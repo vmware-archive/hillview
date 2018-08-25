@@ -18,12 +18,13 @@
 import {axisLeft as d3axisLeft} from "d3-axis";
 import {format as d3format} from "d3-format";
 import {scaleLinear as d3scaleLinear} from "d3-scale";
-import {AxisData} from "../dataViews/axisData";
+import {AxisData, AxisKind} from "../dataViews/axisData";
 import {Histogram2DView} from "../dataViews/histogram2DView";
 import {HistogramViewBase} from "../dataViews/histogramViewBase";
-import {HeatMap, Histogram} from "../javaBridge";
+import {Heatmap} from "../javaBridge";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
+import {D3Axis, D3Scale} from "./ui";
 
 /**
  * Represents an SVG rectangle drawn on the screen.
@@ -48,31 +49,25 @@ interface Rect {
 }
 
 export class Histogram2DPlot extends Plot {
-    /**
-     * A 2D histogram contains a heatmap for the data, a 1D Histogram for the misisng data,
-     * a cdf, and a missing count.
-     */
-    protected heatmap: HeatMap;
-    protected cdf: Histogram;
+    protected heatmap: Heatmap;
     protected xAxisData: AxisData;
-    protected yAxisData: AxisData;
     protected samplingRate: number;
     protected normalized: boolean;
     protected missingDisplayed: number;
     protected visiblePoints: number;
     protected barWidth: number;
+    protected yScale: D3Scale;
+    protected yAxis: D3Axis;
 
     public constructor(protected plottingSurface: PlottingSurface) {
         super(plottingSurface);
     }
 
-    public setData(heatmap: HeatMap, cdf: Histogram,
-                   xAxisData: AxisData, yAxisData: AxisData, samplingRate: number,
+    public setData(heatmap: Heatmap,
+                   xAxisData: AxisData, samplingRate: number,
                    normalized: boolean): void {
         this.heatmap = heatmap;
-        this.cdf = cdf;
         this.xAxisData = xAxisData;
-        this.yAxisData = yAxisData;
         this.samplingRate = samplingRate;
         this.normalized = normalized;
     }
@@ -128,9 +123,7 @@ export class Histogram2DPlot extends Plot {
             .tickFormat(d3format(".2s"));
 
         const bucketCount = xPoints;
-        const scAxis = this.xAxisData.scaleAndAxis(this.getChartWidth(), true, false);
-        this.xScale = scAxis.scale;
-        this.xAxis = scAxis.axis;
+        this.xAxisData.setResolution(this.getChartWidth(), AxisKind.Bottom);
 
         this.plottingSurface.getCanvas().append("text")
             .text(this.xAxisData.description.name)
@@ -181,6 +174,14 @@ export class Histogram2DPlot extends Plot {
         this.drawAxes();
     }
 
+    public getYAxis(): D3Axis {
+        return this.yAxis;
+    }
+
+    public getYScale(): D3Scale {
+        return this.yScale;
+    }
+
     /**
      * The bar width in pixels.
      */
@@ -223,6 +224,7 @@ export class Histogram2DPlot extends Plot {
         return this.getChartHeight() - y * scale;
     }
 
+    // noinspection JSMethodCanBeStatic
     public color(d: number, max: number): string {
         if (d > max)
         // This is for the "missing" data

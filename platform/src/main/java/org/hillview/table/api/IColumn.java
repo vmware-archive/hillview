@@ -94,10 +94,8 @@ public interface IColumn extends Serializable {
 
     /**
      * Whatever the internal data type, return a double.
-     * The converter is only used for columns that store data as strings.
-     * If the converter supplied is null, the default converter will be used.
      */
-    double asDouble(int rowIndex, IStringConverter converter);
+    double asDouble(int rowIndex);
 
     // Returns null only if the object is missing.
     @Nullable

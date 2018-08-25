@@ -94,7 +94,7 @@ export function loadFile(file: File,
                          onsuccess: (s: string) => void,
                          reporter: ErrorReporter): void {
     const reader = new FileReader();
-    reader.onloadend = () => onsuccess(reader.result);
+    reader.onloadend = () => onsuccess(reader.result as string);
     reader.onabort = () => reporter.reportError("Read of file " + file.name + " aborted");
     reader.onerror = (e) => reporter.reportError(e.toString());
     if (file)
@@ -113,6 +113,12 @@ export class Seed {
 
     public get(): number {
         return Math.round(Math.random() * 1024 * 1024);
+    }
+
+    public getSampled(samplingRate: number): number {
+        if (samplingRate >= 1.0)
+            return 0;
+        return this.get();
     }
 }
 
@@ -224,6 +230,26 @@ export function significantDigits(n: number): string {
     else
         n = Math.round(n * 1000) / 1000;
     return String(n) + suffix;
+}
+
+/**
+ * Given some strings returns a subset of them.
+ * @param data   A set of strings.
+ * @param count  Number of strings to return.
+ * @returns      At most count strings equi-spaced.
+ */
+export function periodicSamples(data: string[], count: number): string[] {
+    if (data == null)
+        return null;
+
+    if (count >= data.length)
+        return data;
+    const boundaries: string[] = [];
+    for (let i = 0; i < count; i++) {
+        const index = Math.round(i * (data.length - 1) / count);
+        boundaries.push(data[index]);
+    }
+    return boundaries;
 }
 
 /**
@@ -429,7 +455,8 @@ export interface RpcReply {
     isCompleted: boolean;  // If true this message is the last one.
 }
 
-export interface ICancellable {
+// untyped cancellable
+export interface IRawCancellable {
     /**
      * return 'true' if cancellation succeeds.
      * Cancellation may fail if the computation is terminated.
@@ -438,3 +465,7 @@ export interface ICancellable {
     /** time when operation was initiated */
     startTime(): Date;
 }
+
+// Typed version of the cancellable API, makes it easy to do
+// stong typing.
+export interface ICancellable<T> extends IRawCancellable {}

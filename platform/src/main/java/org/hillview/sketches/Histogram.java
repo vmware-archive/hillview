@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2018 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,63 +17,54 @@
 
 package org.hillview.sketches;
 
-import org.hillview.table.api.*;
-import java.io.Serializable;
+import org.hillview.table.api.IColumn;
+import org.hillview.table.api.IMembershipSet;
+import org.hillview.table.api.ISampledRowIterator;
 
 /**
  * One dimensional histogram.
  */
-public class Histogram implements Serializable {
-    private final long[] buckets;
-    private long missingData;
-    private long outOfRange;
-    private final IBucketsDescription bucketDescription;
+public class Histogram extends HistogramBase {
+    private final IHistogramBuckets bucketDescription;
 
-    public Histogram(final IBucketsDescription bucketDescription) {
+    public Histogram(final IHistogramBuckets bucketDescription) {
         this.bucketDescription = bucketDescription;
         this.buckets = new long[bucketDescription.getNumOfBuckets()];
-    }
-
-    void addValue(final double val) {
-        int index = this.bucketDescription.indexOf(val);
-        if (index >= 0)
-            this.buckets[index]++;
-        else this.outOfRange++;
     }
 
     public void rescale(double sampleRate) {
         if (sampleRate >= 1)
             return;
-        this.outOfRange = (long) ((double) this.outOfRange / sampleRate);
         this.missingData = (long) ((double) this.missingData / sampleRate);
         for (int i = 0; i < this.buckets.length; i++)
             this.buckets[i] = (long) ((double) this.buckets[i] / sampleRate);
     }
 
-    public void create(final ColumnAndConverter column, IMembershipSet membershipSet,
+    public void add(IColumn column, int currRow) {
+        if (column.isMissing(currRow))
+            this.missingData++;
+        else {
+            int index = this.bucketDescription.indexOf(column, currRow);
+            if (index >= 0)
+                this.buckets[index]++;
+        }
+    }
+
+    public void create(final IColumn column, IMembershipSet membershipSet,
                        double sampleRate, long seed, boolean enforceRate) {
         if (sampleRate <= 0)
             throw new RuntimeException("Negative sampling rate");
-        final ISampledRowIterator myIter = membershipSet.getIteratorOverSample(sampleRate, seed, enforceRate);
+        final ISampledRowIterator myIter = membershipSet.getIteratorOverSample(
+                sampleRate, seed, enforceRate);
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
-            if (column.isMissing(currRow))
-                this.missingData++;
-            else {
-                double val = column.asDouble(currRow);
-                int index = this.bucketDescription.indexOf(val);
-                if (index >= 0)
-                    this.buckets[index]++;
-                else this.outOfRange++;
-            }
+            this.add(column, currRow);
             currRow = myIter.getNextRow();
         }
         this.rescale(myIter.rate());
     }
 
     public long getMissingData() { return this.missingData; }
-
-    public long getOutOfRange() { return this.outOfRange; }
 
     /**
      * @return the index's bucket count
@@ -89,17 +80,7 @@ public class Histogram implements Serializable {
         for (int i = 0; i < unionH.bucketDescription.getNumOfBuckets(); i++)
             unionH.buckets[i] = this.buckets[i] + otherHistogram.buckets[i];
         unionH.missingData = this.missingData + otherHistogram.missingData;
-        unionH.outOfRange = this.outOfRange + otherHistogram.outOfRange;
         return unionH;
-    }
-
-    public Histogram prefixSum() {
-        // This method is used for creating the CDF
-        Histogram cdf = new Histogram(this.bucketDescription);
-        cdf.buckets[0] = this.buckets[0];
-        for (int i = 1; i < this.bucketDescription.getNumOfBuckets(); i++)
-            cdf.buckets[i] = cdf.buckets[i - 1] + this.buckets[i];
-        return cdf;
     }
 
     public int getNumOfBuckets() { return this.bucketDescription.getNumOfBuckets(); }

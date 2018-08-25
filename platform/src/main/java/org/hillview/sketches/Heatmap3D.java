@@ -24,27 +24,25 @@ import java.io.Serializable;
 /**
  * A 3-dimensional histogram.
  */
-public class HeatMap3D implements Serializable, IJson {
+public class Heatmap3D implements Serializable, IJson {
     private final long[][][] buckets;
     private long eitherMissing; // number of items missing in either of the columns
-    private long outOfRange;
-    private final IBucketsDescription bucketDescDim1;
-    private final IBucketsDescription bucketDescDim2;
-    private final IBucketsDescription bucketDescDim3;
+    private final IHistogramBuckets bucketDescDim1;
+    private final IHistogramBuckets bucketDescDim2;
+    private final IHistogramBuckets bucketDescDim3;
     private long totalPresent; // number of items that have no missing values in either column
 
-    HeatMap3D(final IBucketsDescription buckets1,
-                     final IBucketsDescription buckets2,
-                     final IBucketsDescription buckets3) {
+    Heatmap3D(final IHistogramBuckets buckets1,
+              final IHistogramBuckets buckets2,
+              final IHistogramBuckets buckets3) {
         this.bucketDescDim1 = buckets1;
         this.bucketDescDim2 = buckets2;
         this.bucketDescDim3 = buckets3;
         this.buckets = new long[buckets1.getNumOfBuckets()][buckets2.getNumOfBuckets()][buckets3.getNumOfBuckets()];
     }
 
-    void createHeatMap(
-            final ColumnAndConverter columnD1, final ColumnAndConverter columnD2,
-            final ColumnAndConverter columnD3,
+    void createHeatmap(
+            final IColumn columnD1, final IColumn columnD2, final IColumn columnD3,
             final IMembershipSet membershipSet,
             final double samplingRate,
             final long seed, boolean enforceRate) {
@@ -57,17 +55,13 @@ public class HeatMap3D implements Serializable, IJson {
             if (isMissingD1 || isMissingD2 || isMissingD3) {
                 this.eitherMissing++; // At least one of the three is missing.
             } else {
-                double val1 = columnD1.asDouble(currRow);
-                double val2 = columnD2.asDouble(currRow);
-                double val3 = columnD3.asDouble(currRow);
-                int index1 = this.bucketDescDim1.indexOf(val1);
-                int index2 = this.bucketDescDim2.indexOf(val2);
-                int index3 = this.bucketDescDim3.indexOf(val3);
+                int index1 = this.bucketDescDim1.indexOf(columnD1, currRow);
+                int index2 = this.bucketDescDim2.indexOf(columnD2, currRow);
+                int index3 = this.bucketDescDim3.indexOf(columnD3, currRow);
                 if ((index1 >= 0) && (index2 >= 0) && (index3 >= 0)) {
                     this.buckets[index1][index2][index3]++;
                     this.totalPresent++;
                 }
-                else this.outOfRange++;
             }
             currRow = myIter.getNextRow();
         }
@@ -77,8 +71,6 @@ public class HeatMap3D implements Serializable, IJson {
 
     public long getMissingData() { return this.eitherMissing; }
 
-    public long getOutOfRange() { return this.outOfRange; }
-
     public long getCount(final int index1, final int index2, final int index3) {
         return this.buckets[index1][index2][index3];
     }
@@ -87,14 +79,13 @@ public class HeatMap3D implements Serializable, IJson {
      * @param  otherHeatmap3D with the same bucketDescriptions
      * @return a new HeatMap3D which is the union of this and otherHeatmap3D
      */
-    public HeatMap3D union(HeatMap3D otherHeatmap3D) {
-        HeatMap3D unionH = new HeatMap3D(this.bucketDescDim1, this.bucketDescDim2, this.bucketDescDim3);
+    public Heatmap3D union(Heatmap3D otherHeatmap3D) {
+        Heatmap3D unionH = new Heatmap3D(this.bucketDescDim1, this.bucketDescDim2, this.bucketDescDim3);
         for (int i = 0; i < unionH.bucketDescDim1.getNumOfBuckets(); i++)
             for (int j = 0; j < unionH.bucketDescDim2.getNumOfBuckets(); j++)
                 for (int k = 0; k < unionH.bucketDescDim3.getNumOfBuckets(); k++)
                     unionH.buckets[i][j][k] = this.buckets[i][j][k] + otherHeatmap3D.buckets[i][j][k];
         unionH.eitherMissing = this.eitherMissing + otherHeatmap3D.eitherMissing;
-        unionH.outOfRange = this.outOfRange + otherHeatmap3D.outOfRange;
         unionH.totalPresent = this.totalPresent + otherHeatmap3D.totalPresent;
         return unionH;
     }

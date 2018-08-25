@@ -17,16 +17,18 @@
 
 import {axisBottom as d3axisBottom} from "d3-axis";
 import {scaleLinear as d3scaleLinear, scaleLog as d3scaleLog} from "d3-scale";
-import {interpolateCool as d3interpolateCool,
-    interpolateWarm as d3interpolateWarm} from "d3-scale-chromatic";
+import {
+    interpolateCool as d3interpolateCool,
+    interpolateWarm as d3interpolateWarm
+} from "d3-scale-chromatic";
 import {event as d3event} from "d3-selection";
-import {AxisData} from "../dataViews/axisData";
+import {AxisData, AxisKind} from "../dataViews/axisData";
 import {Histogram2DView} from "../dataViews/histogram2DView";
 import {assert} from "../util";
 import {ContextMenu} from "./menu";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
-import {Rectangle, Resolution} from "./ui";
+import {D3Axis, D3Scale, D3SvgElement, Rectangle, Resolution} from "./ui";
 
 /**
  * Displays a legend for a 2D histogram.
@@ -35,7 +37,7 @@ export class HistogramLegendPlot extends Plot {
     protected axisData: AxisData;
     protected legendRect: Rectangle;
     protected missingLegend: boolean;  // if true display legend for missing
-    protected hilightRect: any;
+    protected hilightRect: D3SvgElement;
     protected missingX: number;
     protected missingY: number;
     protected readonly missingGap = 30;
@@ -84,14 +86,11 @@ export class HistogramLegendPlot extends Plot {
             x += this.colorWidth;
         }
 
-        const scaleAxis = this.axisData.scaleAndAxis(this.legendRect.width(), true, true);
-        // create a scale and axis for the legend
-        this.xScale = scaleAxis.scale;
-        this.xAxis = scaleAxis.axis;
+        this.axisData.setResolution(this.legendRect.width(), AxisKind.Legend);
         canvas.append("g")
             .attr("transform", `translate(${this.legendRect.lowerLeft().x},
                                           ${this.legendRect.lowerLeft().y})`)
-            .call(this.xAxis);
+            .call(this.axisData.axis);
 
         if (this.missingLegend) {
             if (this.legendRect != null) {
@@ -178,7 +177,7 @@ class HeatmapColormap {
         this.setMap(d3interpolateWarm);
     }
 
-    public setLogScale(logScale: boolean) {
+    public setLogScale(logScale: boolean): void {
         this.logScale = logScale;
     }
 
@@ -214,15 +213,16 @@ export class HeatmapLegendPlot extends Plot {
        a unique ID for the gradient element. */
     private static nextUniqueId: number = 0;
     private readonly uniqueId: number;
-    private gradient: any; // Element that contains the definitions for the colors in the color map
+    private gradient: D3SvgElement; // Element that contains the definitions for the colors in the color map
 
     // Function that is called to update other elements when the color map changes.
     private onColorMapChange: (ColorMap) => void;
     private contextMenu: ContextMenu;
     private barHeight: number;
     private colorMap: HeatmapColormap;
-    private legendRectangle: any;
-    private axisElement: any;
+    private legendRectangle: D3SvgElement;
+    private axisElement: D3SvgElement;
+    protected xAxis: D3Axis;
 
     constructor(surface: PlottingSurface) {
         super(surface);
@@ -230,7 +230,7 @@ export class HeatmapLegendPlot extends Plot {
         this.uniqueId = HeatmapLegendPlot.nextUniqueId++;
     }
 
-    public setColorMapChangeEventListener(listener: (ColorMap) => void) {
+    public setColorMapChangeEventListener(listener: (ColorMap) => void): void {
         this.onColorMapChange = listener;
     }
 
@@ -242,9 +242,9 @@ export class HeatmapLegendPlot extends Plot {
     /**
      * The context menu is added only when a colormap change event listener is set.
      */
-    private enableContextMenu() {
+    private enableContextMenu(): void {
         this.contextMenu = new ContextMenu(
-            this.plottingSurface.getHTMLRepresentation(), [
+            this.plottingSurface.topLevelElement, [
             {
                 text: "Cool",
                 help: "Use a color palette with cool colors.",
@@ -278,7 +278,7 @@ export class HeatmapLegendPlot extends Plot {
         ]);
     }
 
-    private showContextMenu(event: MouseEvent) {
+    private showContextMenu(event: MouseEvent): void {
         /* Only show context menu if it is enabled. */
         if (this.contextMenu != null) {
             event.preventDefault();
@@ -287,7 +287,7 @@ export class HeatmapLegendPlot extends Plot {
     }
 
     // Redraw the legend, and notify the listeners.
-    private mapUpdated() {
+    private mapUpdated(): void {
         this.setData(this.colorMap.min, this.colorMap.max, this.colorMap.logScale);
         this.draw();
         // Notify the onColorChange listener (redraw the elements with new colors)
@@ -303,18 +303,24 @@ export class HeatmapLegendPlot extends Plot {
         assert(max === this.colorMap.max);
         const logScale = useLogScale != null ? useLogScale : max > HeatmapColormap.logThreshold;
         this.colorMap.setLogScale(logScale);
+
+        let scale: D3Scale;
         if (logScale) {
-            this.xScale = d3scaleLog().base(base);
+            scale = d3scaleLog().base(base);
         } else
-            this.xScale = d3scaleLinear();
-        this.xScale
+            scale = d3scaleLinear();
+        scale
             .domain([min, max])
             .range([0, Resolution.legendBarWidth]);
         const ticks = Math.min(max, 10);
-        this.xAxis = d3axisBottom(this.xScale).ticks(ticks);
+        this.xAxis = d3axisBottom(scale).ticks(ticks);
     }
 
-    public getColor(v: number): any {
+    public getXAxis(): D3Axis {
+        return this.xAxis;
+    }
+
+    public getColor(v: number): string {
         return this.colorMap.apply(v);
     }
 
@@ -331,7 +337,7 @@ export class HeatmapLegendPlot extends Plot {
         const min = this.colorMap.min;
         const max = this.colorMap.max;
         const canvas = this.plottingSurface.getCanvas();
-        const x = (this.plottingSurface.getActualChartWidth() - Resolution.legendBarWidth) / 2;
+        const x = (this.plottingSurface.getChartWidth() - Resolution.legendBarWidth) / 2;
 
         if (!this.colorMap.logScale && this.colorMap.max - this.colorMap.min < 25) {
             // use discrete colors
@@ -372,6 +378,6 @@ export class HeatmapLegendPlot extends Plot {
         this.legendRectangle.on("contextmenu", () => this.showContextMenu(d3event));
         this.axisElement = canvas.append("g")
             .attr("transform", `translate(${x}, ${this.barHeight})`)
-            .call(this.xAxis);
+            .call(this.getXAxis());
     }
 }

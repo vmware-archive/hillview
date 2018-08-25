@@ -22,6 +22,7 @@ import org.hillview.table.SmallTable;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -117,22 +118,20 @@ public interface ITable {
     /**
      * Returns the specified columns.  Ensures that the columns are loaded.
      */
-    List<ColumnAndConverter> getLoadedColumns(List<ColumnAndConverterDescription> columns);
+    List<IColumn> getLoadedColumns(List<String> columns);
 
+    default List<IColumn> getLoadedColumns(String[] columns) {
+        return this.getLoadedColumns(Arrays.asList(columns));
+    }
     /**
      * Returns the specified column.  Ensures that the column is loaded.
      */
-    default ColumnAndConverter getLoadedColumn(ColumnAndConverterDescription column) {
-        List<ColumnAndConverterDescription> cols = new ArrayList<ColumnAndConverterDescription>(1);
+    default IColumn getLoadedColumn(String column) {
+        List<String> cols = new ArrayList<String>(1);
         cols.add(column);
-        List<ColumnAndConverter> result = this.getLoadedColumns(cols);
+        List<IColumn> result = this.getLoadedColumns(cols);
         assert result.size() == 1;
         return result.get(0);
-    }
-
-    default ColumnAndConverter getLoadedColumn(String columnName) {
-        ColumnAndConverterDescription desc = new ColumnAndConverterDescription(columnName);
-        return this.getLoadedColumn(desc);
     }
 
     /**

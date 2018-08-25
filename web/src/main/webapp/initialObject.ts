@@ -65,7 +65,7 @@ export function getDescription(data: DataLoaded): string {
  * Initiates an RPC to get the file size.
  */
 class FileNamesReceiver extends OnCompleteReceiver<RemoteObjectId> {
-    constructor(loadMenuPage: FullPage, operation: ICancellable, protected data: DataLoaded) {
+    constructor(loadMenuPage: FullPage, operation: ICancellable<RemoteObjectId>, protected data: DataLoaded) {
         super(loadMenuPage, operation, "Get file info");
     }
 
@@ -83,7 +83,7 @@ class FileNamesReceiver extends OnCompleteReceiver<RemoteObjectId> {
  * It initiates a loadTable RPC request to load data from these files as a table.
  */
 class FileSizeReceiver extends OnCompleteReceiver<FileSizeSketchInfo> {
-    constructor(loadMenuPage: FullPage, operation: ICancellable,
+    constructor(loadMenuPage: FullPage, operation: ICancellable<FileSizeSketchInfo>,
                 protected data: DataLoaded,
                 protected remoteObj: RemoteObject) {
         super(loadMenuPage, operation, "Load data");
@@ -116,7 +116,7 @@ export class RemoteTableReceiver extends BaseRenderer {
      * @param progressInfo    Description of the files that are being loaded.
      * @param forceTableView  If true the resulting view is always a table.
      */
-    constructor(page: FullPage, operation: ICancellable, protected data: DataLoaded,
+    constructor(page: FullPage, operation: ICancellable<RemoteObjectId>, protected data: DataLoaded,
                 progressInfo: string, protected forceTableView: boolean) {
         super(page, operation, progressInfo, null);
     }

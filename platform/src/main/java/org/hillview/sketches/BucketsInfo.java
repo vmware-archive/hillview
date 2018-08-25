@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2018 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,16 +15,26 @@
  * limitations under the License.
  */
 
-package org.hillview.table;
+package org.hillview.sketches;
 
-import javax.annotation.Nullable;
+import org.hillview.dataset.api.IJson;
 
-public final class ExplicitStringConverter extends BaseExplicitConverter {
-    /* Will throw an exception when string is not known */
-    @Override
-    public double asDouble(@Nullable final String string) {
-        if (this.stringValue.containsKey(string))
-            return this.stringValue.getInt(string);
-        throw new RuntimeException("Unknown key " + string);
+import java.io.Serializable;
+
+/**
+ * This interface is a base class for all sketch results that are
+ * used to compute the buckets of a histogram.
+ */
+public abstract class BucketsInfo implements Serializable, IJson {
+    public long presentCount;
+    public long missingCount;
+
+    public BucketsInfo() {
+        this.presentCount = 0;
+        this.missingCount = 0;
+    }
+
+    public void addMissing() {
+        this.missingCount++;
     }
 }

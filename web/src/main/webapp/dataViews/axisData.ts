@@ -21,41 +21,97 @@ import {
 } from "d3-axis";
 import {
     scaleLinear as d3scaleLinear,
-    ScaleLinear as D3ScaleLinear,
     scaleTime as d3scaleTime,
-    ScaleTime as D3ScaleTime,
 } from "d3-scale";
-import {DistinctStrings} from "../distinctStrings";
-import {BasicColStats, CategoricalValues, ColumnAndRange, IColumnDescription} from "../javaBridge";
-import {Converters, significantDigits} from "../util";
+import {
+    ContentsKind,
+    DataRange,
+    IColumnDescription,
+    kindIsString
+} from "../javaBridge";
+import {Converters, formatDate, formatNumber, significantDigits} from "../util";
+import {AnyScale, D3Axis} from "../ui/ui";
 
-export type AnyScale = D3ScaleLinear<number, number> | D3ScaleTime<number, number>;
-
-/**
- * A D3 axis and an associated scale.
- */
-export interface ScaleAndAxis {
-    scale: AnyScale;
-    axis: any;  // a d3 axis, but typing does not work well
+export enum AxisKind {
+    Bottom,
+    Left,
+    Legend
 }
 
 /**
  * Contains all information required to build an axis and a d3 scale associated to it.
  */
 export class AxisData {
+    public readonly distinctStrings: string[];
+    public scale: AnyScale;
+    public axis: D3Axis;
+    public bucketCount: number;
+
     public constructor(public description: IColumnDescription,
-                       public stats: BasicColStats,
-                       public distinctStrings: DistinctStrings,
-                       public bucketCount: number) {}
+                       public range: DataRange | null) {
+        this.bucketCount = 0;
+        let useRange = range;
+        if (useRange != null) {
+            if (kindIsString(description.kind)) {
+                useRange = {
+                    min: -.5,
+                    max: range.leftBoundaries.length - .5,
+                    presentCount: range.presentCount,
+                    missingCount: range.missingCount,
+                    allStringsKnown: range.allStringsKnown,
+                    leftBoundaries: range.leftBoundaries,
+                    maxBoundary: range.maxBoundary
+                };
+            } else if (description.kind === "Integer") {
+                useRange = {
+                    min: range.min - .5,
+                    max: range.max + .5,
+                    presentCount: range.presentCount,
+                    missingCount: range.missingCount
+                };
+            }
+        }
+        this.range = useRange;
+        const strings = range !== null ? range.leftBoundaries : null;
+        this.distinctStrings = strings;
+        // These are set when we know the screen size.
+        this.scale = null;
+        this.axis = null;
+    }
 
-    public scaleAndAxis(length: number, bottom: boolean, legend: boolean): ScaleAndAxis {
+    private static needsAdjustment(kind: ContentsKind): boolean {
+        return kindIsString(kind) || kind === "Integer";
+    }
+
+    public setBucketCount(bucketCount: number): void {
+        this.bucketCount = bucketCount;
+    }
+
+    public getString(index: number, clamp: boolean): string {
+        index = Math.round(index);
+        if (clamp) {
+            if (index < 0)
+                index = 0;
+            if (index >= this.distinctStrings.length)
+                index = this.distinctStrings.length - 1;
+        }
+        if (index >= 0 && index < this.distinctStrings.length)
+            return this.distinctStrings[index];
+        return null;
+    }
+
+    /**
+     * Map the axis to the screen.
+     * @param pixels       Number of pixels spanned by the axis.
+     * @param axisKind     What kind of axis this is.
+     */
+    public setResolution(pixels: number, axisKind: AxisKind): void {
+        const bottom = axisKind !== AxisKind.Left;
         const axisCreator = bottom ? d3axisBottom : d3axisLeft;
-
-        let actualMin = this.stats.min;
-        let actualMax = this.stats.max;
+        let actualMin = this.range.min;
+        let actualMax = this.range.max;
         let adjust = .5;
-        if (legend && (this.description.kind === "Integer" ||
-            this.description.kind === "Category")) {
+        if (axisKind === AxisKind.Legend && AxisData.needsAdjustment(this.description.kind)) {
             // These were adjusted, bring them back.
             actualMin += .5;
             actualMax -= .5;
@@ -65,36 +121,39 @@ export class AxisData {
         // on vertical axis the direction is swapped
         const domain = bottom ? [actualMin, actualMax] : [actualMax, actualMin];
 
-        let axis: any;
-        let scale: AnyScale;
         switch (this.description.kind) {
             case "Integer":
             case "Double": {
-                scale = d3scaleLinear()
+                this.scale = d3scaleLinear()
                     .domain(domain)
-                    .range([0, length]);
-                axis = axisCreator(scale);
+                    .range([0, pixels]);
+                this.axis = axisCreator(this.scale);
                 break;
             }
+            case "Json":
+            case "String":
             case "Category": {
                 const ticks: number[] = [];
                 const labels: string[] = [];
                 // note: this is without adjustment.
-                const tickCount = Math.ceil(this.stats.max - this.stats.min);
+                const tickCount = Math.ceil(this.range.max - this.range.min);
                 // TODO: if the tick count is too large it must be reduced
                 const minLabelWidth = 40;  // pixels
-                const maxLabelCount = length / minLabelWidth;
+                const maxLabelCount = pixels / minLabelWidth;
                 const labelPeriod = Math.ceil(tickCount / maxLabelCount);
                 // On a legend the leftmost and rightmost ticks are at the ends
                 // On a plot axis the ticks are offset .5 from the ends.
-                const totalIntervals = legend ? (tickCount - 1) : tickCount;
-                const tickWidth = length / totalIntervals;
+                const totalIntervals = axisKind === AxisKind.Legend ? (tickCount - 1) : tickCount;
+                const tickWidth = pixels / totalIntervals;
 
                 for (let i = 0; i < tickCount; i++) {
                     ticks.push((i + adjust) * tickWidth);
                     let label = "";
-                    if (i % labelPeriod === 0)
-                        label = this.distinctStrings.get(this.stats.min + .5 + i);
+                    if (i % labelPeriod === 0) {
+                        label = this.getString(this.range.min + .5 + i, false);
+                        if (label === null)
+                            label = "";
+                    }
                     labels.push(label);
                 }
                 if (!bottom)
@@ -102,12 +161,12 @@ export class AxisData {
 
                 // We manually control the ticks.
                 const manual = d3scaleLinear()
-                    .domain([0, length])
-                    .range([0, length]);
-                scale = d3scaleLinear()
+                    .domain([0, pixels])
+                    .range([0, pixels]);
+                this.scale = d3scaleLinear()
                     .domain(domain)
-                    .range([0, length]);
-                axis = axisCreator(manual)
+                    .range([0, pixels]);
+                this.axis = axisCreator(manual)
                     .tickValues(ticks)
                     .tickFormat((d, i) => labels[i]);
                 break;
@@ -115,52 +174,50 @@ export class AxisData {
             case "Date": {
                 const minDate: Date = Converters.dateFromDouble(domain[0]);
                 const maxDate: Date = Converters.dateFromDouble(domain[1]);
-                scale = d3scaleTime()
+                this.scale = d3scaleTime()
                     .domain([minDate, maxDate])
-                    .range([0, length]);
-                axis = axisCreator(scale);
+                    .range([0, pixels]);
+                this.axis = axisCreator(this.scale);
                 break;
             }
             default: {
-                axis = null;
-                scale = null;
+                console.log("Unexpected data kind for axis" + this.description.kind);
                 break;
             }
         }
-
-        return { scale: scale, axis: axis };
-    }
-
-    public getCategoricalValues(): CategoricalValues {
-        return new CategoricalValues(this.description.name,
-            this.distinctStrings != null ? this.distinctStrings.uniqueStrings : null);
     }
 
     /**
-     * The categorical values in the min-max range.
-     * @param {number} bucketCount  Number of categories to return.
-     * @returns {string[]}  An array of categories, or null if this is not a
-     * categorical column.
+     * Given a mouse coordinate on a specified d3 scale, returns the corresponding
+     * Real-world value.  Returns the result as a string.
      */
-    public getCategoriesInRange(bucketCount: number): string[] {
-        if (this.distinctStrings == null)
-            return null;
-        return this.distinctStrings.categoriesInRange(
-                this.stats.min, this.stats.max, bucketCount);
+    public invert(v: number): string {
+        const inv = this.scale.invert(v);
+        let result: string;
+        if (this.description.kind === "Integer")
+            result = formatNumber(Math.round(inv as number));
+        else if (kindIsString(this.description.kind))
+            result = this.getString(inv as number, true);
+        else if (this.description.kind === "Double")
+            result = formatNumber(inv as number);
+        else if (this.description.kind === "Date")
+            result = formatDate(inv as Date);
+        else
+            result = inv.toString();
+        return result;
     }
 
-    /**
-     * Creates a ColumnAndRange data structure from the AxisData, which
-     * may be used to initiate a histogram computation.
-     * @param {number} bucketCount  Number of buckets expected in histogram.
-     */
-    public getColumnAndRange(bucketCount: number): ColumnAndRange {
-        return {
-            columnName: this.description.name,
-            min: this.stats.min,
-            max: this.stats.max,
-            bucketBoundaries: this.getCategoriesInRange(bucketCount),
-        };
+    public invertToNumber(v: number): number {
+        const inv = this.scale.invert(v);
+        let result: number = 0;
+        if (this.description.kind === "Integer" || kindIsString(this.description.kind)) {
+            result = Math.round(inv as number);
+        } else if (this.description.kind === "Double") {
+            result = inv as number;
+        } else if (this.description.kind === "Date") {
+            result = Converters.doubleFromDate(inv as Date);
+        }
+        return result;
     }
 
     /**
@@ -171,8 +228,8 @@ export class AxisData {
     public boundaries(bucket: number): [number, number] {
         if (bucket < 0 || bucket >= this.bucketCount)
             return null;
-        const interval = (this.stats.max - this.stats.min) / this.bucketCount;
-        const start = this.stats.min + interval * bucket;
+        const interval = (this.range.max - this.range.min) / this.bucketCount;
+        const start = this.range.min + interval * bucket;
         const end = start + interval;
         return [start, end];
     }
@@ -184,9 +241,20 @@ export class AxisData {
     public bucketDescription(bucket: number): string {
         if (bucket < 0 || bucket >= this.bucketCount)
             return "empty";
+
+        if (kindIsString(this.description.kind)) {
+            const left = this.getString(bucket, false);
+            if (this.range.allStringsKnown)
+                return left;
+            if (bucket === this.bucketCount - 1)
+                return "[" + left + "," + this.range.maxBoundary + "]";
+            else
+                return "[" + left + "," + this.getString(bucket + 1, false) + ")";
+        }
+
         let [start, end] = this.boundaries(bucket);
         let closeBracket = ")";
-        if (end >= this.stats.max)
+        if (end >= this.range.max)
             closeBracket = "]";
         switch (this.description.kind) {
             case "Integer":
@@ -200,16 +268,6 @@ export class AxisData {
                     return "[" + significantDigits(start) + ", " + significantDigits(end) + closeBracket;
             case "Double":
                  return "[" + significantDigits(start) + ", " + significantDigits(end) + closeBracket;
-            case "Category": {
-                start = Math.ceil(start);
-                end = Math.floor(end);
-                if (end < start)
-                    return "empty";
-                else if (end === start)
-                    return this.distinctStrings.get(start);
-                else
-                    return "[" + this.distinctStrings.get(start) + ", " + this.distinctStrings.get(end) + closeBracket;
-            }
             case "Date": {
                 const minDate: Date = Converters.dateFromDouble(start);
                 const maxDate: Date = Converters.dateFromDouble(end);

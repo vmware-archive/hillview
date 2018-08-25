@@ -52,4 +52,20 @@ public enum ContentsKind implements Serializable {
                 return false;
         }
     }
+
+    public boolean isString() {
+        switch (this) {
+            case Category:
+            case String:
+            case Json:
+                return true;
+            case None:
+            case Date:
+            case Duration:
+            case Integer:
+            case Double:
+            default:
+                return false;
+        }
+    }
 }

@@ -73,18 +73,16 @@ public class RecordOrder implements Serializable {
      */
     public IndexComparator getComparator(final ITable table) {
         final ArrayList<IndexComparator> comparatorList = new ArrayList<IndexComparator>();
-        List<ColumnAndConverterDescription> ccds =
-                Linq.map(this.sortOrientationList,
-                        ordCol -> new ColumnAndConverterDescription(ordCol.columnDescription.name));
-        List<ColumnAndConverter> cols = table.getLoadedColumns(ccds);
+        List<IColumn> cols = table.getLoadedColumns(Linq.map(this.sortOrientationList,
+                ordCol -> ordCol.columnDescription.name));
 
         for (int i=0; i < this.sortOrientationList.size(); i++) {
             ColumnSortOrientation ordCol = this.sortOrientationList.get(i);
-            ColumnAndConverter col = cols.get(i);
+            IColumn col = cols.get(i);
             if (ordCol.isAscending) {
-                comparatorList.add(col.column.getComparator());
+                comparatorList.add(col.getComparator());
             } else {
-                comparatorList.add(col.column.getComparator().rev());
+                comparatorList.add(col.getComparator().rev());
             }
         }
         return new ListComparator(comparatorList);

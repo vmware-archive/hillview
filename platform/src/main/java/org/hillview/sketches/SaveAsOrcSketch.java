@@ -21,7 +21,6 @@ import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.storage.OrcFileWriter;
 import org.hillview.table.Schema;
-import org.hillview.table.api.ColumnAndConverterDescription;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Utilities;
 
@@ -33,7 +32,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
-import java.util.List;
 
 /**
  * This sketch saves a table into a set of Orc files in the specified folder.
@@ -74,9 +72,8 @@ public class SaveAsOrcSketch implements ISketch<ITable, Empty> {
             if (this.renameMap != null && this.renameMap.size() != 0)
                 data = data.renameColumns(this.renameMap);
 
-            List<ColumnAndConverterDescription> ccds = data.getSchema()
-                    .getColumnAndConverterDescriptions();
-            data.getLoadedColumns(ccds);
+            // Executed for side-effect.
+            data.getLoadedColumns(data.getSchema().getColumnNames());
             File file = new File(this.folder);
             @SuppressWarnings("unused")
             boolean ignored = file.mkdir();

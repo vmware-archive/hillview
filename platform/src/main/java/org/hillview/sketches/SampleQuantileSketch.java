@@ -33,6 +33,9 @@ import java.util.List;
 
 import static org.hillview.table.columns.ObjectArrayColumn.mergeColumns;
 
+/**
+ * Samples a number of rows from a table.
+ */
 public class SampleQuantileSketch  implements ISketch<ITable, SampleList> {
     private final RecordOrder colSortOrder;
     /**

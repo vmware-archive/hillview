@@ -17,20 +17,27 @@
 
 import {IViewSerialization, SpectrumSerialization} from "../datasetView";
 import {
-    BasicColStats, CombineOperators, EigenVal, Histogram, IColumnDescription, RecordOrder, RemoteObjectId,
+    CombineOperators,
+    DataRange,
+    EigenVal,
+    HistogramBase,
+    IColumnDescription, RecordOrder,
+    RemoteObjectId
 } from "../javaBridge";
 import {OnCompleteReceiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
-import {BigTableView, TableTargetAPI} from "../tableTarget";
+import {TableTargetAPI} from "../tableTarget";
 import {IDataView} from "../ui/dataview";
+import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
-import {PlottingSurface} from "../ui/plottingSurface";
+import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {ICancellable, significantDigits} from "../util";
 import {AxisData} from "./axisData";
-import {CorrelationMatrixReceiver, TableView} from "./tableView"
-import {Dialog, FieldKind} from "../ui/dialog";
+import {CorrelationMatrixReceiver, TableView} from "./tableView";
+import {ChartView} from "./chartView";
+
 /**
  * Receives the result of a PCA computation and plots the singular values
  */
@@ -43,7 +50,7 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
                        protected rowCount: number,
                        protected schema: SchemaClass,
                        protected colNames: string[],
-                       operation: ICancellable,
+                       operation: ICancellable<EigenVal>,
                        protected reusePage: boolean) {
         super(page, operation, "Singular Value Spectrum");
         if (this.reusePage)
@@ -67,18 +74,18 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
         this.newPage.setDataView(this.specView);
 
         const ev: number [] = eVals.eigenValues;
-        const histogram: Histogram = { buckets: ev, missingData: 0, outOfRange: 0 };
+        const histogram: HistogramBase = { buckets: ev, missingData: 0 };
         const icd: IColumnDescription = { kind: "Integer", name: "Singular Values" };
-        const stats: BasicColStats = { momentCount: 0, min: -.5, max: ev.length - .5,
-            moments: null, presentCount: 0, missingCount: 0};
-        const axisData = new AxisData(icd, stats, null, ev.length);
+        const range: DataRange = { min: -.5, max: ev.length - .5,
+            presentCount: 0, missingCount: 0 };
+        const axisData = new AxisData(icd, range);
         this.specView.updateView("Spectrum", histogram, axisData, this.elapsedMilliseconds());
         this.newPage.reportError("Showing top " + eVals.eigenValues.length + "/" + this.colNames.length +
             " singular values, Total Variance: " + significantDigits(eVals.totalVar) +
             ", Explained Variance: " + significantDigits(eVals.explainedVar));
     }
 
-    private computePCA() {
+    private computePCA(): void {
         const pcaDialog = new Dialog("Principal Component Analysis",
             "Projects a set of numeric columns to a smaller set of numeric columns while preserving the 'shape' " +
             " of the data as much as possible.");
@@ -112,15 +119,11 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
 /**
  * A SpectrumView plots a one-dimensional bar-chart showing the top singular values.
  */
-export class SpectrumView extends BigTableView {
-    protected currentData: {
-        histogram: Histogram,
-        axisData: AxisData,
-        title: string,
-    };
-    protected menu: TopMenu;
+export class SpectrumView extends ChartView {
+    protected histogram: HistogramBase;
+    protected axisData: AxisData;
+    protected title: string;
     protected plot: HistogramPlot;
-    protected surface: PlottingSurface;
     protected chartDiv: HTMLElement;
     protected summary: HTMLElement;
 
@@ -135,13 +138,13 @@ export class SpectrumView extends BigTableView {
         this.topLevel.appendChild(this.chartDiv);
         this.chartDiv.style.display = "flex";
         this.chartDiv.style.flexDirection = "column";
-        this.surface = new PlottingSurface(this.chartDiv, page);
+        this.surface = new HtmlPlottingSurface(this.chartDiv, page);
         this.plot = new HistogramPlot(this.surface);
         this.summary = document.createElement("div");
         this.topLevel.appendChild(this.summary);
     }
 
-    public updateView(title: string, h: Histogram,
+    public updateView(title: string, h: HistogramBase,
                       axisData: AxisData, elapsedMs: number): void {
         this.page.reportTime(elapsedMs);
         this.plot.clear();
@@ -150,25 +153,19 @@ export class SpectrumView extends BigTableView {
             return;
         }
 
-        this.currentData = {
-            axisData: axisData,
-            title: title,
-            histogram: h };
-
+        this.axisData = axisData;
+        this.title = title;
+        this.histogram = h;
         this.plot.setHistogram(h, 1, axisData);
         this.plot.draw();
 
         this.summary.innerHTML = "Columns: " + this.colNames.join(", ");
     }
 
-    public refresh(): void {
-        if (this.currentData == null)
-            return;
-        this.updateView(
-            this.currentData.title,
-            this.currentData.histogram,
-            this.currentData.axisData,
-            0);
+    protected onMouseMove(): void {}
+
+    public resize(): void {
+        this.updateView(this.title, this.histogram, this.axisData, 0);
     }
 
     public serialize(): IViewSerialization {
@@ -179,16 +176,18 @@ export class SpectrumView extends BigTableView {
         return result;
     }
 
+    public refresh(): void {
+        const rr = this.createSpectrumRequest(this.colNames, this.rowCount, true);
+        rr.invoke(new SpectrumReceiver(this.page, this, this.remoteObjectId,
+            this.rowCount, this.schema,  this.colNames, rr, true));
+    }
+
     public static reconstruct(ser: SpectrumSerialization, page: FullPage): IDataView {
         const schema = new SchemaClass([]).deserialize(ser.schema);
         const colNames: string[] = ser.colNames;
         if (colNames == null || schema == null)
             return null;
-        const sv = new SpectrumView(ser.remoteObjectId, ser.rowCount, colNames, schema, page);
-        const rr = sv.createSpectrumRequest(colNames, ser.rowCount, true);
-        rr.invoke(new SpectrumReceiver(page, sv, ser.remoteObjectId,
-            ser.rowCount, schema,  colNames, rr, true));
-        return sv;
+        return new SpectrumView(ser.remoteObjectId, ser.rowCount, colNames, schema, page);
     }
 
     public combine(how: CombineOperators): void {

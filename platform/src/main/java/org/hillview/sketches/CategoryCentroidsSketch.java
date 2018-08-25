@@ -18,8 +18,7 @@
 package org.hillview.sketches;
 
 import org.hillview.dataset.api.ISketch;
-import org.hillview.table.api.ColumnAndConverter;
-import org.hillview.table.api.ColumnAndConverterDescription;
+import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 
 import javax.annotation.Nullable;
@@ -47,10 +46,9 @@ public class CategoryCentroidsSketch implements ISketch<ITable,Centroids<String>
         allColumns.add(this.catColName);
         allColumns.addAll(Arrays.asList(this.columns));
 
-        List<ColumnAndConverterDescription> ccds = ColumnAndConverterDescription.create(allColumns);
-        List<ColumnAndConverter> cols = data.getLoadedColumns(ccds);
-        List<ColumnAndConverter> numericColumns =
-                new ArrayList<ColumnAndConverter>(this.columns.length);
+        List<IColumn> cols = data.getLoadedColumns(allColumns);
+        List<IColumn> numericColumns =
+                new ArrayList<IColumn>(this.columns.length);
         for (int i=1; i < cols.size(); i++)
             numericColumns.add(cols.get(i));
 

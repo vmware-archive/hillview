@@ -18,16 +18,15 @@
 package org.hillview.sketches;
 
 import org.hillview.dataset.api.ISketch;
-import org.hillview.table.api.ColumnAndConverterDescription;
 import org.hillview.table.api.ITable;
 
 import javax.annotation.Nullable;
 
 public class BasicColStatSketch implements ISketch<ITable, BasicColStats> {
-    private final ColumnAndConverterDescription col;
+    private final String col;
     private final int momentNum;
 
-    public BasicColStatSketch(ColumnAndConverterDescription col, int momentNum) {
+    public BasicColStatSketch(String col, int momentNum) {
         this.col = col;
         this.momentNum = momentNum;
     }

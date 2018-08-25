@@ -22,7 +22,7 @@ import {IElement} from "./ui";
 /**
  * A horizontal rectangle that displays a data range within an interval 0-max.
  */
-export class DataRange implements IElement {
+export class DataRangeUI implements IElement {
     private readonly topLevel: Element;
 
     /**

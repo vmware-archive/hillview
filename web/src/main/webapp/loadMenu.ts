@@ -225,6 +225,10 @@ export class LoadMenu extends RemoteObject implements IDataView {
         this.top.appendChild(this.console.getHTMLRepresentation());
     }
 
+    public refresh(): void {
+        // Not needed
+    }
+
     public toggleAdvanced(): void {
         this.advanced = !this.advanced;
         this.showAdvanced(this.advanced);
@@ -322,7 +326,7 @@ export class LoadMenu extends RemoteObject implements IDataView {
         rr.invoke(new CommandReceiver(command, this.page, rr));
     }
 
-    public refresh(): void {}
+    public resize(): void {}
 
     public setPage(page: FullPage): void {
         this.page = page;
@@ -457,7 +461,6 @@ class OrcFileDialog extends Dialog {
 class DBDialog extends Dialog {
     constructor() {
         super("Load DB tables", "Loads one table on each machine that is part of the service.");
-        // TODO: this should be a pattern string, based on local worker name.
         const sel = this.addSelectField("databaseKind", "Database kind", ["mysql", "impala"], "mysql",
             "The kind of database.");
         sel.onchange = () => this.dbChanged();
@@ -507,7 +510,7 @@ class DBDialog extends Dialog {
  * @param T  each individual result has this type.
  */
 class CommandReceiver extends OnCompleteReceiver<Status[]> {
-    public constructor(name: string, page: FullPage, operation: ICancellable) {
+    public constructor(name: string, page: FullPage, operation: ICancellable<Status[]>) {
         super(page, operation, name);
     }
 
@@ -535,7 +538,7 @@ class CommandReceiver extends OnCompleteReceiver<Status[]> {
  * Receives and displays the result of the ping command.
  */
 class PingReceiver extends OnCompleteReceiver<string[]> {
-    public constructor(page: FullPage, operation: ICancellable) {
+    public constructor(page: FullPage, operation: ICancellable<string[]>) {
         super(page, operation, "ping");
     }
 

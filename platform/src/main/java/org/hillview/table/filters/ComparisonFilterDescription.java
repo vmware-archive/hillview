@@ -55,13 +55,11 @@ public class ComparisonFilterDescription implements ITableFilterDescription {
      * specified column.
      */
     public class ComparisonFilter implements ITableFilter {
-        private final ColumnAndConverter column;
+        private final IColumn column;
         private final Predicate<Integer> comparator;
 
         ComparisonFilter(ITable table) {
-            ColumnAndConverterDescription ccd = new ColumnAndConverterDescription
-                    (ComparisonFilterDescription.this.column);
-            this.column = table.getLoadedColumn(ccd);
+            this.column = table.getLoadedColumn(ComparisonFilterDescription.this.column);
             if (ComparisonFilterDescription.this.compareValue == null) {
                 switch (ComparisonFilterDescription.this.comparison) {
                     case "<":
@@ -84,7 +82,7 @@ public class ComparisonFilterDescription implements ITableFilterDescription {
                 }
             }
 
-            switch (this.column.column.getKind()) {
+            switch (this.column.getKind()) {
                 case Category:
                 case String:
                 case Json:
@@ -261,7 +259,7 @@ public class ComparisonFilterDescription implements ITableFilterDescription {
                                     ComparisonFilterDescription.this.comparison);
                     }
                 default:
-                    throw new RuntimeException("Unexpected kind " + this.column.column.getKind());
+                    throw new RuntimeException("Unexpected kind " + this.column.getKind());
             }
         }
 

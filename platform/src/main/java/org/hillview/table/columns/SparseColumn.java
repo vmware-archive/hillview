@@ -21,7 +21,6 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.openhft.hashing.LongHashFunction;
 import org.hillview.table.ColumnDescription;
-import org.hillview.table.NoStringConverter;
 import org.hillview.table.api.*;
 import org.hillview.utils.Converters;
 
@@ -59,13 +58,13 @@ public class SparseColumn extends BaseColumn
 
     @SuppressWarnings("ConstantConditions")
     @Override
-    public double asDouble(int rowIndex, IStringConverter converter) {
+    public double asDouble(int rowIndex) {
         assert !this.isMissing(rowIndex);
         switch (this.description.kind) {
             case Category:
             case String:
             case Json:
-                return converter.asDouble(this.getString(rowIndex));
+                return IStringColumn.stringToDouble(this.getString(rowIndex));
             case Integer:
                 return this.getInt(rowIndex);
             case Date:
@@ -117,8 +116,8 @@ public class SparseColumn extends BaseColumn
                 case Date:
                 case Double:
                 case Duration:
-                    return Double.compare(SparseColumn.this.asDouble(o1, NoStringConverter.getConverterInstance()),
-                            SparseColumn.this.asDouble(o2, NoStringConverter.getConverterInstance()));
+                    return Double.compare(SparseColumn.this.asDouble(o1),
+                            SparseColumn.this.asDouble(o2));
                 default:
                     throw new RuntimeException("Unexpected kind " +
                             SparseColumn.this.description.kind);
@@ -146,8 +145,7 @@ public class SparseColumn extends BaseColumn
             case Date:
             case Double:
             case Duration:
-                return hash.hashLong(Double.doubleToRawLongBits(this.asDouble(rowIndex,
-                                                                NoStringConverter.getConverterInstance())));
+                return hash.hashLong(Double.doubleToRawLongBits(this.asDouble(rowIndex)));
             default:
                 throw new RuntimeException("Unexpected kind " + this.description.kind);
         }

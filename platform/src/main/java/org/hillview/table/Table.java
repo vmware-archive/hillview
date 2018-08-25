@@ -145,12 +145,10 @@ public class Table extends BaseTable {
     }
 
     @Override
-    synchronized public List<ColumnAndConverter> getLoadedColumns(
-            List<ColumnAndConverterDescription> columns) {
+    synchronized public List<IColumn> getLoadedColumns(List<String> columns) {
         List<String> toLoad = new ArrayList<String>();
-        List<ColumnAndConverter> result = new ArrayList<ColumnAndConverter>(columns.size());
-        for (ColumnAndConverterDescription column : columns) {
-            String name = column.columnName;
+        List<IColumn> result = new ArrayList<IColumn>(columns.size());
+        for (String name : columns) {
             IColumn col = this.columns.get(name);
             if (col == null)
                 throw new RuntimeException("No column named " + name);
@@ -164,12 +162,11 @@ public class Table extends BaseTable {
             for (IColumn c: cols)
                 this.columns.put(c.getName(), c);
         }
-        for (ColumnAndConverterDescription column : columns) {
-            String name = column.columnName;
+        for (String name : columns) {
             IColumn col = this.columns.get(name);
             if (col == null)
                 throw new RuntimeException("Cannot get column " + name);
-            result.add(new ColumnAndConverter(col, column.getConverter()));
+            result.add(col);
         }
         return result;
     }

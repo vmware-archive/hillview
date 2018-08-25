@@ -23,8 +23,23 @@
 /**
  * The list of rendering kinds supported by Hillview.
  */
+import {ScaleLinear as D3ScaleLinear, ScaleTime as D3ScaleTime} from "d3-scale";
+
 export type ViewKind = "Table" | "Histogram" | "2DHistogram" | "Heatmap" |
-    "Trellis" | "HeavyHitters" | "LAMP" | "Schema" | "Load" | "SVD Spectrum";
+    "TrellisHistogram" | "Trellis2DHistogram" | "TrellisHeatmap" |
+    "HeavyHitters" | "Schema" | "Load" | "SVD Spectrum";
+
+// Using an interface for emulating named arguments
+// otherwise it's hard to remember the order of all these booleans.
+export interface HistogramOptions {
+    exact: boolean;  // exact histogram
+    reusePage: boolean;   // reuse the original page
+}
+
+export interface ChartOptions extends HistogramOptions {
+    chartKind: ViewKind;
+    relative: boolean;  // draw a relative 2D histogram
+}
 
 /**
  * Interface implemented by TypeScript objects that have an HTML rendering.
@@ -110,12 +125,18 @@ export class Rectangle {
  * the displayed objects.
  */
 export class Resolution {
-    public static readonly maxBucketCount = 40;  // maximum number of buckets in a histogram
-    public static readonly minBarWidth = 5;      // minimum number of pixels for a histogram bar
+    public static readonly maxBucketCount = 50;  // maximum number of buckets in a histogram
+    public static readonly minBarWidth = 15;     // minimum number of pixels for a histogram bar
     public static readonly minDotSize = 4;       // dots are drawn as rectangles of this size in pixels
     public static readonly tableRowsOnScreen = 20; // table rows displayed
     public static readonly lineHeight = 20;      // Height of a line of text drawn in svg (including reasonable margin).
     public static readonly mouseDotRadius = 3;        // Size of dots that show mouse position
     public static readonly legendBarWidth = 500;
     public static readonly legendSpaceHeight = 60;
+    public static readonly minTrellisWindowSize = 200;
 }
+
+export type D3Axis = any;  // d3 axis; perhaps some day we will be aboe to use a better type
+export type D3Scale = any; // d3 scale.
+export type D3SvgElement = any;  // An SVG G elemenet created by d3
+export type AnyScale = D3ScaleLinear<number, number> | D3ScaleTime<number, number>;

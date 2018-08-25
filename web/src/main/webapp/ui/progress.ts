@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {ICancellable, readableTime} from "../util";
+import {ICancellable, IRawCancellable, readableTime} from "../util";
 import {IHtmlElement} from "./ui";
 
 /**
@@ -43,7 +43,7 @@ export class ProgressBar implements IHtmlElement {
      */
     constructor(private manager: ProgressManager,
                 public readonly description: string,
-                private readonly operation: ICancellable) {
+                private readonly operation: IRawCancellable) {
         if (description == null)
             throw new Error("Null label");
         if (manager == null)
@@ -164,7 +164,7 @@ export class ProgressManager implements IHtmlElement {
         return this.topLevel;
     }
 
-    public newProgressBar(operation: ICancellable, description: string) {
+    public newProgressBar(operation: IRawCancellable, description: string) {
         this.topLevel.classList.remove("idle");
         const p = new ProgressBar(this, description, operation);
         this.topLevel.appendChild(p.getHTMLRepresentation());

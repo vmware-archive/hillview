@@ -49,7 +49,7 @@ using a sample dataset.
 
 ```
 $ cd bin
-$ ./rebuild.sh
+$ ./rebuild.sh -a
 ```
 
 * Download and prepare the sample data.  The download script will
@@ -280,7 +280,8 @@ $ ./install-dependences.sh
 
 If you want to access the [Impala](https://impala.apache.org/)
 database you will need to download and install the JDBC connectors for
-Impala libraries from [Cloudera](https://www.cloudera.com/documentation/other/connectors.html).
+Impala libraries from
+[Cloudera](https://www.cloudera.com/documentation/other/connectors.html).
 (These are not free software, so they are not available in Java Maven
 repositories.)  You should install these in your local Maven
 repository, e.g. in the ~/.m2/com/cloudera/impala folder.  You may

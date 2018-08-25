@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2018 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,21 +17,23 @@
 
 package org.hillview.sketches;
 import org.hillview.dataset.api.ISketch;
-import org.hillview.table.api.ColumnAndConverterDescription;
 import org.hillview.table.api.ITable;
 
 import javax.annotation.Nullable;
 
+/**
+ * One-dimensional histogram
+ */
 public class HistogramSketch implements ISketch<ITable, Histogram> {
-    private final IBucketsDescription bucketDesc;
-    private final ColumnAndConverterDescription col;
+    private final IHistogramBuckets bucketDesc;
+    private final String columnName;
     private final double rate;
     private final long seed;
 
-    public HistogramSketch(IBucketsDescription bucketDesc, ColumnAndConverterDescription col,
+    public HistogramSketch(IHistogramBuckets bucketDesc, String columnName,
                            double rate, long seed) {
         this.bucketDesc = bucketDesc;
-        this.col = col;
+        this.columnName = columnName;
         this.rate = rate;
         this.seed = seed;
     }
@@ -39,7 +41,8 @@ public class HistogramSketch implements ISketch<ITable, Histogram> {
     @Override
     public Histogram create(final ITable data) {
         Histogram result = this.getZero();
-        result.create(data.getLoadedColumn(this.col), data.getMembershipSet(),
+        result.create(data.getLoadedColumn(this.columnName),
+                data.getMembershipSet(),
                 this.rate, this.seed, false);
         return result;
     }

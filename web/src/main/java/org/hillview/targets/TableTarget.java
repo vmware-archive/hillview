@@ -21,21 +21,14 @@ import com.google.gson.JsonObject;
 import org.hillview.*;
 import org.hillview.dataset.ConcurrentSketch;
 import org.hillview.dataset.TripleSketch;
-import org.hillview.dataset.api.IDataSet;
-import org.hillview.dataset.api.IJson;
-import org.hillview.jsonObjects.Histogram2DArgs;
-import org.hillview.jsonObjects.Histogram3DArgs;
-import org.hillview.jsonObjects.HistogramArgs;
+import org.hillview.dataset.api.*;
 import org.hillview.maps.*;
 import org.hillview.sketches.*;
 import org.hillview.table.*;
 import org.hillview.table.api.*;
 import org.hillview.table.filters.*;
 import org.hillview.table.rows.RowSnapshot;
-import org.hillview.utils.Converters;
-import org.hillview.utils.LinAlg;
-import org.hillview.utils.Point2D;
-import org.hillview.utils.Utilities;
+import org.hillview.utils.*;
 import org.jblas.DoubleMatrix;
 import rx.Observer;
 
@@ -126,123 +119,184 @@ public final class TableTarget extends RpcTarget {
         this.runCompleteSketch(this.table, sk, (e, c) -> e, request, context);
     }
 
+    static class StringBucketLeftBoundaries extends BucketsInfo {
+        JsonList<String> leftBoundaries;
+        @Nullable
+        String           maxBoundary;
+        boolean          allStringsKnown;
+
+        StringBucketLeftBoundaries(MinKSet<String> samples, int bucketCount) {
+            this.leftBoundaries = samples.getLeftBoundaries(bucketCount);
+            this.maxBoundary = samples.max;
+            this.allStringsKnown = samples.allStringsKnown(bucketCount);
+            this.presentCount = samples.presentCount;
+            this.missingCount = samples.missingCount;
+        }
+    }
+
+    static class RangeArgs {
+        // if this is Category, String, or Json we are sampling strings
+        ColumnDescription cd = new ColumnDescription();
+        long seed;       // only used if sampling strings
+        int stringsToSample;  // only used if sampling strings
+
+        // This class has a bunch of unchecked casts, but the Java
+        // type system is not good enough to express these operations
+        // in a type-safe manner.
+        ISketch<ITable, BucketsInfo> getSketch() {
+            if (this.cd.kind.isString()) {
+                ISketch<ITable, MinKSet<String>> s = new SampleDistinctElementsSketch(
+                        // We sample stringsToSample squared
+                        this.cd.name, this.seed, this.stringsToSample * this.stringsToSample);
+                //noinspection unchecked
+                return (ISketch<ITable, BucketsInfo>)(Object)s;
+            } else {
+                ISketch<ITable, DataRange> s = new DoubleDataRangeSketch(this.cd.name);
+                //noinspection unchecked
+                return (ISketch<ITable, BucketsInfo>)(Object)s;
+            }
+        }
+
+        BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> getPostProcessing() {
+            if (this.cd.kind.isString()) {
+                int b = this.stringsToSample;
+                //noinspection unchecked
+                return (e, c) -> new StringBucketLeftBoundaries((MinKSet<String>)e, b);
+            } else {
+                return (e, c) -> e;
+            }
+        }
+    }
+
+    // This function returns a subclass of BucketsInfo: either
+    // StringBucketBoundaries or DataRange
     @HillviewRpc
-    public void uniqueStrings(RpcRequest request, RpcRequestContext context) {
-        String[] columnNames = request.parseArgs(String[].class);
-        DistinctStringsSketch sk = new DistinctStringsSketch(0, columnNames);
-        this.runCompleteSketch(this.table, sk, (e, c)->e, request, context);
+    public void getDataRange(RpcRequest request, RpcRequestContext context) {
+        RangeArgs args = request.parseArgs(RangeArgs.class);
+        ISketch<ITable, BucketsInfo> sk = args.getSketch();
+        BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> post = args.getPostProcessing();
+        this.runCompleteSketch(this.table, sk, post, request, context);
+    }
+
+    @HillviewRpc
+    public void getDataRanges2D(RpcRequest request, RpcRequestContext context) {
+        RangeArgs[] args = request.parseArgs(RangeArgs[].class);
+        assert args.length == 2;
+        ISketch<ITable, BucketsInfo> sk0 = args[0].getSketch();
+        ISketch<ITable, BucketsInfo> sk1 = args[1].getSketch();
+        BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> post0 = args[0].getPostProcessing();
+        BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> post1 = args[1].getPostProcessing();
+        ConcurrentSketch<ITable, BucketsInfo, BucketsInfo> csk =
+                new ConcurrentSketch<ITable, BucketsInfo, BucketsInfo>(sk0, sk1);
+        BiFunction<Pair<BucketsInfo, BucketsInfo>, HillviewComputation, JsonList<BucketsInfo>> post =
+                (e, c) -> {
+            JsonList<BucketsInfo> result = new JsonList<BucketsInfo>(2);
+            result.add(post0.apply(e.first, c));
+            result.add(post1.apply(e.second, c));
+            return result;
+        };
+        this.runCompleteSketch(this.table, csk, post, request, context);
+    }
+
+    @HillviewRpc
+    public void getDataRanges3D(RpcRequest request, RpcRequestContext context) {
+        RangeArgs[] args = request.parseArgs(RangeArgs[].class);
+        assert args.length == 3;
+        ISketch<ITable, BucketsInfo> sk0 = args[0].getSketch();
+        ISketch<ITable, BucketsInfo> sk1 = args[1].getSketch();
+        ISketch<ITable, BucketsInfo> sk2 = args[2].getSketch();
+        BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> post0 = args[0].getPostProcessing();
+        BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> post1 = args[1].getPostProcessing();
+        BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> post2 = args[2].getPostProcessing();
+        TripleSketch<ITable, BucketsInfo, BucketsInfo, BucketsInfo> csk =
+                new TripleSketch<ITable, BucketsInfo, BucketsInfo, BucketsInfo>(sk0, sk1, sk2);
+        BiFunction<Triple<BucketsInfo, BucketsInfo, BucketsInfo>, HillviewComputation,
+                JsonList<BucketsInfo>> post =
+                (e, c) -> {
+                    JsonList<BucketsInfo> result = new JsonList<BucketsInfo>(3);
+                    result.add(post0.apply(e.first, c));
+                    result.add(post1.apply(e.second, c));
+                    result.add(post2.apply(e.third, c));
+                    return result;
+                };
+        this.runCompleteSketch(this.table, csk, post, request, context);
+    }
+
+    static class HistogramArgs {
+        ColumnDescription cd = new ColumnDescription();
+        double samplingRate;
+        long seed;
+        // Only used when doing string histograms
+        @Nullable
+        String[] leftBoundaries;
+        // Only used when doing double histograms
+        double min;
+        double max;
+        int bucketCount;
+
+        IHistogramBuckets getBuckets() {
+            if (cd.kind.isString()) {
+                assert this.leftBoundaries != null;
+                return new StringHistogramBuckets(this.leftBoundaries);
+            } else {
+                return new DoubleHistogramBuckets(this.min, this.max, this.bucketCount);
+            }
+        }
+
+        HistogramSketch getSketch() {
+            IHistogramBuckets buckets = this.getBuckets();
+            return new HistogramSketch(buckets, this.cd.name, this.samplingRate, this.seed);
+        }
     }
 
     @HillviewRpc
     public void histogram(RpcRequest request, RpcRequestContext context) {
         HistogramArgs info = request.parseArgs(HistogramArgs.class);
-        HistogramSketch histo = info.getSketch(false);
-        HistogramSketch cdf = info.getSketch(true);
-        ConcurrentSketch<ITable, Histogram, Histogram> csk =
-                new ConcurrentSketch<ITable, Histogram, Histogram>(cdf, histo);
-        this.runSketch(this.table, csk, request, context);
+        HistogramSketch sk = info.getSketch();
+        this.runSketch(this.table, sk, request, context);
     }
 
     @HillviewRpc
-    public void heatMap(RpcRequest request, RpcRequestContext context) {
-        Histogram2DArgs info = request.parseArgs(Histogram2DArgs.class);
-        assert info.first != null;
-        assert info.second != null;
-        HeatMapSketch sk = new HeatMapSketch(
-                info.first.getBuckets(info.xBucketCount),
-                info.second.getBuckets(info.yBucketCount),
-                info.first.getDescription(),
-                info.second.getDescription(),
-                info.samplingRate, info.seed);
+    public void heatmap(RpcRequest request, RpcRequestContext context) {
+        HistogramArgs[] info = request.parseArgs(HistogramArgs[].class);
+        assert info.length == 2;
+        HeatmapSketch sk = new HeatmapSketch(
+                info[0].getBuckets(),
+                info[1].getBuckets(),
+                info[0].cd.name,
+                info[1].cd.name, 1.0, 0);
         this.runSketch(this.table, sk, request, context);
     }
 
     @HillviewRpc
     public void histogram2D(RpcRequest request, RpcRequestContext context) {
-        Histogram2DArgs info = request.parseArgs(Histogram2DArgs.class);
-        assert info.first != null;
-        assert info.second != null;
-        HeatMapSketch sk = new HeatMapSketch(
-                info.first.getBuckets(info.xBucketCount),
-                info.second.getBuckets(info.yBucketCount),
-                info.first.getDescription(),
-                info.second.getDescription(),
-                info.samplingRate, info.seed);
-        IBucketsDescription buckets = info.first.getBuckets(info.cdfBucketCount);
-        HistogramSketch cdf = new HistogramSketch(buckets, info.first.getDescription(), info.cdfSamplingRate, info.seed);
-        ConcurrentSketch<ITable, HeatMap, Histogram> csk =
-                new ConcurrentSketch<ITable, HeatMap, Histogram>(sk, cdf);
+        HistogramArgs[] info = request.parseArgs(HistogramArgs[].class);
+        assert info.length == 3;
+        HeatmapSketch sk = new HeatmapSketch(
+                info[0].getBuckets(),
+                info[1].getBuckets(),
+                info[0].cd.name,
+                info[1].cd.name,
+                info[0].samplingRate, info[0].seed);
+        HistogramSketch cdf = info[2].getSketch();
+        ConcurrentSketch<ITable, Heatmap, Histogram> csk =
+                new ConcurrentSketch<ITable, Heatmap, Histogram>(sk, cdf);
         this.runSketch(this.table, csk, request, context);
     }
 
     @HillviewRpc
-    public void heatMap3D(RpcRequest request, RpcRequestContext context) {
-        Histogram3DArgs info = request.parseArgs(Histogram3DArgs.class);
-        assert info.first != null;
-        assert info.second != null;
-        assert info.third != null;
-        HeatMap3DSketch sk = new HeatMap3DSketch(
-                info.first.getBuckets(info.xBucketCount),
-                info.second.getBuckets(info.yBucketCount),
-                info.third.getBuckets(info.zBucketCount),
-                info.first.getDescription(),
-                info.second.getDescription(),
-                info.third.getDescription(),
-                info.samplingRate, info.seed);
+    public void heatmap3D(RpcRequest request, RpcRequestContext context) {
+        HistogramArgs[] info = request.parseArgs(HistogramArgs[].class);
+        assert info.length == 3;
+        Heatmap3DSketch sk = new Heatmap3DSketch(
+                info[0].getBuckets(),
+                info[1].getBuckets(),
+                info[2].getBuckets(),
+                info[0].cd.name,
+                info[1].cd.name,
+                info[2].cd.name,
+                info[0].samplingRate, info[0].seed);
         this.runSketch(this.table, sk, request, context);
-    }
-
-    static class CategoricalValues {
-        String columnName = "";
-        // The following are only used for categorical columns
-        @Nullable
-        String[] allNames;
-
-        ColumnAndConverterDescription getColumn() {
-            IStringConverterDescription converter;
-            if (this.allNames != null)
-                converter = new SortedStringsConverterDescription(this.allNames);
-            else
-                // only used if the column has Strings
-                converter = new RadixConverter();
-            return new ColumnAndConverterDescription(this.columnName, converter);
-        }
-
-        BasicColStatSketch getBasicStatsSketch() {
-            return new BasicColStatSketch(this.getColumn(), 0);
-        }
-    }
-
-    @HillviewRpc
-    public void range(RpcRequest request, RpcRequestContext context) {
-        CategoricalValues info = request.parseArgs(CategoricalValues.class);
-        BasicColStatSketch sk = info.getBasicStatsSketch();
-        this.runSketch(this.table, sk, request, context);
-    }
-
-    @HillviewRpc
-    public void range2D(RpcRequest request, RpcRequestContext context) {
-        CategoricalValues[] cols = request.parseArgs(CategoricalValues[].class);
-        if (cols.length != 2)
-            throw new RuntimeException("Expected 2 RangeInfo objects, got " + cols.length);
-        BasicColStatSketch sk1 = cols[0].getBasicStatsSketch();
-        BasicColStatSketch sk2 = cols[1].getBasicStatsSketch();
-        ConcurrentSketch<ITable, BasicColStats, BasicColStats> csk =
-                new ConcurrentSketch<ITable, BasicColStats, BasicColStats>(sk1, sk2);
-        this.runSketch(this.table, csk, request, context);
-    }
-
-    @HillviewRpc
-    public void range3D(RpcRequest request, RpcRequestContext context) {
-        CategoricalValues[] cols = request.parseArgs(CategoricalValues[].class);
-        if (cols.length != 3)
-            throw new RuntimeException("Expected 3 RangeInfo objects, got " + cols.length);
-        BasicColStatSketch sk1 = cols[0].getBasicStatsSketch();
-        BasicColStatSketch sk2 = cols[1].getBasicStatsSketch();
-        BasicColStatSketch sk3 = cols[2].getBasicStatsSketch();
-        TripleSketch<ITable, BasicColStats, BasicColStats, BasicColStats> tsk =
-                new TripleSketch<ITable, BasicColStats, BasicColStats, BasicColStats>(sk1, sk2, sk3);
-        this.runSketch(this.table, tsk, request, context);
     }
 
     @HillviewRpc
@@ -291,6 +345,7 @@ public final class TableTarget extends RpcTarget {
             pcaSketch = new PCACorrelationSketch(colNames);
         return pcaSketch;
     }
+
     @HillviewRpc
     public void correlationMatrix(RpcRequest request, RpcRequestContext context) {
         PCACorrelationSketch pcaSketch = this.getPCASketch(request);

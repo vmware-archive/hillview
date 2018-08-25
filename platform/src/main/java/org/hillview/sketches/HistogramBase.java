@@ -1,12 +1,12 @@
 /*
- * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2018 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,16 +15,13 @@
  * limitations under the License.
  */
 
-/**
- * Package that doesn't allow null values as method parameters.
- */
+package org.hillview.sketches;
 
-@ParametersAreNonnullByDefault
-@FieldsAreNonnullByDefault
-@MethodsAreNonnullByDefault
-package org.hillview.jsonObjects;
+import org.hillview.dataset.api.IJson;
 
-import org.hillview.utils.FieldsAreNonnullByDefault;
-import org.hillview.utils.MethodsAreNonnullByDefault;
+import java.io.Serializable;
 
-import javax.annotation.ParametersAreNonnullByDefault;
+public abstract class HistogramBase implements Serializable, IJson {
+    protected long[] buckets = new long[0];
+    protected long missingData;
+}

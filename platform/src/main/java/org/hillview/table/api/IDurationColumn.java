@@ -18,7 +18,6 @@
 package org.hillview.table.api;
 
 import net.openhft.hashing.LongHashFunction;
-import org.hillview.table.NoStringConverter;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
@@ -26,7 +25,7 @@ import java.time.Duration;
 
 public interface IDurationColumn extends IColumn {
     @Override
-    default double asDouble(final int rowIndex, final IStringConverter unused) {
+    default double asDouble(final int rowIndex) {
         assert !this.isMissing(rowIndex);
         final Duration tmp = this.getDuration(rowIndex);
         assert tmp != null;
@@ -69,8 +68,7 @@ public interface IDurationColumn extends IColumn {
     @Override
     default long hashCode64(int rowIndex, LongHashFunction hash) {
         assert !isMissing(rowIndex);
-        return hash.hashLong(Double.doubleToRawLongBits(this.asDouble(rowIndex,
-                                                                      NoStringConverter.getConverterInstance())));
+        return hash.hashLong(Double.doubleToRawLongBits(this.asDouble(rowIndex)));
     }
 
     @Override

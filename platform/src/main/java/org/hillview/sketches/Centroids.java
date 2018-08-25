@@ -17,7 +17,7 @@
 
 package org.hillview.sketches;
 
-import org.hillview.table.api.ColumnAndConverter;
+import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.IRowIterator;
 
@@ -52,7 +52,7 @@ public class Centroids<T> implements Serializable {
     /**
      * Constructs a zero-centroids.
      */
-    public Centroids() {
+    Centroids() {
         this.sums = new HashMap<T, double[]>();
         this.counts = new HashMap<T, long[]>();
     }
@@ -64,11 +64,11 @@ public class Centroids<T> implements Serializable {
      * @param keyFunc Function that can determine the partition key of a row entry.
      * @param columns Column that define the nD space.
      */
-    public Centroids(IMembershipSet members, Function<Integer, T> keyFunc,
-                     List<ColumnAndConverter> columns) {
+    Centroids(IMembershipSet members, Function<Integer, T> keyFunc,
+                     List<IColumn> columns) {
         this();
         int colIndex = 0;
-        for (ColumnAndConverter column : columns) {
+        for (IColumn column : columns) {
             IRowIterator rowIterator = members.getIterator();
             int row = rowIterator.getNextRow();
             while (row >= 0) {

@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-import {AxisData} from "../dataViews/axisData";
-import {HeatMap} from "../javaBridge";
+import {AxisData, AxisKind} from "../dataViews/axisData";
+import {Heatmap, kindIsString} from "../javaBridge";
 import {regression} from "../util";
 import {HeatmapLegendPlot} from "./legendPlot";
 import {Plot} from "./plot";
@@ -29,10 +29,7 @@ interface Dot {
 }
 
 export class HeatmapPlot extends Plot {
-    protected heatmap: HeatMap;
-    protected xAxisData: AxisData;
-    protected yAxisData: AxisData;
-    protected samplingRate: number;
+    protected heatmap: Heatmap;
     protected pointWidth: number; // in pixels
     protected pointHeight: number; // in pixels
     protected max: number;  // maximum count
@@ -40,7 +37,9 @@ export class HeatmapPlot extends Plot {
     protected distinct: number;
     protected dots: Dot[];
 
-    public constructor(surface: PlottingSurface, protected legendPlot: HeatmapLegendPlot) {
+    public constructor(surface: PlottingSurface,
+                       protected legendPlot: HeatmapLegendPlot,
+                       protected showAxes: boolean) {
         super(surface);
         this.dots = null;
     }
@@ -52,22 +51,18 @@ export class HeatmapPlot extends Plot {
         }
 
         const canvas = this.plottingSurface.getCanvas();
-        canvas.append("text")
-            .text(this.yAxisData.description.name)
-            .attr("dominant-baseline", "text-before-edge");
-        canvas.append("text")
-            .text(this.xAxisData.description.name)
-            .attr("transform", `translate(${this.getChartWidth() / 2},
-                  ${this.getChartHeight() + this.plottingSurface.topMargin + this.plottingSurface.bottomMargin / 2})`)
-            .attr("text-anchor", "middle")
-            .attr("dominant-baseline", "hanging");
-
-        const xsc = this.xAxisData.scaleAndAxis(this.getChartWidth(), true, false);
-        const ysc = this.yAxisData.scaleAndAxis(this.getChartHeight(), false, false);
-        this.xAxis = xsc.axis;
-        this.yAxis = ysc.axis;
-        this.xScale = xsc.scale;
-        this.yScale = ysc.scale;
+        if (this.showAxes) {
+            canvas.append("text")
+                .text(this.yAxisData.description.name)
+                .attr("dominant-baseline", "text-before-edge");
+            canvas.append("text")
+                .text(this.xAxisData.description.name)
+                .attr("transform", `translate(${this.getChartWidth() / 2},
+                      ${this.getChartHeight() + this.plottingSurface.topMargin + 
+                        this.plottingSurface.bottomMargin / 2})`)
+                .attr("text-anchor", "middle")
+                .attr("dominant-baseline", "hanging");
+        }
 
         const htmlCanvas: HTMLCanvasElement = document.createElement("canvas");
         htmlCanvas.height = this.getChartHeight();
@@ -86,17 +81,18 @@ export class HeatmapPlot extends Plot {
             .attr("xlink:href", url)
             .attr("width", this.getChartWidth())
             .attr("height", this.getChartHeight());
-        this.drawAxes();
+        if (this.showAxes)
+            this.drawAxes();
 
-        if (this.yAxisData.description.kind !== "Category" &&
-            this.xAxisData.description.kind !== "Category") {
-            // it makes no sense to do regressions for categorical values
+        if (!kindIsString(this.yAxisData.description.kind) &&
+            !kindIsString(this.xAxisData.description.kind)) {
+            // it makes no sense to do regressions for string values
             const regr = regression(this.heatmap.buckets);
             if (regr.length === 2) {
                 const b = regr[0];
                 const a = regr[1];
-                const y1 = this.getChartHeight() - b * this.pointHeight;
-                const y2 = this.getChartHeight() - (a * this.heatmap.buckets.length + b) * this.pointHeight;
+                const y1 = this.getChartHeight() - (b + .5) * this.pointHeight;
+                const y2 = this.getChartHeight() - (a * this.heatmap.buckets.length + b + .5) * this.pointHeight;
                 this.plottingSurface.getChart()
                     .append("line")
                     .attr("x1", 0)
@@ -135,11 +131,12 @@ export class HeatmapPlot extends Plot {
         return this.distinct;
     }
 
-    public setData(heatmap: HeatMap, xData: AxisData, yData: AxisData, samplingRate: number) {
+    public setData(heatmap: Heatmap, xData: AxisData, yData: AxisData): void {
         this.heatmap = heatmap;
         this.xAxisData = xData;
         this.yAxisData = yData;
-        this.samplingRate = samplingRate;
+        this.xAxisData.setResolution(this.getChartWidth(), AxisKind.Bottom);
+        this.yAxisData.setResolution(this.getChartHeight(), AxisKind.Left);
 
         const xPoints = this.heatmap.buckets.length;
         const yPoints = this.heatmap.buckets[0].length;

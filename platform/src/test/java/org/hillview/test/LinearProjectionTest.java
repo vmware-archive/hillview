@@ -21,7 +21,6 @@ import org.hillview.dataset.api.IDataSet;
 import org.hillview.maps.LinearProjectionMap;
 import org.hillview.sketches.BasicColStatSketch;
 import org.hillview.sketches.BasicColStats;
-import org.hillview.table.api.ColumnAndConverterDescription;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.BlasConversions;
 import org.hillview.utils.TestTables;
@@ -91,7 +90,7 @@ public class LinearProjectionTest extends BaseTest {
 
         for (int i = 0; i < numProjections; i++) {
             BasicColStatSketch b = new BasicColStatSketch(
-                    new ColumnAndConverterDescription(String.format("LP%d", i)), 1);
+                    String.format("LP%d", i), 1);
             BasicColStats bcs = result.blockingSketch(b);
             double expectedMean = projectionCheck.get(new AllRange(), i).mean();
             double actualMean = bcs.getMoment(1);

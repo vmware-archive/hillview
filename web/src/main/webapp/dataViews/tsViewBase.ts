@@ -15,28 +15,41 @@
  * limitations under the License.
  */
 
-import {DistinctStrings} from "../distinctStrings";
 import {
-    allContentsKind, asContentsKind, ColumnSortOrientation, ComparisonFilterDescription,
-    CreateColumnInfo, EqualityFilterDescription, HLogLog, IColumnDescription,
-    RecordOrder, RemoteObjectId,
+    allContentsKind,
+    asContentsKind,
+    ColumnSortOrientation,
+    ComparisonFilterDescription,
+    ContentsKind,
+    ConvertColumnInfo,
+    CreateColumnInfo,
+    EqualityFilterDescription,
+    HLogLog,
+    IColumnDescription,
+    RecordOrder,
+    RemoteObjectId,
 } from "../javaBridge";
 import {OnCompleteReceiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
-import {BigTableView, TableTargetAPI} from "../tableTarget";
+import {BigTableView} from "../tableTarget";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
 import {SubMenu, TopMenuItem} from "../ui/menu";
 import {SpecialChars, ViewKind} from "../ui/ui";
 import {
-    cloneToSet, Comparison, Converters, ICancellable, mapToArray, significantDigits,
+    cloneToSet,
+    Comparison,
+    Converters,
+    ICancellable,
+    mapToArray,
+    significantDigits,
 } from "../util";
-import {Range2DCollector} from "./heatmapView";
 import {HeavyHittersReceiver, HeavyHittersView} from "./heavyHittersView";
-import {Histogram2DDialog} from "./histogram2DView";
-import {HistogramDialog, RangeCollector} from "./histogramView";
+import {DataRangeCollector, DataRangesCollector} from "./dataRangesCollectors";
 import {TableOperationCompleted, TableView} from "./tableView";
-import {TrellisPlotDialog, TrellisRangeReceiver} from "./trellisHeatMapView";
+import {PlottingSurface} from "../ui/plottingSurface";
+import {HistogramViewBase} from "./histogramViewBase";
+import {HistogramDialog} from "./histogramView";
 
 /**
  * A base class for TableView and SchemaView.
@@ -84,23 +97,10 @@ export abstract class TSViewBase extends BigTableView {
             this.reportError("Cannot rename column to " + to + " since the name is already used.");
             return;
         }
-        this.refresh();
+        this.resize();
     }
 
-    protected heatMap(): void {
-        if (this.getSelectedColCount() === 3) {
-            this.trellisPlot();
-            return;
-        }
-        if (this.getSelectedColCount() !== 2) {
-            this.reportError("Must select exactly 2 columns for heatmap");
-            return;
-        }
-
-        this.histogram(true);
-    }
-
-    public reportError(s: string) {
+    public reportError(s: string): void {
         this.page.reportError(s);
     }
 
@@ -112,7 +112,7 @@ export abstract class TSViewBase extends BigTableView {
         dialog.setCacheTitle("saveAsDialog");
 
         class SaveReceiver extends OnCompleteReceiver<boolean> {
-            constructor(page: FullPage, operation: ICancellable) {
+            constructor(page: FullPage, operation: ICancellable<boolean>) {
                 super(page, operation, "Save as ORC files");
             }
 
@@ -175,66 +175,187 @@ export abstract class TSViewBase extends BigTableView {
         const o = order.clone();
         o.addColumn({columnDescription: cd, isAscending: true});
 
-        const rec = new TableOperationCompleted(
-            newPage, this.rowCount, schema, rr, o, tableRowsDesired);
+        const rec = new TableOperationCompleted(newPage, rr, this.rowCount, schema, o, tableRowsDesired);
         rr.invoke(rec);
     }
 
-    protected histogramOrHeatmap(columns: string[], heatmap: boolean): void {
-        const cds: IColumnDescription[] = [];
-        columns.forEach((v) => {
-            const colDesc = this.schema.find(v);
-            if (colDesc.kind === "String" || colDesc.kind === "Json") {
-                this.reportError("Histograms not supported for string or JSON columns " +
-                    this.schema.displayName(colDesc.name));
-                return;
-            }
-            cds.push(colDesc);
-        });
-
-        if (cds.length !== columns.length)
-            // some error occurred
-            return;
-        const rr = this.dataset.createGetCategoryRequest(this.page, cds);
-        rr.invoke(new ChartObserver(this, this.page, rr, null,
-            this.rowCount, this.schema,
-            { exact: false, heatmap, relative: false, reusePage: false}, cds));
+    protected histogram1D(cd: IColumnDescription): void {
+        const size = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
+        const rr = this.createDataRangeRequest(cd, size.width);
+        rr.invoke(new DataRangeCollector(
+            this, this.page, rr, this.schema, 0, cd, null, size.width,
+            { exact: false, reusePage: false }));
     }
 
-    protected histogram(heatMap: boolean): void {
+    protected histogram2D(cds: IColumnDescription[]): void {
+        const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
+        const rr = this.createDataRangesRequest(cds, buckets);
+        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+            [0, 0], cds, null, {
+            reusePage: false, relative: false,
+            chartKind: "2DHistogram", exact: false
+        }));
+    }
+
+    protected trellis2D(cds: IColumnDescription[]): void {
+        const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
+        const rr = this.createDataRangesRequest(cds, buckets);
+        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+            [0, 0], cds, null, {
+            reusePage: false, relative: false,
+            chartKind: "TrellisHistogram", exact: false
+        }));
+    }
+
+    protected trellis3D(cds: IColumnDescription[], heatmap: boolean): void {
+        const buckets = HistogramViewBase.maxTrellis3DBuckets(this.page);
+        const rr = this.createDataRangesRequest(cds, buckets);
+        let chartKind: ViewKind;
+        if (heatmap)
+            chartKind = "TrellisHeatmap";
+        else if (cds.length === 2)
+            chartKind = "TrellisHistogram";
+        else
+            chartKind = "Trellis2DHistogram";
+        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+            [0, 0, 0], cds, null, {
+            reusePage: false, relative: false,
+            chartKind: chartKind, exact: false
+        }));
+    }
+
+    protected histogram(columns: string[]): void {
+        const cds = this.schema.getDescriptions(columns);
+        if (cds.length === 1) {
+            this.histogram1D(cds[0]);
+        } else {
+            this.histogram2D(cds);
+        }
+    }
+
+    protected trellis(columns: string[], heatmap: boolean): void {
+        const cds = this.schema.getDescriptions(columns);
+        if (cds.length === 2) {
+            console.assert(!heatmap);
+            this.trellis2D(cds);
+        } else {
+            this.trellis3D(cds, heatmap);
+        }
+    }
+
+    protected heatmap(columns: string[]): void {
+        const cds = this.schema.getDescriptions(columns);
+        const buckets = HistogramViewBase.maxHeatmapBuckets(this.page);
+        const rr = this.createDataRangesRequest(cds, buckets);
+        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+            [0, 0], cds, null, {
+            reusePage: false,
+            relative: false,
+            chartKind: "Heatmap",
+            exact: true
+        }));
+    }
+
+    protected heatmapSelected(): void {
+        if (this.getSelectedColCount() !== 2) {
+            this.reportError("Must select 2 columns for heatmap");
+            return;
+        }
+        this.heatmap(this.getSelectedColNames());
+    }
+
+    protected histogramSelected(): void {
         if (this.getSelectedColCount() < 1 || this.getSelectedColCount() > 2) {
             this.reportError("Must select 1 or 2 columns for histogram");
             return;
         }
-
-        this.histogramOrHeatmap(this.getSelectedColNames(), heatMap);
+        this.histogram(this.getSelectedColNames());
     }
 
-    protected trellisPlot(): void {
-        const colNames: string[] = this.getSelectedColNames().map((c) => this.schema.displayName(c));
-        const dialog = new TrellisPlotDialog(
-            colNames, this.getPage(), this.rowCount, this.schema, this, false);
-        if (dialog.validate())
-            dialog.show();
+    protected trellisSelected(heatmap: boolean): void {
+        if (this.getSelectedColCount() < 2 || this.getSelectedColCount() > 3) {
+            this.reportError("Must select 1 or 2 columns for Trellis polots");
+            return;
+        }
+        this.trellis(this.getSelectedColNames(), heatmap);
     }
 
     public twoDHistogramMenu(heatmap: boolean): void {
-        const eligible = this.schema.filter((d) => d.kind !== "String");
-        if (eligible.length < 2) {
+        if (this.schema.length < 2) {
             this.reportError("Could not find two columns that can be charted.");
             return;
         }
-        const dia = new Histogram2DDialog(
-            eligible.columnNames.map((c) => this.schema.displayName(c)), heatmap);
+
+        const allColumns = this.schema.columnNames.map((c) => this.schema.displayName(c));
+        const label = heatmap ? "heatmap" : "2D histogram";
+        const dia = new Dialog(label,
+                        "Display a " + label + " of the data in two columns");
+        dia.addSelectField("columnName0", "First column", allColumns, allColumns[0],
+                    "First column (X axis)");
+        dia.addSelectField("columnName1", "Second column", allColumns, allColumns[1],
+                    "Second column " + (heatmap ? "(Y axis)" : "(color)"));
         dia.setAction(
             () => {
-                const col0 = this.schema.fromDisplayName(dia.getColumn(false));
-                const col1 = this.schema.fromDisplayName(dia.getColumn(true));
+                const c0 = dia.getFieldValue("columnName0");
+                const col0 = this.schema.fromDisplayName(c0);
+                const c1 = dia.getFieldValue("columnName1");
+                const col1 = this.schema.fromDisplayName(c1);
                 if (col0 === col1) {
                     this.reportError("The two columns must be distinct");
                     return;
                 }
-                this.histogramOrHeatmap([col0, col1], heatmap);
+                if (heatmap)
+                    this.histogram([col0, col1]);
+                else
+                    this.heatmap([col0, col1]);
+            },
+        );
+        dia.show();
+    }
+
+    public trellisMenu(twoD: boolean, heatmap: boolean): void {
+        const count = twoD ? 2 : 3;
+        if (this.schema.length < count) {
+            this.reportError("Could not find enough columns that can be charted.");
+            return;
+        }
+
+        const allColumns = this.schema.columnNames.map((c) => this.schema.displayName(c));
+        const label = heatmap ? "heatmap" : "2D histogram";
+        const dia = new Dialog(label,
+            "Display a Trellis plot of " + label + "s");
+        dia.addSelectField("columnName0", "First column", allColumns, allColumns[0],
+            "First column (X axis)");
+        dia.addSelectField("columnName1", "Second column", allColumns, allColumns[1],
+            count === 2 ? "Column to group by" :
+                "Second column " + (heatmap ? "(Y axis)" : "(color)"));
+        if (count === 3)
+            dia.addSelectField("columnName2", "Third column", allColumns, allColumns[2],
+                "Column to group by");
+
+        dia.setAction(
+            () => {
+                const c0 = dia.getFieldValue("columnName0");
+                const col0 = this.schema.fromDisplayName(c0);
+                const c1 = dia.getFieldValue("columnName1");
+                const col1 = this.schema.fromDisplayName(c1);
+                if (col0 === col1) {
+                    this.reportError("The columns must be distinct");
+                    return;
+                }
+                let col2 = null;
+                const colNames = [col0, col1];
+
+                if (count === 3) {
+                    const c2 = dia.getFieldValue("columnName2");
+                    col2 = this.schema.fromDisplayName(c2);
+                    if (col0 === col2 || col1 === col2) {
+                        this.reportError("The columns must be distinct");
+                        return;
+                    }
+                    colNames.push(col2);
+                }
+                this.trellis(colNames, heatmap);
             },
         );
         dia.show();
@@ -252,16 +373,12 @@ export abstract class TSViewBase extends BigTableView {
     }
 
     public oneDHistogramMenu(): void {
-        const eligible = this.schema.filter((d) => d.kind !== "String");
-        if (eligible.length === 0) {
-            this.reportError("No columns that can be histogrammed found.");
-            return;
-        }
-        const dia = new HistogramDialog(eligible.columnNames.map((c) => this.schema.displayName(c)));
+        const dia = new HistogramDialog(
+            this.schema.columnNames.map((c) => this.schema.displayName(c)));
         dia.setAction(
             () => {
                 const col = this.schema.fromDisplayName(dia.getColumn());
-                this.histogramOrHeatmap([col], false);
+                this.histogram([col]);
             },
         );
         dia.show();
@@ -288,6 +405,12 @@ export abstract class TSViewBase extends BigTableView {
                     help: "Draw a histogram of the data in two columns."},
                 { text: "Heatmap...", action: () => this.twoDHistogramMenu(true),
                     help: "Draw a heatmap of the data in two columns."},
+                { text: "Trellis histograms...", action: () => this.trellisMenu(true, false),
+                    help: "Draw a Trellis plot of histograms."},
+                { text: "Trellis 2D histograms...", action: () => this.trellisMenu(false, false),
+                    help: "Draw a Trellis plot of 2D histograms."},
+                { text: "Trellis 2D heatmaps...", action: () => this.trellisMenu(false, true),
+                    help: "Draw a Trellis plot of 3D histograms."},
             ]),
         };
     }
@@ -317,8 +440,7 @@ export abstract class TSViewBase extends BigTableView {
                 TableView.convert(filter.compareValue, desc.kind);
 
             const newPage = this.dataset.newPage(title, this.page);
-            rr.invoke(new TableOperationCompleted(
-                newPage, this.rowCount, this.schema, rr, o, tableRowsDesired));
+            rr.invoke(new TableOperationCompleted(newPage, rr, this.rowCount, this.schema, o, tableRowsDesired));
         });
         ef.show();
     }
@@ -353,11 +475,10 @@ export abstract class TSViewBase extends BigTableView {
             this.schema.displayName(filter.column);
 
         const newPage = this.dataset.newPage(title, this.page);
-        rr.invoke(new TableOperationCompleted(
-            newPage, this.rowCount, this.schema, rr, o, tableRowsDesired));
+        rr.invoke(new TableOperationCompleted(newPage, rr, this.rowCount, this.schema, o, tableRowsDesired));
     }
 
-    protected runHeavyHitters(percent: number) {
+    protected runHeavyHitters(percent: number): void {
         if (percent == null || percent < HeavyHittersView.min || percent > 100) {
             this.reportError("Percentage must be between " + HeavyHittersView.min.toString() + " and 100");
             return;
@@ -372,7 +493,7 @@ export abstract class TSViewBase extends BigTableView {
         });
         const order = new RecordOrder(cso);
         const rr = this.createHeavyHittersRequest(
-            columnsShown, percent, this.getTotalRowCount(), HeavyHittersView.switchToMG);
+            columnsShown, percent, this.rowCount, HeavyHittersView.switchToMG);
         rr.invoke(new HeavyHittersReceiver(
             this.getPage(), this, rr, this.rowCount, this.schema,
             order, isApprox, percent, columnsShown, false));
@@ -398,10 +519,6 @@ export abstract class TSViewBase extends BigTableView {
         });
         d.setCacheTitle("HeavyHittersDialog");
         d.show();
-    }
-
-    public getTotalRowCount(): number {
-        return this.rowCount;
     }
 }
 
@@ -499,7 +616,7 @@ class ComparisonFilterDialog extends Dialog {
 }
 
 class CountReceiver extends OnCompleteReceiver<HLogLog> {
-    constructor(page: FullPage, operation: ICancellable,
+    constructor(page: FullPage, operation: ICancellable<HLogLog>,
                 protected colName: string) {
         super(page, operation, "HyperLogLog");
     }
@@ -512,67 +629,86 @@ class CountReceiver extends OnCompleteReceiver<HLogLog> {
     }
 }
 
-// Using an interface for emulating named arguments
-// otherwise it's hard to remember the order of all these booleans.
-export interface ChartOptions {
-    exact: boolean;    // draw an exact chart (not approximate)
-    heatmap: boolean;  // draw heatmaps, not histograms
-    relative: boolean;  // draw a relative 2D histogram
-    reusePage: boolean; // draw the chart in the supplied page
-}
+/**
+ * A dialog to find out information about how to perform the conversion of the data in a column.
+ */
+export class ConverterDialog extends Dialog {
+    // noinspection TypeScriptFieldCanBeMadeReadonly
+    private columnNameFixed: boolean = false;
 
-export class ChartObserver extends OnCompleteReceiver<DistinctStrings[]> {
-    constructor(
-        protected remoteObject: TableTargetAPI,
-        page: FullPage, operation: ICancellable,
-        protected title: string | null,
-        protected rowCount: number,
-        protected schema: SchemaClass,
-        protected options: ChartOptions,
-        protected columns: IColumnDescription[]) {
-        super(page, operation, "Get category values");
+    constructor(protected readonly columnName: string,
+                protected readonly allColumns: string[]) {
+        super("Convert column", "Creates a new column by converting the data in an existing column to a new type.");
+        const cn = this.addSelectField("columnName", "Column: ", allColumns, columnName,
+            "Column whose type is converted");
+        const nk = this.addSelectField("newKind", "Convert to: ",
+            allContentsKind.filter((c) => c !== "Category"), null,
+            "Type of data for the converted column.");
+        const nn = this.addTextField("newColumnName", "New column name: ", FieldKind.String, null,
+            "A name for the new column.  The name must be different from all other column names.");
+        cn.onchange = () => this.generateColumnName();
+        nk.onchange = () => this.generateColumnName();
+        // If the user types a column name don't attempt to change it
+        nn.onchange = () => this.columnNameFixed = true;
+        this.setCacheTitle("ConverterDialog");
+        this.setFieldValue("columnName", columnName);
+        this.generateColumnName();
     }
 
-    public run(value: DistinctStrings[]): void {
-        if (value == null)
+    private generateColumnName(): void {
+        if (this.columnNameFixed)
             return;
-        switch (value.length) {
-            case 1: {
-                const col = this.columns[0];
-                const cv = value[0].getCategoricalValues();
-                const rr = this.remoteObject.createRangeRequest(cv);
-                rr.chain(this.operation);
-                if (this.title == null)
-                    this.title = "Histogram " + this.schema.displayName(col.name);
-                rr.invoke(new RangeCollector(
-                    this.title, col,
-                    this.rowCount, this.schema, value[0],
-                    this.page, this.remoteObject, this.options.exact, rr,
-                    this.options.reusePage));
-                break;
+        const cn = this.getFieldValue("columnName");
+        const suffix = " (" + this.getFieldValue("newKind") + ")";
+        let nn = cn + suffix;
+        if (this.allColumns.indexOf(nn) >= 0) {
+            let counter = 0;
+            while (this.allColumns.indexOf(nn) >= 0) {
+                nn = cn + counter.toString() + suffix;
+                counter++;
             }
-            case 2: {
-                const cv0 = value[0].getCategoricalValues();
-                const cv1 = value[1].getCategoricalValues();
-                const rr = this.remoteObject.createRange2DRequest(cv0, cv1);
-                rr.chain(this.operation);
-                rr.invoke(new Range2DCollector(
-                    this.columns, this.rowCount, this.schema, value,
-                    this.page, this.remoteObject, this.options.exact, rr,
-                    this.options.heatmap, this.options.relative, this.options.reusePage));
-                break;
-            }
-            case 3: {
-                // TODO: generalize this
-                const rr = this.remoteObject.createRange2DColsRequest(
-                    this.columns[0].name, this.columns[1].name);
-                rr.chain(this.operation);
-                rr.invoke(new TrellisRangeReceiver(
-                    this.remoteObject, this.page, rr, this.schema, this.rowCount, this.columns));
-                break;
-            }
-            default:
-                this.page.reportError("Unexpected number of values received: " + value.length);
         }
+        this.setFieldValue("newColumnName", nn);
+    }
+}
+
+/**
+ * This class handles type conversions on columns (e.g. String to Integer).
+ */
+export class ColumnConverter  {
+    private readonly columnIndex: number;  // index of original column in schema
+
+    constructor(private columnName: string,
+                private newKind: ContentsKind,
+                private newColumnName: string,
+                private table: TableView,
+                private order: RecordOrder,
+                private page: FullPage) {
+        this.columnIndex = this.table.schema.columnIndex(this.columnName);
+    }
+
+    public run(): void {
+        if (this.table.schema.columnIndex(this.newColumnName) >= 0) {
+            this.table.reportError(`Column name ${this.newColumnName} already exists in table.`);
+            return;
+        }
+
+        const args: ConvertColumnInfo = {
+            colName: this.columnName,
+            newColName: this.newColumnName,
+            newKind: this.newKind,
+            columnIndex: this.columnIndex,
+        };
+        const newPage = this.table.dataset.newPage("Converted " + this.newColumnName, this.page);
+        const rr = this.table.createStreamingRpcRequest<string>("convertColumnMap", args);
+        const cd: IColumnDescription = {
+            kind: this.newKind,
+            name: this.newColumnName,
+        };
+        const schema = this.table.schema.append(cd);
+        const o = this.order.clone();
+        o.addColumn({columnDescription: cd, isAscending: true});
+        rr.invoke(new TableOperationCompleted(newPage, rr, this.table.rowCount, schema,
+            o, this.table.tableRowsDesired));
     }
 }

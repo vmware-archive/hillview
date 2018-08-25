@@ -80,7 +80,7 @@ public class DateListColumn
     }
 
     @Override
-    public double asDouble(int rowIndex, @Nullable IStringConverter unused) {
+    public double asDouble(int rowIndex) {
         return this.getDouble(rowIndex);
     }
 

@@ -19,66 +19,72 @@ import {drag as d3drag} from "d3-drag";
 import {interpolateRainbow as d3interpolateRainbow} from "d3-scale-chromatic";
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {DatasetView, Histogram2DSerialization, IViewSerialization} from "../datasetView";
-import {DistinctStrings} from "../distinctStrings";
 import {
-    BasicColStats, CategoricalValues, ColumnAndRange, CombineOperators,
-    FilterDescription, HeatMap, Histogram, Histogram2DArgs,
-    IColumnDescription, RecordOrder, RemoteObjectId,
+    CombineOperators,
+    FilterDescription,
+    Heatmap,
+    HistogramBase,
+    IColumnDescription,
+    kindIsString,
+    RecordOrder,
+    RemoteObjectId,
 } from "../javaBridge";
 import {Receiver, RpcRequest} from "../rpc";
 import {SchemaClass} from "../schemaClass";
 import {BaseRenderer, TableTargetAPI, ZipReceiver} from "../tableTarget";
 import {CDFPlot} from "../ui/CDFPlot";
 import {IDataView} from "../ui/dataview";
-import {Dialog} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
 import {Histogram2DPlot} from "../ui/Histogram2DPlot";
 import {HistogramLegendPlot} from "../ui/legendPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
-import {PlottingSurface} from "../ui/plottingSurface";
+import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {Rectangle, Resolution} from "../ui/ui";
+import {ChartOptions, D3SvgElement, Rectangle, Resolution} from "../ui/ui";
 import {
-    formatNumber, ICancellable, Pair, PartialResult, percent,
-    reorder, saveAs, Seed, significantDigits,
+    formatNumber,
+    ICancellable,
+    Pair,
+    PartialResult,
+    percent,
+    reorder,
+    saveAs,
+    significantDigits,
 } from "../util";
-import {AnyScale, AxisData} from "./axisData";
-import {Range2DCollector} from "./heatmapView";
-import { BucketDialog, HistogramViewBase } from "./histogramViewBase";
+import {AxisData} from "./axisData";
+import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
-import {ChartObserver} from "./tsViewBase";
+import {Dialog} from "../ui/dialog";
+import {
+    DataRangesCollector,
+} from "./dataRangesCollectors";
 
 /**
  * This class is responsible for rendering a 2D histogram.
  * This is a histogram where each bar is divided further into sub-bars.
  */
 export class Histogram2DView extends HistogramViewBase {
-    protected currentData: {
-        xData: AxisData;
-        yData: AxisData;
-        cdf: Histogram;
-        heatMap: HeatMap;
-        xPoints: number;
-        yPoints: number;
-        samplingRate: number;
-    };
+    protected xAxisData: AxisData;
+    protected yData: AxisData;
+    protected cdf: HistogramBase;
+    protected heatMap: Heatmap;
+    protected xPoints: number;
+    protected yPoints: number;
     protected relative: boolean;  // true when bars are normalized to 100%
     protected legendRect: Rectangle;  // legend position on the screen; relative to canvas
-    protected menu: TopMenu;
-    protected legendSelectionRectangle: any;
+    protected legendSelectionRectangle: D3SvgElement;
     protected plot: Histogram2DPlot;
     protected legendPlot: HistogramLegendPlot;
     protected legendSurface: PlottingSurface;
-    protected samplingRate: number;
 
     constructor(remoteObjectId: RemoteObjectId, rowCount: number,
-                schema: SchemaClass, page: FullPage) {
+                schema: SchemaClass, protected samplingRate: number, page: FullPage) {
         super(remoteObjectId, rowCount, schema, page, "2DHistogram");
 
-        this.legendSurface = new PlottingSurface(this.chartDiv, page);
+        this.legendSurface = new HtmlPlottingSurface(this.chartDiv, page);
         this.legendSurface.setHeight(Resolution.legendSpaceHeight);
         this.legendPlot = new HistogramLegendPlot(this.legendSurface);
-        this.surface = new PlottingSurface(this.chartDiv, page);
+        this.surface = new HtmlPlottingSurface(this.chartDiv, page);
         this.plot = new Histogram2DPlot(this.surface);
         this.cdfPlot = new CDFPlot(this.surface);
 
@@ -116,8 +122,13 @@ export class Histogram2DView extends HistogramViewBase {
                 help: "Redraw this histogram by swapping the X and Y axes.",
             }, {
                 text: "heatmap",
-                action: () => { this.heatmap(); },
+                action: () => { this.doHeatmap(); },
                 help: "Plot this data as a heatmap view.",
+            }, { text: "group by...",
+                action: () => {
+                    this.trellis();
+                },
+                help: "Group data by a third column.",
             }, {
                 text: "relative/absolute",
                 action: () => this.toggleNormalize(),
@@ -129,12 +140,13 @@ export class Histogram2DView extends HistogramViewBase {
 
         this.relative = false;
         this.page.setMenu(this.menu);
+        if (this.samplingRate >= 1) {
+            const submenu = this.menu.getSubmenu("View");
+            submenu.enable("exact", false);
+        }
     }
 
-    public updateView(heatmap: HeatMap, xData: AxisData, yData: AxisData, cdf: Histogram,
-                      samplingRate: number, relative: boolean, elapsedMs: number): void {
-        this.relative = relative;
-        this.samplingRate = samplingRate;
+    public updateView(heatmap: Heatmap, cdf: HistogramBase, elapsedMs: number): void {
         this.page.reportTime(elapsedMs);
         this.plot.clear();
         this.legendPlot.clear();
@@ -142,27 +154,16 @@ export class Histogram2DView extends HistogramViewBase {
             this.page.reportError("No data to display");
             return;
         }
-        if (samplingRate >= 1) {
-            const submenu = this.menu.getSubmenu("View");
-            submenu.enable("exact", false);
-        }
-        const xPoints = heatmap.buckets.length;
-        const yPoints = heatmap.buckets[0].length;
-        if (yPoints === 0) {
+        this.xPoints = heatmap.buckets.length;
+        this.yPoints = heatmap.buckets[0].length;
+        if (this.yPoints === 0) {
             this.page.reportError("No data to display");
             return;
         }
-        this.currentData = {
-            heatMap: heatmap,
-            xData,
-            yData,
-            cdf,
-            samplingRate,
-            xPoints,
-            yPoints,
-        };
+        this.heatMap = heatmap;
+        this.cdf = cdf;
 
-        const bucketCount = xPoints;
+        const bucketCount = this.xPoints;
         const canvas = this.surface.getCanvas();
 
         const legendDrag = d3drag()
@@ -172,35 +173,22 @@ export class Histogram2DView extends HistogramViewBase {
         this.legendSurface.getCanvas()
             .call(legendDrag);
 
-        const drag = d3drag()
-            .on("start", () => this.dragStart())
-            .on("drag", () => this.dragMove())
-            .on("end", () => this.dragCanvasEnd());
-
-        this.plot.setData(heatmap, cdf, xData, yData, samplingRate, this.relative);
+        this.plot.setData(heatmap, this.xAxisData, this.samplingRate, this.relative);
         this.plot.draw();
-        this.cdfPlot.setData(cdf);
+        const discrete = kindIsString(this.xAxisData.description.kind) ||
+            this.xAxisData.description.kind === "Integer";
+        this.cdfPlot.setData(cdf, discrete);
         this.cdfPlot.draw();
-        this.legendPlot.setData(yData, this.plot.getMissingDisplayed() > 0);
+        this.legendPlot.setData(this.yData, this.plot.getMissingDisplayed() > 0);
         this.legendPlot.draw();
 
-        canvas.call(drag)
-            .on("mousemove", () => this.mouseMove())
-            .on("mouseleave", () => this.mouseLeave())
-            .on("mouseenter", () => this.mouseEnter());
-
+        this.setupMouse();
         this.cdfDot = canvas
             .append("circle")
             .attr("r", Resolution.mouseDotRadius)
             .attr("fill", "blue");
 
         this.legendRect = this.legendPlot.legendRectangle();
-
-        this.selectionRectangle = canvas
-            .append("rect")
-            .attr("class", "dashed")
-            .attr("width", 0)
-            .attr("height", 0);
         this.legendSelectionRectangle = this.legendSurface.getCanvas()
             .append("rect")
             .attr("class", "dashed")
@@ -208,9 +196,9 @@ export class Histogram2DView extends HistogramViewBase {
             .attr("height", 0);
 
         this.pointDescription = new TextOverlay(this.surface.getChart(),
-            this.surface.getDefaultChartSize(),
-            [   this.currentData.xData.description.name,
-                this.currentData.yData.description.name,
+            this.surface.getActualChartSize(),
+            [   this.xAxisData.description.name,
+                this.yData.description.name,
                 "y", "count", "%", "cdf"], 40);
         this.pointDescription.show(false);
         let summary = formatNumber(this.plot.getDisplayedPoints()) + " data points";
@@ -221,38 +209,80 @@ export class Histogram2DView extends HistogramViewBase {
         if (heatmap.histogramMissingY.missingData !== 0)
             summary += ", " + formatNumber(heatmap.histogramMissingY.missingData) + " missing X coordinate";
         summary += ", " + String(bucketCount) + " buckets";
-        if (samplingRate < 1.0)
-            summary += ", sampling rate " + significantDigits(samplingRate);
+        if (this.samplingRate < 1.0)
+            summary += ", sampling rate " + significantDigits(this.samplingRate);
         this.summary.innerHTML = summary;
     }
 
     public serialize(): IViewSerialization {
         const result: Histogram2DSerialization = {
             ...super.serialize(),
-            exact: this.currentData.samplingRate >= 1,
+            samplingRate: this.samplingRate,
             relative: this.relative,
-            columnDescription0: this.currentData.xData.description,
-            columnDescription1: this.currentData.yData.description,
+            columnDescription0: this.xAxisData.description,
+            columnDescription1: this.yData.description,
+            xBucketCount: this.xPoints,
+            yBucketCount: this.yPoints
         };
         return result;
     }
 
     public static reconstruct(ser: Histogram2DSerialization, page: FullPage): IDataView {
-        const exact: boolean = ser.exact;
+        const samplingRate: number = ser.samplingRate;
         const relative: boolean = ser.relative;
         const cd0: IColumnDescription = ser.columnDescription0;
         const cd1: IColumnDescription = ser.columnDescription1;
+        const xPoints: number = ser.xBucketCount;
+        const yPoints: number = ser.yBucketCount;
         const schema: SchemaClass = new SchemaClass([]).deserialize(ser.schema);
-        if (cd0 == null || cd1 == null || exact == null || schema == null)
+        if (cd0 === null || cd1 === null || samplingRate === null || schema === null ||
+            xPoints === null || yPoints == null)
             return null;
-        const cds = [cd0, cd1];
 
-        const hv = new Histogram2DView(ser.remoteObjectId, ser.rowCount, schema, page);
-        const rr = page.dataset.createGetCategoryRequest(page, cds);
-        rr.invoke(new ChartObserver(hv, page, rr, null,
-            ser.rowCount, schema,
-            { exact, heatmap: false, relative, reusePage: true }, cds));
+        const hv = new Histogram2DView(ser.remoteObjectId, ser.rowCount, schema, samplingRate, page);
+        hv.setAxes(new AxisData(cd0, null), new AxisData(cd1, null), relative);
         return hv;
+    }
+
+    public setAxes(xAxisData: AxisData, yData: AxisData, relative: boolean): void {
+        this.relative = relative;
+        this.xAxisData = xAxisData;
+        this.yData = yData;
+    }
+
+    public trellis(): void {
+        const columns: string[] = [];
+        for (let i = 0; i < this.schema.length; i++) {
+            const col = this.schema.get(i);
+            if (col.name !== this.xAxisData.description.name &&
+                col.name !== this.yData.description.name)
+                columns.push(this.schema.displayName(col.name));
+        }
+        if (columns.length === 0) {
+            this.page.reportError("No acceptable columns found");
+            return;
+        }
+
+        const dialog = new Dialog("Choose column", "Select a column to group on.");
+        dialog.addSelectField("column", "column", columns, null,
+            "The column that will be used to group on.");
+        dialog.setAction(() => this.showTrellis(dialog.getFieldValue("column")));
+        dialog.show();
+    }
+
+    private showTrellis(colName: string): void {
+        const groupBy = this.schema.findByDisplayName(colName);
+        const cds: IColumnDescription[] = [
+            this.xAxisData.description,
+            this.yData.description,
+            groupBy];
+        const buckets = HistogramViewBase.maxTrellis3DBuckets(this.page);
+        const rr = this.createDataRangesRequest(cds, buckets);
+        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+            [0, 0, 0], cds, null, {
+            reusePage: false, relative: false,
+            chartKind: "Trellis2DHistogram", exact: false
+        }));
     }
 
     public toggleNormalize(): void {
@@ -261,18 +291,21 @@ export class Histogram2DView extends HistogramViewBase {
             // We cannot use sampling when we display relative views.
             this.exactHistogram();
         } else {
-            this.refresh();
+            this.resize();
         }
     }
 
-    public heatmap(): void {
-        const rcol = new Range2DCollector(
-            [this.currentData.xData.description, this.currentData.yData.description],
-            this.rowCount, this.schema,
-            [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
-            this.page, this, this.currentData.samplingRate >= 1, null, true, false, false);
-        rcol.setValue({ first: this.currentData.xData.stats, second: this.currentData.yData.stats });
-        rcol.onCompleted();
+    public doHeatmap(): void {
+        const cds = [this.xAxisData.description, this.yData.description];
+        const buckets = HistogramViewBase.maxHeatmapBuckets(this.page);
+        const rr = this.createDataRangesRequest(cds, buckets);
+        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+            [0, 0], cds, null, {
+            reusePage: false,
+            relative: false,
+            chartKind: "Heatmap",
+            exact: true
+        }));
     }
 
     public export(): void {
@@ -289,23 +322,23 @@ export class Histogram2DView extends HistogramViewBase {
     public asCSV(): string[] {
         const lines: string[] = [];
         let line = "";
-        for (let y = 0; y < this.currentData.yData.bucketCount; y++) {
-            const by = this.currentData.yData.bucketDescription(y);
-            line += "," + JSON.stringify(this.currentData.yData.description.name + " " + by);
+        for (let y = 0; y < this.yData.bucketCount; y++) {
+            const by = this.yData.bucketDescription(y);
+            line += "," + JSON.stringify(this.yData.description.name + " " + by);
         }
         line += ",missing";
         lines.push(line);
-        for (let x = 0; x < this.currentData.xData.bucketCount; x++) {
-            const data = this.currentData.heatMap.buckets[x];
-            const bx = this.currentData.xData.bucketDescription(x);
-            let l = JSON.stringify(this.currentData.xData.description.name + " " + bx);
+        for (let x = 0; x < this.xAxisData.bucketCount; x++) {
+            const data = this.heatMap.buckets[x];
+            const bx = this.xAxisData.bucketDescription(x);
+            let l = JSON.stringify(this.xAxisData.description.name + " " + bx);
             for (const y of data)
                 l += "," + y;
-            l += "," + this.currentData.heatMap.histogramMissingY.buckets[x];
+            l += "," + this.heatMap.histogramMissingY.buckets[x];
             lines.push(l);
         }
         line = "mising";
-        for (const y of this.currentData.heatMap.histogramMissingX.buckets)
+        for (const y of this.heatMap.histogramMissingX.buckets)
             line += "," + y;
         lines.push(line);
         return lines;
@@ -318,96 +351,62 @@ export class Histogram2DView extends HistogramViewBase {
             return;
 
         const rr = this.createZipRequest(r.first);
-        const renderer = (page: FullPage, operation: ICancellable) => {
-            return new Make2DHistogram(
+        const renderer = (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
+            return new MakeHistogramOrHeatmap(
                 page, operation,
-                [this.currentData.xData.description, this.currentData.yData.description],
-                [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
-                this.rowCount, this.schema, this.currentData.samplingRate >= 1, false, this.dataset,
-                this.relative);
+                [this.xAxisData.description, this.yData.description],
+                this.rowCount, this.schema,
+                { exact: this.samplingRate >= 1, chartKind: "Histogram",
+                    relative: this.relative, reusePage: false },
+                this.dataset
+                );
         };
         rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.dataset, renderer));
     }
 
     public swapAxes(): void {
-        if (this.currentData == null)
+        if (this == null)
             return;
-        const rc = new Range2DCollector(
-            [this.currentData.yData.description, this.currentData.xData.description],
-            this.rowCount, this.schema,
-            [this.currentData.yData.distinctStrings, this.currentData.xData.distinctStrings],
-            this.page, this, true, null, false, this.relative, false);
-        rc.setValue({ first: this.currentData.yData.stats, second: this.currentData.xData.stats });
-        rc.onCompleted();
+        const cds = [this.yData.description, this.xAxisData.description];
+        const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
+        const rr = this.createDataRangesRequest(cds, buckets);
+        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+            [0, 0], cds, null, {
+            reusePage: true, relative: this.relative,
+            chartKind: "Histogram", exact: this.samplingRate >= 1.0
+        }));
     }
 
     public exactHistogram(): void {
-        if (this.currentData == null)
+        if (this == null)
             return;
-        const rc = new Range2DCollector(
-            [this.currentData.xData.description, this.currentData.yData.description],
-            this.rowCount, this.schema,
-            [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
-            this.page, this, true, null, false, this.relative, true);
-        rc.setValue({ first: this.currentData.xData.stats,
-            second: this.currentData.yData.stats });
-        rc.onCompleted();
+        const cds = [this.yData.description, this.xAxisData.description];
+        const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
+        const rr = this.createDataRangesRequest(cds, buckets);
+        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+            [this.xPoints, this.yPoints], cds, this.page.title, {
+            reusePage: true,
+            relative: this.relative,
+            chartKind: "Histogram",
+            exact: true
+        }));
     }
 
     public changeBuckets(bucketCount: number): void {
-        const samplingRate = HistogramViewBase.samplingRate(bucketCount,
-            this.currentData.xData.stats.presentCount, this.page);
-
-        let xBoundaries;
-        let yBoundaries;
-        if (this.currentData.xData.distinctStrings == null)
-            xBoundaries = null;
-        else
-            xBoundaries = this.currentData.xData.distinctStrings.uniqueStrings;
-        if (this.currentData.yData.distinctStrings == null)
-            yBoundaries = null;
-        else
-            yBoundaries = this.currentData.yData.distinctStrings.uniqueStrings;
-
-        const arg0: ColumnAndRange = {
-            columnName: this.currentData.xData.description.name,
-            min: this.currentData.xData.stats.min,
-            max: this.currentData.xData.stats.max,
-            bucketBoundaries: xBoundaries,
-        };
-        const arg1: ColumnAndRange = {
-            columnName: this.currentData.yData.description.name,
-            min: this.currentData.yData.stats.min,
-            max: this.currentData.yData.stats.max,
-            bucketBoundaries: yBoundaries,
-        };
-        const size = PlottingSurface.getDefaultChartSize(this.page);
-        const cdfCount = Math.floor(size.width);
-
-        const args: Histogram2DArgs = {
-            first: arg0,
-            second: arg1,
-            xBucketCount: bucketCount,
-            yBucketCount: this.currentData.yPoints,
-            samplingRate,
-            seed: Seed.instance.get(),
-            cdfBucketCount: cdfCount,
-            cdfSamplingRate: HistogramViewBase.samplingRate(bucketCount,
-                this.currentData.xData.stats.presentCount, this.page),
-        };
-        const rr = this.createHistogram2DRequest(args);
-        const renderer = new Histogram2DRenderer(this.page,
-            this, this.rowCount, this.schema,
-            [this.currentData.xData.description, this.currentData.yData.description],
-            [this.currentData.xData.stats, this.currentData.yData.stats],
-            samplingRate,
-            [this.currentData.xData.distinctStrings, this.currentData.yData.distinctStrings],
-            rr, this.relative, true);
-        rr.invoke(renderer);
+        const cds = [this.yData.description, this.xAxisData.description];
+        const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
+        const rr = this.createDataRangesRequest(cds, buckets);
+        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+            [bucketCount, this.yPoints], cds, null, {
+            reusePage: true,
+            relative: this.relative,
+            chartKind: "Histogram",
+            exact: true
+        }));
     }
 
     public chooseBuckets(): void {
-        if (this.currentData == null)
+        if (this == null)
             return;
 
         const bucketDialog = new BucketDialog();
@@ -415,42 +414,46 @@ export class Histogram2DView extends HistogramViewBase {
         bucketDialog.show();
     }
 
-    public refresh(): void {
-        if (this.currentData == null)
+    public resize(): void {
+        if (this == null)
             return;
-        this.updateView(
-            this.currentData.heatMap,
-            this.currentData.xData,
-            this.currentData.yData,
-            this.currentData.cdf,
-            this.currentData.samplingRate,
-            this.relative,
-            0);
-        this.page.scrollIntoView();
+        this.updateView(this.heatMap, this.cdf, 0);
     }
 
-    public mouseEnter(): void {
-        super.mouseEnter();
+    public refresh(): void {
+        const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
+        const cds = [this.xAxisData.description, this.yData.description];
+        const rr = this.createDataRangesRequest(cds, buckets);
+        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+            [this.xPoints, this.yPoints], cds, null, {
+            reusePage: false, relative: false,
+            chartKind: "2DHistogram", exact: false
+        }));
+    }
+
+    public onMouseEnter(): void {
+        super.onMouseEnter();
         this.cdfDot.attr("visibility", "visible");
     }
 
-    public mouseLeave(): void {
+    public onMouseLeave(): void {
         this.cdfDot.attr("visibility", "hidden");
-        super.mouseLeave();
+        super.onMouseLeave();
     }
 
     /**
      * Handles mouse movements in the canvas area only.
      */
-    public mouseMove(): void {
+    public onMouseMove(): void {
         const position = d3mouse(this.surface.getChart().node());
         // note: this position is within the chart
         const mouseX = position[0];
         const mouseY = position[1];
 
-        const xs = HistogramViewBase.invert(position[0], this.plot.xScale,
-            this.currentData.xData.description.kind, this.currentData.xData.distinctStrings);
-        const y = Math.round(this.plot.yScale.invert(mouseY));
+        const xs = this.xAxisData.invert(position[0]);
+        // Use the plot scale, not the yData to invert.  That's the
+        // one which is used to draw the axis.
+        const y = Math.round(this.plot.getYScale().invert(mouseY));
         let ys = significantDigits(y);
         let scale = 1.0;
         if (this.relative)
@@ -463,14 +466,14 @@ export class Histogram2DView extends HistogramViewBase {
         let perc: number = 0;
         let colorIndex: number = null;
         let found = false;
-        if (xIndex >= 0 && xIndex < this.currentData.heatMap.buckets.length &&
-            y >= 0 && mouseY < this.surface.getActualChartHeight()) {
-            const values: number[] = this.currentData.heatMap.buckets[xIndex];
+        if (xIndex >= 0 && xIndex < this.heatMap.buckets.length &&
+            y >= 0 && mouseY < this.surface.getChartHeight()) {
+            const values: number[] = this.heatMap.buckets[xIndex];
 
             let total = 0;
             for (const v of values)
                 total += v;
-            total += this.currentData.heatMap.histogramMissingY.buckets[xIndex];
+            total += this.heatMap.histogramMissingY.buckets[xIndex];
             if (total > 0) {
                 // There could be no data for this specific x value
                 if (this.relative)
@@ -484,12 +487,12 @@ export class Histogram2DView extends HistogramViewBase {
                     if (yTotalScaled >= y && !found) {
                         size = significantDigits(values[i]);
                         perc = values[i];
-                        value = this.currentData.yData.bucketDescription(i);
+                        value = this.yData.bucketDescription(i);
                         colorIndex = i;
                         found = true;
                     }
                 }
-                const missing = this.currentData.heatMap.histogramMissingY.buckets[xIndex];
+                const missing = this.heatMap.histogramMissingY.buckets[xIndex];
                 yTotal += missing;
                 yTotalScaled += missing * scale;
                 if (!found && yTotalScaled >= y) {
@@ -506,24 +509,23 @@ export class Histogram2DView extends HistogramViewBase {
 
         const pos = this.cdfPlot.getY(mouseX);
         this.cdfDot.attr("cx", mouseX + this.surface.leftMargin);
-        this.cdfDot.attr("cy", (1 - pos) * this.surface.getActualChartHeight() + this.surface.topMargin);
+        this.cdfDot.attr("cy", (1 - pos) * this.surface.getChartHeight() + this.surface.topMargin);
         const cdf = percent(pos);
         this.pointDescription.update([xs, value, ys, size, percent(perc), cdf], mouseX, mouseY);
         this.legendPlot.hilight(colorIndex);
     }
 
-    protected dragCanvasEnd() {
-        const dragging = this.dragging && this.moved;
-        super.dragEnd();
-        if (!dragging)
-            return;
+    protected dragEnd(): boolean {
+        if (!super.dragEnd())
+            return false;
         const position = d3mouse(this.surface.getCanvas().node());
         const x = position[0];
         this.selectionCompleted(this.selectionOrigin.x, x, false);
+        return true;
     }
 
     // dragging in the legend
-   protected dragLegendStart() {
+   protected dragLegendStart(): void {
        this.dragging = true;
        this.moved = false;
        const position = d3mouse(this.legendSurface.getCanvas().node());
@@ -579,42 +581,27 @@ export class Histogram2DView extends HistogramViewBase {
         this.selectionCompleted(this.selectionOrigin.x, x, true);
     }
 
-    protected cancelDrag() {
-        super.cancelDrag();
-        this.legendSelectionRectangle
-            .attr("width", 0)
-            .attr("heigh", 0);
-    }
-
     /**
      * * xl and xr are coordinates of the mouse position within the canvas or legendSvg respectively.
      */
     protected selectionCompleted(xl: number, xr: number, inLegend: boolean): void {
         let min: number;
         let max: number;
-        let boundaries: string[] = null;
         let selectedAxis: AxisData = null;
-        let scale: AnyScale = null;
 
         if (inLegend) {
             const legendX = this.legendRect.lowerLeft().x;
             xl -= legendX;
             xr -= legendX;
-            selectedAxis = this.currentData.yData;
-            scale = this.legendPlot.xScale;
+            selectedAxis = this.yData;
         } else {
             xl -= this.surface.leftMargin;
             xr -= this.surface.leftMargin;
-            selectedAxis = this.currentData.xData;
-            scale = this.plot.xScale;
+            selectedAxis = this.xAxisData;
         }
 
-        if (scale == null)
-            return;
-
-        const kind = selectedAxis.description.kind;
-        const x0 = HistogramViewBase.invertToNumber(xl, scale, kind);
-        const x1 = HistogramViewBase.invertToNumber(xr, scale, kind);
+        const x0 = selectedAxis.invertToNumber(xl);
+        const x1 = selectedAxis.invertToNumber(xr);
 
         // selection could be done in reverse
         [min, max] = reorder(x0, x1);
@@ -623,28 +610,26 @@ export class Histogram2DView extends HistogramViewBase {
             return;
         }
 
-        if (selectedAxis.distinctStrings != null)
-            boundaries = selectedAxis.distinctStrings.categoriesInRange(min, max, max - min);
         const filter: FilterDescription = {
-            min,
-            max,
-            kind: selectedAxis.description.kind,
-            columnName: selectedAxis.description.name,
-            bucketBoundaries: boundaries,
+            min: min,
+            max: max,
+            minString: selectedAxis.invert(xl),
+            maxString: selectedAxis.invert(xr),
+            cd: selectedAxis.description,
             complement: d3event.sourceEvent.ctrlKey,
         };
-
         const rr = this.createFilterRequest(filter);
         const renderer = new Filter2DReceiver(
-            this.currentData.xData.description,
-            this.currentData.yData.description,
-            this.currentData.xData.distinctStrings,
-            this.currentData.yData.distinctStrings,
-            this.rowCount,
+            "Filtered on " + selectedAxis.description.name,
+            this.xAxisData.description, this.yData.description,
             this.schema,
-            this.page, this.currentData.samplingRate >= 1.0, rr, false,
-            this.dataset,
-            this.relative);
+            [inLegend ? this.xPoints : 0, this.yPoints], this.page, rr,
+            this.dataset, {
+            exact: this.samplingRate >= 1.0,
+            chartKind: "2DHistogram",
+            reusePage: false,
+            relative: this.relative
+        });
         rr.invoke(renderer);
     }
 
@@ -657,10 +642,10 @@ export class Histogram2DView extends HistogramViewBase {
     // show the table corresponding to the data in the histogram
     protected showTable(): void {
         const order =  new RecordOrder([ {
-            columnDescription: this.currentData.xData.description,
+            columnDescription: this.xAxisData.description,
             isAscending: true,
         }, {
-            columnDescription: this.currentData.yData.description,
+            columnDescription: this.yData.description,
             isAscending: true,
         } ]);
 
@@ -673,138 +658,116 @@ export class Histogram2DView extends HistogramViewBase {
 }
 
 /**
- * Receives the result of a filtering operation on two axes and initiates
- * a new 2D range computation, which in turns initiates a new 2D histogram
+ * Receives the result of a filtering operation and initiates
+ * a new 2D range computation, which in turns initiates a new 2D histogram or heatmap
  * rendering.
  */
 export class Filter2DReceiver extends BaseRenderer {
-    constructor(protected xColumn: IColumnDescription,
+    constructor(protected title: string,
+                protected xColumn: IColumnDescription,
                 protected yColumn: IColumnDescription,
-                protected xDs: DistinctStrings,
-                protected yDs: DistinctStrings,
-                protected rowCount: number,
                 protected schema: SchemaClass,
+                protected bucketCounts: number[],
                 page: FullPage,
-                protected exact: boolean,
-                operation: ICancellable,
-                protected heatMap: boolean,
+                operation: ICancellable<RemoteObjectId>,
                 dataset: DatasetView,
-                protected relative: boolean) {
+                protected options: ChartOptions) {
         super(page, operation, "Filter", dataset);
     }
 
     public run(): void {
         super.run();
         const cds: IColumnDescription[] = [this.xColumn, this.yColumn];
-        const ds: DistinctStrings[] = [this.xDs, this.yDs];
-        const rx = new CategoricalValues(this.xColumn.name, this.xDs != null ? this.xDs.uniqueStrings : null);
-        const ry = new CategoricalValues(this.yColumn.name, this.yDs != null ? this.yDs.uniqueStrings : null);
-        const rr = this.remoteObject.createRange2DRequest(rx, ry);
-        rr.invoke(new Range2DCollector(
-            cds, this.rowCount, this.schema, ds, this.page, this.remoteObject, this.exact,
-            rr, this.heatMap, this.relative, false));
+        let buckets: number[];
+        switch (this.options.chartKind) {
+            case "Heatmap":
+                buckets = HistogramViewBase.maxHeatmapBuckets(this.page);
+                break;
+            case "2DHistogram":
+                buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
+                break;
+            default:
+                console.assert(false);
+                return;
+        }
+        const rr = this.remoteObject.createDataRangesRequest(cds, buckets);
+        rr.invoke(new DataRangesCollector(this.remoteObject, this.page, rr, this.schema,
+            this.bucketCounts, cds, this.title, this.options));
     }
 }
 
 /**
  * This class is invoked by the ZipReceiver after a set operation
- * to create a new 2D histogram.
+ * to create a new 2D histogram or heatmap.
  */
-export class Make2DHistogram extends BaseRenderer {
+export class MakeHistogramOrHeatmap extends BaseRenderer {
     public constructor(page: FullPage,
-                       operation: ICancellable,
-                       private colDesc: IColumnDescription[],
-                       protected ds: DistinctStrings[],
+                       operation: ICancellable<RemoteObjectId>,
+                       private cds: IColumnDescription[],
                        private rowCount: number,
                        private schema: SchemaClass,
-                       private exact: boolean,
-                       private heatMap: boolean,
-                       dataset: DatasetView,
-                       private relative: boolean) {
+                       private options: ChartOptions,
+                       dataset: DatasetView) {
         super(page, operation, "Reload", dataset);
     }
 
     public run(): void {
         super.run();
-        const rx = new CategoricalValues(this.colDesc[0].name, this.ds[0] != null ? this.ds[0].uniqueStrings : null);
-        const ry = new CategoricalValues(this.colDesc[1].name, this.ds[1] != null ? this.ds[1].uniqueStrings : null);
-        const rr = this.remoteObject.createRange2DRequest(rx, ry);
-        rr.chain(this.operation);
-        rr.invoke(new Range2DCollector(
-            this.colDesc, this.rowCount, this.schema, this.ds, this.page, this.remoteObject,
-            this.exact, rr, this.heatMap, this.relative, false));
+        let buckets;
+        switch (this.options.chartKind) {
+            case "Heatmap":
+                buckets = HistogramViewBase.maxHeatmapBuckets(this.page);
+                break;
+            case "2DHistogram":
+                buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
+                break;
+            default:
+                console.assert(false);
+                return;
+        }
+        const rr = this.remoteObject.createDataRangesRequest(this.cds, buckets);
+        rr.invoke(new DataRangesCollector(this.remoteObject, this.page, rr, this.schema,
+            [0, 0], this.cds, null, this.options));
     }
 }
 
 /**
  * Receives partial results and renders a 2D histogram.
- * The 2D histogram data and the HeatMap data use the same data structure.
+ * The 2D histogram data and the Heatmap data use the same data structure.
  */
-export class Histogram2DRenderer extends Receiver<Pair<HeatMap, Histogram>> {
-    protected histogram: Histogram2DView;
+export class Histogram2DRenderer extends Receiver<Pair<Heatmap, HistogramBase>> {
+    protected view: Histogram2DView;
 
     constructor(page: FullPage,
                 protected remoteObject: TableTargetAPI,
                 protected rowCount: number,
                 protected schema: SchemaClass,
-                protected cds: IColumnDescription[],
-                protected stats: BasicColStats[],
+                protected axes: AxisData[],
                 protected samplingRate: number,
-                protected distinctStrings: DistinctStrings[],
-                operation: RpcRequest<PartialResult<Pair<HeatMap, Histogram>>>,
-                protected relative: boolean,
-                protected reusePage: boolean) {
+                operation: RpcRequest<PartialResult<Pair<Heatmap, HistogramBase>>>,
+                protected options: ChartOptions) {
         super(
-            reusePage ? page : page.dataset.newPage(
-                "Histogram(" + schema.displayName(cds[0].name) + ", " +
-                schema.displayName(cds[1].name) + ")", page),
+            options.reusePage ? page :
+                page.dataset.newPage(Histogram2DRenderer.title(schema,
+                    [axes[0].description, axes[1].description]), page),
             operation, "histogram");
-        this.histogram = new Histogram2DView(
-            this.remoteObject.remoteObjectId, rowCount, schema, this.page);
-        this.page.setDataView(this.histogram);
-        if (cds.length !== 2 || stats.length !== 2 || distinctStrings.length !== 2)
-            throw new Error("Expected 2 columns");
+        this.view = new Histogram2DView(
+            this.remoteObject.remoteObjectId, rowCount, schema, samplingRate, this.page);
+        this.page.setDataView(this.view);
+        this.view.setAxes(axes[0], axes[1], options.relative);
     }
 
-    public onNext(value: PartialResult<Pair<HeatMap, Histogram>>): void {
+    private static title(schema: SchemaClass, cds: IColumnDescription[]): string {
+        return "Histogram(" + schema.displayName(cds[0].name) + ", " +
+            schema.displayName(cds[1].name) + ")";
+    }
+
+    public onNext(value: PartialResult<Pair<Heatmap, HistogramBase>>): void {
         super.onNext(value);
         if (value == null)
             return;
-        const heatMap = value.data.first;
+        const heatmap = value.data.first;
         const cdf = value.data.second;
-        const points = heatMap.buckets;
-        let xPoints = 1;
-        let yPoints = 1;
-        if (points != null) {
-            xPoints = points.length;
-            yPoints = points[0] != null ? points[0].length : 1;
-        }
-
-        const xAxisData = new AxisData(this.cds[0], this.stats[0], this.distinctStrings[0], xPoints);
-        const yAxisData = new AxisData(this.cds[1], this.stats[1], this.distinctStrings[1], yPoints);
-        this.histogram.updateView(heatMap, xAxisData, yAxisData, cdf,
-            this.samplingRate, this.relative, this.elapsedMilliseconds());
-    }
-}
-
-export class Histogram2DDialog extends Dialog {
-    public static label(heatmap: boolean): string {
-        return heatmap ? "heatmap" : "2D histogram";
-    }
-
-    constructor(allColumns: string[], heatmap: boolean) {
-        super(Histogram2DDialog.label(heatmap),
-            "Display a " + Histogram2DDialog.label(heatmap) + " of the data in two columns");
-        this.addSelectField("columnName0", "First Column", allColumns, allColumns[0],
-            "First column (X axis)");
-        this.addSelectField("columnName1", "Second Column", allColumns, allColumns[1],
-            "Second column " + (heatmap ? "(Y axis)" : "(color)"));
-    }
-
-    public getColumn(first: boolean): string {
-        if (first)
-            return this.getFieldValue("columnName0");
-        else
-            return this.getFieldValue("columnName1");
+        this.view.updateView(heatmap, cdf, this.elapsedMilliseconds());
     }
 }

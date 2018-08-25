@@ -56,8 +56,8 @@ public class TestTables {
      */
     public static Table testListTable() {
         Table t = testTable();
-        CategoryListColumn sac = new CategoryListColumn(t.getLoadedColumn("Name").column.getDescription());
-        IntListColumn iac = new IntListColumn(t.getLoadedColumn("Age").column.getDescription());
+        CategoryListColumn sac = new CategoryListColumn(t.getLoadedColumn("Name").getDescription());
+        IntListColumn iac = new IntListColumn(t.getLoadedColumn("Age").getDescription());
         IRowIterator row = t.getMembershipSet().getIterator();
         for (int r = row.getNextRow(); r >= 0; r = row.getNextRow()) {
             RowSnapshot rs = new RowSnapshot(t, r, t.getSchema());
@@ -128,7 +128,6 @@ public class TestTables {
      */
     public static List<String> randStringList(int suppSize, int length) {
         String aToZ = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        ColumnDescription c0 = new ColumnDescription("Name", ContentsKind.String);
         Random random = new Random(1276449);
         ArrayList<String> names = new ArrayList<String>();
         for (int i = 0; i < suppSize; i++) {
@@ -165,9 +164,9 @@ public class TestTables {
             if (count[i] > 0)
                 dist.put(randString.get(i), count[i]);
         ColumnDescription c0 = new ColumnDescription("Name", ContentsKind.String);
-        StringArrayColumn sac =  new StringArrayColumn(c0, names.toArray(new String[0]));
+        StringArrayColumn sac = new StringArrayColumn(c0, names.toArray(new String[0]));
         Table randStringTable = new Table(Arrays.asList(sac), null, null);
-        return new Pair(randStringTable, dist);
+        return new Pair<Table, SortedMap<String, Integer>>(randStringTable, dist);
     }
 
     /**
@@ -180,9 +179,9 @@ public class TestTables {
         for (int i = 0; i < allStrings.size(); i++)
             sortedStrings.put(allStrings.get(i), i);
         List<Integer> ranks = new ArrayList<>();
-        for (int i = 0; i < inpList.size(); i++) {
-            if (sortedStrings.get(inpList.get(i)) != null)
-                ranks.add(sortedStrings.get(inpList.get(i)));
+        for (String anInpList : inpList) {
+            if (sortedStrings.get(anInpList) != null)
+                ranks.add(sortedStrings.get(anInpList));
         }
         return ranks;
     }
@@ -195,7 +194,7 @@ public class TestTables {
         columns.add(IntArrayGenerator.getSqIntArray(range));
         return new SmallTable(columns);
     }
-    
+
     /**
      * A table of integers whose rows are typically distinct. Each row is sampled randomly from a
      * domain of size 5^numCols*size. When numCols is small, some collisions are to be expected, but

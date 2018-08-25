@@ -18,6 +18,7 @@
 package org.hillview.table.api;
 
 import net.openhft.hashing.LongHashFunction;
+import org.hillview.table.RadixConverter;
 import org.hillview.utils.DateParsing;
 
 import javax.annotation.Nullable;
@@ -25,11 +26,16 @@ import java.time.Instant;
 import java.util.function.Function;
 
 public interface IStringColumn extends IColumn {
+    RadixConverter radixConverter = new RadixConverter();
+    static double stringToDouble(@Nullable String s) {
+        return radixConverter.asDouble(s);
+    }
+
     @Override
-    default double asDouble(final int rowIndex, final IStringConverter converter) {
+    default double asDouble(final int rowIndex) {
         assert !isMissing(rowIndex);
         final String tmp = this.getString(rowIndex);
-        return converter.asDouble(tmp);
+        return stringToDouble(tmp);
     }
 
     @Nullable

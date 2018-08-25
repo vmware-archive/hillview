@@ -17,37 +17,33 @@
 
 package org.hillview.table.filters;
 
-import org.hillview.table.NoStringConverter;
-import org.hillview.table.SortedStringsConverterDescription;
+import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.*;
-
-import javax.annotation.Nullable;
 
 @SuppressWarnings("CanBeFinal")
 public class RangeFilterDescription implements ITableFilterDescription {
-    private String columnName = "";
-    private double min;
-    private double max;
-    private boolean complement;
-    @Nullable
-    private String[] bucketBoundaries;  // only used for Categorical columns
+    // Instances of this class are created by deserialization from JSON,
+    // so these initializers are not useful.
+    private ColumnDescription cd = new ColumnDescription();
+    private double min = 0;
+    private double max = 0;
+    private String minString = "";
+    private String maxString = "";
+    private boolean complement = false;
 
     @Override
     public ITableFilter getFilter(ITable table) {
-        IStringConverterDescription conv = NoStringConverter.getDescriptionInstance();
-        if (this.bucketBoundaries != null) {
-            conv = new SortedStringsConverterDescription(
-                    this.bucketBoundaries, (int) Math.ceil(this.min), (int) Math.floor(this.max));
-        }
-        ColumnAndConverterDescription ccd = new ColumnAndConverterDescription(
-                this.columnName, conv);
-        return new RangeFilter(table.getLoadedColumn(ccd));
+        IColumn col = table.getLoadedColumn(this.cd.name);
+        if (this.cd.kind.isString())
+            return new StringRangeFilter(col);
+        else
+            return new DoubleRangeFilter(col);
     }
 
-    public class RangeFilter implements ITableFilter {
-        final ColumnAndConverter column;
+    public class DoubleRangeFilter implements ITableFilter {
+        final IColumn column;
 
-        RangeFilter(ColumnAndConverter column) {
+        DoubleRangeFilter(IColumn column) {
             this.column = column;
         }
 
@@ -68,6 +64,34 @@ public class RangeFilterDescription implements ITableFilterDescription {
         public String toString() {
             return "Rangefilter[" + RangeFilterDescription.this.min + "," +
                     RangeFilterDescription.this.max + "]";
+        }
+    }
+
+    public class StringRangeFilter implements ITableFilter {
+        final IColumn column;
+
+        StringRangeFilter(IColumn column) {
+            this.column = column;
+        }
+
+        public boolean test(int rowIndex) {
+            RangeFilterDescription desc = RangeFilterDescription.this;
+            boolean result;
+            if (this.column.isMissing(rowIndex))
+                result = false;
+            else {
+                String s = this.column.getString(rowIndex);
+                assert s != null;
+                result = (s.compareTo(desc.minString) >= 0) && (s.compareTo(desc.maxString) <= 0);
+            }
+            if (desc.complement)
+                result = !result;
+            return result;
+        }
+
+        public String toString() {
+            return "Rangefilter[" + RangeFilterDescription.this.minString + "," +
+                    RangeFilterDescription.this.maxString + "]";
         }
     }
 }

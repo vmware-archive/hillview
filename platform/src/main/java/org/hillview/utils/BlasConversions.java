@@ -18,7 +18,6 @@
 package org.hillview.utils;
 
 import org.hillview.table.ColumnDescription;
-import org.hillview.table.NoStringConverter;
 import org.hillview.table.columns.DoubleArrayColumn;
 import org.hillview.table.Table;
 import org.hillview.table.api.*;
@@ -42,12 +41,10 @@ public class BlasConversions {
      * @return DoubleMatrix with the table's columns interpreted as doubles.
      */
     public static DoubleMatrix toDoubleMatrix(ITable table, List<String> colNames) {
-        List<ColumnAndConverterDescription> ccds = ColumnAndConverterDescription.create(colNames);
-        List<ColumnAndConverter> cols = table.getLoadedColumns(ccds);
-
+        List<IColumn> cols = table.getLoadedColumns(colNames);
         DoubleMatrix mat = new DoubleMatrix(table.getNumOfRows(), colNames.size());
         for (int j = 0; j < colNames.size(); j++) {
-            IColumn col = cols.get(j).column;
+            IColumn col = cols.get(j);
             IRowIterator iter = table.getRowIterator();
             int row = iter.getNextRow();
             int i = 0;
@@ -55,7 +52,7 @@ public class BlasConversions {
                 if (col.isMissing(row)) {
                     mat.put(i, j, Double.NaN);
                 } else {
-                    mat.put(i, j, col.asDouble(row, NoStringConverter.getConverterInstance()));
+                    mat.put(i, j, col.asDouble(row));
                 }
                 row = iter.getNextRow();
                 i++;

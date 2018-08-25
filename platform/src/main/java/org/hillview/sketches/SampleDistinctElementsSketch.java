@@ -11,7 +11,7 @@ import java.util.Comparator;
 /**
  * This sketch produces a uniformly random sample of maxSize distinct values from a column (assuming
  * truly random hashing). The values are sampled from the set of distinct values in that column.
- * Missing values are ignored. IF there are fewer than msxSize distinct values, then all of them are
+ * Missing values are ignored. If there are fewer than maxSize distinct values, then all of them are
  * returned.
  */
 public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<String>> {
@@ -30,23 +30,25 @@ public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<Str
      * that have the minimum hash values.
      */
     @Override
-    public MinKSet create(ITable data) {
-        IColumn col = data.getLoadedColumn(new ColumnAndConverterDescription(this.colName)).column;
-        if (col.getDescription().kind != ContentsKind.String)
+    public MinKSet<String> create(ITable data) {
+        IColumn col = data.getLoadedColumn(this.colName);
+        if (!col.getDescription().kind.isString())
             throw new IllegalArgumentException(
-                    "SampleDistinctElementsSketch only supports String columns");
+                    "SampleDistinctElementsSketch only supports String-like columns");
         LongHashFunction hash = LongHashFunction.xx(this.seed);
         @Nullable String minString = null;
         @Nullable String maxString = null;
         final IRowIterator myIter = data.getMembershipSet().getIterator();
         MinKRows mkRows = new MinKRows(this.maxSize);
-        long numPresent  = 0;
+        long numPresent = 0;
+        long numMissing = 0;
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
             if (!col.isMissing(currRow)) {
                 numPresent += 1;
                 mkRows.push(col.hashCode64(currRow, hash), currRow);
                 String thisString = col.getString(currRow);
+                assert thisString != null;
                 if (minString == null) {
                     minString = thisString;
                     maxString = thisString;
@@ -56,25 +58,23 @@ public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<Str
                     if (maxString.compareTo(thisString) < 0)
                         maxString = thisString;
                 }
+            } else {
+                numMissing++;
             }
             currRow = myIter.getNextRow();
         }
-        return getMinStrings(col, mkRows, minString, maxString, numPresent);
-    }
 
-    private MinKSet<String> getMinStrings(IColumn col, MinKRows mkRows, @Nullable  String minString,
-                                          @Nullable String maxString, long numPresent) {
-        Long2ObjectRBTreeMap<String> data = new Long2ObjectRBTreeMap<String>();
+        Long2ObjectRBTreeMap<String> map = new Long2ObjectRBTreeMap<String>();
         for (long hashKey: mkRows.treeMap.keySet())
-            data.put(hashKey, col.getString(mkRows.treeMap.get(hashKey)));
-        return new MinKSet<String>(this.maxSize, data, Comparator.<String>naturalOrder(),
-                minString, maxString, numPresent);
+            map.put(hashKey, col.getString(mkRows.treeMap.get(hashKey)));
+        return new MinKSet<String>(this.maxSize, map, Comparator.naturalOrder(),
+                minString, maxString, numPresent, numMissing);
     }
 
     @Nullable
     @Override
     public MinKSet<String> zero() {
-        return new MinKSet(this.maxSize, Comparator.<String>naturalOrder());
+        return new MinKSet<String>(this.maxSize, Comparator.naturalOrder());
     }
 
     /**
@@ -83,20 +83,26 @@ public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<Str
      */
     @Nullable
     public MinKSet<String> add(@Nullable MinKSet<String> left, @Nullable MinKSet<String> right) {
+        assert left != null;
+        assert right != null;
         String minString, maxString;
-        long numPresent;
-        if (left.numPresent == 0) {
+        long numPresent, numMissing;
+
+        numMissing = left.missingCount + right.missingCount;
+        numPresent = left.presentCount + right.presentCount;
+        if (left.presentCount == 0) {
             minString = right.min;
             maxString = right.max;
-            numPresent = right.numPresent;
-        } else if (right.numPresent == 0) {
+        } else if (right.presentCount == 0) {
             minString = left.min;
             maxString = left.max;
-            numPresent = left.numPresent;
         } else {
+            assert left.min != null;
+            assert left.max != null;
+            assert right.min != null;
+            assert right.max != null;
             minString = (left.min.compareTo(right.min) < 0) ? left.min : right.min;
             maxString = (left.max.compareTo(right.max) > 0) ? left.max : right.max;
-            numPresent = left.numPresent + right.numPresent;
         }
         Long2ObjectRBTreeMap<String> data = new Long2ObjectRBTreeMap<>();
         data.putAll(left.data);
@@ -105,7 +111,7 @@ public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<Str
             long maxKey = data.lastLongKey();
             data.remove(maxKey);
         }
-        return new MinKSet(this.maxSize, data, Comparator.<String>naturalOrder(),
-                minString, maxString, numPresent);
+        return new MinKSet<String>(this.maxSize, data, Comparator.naturalOrder(),
+                minString, maxString, numPresent, numMissing);
     }
 }

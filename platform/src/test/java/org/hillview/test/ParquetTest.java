@@ -19,7 +19,7 @@ package org.hillview.test;
 
 import org.hillview.storage.ParquetFileLoader;
 import org.hillview.table.Table;
-import org.hillview.table.api.ColumnAndConverter;
+import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.junit.Assert;
 import org.junit.Test;
@@ -41,7 +41,7 @@ public class ParquetTest extends BaseTest {
         }
 
         Assert.assertEquals("Table[18x4214]", table.toString());
-        ColumnAndConverter first = table.getLoadedColumn("java_version");
+        IColumn first = table.getLoadedColumn("java_version");
         Assert.assertEquals(first.getString(0), "1.8.0_91");
     }
 
@@ -57,7 +57,7 @@ public class ParquetTest extends BaseTest {
         }
 
         Assert.assertEquals("Table[18x4214]", table.toString());
-        ColumnAndConverter first = table.getLoadedColumn("java_version");
+        IColumn first = table.getLoadedColumn("java_version");
         Assert.assertEquals(first.getString(0), "1.8.0_91");
         Table tbl = (Table)table;
         Assert.assertFalse(tbl.getColumns().get(1).isLoaded());

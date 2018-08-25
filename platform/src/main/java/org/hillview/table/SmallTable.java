@@ -137,9 +137,8 @@ public class SmallTable extends BaseTable implements Serializable, IJson {
     }
 
     @Override
-    public List<ColumnAndConverter> getLoadedColumns(List<ColumnAndConverterDescription> columns) {
-        return Linq.map(columns, c -> new ColumnAndConverter(
-                this.columns.get(c.columnName), c.getConverter()));
+    public List<IColumn> getLoadedColumns(List<String> columns) {
+        return Linq.map(columns, this.columns::get);
     }
 
     @Override

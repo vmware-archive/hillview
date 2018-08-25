@@ -26,16 +26,9 @@ import javax.annotation.Nullable;
  * A class that scans a column and collects basic statistics: maximum, minimum,
  * number of non-empty rows and the moments of asDouble values.
  */
-public class BasicColStats implements IJson {
+public class BasicColStats extends DataRange implements IJson {
     private final int momentCount;
     private final boolean computeStringMax;
-    // Number of values that have been used to compute the stats.
-    private long presentCount;
-    // Number of missing elements
-    private long missingCount;
-    // The following values are meaningful only if presentCount > 0.
-    private double min;
-    private double max;
     @Nullable
     private String minString;
     @Nullable
@@ -72,13 +65,13 @@ public class BasicColStats implements IJson {
     public long getPresentCount() { return this.presentCount; }
     public long getRowCount() { return this.presentCount + this.missingCount; }
 
-    void createStats(final ColumnAndConverter column,
+    void createStats(final IColumn column,
                      final IMembershipSet membershipSet) {
         final IRowIterator myIter = membershipSet.getIterator();
         int currRow = myIter.getNextRow();
 
         boolean extractString = false;
-        switch (column.column.getKind()) {
+        switch (column.getKind()) {
             case Category:
             case String:
             case Json:
@@ -88,7 +81,7 @@ public class BasicColStats implements IJson {
                 break;
         }
         while (currRow >= 0) {
-            if (column.column.isMissing(currRow)) {
+            if (column.isMissing(currRow)) {
                 this.missingCount++;
                 currRow = myIter.getNextRow();
                 continue;

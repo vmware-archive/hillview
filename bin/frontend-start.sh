@@ -7,6 +7,6 @@ source $mydir/lib.sh
 
 # If you add this line the java process enables a remote debugger to be connected to it
 # on port 5005
-#export JAVA_OPTS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
+export JAVA_OPTS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
 cd $mydir/../web  # logs will always be in this folder
 ../apache-tomcat-${TOMCATVERSION}/bin/catalina.sh run

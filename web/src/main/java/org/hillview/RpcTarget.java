@@ -430,7 +430,7 @@ public abstract class RpcTarget implements IJson {
      * Progress updates are sent to the client, but accompanied by null values.
      * @param data    Dataset to run the sketch on.
      * @param sketch  Sketch to run.
-     * @param postprocessing  This function is applied to the sketch results.
+     * @param postprocessing  This function is applied to the sketch results at the end.
      * @param request Web socket request, where replies are sent.
      * @param context Context for the computation.
      */

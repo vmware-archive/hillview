@@ -61,7 +61,7 @@ public final class DurationArrayColumn extends DoubleArrayColumn
     }
 
     @Override
-    public double asDouble(int rowIndex, @Nullable IStringConverter unused) {
+    public double asDouble(int rowIndex) {
         return super.getDouble(rowIndex);
     }
 

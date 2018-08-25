@@ -18,7 +18,7 @@
 import {drag as d3drag} from "d3-drag";
 import {mouse as d3mouse, select as d3select} from "d3-selection";
 import {percent} from "../util";
-import {IHtmlElement} from "./ui";
+import {D3SvgElement, IHtmlElement} from "./ui";
 
 /**
  * A scroll target is an object which supports scrolling.  These are events
@@ -49,15 +49,15 @@ export class ScrollBar implements IHtmlElement {
     public end: number;
 
     private readonly topLevel: HTMLElement;
-    private beforeG: any;
-    private before: any;
-    private afterG: any;
-    private after: any;
-    private barG: any;
-    private bar: any;
-    private handleG: any;
-    private handle: any;
-    private svg: any;
+    private beforeG: D3SvgElement;
+    private before: D3SvgElement;
+    private afterG: D3SvgElement;
+    private after: D3SvgElement;
+    private barG: D3SvgElement;
+    private bar: D3SvgElement;
+    private handleG: D3SvgElement;
+    private handle: D3SvgElement;
+    private svg: D3SvgElement;
     private height: number;
     private readonly target: IScrollTarget;
 

@@ -16,41 +16,26 @@
  */
 
 import {mouse as d3mouse} from "d3-selection";
-import {DistinctStrings} from "../distinctStrings";
-import {BasicColStats, ColumnAndRange, ContentsKind, IColumnDescription, RemoteObjectId} from "../javaBridge";
+import {
+    RemoteObjectId
+} from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
-import {BigTableView} from "../tableTarget";
 import {CDFPlot} from "../ui/CDFPlot";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
 import {PlottingSurface} from "../ui/plottingSurface";
-import {TextOverlay} from "../ui/textOverlay";
-import {Point, Resolution, SpecialChars, ViewKind} from "../ui/ui";
-import {Converters, formatDate, formatNumber, significantDigits} from "../util";
-import {AnyScale} from "./axisData";
+import {D3SvgElement, Resolution, SpecialChars, ViewKind} from "../ui/ui";
+import {significantDigits} from "../util";
+import {ChartView} from "./chartView";
 
 /**
  * This is a base class that contains code common to various histogram renderings.
  */
-export abstract class HistogramViewBase extends BigTableView {
-    protected dragging: boolean;
-    protected svg: any;
-    /**
-     * Coordinates are within the canvas, not within the chart.
-     */
-    protected selectionOrigin: Point;
-    /**
-     * The coordinates of the selectionRectangle are relative to the canvas.
-     */
-    protected selectionRectangle: any;
-    protected chartDiv: HTMLElement;
+export abstract class HistogramViewBase extends ChartView {
     protected summary: HTMLElement;
-    protected cdfDot: any;
-    protected moved: boolean;  // to detect trivial empty drags
-    protected pointDescription: TextOverlay;
-
+    protected cdfDot: D3SvgElement;
     protected cdfPlot: CDFPlot;
-    protected surface: PlottingSurface;
+    protected chartDiv: HTMLDivElement;
 
     protected constructor(
         remoteObjectId: RemoteObjectId,
@@ -60,11 +45,6 @@ export abstract class HistogramViewBase extends BigTableView {
         super(remoteObjectId, rowCount, schema, page, viewKind);
         this.topLevel = document.createElement("div");
         this.topLevel.className = "chart";
-        this.topLevel.onkeydown = (e) => this.keyDown(e);
-        this.dragging = false;
-        this.moved = false;
-
-        this.topLevel.tabIndex = 1;
 
         this.chartDiv = document.createElement("div");
         this.topLevel.appendChild(this.chartDiv);
@@ -80,32 +60,14 @@ export abstract class HistogramViewBase extends BigTableView {
             this.cancelDrag();
     }
 
-    protected cancelDrag() {
-        this.dragging = false;
-        this.selectionRectangle
-            .attr("width", 0)
-            .attr("height", 0);
-    }
-
     protected abstract showTable(): void;
-    public abstract refresh(): void;
-
-    public mouseEnter(): void {
-        if (this.pointDescription != null)
-            this.pointDescription.show(true);
-    }
-
-    public mouseLeave(): void {
-        if (this.pointDescription != null)
-            this.pointDescription.show(false);
-    }
+    public abstract resize(): void;
 
     /**
      * Dragging started in the canvas.
      */
     public dragStart(): void {
-        this.dragging = true;
-        this.moved = false;
+        super.dragStart();
         const position = d3mouse(this.surface.getCanvas().node());
         this.selectionOrigin = {
             x: position[0],
@@ -115,15 +77,14 @@ export abstract class HistogramViewBase extends BigTableView {
     /**
      * The mouse moved in the canvas.
      */
-    public dragMove(): void {
-        if (!this.dragging)
-            return;
-        this.moved = true;
+    protected dragMove(): boolean {
+        if (!super.dragMove())
+            return false;
         let ox = this.selectionOrigin.x;
         const position = d3mouse(this.surface.getCanvas().node());
         const x = position[0];
         let width = x - ox;
-        const height = this.surface.getActualChartHeight();
+        const height = this.surface.getChartHeight();
 
         if (width < 0) {
             ox = x;
@@ -135,24 +96,7 @@ export abstract class HistogramViewBase extends BigTableView {
             .attr("y", this.surface.topMargin)
             .attr("width", width)
             .attr("height", height);
-    }
-
-    public dragEnd(): void {
-        if (!this.dragging || !this.moved)
-            return;
-        this.dragging = false;
-        this.selectionRectangle
-            .attr("width", 0)
-            .attr("height", 0);
-    }
-
-    // noinspection JSUnusedLocalSymbols
-    public static samplingRate(bucketCount: number, rowCount: number, page: FullPage): number {
-        const constant = 4;  // This models the confidence we want from the sampling
-        const height = PlottingSurface.getDefaultChartSize(page).height;
-        const sampleCount = constant * height * height;
-        const sampleRate = sampleCount / rowCount;
-        return Math.min(sampleRate, 1);
+        return true;
     }
 
     /**
@@ -178,80 +122,45 @@ export abstract class HistogramViewBase extends BigTableView {
         return SpecialChars.approx + significantDigits(barSize);
     }
 
-    // Adjust the statistics for integral and categorical data pretending
-    // that we are centering the values.
-    public static adjustStats(kind: ContentsKind, stats: BasicColStats): void {
-         if (kind === "Integer" || kind === "Category") {
-             stats.min -= .5;
-             stats.max += .5;
-         }
+    /**
+     * The number of "buckets" needed for displaying a heatmap.
+     */
+    public static maxHeatmapBuckets(page: FullPage): [number, number] {
+        const size = PlottingSurface.getDefaultChartSize(page.getWidthInPixels());
+        return [Math.floor(size.width / Resolution.minDotSize),
+            Math.floor(size.height / Resolution.minDotSize)];
     }
 
-    public static getRange(stats: BasicColStats, cd: IColumnDescription,
-                           allStrings: DistinctStrings,
-                           bucketCount: number): ColumnAndRange {
-        const boundaries = (allStrings != null && allStrings.uniqueStrings != null) ?
-            allStrings.categoriesInRange(stats.min, stats.max, bucketCount) : null;
-        return {
-            columnName: cd.name,
-            min: stats.min,
-            max: stats.max,
-            bucketBoundaries: boundaries,
-        };
+    /**
+     * The max number of buckets to use when requesting the range of
+     * data for displaying a 2D histogram.
+     */
+    public static maxHistogram2DBuckets(page: FullPage): [number, number] {
+        // On the horizontal axis we get the maximum resolution, which we will use for
+        // deriving the CDF curve.  On the vertical axis we use a smaller number.
+        return [page.getWidthInPixels(), Resolution.maxBucketCount];
     }
 
-    public static bucketCount(stats: BasicColStats, page: FullPage, columnKind: ContentsKind,
-                              heatMap: boolean, bottom: boolean): number {
-        const size = PlottingSurface.getDefaultChartSize(page);
-        const length = Math.floor(bottom ? size.width : size.height);
-        let maxBucketCount = Resolution.maxBucketCount;
-        let minBarWidth = Resolution.minBarWidth;
-        if (heatMap) {
-            maxBucketCount = length;
-            minBarWidth = Resolution.minDotSize;
-        }
-
-        let bucketCount = maxBucketCount;
-        if (length / minBarWidth < bucketCount)
-            bucketCount = Math.floor(length / minBarWidth);
-
-        if (columnKind === "Integer" ||
-            columnKind === "Category")
-            bucketCount = Math.min(
-                bucketCount,
-                (stats.max - stats.min) / Math.ceil( (stats.max - stats.min) / maxBucketCount));
-
-        return Math.floor(bucketCount);
+    /**
+     * The max number of buckets to use when requesting the range of
+     * data for displaying a 2D Trellis plot.
+     */
+    public static maxTrellis2DBuckets(page: FullPage): [number, number] {
+        const width = page.getWidthInPixels();
+        const maxWindows = Math.floor(width / Resolution.minTrellisWindowSize) *
+            Math.floor(PlottingSurface.getDefaultCanvasSize(width).height / Resolution.minTrellisWindowSize);
+        return [page.getWidthInPixels(), maxWindows];
     }
 
-    public static invert(v: number, scale: AnyScale, kind: ContentsKind,
-                         allStrings: DistinctStrings): string {
-        const inv = scale.invert(v);
-        let result: string;
-        if (kind === "Integer")
-            result = formatNumber(Math.round(inv as number));
-        if (kind === "Category")
-            result = allStrings.get(inv as number);
-        else if (kind === "Integer" || kind === "Double")
-            result = formatNumber(inv as number);
-        else if (kind === "Date")
-            result = formatDate(inv as Date);
-        else
-            result = inv.toString();
-        return result;
-    }
-
-    public static invertToNumber(v: number, scale: AnyScale, kind: ContentsKind): number {
-        const inv = scale.invert(v);
-        let result: number = 0;
-        if (kind === "Integer" || kind === "Category") {
-            result = Math.round(inv as number);
-        } else if (kind === "Double") {
-            result = inv as number;
-        } else if (kind === "Date") {
-            result = Converters.doubleFromDate(inv as Date);
-        }
-        return result;
+    /**
+     * The max number of buckets to use when requesting the range of
+     * data for displaying a 3D Trellism plot.
+     */
+    public static maxTrellis3DBuckets(page: FullPage): [number, number, number] {
+        const width = page.getWidthInPixels();
+        const maxWindows = Math.floor(width / Resolution.minTrellisWindowSize) *
+            Math.floor(PlottingSurface.getDefaultCanvasSize(width).height / Resolution.minTrellisWindowSize);
+        return [page.getWidthInPixels(), Resolution.maxBucketCount, maxWindows];
     }
 }
 

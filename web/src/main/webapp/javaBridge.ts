@@ -23,6 +23,7 @@ import {Comparison} from "./util";
 
 export type RemoteObjectId = string;
 
+// TODO: remove Category kind
 export type ContentsKind = "Category" | "Json" | "String" | "Integer" |
     "Double" | "Date" | "Interval";
 
@@ -112,12 +113,18 @@ export interface CreateColumnInfo {
     renameMap: string[];
 }
 
-export interface HeatMap {
+export interface Heatmap {
     buckets: number[][];
     missingData: number;
-    histogramMissingX: Histogram;
-    histogramMissingY: Histogram;
+    histogramMissingX: HistogramBase;
+    histogramMissingY: HistogramBase;
     totalSize: number;
+}
+
+export interface Heatmap3D {
+    buckets: number[][][];
+    eitherMissing: number;
+    totalPresent: number;
 }
 
 /**
@@ -138,8 +145,12 @@ export interface IColumnDescription {
     readonly name: string;
 }
 
-export function isNumeric(kind: ContentsKind): boolean {
+export function kindIsNumeric(kind: ContentsKind): boolean {
     return kind === "Integer" || kind === "Double";
+}
+
+export function kindIsString(kind: ContentsKind): boolean {
+    return kind === "Category" || kind === "String" || kind === "Json";
 }
 
 export type Schema = IColumnDescription[];
@@ -159,97 +170,58 @@ export interface ColumnSortOrientation {
     isAscending: boolean;
 }
 
-export class CategoricalValues {
-    constructor(public columnName: string,
-                public allNames?: string[]) {}
-}
-
-/**
- * All strings that can appear in a categorical column.
- * Serialization of the DistinctStrings Java class.
- */
-export interface IDistinctStrings {
-    uniqueStrings: string[];
-    // This may be true if there are too many distinct strings in a column.
-    truncated: boolean;
-}
-
-export interface Histogram {
+export interface HistogramBase {
     buckets: number[];
     missingData: number;
-    outOfRange: number;
 }
 
-export interface NumericColumnStatistics {
+// This is actually a union of several java classes:
+// StringBucketLeftBoundaries and DataRange, both sub-classes
+// of BucketsInfo in Java.
+export interface DataRange {
+    presentCount: number;
+    missingCount: number;
+    // Only used for numeric data
+    min?: number;
+    max?: number;
+    // Only used for string data
+    leftBoundaries?: string[];
+    maxBoundary?: string;
+    allStringsKnown?: boolean;
+}
+
+export interface BasicColStats extends DataRange {
     momentCount: number;
-    min: number;
-    max: number;
     moments: number[];
-    presentCount: number;
-    missingCount: number;
 }
 
-export interface StringColumnStatistics {
-    min: string;
-    max: string;
-    presentCount: number;
-    missingCount: number;
-}
-
-export interface BasicColStats {
-    momentCount: number;
-    min: number;
-    max: number;
-    moments: number[];
-    presentCount: number;
-    missingCount: number;
-}
-
-export interface ColumnAndRange {
-    min: number;
-    max: number;
-    columnName: string;
-    bucketBoundaries: string[];
-}
-
-export interface HistogramArgs {
-    column: ColumnAndRange;
-    cdfBucketCount: number;
-    bucketCount: number;
-    samplingRate: number;
-    cdfSamplingRate: number;
+export interface RangeArgs {
+    cd: IColumnDescription;
     seed: number;
+    stringsToSample: number;
 }
 
-export interface Histogram2DArgs {
-    first: ColumnAndRange;
-    second: ColumnAndRange;
-    xBucketCount: number;
-    yBucketCount: number;
-    samplingRate: number;
-    seed: number;
-    cdfBucketCount: number;
-    cdfSamplingRate: number;
-}
-
-export interface Histogram3DArgs {
-    first: ColumnAndRange;
-    second: ColumnAndRange;
-    third: ColumnAndRange;
-    xBucketCount: number;
-    yBucketCount: number;
-    zBucketCount: number;
-    samplingRate: number;
-    seed: number;
-}
-
+// This is a union of DoubleRangeFilterDescription
+// and StringRangeFilterDescription.
 export interface FilterDescription {
     min: number;
     max: number;
-    columnName: string;
-    kind: ContentsKind;
+    minString: string;
+    maxString: string;
+    cd: IColumnDescription;
     complement: boolean;
-    bucketBoundaries: string[];
+}
+
+export interface HistogramArgs {
+    cd: IColumnDescription;
+    seed: number;
+    samplingRate: number;
+    bucketCount: number;  // sometimes superseded by leftBoundaries
+    // only used when doing string histograms
+    leftBoundaries?: string[];
+    // only used when doing double histograms
+    min?: number;
+    max?: number;
 }
 
 export interface HeavyHittersFilterInfo {
@@ -307,21 +279,21 @@ export class RecordOrder {
         this.sortOrientationList.splice(index, 1);
     }
 
-    public sortFirst(cso: ColumnSortOrientation) {
+    public sortFirst(cso: ColumnSortOrientation): void {
         const index = this.find(cso.columnDescription.name);
         if (index !== -1)
             this.sortOrientationList.splice(index, 1);
         this.sortOrientationList.splice(0, 0, cso);
     }
 
-    public addColumn(cso: ColumnSortOrientation) {
+    public addColumn(cso: ColumnSortOrientation): void {
         const index = this.find(cso.columnDescription.name);
         if (index !== -1)
             this.sortOrientationList.splice(index, 1);
         this.sortOrientationList.push(cso);
     }
 
-    public addColumnIfNotVisible(cso: ColumnSortOrientation) {
+    public addColumnIfNotVisible(cso: ColumnSortOrientation): void {
         const index = this.find(cso.columnDescription.name);
         if (index === -1)
             this.sortOrientationList.push(cso);

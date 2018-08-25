@@ -44,9 +44,7 @@ public class CsvFileWriter implements ITableWriter {
     public void writeTable(ITable table) {
         try {
             Schema schema = table.getSchema();
-            List<ColumnAndConverterDescription> ccds =
-                    ColumnAndConverterDescription.create(schema.getColumnNames());
-            List<ColumnAndConverter> cols = table.getLoadedColumns(ccds);
+            List<IColumn> cols = table.getLoadedColumns(schema.getColumnNames());
 
             CsvWriterSettings settings = new CsvWriterSettings();
             CsvFormat format = new CsvFormat();
@@ -80,7 +78,7 @@ public class CsvFileWriter implements ITableWriter {
             int nextRow = rowIter.getNextRow();
             while (nextRow >= 0) {
                 for (index = 0; index < cols.size(); index++) {
-                    ColumnAndConverter colI = cols.get(index);
+                    IColumn colI = cols.get(index);
                     String d = colI.isMissing(nextRow) ? null : colI.asString(nextRow);
                     data[index] = d;
                 }

@@ -39,7 +39,6 @@ import java.util.List;
  *   https://doi.org/10.1109/TVCG.2011.220
  */
 public class LAMPMap implements IMap<ITable, ITable> {
-    private final static double eps = 1e-9;
     private final String[] numColNames;
     private final DoubleMatrix highDimControlPoints;
     private final DoubleMatrix lowDimControlPoints;
@@ -59,10 +58,7 @@ public class LAMPMap implements IMap<ITable, ITable> {
 
     @Override
     public ITable apply(ITable data) {
-        List<ColumnAndConverterDescription> ccds =
-                ColumnAndConverterDescription.create(this.numColNames);
-        List<ColumnAndConverter> columns = data.getLoadedColumns(ccds);
-
+        List<IColumn> columns = data.getLoadedColumns(this.numColNames);
         List<IMutableColumn> newColumns = new ArrayList<IMutableColumn>(this.lowDims);
         IMembershipSet set = data.getMembershipSet();
         int colSize = set.getMax();

@@ -83,8 +83,8 @@ public class LazyColumn extends BaseColumn {
 
 
     @Override
-    public double asDouble(int rowIndex, IStringConverter converter) {
-        return this.ensureLoaded().asDouble(rowIndex, converter);
+    public double asDouble(int rowIndex) {
+        return this.ensureLoaded().asDouble(rowIndex);
     }
 
     @Nullable

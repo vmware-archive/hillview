@@ -20,7 +20,6 @@ package org.hillview.test;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.sketches.*;
 import org.hillview.table.SmallTable;
-import org.hillview.table.api.ColumnAndConverterDescription;
 import org.hillview.table.api.ITable;
 import org.junit.Test;
 import static org.hillview.utils.TestTables.getIntTable;
@@ -40,35 +39,32 @@ public class CDFTest extends BaseTest {
         this.colName = bigTable.getSchema().getColumnNames().get(0);
         this.dataSet = new LocalDataSet<ITable>(bigTable);
         this.colStat = this.dataSet.blockingSketch(
-                       new BasicColStatSketch(
-                               new ColumnAndConverterDescription(this.colName), 0));
+                       new BasicColStatSketch(this.colName, 0));
     }
 
     private Histogram prepareCDF(int width, int height, boolean useSampling) {
-        BucketsDescriptionEqSize bDec  =
-                new BucketsDescriptionEqSize(this.colStat.getMin(), this.colStat.getMax(), width);
+        IHistogramBuckets bDec  =
+                new DoubleHistogramBuckets(this.colStat.getMin(), this.colStat.getMax(), width);
         double sampleSize  =  2 * height * height * width;
         double rate = sampleSize / (double)this.colStat.getPresentCount();
         if ((rate > 0.1) || (!useSampling))
             rate = 1.0; // no performance gains in sampling
         HistogramSketch sk = new HistogramSketch(
-                bDec, new ColumnAndConverterDescription(this.colName), rate, 0);
-        final Histogram tmpHist = this.dataSet.blockingSketch(sk);
-        return tmpHist.prefixSum();
+                bDec, this.colName, rate, 0);
+        return this.dataSet.blockingSketch(sk);
     }
 
     private Histogram prepareHist(int width, int height, int barWidth, boolean useSampling) {
         int bucketNum = width / barWidth;
-        BucketsDescriptionEqSize bDec  =
-                new BucketsDescriptionEqSize(this.colStat.getMin(), this.colStat.getMax(), bucketNum);
+        IHistogramBuckets bDec  =
+                new DoubleHistogramBuckets(this.colStat.getMin(), this.colStat.getMax(), bucketNum);
         // approximately what is needed to have error smaller than a single pixel
         double sampleSize  =  2 * height * height * bucketNum;
         double rate = sampleSize / this.colStat.getPresentCount();
         if ((rate > 0.1) || (!useSampling))
             rate = 1.0; //no use in sampling
         return this.dataSet.blockingSketch(
-                new HistogramSketch(
-                        bDec, new ColumnAndConverterDescription(this.colName), rate, 0));
+                new HistogramSketch(bDec, this.colName, rate, 0));
     }
 
     @Test

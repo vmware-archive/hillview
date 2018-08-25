@@ -1,7 +1,7 @@
 package org.hillview.sketches;
 
 import org.hillview.dataset.api.ISketch;
-import org.hillview.table.api.ColumnAndConverter;
+import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 
 import javax.annotation.Nullable;
@@ -23,10 +23,6 @@ public class NIThresholdSketch implements ISketch<ITable, NumItemsThreshold> {
      */
     private final int logThreshold;
 
-    public NIThresholdSketch(String colName, long seed) {
-        this(colName, 13, seed);
-    }
-
     public NIThresholdSketch(String colName, int logThreshold, long seed) {
         this.colName = colName;
         this.seed = seed;
@@ -36,8 +32,8 @@ public class NIThresholdSketch implements ISketch<ITable, NumItemsThreshold> {
     @Override
     public NumItemsThreshold create(final ITable data) {
         NumItemsThreshold result = this.getZero();
-        ColumnAndConverter col = data.getLoadedColumn(this.colName);
-        result.createBits(col.column, data.getMembershipSet());
+        IColumn col = data.getLoadedColumn(this.colName);
+        result.createBits(col, data.getMembershipSet());
         return result;
     }
 

@@ -202,7 +202,7 @@ export class ContextMenu extends BaseMenu<MenuItem> implements IHtmlElement {
      * @param parent            HTML element where this is inserted.
      * @param {MenuItem[]} mis  List of menu items in the context menu.
      */
-    constructor(parent: HTMLElement, mis?: MenuItem[]) {
+    constructor(parent: Element, mis?: MenuItem[]) {
         super();
         this.addItems(mis);
         this.outer.classList.add("dropdown");
@@ -223,7 +223,7 @@ export class ContextMenu extends BaseMenu<MenuItem> implements IHtmlElement {
         let y = e.clientY - 5;
         this.outer.classList.remove("hidden");
         const max = browserWindowSize();
-       
+
         // We use 5 to leave room for border and shadow
         if (this.outer.offsetWidth + x >= max.width)
             x = max.width - this.outer.offsetWidth - 5;

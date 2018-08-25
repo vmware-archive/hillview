@@ -54,9 +54,11 @@ export class SchemaView extends TSViewBase {
         const schema = new SchemaClass([]).deserialize(ser.schema);
         if (schema == null)
             return null;
-        const schemaView = new SchemaView(ser.remoteObjectId, page, ser.rowCount, schema, 0);
-        schemaView.show();
-        return schemaView;
+        return new SchemaView(ser.remoteObjectId, page, ser.rowCount, schema, 0);
+    }
+
+    public refresh(): void {
+        this.show();
     }
 
     public show(): void {
@@ -168,16 +170,28 @@ export class SchemaView extends TSViewBase {
             help: "Show the selected columns in a tabular view." }, true);
         this.contextMenu.addItem({
             text: "Histogram",
-            action: () => this.histogram(false),
+            action: () => this.histogramSelected(),
             help: "Plot the data in the selected columns as a histogram.  Applies to one or two columns only. " +
             "The data cannot be of type String.",
         }, selectedCount >= 1 && selectedCount <= 2);
         this.contextMenu.addItem({
             text: "Heatmap",
-            action: () => this.heatMap(),
+            action: () => this.heatmapSelected(),
             help: "Plot the data in the selected columns as a heatmap or as a Trellis plot of heatmaps. " +
-            "Applies to two or three columns only.",
-        }, selectedCount >= 2 && selectedCount <= 3);
+            "Applies to two columns only.",
+        }, selectedCount >= 2);
+        this.contextMenu.addItem({
+            text: "Trellis histograms",
+            action: () => this.trellisSelected(false),
+            help: "Plot the data in the selected columns as a Trellis plot of histograms. " +
+                "Applies to two or three columns only.",
+        }, selectedCount >= 2 || selectedCount <= 3);
+        this.contextMenu.addItem({
+            text: "Trellis heatmaps",
+            action: () => this.trellisSelected(true),
+            help: "Plot the data in the selected columns as a Trellis plot of heatmaps. " +
+                "Applies to three columns only.",
+        }, selectedCount === 3);
         this.contextMenu.addItem({
             text: "Estimate distinct elements",
             action: () => this.hLogLog(),
@@ -226,7 +240,7 @@ export class SchemaView extends TSViewBase {
         this.contextMenu.show(e);
     }
 
-    public refresh(): void {
+    public resize(): void {
         this.show();
     }
 
@@ -236,7 +250,7 @@ export class SchemaView extends TSViewBase {
         this.show();
     }
 
-    private nameAction(regExp: RegExp, action: string) {
+    private nameAction(regExp: RegExp, action: string): void {
         for (let i = 0; i < this.schema.length; i++) {
             if (this.schema.displayName(this.schema.get(i).name).match(regExp)) {
                 if (action === "Add")
@@ -265,7 +279,7 @@ export class SchemaView extends TSViewBase {
      * @param {string} action: Either Add or Remove.
      * This method updates the set of selected columns by adding/removing all columns of selectedType.
      */
-    private typeAction(selectedType: string, action: string) {
+    private typeAction(selectedType: string, action: string): void {
         for (let i = 0; i < this.schema.length; i++) {
             if (this.schema.get(i).kind === selectedType) {
                 if (action === "Add")

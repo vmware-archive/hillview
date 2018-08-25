@@ -19,10 +19,12 @@ package org.hillview.sketches;
 
 import org.hillview.table.api.IColumn;
 
+import java.io.Serializable;
+
 /**
  * A description of the buckets used to compute a histogram.
  */
-public interface IHistogramBuckets {
+public interface IHistogramBuckets extends Serializable {
     /**
      * Number of buckets; must be greater than 0.
      */
@@ -32,8 +34,7 @@ public interface IHistogramBuckets {
      * @param column Column holding the data.
      * @param rowIndex  Index of the row in the column.
      * @return the index of the bucket in which the item should be placed.
-     * All buckets are left-inclusive and right-exclusive, except the right most bucket which
-     * is right-inclusive. If the value is out of the range of buckets this returns -1.
+     * If the value is out of the range of buckets this returns -1.
      */
     int indexOf(IColumn column, int rowIndex);
 }

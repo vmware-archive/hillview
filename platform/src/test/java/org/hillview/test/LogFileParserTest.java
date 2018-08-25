@@ -18,7 +18,7 @@
 package org.hillview.test;
 
 import org.hillview.storage.HillviewLogs;
-import org.hillview.table.api.ColumnAndConverter;
+import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 import org.junit.Assert;
@@ -33,7 +33,7 @@ import java.time.*;
 
 public class LogFileParserTest extends BaseTest {
     private Object getValue(ITable table, String col) {
-        ColumnAndConverter cc = table.getLoadedColumn(col);
+        IColumn cc = table.getLoadedColumn(col);
         return Converters.checkNull(cc.getObject(0));
     }
 

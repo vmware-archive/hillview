@@ -20,20 +20,20 @@
  */
 
 import {DatasetView, IViewSerialization} from "./datasetView";
-import {HeatMapArrayData} from "./dataViews/trellisHeatMapView";
-import {Histogram2DArgs, NextKArgs} from "./javaBridge";
-import {ComparisonFilterDescription, EigenVal, EqualityFilterDescription, FindResult} from "./javaBridge";
 import {
-    BasicColStats, CategoricalValues, CombineOperators, CreateColumnInfo, FilterDescription,
-    HeatMap, Histogram, Histogram3DArgs, HistogramArgs,
-    HLogLog, IColumnDescription, NextKList, RecordOrder, RemoteObjectId, Schema, TableSummary, TopList,
+    CombineOperators, CreateColumnInfo, DataRange, FilterDescription,
+    Heatmap, HistogramArgs,
+    HistogramBase, HLogLog, IColumnDescription, kindIsString,
+    NextKList, RangeArgs, RecordOrder, RemoteObjectId, Schema,
+    TableSummary, TopList, NextKArgs, ComparisonFilterDescription,
+    EigenVal, EqualityFilterDescription, FindResult, Heatmap3D,
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
-import {SchemaClass} from "./schemaClass";
-import {IDataView} from "./ui/dataview";
 import {FullPage} from "./ui/fullPage";
 import {PointSet, ViewKind} from "./ui/ui";
 import {ICancellable, Pair, PartialResult, Seed} from "./util";
+import {IDataView} from "./ui/dataview";
+import {SchemaClass} from "./schemaClass";
 
 /**
  * This class has methods that correspond directly to TableTarget.java methods.
@@ -45,10 +45,6 @@ export class TableTargetAPI extends RemoteObject {
      */
     constructor(public readonly remoteObjectId: RemoteObjectId) {
         super(remoteObjectId);
-    }
-
-    public createRangeRequest(r: CategoricalValues): RpcRequest<PartialResult<BasicColStats>> {
-        return this.createStreamingRpcRequest<BasicColStats>("range", r);
     }
 
     public createZipRequest(r: RemoteObject): RpcRequest<PartialResult<RemoteObjectId>> {
@@ -79,6 +75,35 @@ export class TableTargetAPI extends RemoteObject {
         });
     }
 
+    public createDataRangeRequest(cd: IColumnDescription, cdfBuckets: number):
+        RpcRequest<PartialResult<DataRange>> {
+        const seed = kindIsString(cd.kind) ? Seed.instance.get() : 0;
+        const args: RangeArgs = {
+            cd: cd,
+            seed: seed,
+            stringsToSample: cdfBuckets };
+        return this.createStreamingRpcRequest<DataRange>(
+            "getDataRange", args);
+    }
+
+    public createDataRangesRequest(cds: IColumnDescription[], buckets: number[]):
+        RpcRequest<PartialResult<DataRange[]>> {
+        console.assert(cds.length === buckets.length);
+        const args: RangeArgs[] = [];
+        for (let i = 0; i < cds.length; i++) {
+            const cd = cds[i];
+            const seed = kindIsString(cd.kind) ? Seed.instance.get() : 0;
+            const arg: RangeArgs = {
+                cd: cd,
+                seed: seed,
+                stringsToSample: buckets[i]
+            };
+            args.push(arg);
+        }
+        const method = cds.length === 3 ? "getDataRanges3D" : "getDataRanges2D";
+        return this.createStreamingRpcRequest<DataRange>(method, args);
+    }
+
     public createNextKRequest(order: RecordOrder, firstRow: any[] | null, rowCount: number):
         RpcRequest<PartialResult<NextKList>> {
         const nextKArgs: NextKArgs = {
@@ -97,18 +122,6 @@ export class TableTargetAPI extends RemoteObject {
     public createHLogLogRequest(colName: string): RpcRequest<PartialResult<HLogLog>> {
         return this.createStreamingRpcRequest<HLogLog>("hLogLog",
             { columnName: colName, seed: Seed.instance.get() });
-    }
-
-    public createRange2DRequest(r1: CategoricalValues, r2: CategoricalValues):
-    RpcRequest<PartialResult<Pair<BasicColStats, BasicColStats>>> {
-        return this.createStreamingRpcRequest<Pair<BasicColStats, BasicColStats>>("range2D", [r1, r2]);
-    }
-
-    public createRange2DColsRequest(c1: string, c2: string):
-            RpcRequest<PartialResult<Pair<BasicColStats, BasicColStats>>> {
-        const r1: CategoricalValues = new CategoricalValues(c1, null);
-        const r2: CategoricalValues = new CategoricalValues(c2, null);
-        return this.createRange2DRequest(r1, r2);
     }
 
     public createHeavyHittersRequest(columns: IColumnDescription[],
@@ -192,35 +205,39 @@ RpcRequest<PartialResult<RemoteObjectId>> {
         });
     }
 
-    public createCreateColumnRequest(c: CreateColumnInfo): RpcRequest<PartialResult<string>> {
+    public createCreateColumnRequest(c: CreateColumnInfo):
+        RpcRequest<PartialResult<string>> {
         return this.createStreamingRpcRequest<string>("createColumn", c);
     }
 
-    public createFilterRequest(f: FilterDescription): RpcRequest<PartialResult<RemoteObjectId>> {
+    public createFilterRequest(f: FilterDescription):
+        RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<RemoteObjectId>("filterRange", f);
     }
 
     public createFilter2DRequest(xRange: FilterDescription, yRange: FilterDescription):
             RpcRequest<PartialResult<RemoteObjectId>> {
-        return this.createStreamingRpcRequest<RemoteObjectId>("filter2DRange", {first: xRange, second: yRange});
+        return this.createStreamingRpcRequest<RemoteObjectId>("filter2DRange",
+            {first: xRange, second: yRange});
     }
 
-    public createHistogram2DRequest(info: Histogram2DArgs): RpcRequest<PartialResult<Pair<HeatMap, Histogram>>> {
-        return this.createStreamingRpcRequest<Pair<HeatMap, Histogram>>("histogram2D", info);
+    public createHistogram2DRequest(info: HistogramArgs[]):
+        RpcRequest<PartialResult<Pair<Heatmap, HistogramBase>>> {
+        return this.createStreamingRpcRequest<Pair<Heatmap, HistogramBase>>("histogram2D", info);
     }
 
-    public createHeatMapRequest(info: Histogram2DArgs): RpcRequest<PartialResult<HeatMap>> {
-        return this.createStreamingRpcRequest<HeatMap>("heatMap", info);
+    public createHeatmapRequest(info: HistogramArgs[]): RpcRequest<PartialResult<Heatmap>> {
+        return this.createStreamingRpcRequest<Heatmap>("heatmap", info);
     }
 
-    public createHeatMap3DRequest(info: Histogram3DArgs):
-            RpcRequest<PartialResult<HeatMapArrayData>> {
-        return this.createStreamingRpcRequest<HeatMapArrayData>("heatMap3D", info);
+    public createHeatmap3DRequest(info: HistogramArgs[]): RpcRequest<PartialResult<Heatmap3D>> {
+        return this.createStreamingRpcRequest<Heatmap3D>("heatmap3D", info);
     }
 
     public createHistogramRequest(info: HistogramArgs):
-            RpcRequest<PartialResult<Pair<Histogram, Histogram>>> {
-        return this.createStreamingRpcRequest<Pair<Histogram, Histogram>>("histogram", info);
+        RpcRequest<PartialResult<HistogramBase>> {
+        return this.createStreamingRpcRequest<HistogramBase>(
+            "histogram", info);
     }
 
     public createSetOperationRequest(setOp: CombineOperators): RpcRequest<PartialResult<RemoteObjectId>> {
@@ -250,7 +267,8 @@ RpcRequest<PartialResult<RemoteObjectId>> {
                                 colNames: string[], controlPoints: PointSet, newColNames: string[]):
             RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<RemoteObjectId>("lampMap",
-            {controlPointsId: controlPointsId, colNames: colNames, newLowDimControlPoints: controlPoints, newColNames: newColNames});
+            {controlPointsId: controlPointsId, colNames: colNames,
+                newLowDimControlPoints: controlPoints, newColNames: newColNames});
     }
 }
 
@@ -260,7 +278,7 @@ RpcRequest<PartialResult<RemoteObjectId>> {
  * in Java by IDataSet<ITable>.
  * This is a base class for most views that are rendering
  * information from a big table.
- * A BigTableView view is always part of a datasetview.
+ * A BigTableView view is always part of a DatasetView.
  */
 export abstract class BigTableView extends TableTargetAPI implements IDataView {
     protected topLevel: HTMLElement;
@@ -279,7 +297,7 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView {
         remoteObjectId: RemoteObjectId,
         public rowCount: number,
         public schema: SchemaClass,
-        protected page: FullPage,
+        public page: FullPage,
         public readonly viewKind: ViewKind) {
         super(remoteObjectId);
         this.setPage(page);
@@ -301,7 +319,7 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView {
         };
     }
 
-    public setPage(page: FullPage) {
+    public setPage(page: FullPage): void {
         if (page == null)
             throw new Error(("null FullPage"));
         this.page = page;
@@ -324,13 +342,14 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView {
         this.dataset.select(this, this.page.pageId);
     }
 
+    public abstract resize(): void;
     public abstract refresh(): void;
 
     public getHTMLRepresentation(): HTMLElement {
         return this.topLevel;
     }
 
-    public abstract combine(op: CombineOperators);
+    public abstract combine(op: CombineOperators): void;
 }
 
 /**
@@ -340,7 +359,7 @@ export abstract class BaseRenderer extends OnCompleteReceiver<RemoteObjectId> {
     protected remoteObject: TableTargetAPI;
 
     protected constructor(public page: FullPage,
-                          public operation: ICancellable,
+                          public operation: ICancellable<RemoteObjectId>,
                           public description: string,
                           protected dataset: DatasetView) { // may be null for the first table
         super(page, operation, description);
@@ -360,12 +379,13 @@ export abstract class BaseRenderer extends OnCompleteReceiver<RemoteObjectId> {
  */
 export class ZipReceiver extends BaseRenderer {
     public constructor(page: FullPage,
-                       operation: ICancellable,
+                       operation: ICancellable<RemoteObjectId>,
                        protected setOp: CombineOperators,
                        protected dataset: DatasetView,
                        // receiver constructs the renderer that is used to display
                        // the result after combining
-                       protected receiver: (page: FullPage, operation: ICancellable) => BaseRenderer) {
+                       protected receiver:
+                           (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer) {
         super(page, operation, "zip", dataset);
     }
 

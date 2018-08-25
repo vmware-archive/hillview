@@ -24,18 +24,21 @@ import {IHtmlElement, ViewKind} from "./ui";
  */
 export interface IDataView extends IHtmlElement {
     /**
-     * Set the page where the dataview is displayed.
-     */
-    setPage(page: FullPage): void;
-    /**
      * Get the page where the dataview is displayed.
      */
     getPage(): FullPage;
     /**
-     * This method can be called automatically when the browser window is
-     * being resized, or it can be called as a result of a user action.
+     * This method is called when the browser window is being resized.  This should
+     * only use locally-available data.
+     */
+    resize(): void;
+    /**
+     * This method is called to reconstruct the view.  This will use a request
+     * to get the remote data again.
      */
     refresh(): void;
-    /** Kind of view displayed */
+    /**
+     * Kind of view displayed
+     */
     viewKind: ViewKind;
 }

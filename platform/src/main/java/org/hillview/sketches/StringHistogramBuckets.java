@@ -22,31 +22,30 @@ import org.hillview.table.api.IColumn;
 import java.util.Arrays;
 
 /**
- * Bucket boundaries for string histograms.
+ * Left endpoints for string buckets.
  */
-public class StringBucketsDescription implements IHistogramBuckets {
+public class StringHistogramBuckets implements IHistogramBuckets {
     private final String minValue;
-    private final String maxValue;
+    private final String lastBoundary;
     private final int numOfBuckets;
-    private final String[] boundaries;
-
     /**
-     * The assumption is that the all buckets are only left inclusive except the right one which
-     * is right inclusive. Boundaries has to be strongly sorted.
+     * These are the *left endpoints* of the buckets.
      */
-    public StringBucketsDescription(final String[] boundaries) {
-        if (boundaries.length == 0)
+    private final String[] leftBoundaries;
+
+    public StringHistogramBuckets(final String[] leftBoundaries) {
+        if (leftBoundaries.length == 0)
             throw new IllegalArgumentException("Boundaries of buckets can't be empty");
-        if (!isSorted(boundaries))
+        if (!isSorted(leftBoundaries))
             throw new IllegalArgumentException("Boundaries of buckets have to be sorted");
-        this.boundaries = boundaries;
-        this.numOfBuckets = boundaries.length - 1;
-        this.minValue = this.boundaries[0];
-        this.maxValue = this.boundaries[this.numOfBuckets];
+        this.leftBoundaries = leftBoundaries;
+        this.numOfBuckets = leftBoundaries.length;
+        this.minValue = this.leftBoundaries[0];
+        this.lastBoundary = this.leftBoundaries[this.leftBoundaries.length - 1];
     }
 
     /**
-     * Checks that an array is strongly sorted
+     * Checks that an array is strongly sorted.
      */
     private static boolean isSorted(final String[] a) {
         for (int i = 0; i < (a.length - 1); i++)
@@ -56,11 +55,12 @@ public class StringBucketsDescription implements IHistogramBuckets {
     }
 
     public int indexOf(String item) {
-        if ((item.compareTo(this.minValue)) < 0 || (item.compareTo(this.maxValue)) > 0)
+        if ((item.compareTo(this.minValue)) < 0)
             return -1;
-        if (item.equals(this.maxValue))
-            return this.numOfBuckets;
-        int index = Arrays.binarySearch(boundaries, item);
+        if (item.compareTo(this.lastBoundary) >= 0)
+            // Anything bigger than the lastBoundary is in the last bucket
+            return this.numOfBuckets - 1;
+        int index = Arrays.binarySearch(leftBoundaries, item);
         // This method returns index of the search key, if it is contained in the array,
         // else it returns (-(insertion point) - 1). The insertion point is the point
         // at which the key would be inserted into the array: the index of the first
@@ -70,7 +70,8 @@ public class StringBucketsDescription implements IHistogramBuckets {
             index = -index - 1;
             if (index == 0)
                 // before first element
-                index = -1;
+                return -1;
+            return index - 1;
         }
         return index;
     }

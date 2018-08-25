@@ -18,52 +18,63 @@
 import {axisLeft as d3axisLeft} from "d3-axis";
 import {format as d3format} from "d3-format";
 import {scaleLinear as d3scaleLinear} from "d3-scale";
-import {AxisData} from "../dataViews/axisData";
+import {AxisData, AxisKind} from "../dataViews/axisData";
 import {HistogramViewBase} from "../dataViews/histogramViewBase";
-import {Histogram} from "../javaBridge";
+import {HistogramBase} from "../javaBridge";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
+import {D3Axis, D3Scale} from "./ui";
 
 /**
  * A HistogramPlot draws a  bar chart on a PlottingSurface, including the axes.
  */
 export class HistogramPlot extends Plot {
+    // While the data has histogram type, nothing prevents the values in the histogram
+    // from being non-integers, so this class can be used to draw more general bar-charts.
+
     /**
      * Histogram that is being drawn.
      */
-    public histogram: Histogram;
+    public histogram: HistogramBase;
     /**
      * Sampling rate that was used to compute the histogram.
      */
     public samplingRate: number;
-    /**
-     * Data used to draw the X axis.
-     */
-    public axisData: AxisData;
     public barWidth: number;
+    protected yScale: D3Scale;
+    protected yAxis: D3Axis;
+    protected max: number | null;
 
     public constructor(protected plottingSurface: PlottingSurface) {
         super(plottingSurface);
     }
 
-    // While the data has histogram type, nothing prevents the values in the histogram
-    // from being non-integers, so this class can be used to draw more general bar-charts.
-    public setHistogram(bars: Histogram, samplingRate: number, axisData: AxisData): void {
+    /**
+     * Set the histogram that we want to draw.
+     * @param bars          Description of the histogram bars.
+     * @param samplingRate  Sampling rate used to compute this histogram.
+     * @param axisData      Description of the X axis.
+     * @param max           If present it is used to scale the maximum value for the Y axis.
+     *                      Currently if present we do not draw the axes.
+     */
+    public setHistogram(bars: HistogramBase, samplingRate: number,
+                        axisData: AxisData, max?: number): void {
         this.histogram = bars;
         this.samplingRate = samplingRate;
-        this.axisData = axisData;
+        this.xAxisData = axisData;
         const chartWidth = this.getChartWidth();
         const bucketCount = this.histogram.buckets.length;
         this.barWidth = chartWidth / bucketCount;
+        this.max = max;
     }
 
     public draw(): void {
-        this.plottingSurface.clear();
+        this.plottingSurface.create();
         if (this.histogram == null)
             return;
 
         const counts = this.histogram.buckets;
-        const max = Math.max(...counts);
+        const max = this.max == null ? Math.max(...counts) : this.max;
 
         const chartWidth = this.getChartWidth();
         const chartHeight = this.getChartHeight();
@@ -91,17 +102,24 @@ export class HistogramPlot extends Plot {
             .attr("y", (d) => this.yScale(d))
             .attr("text-anchor", "middle")
             .attr("dy", (d) => d <= (9 * max / 10) ? "-.25em" : ".75em")
-            .text((d) => HistogramViewBase.boxHeight(d, this.samplingRate, this.axisData.stats.presentCount))
+            .text((d) => HistogramViewBase.boxHeight(
+                d, this.samplingRate, this.xAxisData.range.presentCount))
             .exit();
 
         this.yAxis = d3axisLeft(this.yScale)
             .tickFormat(d3format(".2s"));
 
-        const scaleAxis = this.axisData.scaleAndAxis(chartWidth, true, false);
-        this.xScale = scaleAxis.scale;
-        this.xAxis = scaleAxis.axis;
+        this.xAxisData.setResolution(chartWidth, AxisKind.Bottom);
+        if (this.max == null)
+            this.drawAxes();
+    }
 
-        this.drawAxes();
+    public getYAxis(): D3Axis {
+        return this.yAxis;
+    }
+
+    public getYScale(): D3Scale {
+        return this.yScale;
     }
 
     public get(x: number): number {
