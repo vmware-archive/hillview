@@ -24,8 +24,12 @@ import org.hillview.dataset.TripleSketch;
 import org.hillview.dataset.api.*;
 import org.hillview.maps.*;
 import org.hillview.sketches.*;
-import org.hillview.table.*;
-import org.hillview.table.api.*;
+import org.hillview.table.ColumnDescription;
+import org.hillview.table.RecordOrder;
+import org.hillview.table.Schema;
+import org.hillview.table.api.ContentsKind;
+import org.hillview.table.api.ITable;
+import org.hillview.table.api.ITableFilterDescription;
 import org.hillview.table.filters.*;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.*;
@@ -83,22 +87,17 @@ public final class TableTarget extends RpcTarget {
     }
 
     static class FindArgs {
-        RecordOrder order = new RecordOrder();
-        String toFind = "";
-        boolean caseSensitive;
-        boolean subString;
-        boolean regex;
+        RecordOrder order;
         @Nullable
         Object[] topRow;
+        StringFilterDescription stringFilterDescription;
     }
 
     @HillviewRpc
     public void find(RpcRequest request, RpcRequestContext context) {
         FindArgs args = request.parseArgs(FindArgs.class);
         RowSnapshot rs = TableTarget.asRowSnapshot(args.topRow, args.order);
-        StringFilterDescription filter = new StringFilterDescription(
-                args.toFind, !args.caseSensitive, args.regex, args.subString);
-        FindSketch sk = new FindSketch(filter, rs, args.order);
+        FindSketch sk = new FindSketch(args.stringFilterDescription, rs, args.order);
         this.runCompleteSketch(this.table, sk, (e, c) -> e, request, context);
     }
 
@@ -309,7 +308,7 @@ public final class TableTarget extends RpcTarget {
 
     @HillviewRpc
     public void filterEquality(RpcRequest request, RpcRequestContext context) {
-        EqualityFilterDescription filter = request.parseArgs(EqualityFilterDescription.class);
+        StringRowFilterDescription filter = request.parseArgs(StringRowFilterDescription.class);
         FilterMap filterMap = new FilterMap(filter);
         this.runMap(this.table, filterMap, TableTarget::new, request, context);
     }

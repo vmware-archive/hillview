@@ -327,16 +327,15 @@ export class RecordOrder {
     }
 }
 
+
+
+
 /**
- * Describes the a filter that checks for (in)equality.
+ * Describes the a filter that checks for (in)equality again a search string/pattern.
  */
-export interface EqualityFilterDescription {
+export interface StringFilterDescription {
     /**
-     * Column that is being filtered.
-     */
-    column: string;
-    /**
-     * Column that is being filtered.
+     * String/pattern that is being tested.
      */
     compareValue: string;
     /**
@@ -357,13 +356,18 @@ export interface EqualityFilterDescription {
     complement: boolean;
 }
 
+export interface StringRowFilterDescription {
+    colName: string;
+    stringFilterDescription: StringFilterDescription;
+}
+
 export interface ComparisonFilterDescription {
     /**
      * Column that is being filtered.
      */
     column: string;
     /**
-     * Column that is being filtered.
+     * Value that is being tested.
      */
     compareValue: string;
     comparison: Comparison;

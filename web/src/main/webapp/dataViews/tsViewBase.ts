@@ -24,11 +24,11 @@ import {
     ContentsKind,
     ConvertColumnInfo,
     CreateColumnInfo,
-    EqualityFilterDescription,
+    StringFilterDescription,
     HLogLog,
     IColumnDescription,
     RecordOrder,
-    RemoteObjectId,
+    RemoteObjectId, StringRowFilterDescription,
 } from "../javaBridge";
 import {OnCompleteReceiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
@@ -417,25 +417,26 @@ export abstract class TSViewBase extends BigTableView {
         const cd = this.schema.find(colName);
         const ef = new EqualityFilterDialog(cd, this.schema);
         ef.setAction(() => {
-            const filter = ef.getFilter();
-            const desc = this.schema.find(filter.column);
+            const rowFilter = ef.getFilter();
+            const strFilter = rowFilter.stringFilterDescription;
+            const desc = this.schema.find(rowFilter.colName);
             const o = order.clone();
             const so: ColumnSortOrientation = {
                 columnDescription: desc,
                 isAscending: true,
             };
             o.addColumn(so);
-            const rr = this.createFilterEqualityRequest(filter);
-            let title = "Filtered: " + filter.column;
-            if ((filter.asSubString || filter.asRegEx) && !filter.complement)
+            const rr = this.createFilterEqualityRequest(rowFilter);
+            let title = "Filtered: " + rowFilter.colName;
+            if ((strFilter.asSubString || strFilter.asRegEx) && !strFilter.complement)
                 title += " contains ";
-            else if ((filter.asSubString || filter.asRegEx) && filter.complement)
+            else if ((strFilter.asSubString || strFilter.asRegEx) && strFilter.complement)
                 title += " does not contain ";
-            else if (!(filter.asSubString || filter.asRegEx) && !filter.complement)
+            else if (!(strFilter.asSubString || strFilter.asRegEx) && !strFilter.complement)
                 title += " equals ";
-            else if (!(filter.asSubString || filter.asRegEx) && filter.complement)
+            else if (!(strFilter.asSubString || strFilter.asRegEx) && strFilter.complement)
                 title += " does not equal ";
-            title += filter.compareValue;
+            title += strFilter.compareValue;
             const newPage = this.dataset.newPage(title, this.page);
             rr.invoke(new TableOperationCompleted(newPage, rr, this.rowCount, this.schema, o, tableRowsDesired));
         });
@@ -540,7 +541,7 @@ class EqualityFilterDialog extends Dialog {
         this.setCacheTitle("EqualityFilterDialog");
     }
 
-    public getFilter(): EqualityFilterDescription {
+    public getFilter(): StringRowFilterDescription {
         let textQuery: string = this.getFieldValue("query");
         if (this.columnDescription == null) {
             const colName = this.getFieldValue("column");
@@ -554,13 +555,16 @@ class EqualityFilterDialog extends Dialog {
         const asRegEx = this.getBooleanValue("asRegEx");
         const caseSensitive = this.getBooleanValue("caseSensitive");
         const complement = this.getBooleanValue("complement");
-        return {
-            column: this.columnDescription.name,
+        const stringFilterDescription: StringFilterDescription = {
             compareValue: textQuery,
             asSubString: asSubString,
             asRegEx: asRegEx,
             caseSensitive: caseSensitive,
             complement: complement,
+        };
+        return {
+            colName: this.columnDescription.name,
+            stringFilterDescription: stringFilterDescription,
         };
     }
 }

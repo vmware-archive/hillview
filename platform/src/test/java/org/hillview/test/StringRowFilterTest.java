@@ -20,19 +20,21 @@ package org.hillview.test;
 import org.hillview.maps.FilterMap;
 import org.hillview.table.*;
 import org.hillview.table.api.*;
-import org.hillview.table.filters.EqualityFilterDescription;
+import org.hillview.table.filters.StringFilterDescription;
+import org.hillview.table.filters.StringRowFilterDescription;
 import org.hillview.utils.TestTables;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class EqualityFilterTest extends BaseTest {
+public class StringRowFilterTest extends BaseTest {
     @Test
     public void testFilterSmallTable() {
         // Make a small table
         Table table = TestTables.testRepTable();
 
         // Make a filter and apply it
-        EqualityFilterDescription equalityFilter = new EqualityFilterDescription("Name", "Ed");
+        StringRowFilterDescription equalityFilter = new StringRowFilterDescription("Name",
+                new StringFilterDescription("Ed"));
         FilterMap filterMap = new FilterMap(equalityFilter);
         ITable result = filterMap.apply(table);
 
@@ -49,7 +51,8 @@ public class EqualityFilterTest extends BaseTest {
         }
 
         // Same process for Mike.
-        equalityFilter = new EqualityFilterDescription("Name", "Mike");
+        equalityFilter = new StringRowFilterDescription("Name",
+                new StringFilterDescription("Mike"));
         filterMap = new FilterMap(equalityFilter);
         result = filterMap.apply(table);
 
@@ -69,7 +72,7 @@ public class EqualityFilterTest extends BaseTest {
         Table table = TestTables.testRepTable();
 
         // Make a filter and apply it
-        EqualityFilterDescription equalityFilter = new EqualityFilterDescription("Age", "10");
+        StringRowFilterDescription equalityFilter = new StringRowFilterDescription("Age", new StringFilterDescription("10"));
         FilterMap filterMap = new FilterMap(equalityFilter);
         ITable result = filterMap.apply(table);
 
@@ -77,7 +80,7 @@ public class EqualityFilterTest extends BaseTest {
         Assert.assertEquals(4, result.getNumOfRows());
 
         // Make a filter and apply it
-        equalityFilter = new EqualityFilterDescription("Age", "40");
+        equalityFilter = new StringRowFilterDescription("Age", new StringFilterDescription("40"));
         filterMap = new FilterMap(equalityFilter);
         result = filterMap.apply(table);
 
@@ -95,7 +98,8 @@ public class EqualityFilterTest extends BaseTest {
         ITable table = TestTables.testLargeStringTable(size, possibleNames, count, name);
 
         // Make the filter map
-        EqualityFilterDescription equalityFilter = new EqualityFilterDescription("Name", name);
+        StringRowFilterDescription equalityFilter = new StringRowFilterDescription("Name",
+                new StringFilterDescription(name));
         FilterMap filterMap = new FilterMap(equalityFilter);
 
         // Apply the filter map

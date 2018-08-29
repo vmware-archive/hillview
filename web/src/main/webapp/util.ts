@@ -471,5 +471,5 @@ export interface IRawCancellable {
 }
 
 // Typed version of the cancellable API, makes it easy to do
-// stong typing.
+// strong typing.
 export interface ICancellable<T> extends IRawCancellable {}

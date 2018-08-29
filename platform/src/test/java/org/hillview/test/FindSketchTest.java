@@ -19,7 +19,8 @@ package org.hillview.test;
 
 import org.hillview.sketches.ColumnSortOrientation;
 import org.hillview.sketches.FindSketch;
-import org.hillview.table.*;
+import org.hillview.table.RecordOrder;
+import org.hillview.table.Table;
 import org.hillview.table.filters.StringFilterDescription;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.TestTables;
@@ -33,7 +34,6 @@ public class FindSketchTest extends BaseTest {
         RecordOrder cso = new RecordOrder();
         for (String colName : table.getSchema().getColumnNames())
             cso.append(new ColumnSortOrientation(table.getSchema().getDescription(colName), true));
-
         StringFilterDescription sf = new StringFilterDescription("Mike", false, false, false);
         FindSketch fsk = new FindSketch(sf, null, cso);
         FindSketch.Result result = fsk.create(table);
@@ -48,7 +48,6 @@ public class FindSketchTest extends BaseTest {
         RecordOrder cso = new RecordOrder();
         for (String colName : table.getSchema().getColumnNames())
             cso.append(new ColumnSortOrientation(table.getSchema().getDescription(colName), true));
-
         StringFilterDescription sf = new StringFilterDescription("Noone", false, false, false);
         FindSketch fsk = new FindSketch(sf, null, cso);
         FindSketch.Result result = fsk.create(table);
@@ -62,7 +61,6 @@ public class FindSketchTest extends BaseTest {
         RecordOrder cso = new RecordOrder();
         for (String colName : table.getSchema().getColumnNames())
             cso.append(new ColumnSortOrientation(table.getSchema().getDescription(colName), true));
-
         StringFilterDescription sf = new StringFilterDescription("Bill", false, false, false);
         FindSketch fsk = new FindSketch(sf, null, cso);
         FindSketch.Result result = fsk.create(table);
@@ -126,7 +124,7 @@ public class FindSketchTest extends BaseTest {
         cso.append(new ColumnSortOrientation(table.getSchema().getDescription(colName), true));
 
         // Search substring "i".
-        StringFilterDescription sf = new StringFilterDescription("i", false, false, true);
+        StringFilterDescription sf = new StringFilterDescription("i", true, false, true);
         FindSketch fsk = new FindSketch(sf, null, cso);
         FindSketch.Result result = fsk.create(table);
         // No matches on the second column

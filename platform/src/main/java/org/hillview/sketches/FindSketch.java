@@ -26,9 +26,11 @@ import org.hillview.table.Schema;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.IStringFilter;
 import org.hillview.table.api.ITable;
+import org.hillview.table.filters.StringFilter;
 import org.hillview.table.filters.StringFilterDescription;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.VirtualRowSnapshot;
+
 import javax.annotation.Nullable;
 
 public class FindSketch implements ISketch<ITable, FindSketch.Result> {
@@ -84,7 +86,7 @@ public class FindSketch implements ISketch<ITable, FindSketch.Result> {
     /**
      * Description of the string to search.
      */
-    private final StringFilterDescription toFind;
+    private final StringFilterDescription stringFilterDescription;
     /**
      * Only return rows larger than this row.
      * If this is null there are no constraints.
@@ -96,10 +98,10 @@ public class FindSketch implements ISketch<ITable, FindSketch.Result> {
      */
     private final RecordOrder recordOrder;
 
-    public FindSketch(final StringFilterDescription toFind,
+    public FindSketch(final StringFilterDescription stringFilterDescription,
                       final @Nullable RowSnapshot topRow,
                       final RecordOrder recordOrder) {
-        this.toFind = toFind;
+        this.stringFilterDescription = stringFilterDescription;
         this.topRow = topRow;
         this.recordOrder = recordOrder;
     }
@@ -107,15 +109,15 @@ public class FindSketch implements ISketch<ITable, FindSketch.Result> {
     @Override
     public Result create(ITable data) {
         long count = 0;
-        IStringFilter filter = this.toFind.getFilter();
         IRowIterator rowIt = data.getRowIterator();
         Schema toCheck = this.recordOrder.toSchema();
+        IStringFilter stringFilter = new StringFilter(this.stringFilterDescription);
         VirtualRowSnapshot vw = new VirtualRowSnapshot(data, toCheck);
         VirtualRowSnapshot smallestMatch = new VirtualRowSnapshot(data, toCheck);
 
         for (int i = rowIt.getNextRow(); i >= 0; i = rowIt.getNextRow()) {
             vw.setRow(i);
-            if (!vw.matches(filter))
+            if (!vw.matches(stringFilter))
                 continue;
             count++;
             if ((this.topRow != null) && (this.topRow.compareTo(vw, this.recordOrder) > 0)) {
