@@ -90,11 +90,6 @@ export class TrellisHeatmapView extends TrellisChartView {
         this.legendSurface = new HtmlPlottingSurface(this.topLevel, page);
         this.legendSurface.setHeight(Resolution.legendSpaceHeight);
         this.colorLegend = new HeatmapLegendPlot(this.legendSurface);
-        this.createSurfaces((surface) => {
-                const hp = new HeatmapPlot(surface, this.colorLegend, false);
-                hp.clear();
-                this.hps.push(hp);
-            });
     }
 
     public static reconstruct(ser: TrellisHeatmapSerialization, page: FullPage): IDataView {
@@ -137,6 +132,12 @@ export class TrellisHeatmapView extends TrellisChartView {
         this.xAxisData = xAxisData;
         this.yAxisData = yAxisData;
         this.groupByAxisData = groupByAxisData;
+
+        this.createSurfaces((surface) => {
+            const hp = new HeatmapPlot(surface, this.colorLegend, false);
+            hp.clear();
+            this.hps.push(hp);
+        });
     }
 
     public combine(how: CombineOperators): void {
@@ -189,7 +190,7 @@ export class TrellisHeatmapView extends TrellisChartView {
             columnDescription: this.xAxisData.description,
             isAscending: true
         }, {
-            columnDescription: this.xAxisData.description,
+            columnDescription: this.yAxisData.description,
             isAscending: true
         }, {
             columnDescription: this.groupByAxisData.description,
@@ -232,28 +233,9 @@ export class TrellisHeatmapView extends TrellisChartView {
         }
 
         this.xAxisData.setResolution(this.shape.size.width, AxisKind.Bottom);
-        for (let i = 0; i < this.shape.xNum; i++) {
-            this.surface
-                .getCanvas()
-                .append("g")
-                .attr("class", "x-axis")
-                .attr("transform", `translate(
-                    ${this.surface.leftMargin + i * this.shape.size.width}, 
-                    ${this.surface.topMargin + this.shape.size.height * this.shape.yNum})`)
-                .call(this.xAxisData.axis);
-        }
-
         // This axis is only created when the surface is drawn
         this.yAxisData.setResolution(this.shape.size.height, AxisKind.Left);
-        for (let i = 0; i < this.shape.yNum; i++) {
-            this.surface.getCanvas()
-                .append("g")
-                .attr("class", "y-axis")
-                .attr("transform", `translate(${this.surface.leftMargin},
-                                              ${this.surface.topMargin + 
-                                                i * this.shape.size.height})`)
-                .call(this.yAxisData.axis);
-        }
+        this.drawAxes(this.xAxisData.axis, this.yAxisData.axis);
 
         this.setupMouse();
         this.pointDescription = new TextOverlay(this.surface.getCanvas(),
@@ -279,8 +261,11 @@ export class TrellisHeatmapView extends TrellisChartView {
 
     public onMouseMove(): void {
         const mousePosition = this.mousePosition();
-        if (mousePosition.plotIndex == null)
+        if (mousePosition.plotIndex == null ||
+            mousePosition.x < 0 || mousePosition.y < 0) {
+            this.pointDescription.show(false);
             return;
+        }
 
         this.pointDescription.show(true);
         const plot = this.hps[mousePosition.plotIndex];

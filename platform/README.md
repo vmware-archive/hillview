@@ -18,3 +18,6 @@ To run tests from Intellij: run using the JUnit run configuration.
 The package must be installed to be used by the Hillview web project:
 
 > $: mvn install
+
+Alternatively, you can just run ../bin/rebuild.sh
+

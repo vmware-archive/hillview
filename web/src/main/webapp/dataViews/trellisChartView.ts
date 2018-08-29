@@ -19,7 +19,7 @@ import {AxisData} from "./axisData";
 import {RemoteObjectId} from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
 import {FullPage} from "../ui/fullPage";
-import {ViewKind} from "../ui/ui";
+import {D3Axis, Resolution, ViewKind} from "../ui/ui";
 import {ChartView} from "./chartView";
 import {TrellisShape} from "./dataRangesCollectors";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
@@ -71,19 +71,62 @@ export abstract class TrellisChartView extends ChartView {
      * Create the surfaces to display the data on.
      * @param onCreation  Method to invoke for each surface created.
      */
-    protected createSurfaces(onCreation: (surface: PlottingSurface) => void): void {
+    protected createSurfaces(
+        onCreation: (surface: PlottingSurface) => void): void {
         this.surface = new HtmlPlottingSurface(this.topLevel, this.page);
         this.surface.create();
 
+        let created = 0;
         for (let y = 0; y < this.shape.yNum; y++) {
             for (let x = 0; x < this.shape.xNum; x++) {
+                const xCorner = this.surface.leftMargin + x * this.shape.size.width;
+                const title = this.groupByAxisData.bucketDescription(created);
+                const canvas = this.surface.getCanvas();
+                canvas.append("text")
+                    .text(title)
+                    .attr("class", "trellisTitle")
+                    .attr("x", xCorner + this.shape.size.width / 2)
+                    .attr("y", y * (this.shape.size.height + this.shape.headerHeight)
+                        + this.surface.topMargin + (this.shape.headerHeight / 2))
+                    .attr("text-anchor", "middle")
+                    .attr("dominant-baseline", "middle")
+                    .attr("title", title);
                 const surface = this.surface.createChildSurface(
-                    this.surface.leftMargin + x * this.shape.size.width,
-                    y * this.shape.size.height + this.surface.topMargin);
+                    xCorner,
+                    y * (this.shape.size.height + this.shape.headerHeight)
+                    + this.shape.headerHeight + this.surface.topMargin);
                 surface.setSize(this.shape.size);
                 surface.setMargins(0, 0, 0, 0);
                 onCreation(surface);
+                created++;
+                if (created === this.shape.bucketCount)
+                    return;
             }
+        }
+    }
+
+    protected drawAxes(xAxis: D3Axis, yAxis: D3Axis): void {
+        for (let i = 0; i < this.shape.xNum; i++) {
+            this.surface
+                .getCanvas()
+                .append("g")
+                .attr("class", "x-axis")
+                .attr("transform", `translate(
+                    ${this.surface.leftMargin + i * this.shape.size.width}, 
+                    ${this.surface.topMargin +
+                     (this.shape.size.height + this.shape.headerHeight) * this.shape.yNum})`)
+                .call(xAxis);
+        }
+
+        for (let i = 0; i < this.shape.yNum; i++) {
+            this.surface.getCanvas()
+                .append("g")
+                .attr("class", "y-axis")
+                .attr("transform", `translate(
+                    ${this.surface.leftMargin},
+                    ${this.surface.topMargin + this.shape.headerHeight +
+                      i * (this.shape.size.height + this.shape.headerHeight)})`)
+                .call(yAxis);
         }
     }
 
@@ -99,7 +142,8 @@ export abstract class TrellisChartView extends ChartView {
             size: {
                 width: size.width / ser.xWindows,
                 height: size.height / ser.xWindows
-            }
+            },
+            headerHeight: Resolution.lineHeight
         };
     }
 
@@ -113,12 +157,12 @@ export abstract class TrellisChartView extends ChartView {
 
         // Find out which plot we are in.
         const xIndex = Math.floor(mouseX / this.shape.size.width);
-        const yIndex = Math.floor(mouseY / this.shape.size.height);
+        const yIndex = Math.floor(mouseY / (this.shape.size.height + this.shape.headerHeight));
         let plotIndex = yIndex * this.shape.xNum + xIndex;
         mouseX -= xIndex * this.shape.size.width;
-        mouseY -= yIndex * this.shape.size.height;
+        mouseY -= yIndex * (this.shape.size.height + this.shape.headerHeight) + this.shape.headerHeight;
 
-        if (plotIndex < 0 || plotIndex >= this.shape.bucketCount)
+        if (xIndex < 0 || plotIndex < 0 || plotIndex >= this.shape.bucketCount)
             plotIndex = null;
         return { plotIndex: plotIndex, x: mouseX, y: mouseY, plotXIndex: xIndex, plotYIndex: yIndex };
     }

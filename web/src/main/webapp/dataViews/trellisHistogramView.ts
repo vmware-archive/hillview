@@ -20,7 +20,8 @@ import {
     CombineOperators,
     Heatmap,
     HistogramBase,
-    kindIsString, RecordOrder,
+    kindIsString,
+    RecordOrder,
     RemoteObjectId
 } from "../javaBridge";
 import {FullPage} from "../ui/fullPage";
@@ -28,10 +29,7 @@ import {TableTargetAPI} from "../tableTarget";
 import {SchemaClass} from "../schemaClass";
 import {ICancellable, PartialResult, percent, significantDigits} from "../util";
 import {AxisData, AxisKind} from "./axisData";
-import {
-    IViewSerialization,
-    TrellisHistogramSerialization
-} from "../datasetView";
+import {IViewSerialization, TrellisHistogramSerialization} from "../datasetView";
 import {IDataView} from "../ui/dataview";
 import {D3SvgElement, Resolution} from "../ui/ui";
 import {HistogramPlot} from "../ui/histogramPlot";
@@ -103,17 +101,18 @@ export class TrellisHistogramView extends TrellisChartView {
         ]);
 
         this.page.setMenu(this.menu);
-        this.createSurfaces((surface) => {
-                const hp = new HistogramPlot(surface);
-                this.hps.push(hp);
-                const cdfp = new CDFPlot(surface);
-                this.cdfs.push(cdfp);
-            });
     }
 
     public setAxes(xAxisData: AxisData, groupByAxisData: AxisData): void {
         this.xAxisData = xAxisData;
         this.groupByAxisData = groupByAxisData;
+
+        this.createSurfaces((surface) => {
+            const hp = new HistogramPlot(surface);
+            this.hps.push(hp);
+            const cdfp = new CDFPlot(surface);
+            this.cdfs.push(cdfp);
+        });
     }
 
     protected showTable(): void {
@@ -146,14 +145,9 @@ export class TrellisHistogramView extends TrellisChartView {
 
     protected chooseBuckets(): void {
         const bucketDialog = new BucketDialog();
-        bucketDialog.setAction(() => this.changeBuckets(bucketDialog.getBucketCount()));
+        bucketDialog.setAction(() => this.updateView(this.data, bucketDialog.getBucketCount(), 0));
         bucketDialog.show();
     }
-
-    public changeBuckets(bucketCount: number): void {
-        this.updateView(this.data, bucketCount, 0);
-    }
-
     public chooseSecondColumn(): void {
         const columns: string[] = [];
         for (let i = 0; i < this.schema.length; i++) {
@@ -274,30 +268,10 @@ export class TrellisHistogramView extends TrellisChartView {
         }
 
         // We draw the axes after drawing the data
-        const borderWidth = 0;
         this.xAxisData.setResolution(this.shape.size.width, AxisKind.Bottom);
-        for (let i = 0; i < this.shape.xNum; i++) {
-            this.surface
-                .getCanvas()
-                .append("g")
-                .attr("class", "x-axis")
-                .attr("transform", `translate(
-                    ${PlottingSurface.leftMargin + i * (this.shape.size.width + borderWidth)}, 
-                    ${PlottingSurface.topMargin + (this.shape.size.height + borderWidth) * this.shape.yNum})`)
-                .call(this.xAxisData.axis);
-        }
-
         // This axis is only created when the surface is drawn
         const yAxis = this.hps[0].getYAxis();
-        for (let i = 0; i < this.shape.yNum; i++) {
-            this.surface.getCanvas()
-                .append("g")
-                .attr("class", "y-axis")
-                .attr("transform", `translate(${PlottingSurface.leftMargin},
-                                              ${PlottingSurface.topMargin + i * 
-                                                (this.shape.size.height + borderWidth)})`)
-                .call(yAxis);
-        }
+        this.drawAxes(this.xAxisData.axis, yAxis);
 
         this.setupMouse();
         this.pointDescription = new TextOverlay(this.surface.getCanvas(),
@@ -314,8 +288,11 @@ export class TrellisHistogramView extends TrellisChartView {
 
     protected onMouseMove(): void {
         const mousePosition = this.mousePosition();
-        if (mousePosition.plotIndex == null)
+        if (mousePosition.plotIndex == null ||
+            mousePosition.x < 0 || mousePosition.y < 0) {
+            this.pointDescription.show(false);
             return;
+        }
 
         this.pointDescription.show(true);
         const plot = this.hps[mousePosition.plotIndex];
@@ -329,8 +306,8 @@ export class TrellisHistogramView extends TrellisChartView {
         const position = d3mouse(this.surface.getCanvas().node());
         const cdfPos = cdfPlot.getY(mousePosition.x);
         this.cdfDot.attr("cx", position[0] - this.surface.leftMargin);
-        this.cdfDot.attr("cy", (1 - cdfPos) * cdfPlot.getChartHeight() +
-            mousePosition.plotYIndex * this.shape.size.height);
+        this.cdfDot.attr("cy", (1 - cdfPos) * cdfPlot.getChartHeight() + this.shape.headerHeight +
+            mousePosition.plotYIndex * (this.shape.size.height + this.shape.headerHeight));
         const perc = percent(cdfPos);
         this.pointDescription.update([xs, group, significantDigits(value), perc], position[0], position[1]);
     }

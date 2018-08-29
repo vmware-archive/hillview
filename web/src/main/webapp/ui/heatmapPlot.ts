@@ -57,9 +57,9 @@ export class HeatmapPlot extends Plot {
                 .attr("dominant-baseline", "text-before-edge");
             canvas.append("text")
                 .text(this.xAxisData.description.name)
-                .attr("transform", `translate(${this.getChartWidth() / 2},
-                      ${this.getChartHeight() + this.plottingSurface.topMargin + 
-                        this.plottingSurface.bottomMargin / 2})`)
+                .attr("x", this.getChartWidth() / 2)
+                .attr("y", this.getChartHeight() + this.plottingSurface.topMargin +
+                        this.plottingSurface.bottomMargin / 2)
                 .attr("text-anchor", "middle")
                 .attr("dominant-baseline", "hanging");
         }

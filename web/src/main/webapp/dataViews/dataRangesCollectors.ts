@@ -35,18 +35,21 @@ import {TrellisHistogram2DRenderer} from "./trellisHistogram2DView";
  * Describes the shape of trellis display.
  */
 export interface TrellisShape {
-    /// The number of plots in a row.
+    /** The number of plots in a row. */
     xNum: number;
-    /// The number of plots in a column.
+    /** The number of plots in a column. */
     yNum: number;
-    /// The size of a plot in pixels
+    /** The size of the header in pixels. */
+    headerHeight: number;
+    /// The size of a plot in pixels, excluding the header.
     size: Size;
-    /// The fraction of available display used by the trellis display. This is the
-    /// parameter that our algorithm optimizes, subject to constraints on the aspect ratio and minimum
-    /// width and height of each histogram. This should be a fraction between 0 and 1. A value larger
-    /// than 1 indicates that there is no feasible solution.
+    /** The fraction of available display used by the trellis display. This is the
+     * parameter that our algorithm optimizes, subject to constraints on the aspect ratio and minimum
+     * width and height of each histogram. This should be a fraction between 0 and 1. A value larger
+     * than 1 indicates that there is no feasible solution.
+     */
     coverage: number;
-    /// The actual number of buckets to request.
+    /** The actual number of windows to display. */
     bucketCount: number;
 }
 
@@ -61,6 +64,7 @@ export class TrellisLayoutComputation {
      * @param yMax: The height of the display in pixels.
      * @param yMin: Minimum height of a single histogram in pixels.
      * @param maxRatio: The maximum aspect ratio we want in our histograms.
+     * @param headerHt: The header height for each window.
      *                   x_min and y_min should satisfy the aspect ratio condition:
      *                   Max(x_min/y_min, y_min/x_min) <= max_ratio.
      */
@@ -68,23 +72,25 @@ export class TrellisLayoutComputation {
                        public xMin: number,
                        public yMax: number,
                        public yMin: number,
+                       public headerHt: number,
                        public maxRatio: number) {
-        this.maxWidth = xMax / xMin;
-        this.maxHeight = yMax / yMin;
+        this.maxWidth = Math.floor(xMax / xMin);
+        this.maxHeight = Math.floor(yMax / (yMin + headerHt));
         console.assert(Math.max(xMin / yMin, yMin / xMin) <= maxRatio,
             "The minimum sizes do not satisfy aspect ratio");
     }
 
     public getShape(nBuckets: number): TrellisShape {
         const total = this.xMax * this.yMax;
-        let used = nBuckets * this.xMin * this.yMin;
+        let used = nBuckets * this.xMin * (this.yMin + this.headerHt);
         let coverage = used / total;
         const opt: TrellisShape = {
             xNum: this.maxWidth,
             yNum: this.maxHeight,
             bucketCount: nBuckets,
             size: {width: this.xMin, height: this.yMin},
-            coverage: coverage
+            coverage: coverage,
+            headerHeight: this.headerHt
         };
         if (this.maxWidth * this.maxHeight < nBuckets) {
             return opt;
@@ -98,9 +104,9 @@ export class TrellisLayoutComputation {
         let yLen: number;
         for (const size of sizes) {
             xLen = Math.floor(this.xMax / size[0]);
-            yLen = Math.floor(this.yMax / size[1]);
+            yLen = Math.floor(this.yMax / size[1]) - this.headerHt;
             if (xLen >= yLen)
-                xLen = Math.min(xLen, this.maxRatio * yLen);
+                xLen = Math.min(xLen, this.maxRatio * (yLen + this.headerHt));
             else
                 yLen = Math.min(yLen, this.maxRatio * xLen);
             used = nBuckets * xLen * yLen;
@@ -206,7 +212,7 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
         const tlc = new TrellisLayoutComputation(
             chartSize.width, Resolution.minTrellisWindowSize,
             chartSize.height, Resolution.minTrellisWindowSize,
-            1.2);
+            Resolution.lineHeight, 1.2);
         return tlc.getShape(windows);
     }
 
@@ -224,7 +230,8 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
         let trellisShape: TrellisShape = null;
         let windows: number = null;  // number of Trellis windows
         if (this.options.chartKind === "TrellisHeatmap" ||
-            this.options.chartKind === "TrellisHistogram") {
+            this.options.chartKind === "TrellisHistogram" ||
+            this.options.chartKind === "Trellis2DHistogram") {
             const groupByIndex = ranges.length === 3 ? 2 : 1;
             const maxWindows =
                 Math.floor(chartSize.width / Resolution.minTrellisWindowSize) *

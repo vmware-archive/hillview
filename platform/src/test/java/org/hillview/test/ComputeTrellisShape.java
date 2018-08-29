@@ -16,14 +16,15 @@ class ComputeTrellisShape {
     private final int max_height;
 
     /**
-     A class that optimizes the shape of a trellis display.
-     @param x_max: The width of the display in pixels.
-     @param x_min: Minimum width of a single histogram in pixels.
-     @param y_max: The height of the display in pixels.
-     @param y_min: Minimum height of a single histogram in pixels.
-     @param max_ratio: The maximum aspect ratio we want in our histograms.
-     x_min and y_min should satisfy the aspect ratio condition:
-     Max(x_min/y_min, y_min/x_min) <= max_ratio.
+     * A class that optimizes the shape of a trellis display.
+     * @param x_max: The width of the display in pixels.
+     * @param x_min: Minimum width of a single histogram in pixels.
+     * @param y_max: The height of the display in pixels.
+     * @param y_min: Minimum height of a single histogram in pixels.
+     * @param max_ratio: The maximum aspect ratio we want in our histograms.
+     * @param header_ht: The header height for each window.
+     * x_min and y_min should satisfy the aspect ratio condition:
+     * Max(x_min/y_min, y_min/x_min) <= max_ratio.
      */
     ComputeTrellisShape(int x_max, int x_min, int y_max, int y_min, double max_ratio,
                                int header_ht) {
