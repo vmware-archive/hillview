@@ -20,7 +20,7 @@ package org.hillview.table.filters;
 import org.hillview.table.api.ITableFilter;
 
 /**
- * This filter execute two other filters and returns true when either returns true.
+ * This filter executes two other filters and returns true when either returns true.
  */
 public class OrFilter implements ITableFilter {
     private final ITableFilter first;
