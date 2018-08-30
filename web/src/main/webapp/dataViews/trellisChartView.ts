@@ -19,17 +19,18 @@ import {AxisData} from "./axisData";
 import {RemoteObjectId} from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
 import {FullPage} from "../ui/fullPage";
-import {D3Axis, Resolution, ViewKind} from "../ui/ui";
+import {D3Axis, Point, Resolution, ViewKind} from "../ui/ui";
 import {ChartView} from "./chartView";
 import {TrellisShape} from "./dataRangesCollectors";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {mouse as d3mouse} from "d3-selection";
 import {TrellisShapeSerialization} from "../datasetView";
+import {reorder} from "../util";
 
 /**
- * The mouse position in a Trellis plot.
+ * Point position within a Trellis plot.
  */
-interface TrellisMousePosition {
+interface TrellisPosition {
     /**
      * The plot number; if this is null then the mouse is on no plot.
      */
@@ -57,6 +58,15 @@ interface TrellisMousePosition {
  */
 export abstract class TrellisChartView extends ChartView {
     protected groupByAxisData: AxisData;
+    /**
+     * Selection endpoint in canvas.
+     */
+    protected selectionEnd: Point;
+    protected surfaces: PlottingSurface[];
+    /**
+     * Coordinates of each surface within the canvas.
+     */
+    protected coordinates: Point[];
 
     protected constructor(remoteObjectId: RemoteObjectId,
                           rowCount: number,
@@ -65,6 +75,8 @@ export abstract class TrellisChartView extends ChartView {
                           page: FullPage,
                           viewKind: ViewKind) {
         super(remoteObjectId, rowCount, schema, page, viewKind);
+        this.selectionEnd = null;
+        this.surfaces = null;
     }
 
     /**
@@ -77,6 +89,8 @@ export abstract class TrellisChartView extends ChartView {
         this.surface.create();
 
         let created = 0;
+        this.surfaces = [];
+        this.coordinates = [];
         for (let y = 0; y < this.shape.yNum; y++) {
             for (let x = 0; x < this.shape.xNum; x++) {
                 const xCorner = this.surface.leftMargin + x * this.shape.size.width;
@@ -91,12 +105,16 @@ export abstract class TrellisChartView extends ChartView {
                     .attr("text-anchor", "middle")
                     .attr("dominant-baseline", "middle")
                     .attr("title", title);
-                const surface = this.surface.createChildSurface(
-                    xCorner,
-                    y * (this.shape.size.height + this.shape.headerHeight)
-                    + this.shape.headerHeight + this.surface.topMargin);
+                const yCorner = y * (this.shape.size.height + this.shape.headerHeight)
+                    + this.shape.headerHeight + this.surface.topMargin;
+                const surface = this.surface.createChildSurface(xCorner, yCorner);
                 surface.setSize(this.shape.size);
                 surface.setMargins(0, 0, 0, 0);
+                this.surfaces.push(surface);
+                this.coordinates.push( {
+                    x: xCorner,
+                    y: yCorner
+                } );
                 onCreation(surface);
                 created++;
                 if (created === this.shape.bucketCount)
@@ -148,22 +166,110 @@ export abstract class TrellisChartView extends ChartView {
     }
 
     /**
-     * Computes the mouse position in a Trellis plot.
+     * Returns the current selection index if the current selection falls within a single plot.
+     * Otherwise it returns null.
      */
-    protected mousePosition(): TrellisMousePosition {
-        const position = d3mouse(this.surface.getChart().node());
-        let mouseX = position[0];
-        let mouseY = position[1];
+    protected selectionIsLocal(): number | null {
+        if (this.selectionOrigin == null)
+            return null;
 
+        const origin = this.canvasToChart(this.selectionOrigin);
+        const op = this.position(origin.x, origin.y);
+        if (op.plotIndex == null)
+            return null;
+
+        const position = d3mouse(this.surface.getChart().node());
+        const ep = this.position(position[0], position[1]);
+        if (ep.plotIndex == null)
+            return null;
+
+        if (op.plotIndex === ep.plotIndex)
+            return op.plotIndex;
+        else
+            return null;
+    }
+
+    protected dragStart(): void {
+        this.dragStartRectangle();
+    }
+
+    protected selectSurfaces(start: number, end: number): void {
+        for (let index = 0; index < this.shape.bucketCount; index++) {
+            const selected = index >= start && index <= end;
+            this.surfaces[index].select(selected);
+        }
+    }
+
+    private selectionWasLocal: boolean = false;
+    protected dragMove(): boolean {
+        if (this.selectionIsLocal() != null) {
+            if (!this.selectionWasLocal)
+                this.selectSurfaces(1, 0); // i.e. none
+            this.selectionWasLocal = true;
+        } else {
+            this.onMouseMove();
+            if (this.selectionWasLocal) {
+                // Hide the selection rectangle
+                this.selectionRectangle
+                    .attr("width", 0)
+                    .attr("height", 0);
+            }
+
+            this.selectionWasLocal = false;
+            // Find the top-left and bottom-right corners of the selection
+            const position = d3mouse(this.surface.getChart().node());
+            const [x0, x1] = reorder(this.selectionOrigin.x, position[0]);
+            const [y0, y1] = reorder(this.selectionOrigin.y, position[1]);
+            const posUp = this.position(x0, y0);
+            const posDown = this.position(x1, y1);
+            if (posUp.plotIndex == null || posDown.plotIndex == null)
+                return;
+            this.selectSurfaces(posUp.plotIndex, posDown.plotIndex);
+        }
+        return this.dragMoveRectangle();
+    }
+
+    protected dragEnd(): boolean {
+        if (!super.dragEnd())
+            return false;
+        const position = d3mouse(this.surface.getCanvas().node());
+        this.selectionEnd = { x: position[0], y: position[1] };
+        this.selectionCompleted();
+        this.selectSurfaces(1, 0); // none
+        this.selectionRectangle
+            .attr("width", 0)
+            .attr("height", 0);
+        return true;
+    }
+
+    protected selectionCompleted(): void {
+        // TODO
+    }
+
+    /**
+     * Given a position within the chart returns information about the plot
+     * where the position falls.
+     * @param chartX  X coordinate within chart.
+     * @param chartY  Y coordinate within chart.
+     */
+    protected position(chartX: number, chartY: number): TrellisPosition {
         // Find out which plot we are in.
-        const xIndex = Math.floor(mouseX / this.shape.size.width);
-        const yIndex = Math.floor(mouseY / (this.shape.size.height + this.shape.headerHeight));
+        const xIndex = Math.floor(chartX / this.shape.size.width);
+        const yIndex = Math.floor(chartY / (this.shape.size.height + this.shape.headerHeight));
         let plotIndex = yIndex * this.shape.xNum + xIndex;
-        mouseX -= xIndex * this.shape.size.width;
-        mouseY -= yIndex * (this.shape.size.height + this.shape.headerHeight) + this.shape.headerHeight;
+        chartX -= xIndex * this.shape.size.width;
+        chartY -= yIndex * (this.shape.size.height + this.shape.headerHeight) + this.shape.headerHeight;
 
         if (xIndex < 0 || plotIndex < 0 || plotIndex >= this.shape.bucketCount)
             plotIndex = null;
-        return { plotIndex: plotIndex, x: mouseX, y: mouseY, plotXIndex: xIndex, plotYIndex: yIndex };
+        return { plotIndex: plotIndex, x: chartX, y: chartY, plotXIndex: xIndex, plotYIndex: yIndex };
+    }
+
+    /**
+     * Computes the mouse position in a Trellis plot.
+     */
+    protected mousePosition(): TrellisPosition {
+        const position = d3mouse(this.surface.getChart().node());
+        return this.position(position[0], position[1]);
     }
 }

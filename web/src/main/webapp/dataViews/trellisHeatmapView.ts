@@ -279,28 +279,7 @@ export class TrellisHeatmapView extends TrellisChartView {
         this.pointDescription.update([xs, ys, group, value.toString()], position[0], position[1]);
     }
 
-    public dragStart(): void {
-        this.dragStartRectangle();
-    }
-
-    public dragMove(): boolean {
-        return this.dragMoveRectangle();
-    }
-
-    public dragEnd(): boolean {
-        if (!super.dragEnd())
-            return false;
-        const position = d3mouse(this.surface.getCanvas().node());
-        const x = position[0];
-        const y = position[1];
-        this.selectionCompleted(this.selectionOrigin.x, x, this.selectionOrigin.y, y);
-        return true;
-    }
-
-    /**
-     * Selection has been completed.  The mouse coordinates are within the canvas.
-     */
-    private selectionCompleted(xl: number, xr: number, yl: number, yr: number): void {
+    protected selectionCompleted(): void {
         // TODO
     }
 }

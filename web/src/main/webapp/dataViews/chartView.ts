@@ -44,11 +44,11 @@ export abstract class ChartView extends BigTableView {
      */
     protected selectionOrigin: Point;
     /**
-     * Rectangle in cavas used to perform selection.
+     * Rectangle in canvas used to display the current selection.
      */
     protected selectionRectangle: D3SvgElement;
     /**
-     * Describes the mouse position.
+     * Describes the data currently pointed by the mouse.
      */
     protected pointDescription: TextOverlay;
     /**
@@ -118,6 +118,13 @@ export abstract class ChartView extends BigTableView {
         this.selectionRectangle
             .attr("width", 0)
             .attr("height", 0);
+    }
+
+    /**
+     * Converts a point coordinate in canvas to a point coordinate in the chart surface.
+     */
+    public canvasToChart(point: Point): Point {
+        return { x: point.x - this.surface.leftMargin, y: point.y - this.surface.topMargin };
     }
 
     protected abstract onMouseMove(): void;
@@ -194,4 +201,3 @@ export abstract class ChartView extends BigTableView {
         return true;
     }
 }
-

@@ -312,6 +312,18 @@ export class TrellisHistogramView extends TrellisChartView {
         this.pointDescription.update([xs, group, significantDigits(value), perc], position[0], position[1]);
     }
 
+    protected dragMove(): boolean {
+        if (!super.dragMove())
+            return false;
+        const index = this.selectionIsLocal();
+        if (index != null) {
+            // Adjust the selection rectangle size to cover the whole vertical space
+            this.selectionRectangle
+                .attr("height", this.shape.size.height)
+                .attr("y", this.coordinates[index].y);
+        }
+    }
+
     // combine two views according to some operation
     public combine(how: CombineOperators): void {
         // TODO
