@@ -81,6 +81,8 @@ export class TableView extends TSViewBase implements IScrollTarget {
     protected cellsPerColumn: Map<string, HTMLElement[]>;
     protected selectedColumns = new SelectionStateMachine();
     protected messageBox: HTMLElement;
+    protected ranFind: boolean;
+    protected stringFilterDescription: StringFilterDescription;
 
     // The following elements are used for Find
     protected findBarVisible: boolean;
@@ -104,7 +106,6 @@ export class TableView extends TSViewBase implements IScrollTarget {
         this.topLevel.tabIndex = 1;  // necessary for keyboard events?
         this.topLevel.onkeydown = (e) => this.keyDown(e);
         this.strFilter = null;
-
         this.topLevel.style.flexDirection = "column";
         this.topLevel.style.display = "flex";
         this.topLevel.style.flexWrap = "nowrap";
