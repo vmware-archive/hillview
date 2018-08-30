@@ -17,10 +17,7 @@
 
 package org.hillview.table.filters;
 
-import org.hillview.table.api.IColumn;
-import org.hillview.table.api.ITable;
-import org.hillview.table.api.ITableFilter;
-import org.hillview.table.api.ITableFilterDescription;
+import org.hillview.table.api.*;
 
 import javax.annotation.Nullable;
 
@@ -47,9 +44,9 @@ public class StringRowFilterDescription implements ITableFilterDescription {
      */
     public class StringRowFilter implements ITableFilter {
         private final IColumn column;
-        private final StringFilter stringFilter;
+        private final IStringFilter stringFilter;
         StringRowFilter(ITable table) {
-            this.stringFilter = new StringFilter(stringFilterDescription);
+            this.stringFilter = new StringFilterFactory().getFilter(stringFilterDescription);
             this.column = table.getLoadedColumn(StringRowFilterDescription.this.colName);
         }
 

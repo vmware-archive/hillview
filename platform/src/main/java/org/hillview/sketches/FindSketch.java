@@ -26,7 +26,7 @@ import org.hillview.table.Schema;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.IStringFilter;
 import org.hillview.table.api.ITable;
-import org.hillview.table.filters.StringFilter;
+import org.hillview.table.filters.StringFilterFactory;
 import org.hillview.table.filters.StringFilterDescription;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.VirtualRowSnapshot;
@@ -111,7 +111,7 @@ public class FindSketch implements ISketch<ITable, FindSketch.Result> {
         long count = 0;
         IRowIterator rowIt = data.getRowIterator();
         Schema toCheck = this.recordOrder.toSchema();
-        IStringFilter stringFilter = new StringFilter(this.stringFilterDescription);
+        IStringFilter stringFilter = new StringFilterFactory().getFilter(this.stringFilterDescription);
         VirtualRowSnapshot vw = new VirtualRowSnapshot(data, toCheck);
         VirtualRowSnapshot smallestMatch = new VirtualRowSnapshot(data, toCheck);
 
