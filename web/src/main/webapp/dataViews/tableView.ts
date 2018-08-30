@@ -80,6 +80,8 @@ export class TableView extends TSViewBase implements IScrollTarget {
     protected cellsPerColumn: Map<string, HTMLElement[]>;
     protected selectedColumns = new SelectionStateMachine();
     protected messageBox: HTMLElement;
+    protected ranFind: boolean;
+    protected stringFilterDescription: StringFilterDescription;
 
     public constructor(
         remoteObjectId: RemoteObjectId, rowCount: number, schema: SchemaClass, page: FullPage) {
@@ -91,6 +93,8 @@ export class TableView extends TSViewBase implements IScrollTarget {
         this.topLevel.id = "tableContainer";
         this.topLevel.tabIndex = 1;  // necessary for keyboard events?
         this.topLevel.onkeydown = (e) => this.keyDown(e);
+        this.ranFind = false;
+        this.stringFilterDescription = null;
 
         this.topLevel.style.flexDirection = "column";
         this.topLevel.style.display = "flex";
@@ -133,7 +137,13 @@ export class TableView extends TSViewBase implements IScrollTarget {
                 subMenu: new SubMenu([{
                     text: "Find...",
                     help: "Search for a string in the visible columns",
-                    action: () => this.find() }, {
+                    action: () => this.find() },
+                    {
+                        text: "Find Next",
+                        help: "Search for next occurance in the visible columns",
+                        action: () => this.findNext(),
+                        },
+                    {
                     text: "Filter...",
                     help: "Filter rows that contain a specific value",
                     action: () => this.showFilterDialog(null, this.order, this.tableRowsDesired) }, {
@@ -236,6 +246,8 @@ export class TableView extends TSViewBase implements IScrollTarget {
             caseSensitive: caseSensitive,
             complement: false
         }
+        this.ranFind = true;
+        this.stringFilterDescription = strFilter;
         const rr = this.createFindRequest(o, this.nextKList.rows[0].values, strFilter);
         rr.invoke(new FindReceiver(this.getPage(), rr, this, o));
     }
