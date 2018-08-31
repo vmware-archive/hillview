@@ -16,7 +16,7 @@
  */
 
 import {
-    CombineOperators,
+    FilterDescription,
     Heatmap,
     Heatmap3D,
     IColumnDescription,
@@ -24,24 +24,23 @@ import {
     RemoteObjectId
 } from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
-import {TableTargetAPI} from "../tableTarget";
+import {BaseRenderer, TableTargetAPI} from "../tableTarget";
 import {FullPage} from "../ui/fullPage";
 import {HeatmapLegendPlot} from "../ui/legendPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {Resolution} from "../ui/ui";
 import {AxisData, AxisKind} from "./axisData";
-import {DataRangesCollector, TrellisShape} from "./dataRangesCollectors";
-import {Receiver} from "../rpc";
-import {ICancellable, PartialResult} from "../util";
+import {FilterReceiver, DataRangesCollector, TrellisShape} from "./dataRangesCollectors";
+import {Receiver, RpcRequest} from "../rpc";
+import {ICancellable, PartialResult, reorder} from "../util";
 import {HeatmapPlot} from "../ui/heatmapPlot";
 import {IViewSerialization, TrellisHeatmapSerialization} from "../datasetView";
 import {IDataView} from "../ui/dataview";
-import {mouse as d3mouse} from "d3-selection";
+import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {TextOverlay} from "../ui/textOverlay";
 import {TrellisChartView} from "./trellisChartView";
 import {NextKReceiver, TableView} from "./tableView";
-import {HistogramViewBase} from "./histogramViewBase";
 
 /**
  * A Trellis plot containing multiple heatmaps.
@@ -76,15 +75,19 @@ export class TrellisHeatmapView extends TrellisChartView {
                 }, {
                 text: "swap axes",
                     action: () => this.swapAxes(),
-                    help: "Swap the X and Y axes of all plots.",
+                    help: "Swap the X and Y axes of all plots."
                 }, { text: "table",
                     action: () => this.showTable(),
-                    help: "Show the data underlying this view in a tabular view.",
+                    help: "Show the data underlying this view in a tabular view."
                 }, { text: "histogram",
                         action: () => this.histogram(),
-                        help: "Show this data as a two-dimensional histogram.",
-                    },
+                        help: "Show this data as a Trellis plot of two-dimensional histograms."
+                }, { text: "# groups",
+                        action: () => this.changeGroups(),
+                        help: "Change the number of groups."
+                    }
                 ]) },
+            this.dataset.combineMenu(this, page.pageId),
         ]);
         this.page.setMenu(this.menu);
         this.legendSurface = new HtmlPlottingSurface(this.topLevel, page);
@@ -140,10 +143,6 @@ export class TrellisHeatmapView extends TrellisChartView {
         });
     }
 
-    public combine(how: CombineOperators): void {
-        // not yet used. TODO: add this menu
-    }
-
     public refresh(): void {
         this.updateView(this.heatmaps, 0);
     }
@@ -152,11 +151,34 @@ export class TrellisHeatmapView extends TrellisChartView {
         this.updateView(this.heatmaps, 0);
     }
 
+    protected doChangeGroups(groupCount: number): void {
+        if (groupCount == null) {
+            this.page.reportError("Illegal group count");
+            return;
+        }
+        if (groupCount === 1) {
+            const cds = [this.xAxisData.description, this.yAxisData.description];
+            const rr = this.createDataRangesRequest(cds, this.page, "Heatmap");
+            rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+                [0], cds, null, {
+                    reusePage: true, relative: false,
+                    chartKind: "Heatmap", exact: this.samplingRate >= 1
+                }));
+        } else {
+            const cds = [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description];
+            const rr = this.createDataRangesRequest(cds, this.page, "TrellisHeatmap");
+            rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+                [0, 0, groupCount], cds, null, {
+                    reusePage: true, relative: false,
+                    chartKind: "TrellisHeatmap", exact: this.samplingRate >= 1
+                }));
+        }
+    }
+
     public histogram(): void {
         const cds: IColumnDescription[] = [
             this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description];
-        const buckets = HistogramViewBase.maxTrellis3DBuckets(this.page);
-        const rr = this.createDataRangesRequest(cds, buckets);
+        const rr = this.createDataRangesRequest(cds, this.page, "Trellis2DHistogram");
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
                 chartKind: "Trellis2DHistogram",
@@ -169,8 +191,7 @@ export class TrellisHeatmapView extends TrellisChartView {
     public swapAxes(): void {
         const cds: IColumnDescription[] = [
             this.yAxisData.description, this.xAxisData.description, this.groupByAxisData.description];
-        const buckets = HistogramViewBase.maxTrellis3DBuckets(this.page);
-        const rr = this.createDataRangesRequest(cds, buckets);
+        const rr = this.createDataRangesRequest(cds, this.page, "TrellisHeatmap");
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
                 chartKind: "TrellisHeatmap",
@@ -279,8 +300,65 @@ export class TrellisHeatmapView extends TrellisChartView {
         this.pointDescription.update([xs, ys, group, value.toString()], position[0], position[1]);
     }
 
+    protected getCombineRenderer(title: string):
+        (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer {
+        return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
+            return new FilterReceiver(
+                title,
+                [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description],
+                this.schema, [0, 0, 0], page, operation, this.dataset, {
+                    chartKind: "TrellisHeatmap",
+                    relative: false,
+                    reusePage: false,
+                    exact: this.samplingRate >= 1
+                });
+        };
+    }
+
     protected selectionCompleted(): void {
-        // TODO
+        const local = this.selectionIsLocal();
+        let title: string;
+        let rr: RpcRequest<PartialResult<RemoteObjectId>>;
+        if (local != null) {
+            const origin = this.canvasToChart(this.selectionOrigin);
+            const left = this.position(origin.x, origin.y);
+            const end = this.canvasToChart(this.selectionEnd);
+            const right = this.position(end.x, end.y);
+
+            const [xl, xr] = reorder(left.x, right.x);
+            const [yr, yl] = reorder(left.y, right.y);   // y coordinates are in reverse
+
+            const xRange: FilterDescription = {
+                min: this.xAxisData.invertToNumber(xl),
+                max: this.xAxisData.invertToNumber(xr),
+                minString: this.xAxisData.invert(xl),
+                maxString: this.xAxisData.invert(xr),
+                cd: this.xAxisData.description,
+                complement: d3event.sourceEvent.ctrlKey,
+            };
+            const yRange: FilterDescription = {
+                min: this.yAxisData.invertToNumber(yl),
+                max: this.yAxisData.invertToNumber(yr),
+                minString: this.yAxisData.invert(yl),
+                maxString: this.yAxisData.invert(yr),
+                cd: this.yAxisData.description,
+                complement: d3event.sourceEvent.ctrlKey,
+            };
+            rr = this.createFilter2DRequest(xRange, yRange);
+            title = "Filtered on " + this.xAxisData.description.name + " and " + this.yAxisData.description.name;
+        } else {
+            const filter = this.getGroupBySelectionFilter();
+            if (filter == null)
+                return;
+            rr = this.createFilterRequest(filter);
+            title = "Filtered on " + this.groupByAxisData.description.name;
+        }
+        const renderer = new FilterReceiver(title,
+            [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description],
+            this.schema, [0, 0, 0], this.page, rr, this.dataset, {
+                chartKind: "TrellisHeatmap", relative: false, reusePage: false, exact: this.samplingRate >= 1
+            });
+        rr.invoke(renderer);
     }
 }
 
@@ -290,7 +368,8 @@ export class TrellisHeatmapView extends TrellisChartView {
 export class TrellisHeatmapRenderer extends Receiver<Heatmap3D> {
     protected trellisView: TrellisHeatmapView;
 
-    constructor(page: FullPage,
+    constructor(title: string,
+                page: FullPage,
                 remoteTable: TableTargetAPI,
                 protected rowCount: number,
                 protected schema: SchemaClass,
@@ -299,14 +378,7 @@ export class TrellisHeatmapRenderer extends Receiver<Heatmap3D> {
                 protected shape: TrellisShape,
                 operation: ICancellable<Heatmap3D>,
                 protected reusePage: boolean) {
-        super(
-            reusePage ? page : page.dataset.newPage(
-                "Heatmaps " + schema.displayName(axes[0].description.name) +
-                ", " + schema.displayName(axes[1].description.name) +
-                " grouped by " +
-                schema.displayName(axes[2].description.name), page),
-            operation, "histogram");
-
+        super(reusePage ? page : page.dataset.newPage(title, page), operation, "histogram");
         this.trellisView = new TrellisHeatmapView(
             remoteTable.remoteObjectId, rowCount, schema,
             this.shape, this.samplingRate, this.page);

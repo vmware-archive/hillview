@@ -17,7 +17,6 @@
 
 package org.hillview.test;
 
-import com.google.common.net.HostAndPort;
 import net.jcip.annotations.NotThreadSafe;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.ParallelDataSet;
@@ -29,6 +28,7 @@ import org.hillview.table.RecordOrder;
 import org.hillview.table.SmallTable;
 import org.hillview.table.api.ITable;
 import org.hillview.table.api.IndexComparator;
+import org.hillview.utils.HostAndPort;
 import org.hillview.utils.TestTables;
 import org.junit.Test;
 
@@ -93,7 +93,7 @@ public class TableDataSetTest extends BaseTest {
         final HostAndPort h1 = HostAndPort.fromParts("127.0.0.1", 1234);
         final HillviewServer server1 = new HillviewServer(h1, new LocalDataSet<ITable>(randTable));
         try {
-            final RemoteDataSet<ITable> rds1 = new RemoteDataSet<>(h1);
+            final RemoteDataSet<ITable> rds1 = new RemoteDataSet<ITable>(h1);
             final SampleList sl = rds1.blockingSketch(sqSketch);
             IndexComparator comp = cso.getComparator(sl.table);
             for (int i = 0; i < (sl.table.getNumOfRows() - 1); i++)

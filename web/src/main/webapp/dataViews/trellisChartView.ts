@@ -16,16 +16,17 @@
  */
 
 import {AxisData} from "./axisData";
-import {RemoteObjectId} from "../javaBridge";
+import {FilterDescription, RemoteObjectId} from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
 import {FullPage} from "../ui/fullPage";
 import {D3Axis, Point, Resolution, ViewKind} from "../ui/ui";
 import {ChartView} from "./chartView";
 import {TrellisShape} from "./dataRangesCollectors";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
-import {mouse as d3mouse} from "d3-selection";
+import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {TrellisShapeSerialization} from "../datasetView";
 import {reorder} from "../util";
+import {Dialog, FieldKind} from "../ui/dialog";
 
 /**
  * Point position within a Trellis plot.
@@ -165,6 +166,17 @@ export abstract class TrellisChartView extends ChartView {
         };
     }
 
+    protected changeGroups(): void {
+        const chartSize = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
+        const maxPlots = Math.round(chartSize.height / (Resolution.lineHeight + Resolution.minTrellisWindowSize)) *
+            Math.round(chartSize.width / Resolution.minTrellisWindowSize);
+        const dialog = new GroupsDialog(maxPlots);
+        dialog.setAction(() => this.doChangeGroups(dialog.getGroupCount()));
+        dialog.show();
+    }
+
+    protected abstract doChangeGroups(groupCount: number): void;
+
     /**
      * Returns the current selection index if the current selection falls within a single plot.
      * Otherwise it returns null.
@@ -204,10 +216,9 @@ export abstract class TrellisChartView extends ChartView {
     protected dragMove(): boolean {
         if (this.selectionIsLocal() != null) {
             if (!this.selectionWasLocal)
-                this.selectSurfaces(1, 0); // i.e. none
+                this.unselectAllSurfaces();
             this.selectionWasLocal = true;
         } else {
-            this.onMouseMove();
             if (this.selectionWasLocal) {
                 // Hide the selection rectangle
                 this.selectionRectangle
@@ -229,21 +240,50 @@ export abstract class TrellisChartView extends ChartView {
         return this.dragMoveRectangle();
     }
 
+    protected unselectAllSurfaces(): void {
+        this.selectSurfaces(1, 0); // empty range
+    }
+
+    protected abstract selectionCompleted(): void;
+
     protected dragEnd(): boolean {
         if (!super.dragEnd())
             return false;
         const position = d3mouse(this.surface.getCanvas().node());
         this.selectionEnd = { x: position[0], y: position[1] };
         this.selectionCompleted();
-        this.selectSurfaces(1, 0); // none
+        this.unselectAllSurfaces();
         this.selectionRectangle
             .attr("width", 0)
             .attr("height", 0);
         return true;
     }
 
-    protected selectionCompleted(): void {
-        // TODO
+    /**
+     * After the selection is completed it returns the description of the filter to apply on
+     * the groupBy axis.  Returns null if the selection is not well-defined.
+     */
+    protected getGroupBySelectionFilter(): FilterDescription {
+        if (this.selectionIsLocal() != null)
+            return null;
+        const end = this.canvasToChart(this.selectionEnd);
+        const [x0, x1] = reorder(this.selectionOrigin.x, end.x);
+        const [y0, y1] = reorder(this.selectionOrigin.y, end.y);
+        const posUp = this.position(x0, y0);
+        const posDown = this.position(x1, y1);
+        if (posUp.plotIndex == null || posDown.plotIndex == null)
+            return null;
+
+        const min = this.groupByAxisData.bucketBoundaries(posUp.plotIndex).getMin();
+        const max = this.groupByAxisData.bucketBoundaries(posDown.plotIndex).getMax();
+        return {
+            min: min.getNumber(),
+            max: max.getNumber(),
+            minString: min.getString(),
+            maxString: max.getString(),
+            cd: this.groupByAxisData.description,
+            complement: d3event.sourceEvent.ctrlKey,
+        };
     }
 
     /**
@@ -262,7 +302,8 @@ export abstract class TrellisChartView extends ChartView {
 
         if (xIndex < 0 || plotIndex < 0 || plotIndex >= this.shape.bucketCount)
             plotIndex = null;
-        return { plotIndex: plotIndex, x: chartX, y: chartY, plotXIndex: xIndex, plotYIndex: yIndex };
+        return { plotIndex: plotIndex, x: chartX, y: chartY,
+            plotXIndex: xIndex, plotYIndex: yIndex };
     }
 
     /**
@@ -271,5 +312,29 @@ export abstract class TrellisChartView extends ChartView {
     protected mousePosition(): TrellisPosition {
         const position = d3mouse(this.surface.getChart().node());
         return this.position(position[0], position[1]);
+    }
+}
+
+/**
+ * A dialog that queries the user about the number of groups to use.
+ */
+export class GroupsDialog extends Dialog {
+    constructor(protected maxGroups: number) {
+        super("Set groups", "Change the number of groups.");
+        this.addTextField("groups", "Number of groups:", FieldKind.Integer, null,
+            "The number of groups to use; must be between 1 and " + maxGroups);
+        this.setCacheTitle("GroupsDialog");
+    }
+
+    /**
+     * Returns null if the value is not acceptable.
+     */
+    public getGroupCount(): number {
+        const groups = this.getFieldValueAsInt("groups");
+        if (groups == null)
+            return groups;
+        if (groups < 1 || groups > this.maxGroups)
+            return null;
+        return groups;
     }
 }

@@ -27,9 +27,10 @@ import {FullPage} from "../ui/fullPage";
 import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
 import {TabularDisplay} from "../ui/tabularDisplay";
 import {Resolution} from "../ui/ui";
-import {cloneToSet, significantDigits} from "../util";
+import {cloneToSet, ICancellable, significantDigits} from "../util";
 import {TableView} from "./tableView";
 import {TSViewBase} from "./tsViewBase";
+import {BaseRenderer} from "../tableTarget";
 
 /**
  * This class is used to browse through the columns of a table schema
@@ -259,6 +260,11 @@ export class SchemaView extends TSViewBase {
                     this.display.selectedRows.delete(i);
             }
         }
+    }
+
+    protected getCombineRenderer(title: string):
+        (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer {
+        return null;  // not used
     }
 
     public combine(how: CombineOperators): void {

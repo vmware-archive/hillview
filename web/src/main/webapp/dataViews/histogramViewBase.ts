@@ -23,9 +23,7 @@ import {SchemaClass} from "../schemaClass";
 import {CDFPlot} from "../ui/CDFPlot";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
-import {PlottingSurface} from "../ui/plottingSurface";
-import {D3SvgElement, Resolution, SpecialChars, ViewKind} from "../ui/ui";
-import {significantDigits} from "../util";
+import {D3SvgElement, Resolution, ViewKind} from "../ui/ui";
 import {ChartView} from "./chartView";
 
 /**
@@ -53,11 +51,6 @@ export abstract class HistogramViewBase extends ChartView {
 
         this.summary = document.createElement("div");
         this.topLevel.appendChild(this.summary);
-    }
-
-    protected keyDown(ev: KeyboardEvent): void {
-        if (ev.code === "Escape")
-            this.cancelDrag();
     }
 
     protected abstract showTable(): void;
@@ -98,75 +91,10 @@ export abstract class HistogramViewBase extends ChartView {
             .attr("height", height);
         return true;
     }
-
-    /**
-     * Compute the string used to display the height of a box in a histogram
-     * @param  barSize       Bar size as reported by histogram.
-     * @param  samplingRate  Sampling rate that was used to compute the box height.
-     * @param  totalPop      Total population which was sampled to get this box.
-     */
-    public static boxHeight(barSize: number, samplingRate: number, totalPop: number): string {
-        if (samplingRate >= 1) {
-            if (barSize === 0)
-                return "";
-            return significantDigits(barSize);
-        }
-        const muS = barSize / totalPop;
-        const dev = 2.38 * Math.sqrt(muS * (1 - muS) * totalPop / samplingRate);
-        const min = Math.max(barSize - dev, 0);
-        const max = barSize + dev;
-        const minString = significantDigits(min);
-        const maxString = significantDigits(max);
-        if (minString === maxString && dev !== 0)
-            return minString;
-        return SpecialChars.approx + significantDigits(barSize);
-    }
-
-    /**
-     * The number of "buckets" needed for displaying a heatmap.
-     */
-    public static maxHeatmapBuckets(page: FullPage): [number, number] {
-        const size = PlottingSurface.getDefaultChartSize(page.getWidthInPixels());
-        return [Math.floor(size.width / Resolution.minDotSize),
-            Math.floor(size.height / Resolution.minDotSize)];
-    }
-
-    /**
-     * The max number of buckets to use when requesting the range of
-     * data for displaying a 2D histogram.
-     */
-    public static maxHistogram2DBuckets(page: FullPage): [number, number] {
-        // On the horizontal axis we get the maximum resolution, which we will use for
-        // deriving the CDF curve.  On the vertical axis we use a smaller number.
-        return [page.getWidthInPixels(), Resolution.maxBucketCount];
-    }
-
-    /**
-     * The max number of buckets to use when requesting the range of
-     * data for displaying a 2D Trellis plot.
-     */
-    public static maxTrellis2DBuckets(page: FullPage): [number, number] {
-        const width = page.getWidthInPixels();
-        const maxWindows = Math.floor(width / Resolution.minTrellisWindowSize) *
-            Math.floor(PlottingSurface.getDefaultCanvasSize(width).height / Resolution.minTrellisWindowSize);
-        return [page.getWidthInPixels(), maxWindows];
-    }
-
-    /**
-     * The max number of buckets to use when requesting the range of
-     * data for displaying a 3D Trellism plot.
-     */
-    public static maxTrellis3DBuckets(page: FullPage): [number, number, number] {
-        const width = page.getWidthInPixels();
-        const maxWindows = Math.floor(width / Resolution.minTrellisWindowSize) *
-            Math.floor(PlottingSurface.getDefaultCanvasSize(width).height / Resolution.minTrellisWindowSize);
-        return [page.getWidthInPixels(), Resolution.maxBucketCount, maxWindows];
-    }
 }
 
 /**
- * A dialog that queries the user about the number of buckets to use
- * in a histogram rendering.
+ * A dialog that queries the user about the number of buckets to use.
  */
 export class BucketDialog extends Dialog {
     constructor() {

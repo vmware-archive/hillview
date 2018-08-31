@@ -301,11 +301,6 @@
                 <groupId>org.antlr</groupId>
                 <artifactId>antlr4-maven-plugin</artifactId>
                 <version>${antlr4.version}</version>
-                <configuration>
-                    <arguments>
-                        <argument>-visitor</argument>
-                    </arguments>
-                </configuration>
                 <executions>
                     <execution>
                         <goals>

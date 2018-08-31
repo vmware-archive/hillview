@@ -30,10 +30,11 @@ import {
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
 import {FullPage} from "./ui/fullPage";
-import {PointSet, ViewKind} from "./ui/ui";
-import {ICancellable, Pair, PartialResult, Seed} from "./util";
+import {PointSet, Resolution, ViewKind} from "./ui/ui";
+import {assert, ICancellable, Pair, PartialResult, Seed} from "./util";
 import {IDataView} from "./ui/dataview";
 import {SchemaClass} from "./schemaClass";
+import {PlottingSurface} from "./ui/plottingSurface";
 
 /**
  * This class has methods that correspond directly to TableTarget.java methods.
@@ -75,20 +76,44 @@ export class TableTargetAPI extends RemoteObject {
         });
     }
 
-    public createDataRangeRequest(cd: IColumnDescription, cdfBuckets: number):
-        RpcRequest<PartialResult<DataRange>> {
-        const seed = kindIsString(cd.kind) ? Seed.instance.get() : 0;
-        const args: RangeArgs = {
-            cd: cd,
-            seed: seed,
-            stringsToSample: cdfBuckets };
-        return this.createStreamingRpcRequest<DataRange>(
-            "getDataRange", args);
+    /**
+     * Computes the maximum resolution at which a data range request must be made.
+     * @param page      Page - used to compute the screen size.
+     * @param viewKind  Desired view for the data.
+     */
+    private static rangesResolution(page: FullPage, viewKind: ViewKind): number[] {
+        const width = page.getWidthInPixels();
+        const size = PlottingSurface.getDefaultCanvasSize(width);
+        const maxWindows = Math.floor(width / Resolution.minTrellisWindowSize) *
+            Math.floor(size.height / Resolution.minTrellisWindowSize);
+        switch (viewKind) {
+            case "Histogram":
+                // Always get the window size; we integrate the CDF to draw the actual histogram.
+                return [size.width];
+            case "2DHistogram":
+                // On the horizontal axis we get the maximum resolution, which we will use for
+                // deriving the CDF curve.  On the vertical axis we use a smaller number.
+                return [width, Resolution.maxBucketCount];
+            case "Heatmap":
+                return [Math.floor(size.width / Resolution.minDotSize),
+                        Math.floor(size.height / Resolution.minDotSize)];
+            case "Trellis2DHistogram":
+            case "TrellisHeatmap":
+                return [width, Resolution.maxBucketCount, maxWindows];
+            case "TrellisHistogram":
+                return [width, maxWindows];
+            default:
+                assert(false, "Unhandled case " + viewKind);
+                return null;
+        }
     }
 
-    public createDataRangesRequest(cds: IColumnDescription[], buckets: number[]):
+    public createDataRangesRequest(cds: IColumnDescription[], page: FullPage, viewKind: ViewKind):
         RpcRequest<PartialResult<DataRange[]>> {
-        console.assert(cds.length === buckets.length);
+
+        // Determine the resolution of the ranges request based on the plot kind.
+        const buckets: number[] = TableTargetAPI.rangesResolution(page, viewKind);
+        assert(buckets.length === cds.length);
         const args: RangeArgs[] = [];
         for (let i = 0; i < cds.length; i++) {
             const cd = cds[i];
@@ -100,7 +125,7 @@ export class TableTargetAPI extends RemoteObject {
             };
             args.push(arg);
         }
-        const method = cds.length === 3 ? "getDataRanges3D" : "getDataRanges2D";
+        const method = "getDataRanges" + cds.length + "D";
         return this.createStreamingRpcRequest<DataRange>(method, args);
     }
 
@@ -349,7 +374,25 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView {
         return this.topLevel;
     }
 
-    public abstract combine(op: CombineOperators): void;
+    /**
+     * This method is called by the zip receiver after combining two datasets.
+     * It should return a renderer which will handle the newly received object
+     * after the zip has been performed.
+     */
+    protected abstract getCombineRenderer(title: string):
+        (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer;
+
+    public combine(how: CombineOperators): void {
+        const r = this.dataset.getSelected();
+        if (r.first == null) {
+            this.page.reportError("No original dataset selected");
+            return;
+        }
+
+        const rr = this.createZipRequest(r.first);
+        const renderer = this.getCombineRenderer("[" + r.second + "] " + CombineOperators[how]);
+        rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.dataset, renderer));
+    }
 }
 
 /**
@@ -377,7 +420,7 @@ export abstract class BaseRenderer extends OnCompleteReceiver<RemoteObjectId> {
  * two IDataSet<ITable> objects (an IDataSet<Pair<ITable, ITable>>,
  *  and applies to the pair the specified set operation setOp.
  */
-export class ZipReceiver extends BaseRenderer {
+class ZipReceiver extends BaseRenderer {
     public constructor(page: FullPage,
                        operation: ICancellable<RemoteObjectId>,
                        protected setOp: CombineOperators,

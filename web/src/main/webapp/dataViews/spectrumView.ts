@@ -26,7 +26,7 @@ import {
 } from "../javaBridge";
 import {OnCompleteReceiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
-import {TableTargetAPI} from "../tableTarget";
+import {BaseRenderer, TableTargetAPI} from "../tableTarget";
 import {IDataView} from "../ui/dataview";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
@@ -188,6 +188,11 @@ export class SpectrumView extends ChartView {
         if (colNames == null || schema == null)
             return null;
         return new SpectrumView(ser.remoteObjectId, ser.rowCount, colNames, schema, page);
+    }
+
+    protected getCombineRenderer(title: string):
+        (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer {
+        return null;  // not used
     }
 
     public combine(how: CombineOperators): void {

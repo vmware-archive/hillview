@@ -29,7 +29,7 @@ public class RangeFilterDescription implements ITableFilterDescription {
     private double max = 0;
     private String minString = "";
     private String maxString = "";
-    private boolean complement = false;
+    public boolean complement = false;
 
     @Override
     public ITableFilter getFilter(ITable table) {

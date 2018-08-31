@@ -17,7 +17,6 @@
 
 package org.hillview.utils;
 
-import com.google.common.net.HostAndPort;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;

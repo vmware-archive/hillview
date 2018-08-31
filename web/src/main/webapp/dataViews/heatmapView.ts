@@ -18,7 +18,6 @@
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {HeatmapSerialization, IViewSerialization} from "../datasetView";
 import {
-    CombineOperators,
     FilterDescription,
     Heatmap,
     IColumnDescription,
@@ -27,7 +26,7 @@ import {
 } from "../javaBridge";
 import {Receiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
-import {TableTargetAPI, ZipReceiver} from "../tableTarget";
+import {BaseRenderer, TableTargetAPI} from "../tableTarget";
 import {IDataView} from "../ui/dataview";
 import {Dialog} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
@@ -47,10 +46,8 @@ import {
     significantDigits,
 } from "../util";
 import {AxisData} from "./axisData";
-import {Filter2DReceiver, MakeHistogramOrHeatmap} from "./histogram2DView";
-import {HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
-import {DataRangesCollector} from "./dataRangesCollectors";
+import {DataRangesCollector, FilterReceiver} from "./dataRangesCollectors";
 import {ChartView} from "./chartView";
 
 /**
@@ -235,9 +232,8 @@ export class HeatmapView extends ChartView {
 
     // Draw this as a 2-D histogram
     public histogram(): void {
-        const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
         const cds = [this.xAxisData.description, this.yAxisData.description];
-        const rr = this.createDataRangesRequest(cds, buckets);
+        const rr = this.createDataRangesRequest(cds, this.page, "2DHistogram");
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
             reusePage: false,
@@ -281,26 +277,21 @@ export class HeatmapView extends ChartView {
      */
     public asCSV(): string[] {
         const lines: string[] = [
-            JSON.stringify(this.xAxisData.description.name + "_min") + "," +
-            JSON.stringify(this.xAxisData.description.name + "_max") + "," +
+            JSON.stringify(this.xAxisData.description.name + "_range") + "," +
             JSON.stringify(this.xAxisData.description.name) + "," +
-            JSON.stringify(this.yAxisData.description.name + "_min") + "," +
-            JSON.stringify(this.yAxisData.description.name + "_max") + "," +
+            JSON.stringify(this.yAxisData.description.name + "_range") + "," +
             JSON.stringify(this.yAxisData.description.name) + "," +
                 "count",
         ];
         for (let x = 0; x < this.heatmap.buckets.length; x++) {
             const data = this.heatmap.buckets[x];
-            const bx = this.xAxisData.boundaries(x);
             const bdx = JSON.stringify(this.xAxisData.bucketDescription(x));
             for (let y = 0; y < data.length; y++) {
                 if (data[y] === 0) {
                     continue;
                 }
-                const by = this.yAxisData.boundaries(y);
                 const bdy = JSON.stringify(this.yAxisData.bucketDescription(y));
-                const line = bx[0].toString() + "," + bx[1].toString() + "," + bdx + "," +
-                    by[0].toString() + "," + by[1].toString() + "," + bdy + "," + data[y];
+                const line = bdx + "," + bdy + "," + data[y];
                 lines.push(line);
             }
         }
@@ -311,8 +302,7 @@ export class HeatmapView extends ChartView {
         const groupBy = this.schema.findByDisplayName(colName);
         const cds: IColumnDescription[] = [this.xAxisData.description,
                                            this.yAxisData.description, groupBy];
-        const buckets = HistogramViewBase.maxTrellis3DBuckets(this.page);
-        const rr = this.createDataRangesRequest(cds, buckets);
+        const rr = this.createDataRangesRequest(cds, this.page, "TrellisHeatmap");
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
             [0, 0, 0], cds, null, {
             reusePage: false, relative: false,
@@ -320,24 +310,16 @@ export class HeatmapView extends ChartView {
         }));
     }
 
-    // combine two views according to some operation
-    public combine(how: CombineOperators): void {
-        const r = this.dataset.getSelected();
-        if (r.first == null) {
-            return;
-        }
-
-        const rr = this.createZipRequest(r.first);
-        const renderer = (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
-            return new MakeHistogramOrHeatmap(
-                page, operation,
+    protected getCombineRenderer(title: string):
+        (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer {
+        return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
+            return new FilterReceiver(
+                title,
                 [this.xAxisData.description, this.yAxisData.description],
-                this.rowCount, this.schema,
-                { exact: this.samplingRate >= 1, chartKind: "Heatmap",
-                    reusePage: false, relative: false, },
-                this.dataset);
+                this.schema, [0, 0], page, operation, this.dataset,
+                { exact: true, chartKind: "Heatmap",
+                    reusePage: false, relative: false, });
         };
-        rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.dataset, renderer));
     }
 
     // show the table corresponding to the data in the heatmap
@@ -360,8 +342,7 @@ export class HeatmapView extends ChartView {
     public swapAxes(): void {
         const cds: IColumnDescription[] = [
             this.yAxisData.description, this.xAxisData.description];
-        const buckets = HistogramViewBase.maxHeatmapBuckets(this.page);
-        const rr = this.createDataRangesRequest(cds, buckets);
+        const rr = this.createDataRangesRequest(cds, this.page, "Heatmap");
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
             chartKind: "Heatmap",
@@ -373,8 +354,7 @@ export class HeatmapView extends ChartView {
 
     public refresh(): void {
         const cds = [this.xAxisData.description, this.yAxisData.description];
-        const buckets = HistogramViewBase.maxHeatmapBuckets(this.page);
-        const rr = this.createDataRangesRequest(cds, buckets);
+        const rr = this.createDataRangesRequest(cds, this.page, "Heatmap");
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
             [this.xAxisData.bucketCount, this.yAxisData.bucketCount], cds, this.page.title, {
             reusePage: true,
@@ -457,10 +437,10 @@ export class HeatmapView extends ChartView {
             complement: d3event.sourceEvent.ctrlKey,
         };
         const rr = this.createFilter2DRequest(xRange, yRange);
-        const renderer = new Filter2DReceiver(
+        const renderer = new FilterReceiver(
             "Filtered on " + this.xAxisData.description.name + " and " +
             this.yAxisData.description.name,
-            this.xAxisData.description, this.yAxisData.description,
+            [this.xAxisData.description, this.yAxisData.description],
             this.schema, [0, 0], this.page, rr, this.dataset, {
             exact: this.samplingRate >= 1, chartKind: "Heatmap",
             relative: false, reusePage: false
@@ -475,7 +455,8 @@ export class HeatmapView extends ChartView {
 export class HeatmapRenderer extends Receiver<Heatmap> {
     protected heatmap: HeatmapView;
 
-    constructor(page: FullPage,
+    constructor(title: string,
+                page: FullPage,
                 remoteTable: TableTargetAPI,
                 protected rowCount: number,
                 protected schema: SchemaClass,
@@ -483,12 +464,7 @@ export class HeatmapRenderer extends Receiver<Heatmap> {
                 protected samplingRate: number,
                 operation: ICancellable<Heatmap>,
                 protected reusePage: boolean) {
-        super(
-            reusePage ? page : page.dataset.newPage(
-                "Heatmap (" + schema.displayName(axisData[0].description.name) + ", " +
-                schema.displayName(axisData[1].description.name) + ")", page),
-            operation, "histogram");
-
+        super(reusePage ? page : page.dataset.newPage(title, page), operation, "histogram");
         this.heatmap = new HeatmapView(
             remoteTable.remoteObjectId, rowCount, schema,
             this.samplingRate, this.page);

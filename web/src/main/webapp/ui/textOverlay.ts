@@ -42,6 +42,7 @@ export class TextOverlay {
                 private readonly keys: string[], maxLength: number) {
         this.height = keys.length * Resolution.lineHeight;
         this.rect = this.parent.append("rect")
+            .attr("class", "text-overlay")
             .attr("height", this.height)
             .attr("width", 100)
             .attr("fill", "rgba(255, 255, 255, 0.9)");

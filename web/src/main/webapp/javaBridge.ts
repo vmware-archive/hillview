@@ -19,9 +19,9 @@
 // TypeScript and Java.  These must be changed carefully, and usually in both parts, or
 // subtle bugs may happen.  Most often these classes have the same name in Java and TypeScript.
 
-import {Comparison} from "./util";
-
 export type RemoteObjectId = string;
+
+export type Comparison = "==" | "!=" | "<" | ">" | "<=" | ">=";
 
 // TODO: remove Category kind
 export type ContentsKind = "Category" | "Json" | "String" | "Integer" |

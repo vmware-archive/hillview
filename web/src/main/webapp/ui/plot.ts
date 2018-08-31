@@ -17,7 +17,9 @@
 
 import {PlottingSurface} from "./plottingSurface";
 import {AxisData} from "../dataViews/axisData";
-import {D3Axis, D3SvgElement} from "./ui";
+import {D3Axis, D3SvgElement, SpecialChars} from "./ui";
+import {interpolateRainbow as d3interpolateRainbow} from "d3-scale-chromatic";
+import {significantDigits} from "../util";
 
 /**
  * Abstract base class for all plots.
@@ -108,6 +110,35 @@ export abstract class Plot {
         for (const domNode of domNodes)
             max = Math.max(max, domNode.getBBox().width);
         return max;
+    }
+
+    public static colorMap(d: number): string {
+        // The rainbow color map starts and ends with a similar hue
+        // so we skip the first 20% of it.
+        return d3interpolateRainbow(d * .8 + .2);
+    }
+
+    /**
+     * Compute the string used to display the height of a box in a histogram
+     * @param  barSize       Bar size as reported by histogram.
+     * @param  samplingRate  Sampling rate that was used to compute the box height.
+     * @param  rowCount      Total population which was sampled to get this box.
+     */
+    public static boxHeight(barSize: number, samplingRate: number, rowCount: number): string {
+        if (samplingRate >= 1) {
+            if (barSize === 0)
+                return "";
+            return significantDigits(barSize);
+        }
+        const muS = barSize / rowCount;
+        const dev = 2.38 * Math.sqrt(muS * (1 - muS) * rowCount / samplingRate);
+        const min = Math.max(barSize - dev, 0);
+        const max = barSize + dev;
+        const minString = significantDigits(min);
+        const maxString = significantDigits(max);
+        if (minString === maxString && dev !== 0)
+            return minString;
+        return SpecialChars.approx + significantDigits(barSize);
     }
 
     public abstract draw(): void;

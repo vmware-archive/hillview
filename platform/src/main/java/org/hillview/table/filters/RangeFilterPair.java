@@ -23,7 +23,7 @@ import org.hillview.table.api.ITableFilterDescription;
 import java.io.Serializable;
 
 @SuppressWarnings("CanBeFinal")
-public class RangeFilterPair implements ITableFilterDescription, Serializable {
+public final class RangeFilterPair implements ITableFilterDescription, Serializable {
     private final RangeFilterDescription first;
     private final RangeFilterDescription second;
 
@@ -33,8 +33,19 @@ public class RangeFilterPair implements ITableFilterDescription, Serializable {
     }
 
     public ITableFilter getFilter(ITable table) {
+        // The semantics of this class is a big convoluted: the two filters
+        // are not applied independently.  Each of them indicates a filtering
+        // operation on some axis.  The "complement" bit should be the same in both,
+        // and it should apply to the And of the two filters.  That's why we use
+        // an Or filter if the filter is complemented.
         ITableFilter t1 = this.first.getFilter(table);
         ITableFilter t2 = this.second.getFilter(table);
-        return new AndFilter(t1, t2);
+        if (this.first.complement) {
+            assert this.second.complement;
+            return new OrFilter(t1, t2);
+        } else {
+            assert !this.second.complement;
+            return new AndFilter(t1, t2);
+        }
     }
 }

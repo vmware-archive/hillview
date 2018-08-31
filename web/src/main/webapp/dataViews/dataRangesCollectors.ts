@@ -16,12 +16,18 @@
  */
 
 import {OnCompleteReceiver} from "../rpc";
-import {DataRange, HistogramArgs, IColumnDescription, kindIsString} from "../javaBridge";
-import {TableTargetAPI} from "../tableTarget";
+import {
+    DataRange,
+    HistogramArgs,
+    IColumnDescription,
+    kindIsString,
+    RemoteObjectId
+} from "../javaBridge";
+import {BaseRenderer, TableTargetAPI} from "../tableTarget";
 import {FullPage} from "../ui/fullPage";
 import {ICancellable, periodicSamples, Seed} from "../util";
 import {SchemaClass} from "../schemaClass";
-import {ChartOptions, HistogramOptions, Resolution, Size} from "../ui/ui";
+import {ChartOptions, Resolution, Size} from "../ui/ui";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {TrellisHistogramRenderer} from "./trellisHistogramView";
 import {HeatmapRenderer} from "./heatmapView";
@@ -30,6 +36,7 @@ import {HistogramRenderer} from "./histogramView";
 import {AxisData} from "./axisData";
 import {TrellisHeatmapRenderer} from "./trellisHeatmapView";
 import {TrellisHistogram2DRenderer} from "./trellisHistogram2DView";
+import {DatasetView} from "../datasetView";
 
 /**
  * Describes the shape of trellis display.
@@ -218,6 +225,10 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
 
     public run(ranges: DataRange[]): void {
         for (const range of ranges) {
+            if (range == null) {
+                console.log("Null range received");
+                return;
+            }
             if (range.presentCount === 0) {
                 this.page.reportError("No non-missing data");
                 return;
@@ -233,26 +244,50 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
             this.options.chartKind === "TrellisHistogram" ||
             this.options.chartKind === "Trellis2DHistogram") {
             const groupByIndex = ranges.length === 3 ? 2 : 1;
-            const maxWindows =
-                Math.floor(chartSize.width / Resolution.minTrellisWindowSize) *
-                Math.floor(chartSize.height / Resolution.minTrellisWindowSize);
-            if (kindIsString(this.cds[groupByIndex].kind))
-                windows = Math.min(maxWindows, ranges[groupByIndex].leftBoundaries.length);
-            else if (this.cds[groupByIndex].kind === "Integer")
-                windows = Math.min(maxWindows,
-                    ranges[groupByIndex].max - ranges[groupByIndex].min + 1);
-            else
-                windows = maxWindows;
+            if (this.bucketCounts[groupByIndex] !== 0) {
+                windows = this.bucketCounts[groupByIndex];
+            } else {
+                const maxWindows =
+                    Math.floor(chartSize.width / Resolution.minTrellisWindowSize) *
+                    Math.floor(chartSize.height / Resolution.minTrellisWindowSize);
+                if (kindIsString(this.cds[groupByIndex].kind))
+                    windows = Math.min(maxWindows, ranges[groupByIndex].leftBoundaries.length);
+                else if (this.cds[groupByIndex].kind === "Integer")
+                    windows = Math.min(maxWindows,
+                        ranges[groupByIndex].max - ranges[groupByIndex].min + 1);
+                else
+                    windows = maxWindows;
+            }
             trellisShape = this.trellisLayout(windows);
         }
 
         switch (this.options.chartKind) {
+            case "Histogram": {
+                if (ranges[0].presentCount === 0) {
+                    this.page.reportError("All values are missing");
+                    return;
+                }
+                const args = DataRangesCollector.computeHistogramArgs(
+                    this.cds[0], ranges[0], 0, // ignore the bucket count; we'll integrate the CDF
+                    this.options.exact, chartSize);
+                const rr = this.originator.createHistogramRequest(args);
+                rr.chain(this.operation);
+                const axisData = new AxisData(this.cds[0], ranges[0]);
+                if (this.title == null)
+                    this.title = "Histogram of " + this.schema.displayName(this.cds[0].name);
+                const renderer = new HistogramRenderer(this.title, this.page,
+                    this.originator.remoteObjectId, rowCount, this.schema, this.bucketCounts[0],
+                    axisData, rr, args.samplingRate, this.options.reusePage);
+                rr.invoke(renderer);
+                break;
+            }
             case "TrellisHistogram": {
                 console.assert(ranges.length === 2);
                 const xArg = DataRangesCollector.computeHistogramArgs(
-                    this.cds[0], ranges[0], 0, false, trellisShape.size);
+                    this.cds[0], ranges[0], this.bucketCounts[1], false, trellisShape.size);
+                const groups = this.bucketCounts[1] === 0 ? trellisShape.bucketCount : this.bucketCounts[1];
                 const wArg = DataRangesCollector.computeHistogramArgs(
-                    this.cds[1], ranges[1], trellisShape.bucketCount, false, trellisShape.size);
+                    this.cds[1], ranges[1], groups, false, trellisShape.size);
                 // Window argument comes first
                 const args = [wArg, xArg];
                 // Trellis histograms are computed by heatmap requests
@@ -261,7 +296,10 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                 xAxisData.setBucketCount(this.bucketCounts[0]);
                 const groupByAxis = new AxisData(this.cds[1], ranges[1]);
                 groupByAxis.setBucketCount(wArg.bucketCount);
-                const renderer = new TrellisHistogramRenderer(this.page,
+                if (this.title == null)
+                    this.title = "Histograms of " + this.schema.displayName(this.cds[0].name) +
+                        " grouped by " + this.schema.displayName(this.cds[1].name);
+                const renderer = new TrellisHistogramRenderer(this.title, this.page,
                     this.originator, rowCount, this.schema,
                     [xAxisData, groupByAxis],
                     xArg.samplingRate, trellisShape, rr, this.options.reusePage);
@@ -292,7 +330,11 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                 yAxis.setBucketCount(yArg.bucketCount);
                 const groupByAxis = new AxisData(this.cds[2], ranges[2]);
                 groupByAxis.setBucketCount(wArg.bucketCount);
-                const renderer = new TrellisHistogram2DRenderer(this.page,
+                if (this.title == null)
+                    this.title = "Histograms (" + this.schema.displayName(this.cds[0].name) +
+                                 ", " + this.schema.displayName(this.cds[1].name) +
+                                 ") grouped by " + this.schema.displayName(this.cds[2].name);
+                const renderer = new TrellisHistogram2DRenderer(this.title, this.page,
                     this.originator, rowCount, this.schema,
                     [xAxis, yAxis, groupByAxis], 1.0, trellisShape, rr, this.options.reusePage);
                 rr.chain(this.operation);
@@ -322,7 +364,11 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                 yAxis.setBucketCount(yArg.bucketCount);
                 const groupByAxis = new AxisData(this.cds[2], ranges[2]);
                 groupByAxis.setBucketCount(wArg.bucketCount);
-                const renderer = new TrellisHeatmapRenderer(this.page,
+                if (this.title == null)
+                    this.title = "Heatmaps (" + this.schema.displayName(this.cds[0].name) +
+                        ", " + this.schema.displayName(this.cds[1].name) +
+                        ") grouped by " + this.schema.displayName(this.cds[2].name);
+                const renderer = new TrellisHeatmapRenderer(this.title, this.page,
                     this.originator, rowCount, this.schema,
                     [xAxis, yAxis, groupByAxis], 1.0, trellisShape, rr, this.options.reusePage);
                 rr.chain(this.operation);
@@ -345,7 +391,10 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                 xAxis.setBucketCount(xArg.bucketCount);
                 const yAxis = new AxisData(this.cds[1], ranges[1]);
                 yAxis.setBucketCount(yArg.bucketCount);
-                const renderer = new HeatmapRenderer(this.page,
+                if (this.title == null)
+                    this.title = "Heatmap (" + this.schema.displayName(this.cds[0].name) + ", " +
+                        this.schema.displayName(this.cds[1].name) + ")";
+                const renderer = new HeatmapRenderer(this.title, this.page,
                     this.originator, rowCount, this.schema,
                     [xAxis, yAxis], 1.0, rr, this.options.reusePage);
                 rr.chain(this.operation);
@@ -381,7 +430,10 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                 const xAxis = new AxisData(this.cds[0], ranges[0]);
                 const yData = new AxisData(this.cds[1], ranges[1]);
                 yData.setBucketCount(yarg.bucketCount);
-                const renderer = new Histogram2DRenderer(this.page,
+                if (this.title == null)
+                    this.title = "Histogram (" + this.schema.displayName(this.cds[0].name) + ", " +
+                    this.schema.displayName(this.cds[1].name) + ")";
+                const renderer = new Histogram2DRenderer(this.title, this.page,
                     this.originator, rowCount, this.schema,
                     [xAxis, yData], cdfArg.samplingRate, rr,
                     this.options);
@@ -397,41 +449,26 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
 }
 
 /**
- * Waits for column stats to be received and then initiates a histogram rendering.
+ * Receives the result of a filtering operation and initiates
+ * a new range computation, which in turns initiates a chart
+ * rendering.
  */
-export class DataRangeCollector extends OnCompleteReceiver<DataRange> {
-    constructor(
-        protected originator: TableTargetAPI,
-        page: FullPage,
-        operation: ICancellable<DataRange>,
-        protected schema: SchemaClass,
-        protected bucketCount: number,
-        protected cd: IColumnDescription,  // title of the resulting display
-        protected title: string | null,
-        protected bucketsRequested: number,
-        protected options: HistogramOptions) {
-        super(page, operation, "histogram");
+export class FilterReceiver extends BaseRenderer {
+    constructor(protected title: string,
+                protected cds: IColumnDescription[],
+                protected schema: SchemaClass,
+                protected bucketCounts: number[],
+                page: FullPage,
+                operation: ICancellable<RemoteObjectId>,
+                dataset: DatasetView,
+                protected options: ChartOptions) {
+        super(page, operation, "Filter", dataset);
     }
 
-    public run(range: DataRange): void {
-        if (range.presentCount === 0) {
-            this.page.reportError("All values are missing");
-            return;
-        }
-
-        const rowCount = range.presentCount + range.missingCount;
-        if (this.title == null)
-            this.title = "Histogram of " + this.cd.name;
-        const chartSize = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
-        const args = DataRangesCollector.computeHistogramArgs(
-            this.cd, range, 0, // ignore the bucket count; we'll integrate the CDF
-            this.options.exact, chartSize);
-        const rr = this.originator.createHistogramRequest(args);
-        rr.chain(this.operation);
-        const axisData = new AxisData(this.cd, range);
-        const renderer = new HistogramRenderer(this.title, this.page,
-            this.originator.remoteObjectId, rowCount, this.schema, this.bucketCount,
-            axisData, rr, args.samplingRate, this.options.reusePage);
-        rr.invoke(renderer);
+    public run(): void {
+        super.run();
+        const rr = this.remoteObject.createDataRangesRequest(this.cds, this.page, this.options.chartKind);
+        rr.invoke(new DataRangesCollector(this.remoteObject, this.page, rr, this.schema,
+            this.bucketCounts, this.cds, this.title, this.options));
     }
 }

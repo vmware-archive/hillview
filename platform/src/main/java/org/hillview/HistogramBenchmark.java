@@ -1,6 +1,5 @@
 package org.hillview;
 
-import com.google.common.net.HostAndPort;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.RemoteDataSet;
@@ -16,6 +15,7 @@ import org.hillview.table.api.ITable;
 import org.hillview.table.columns.DoubleArrayColumn;
 import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.utils.HillviewLogger;
+import org.hillview.utils.HostAndPort;
 
 import java.io.IOException;
 import java.util.ArrayList;

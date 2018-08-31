@@ -17,7 +17,7 @@
 
 package org.hillview.dataset.api;
 
-import com.google.common.net.HostAndPort;
+import org.hillview.utils.HostAndPort;
 
 public class DatasetMissing extends RuntimeException {
     public DatasetMissing(int index, HostAndPort location) {
