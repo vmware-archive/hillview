@@ -16,9 +16,8 @@
  */
 
 import {event as d3event, mouse as d3mouse} from "d3-selection";
-import {DatasetView, HistogramSerialization, IViewSerialization} from "../datasetView";
+import {HistogramSerialization, IViewSerialization} from "../datasetView";
 import {
-    CombineOperators,
     FilterDescription,
     HistogramBase,
     IColumnDescription,
@@ -28,7 +27,7 @@ import {
 } from "../javaBridge";
 import {Receiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
-import {BaseRenderer, ZipReceiver} from "../tableTarget";
+import {BaseRenderer} from "../tableTarget";
 import {CDFPlot} from "../ui/CDFPlot";
 import {IDataView} from "../ui/dataview";
 import {Dialog} from "../ui/dialog";
@@ -50,7 +49,7 @@ import {
 import {AxisData} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
-import {DataRangeCollector, DataRangesCollector} from "./dataRangesCollectors";
+import {FilterReceiver, DataRangesCollector} from "./dataRangesCollectors";
 
 /**
  * A HistogramView is responsible for showing a one-dimensional histogram on the screen.
@@ -244,7 +243,7 @@ export class HistogramView extends HistogramViewBase {
         if (this.axisData != null &&
             this.axisData.range.leftBoundaries != null &&
             this.axisData.range.allStringsKnown)
-            summary += ", " + this.axisData.boundaries.length + " distinct values";
+            summary += ", " + this.axisData.range.leftBoundaries.length + " distinct values";
         summary += ", " + String(bucketCount) + " buckets";
         if (this.samplingRate < 1.0)
             summary += ", sampling rate " + significantDigits(this.samplingRate);
@@ -273,8 +272,7 @@ export class HistogramView extends HistogramViewBase {
     private showTrellis(colName: string): void {
         const groupBy = this.schema.findByDisplayName(colName);
         const cds: IColumnDescription[] = [this.axisData.description, groupBy];
-        const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
-        const rr = this.createDataRangesRequest(cds, buckets);
+        const rr = this.createDataRangesRequest(cds, this.page, "2DHistogram");
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
             reusePage: false, relative: false,
@@ -282,21 +280,15 @@ export class HistogramView extends HistogramViewBase {
         }));
     }
 
-    // combine two views according to some operation
-    public combine(how: CombineOperators): void {
-        const r = this.dataset.getSelected();
-        if (r.first == null)
-            return;
-
-        const title = "[" + r.second + "] " + CombineOperators[how];
-        const rr = this.createZipRequest(r.first);
-        const finalRenderer = (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
-            return new MakeHistogram(
-                title, page, operation, this.axisData.description,
-                this.rowCount, this.schema, this.samplingRate >= 1,
-                this.dataset);
+    protected getCombineRenderer(title: string):
+        (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer {
+        return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
+            return new FilterReceiver(
+                title, [this.axisData.description], this.schema, [0],
+                page, operation, this.dataset, {
+                    exact: this.samplingRate >= 1, reusePage: false,
+                    relative: false, chartKind: "Histogram" });
         };
-        rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.dataset, finalRenderer));
     }
 
     public chooseSecondColumn(): void {
@@ -348,8 +340,7 @@ export class HistogramView extends HistogramViewBase {
     private showSecondColumn(colName: string): void {
         const oc = this.schema.find(colName);
         const cds: IColumnDescription[] = [this.axisData.description, oc];
-        const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
-        const rr = this.createDataRangesRequest(cds, buckets);
+        const rr = this.createDataRangesRequest(cds, this.page, "2DHistogram");
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
             [this.histogram.buckets.length, 0], cds, null, {
             reusePage: false,
@@ -385,11 +376,10 @@ export class HistogramView extends HistogramViewBase {
 
     public histogram1D(title: string, cd: IColumnDescription,
                        bucketCount: number, options: HistogramOptions): void {
-        const size = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
-        const rr = this.createDataRangeRequest(cd, size.width);
-        rr.invoke(new DataRangeCollector(
-            this, this.page, rr, this.schema, bucketCount, cd, title,
-            size.width, options));
+        const rr = this.createDataRangesRequest([cd], this.page, "Histogram");
+        rr.invoke(new DataRangesCollector(
+            this, this.page, rr, this.schema, [bucketCount], [cd], title,
+            { chartKind: "Histogram", relative: false, reusePage: options.reusePage, exact: options.exact }));
     }
 
     public exactHistogram(): void {
@@ -472,45 +462,12 @@ export class HistogramView extends HistogramViewBase {
             complement: d3event.sourceEvent.ctrlKey,
         };
         const rr = this.createFilterRequest(filter);
-        const renderer = new FilterReceiver(filter, this.axisData.description, this.schema,
-            this.samplingRate >= 1.0, this.page.title, this.page, rr, this.dataset);
+        const title = "Filtered " + this.axisData.description.name;
+        const renderer = new FilterReceiver(title, [this.axisData.description], this.schema,
+            [0], this.page, rr, this.dataset, {
+            exact: this.samplingRate >= 1, reusePage: false, relative: false, chartKind: "Histogram"
+            });
         rr.invoke(renderer);
-    }
-}
-
-/**
- * Receives the results of a filtering operation and initiates a new Range computation
- * (which in turn will initiate a new histogram rendering).
- */
-class FilterReceiver extends BaseRenderer {
-    constructor(
-        protected filter: FilterDescription,
-        protected columnDescription: IColumnDescription,
-        protected schema: SchemaClass,
-        protected exact: boolean,
-        protected sourceTitle: string,
-        page: FullPage,
-        operation: ICancellable<RemoteObjectId>,
-        dataset: DatasetView) {
-        super(page, operation, "Filter", dataset);
-    }
-
-    private filterDescription(): string {
-        return "Filtered " + this.filter.cd.name;
-    }
-
-    public run(): void {
-        super.run();
-        const title = this.filterDescription();
-        const size = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
-        const rr = this.remoteObject.createDataRangeRequest(
-            this.columnDescription, size.width);
-        rr.invoke(new DataRangeCollector(
-            this.remoteObject, this.page, rr, this.schema, 0,
-            this.columnDescription, title, size.width, {
-            exact: this.exact,
-            reusePage: false
-        }));
     }
 }
 
@@ -550,30 +507,5 @@ export class HistogramRenderer extends Receiver<HistogramBase>  {
         super.onNext(value);
         const timeInMs = this.elapsedMilliseconds();
         this.view.updateView(value.data, this.bucketCount, timeInMs);
-    }
-}
-
-/**
- * This class is invoked by the ZipReceiver after a set operation to create a new histogram
- */
-class MakeHistogram extends BaseRenderer {
-    public constructor(private title: string,
-                       page: FullPage,
-                       operation: ICancellable<RemoteObjectId>,
-                       private cd: IColumnDescription,
-                       private rowCount: number,
-                       private schema: SchemaClass,
-                       protected exact: boolean,
-                       dataset: DatasetView) {
-        super(page, operation, "Reload", dataset);
-    }
-
-    public run(): void {
-        super.run();
-        const size = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
-        const rr = this.remoteObject.createDataRangeRequest(this.cd, size.width);
-        rr.invoke(new DataRangeCollector(
-            this.remoteObject, this.page, rr, this.schema, 0, this.cd, null,
-            size.width, { reusePage: false, exact: this.exact}));
     }
 }

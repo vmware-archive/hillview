@@ -54,6 +54,7 @@ export abstract class PlottingSurface {
      * svgCanvas by leftMargin, topMargin.
      */
     public chartArea: D3SvgElement;
+    protected selectionBorder: D3SvgElement;
 
     public static readonly minCanvasWidth = 300; // minimum number of pixels for a plot (including margins)
     public static readonly canvasHeight = 500;   // size of a plot
@@ -160,6 +161,36 @@ export abstract class PlottingSurface {
     public reportError(message: string): void {
         this.page.reportError(message);
     }
+
+    protected createObjects(root: D3SvgElement): void {
+        this.svgCanvas = root
+            .append("svg")
+            .attr("id", "canvas")
+            .attr("border", 1)
+            .attr("cursor", "crosshair")
+            .attr("width", this.size.width)
+            .attr("height", this.size.height);
+        this.chartArea = this.svgCanvas
+            .append("g")
+            .attr("transform", `translate(${this.leftMargin}, ${this.topMargin})`);
+        this.selectionBorder = this.svgCanvas
+            .append("rect")
+            .attr("width", this.size.width)
+            .attr("height", this.size.height)
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("fill-opacity", .5)
+            .attr("fill", "none");
+    }
+
+    public select(add: boolean): void {
+        if (add)
+            this.selectionBorder
+                .attr("fill", "pink");
+        else
+            this.selectionBorder
+                .attr("fill", "none");
+    }
 }
 
 export class HtmlPlottingSurface extends PlottingSurface implements IHtmlElement {
@@ -180,16 +211,7 @@ export class HtmlPlottingSurface extends PlottingSurface implements IHtmlElement
         if (this.svgCanvas != null)
             this.svgCanvas.remove();
 
-        this.svgCanvas = d3select(this.topLevel)
-            .append("svg")
-            .attr("id", "canvas")
-            .attr("border", 1)
-            .attr("cursor", "crosshair")
-            .attr("width", this.size.width)
-            .attr("height", this.size.height);
-        this.chartArea = this.svgCanvas
-            .append("g")
-            .attr("transform", `translate(${this.leftMargin}, ${this.topMargin})`);
+        this.createObjects(d3select(this.topLevel));
     }
 }
 
@@ -213,15 +235,6 @@ export class SvgPlottingSurface extends PlottingSurface {
         this.shifted = d3select(this.topLevel)
             .append("g")
             .attr("transform", `translate(${this.xOffset}, ${this.yOffset})`);
-        this.svgCanvas = this.shifted
-            .append("svg")
-            .attr("id", "canvas")
-            .attr("border", 1)
-            .attr("cursor", "crosshair")
-            .attr("width", this.size.width)
-            .attr("height", this.size.height);
-        this.chartArea = this.svgCanvas
-            .append("g")
-            .attr("transform", `translate(${this.leftMargin}, ${this.topMargin})`);
+        this.createObjects(this.shifted);
     }
 }

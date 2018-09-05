@@ -19,6 +19,7 @@ import {
     allContentsKind,
     asContentsKind,
     ColumnSortOrientation,
+    Comparison,
     ComparisonFilterDescription,
     ContentsKind,
     ConvertColumnInfo,
@@ -38,17 +39,14 @@ import {SubMenu, TopMenuItem} from "../ui/menu";
 import {SpecialChars, ViewKind} from "../ui/ui";
 import {
     cloneToSet,
-    Comparison,
     Converters,
     ICancellable,
     mapToArray,
     significantDigits,
 } from "../util";
 import {HeavyHittersReceiver, HeavyHittersView} from "./heavyHittersView";
-import {DataRangeCollector, DataRangesCollector} from "./dataRangesCollectors";
+import {DataRangesCollector} from "./dataRangesCollectors";
 import {TableOperationCompleted, TableView} from "./tableView";
-import {PlottingSurface} from "../ui/plottingSurface";
-import {HistogramViewBase} from "./histogramViewBase";
 import {HistogramDialog} from "./histogramView";
 
 /**
@@ -141,7 +139,7 @@ export abstract class TSViewBase extends BigTableView {
         dialog.addTextField(
             "outColName", "Column name", FieldKind.String, null, "Name to use for the generated column.");
         dialog.addSelectField(
-            "outColKind", "Data type", allContentsKind, "Category", "Type of data in the generated column.");
+            "outColKind", "Data type", allContentsKind.filter((c) => c !== "Category"), "String", "Type of data in the generated column.");
         dialog.addMultiLineTextField("function", "Function",
             "function map(row) {", "  return row['col'];", "}",
             "A JavaScript function that computes the values for each row of the generated column." +
@@ -180,16 +178,14 @@ export abstract class TSViewBase extends BigTableView {
     }
 
     protected histogram1D(cd: IColumnDescription): void {
-        const size = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
-        const rr = this.createDataRangeRequest(cd, size.width);
-        rr.invoke(new DataRangeCollector(
-            this, this.page, rr, this.schema, 0, cd, null, size.width,
-            { exact: false, reusePage: false }));
+        const rr = this.createDataRangesRequest([cd], this.page, "Histogram");
+        rr.invoke(new DataRangesCollector(
+            this, this.page, rr, this.schema, [0], [cd], null,
+            { chartKind: "Histogram", relative: false, exact: false, reusePage: false }));
     }
 
     protected histogram2D(cds: IColumnDescription[]): void {
-        const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
-        const rr = this.createDataRangesRequest(cds, buckets);
+        const rr = this.createDataRangesRequest(cds, this.page, "2DHistogram");
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
             reusePage: false, relative: false,
@@ -198,8 +194,7 @@ export abstract class TSViewBase extends BigTableView {
     }
 
     protected trellis2D(cds: IColumnDescription[]): void {
-        const buckets = HistogramViewBase.maxHistogram2DBuckets(this.page);
-        const rr = this.createDataRangesRequest(cds, buckets);
+        const rr = this.createDataRangesRequest(cds, this.page, "TrellisHistogram");
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
             reusePage: false, relative: false,
@@ -208,15 +203,12 @@ export abstract class TSViewBase extends BigTableView {
     }
 
     protected trellis3D(cds: IColumnDescription[], heatmap: boolean): void {
-        const buckets = HistogramViewBase.maxTrellis3DBuckets(this.page);
-        const rr = this.createDataRangesRequest(cds, buckets);
         let chartKind: ViewKind;
         if (heatmap)
             chartKind = "TrellisHeatmap";
-        else if (cds.length === 2)
-            chartKind = "TrellisHistogram";
         else
             chartKind = "Trellis2DHistogram";
+        const rr = this.createDataRangesRequest(cds, this.page, chartKind);
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
             [0, 0, 0], cds, null, {
             reusePage: false, relative: false,
@@ -245,8 +237,7 @@ export abstract class TSViewBase extends BigTableView {
 
     protected heatmap(columns: string[]): void {
         const cds = this.schema.getDescriptions(columns);
-        const buckets = HistogramViewBase.maxHeatmapBuckets(this.page);
-        const rr = this.createDataRangesRequest(cds, buckets);
+        const rr = this.createDataRangesRequest(cds, this.page, "Heatmap");
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
             reusePage: false,

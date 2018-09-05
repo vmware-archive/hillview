@@ -29,13 +29,106 @@ import {
     IColumnDescription,
     kindIsString
 } from "../javaBridge";
-import {Converters, formatDate, formatNumber, significantDigits} from "../util";
+import {assert, Converters, formatDate, formatNumber, significantDigits} from "../util";
 import {AnyScale, D3Axis} from "../ui/ui";
 
 export enum AxisKind {
     Bottom,
     Left,
     Legend
+}
+
+/**
+ * Describes the boundary of a bucket from a histogram.
+ */
+class BucketBoundary {
+    constructor(
+        public readonly value: number | string,
+        public readonly kind: ContentsKind,
+        public readonly inclusive: boolean) {
+    }
+
+    public toString(): string {
+        switch (this.kind) {
+            case "Category":
+            case "Json":
+            case "String":
+                return this.value.toString();
+            case "Integer":
+            case "Double":
+                return significantDigits(this.value as number);
+            case "Date":
+                return Converters.dateFromDouble(this.value as number).toString();
+            case "Interval":
+                return this.value.toString();
+        }
+    }
+
+    public getNumber(): number | null {
+        if (kindIsString(this.kind))
+            return null;
+        return this.value as number;
+    }
+
+    public getString(): string | null {
+        if (!kindIsString(this.kind))
+            return null;
+        return this.value as string;
+    }
+}
+
+/**
+ * Represents the left and right boundaries of a bucket from a histogram.
+ */
+class BucketBoundaries {
+    constructor(
+        /*
+         * If the left bucket is null the right one must be null too.
+         * This indicates an emtpy bucket.
+         */
+        public readonly left: BucketBoundary | null,
+        /*
+         * If null the bucket contains a single value, the left one, which must be inclusive.
+         */
+        public readonly right: BucketBoundary | null) {
+        if (left == null)
+            assert(right == null);
+    }
+
+    public toString(): string {
+        let result: string;
+
+        if (this.left == null) {
+            return "*empty*";
+        }
+
+        if (this.right == null) {
+            assert(this.left.inclusive);
+            return this.left.toString();
+        }
+        if (this.left.inclusive) {
+            result = "[";
+        } else {
+            result = "(";
+        }
+        result += this.left.toString() + "," + this.right.toString();
+        if (this.right.inclusive) {
+            result += "]";
+        } else {
+            result += ")";
+        }
+        return result;
+    }
+
+    public getMin(): BucketBoundary {
+        return this.left;
+    }
+
+    public getMax(): BucketBoundary {
+        if (this.right != null)
+            return this.right;
+        return this.left;
+    }
 }
 
 /**
@@ -137,7 +230,6 @@ export class AxisData {
                 const labels: string[] = [];
                 // note: this is without adjustment.
                 const tickCount = Math.ceil(this.range.max - this.range.min);
-                // TODO: if the tick count is too large it must be reduced
                 const minLabelWidth = 40;  // pixels
                 const maxLabelCount = pixels / minLabelWidth;
                 const labelPeriod = Math.ceil(tickCount / maxLabelCount);
@@ -192,6 +284,7 @@ export class AxisData {
      * Real-world value.  Returns the result as a string.
      */
     public invert(v: number): string {
+        assert(this.scale != null, "invert called before setting the resolution");
         const inv = this.scale.invert(v);
         let result: string;
         if (this.description.kind === "Integer")
@@ -220,18 +313,50 @@ export class AxisData {
         return result;
     }
 
-    /**
-     * Get the boundaries of the specified bucket.
-     * @param {number} bucket  Bucket number.
-     * @returns {[number]}     The left and right margins of this bucket.
-     */
-    public boundaries(bucket: number): [number, number] {
+    public bucketBoundaries(bucket: number): BucketBoundaries {
         if (bucket < 0 || bucket >= this.bucketCount)
-            return null;
+            return new BucketBoundaries(null, null);
+
+        const valueKind = this.description.kind;
+        if (kindIsString(this.description.kind)) {
+            const left = this.getString(bucket, false);
+            if (this.range.allStringsKnown)
+                return new BucketBoundaries(new BucketBoundary(left, valueKind, true), null);
+            if (bucket === this.bucketCount - 1)
+                return new BucketBoundaries(
+                    new BucketBoundary(left, valueKind, true),
+                    new BucketBoundary(this.range.maxBoundary, valueKind, true));
+            else
+                return new BucketBoundaries(
+                    new BucketBoundary(left, valueKind, true),
+                    new BucketBoundary(this.getString(bucket + 1, false), valueKind, false));
+        }
+
         const interval = (this.range.max - this.range.min) / this.bucketCount;
-        const start = this.range.min + interval * bucket;
-        const end = start + interval;
-        return [start, end];
+        let start = this.range.min + interval * bucket;
+        let end = start + interval;
+        const inclusive = end >= this.range.max;
+        switch (valueKind) {
+            case "Integer":
+                start = Math.ceil(start);
+                end = Math.floor(end);
+                if (end < start)
+                    return new BucketBoundaries(null, null);
+                else if (end === start)
+                    return new BucketBoundaries(new BucketBoundary(start, valueKind, true), null);
+                else
+                    return new BucketBoundaries(
+                        new BucketBoundary(start, valueKind, true),
+                        new BucketBoundary(end, valueKind, inclusive));
+            case "Double":
+            case "Date":
+                return new BucketBoundaries(
+                     new BucketBoundary(start, valueKind, true),
+                     new BucketBoundary(end, valueKind, inclusive)
+                 );
+            default:
+                assert(false, "Unhandled data type " + valueKind);
+        }
     }
 
     /**
@@ -239,43 +364,6 @@ export class AxisData {
      * @returns {string}  A description of the boundaries of the specified bucket.
      */
     public bucketDescription(bucket: number): string {
-        if (bucket < 0 || bucket >= this.bucketCount)
-            return "empty";
-
-        if (kindIsString(this.description.kind)) {
-            const left = this.getString(bucket, false);
-            if (this.range.allStringsKnown)
-                return left;
-            if (bucket === this.bucketCount - 1)
-                return "[" + left + "," + this.range.maxBoundary + "]";
-            else
-                return "[" + left + "," + this.getString(bucket + 1, false) + ")";
-        }
-
-        let [start, end] = this.boundaries(bucket);
-        let closeBracket = ")";
-        if (end >= this.range.max)
-            closeBracket = "]";
-        switch (this.description.kind) {
-            case "Integer":
-                start = Math.ceil(start);
-                end = Math.floor(end);
-                if (end < start)
-                    return "empty";
-                else if (end === start)
-                    return significantDigits(start);
-                else
-                    return "[" + significantDigits(start) + ", " + significantDigits(end) + closeBracket;
-            case "Double":
-                 return "[" + significantDigits(start) + ", " + significantDigits(end) + closeBracket;
-            case "Date": {
-                const minDate: Date = Converters.dateFromDouble(start);
-                const maxDate: Date = Converters.dateFromDouble(end);
-                return "[" + minDate + ", " + maxDate + closeBracket;
-            }
-            default: {
-                return "unknown";
-            }
-        }
+        return this.bucketBoundaries(bucket).toString();
     }
 }

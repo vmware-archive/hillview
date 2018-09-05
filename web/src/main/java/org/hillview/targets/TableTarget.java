@@ -168,13 +168,21 @@ public final class TableTarget extends RpcTarget {
         }
     }
 
-    // This function returns a subclass of BucketsInfo: either
-    // StringBucketBoundaries or DataRange
+    // The following functions return lists with subclasses of BucketsInfo: either
+    // StringBucketBoundaries or DataRange.
+
+    // This function manipulates arrays to make it more homogeneous with the other two.
     @HillviewRpc
-    public void getDataRange(RpcRequest request, RpcRequestContext context) {
-        RangeArgs args = request.parseArgs(RangeArgs.class);
-        ISketch<ITable, BucketsInfo> sk = args.getSketch();
-        BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> post = args.getPostProcessing();
+    public void getDataRanges1D(RpcRequest request, RpcRequestContext context) {
+        RangeArgs[] args = request.parseArgs(RangeArgs[].class);
+        assert args.length == 1;
+        ISketch<ITable, BucketsInfo> sk = args[0].getSketch();
+        BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> post0 = args[0].getPostProcessing();
+        BiFunction<BucketsInfo, HillviewComputation, JsonList<BucketsInfo>> post = (e, c) -> {
+            JsonList<BucketsInfo> result = new JsonList<BucketsInfo>(1);
+            result.add(post0.apply(e, c));
+            return result;
+        };
         this.runCompleteSketch(this.table, sk, post, request, context);
     }
 

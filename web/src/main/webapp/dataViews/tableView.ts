@@ -19,7 +19,7 @@ import {DatasetView, IViewSerialization, TableSerialization} from "../datasetVie
 import {
     asContentsKind,
     ColumnSortOrientation,
-    CombineOperators,
+    Comparison,
     ComparisonFilterDescription,
     ContentsKind,
     FindResult,
@@ -35,7 +35,7 @@ import {
 } from "../javaBridge";
 import {OnCompleteReceiver, Receiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
-import {BaseRenderer, TableTargetAPI, ZipReceiver} from "../tableTarget";
+import {BaseRenderer, TableTargetAPI} from "../tableTarget";
 import {DataRangeUI} from "../ui/dataRangeUI";
 import {IDataView} from "../ui/dataview";
 import {Dialog, FieldKind} from "../ui/dialog";
@@ -46,7 +46,6 @@ import {SelectionStateMachine} from "../ui/selectionStateMachine";
 import {missingHtml, Resolution} from "../ui/ui";
 import {
     cloneToSet,
-    Comparison,
     Converters,
     formatDate,
     formatNumber,
@@ -234,20 +233,12 @@ export class TableView extends TSViewBase implements IScrollTarget {
         rr.invoke(new FindReceiver(this.getPage(), rr, this, o));
     }
 
-    /**
-     * Combine two views according to some operation: intersection, union, etc.
-     */
-    public combine(how: CombineOperators): void {
-        const r = this.dataset.getSelected();
-        if (r.first == null)
-            return;
-
-        const rr = this.createZipRequest(r.first);
-        const o = this.order.clone();
-        const finalRenderer = (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
-            return new TableOperationCompleted(page, operation, this.rowCount, this.schema, o, this.tableRowsDesired);
+    protected getCombineRenderer(title: string):
+        (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer {
+        return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
+            return new TableOperationCompleted(page, operation, this.rowCount, this.schema,
+                this.order.clone(), this.tableRowsDesired);
         };
-        rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.dataset, finalRenderer));
     }
 
     public getSelectedColCount(): number {

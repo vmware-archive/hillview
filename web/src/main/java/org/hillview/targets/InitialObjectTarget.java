@@ -17,7 +17,6 @@
 
 package org.hillview.targets;
 
-import com.google.common.net.HostAndPort;
 import org.hillview.*;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.RemoteDataSet;

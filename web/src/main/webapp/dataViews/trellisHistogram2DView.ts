@@ -17,13 +17,12 @@
 
 import {Receiver} from "../rpc";
 import {
-    CombineOperators,
     Heatmap,
     RecordOrder,
     RemoteObjectId
 } from "../javaBridge";
 import {FullPage} from "../ui/fullPage";
-import {TableTargetAPI} from "../tableTarget";
+import {BaseRenderer, TableTargetAPI} from "../tableTarget";
 import {SchemaClass} from "../schemaClass";
 import {ICancellable, PartialResult} from "../util";
 import {AxisData, AxisKind} from "./axisData";
@@ -33,12 +32,12 @@ import {
 } from "../datasetView";
 import {IDataView} from "../ui/dataview";
 import {Resolution} from "../ui/ui";
-import {PlottingSurface} from "../ui/plottingSurface";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {Histogram2DPlot} from "../ui/Histogram2DPlot";
-import {TrellisShape} from "./dataRangesCollectors";
+import {FilterReceiver, DataRangesCollector, TrellisShape} from "./dataRangesCollectors";
 import {TrellisChartView} from "./trellisChartView";
 import {NextKReceiver, TableView} from "./tableView";
+import {BucketDialog} from "./histogramViewBase";
 
 export class TrellisHistogram2DView extends TrellisChartView {
     protected hps: Histogram2DPlot[];
@@ -73,21 +72,20 @@ export class TrellisHistogram2DView extends TrellisChartView {
                 { text: "refresh",
                     action: () => { this.refresh(); },
                     help: "Redraw this view.",
-                },
-                { text: "table",
+                }, { text: "table",
                     action: () => this.showTable(),
                     help: "Show the data underlying view using a table view.",
-                },
-                { text: "exact",
+                }, { text: "exact",
                     action: () => this.exactHistogram(),
                     help: "Draw this data without making any approximations.",
-                },
-                { text: "# buckets...",
+                }, { text: "# buckets...",
                     action: () => this.chooseBuckets(),
                     help: "Change the number of buckets used to draw the histograms. " +
                         "The number of buckets must be between 1 and " + Resolution.maxBucketCount,
-                },
-                { text: "heatmap...",
+                }, { text: "# groups",
+                    action: () => this.changeGroups(),
+                    help: "Change the number of groups."
+                }, { text: "heatmap...",
                     action: () => this.heatmap(),
                     help: "Show this data as a Trellis plot of heatmaps.",
                 },
@@ -96,10 +94,6 @@ export class TrellisHistogram2DView extends TrellisChartView {
         ]);
 
         this.page.setMenu(this.menu);
-        this.createSurfaces( (surface) => {
-                const hp = new Histogram2DPlot(surface);
-                this.hps.push(hp);
-            });
         this.buckets = Math.round(shape.size.width / Resolution.minBarWidth);
     }
 
@@ -109,9 +103,21 @@ export class TrellisHistogram2DView extends TrellisChartView {
         this.xAxisData = xAxisData;
         this.legendAxisData = legendAxisData;
         this.groupByAxisData = groupByAxisData;
+
+        this.createSurfaces( (surface) => {
+            const hp = new Histogram2DPlot(surface);
+            this.hps.push(hp);
+        });
     }
 
     protected onMouseMove(): void {
+        const mousePosition = this.mousePosition();
+        if (mousePosition.plotIndex == null ||
+            mousePosition.x < 0 || mousePosition.y < 0) {
+            this.pointDescription.show(false);
+            return;
+        }
+
         // TODO
     }
 
@@ -136,15 +142,62 @@ export class TrellisHistogram2DView extends TrellisChartView {
     }
 
     protected exactHistogram(): void {
-        // TODO
+        const cds = [this.xAxisData.description,
+            this.legendAxisData.description, this.groupByAxisData.description];
+        const rr = this.createDataRangesRequest(cds, this.page, "Trellis2DHistogram");
+        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+            [this.buckets, this.legendAxisData.bucketCount, this.shape.bucketCount],
+                cds, null, {
+                reusePage: true, relative: this.relative,
+                chartKind: "Trellis2DHistogram", exact: true
+            }));
     }
 
     protected chooseBuckets(): void {
-        // TODO
+        const bucketDialog = new BucketDialog();
+        bucketDialog.setAction(() => this.updateView(this.data,
+            [bucketDialog.getBucketCount(), this.legendAxisData.bucketCount], 0));
+        bucketDialog.show();
+    }
+
+    protected doChangeGroups(groupCount: number): void {
+        if (groupCount == null) {
+            this.page.reportError("Illegal group count");
+            return;
+        }
+        if (groupCount === 1) {
+            const cds = [this.xAxisData.description,
+                this.legendAxisData.description];
+            const rr = this.createDataRangesRequest(cds, this.page, "2DHistogram");
+            rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+                [0, 0],
+                cds, null, {
+                    reusePage: true, relative: this.relative,
+                    chartKind: "2DHistogram", exact: this.samplingRate >= 1
+                }));
+        } else {
+            const cds = [this.xAxisData.description,
+                this.legendAxisData.description, this.groupByAxisData.description];
+            const rr = this.createDataRangesRequest(cds, this.page, "Trellis2DHistogram");
+            rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+                [0, 0, groupCount],
+                cds, null, {
+                    reusePage: true, relative: this.relative,
+                    chartKind: "Trellis2DHistogram", exact: this.samplingRate >= 1
+                }));
+        }
     }
 
     protected heatmap(): void {
-        // TODO
+        const cds = [this.xAxisData.description,
+            this.legendAxisData.description, this.groupByAxisData.description];
+        const rr = this.createDataRangesRequest(cds, this.page, "TrellisHeatmap");
+        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+            [this.buckets, this.legendAxisData.bucketCount, this.shape.bucketCount],
+            cds, null, {
+                reusePage: false, relative: this.relative,
+                chartKind: "TrellisHeatmap", exact: true
+            }));
     }
 
     protected export(): void {
@@ -152,11 +205,12 @@ export class TrellisHistogram2DView extends TrellisChartView {
     }
 
     public resize(): void {
-        // TODO
+        this.updateView(this.data,
+            [this.xAxisData.bucketCount, this.legendAxisData.bucketCount], 0);
     }
 
     public refresh(): void {
-        this.updateView(this.data, 0);
+        // TODO
     }
 
     public serialize(): IViewSerialization {
@@ -177,11 +231,21 @@ export class TrellisHistogram2DView extends TrellisChartView {
     }
 
     public static reconstruct(ser: TrellisHistogram2DSerialization, page: FullPage): IDataView {
-        // TODO
-        return null;
+        if (ser.remoteObjectId == null || ser.rowCount == null || ser.xWindows == null ||
+            ser.yWindows == null || ser.groupByBucketCount ||
+            ser.samplingRate == null || ser.schema == null)
+            return null;
+        const schema = new SchemaClass([]).deserialize(ser.schema);
+        const shape = TrellisChartView.deserializeShape(ser, page);
+        const view = new TrellisHistogram2DView(ser.remoteObjectId, ser.rowCount,
+            schema, shape, ser.samplingRate, page);
+        view.setAxes(new AxisData(ser.columnDescription0, null),
+            new AxisData(ser.columnDescription1, null),
+            new AxisData(ser.groupByColumn, null));
+        return view;
     }
 
-    public updateView(data: Heatmap[], elapsedMs: number): void {
+    public updateView(data: Heatmap[], bucketCount: number[], elapsedMs: number): void {
         this.data = data;
         for (let i = 0; i < data.length; i++) {
             const histo = data[i];
@@ -191,37 +255,41 @@ export class TrellisHistogram2DView extends TrellisChartView {
         }
 
         // We draw the axes after drawing the data
-        const borderWidth = 0;
         this.xAxisData.setResolution(this.shape.size.width, AxisKind.Bottom);
-        for (let i = 0; i < this.shape.xNum; i++) {
-            this.surface
-                .getCanvas()
-                .append("g")
-                .attr("class", "x-axis")
-                .attr("transform", `translate(
-                    ${PlottingSurface.leftMargin + i * (this.shape.size.width + borderWidth)}, 
-                    ${PlottingSurface.topMargin + (this.shape.size.height + borderWidth) * this.shape.yNum})`)
-                .call(this.xAxisData.axis);
-        }
-
         const yAxis = this.hps[0].getYAxis();
-        for (let i = 0; i < this.shape.yNum; i++) {
-            this.surface.getCanvas()
-                .append("g")
-                .attr("class", "y-axis")
-                .attr("transform", `translate(${PlottingSurface.leftMargin},
-                                              ${PlottingSurface.topMargin + i * 
-                                               (this.shape.size.height + borderWidth)})`)
-                .call(yAxis);
-        }
-
+        this.drawAxes(this.xAxisData, yAxis);
         this.setupMouse();
         this.page.reportTime(elapsedMs);
     }
 
-    // combine two views according to some operation
-    public combine(how: CombineOperators): void {
-        // TODO
+    protected getCombineRenderer(title: string):
+        (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer {
+        return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
+            return new FilterReceiver(
+                title,
+                [this.xAxisData.description, this.legendAxisData.description,
+                    this.groupByAxisData.description],
+                this.schema, [0, 0, 0], page, operation, this.dataset, {
+                    chartKind: "Trellis2DHistogram", relative: this.relative,
+                    reusePage: false, exact: this.samplingRate >= 1
+                });
+        };
+    }
+
+    protected selectionCompleted(): void {
+        const filter = this.getGroupBySelectionFilter();
+        if (filter == null)
+            return;
+        const rr = this.createFilterRequest(filter);
+        const title = "Filtered on " + this.groupByAxisData.description.name;
+        const renderer = new FilterReceiver(title,
+            [this.xAxisData.description, this.legendAxisData.description,
+                this.groupByAxisData.description],
+            this.schema, [0, 0, 0], this.page, rr, this.dataset, {
+                chartKind: "Trellis2DHistogram", relative: this.relative,
+                reusePage: false, exact: this.samplingRate >= 1
+            });
+        rr.invoke(renderer);
     }
 }
 
@@ -231,7 +299,8 @@ export class TrellisHistogram2DView extends TrellisChartView {
 export class TrellisHistogram2DRenderer extends Receiver<Heatmap[]> {
     protected trellisView: TrellisHistogram2DView;
 
-    constructor(page: FullPage,
+    constructor(title: string,
+                page: FullPage,
                 remoteTable: TableTargetAPI,
                 protected rowCount: number,
                 protected schema: SchemaClass,
@@ -240,12 +309,7 @@ export class TrellisHistogram2DRenderer extends Receiver<Heatmap[]> {
                 protected shape: TrellisShape,
                 operation: ICancellable<Heatmap[]>,
                 protected reusePage: boolean) {
-        super(
-            reusePage ? page : page.dataset.newPage(
-                "Histograms " + schema.displayName(axes[0].description.name) +
-                ", " + schema.displayName(axes[1].description.name) +
-                " grouped by " + schema.displayName(axes[2].description.name), page),
-            operation, "histogram");
+        super(reusePage ? page : page.dataset.newPage(title, page), operation, "histogram");
         this.trellisView = new TrellisHistogram2DView(
             remoteTable.remoteObjectId, rowCount, schema,
             this.shape, this.samplingRate, this.page);
@@ -259,6 +323,7 @@ export class TrellisHistogram2DRenderer extends Receiver<Heatmap[]> {
             return;
         }
 
-        this.trellisView.updateView(value.data, this.elapsedMilliseconds());
+        this.trellisView.updateView(value.data, [this.axes[0].bucketCount, this.axes[1].bucketCount],
+            this.elapsedMilliseconds());
     }
 }

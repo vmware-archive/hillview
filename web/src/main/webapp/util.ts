@@ -23,8 +23,6 @@ import * as FileSaver from "file-saver";
 import {ErrorReporter} from "./ui/errReporter";
 import {Size} from "./ui/ui";
 
-export type Comparison = "==" | "!=" | "<" | ">" | "<=" | ">=";
-
 export interface Pair<T1, T2> {
     first: T1;
     second: T2;
@@ -79,7 +77,7 @@ export interface Serializable<T> {
  * @param {string} filename  File to save data to.
  * @param {string} contents  Contents to write in file.
  */
-export function saveAs(filename: string, contents: string) {
+export function saveAs(filename: string, contents: string): void {
    const blob = new Blob([contents], {type: "text/plain;charset=utf-8"});
    FileSaver.saveAs(blob, filename);
 }
@@ -111,6 +109,7 @@ export class Seed {
 
     constructor() {}
 
+    // noinspection JSMethodCanBeStatic
     public get(): number {
         return Math.round(Math.random() * 1024 * 1024);
     }
@@ -262,25 +261,30 @@ export function reorder(m: number, n: number): [number, number] {
         return [n, m];
 }
 
+interface NameValue<T> {
+    name: string;
+    value: T;
+}
+
 /**
  * This class builds some useful iterators over typescript enums.
- * In all these methods e is an enum *type*
+ * In all these methods enumType is an enum *type*
  */
 export class EnumIterators {
-    public static getNamesAndValues<T extends number>(e: any) {
-        return EnumIterators.getNames(e).map((n) => ({ name: n, value: e[n] as T }));
+    public static getNamesAndValues<T extends number>(enumType: any): Array<NameValue<T>> {
+        return EnumIterators.getNames(enumType).map((n) => ({ name: n, value: enumType[n] as T }));
     }
 
-    public static getNames(e: any) {
-        return EnumIterators.getObjValues(e).filter((v) => typeof v === "string") as string[];
+    public static getNames(enumType: any): string[] {
+        return EnumIterators.getObjValues(enumType).filter((v) => typeof v === "string") as string[];
     }
 
-    public static getValues<T extends number>(e: any) {
-        return EnumIterators.getObjValues(e).filter((v) => typeof v === "number") as T[];
+    public static getValues<T extends number>(enumType: any): T[] {
+        return EnumIterators.getObjValues(enumType).filter((v) => typeof v === "number") as T[];
     }
 
-    private static getObjValues(e: any): Array<number | string> {
-        return Object.keys(e).map((k) => e[k]);
+    private static getObjValues(enumType: any): Array<number | string> {
+        return Object.keys(enumType).map((k) => enumType[k]);
     }
 }
 
@@ -378,11 +382,11 @@ export function truncate(str: string, length: number): string {
     }
 }
 
-export function clamp(value: number, min: number, max: number) {
+export function clamp(value: number, min: number, max: number): number {
     return Math.max(Math.min(value, max), min);
 }
 
-export function isInteger(n: number) {
+export function isInteger(n: number): boolean {
     return Math.floor(n) === n;
 }
 
@@ -408,7 +412,7 @@ export function uuidv4(): string {
     });
 }
 
-export function readableTime(millisec: number) {
+export function readableTime(millisec: number): string {
     let seconds = Math.floor(millisec / 1000);
     let minutes = Math.floor(seconds / 60);
     const hours = Math.floor(seconds / 3600);
@@ -440,7 +444,7 @@ export function cloneSet<T>(set: Set<T>): T[] {
     return ret;
 }
 
-export function exponentialDistribution(lambda: number) {
+export function exponentialDistribution(lambda: number): number {
     return -Math.log(1 - Math.random()) / lambda;
 }
 

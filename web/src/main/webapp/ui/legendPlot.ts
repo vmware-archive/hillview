@@ -23,7 +23,6 @@ import {
 } from "d3-scale-chromatic";
 import {event as d3event} from "d3-selection";
 import {AxisData, AxisKind} from "../dataViews/axisData";
-import {Histogram2DView} from "../dataViews/histogram2DView";
 import {assert} from "../util";
 import {ContextMenu} from "./menu";
 import {Plot} from "./plot";
@@ -74,9 +73,9 @@ export class HistogramLegendPlot extends Plot {
         for (let i = 0; i < this.axisData.bucketCount; i++) {
             let color: string;
             if (this.axisData.bucketCount === 1)
-                color = Histogram2DView.colorMap(0);
+                color = Plot.colorMap(0);
             else
-                color = Histogram2DView.colorMap(i / (this.axisData.bucketCount - 1));
+                color = Plot.colorMap(i / (this.axisData.bucketCount - 1));
             canvas.append("rect")
                 .attr("width", this.colorWidth)
                 .attr("height", this.height)

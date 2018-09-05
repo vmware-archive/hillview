@@ -19,7 +19,6 @@ import {axisLeft as d3axisLeft} from "d3-axis";
 import {format as d3format} from "d3-format";
 import {scaleLinear as d3scaleLinear} from "d3-scale";
 import {AxisData, AxisKind} from "../dataViews/axisData";
-import {HistogramViewBase} from "../dataViews/histogramViewBase";
 import {HistogramBase} from "../javaBridge";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
@@ -102,7 +101,7 @@ export class HistogramPlot extends Plot {
             .attr("y", (d) => this.yScale(d))
             .attr("text-anchor", "middle")
             .attr("dy", (d) => d <= (9 * max / 10) ? "-.25em" : ".75em")
-            .text((d) => HistogramViewBase.boxHeight(
+            .text((d) => HistogramPlot.boxHeight(
                 d, this.samplingRate, this.xAxisData.range.presentCount))
             .exit();
 

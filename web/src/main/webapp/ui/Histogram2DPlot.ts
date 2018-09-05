@@ -19,8 +19,6 @@ import {axisLeft as d3axisLeft} from "d3-axis";
 import {format as d3format} from "d3-format";
 import {scaleLinear as d3scaleLinear} from "d3-scale";
 import {AxisData, AxisKind} from "../dataViews/axisData";
-import {Histogram2DView} from "../dataViews/histogram2DView";
-import {HistogramViewBase} from "../dataViews/histogramViewBase";
 import {Heatmap} from "../javaBridge";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
@@ -158,7 +156,7 @@ export class Histogram2DPlot extends Plot {
             .attr("y", (d: number) => this.normalized ? 0 : this.getChartHeight() - (d * scale))
             .attr("text-anchor", "middle")
             .attr("dy", (d: number) => this.normalized ? 0 : d <= (9 * max / 10) ? "-.25em" : ".75em")
-            .text((d: number) => HistogramViewBase.boxHeight(d, this.samplingRate, this.getDisplayedPoints()))
+            .text((d: number) => Plot.boxHeight(d, this.samplingRate, this.getDisplayedPoints()))
             .exit();
 
         let noX = 0;
@@ -230,7 +228,7 @@ export class Histogram2DPlot extends Plot {
         // This is for the "missing" data
             return "none";
         if (max === 0)
-            return Histogram2DView.colorMap(0);
-        return Histogram2DView.colorMap(d / max);
+            return Plot.colorMap(0);
+        return Plot.colorMap(d / max);
     }
 }

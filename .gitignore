@@ -79,7 +79,7 @@ data/segmentation.readme
 *.DS_Store
 
 # Configuration for various clusters
-bin/config-*.py
+bin/config-*.json
 
 # Hosts file for ansible
 deployment/hosts

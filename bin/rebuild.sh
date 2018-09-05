@@ -1,7 +1,6 @@
 #!/bin/bash
 # A small shell script which rebuilds both projects that compose Hillview
 
-
 usage() {
     echo "rebuild.sh [-s][-h][-a]"
     echo "Rebuild and the program"
@@ -16,7 +15,7 @@ if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
 source $mydir/lib.sh
 
 # Bail out on first error; verbose
-set -ex
+set -e
 
 SKIP="0"
 TOOLS="0"

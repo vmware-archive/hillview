@@ -90,7 +90,7 @@ public final class RpcRequest implements IJson {
                 Utilities.throwableToString(th), true);
     }
 
-    public RpcReply createCompletedReply() {
+    RpcReply createCompletedReply() {
         return new RpcReply(this.requestId);
     }
 

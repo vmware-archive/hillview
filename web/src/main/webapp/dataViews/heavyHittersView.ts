@@ -27,7 +27,7 @@ import {
     from "../javaBridge";
 import {OnCompleteReceiver, RemoteObject} from "../rpc";
 import {SchemaClass} from "../schemaClass";
-import {BigTableView, TableTargetAPI} from "../tableTarget";
+import {BaseRenderer, BigTableView, TableTargetAPI} from "../tableTarget";
 import {DataRangeUI} from "../ui/dataRangeUI";
 import {IDataView} from "../ui/dataview";
 import {Dialog, FieldKind} from "../ui/dialog";
@@ -393,6 +393,12 @@ export class HeavyHittersView extends BigTableView {
             });
         percentDialog.setCacheTitle("ChangeHeavyHittersDialog");
         percentDialog.show();
+    }
+
+    protected getCombineRenderer(title: string):
+        (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer {
+        // Not used
+        return null;
     }
 
     public combine(how: CombineOperators): void {
