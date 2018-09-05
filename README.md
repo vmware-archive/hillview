@@ -109,45 +109,41 @@ $: cd bin
 ## Service configuration
 
 The fixed configuration of the Hillview service is obtained from a
-configuration file; there is a sample file `bin/config.py`.  This is a
-Python file with global variables that describe the setup of the
-Hillview service.
+configuration file; there is a sample file `bin/config.json`.
 
-```Python
-# This file is a Python program that defines the configuration for a
-# Hillview deployment.  It is imported as a Python module by other
-# Python files that handle the deployment.
+```JSON
+// This file is a Json file that defines the configuration for a
+// Hillview deployment.
 
-# Name of machine hosting the web server
-webserver = "web.server.name"
-
-# Names of the machines hosting the workers; the web
-# server machine can also act as a worker
-backends = [
+{
+  // Name of machine hosting the web server
+  "webserver": "web.server.name",
+  // Names of the machines hosting the workers; the web
+  // server machine can also act as a worker
+  "backends": [
     "worker1.name",
-    "worker2.name" # etc.
-]
-
-# This is a Python map which can be used to override the
-# default_heap_size value below for specific machines.
-backends_heapsize = {
+    "worker2.name"
+    // etc.
+  ],
+  // Network port where the servers listen for requests
+  "backend_port": 3569,
+  // Java heap size for Hillview service
+  "default_heap_size": "25G",
+  // User account for running the Hillview service
+  "user": "hillview",
+  // Folder where the hillview service is installed on remote machines
+  "service_folder": "/home/hillview",
+  // Version of Apache Tomcat to deploy
+  "tomcat_version": "9.0.4",
+  // Tomcat installation folder name
+  "tomcat": "apache-tomcat-9.0.4",
+  // If true delete old log files
+  "cleanup": false,
+  // This can be used to override the default_heap_size for specific machines.
+  "backends_heapsize": {
     "worker1.name": "25G"
+  }
 }
-
-# Network port where the servers listen for requests
-backend_port = 3569
-# Java heap size for Hillview service
-default_heap_size = "25G"
-# User account for running the Hillview service
-user = "hillview"
-# Folder where the hillview service is installed on remote machines
-service_folder = "/home/hillview"
-# Version of Apache Tomcat to deploy
-tomcat_version = "9.0.4"
-# Tomcat installation folder name
-tomcat = "apache-tomcat-" + tomcat_version
-# If true delete old log files
-cleanup = False
 ```
 
 ## Deployment scripts
@@ -155,13 +151,13 @@ cleanup = False
 The following command installs the software on the machines:
 
 ```
-$: deploy.py config.py
+$: deploy.py config.json
 ```
 
 The service is started by running the following command:
 
 ```
-$: start.py config.py
+$: start.py config.json
 ```
 
 To connect to the service open `http://<webserver>:8080` in your web
@@ -170,7 +166,7 @@ browser.
 To stop the services you can run:
 
 ```
-$: stop.py config.py
+$: stop.py config.json
 ```
 
 # Contributing code

@@ -17,44 +17,24 @@
 
 package org.hillview.test;
 
-import org.antlr.v4.runtime.*;
-import org.hillview.ClusterConfigLexer;
-import org.hillview.ClusterConfigParser;
 import org.hillview.management.ClusterConfig;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.List;
 
 /**
  * Test the parser for the cluster config grammar.
  */
 public class ConfigGrammarTest extends BaseTest {
     @Test
-    public void testAntlrGrammar() {
-        String simplestProgram = "# comment\nwebserver = \"web.server.name\"";
-        CharStream inputCharStream = CharStreams.fromString(simplestProgram);
-        TokenSource tokenSource = new ClusterConfigLexer(inputCharStream);
-        TokenStream inputTokenStream = new CommonTokenStream(tokenSource);
-        ClusterConfigParser parser = new ClusterConfigParser(inputTokenStream);
-        parser.addErrorListener(new ConsoleErrorListener());
-        ClusterConfigParser.InitContext context = parser.init();
-        List<ClusterConfigParser.AssignmentContext> assigns = context.assignment();
-        Assert.assertEquals(1, assigns.size());
-        ClusterConfigParser.AssignmentContext assign = assigns.get(0);
-        Assert.assertEquals("webserver", assign.IDENTIFIER().getText());
-        Assert.assertEquals("\"web.server.name\"", assign.expression().STRING().getText());
-    }
-
-    @Test
     public void testConfigLoading() throws IOException {
-        ClusterConfig config = ClusterConfig.parse("../bin/config.py");
-        Assert.assertEquals("web.server.name", config.webServer);
+        ClusterConfig config = ClusterConfig.parse("../bin/config.json");
+        Assert.assertEquals("web.server.name", config.webserver);
         Assert.assertNotNull(config.backends);
         Assert.assertEquals(2, config.backends.length);
         Assert.assertEquals("worker1.name", config.backends[0]);
-        Assert.assertEquals(3569, config.backendPort);
-        Assert.assertEquals("/home/hillview", config.serviceFolder);
+        Assert.assertEquals(3569, config.backend_port);
+        Assert.assertEquals("/home/hillview", config.service_folder);
     }
 }

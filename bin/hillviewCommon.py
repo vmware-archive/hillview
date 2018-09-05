@@ -2,24 +2,28 @@
 
 import os.path
 from optparse import OptionParser
-from importlib.machinery import SourceFileLoader
+from collections import namedtuple
 import subprocess
 import tempfile
+import json
 
 def usage(parser):
     assert isinstance(parser, OptionParser)
     print(parser.print_help())
     exit(1)
 
+class Config:
+    """ Configuration class.  The fields are populated dynamically from a JSON configuration file."""
+    def __init__(self, dict):
+        vars(self).update(dict)
+
 def load_config(parser, file):
     """Load the configuration file describing the Hillview deployment.
-    This file defines a module which has a bunch of global variables.
     """
     print("Importing configuration from", file)
-    (folder, basename) = os.path.split(file)
-    if folder is None:
-        folder = "."
-    config = SourceFileLoader(basename, file).load_module()
+    with open(file) as contents:
+        stripped = "".join(line.partition("//")[0] for line in contents)
+    config = json.loads(stripped, object_hook = Config)
     if not os.path.isabs(config.service_folder):
         print("service_folder must be an absolute path in configuration file",
               config.service_folder)

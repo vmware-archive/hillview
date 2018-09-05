@@ -65,9 +65,6 @@
             </build>
         </profile>
     </profiles>
-    <properties>
-        <antlr4.version>4.7.1</antlr4.version>
-    </properties>
     <dependencies>
         <!-- for URI manipulation -->
         <dependency>
@@ -275,17 +272,6 @@
             <artifactId>jblas</artifactId>
             <version>1.2.4</version>
         </dependency>
-        <!-- Antlr parser generator -->
-        <dependency>
-            <groupId>org.antlr</groupId>
-            <artifactId>antlr4-runtime</artifactId>
-            <version>${antlr4.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.antlr</groupId>
-            <artifactId>antlr4-maven-plugin</artifactId>
-            <version>${antlr4.version}</version>
-        </dependency>
     </dependencies>
     <build>
         <extensions>
@@ -296,19 +282,6 @@
             </extension>
         </extensions>
         <plugins>
-            <!-- ANTRL parser generator -->
-            <plugin>
-                <groupId>org.antlr</groupId>
-                <artifactId>antlr4-maven-plugin</artifactId>
-                <version>${antlr4.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>antlr4</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
             <!-- for parallel junit tests -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
