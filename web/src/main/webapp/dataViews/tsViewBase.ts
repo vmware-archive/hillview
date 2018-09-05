@@ -139,7 +139,7 @@ export abstract class TSViewBase extends BigTableView {
         dialog.addTextField(
             "outColName", "Column name", FieldKind.String, null, "Name to use for the generated column.");
         dialog.addSelectField(
-            "outColKind", "Data type", allContentsKind, "Category", "Type of data in the generated column.");
+            "outColKind", "Data type", allContentsKind.filter((c) => c !== "Category"), "String", "Type of data in the generated column.");
         dialog.addMultiLineTextField("function", "Function",
             "function map(row) {", "  return row['col'];", "}",
             "A JavaScript function that computes the values for each row of the generated column." +
