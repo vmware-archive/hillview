@@ -2,9 +2,10 @@
 
 # This python starts the Hillview service on the machines
 # specified in the configuration file.
+# pylint: disable=unused-wildcard-import,invalid-name,missing-docstring,wildcard-import,superfluous-parens,unused-variable
 
-from hillviewCommon import *
 from optparse import OptionParser
+from hillviewCommon import *
 
 def start_webserver(config):
     """Starts the Hillview web server"""
@@ -15,6 +16,7 @@ def start_webserver(config):
         config.tomcat + "/bin/startup.sh &")
 
 def start_backend(config, rh):
+    # pylint: disable=line-too-long
     """Starts the Hillview service on a remote machine"""
     assert isinstance(rh, RemoteHost)
     print("Starting backend", rh)

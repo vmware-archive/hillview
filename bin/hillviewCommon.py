@@ -1,5 +1,5 @@
 # Common functions user by the Hillview deployment scripts
-
+# pylint: disable=unused-wildcard-import,invalid-name,missing-docstring,wildcard-import,superfluous-parens,unused-variable
 import os.path
 from optparse import OptionParser
 from collections import namedtuple
@@ -19,9 +19,9 @@ class Config(object):
     def __init__(self, d):
         for a, b in d.items():
             if isinstance(b, (list, tuple)):
-               setattr(self, a, [obj(x) if isinstance(x, dict) else x for x in b])
+                setattr(self, a, [obj(x) if isinstance(x, dict) else x for x in b])
             else:
-               setattr(self, a, obj(b) if isinstance(b, dict) else b)
+                setattr(self, a, obj(b) if isinstance(b, dict) else b)
 
     def __getitem__(self, key):
         return self.__dict__[key]
@@ -39,7 +39,7 @@ def load_config(parser, file):
     print("Importing configuration from", file)
     with open(file) as contents:
         stripped = "".join(line.partition("//")[0] for line in contents)
-    config = json.loads(stripped, object_hook = Config)
+    config = json.loads(stripped, object_hook=Config)
     if not os.path.isabs(config.service_folder):
         print("service_folder must be an absolute path in configuration file",
               config.service_folder)

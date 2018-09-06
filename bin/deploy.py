@@ -2,11 +2,11 @@
 
 # This python program deploys the files needed by the Hillview service
 # on the machines specified in the configuration file.
-
-from hillviewCommon import *
+# pylint: disable=unused-wildcard-import,invalid-name,missing-docstring,wildcard-import,superfluous-parens,unused-variable
 from optparse import OptionParser
 import tempfile
 import os
+from hillviewCommon import *
 
 def prepare_webserver(config):
     """Deploys files needed by the Hillview web server"""
@@ -17,9 +17,9 @@ def prepare_webserver(config):
     rh.run_remote_shell_command("chown " + config.user + " " + config.service_folder)
     rh.create_remote_folder(config.service_folder + "/hillview")
 
-    major=config.tomcat_version[0:config.tomcat_version.find('.')]
+    major = config.tomcat_version[0:config.tomcat_version.find('.')]
 
-    installTomcat="cd " + config.service_folder + ";" + \
+    installTomcat = "cd " + config.service_folder + ";" + \
       "if [ ! -d " + config.tomcat + " ]; then " + \
       "wget http://archive.apache.org/dist/tomcat/tomcat-" + major + "/v" + \
       config.tomcat_version + "/bin/" + config.tomcat + ".tar.gz;" + \
@@ -48,6 +48,7 @@ def prepare_webserver(config):
                                 config.service_folder + "/hillview/hillview-web.log")
 
 def prepare_backend(config, rh):
+    # pylint: disable=line-too-long
     """Prepares files needed by a Hillview service on a remote machine"""
     print("Preparing backend", rh)
 #    rh.run_remote_shell_command("sudo apt-get install libgfortran3")
