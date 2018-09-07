@@ -269,7 +269,7 @@ for building and testing.
 
 ```
 $ cd bin
-$ ./install-dependences.sh
+$ ./install-dependencies.sh
 ```
 
 ## Impala Java libraries
