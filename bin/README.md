@@ -3,7 +3,7 @@
 ## Shell scripts for building and testing
 
 * lib.sh: a small library of useful shell functions used by other scripts
-* install-dependences.sh: Install all dependences needed to build Hillview
+* install-dependencies.sh: Install all dependencies needed to build Hillview
 * rebuild.sh: build the Hillview front-end and back-end
 * backend-start.sh: start the Hillview back-end service on the local machine
 * frontend-start.sh: start the Hillview front-end service on the local machine

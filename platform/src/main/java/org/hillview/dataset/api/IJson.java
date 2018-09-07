@@ -28,7 +28,7 @@ import java.io.Serializable;
 import java.lang.reflect.Type;
 import java.time.Instant;
 
-// Unfortunately this module introduces many circular dependences, because it has
+// Unfortunately this module introduces many circular dependencies, because it has
 // to register various type adaptors.
 
 public interface IJson extends Serializable {

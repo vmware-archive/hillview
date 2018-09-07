@@ -270,7 +270,7 @@ export class DatasetView implements IHtmlElement {
      * @returns {boolean}   True if reconstruction succeeds.
      */
     public reconstructView(obj: object): boolean {
-        // This is ugly, but circular module dependences make it
+        // This is ugly, but circular module dependencies make it
         // difficult to place this method in a set of separate classes.
         const vs = obj as IViewSerialization;
         if (vs.pageId == null ||
