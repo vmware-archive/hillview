@@ -72,8 +72,8 @@ def run_on_all_backends(config, function, parallel):
 class RemoteHost:
     """Abstraction for a remote host"""
     def __init__(self, user, host):
-        assert isinstance(user, str)
-        assert isinstance(host, str)
+        assert isinstance(user.encode('utf-8'), str)
+        assert isinstance(host.encode('utf-8'), str)
         self.host = host
         self.user = user
 
