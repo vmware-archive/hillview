@@ -74,14 +74,9 @@ export interface ConvertColumnInfo {
 /// Same as FindSketch.Result
 export interface FindResult {
     before: number;
-<<<<<<< 5bdf00d44504218116c567a8615981a22012d03f
     at: number;
     after: number;
     firstMatchingRow: any[];
-=======
-    after: number;
-    firstRow: any[];
->>>>>>> Friday morning
 }
 
 export interface FindNext {
