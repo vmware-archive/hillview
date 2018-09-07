@@ -73,8 +73,14 @@ export interface ConvertColumnInfo {
 
 /// Same as FindSketch.Result
 export interface FindResult {
-    count: number;
+    before: number;
+    after: number;
     firstRow: any[];
+}
+
+export interface FindNext {
+    strFilter: StringFilterDescription;
+    result: FindResult;
 }
 
 export interface JdbcConnectionInformation {

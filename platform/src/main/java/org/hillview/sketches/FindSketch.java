@@ -36,9 +36,15 @@ import javax.annotation.Nullable;
 public class FindSketch implements ISketch<ITable, FindSketch.Result> {
     public static final class Result implements IJson {
         /**
-         * Number of occurrences of the string to find.
+         * Number of occurrences of the string to find above the current row.
          */
-        public final long count;
+        public final long before;
+        /**
+         * Number of occurrences of the string to find below the current row.
+         */
+        public final long after;
+
+
         /**
          * First row that matches the string after the top row.
          */
@@ -46,12 +52,14 @@ public class FindSketch implements ISketch<ITable, FindSketch.Result> {
         public final RowSnapshot firstRow;
 
         Result() {
-            this.count = 0;
+            this.before = 0;
+            this.after = 0;
             this.firstRow = null;
         }
 
-        Result(long count, @Nullable RowSnapshot firstRow) {
-            this.count = count;
+        Result(long before, long after, @Nullable RowSnapshot firstRow) {
+            this.before = before;
+            this.after= after;
             this.firstRow = firstRow;
         }
 
@@ -68,13 +76,14 @@ public class FindSketch implements ISketch<ITable, FindSketch.Result> {
                 else
                     fr = other.firstRow;
             }
-            return new Result(this.count + other.count, fr);
+            return new Result(this.before + other.before, this.after + other.after, fr);
         }
 
         @Override
         public JsonElement toJsonTree() {
             JsonObject object = new JsonObject();
-            object.addProperty("count", this.count);
+            object.addProperty("before", this.before);
+            object.addProperty("after", this.after);
             if (this.firstRow == null)
                 object.addProperty("firstRow", (String)null);
             else
@@ -88,7 +97,7 @@ public class FindSketch implements ISketch<ITable, FindSketch.Result> {
      */
     private final StringFilterDescription stringFilterDescription;
     /**
-     * Only return rows larger than this row.
+     * Only return rows greater than or equal to than this row.
      * If this is null there are no constraints.
      */
     @Nullable
@@ -97,18 +106,44 @@ public class FindSketch implements ISketch<ITable, FindSketch.Result> {
      * Order used for sorting data.
      */
     private final RecordOrder recordOrder;
+    /**
+     * If true, only return results strictly greater than the top row. Is used in implementing the
+     * findNext functionality.
+     */
+    private final boolean excludeTopRow;
+    private final boolean next;
+
+
+    public FindSketch(final StringFilterDescription stringFilterDescription,
+                      final @Nullable RowSnapshot topRow, final RecordOrder recordOrder,
+                      final boolean excludeTopRow, final boolean next) {
+        this.stringFilterDescription = stringFilterDescription;
+        this.topRow = topRow;
+        this.recordOrder = next ? recordOrder: recordOrder.reverse();
+        this.excludeTopRow = true;
+        this.next = next;
+    }
+
+    public FindSketch(final StringFilterDescription stringFilterDescription,
+                      final @Nullable RowSnapshot topRow,
+                      final RecordOrder recordOrder, final boolean excludeTopRow) {
+        this.stringFilterDescription = stringFilterDescription;
+        this.topRow = topRow;
+        this.recordOrder = recordOrder;
+        this.excludeTopRow = excludeTopRow;
+        this.next = true;
+    }
 
     public FindSketch(final StringFilterDescription stringFilterDescription,
                       final @Nullable RowSnapshot topRow,
                       final RecordOrder recordOrder) {
-        this.stringFilterDescription = stringFilterDescription;
-        this.topRow = topRow;
-        this.recordOrder = recordOrder;
-    }
+        this(stringFilterDescription, topRow, recordOrder, false, true);
+        }
 
     @Override
     public Result create(ITable data) {
-        long count = 0;
+        long before = 0;
+        long after = 0;
         IRowIterator rowIt = data.getRowIterator();
         Schema toCheck = this.recordOrder.toSchema();
         IStringFilter stringFilter = StringFilterFactory.getFilter(this.stringFilterDescription);
@@ -120,27 +155,36 @@ public class FindSketch implements ISketch<ITable, FindSketch.Result> {
             vw.setRow(i);
             if (!vw.matches(stringFilter))
                 continue;
-            count++;
-            if ((this.topRow != null) && (this.topRow.compareTo(vw, this.recordOrder) > 0)) {
-                // This matches, but is before the topRow.
-                continue;
-            }
-
-            if (!smallestMatch.exists()) {
-                smallestMatch.setRow(i);
-            } else {
-                if (smallestMatch.compareTo(vw, this.recordOrder) > 0)
+            boolean match_before;
+            if (this.topRow == null)
+                match_before = false;
+            else
+                match_before = (this.topRow.compareTo(vw, this.recordOrder) > 0) ||
+                        ((this.topRow.compareTo(vw, this.recordOrder) == 0) && this.excludeTopRow);
+            if (match_before)
+                before += 1;
+            else {
+                if (after == 0) {
                     smallestMatch.setRow(i);
+                } else {
+                    if (smallestMatch.compareTo(vw, this.recordOrder) > 0)
+                        smallestMatch.setRow(i);
+                }
+                after += 1;
             }
         }
-
         RowSnapshot firstRow;
-        if (!smallestMatch.exists()) {
+        if (after == 0) {
             firstRow = null;
         } else {
             firstRow = smallestMatch.materialize();
         }
-        return new Result(count, firstRow);
+        if(!next) {
+            long tmp = before;
+            before = after;
+            after = tmp;
+        }
+        return new Result(before, after, firstRow);
     }
 
     @Nullable
