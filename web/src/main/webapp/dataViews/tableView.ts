@@ -184,12 +184,18 @@ export class TableView extends TSViewBase implements IScrollTarget {
     }
 
     private addCheckbox(stringDesc: string ): HTMLInputElement{
+        let div: HTMLElement = document.createElement("div");
+        div.innerHTML = "&nbsp; &nbsp;";
+        this.findBar.appendChild(div)
         let label = document.createElement("label");
         label.textContent = stringDesc;
         this.findBar.appendChild(label);
         let checkBox: HTMLInputElement = document.createElement("input");
         checkBox.type = "checkbox";
         this.findBar.appendChild(checkBox);
+        let divEnd: HTMLElement = document.createElement("div");
+        divEnd.innerHTML = "&nbsp; | &nbsp;";
+        this.findBar.appendChild(divEnd)
         return checkBox;
     }
 
@@ -293,7 +299,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
         const o = this.order.clone();
         let topRow: any[] = (this.startFromTopCheckbox.checked ? null: this.nextKList.rows[0].values);
         const rr = this.createFindRequest(o, topRow, this.strFilter, excludeTopRow, next);
-        rr.invoke(new FindReceiver(this.getPage(), rr, this, o, this.strFilter));
+        rr.invoke(new FindReceiver(this.getPage(), rr, this, o));
     }
 
     protected getCombineRenderer(title: string):
@@ -724,12 +730,12 @@ export class TableView extends TSViewBase implements IScrollTarget {
         if (perc !== "")
             perc = " (" + perc + ")";
 
-        let message = "Showing on " + tableRowCount + " rows " +
+        let message = tableRowCount + " displayed rows represent " +
             formatNumber(this.dataRowsDisplayed) +
             "/" + formatNumber(this.rowCount) + " data rows" + perc;
         if (result != null)
-            message = result.after.toString() + " matching rows below, " + result.before.toString() +
-                " matching rows above <br>" + message;
+            message = result.before.toString() + " matching rows above, " + result.after.toString() +
+                " matching rows below the top row <br>";
         else {
             this.strFilter = null;
             this.findBar.style.display = "none";
@@ -1299,15 +1305,13 @@ export class FindReceiver extends OnCompleteReceiver<FindResult> {
     public constructor(page: FullPage,
                        operation: ICancellable<FindResult>,
                        protected tv: TableView,
-                       protected order: RecordOrder,
-                       protected strFilter: StringFilterDescription) {
+                       protected order: RecordOrder,) {
         super(page, operation, "Compute quantiles");
     }
 
     public run(result: FindResult): void {
-        if (result.after === 0) {
-            let mesg: string = "No matches below. " + result.before + " matches above."
-            this.page.reportError(mesg);
+        if (result.at == 0) {
+            this.page.reportError("No matches found. ");
             return;
         }
         const rr = this.tv.createNextKRequest(this.order, result.firstRow, this.tv.tableRowsDesired);

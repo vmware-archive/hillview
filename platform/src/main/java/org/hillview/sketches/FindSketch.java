@@ -32,19 +32,22 @@ import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.VirtualRowSnapshot;
 
 import javax.annotation.Nullable;
+import java.security.InvalidParameterException;
 
 public class FindSketch implements ISketch<ITable, FindSketch.Result> {
     public static final class Result implements IJson {
         /**
-         * Number of occurrences of the string to find above the current row.
+         * Number of occurrences of the search string (strictly) above the first row.
          */
         public final long before;
         /**
-         * Number of occurrences of the string to find below the current row.
+         * Number of occurrences of the first row.
+         */
+        public final long at;
+        /**
+         * Number of occurrences of the search string (strictly) below the first row.
          */
         public final long after;
-
-
         /**
          * First row that matches the string after the top row.
          */
@@ -53,36 +56,58 @@ public class FindSketch implements ISketch<ITable, FindSketch.Result> {
 
         Result() {
             this.before = 0;
+            this.at = 0;
             this.after = 0;
             this.firstRow = null;
         }
 
-        Result(long before, long after, @Nullable RowSnapshot firstRow) {
+        Result(long before, long at, long after,  @Nullable RowSnapshot firstRow) {
             this.before = before;
+            this.at = at;
             this.after= after;
             this.firstRow = firstRow;
         }
 
         Result add(Result other, RecordOrder order) {
             @Nullable RowSnapshot fr;
+            long before, at, after;
             if (this.firstRow == null) {
                 fr = other.firstRow;
+                before = this.before + other.before;
+                at = other.at;
+                after = other.after;
             } else if (other.firstRow == null) {
                 fr = this.firstRow;
+                before = this.before + other.before;
+                at = this.at;
+                after = this.after;
             } else {
                 int compare = this.firstRow.compareTo(other.firstRow, order);
-                if (compare < 0)
+                before  = this.before + other.before;
+                if (compare < 0) {
                     fr = this.firstRow;
-                else
+                    at = this.at;
+                    after = this.after + other.at + other.after;
+                }
+                else if (compare == 0 ) {
+                    fr = this.firstRow;
+                    at = this.at + other.at;
+                    after = this.after + other.after;
+                }
+                else {
                     fr = other.firstRow;
+                    at = other.at;
+                    after = this.at + this.after + other.after;
+                }
             }
-            return new Result(this.before + other.before, this.after + other.after, fr);
+            return new Result(before, at, after, fr);
         }
 
         @Override
         public JsonElement toJsonTree() {
             JsonObject object = new JsonObject();
             object.addProperty("before", this.before);
+            object.addProperty("at", this.at);
             object.addProperty("after", this.after);
             if (this.firstRow == null)
                 object.addProperty("firstRow", (String)null);
@@ -111,6 +136,11 @@ public class FindSketch implements ISketch<ITable, FindSketch.Result> {
      * findNext functionality.
      */
     private final boolean excludeTopRow;
+    /**
+     * If true, we are finding the next string in sorted order (as specified by recordOrder). If
+     * false, we are looking for the previous string (or equivalently the next string in reverse
+     * sorted order.
+     */
     private final boolean next;
 
 
@@ -118,20 +148,18 @@ public class FindSketch implements ISketch<ITable, FindSketch.Result> {
                       final @Nullable RowSnapshot topRow, final RecordOrder recordOrder,
                       final boolean excludeTopRow, final boolean next) {
         this.stringFilterDescription = stringFilterDescription;
+        if ((!next) && (topRow == null))
+                throw new InvalidParameterException("Reverse search requires a top row");
         this.topRow = topRow;
         this.recordOrder = next ? recordOrder: recordOrder.reverse();
-        this.excludeTopRow = true;
+        this.excludeTopRow = next ? excludeTopRow: true;
         this.next = next;
     }
 
     public FindSketch(final StringFilterDescription stringFilterDescription,
                       final @Nullable RowSnapshot topRow,
                       final RecordOrder recordOrder, final boolean excludeTopRow) {
-        this.stringFilterDescription = stringFilterDescription;
-        this.topRow = topRow;
-        this.recordOrder = recordOrder;
-        this.excludeTopRow = excludeTopRow;
-        this.next = true;
+        this(stringFilterDescription, topRow, recordOrder, excludeTopRow, true);
     }
 
     public FindSketch(final StringFilterDescription stringFilterDescription,
@@ -143,6 +171,7 @@ public class FindSketch implements ISketch<ITable, FindSketch.Result> {
     @Override
     public Result create(ITable data) {
         long before = 0;
+        long at = 0;
         long after = 0;
         IRowIterator rowIt = data.getRowIterator();
         Schema toCheck = this.recordOrder.toSchema();
@@ -158,23 +187,31 @@ public class FindSketch implements ISketch<ITable, FindSketch.Result> {
             boolean match_before;
             if (this.topRow == null)
                 match_before = false;
-            else
+            else {
                 match_before = (this.topRow.compareTo(vw, this.recordOrder) > 0) ||
                         ((this.topRow.compareTo(vw, this.recordOrder) == 0) && this.excludeTopRow);
+            }
             if (match_before)
                 before += 1;
             else {
-                if (after == 0) {
+                if (at == 0) {
                     smallestMatch.setRow(i);
+                    at = 1;
                 } else {
-                    if (smallestMatch.compareTo(vw, this.recordOrder) > 0)
+                    if (smallestMatch.compareTo(vw, this.recordOrder) > 0) {
                         smallestMatch.setRow(i);
+                        after += at;
+                        at = 1;
+                    } else if (smallestMatch.compareTo(vw, this.recordOrder) == 0) {
+                        at += 1;
+                    } else
+                        after += 1;
+
                 }
-                after += 1;
             }
         }
         RowSnapshot firstRow;
-        if (after == 0) {
+        if (at == 0) {
             firstRow = null;
         } else {
             firstRow = smallestMatch.materialize();
@@ -184,7 +221,7 @@ public class FindSketch implements ISketch<ITable, FindSketch.Result> {
             before = after;
             after = tmp;
         }
-        return new Result(before, after, firstRow);
+        return new Result(before, at, after, firstRow);
     }
 
     @Nullable

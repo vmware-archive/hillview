@@ -74,6 +74,7 @@ export interface ConvertColumnInfo {
 /// Same as FindSketch.Result
 export interface FindResult {
     before: number;
+    at: number;
     after: number;
     firstRow: any[];
 }
