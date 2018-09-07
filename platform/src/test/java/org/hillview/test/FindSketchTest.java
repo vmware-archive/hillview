@@ -54,7 +54,6 @@ public class FindSketchTest extends BaseTest {
         FindSketch fsk = new FindSketch(sf, null, cso);
         FindSketch.Result result = fsk.create(table);
         this.assertResult(0,0, 0,true, result);
-
     }
 
     @Test

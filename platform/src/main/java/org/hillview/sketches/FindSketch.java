@@ -165,6 +165,7 @@ public class FindSketch implements ISketch<ITable, FindSketch.Result> {
         this(stringFilterDescription, topRow, recordOrder, false, true);
     }
 
+
     @Override
     public Result create(ITable data) {
         long before = 0;

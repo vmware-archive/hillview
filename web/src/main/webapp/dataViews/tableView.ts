@@ -21,7 +21,7 @@ import {
     ColumnSortOrientation,
     Comparison,
     ComparisonFilterDescription,
-    ContentsKind,
+    ContentsKind, FindNext,
     FindResult,
     IColumnDescription,
     kindIsNumeric,
@@ -81,18 +81,15 @@ export class TableView extends TSViewBase implements IScrollTarget {
     protected cellsPerColumn: Map<string, HTMLElement[]>;
     protected selectedColumns = new SelectionStateMachine();
     protected messageBox: HTMLElement;
-    protected ranFind: boolean;
-    protected stringFilterDescription: StringFilterDescription;
 
     // The following elements are used for Find
-    protected findBarVisible: boolean;
     protected strFilter: StringFilterDescription;
     protected findInputBox: HTMLInputElement;
     protected substringsFindCheckbox: HTMLInputElement;
     protected regexFindCheckbox: HTMLInputElement;
     protected caseFindCheckbox: HTMLInputElement;
-    protected startFromTopCheckbox: HTMLInputElement;
     protected findBar: HTMLElement;
+    protected findBarVisible: boolean;
     protected foundCount: HTMLElement;
 
     public constructor(
