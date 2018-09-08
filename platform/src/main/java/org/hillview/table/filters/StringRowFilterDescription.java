@@ -19,12 +19,14 @@ package org.hillview.table.filters;
 
 import org.hillview.table.api.*;
 
-import javax.annotation.Nullable;
-
 public class StringRowFilterDescription implements ITableFilterDescription {
-    @Nullable
+    /**
+     * The name of the column on which the filtering operation is performed.
+     */
     private final String colName;
-    @Nullable
+    /**
+     * The description of the filter that will be used.
+     */
     private final StringFilterDescription stringFilterDescription;
 
     public StringRowFilterDescription(String colName, StringFilterDescription
@@ -46,7 +48,7 @@ public class StringRowFilterDescription implements ITableFilterDescription {
         private final IColumn column;
         private final IStringFilter stringFilter;
         StringRowFilter(ITable table) {
-            this.stringFilter = new StringFilterFactory().getFilter(stringFilterDescription);
+            this.stringFilter = new StringFilterFactory(stringFilterDescription).getFilter();
             this.column = table.getLoadedColumn(StringRowFilterDescription.this.colName);
         }
 

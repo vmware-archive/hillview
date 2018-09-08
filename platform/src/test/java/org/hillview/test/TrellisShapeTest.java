@@ -15,7 +15,7 @@ public class TrellisShapeTest {
                 System.out.printf("\nAspect ratio %f\n", ratio);
             for (int n = 10; n <= 25; n++) {
                 ComputeTrellisShape.TrellisShape optShape = tShape.getShape(n);
-                if(toPrint) {
+                if (toPrint) {
                     if (optShape.x_num * optShape.y_num < n)
                         System.out.println("Constraints are not feasible for ");
                     System.out.printf("%d: %d * %d, Size %.0f * %.0f, Coverage: %f \n", n,

@@ -27,7 +27,6 @@ import java.io.IOException;
  * Test the parser for the cluster config grammar.
  */
 public class ConfigGrammarTest extends BaseTest {
-    /*
     @Test
     public void testConfigLoading() throws IOException {
         ClusterConfig config = ClusterConfig.parse("../bin/config.json");
@@ -38,5 +37,4 @@ public class ConfigGrammarTest extends BaseTest {
         Assert.assertEquals(3569, config.backend_port);
         Assert.assertEquals("/home/hillview", config.service_folder);
     }
-    */
 }
