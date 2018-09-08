@@ -13,7 +13,6 @@
 ## Python scripts for deploying Hillview on a cluster and managing data
 
 * hillviewCommon.py: common library used by other python programs
-* config-sample.py: sample configuration file describing a Hillview cluster installation
 * upload-data.py: upload a set of files to a folder on a set of machines in a
                   round-robin fashion
 * delete-data.py: delete a folder from all machines in a Hillview cluster
