@@ -9,7 +9,7 @@ source $mydir/lib.sh
 set -e
 
 usage() {
-    echo "redeploy.sh [-shd] config.py"
+    echo "redeploy.sh [-shd] config.json"
     echo "Rebuild and redeploy program on a cluster"
     echo "-d: skip deploying software, just stop and start"
     echo "-s: skip rebuilding, just redeploy"
@@ -32,7 +32,7 @@ done
 shift $((OPTIND-1))
 
 if [ $# -ne 1 ]; then
-   echo "You must supply a config.py argument"
+   echo "You must supply a config.json argument"
    usage
 fi
 
