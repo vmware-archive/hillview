@@ -25,82 +25,88 @@ import javax.annotation.Nullable;
 import java.util.regex.Pattern;
 
 public class StringFilterFactory {
-    protected final StringFilterDescription stringFilterDescription;
-    protected static IStringFilter instance = null;
+    public static IStringFilter instance = null;
 
-    public StringFilterFactory(StringFilterDescription stringFilterDescription) {
-        this.stringFilterDescription = stringFilterDescription;
-        if (this.stringFilterDescription.compareValue == null)
-            this.instance= new MissingValuesFilter();
+    public IStringFilter getFilter(StringFilterDescription stringFilterDescription) {
+        if (stringFilterDescription.compareValue == null)
+            this.instance= new MissingValuesFilter(stringFilterDescription);
         else {
             if (stringFilterDescription.asRegEx) {
-                this.instance = new RegExFilter();
+                this.instance = new RegExFilter(stringFilterDescription);
             } else if (stringFilterDescription.asSubString) {
-                this.instance= new SubStringFilter();
+                this.instance= new SubStringFilter(stringFilterDescription);
             } else
-                this.instance = new ExactCompFilter();
+                this.instance = new ExactCompFilter(stringFilterDescription);
         }
-    }
-
-    public IStringFilter getFilter() {
         return this.instance;
     }
 
     class MissingValuesFilter implements IStringFilter {
+        private StringFilterDescription stringFilterDescription;
+
+        public MissingValuesFilter(StringFilterDescription stringFilterDescription) {
+            this.stringFilterDescription = stringFilterDescription;
+        }
+
         public boolean test(@Nullable String curString) {
-            return (curString == null)^StringFilterFactory.this.stringFilterDescription.complement;
+            return (curString == null)^this.stringFilterDescription.complement;
         }
     }
 
     class RegExFilter implements IStringFilter {
+        private StringFilterDescription stringFilterDescription;
         private final Pattern regEx;
 
-        public RegExFilter(){
+        public RegExFilter(StringFilterDescription stringFilterDescription){
+            this.stringFilterDescription = stringFilterDescription;
             this.regEx = Pattern.compile(
-                    StringFilterFactory.this.stringFilterDescription.compareValue,
-                    StringFilterFactory.this.stringFilterDescription.caseSensitive ?
-                            0 : Pattern.CASE_INSENSITIVE);
+                    this.stringFilterDescription.compareValue,
+                    this.stringFilterDescription.caseSensitive ? 0 : Pattern.CASE_INSENSITIVE);
         }
 
         public boolean test(@Nullable String curString) {
             boolean result = (curString != null) && this.regEx.matcher(curString).matches();
-            return result^StringFilterFactory.this.stringFilterDescription.complement;
+            return result^this.stringFilterDescription.complement;
         }
     }
 
     class SubStringFilter implements IStringFilter {
+        private StringFilterDescription stringFilterDescription;
         private final String compareTo;
 
-        public SubStringFilter() {
-            this.compareTo = StringFilterFactory.this.stringFilterDescription.caseSensitive ?
-                    StringFilterFactory.this.stringFilterDescription.compareValue :
-                    StringFilterFactory.this.stringFilterDescription.compareValue.toLowerCase();
+        public SubStringFilter(StringFilterDescription stringFilterDescription) {
+            this.stringFilterDescription = stringFilterDescription;
+            this.compareTo = stringFilterDescription.caseSensitive ?
+                    stringFilterDescription.compareValue :
+                    stringFilterDescription.compareValue.toLowerCase();
         }
 
         public boolean test(@Nullable String curString) {
             boolean result = (curString != null) && (
-                    StringFilterFactory.this.stringFilterDescription.caseSensitive ?
+                    this.stringFilterDescription.caseSensitive ?
                     curString.contains(this.compareTo) :
                     StringUtils.containsIgnoreCase(curString, this.compareTo));
-            return result^StringFilterFactory.this.stringFilterDescription.complement;
+            return result^this.stringFilterDescription.complement;
         }
     }
 
     class ExactCompFilter implements IStringFilter {
+        private StringFilterDescription stringFilterDescription;
         private final String compareTo;
 
-        public ExactCompFilter() {
-            this.compareTo = StringFilterFactory.this.stringFilterDescription.caseSensitive ?
-                    StringFilterFactory.this.stringFilterDescription.compareValue :
-                    StringFilterFactory.this.stringFilterDescription.compareValue.toLowerCase();
+        public ExactCompFilter(StringFilterDescription stringFilterDescription) {
+            this.stringFilterDescription = stringFilterDescription;
+            this.compareTo = stringFilterDescription.caseSensitive ?
+                    stringFilterDescription.compareValue :
+                    stringFilterDescription.compareValue.toLowerCase();
         }
 
         public boolean test(@Nullable String curString) {
             boolean result = (curString != null) && (
-                    StringFilterFactory.this.stringFilterDescription.caseSensitive ?
+                    this.stringFilterDescription.caseSensitive ?
                     curString.equals(this.compareTo) :
                     curString.equalsIgnoreCase(this.compareTo));
-            return result^StringFilterFactory.this.stringFilterDescription.complement;
+            return result^this.stringFilterDescription.complement;
         }
     }
 }
