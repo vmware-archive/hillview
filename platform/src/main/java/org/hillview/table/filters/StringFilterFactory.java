@@ -25,20 +25,19 @@ import javax.annotation.Nullable;
 import java.util.regex.Pattern;
 
 public class StringFilterFactory {
-    public static IStringFilter instance = null;
+    public static StringFilterFactory instance = new StringFilterFactory();
 
     public IStringFilter getFilter(StringFilterDescription stringFilterDescription) {
         if (stringFilterDescription.compareValue == null)
-            this.instance= new MissingValuesFilter(stringFilterDescription);
+            return new MissingValuesFilter(stringFilterDescription);
         else {
             if (stringFilterDescription.asRegEx) {
-                this.instance = new RegExFilter(stringFilterDescription);
+                return new RegExFilter(stringFilterDescription);
             } else if (stringFilterDescription.asSubString) {
-                this.instance= new SubStringFilter(stringFilterDescription);
+                return new SubStringFilter(stringFilterDescription);
             } else
-                this.instance = new ExactCompFilter(stringFilterDescription);
+                return new ExactCompFilter(stringFilterDescription);
         }
-        return this.instance;
     }
 
     class MissingValuesFilter implements IStringFilter {
