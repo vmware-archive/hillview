@@ -111,8 +111,7 @@ public class FindSketch implements ISketch<ITable, FindSketch.Result> {
         long count = 0;
         IRowIterator rowIt = data.getRowIterator();
         Schema toCheck = this.recordOrder.toSchema();
-        IStringFilter stringFilter = new StringFilterFactory().
-                getFilter(this.stringFilterDescription);
+        IStringFilter stringFilter = new StringFilterFactory().instance.getFilter(this.stringFilterDescription);
         assert(stringFilter != null);
         VirtualRowSnapshot vw = new VirtualRowSnapshot(data, toCheck);
         VirtualRowSnapshot smallestMatch = new VirtualRowSnapshot(data, toCheck);
