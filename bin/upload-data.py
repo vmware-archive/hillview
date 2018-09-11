@@ -5,14 +5,16 @@
 # The script can also be given an optional schema file.
 # This file will be uploaded to all machines.
 # The list of machines is provided in a Hillview configuration file.
+# pylint: disable=unused-wildcard-import,invalid-name,missing-docstring,wildcard-import,superfluous-parens,unused-variable
 
-from hillviewCommon import *
 from optparse import OptionParser
 import os.path
+from hillviewCommon import *
 
 created_folders = set()
 
 def create_remote_folder(remoteHost, folder):
+    # pylint: disable=unnecessary-semicolon
     shortcut = "" + remoteHost.host + ":" + folder;
     if shortcut in created_folders:
         return
@@ -24,6 +26,7 @@ def copy_file_to_remote_host(rh, source, folder, copyOption):
     rh.copy_file_to_remote(source, folder, copyOption)
 
 def copy_schema(config, schema, folder, copyOption):
+    # pylint: disable=line-too-long
     print("Copying", schema, "to all hosts")
     run_on_all_backends(config, lambda rh: copy_file_to_remote_host(rh, schema, folder, copyOption), True)
 
@@ -37,6 +40,7 @@ def copy_files(config, folder, filelist, copyOption):
         copy_file_to_remote_host(rh, f, folder, copyOption)
 
 def main():
+    # pylint: disable=line-too-long,unnecessary-semicolon
     parser = OptionParser(usage="%prog [options] config fileList\n" + \
                           "files in the list are uploaded in round-robin to the worker machines in the cluster")
     parser.add_option("-d", help="destination folder where output is written" +\
@@ -51,7 +55,7 @@ def main():
         usage(parser)
     config = load_config(parser, args[0])
     folder = options.folder
-    if folder == None:
+    if folder is None:
         print("Destination folder is mandatory")
         usage(parser)
     if not os.path.isabs(folder):

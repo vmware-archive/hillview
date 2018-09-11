@@ -2,9 +2,10 @@
 
 # This Python program stops the Hillview service on the machines specified in the
 # configuration file.
+# pylint: disable=unused-wildcard-import,invalid-name,missing-docstring,wildcard-import,superfluous-parens,unused-variable
 
-from hillviewCommon import *
 from optparse import OptionParser
+from hillviewCommon import *
 
 def stop_webserver(config):
     """Stops the Hillview web server"""
@@ -24,6 +25,7 @@ def stop_backend(rh):
         "pkill -f hillview-server; true")
 
 def stop_backends(config):
+    # pylint: disable=unnecessary-lambda
     """Stops all Hillview backend workers"""
     run_on_all_backends(config, lambda rh: stop_backend(rh), True)
 

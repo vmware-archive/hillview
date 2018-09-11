@@ -2,9 +2,10 @@
 
 # This python checks if the Hillview service is running on all machines
 # specified in the configuration file.
+# pylint: disable=unused-wildcard-import,invalid-name,missing-docstring,wildcard-import,superfluous-parens,unused-variable
 
-from hillviewCommon import *
 from optparse import OptionParser
+from hillviewCommon import *
 
 def check_webserver(config):
     """Checks if the Hillview web server is running"""
