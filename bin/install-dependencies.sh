@@ -3,6 +3,7 @@
 
 # Bail out at first error
 set -e
+set -x
 
 mydir="$(dirname "$0")"
 if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
@@ -22,6 +23,7 @@ if [ ! -d apache-tomcat-${TOMCATVERSION} ]; then
     rm -rf ROOT*
     ln -s ../../web/target/web-1.0-SNAPSHOT.war ROOT.war
     popd
+    rm -rf apache-tomcat-${TOMCATVERSION}.tar.gz
 else
     echo "Tomcat already installed"
 fi
