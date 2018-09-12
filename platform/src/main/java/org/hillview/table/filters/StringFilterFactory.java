@@ -25,9 +25,8 @@ import javax.annotation.Nullable;
 import java.util.regex.Pattern;
 
 public class StringFilterFactory {
-    public static StringFilterFactory instance = new StringFilterFactory();
 
-    public IStringFilter getFilter(StringFilterDescription stringFilterDescription) {
+    public static IStringFilter getFilter(StringFilterDescription stringFilterDescription) {
         if (stringFilterDescription.compareValue == null)
             return new MissingValuesFilter(stringFilterDescription);
         else {
@@ -40,7 +39,7 @@ public class StringFilterFactory {
         }
     }
 
-    class MissingValuesFilter implements IStringFilter {
+    static class MissingValuesFilter implements IStringFilter {
         private StringFilterDescription stringFilterDescription;
 
         public MissingValuesFilter(StringFilterDescription stringFilterDescription) {
@@ -52,7 +51,7 @@ public class StringFilterFactory {
         }
     }
 
-    class RegExFilter implements IStringFilter {
+    static class RegExFilter implements IStringFilter {
         private StringFilterDescription stringFilterDescription;
         private final Pattern regEx;
 
@@ -69,7 +68,7 @@ public class StringFilterFactory {
         }
     }
 
-    class SubStringFilter implements IStringFilter {
+    static class SubStringFilter implements IStringFilter {
         private StringFilterDescription stringFilterDescription;
         private final String compareTo;
 
@@ -89,7 +88,7 @@ public class StringFilterFactory {
         }
     }
 
-    class ExactCompFilter implements IStringFilter {
+    static class ExactCompFilter implements IStringFilter {
         private StringFilterDescription stringFilterDescription;
         private final String compareTo;
 

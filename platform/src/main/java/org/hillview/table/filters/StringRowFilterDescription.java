@@ -48,7 +48,7 @@ public class StringRowFilterDescription implements ITableFilterDescription {
         private final IColumn column;
         private final IStringFilter stringFilter;
         StringRowFilter(ITable table) {
-            this.stringFilter = new StringFilterFactory().instance.getFilter(stringFilterDescription);
+            this.stringFilter = StringFilterFactory.getFilter(stringFilterDescription);
             this.column = table.getLoadedColumn(StringRowFilterDescription.this.colName);
         }
 
