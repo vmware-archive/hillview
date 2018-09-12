@@ -5,7 +5,7 @@ TOMCATVERSION="9.0.4"
 
 # Detect operating system
 # Sets "INSTALL" to the program that can install software
-# Sets "SUDO" to whatever necessary to install software with enough priviledges
+# Sets "SUDO" to whatever necessary to install software with enough privileges
 # Sets various variables to the names of the software packages needed
 
 case "$OSTYPE" in
