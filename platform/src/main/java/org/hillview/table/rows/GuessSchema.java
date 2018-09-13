@@ -20,7 +20,6 @@ package org.hillview.table.rows;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import org.hillview.table.api.ContentsKind;
-import org.hillview.table.api.ICategoryColumn;
 import org.hillview.table.api.IStringColumn;
 import org.hillview.utils.DateParsing;
 
@@ -29,7 +28,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.HashMap;
-import java.util.HashSet;
 
 /**
  * Helper class to guess the schema of data given a set of strings.
@@ -42,10 +40,6 @@ public class GuessSchema {
         SchemaInfo(ContentsKind kind, boolean allowMissing) {
             this.kind = kind;
             this.allowMissing = allowMissing;
-        }
-
-        public SchemaInfo() {
-            this(ContentsKind.None, false);
         }
 
         public String toString() {
@@ -66,31 +60,23 @@ public class GuessSchema {
     private static final HashMap<ContentsKind, ContentsKind[]> successor =
             new HashMap<ContentsKind, ContentsKind[]>();
 
-    /**
-     * All strings seen so far - used to detect categories.
-     */
-    private HashSet<String> stringSet;
-    private boolean canBeCategory;
-
     static {
         successor.put(ContentsKind.None, new ContentsKind[]{
                 ContentsKind.Integer, ContentsKind.Double,
                 ContentsKind.Duration, ContentsKind.Date,
-                ContentsKind.Json, ContentsKind.Category,
-                ContentsKind.String
+                ContentsKind.Json, ContentsKind.String
         });
         successor.put(ContentsKind.Integer,
                 new ContentsKind[] { ContentsKind.Double, ContentsKind.Json,
-                        ContentsKind.Category, ContentsKind.String
+                        ContentsKind.String
         });
         successor.put(ContentsKind.Double,
-                new ContentsKind[] { ContentsKind.Json, ContentsKind.Category, ContentsKind.String });
+                new ContentsKind[] { ContentsKind.Json, ContentsKind.String });
         successor.put(ContentsKind.Date, new ContentsKind[]
-                { ContentsKind.Category, ContentsKind.String });
+                { ContentsKind.String });
         successor.put(ContentsKind.Duration, new ContentsKind[]
-                { ContentsKind.Category, ContentsKind.String });
+                {  ContentsKind.String });
         successor.put(ContentsKind.Json, new ContentsKind[] { ContentsKind.String });
-        successor.put(ContentsKind.Category, new ContentsKind[] { ContentsKind.String });
     }
 
     @Nullable
@@ -99,19 +85,11 @@ public class GuessSchema {
 
     public GuessSchema() {
         this.dateParser = null;
-        this.stringSet = new HashSet<String>();
-        this.canBeCategory = true;
     }
 
     private void guess(@Nullable String value, SchemaInfo info) {
         if (info.kind == ContentsKind.String)
             return;
-
-        if (this.canBeCategory) {
-            this.stringSet.add(value);
-            if (this.stringSet.size() > ICategoryColumn.maxDistinctCount / 2)
-                this.canBeCategory = false;
-        }
 
         CanParse cp = this.canParse(value, info.kind);
         if (cp == CanParse.Yes)
@@ -216,8 +194,6 @@ public class GuessSchema {
         switch (with) {
             case None:
                 return CanParse.No;
-            case Category:
-                return this.canBeCategory ? CanParse.Yes : CanParse.No;
             case String:
                 return CanParse.Yes;
             case Date:

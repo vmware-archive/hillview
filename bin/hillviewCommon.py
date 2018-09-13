@@ -6,7 +6,6 @@ from collections import namedtuple
 import subprocess
 import tempfile
 import json
-from pprint import pprint
 
 def usage(parser):
     assert isinstance(parser, OptionParser)
@@ -46,8 +45,6 @@ def load_config(parser, file):
         exit(1)
     # The path where the current script is installed
     config.scriptFolder = os.path.dirname(os.path.abspath(__file__))
-    pprint(vars(config))
-    pprint(vars(config.backends_heapsize))
     return config
 
 def execute_command(command):
