@@ -31,7 +31,6 @@ import org.hillview.table.filters.StringFilterFactory;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.VirtualRowSnapshot;
 import javax.annotation.Nullable;
-import java.security.InvalidParameterException;
 
 public class FindSketch implements ISketch<ITable, FindSketch.Result> {
     public static final class Result implements IJson {
@@ -165,7 +164,6 @@ public class FindSketch implements ISketch<ITable, FindSketch.Result> {
                       final RecordOrder recordOrder) {
         this(stringFilterDescription, topRow, recordOrder, false, true);
     }
-
 
     @Override
     public Result create(ITable data) {
