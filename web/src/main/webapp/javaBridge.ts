@@ -76,7 +76,7 @@ export interface FindResult {
     before: number;
     at: number;
     after: number;
-    firstRow: any[];
+    firstMatchingRow: any[];
 }
 
 export interface FindNext {

@@ -183,10 +183,17 @@ export class TableView extends TSViewBase implements IScrollTarget {
         this.topLevel.appendChild(this.messageBox);
     }
 
-    private addCheckbox(stringDesc: string ): HTMLInputElement{
+    private addSpace(num: number): void {
         let div: HTMLElement = document.createElement("div");
-        div.innerHTML = "&nbsp; &nbsp;";
+        let str: string = "";
+        for (let i =0; i < num; i++)
+            str += "&nbsp;";
+        div.innerHTML = str;
         this.findBar.appendChild(div)
+    }
+
+    private addCheckbox(stringDesc: string ): HTMLInputElement{
+        this.addSpace(2);
         let label = document.createElement("label");
         label.textContent = stringDesc;
         this.findBar.appendChild(label);
@@ -202,7 +209,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
     private initFindBar(): void {
         this.findBar = document.createElement("div");
         this.findBar.style.margin = "2px";
-        this.findBar.style.backgroundColor = "yellow";
+        //this.findBar.style.backgroundColor = "yellow";
         this.findBar.style.flexDirection = "row";
         this.findBar.style.display = "none";
         this.findBar.style.flexWrap = "nowrap";
@@ -211,24 +218,28 @@ export class TableView extends TSViewBase implements IScrollTarget {
 
         this.findInputBox = document.createElement("input");
         this.findBar.appendChild(this.findInputBox);
+        this.addSpace(1);
 
         let nextButton = this.findBar.appendChild(document.createElement("button"));
         nextButton.innerText = "Next";
         nextButton.onclick = () => this.find(true, false);
+        this.addSpace(1);
 
         let prevButton = this.findBar.appendChild(document.createElement("button"));
         prevButton.innerText = "Previous";
         prevButton.onclick = () => this.find(false, false);
+        this.addSpace(1);
+
+        let topButton = this.findBar.appendChild(document.createElement("button"));
+        topButton.innerText = "Search from Top";
+        topButton.onclick = () => this.find(true, true);
+        this.addSpace(1);
 
         this.substringsFindCheckbox = this.addCheckbox("Match substrings: ");
         this.regexFindCheckbox = this.addCheckbox("Treat as regular expression:")
         this.caseFindCheckbox = this.addCheckbox("Case sensitive: ")
         //this.startFromTopCheckbox = this.addCheckbox("Start searching from the top: ")
-
-        let topButton = this.findBar.appendChild(document.createElement("button"));
-        topButton.innerText = "Search from Top";
-        topButton.onclick = () => this.find(false, true);
-
+        
         this.topLevel.appendChild(this.findBar);
     }
 
@@ -1318,7 +1329,7 @@ export class FindReceiver extends OnCompleteReceiver<FindResult> {
             this.page.reportError("No matches found.");
             return;
         }
-        const rr = this.tv.createNextKRequest(this.order, result.firstRow, this.tv.tableRowsDesired);
+        const rr = this.tv.createNextKRequest(this.order, result.firstMatchingRow, this.tv.tableRowsDesired);
         rr.chain(this.operation);
         rr.invoke(new NextKReceiver(this.page, this.tv, rr, false, this.order, result));
     }
