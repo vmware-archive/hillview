@@ -91,13 +91,16 @@ public final class TableTarget extends RpcTarget {
         @Nullable
         Object[] topRow;
         StringFilterDescription stringFilterDescription;
+        boolean excludeTopRow;
+        boolean next;
     }
 
     @HillviewRpc
     public void find(RpcRequest request, RpcRequestContext context) {
         FindArgs args = request.parseArgs(FindArgs.class);
         RowSnapshot rs = TableTarget.asRowSnapshot(args.topRow, args.order);
-        FindSketch sk = new FindSketch(args.stringFilterDescription, rs, args.order);
+        FindSketch sk = new FindSketch(args.stringFilterDescription, rs, args.order,
+                args.excludeTopRow, args.next);
         this.runCompleteSketch(this.table, sk, (e, c) -> e, request, context);
     }
 
