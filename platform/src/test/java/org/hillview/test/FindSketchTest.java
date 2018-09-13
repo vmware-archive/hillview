@@ -39,7 +39,8 @@ public class FindSketchTest extends BaseTest {
         StringFilterDescription sf = new StringFilterDescription("Mike", false, false, false);
         FindSketch fsk = new FindSketch(sf, null, cso);
         FindSketch.Result result = fsk.create(table);
-        if(toPrint) printRes(table.getSchema().getColumnNames().get(0), result);
+        if (toPrint)
+            printRes(table.getSchema().getColumnNames().get(0), result);
         this.assertResult(0, 1, 0,"Mike,20", result);
     }
 
@@ -65,7 +66,8 @@ public class FindSketchTest extends BaseTest {
         StringFilterDescription sf = new StringFilterDescription("Bill", false, false, false);
         FindSketch fsk = new FindSketch(sf, null, cso);
         FindSketch.Result result = fsk.create(table);
-        if(toPrint) printRes(table.getSchema().getColumnNames().get(0), result);
+        if (toPrint)
+            printRes(table.getSchema().getColumnNames().get(0), result);
         this.assertResult(0, 1, 1,"Bill,1", result);
     }
 
@@ -143,32 +145,34 @@ public class FindSketchTest extends BaseTest {
         // Previous search from Mike
         fsk = new FindSketch(sf, top, cso, true, false);
         result = fsk.create(table);
-        if (toPrint) printRes(top, colName, result);
+        if (toPrint)
+            printRes(top, colName, result);
         this.assertResult(0, 2, 3, "Bill", result);
         // Previous search from Smith
         top = new RowSnapshot(table, 5, table.getSchema());
         fsk = new FindSketch(sf, top, cso, true, false);
         result = fsk.create(table);
-        if (toPrint) printRes(top, colName, result);
+        if (toPrint)
+            printRes(top, colName, result);
         this.assertResult(3, 1, 1, "Richard", result);
     }
 
     private void printRes(RowSnapshot topRow,  String colName, FindSketch.Result result) {
         System.out.printf("TopRow: %s\n", topRow.getString(colName));
         System.out.printf("First Row: %s, before %d, at %d, after %d\n",
-                result.firstRow.getString(colName), result.before, result.at,  result.after);
+                result.firstMatchingRow.getString(colName), result.before, result.at,  result.after);
     }
 
     private void printRes(String colName, FindSketch.Result result) {
         System.out.printf("First Row: %s, before %d, at %d, after %d\n",
-                result.firstRow.getString(colName), result.before, result.at,  result.after);
+                result.firstMatchingRow.getString(colName), result.before, result.at,  result.after);
     }
     private void assertResult(long expBefore, long expAt, long expAfter, String expStr,
                               FindSketch.Result result) {
         Assert.assertEquals(expBefore, result.before);
         Assert.assertEquals(expAt, result.at);
         Assert.assertEquals(expAfter, result.after);
-        Assert.assertEquals(expStr, result.firstRow.toString());
+        Assert.assertEquals(expStr, result.firstMatchingRow.toString());
     }
 
     private void assertResult(long expBefore, long expAt, long expAfter, Boolean isNull,
@@ -177,8 +181,8 @@ public class FindSketchTest extends BaseTest {
         Assert.assertEquals(expAt, result.at);
         Assert.assertEquals(expAfter, result.after);
         if (isNull)
-            Assert.assertNull(result.firstRow);
+            Assert.assertNull(result.firstMatchingRow);
         else
-            Assert.assertNotNull(result.firstRow);
+            Assert.assertNotNull(result.firstMatchingRow);
     }
 }

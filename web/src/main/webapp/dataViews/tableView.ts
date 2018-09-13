@@ -214,16 +214,20 @@ export class TableView extends TSViewBase implements IScrollTarget {
 
         let nextButton = this.findBar.appendChild(document.createElement("button"));
         nextButton.innerText = "Next";
-        nextButton.onclick = () => this.find(true);
+        nextButton.onclick = () => this.find(true, false);
 
         let prevButton = this.findBar.appendChild(document.createElement("button"));
         prevButton.innerText = "Previous";
-        prevButton.onclick = () => this.find(false);
+        prevButton.onclick = () => this.find(false, false);
 
         this.substringsFindCheckbox = this.addCheckbox("Match substrings: ");
         this.regexFindCheckbox = this.addCheckbox("Treat as regular expression:")
         this.caseFindCheckbox = this.addCheckbox("Case sensitive: ")
-        this.startFromTopCheckbox = this.addCheckbox("Start searching from the top: ")
+        //this.startFromTopCheckbox = this.addCheckbox("Start searching from the top: ")
+
+        let topButton = this.findBar.appendChild(document.createElement("button"));
+        topButton.innerText = "Search from Top";
+        topButton.onclick = () => this.find(false, true);
 
         this.topLevel.appendChild(this.findBar);
     }
@@ -258,15 +262,15 @@ export class TableView extends TSViewBase implements IScrollTarget {
         return tableView;
     }
 
-    public compareFilters(a:StringFilterDescription, b: StringFilterDescription): boolean {
+    private compareFilters(a:StringFilterDescription, b: StringFilterDescription): boolean {
         if ((a == null) || (b == null))
-            return ((a == null) && (b = null));
+            return ((a == null) && (b == null));
         else
             return ((a.compareValue == b.compareValue) && (a.asRegEx == b.asRegEx) && (a.asSubString == b.asSubString)
                 && (a.caseSensitive == b.caseSensitive) && (a.complement == b.complement));
     }
 
-    public find(next:boolean): void {
+    private find(next:boolean, fromTop: boolean): void {
         if (this.order.length() === 0) {
             this.reportError("Find operates in the displayed column, but no column is currently visible.");
             return;
@@ -297,7 +301,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
             return;
         }
         const o = this.order.clone();
-        let topRow: any[] = (this.startFromTopCheckbox.checked ? null: this.nextKList.rows[0].values);
+        let topRow: any[] = (fromTop ? null: this.nextKList.rows[0].values);
         const rr = this.createFindRequest(o, topRow, this.strFilter, excludeTopRow, next);
         rr.invoke(new FindReceiver(this.getPage(), rr, this, o));
     }
@@ -1110,7 +1114,7 @@ export class NextKReceiver extends Receiver<NextKList> {
                 operation: ICancellable<NextKList>,
                 protected reverse: boolean,
                 protected order: RecordOrder,
-                protected result: FindResult,) {
+                protected result: FindResult) {
         super(page, operation, "Getting table info");
     }
 
@@ -1305,13 +1309,13 @@ export class FindReceiver extends OnCompleteReceiver<FindResult> {
     public constructor(page: FullPage,
                        operation: ICancellable<FindResult>,
                        protected tv: TableView,
-                       protected order: RecordOrder,) {
+                       protected order: RecordOrder) {
         super(page, operation, "Compute quantiles");
     }
 
     public run(result: FindResult): void {
         if (result.at == 0) {
-            this.page.reportError("No matches found. ");
+            this.page.reportError("No matches found.");
             return;
         }
         const rr = this.tv.createNextKRequest(this.order, result.firstRow, this.tv.tableRowsDesired);
