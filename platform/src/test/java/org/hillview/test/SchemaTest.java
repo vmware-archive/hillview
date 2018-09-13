@@ -51,7 +51,7 @@ public class SchemaTest extends BaseTest {
 
         data = new String[] { "1", "1.0", "Mike"};
         info = gs.guess(Arrays.asList(data));
-        Assert.assertEquals(ContentsKind.Category, info.kind);
+        Assert.assertEquals(ContentsKind.String, info.kind);
         Assert.assertFalse(info.allowMissing);
 
         /*
@@ -68,7 +68,7 @@ public class SchemaTest extends BaseTest {
 
         data = new String[] { "1 - not a number", "2 - another one" };
         info = gs.guess(Arrays.asList(data));
-        Assert.assertEquals(ContentsKind.Category, info.kind);
+        Assert.assertEquals(ContentsKind.String, info.kind);
         Assert.assertFalse(info.allowMissing);
     }
 }

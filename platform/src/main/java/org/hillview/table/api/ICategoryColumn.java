@@ -17,9 +17,4 @@
 
 package org.hillview.table.api;
 
-public interface ICategoryColumn extends IStringColumn {
-    /**
-     * A categorical column should not have more than this many distinct values.
-     */
-    int maxDistinctCount = 10000;
-}
+public interface ICategoryColumn extends IStringColumn { }
