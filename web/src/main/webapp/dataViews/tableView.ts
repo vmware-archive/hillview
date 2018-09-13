@@ -30,7 +30,7 @@ import {
     RecordOrder,
     RemoteObjectId,
     RowSnapshot,
-    Schema,
+    Schema, StringFilterDescription,
     TableSummary
 } from "../javaBridge";
 import {OnCompleteReceiver, Receiver} from "../rpc";
@@ -208,7 +208,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
             "If checked a substring will match.");
         dialog.addBooleanField("regex", "Treat as regular expression", false,
             "If true the string is treated as a regular expression");
-        dialog.addBooleanField("caseSensitive", "case sensitive", true,
+        dialog.addBooleanField("caseSensitive", "case sensitive", false,
             "if checked search will match uppercase/lowercase exactly.");
         dialog.setCacheTitle("FindMenu");
 
@@ -219,8 +219,8 @@ export class TableView extends TSViewBase implements IScrollTarget {
         dialog.show();
     }
 
-    public search(toFind: string, regex: boolean, substring: boolean, caseSensitive: boolean): void {
-        if (toFind === "") {
+    public search(compareValue: string, asRegex: boolean, asSubString: boolean, caseSensitive: boolean): void {
+        if (compareValue === "") {
             this.reportError("Search string cannot be empty");
             return;
         }
@@ -229,7 +229,14 @@ export class TableView extends TSViewBase implements IScrollTarget {
             return;
         }
         const o = this.order.clone();
-        const rr = this.createFindRequest(o, this.nextKList.rows[0].values, toFind, regex, substring, caseSensitive);
+        const strFilter: StringFilterDescription = {
+            compareValue: compareValue,
+            asRegEx: asRegex,
+            asSubString: asSubString,
+            caseSensitive: caseSensitive,
+            complement: false
+        }
+        const rr = this.createFindRequest(o, this.nextKList.rows[0].values, strFilter);
         rr.invoke(new FindReceiver(this.getPage(), rr, this, o));
     }
 

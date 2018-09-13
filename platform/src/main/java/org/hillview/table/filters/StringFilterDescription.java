@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2017 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,51 +15,55 @@
  * limitations under the License.
  */
 
-package org.hillview.table.filters;
 
-import org.hillview.table.api.IStringFilter;
+package org.hillview.table.filters;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;
-
 /**
  * Description of a string filtering operation.
  * Not all combinations of options make sense.
  */
 public class StringFilterDescription implements Serializable {
     /**
-     * String to look for.
+     * Search pattern to look for.
      */
     @Nullable
-    private final String toFind;
+    public final String compareValue;
     /**
-     * If true the comparison will be made case-insensitive.
+     * If true the search pattern will be matched against substrings.
      */
-    private final boolean caseSensitive;
+    public final boolean asSubString;
     /**
-     * If true the toFind string is interpreted as a regular expression.
+     * If true the search pattern will be interpreted as a regular expression.
      */
-    private final boolean asRegex;
+    public final boolean asRegEx;
     /**
-     * If true the search will match substrings.
+     * If true the comparison will be made case-sensitive.
      */
-    private final boolean subString;
+    public final boolean caseSensitive;
+    /**
+     * If true all matches will be omitted.
+     */
+    public final boolean complement;
 
-    public StringFilterDescription(@Nullable String toFind, boolean caseSensitive,
-                                   boolean asRegex, boolean subString) {
-        this.toFind = toFind;
+    public StringFilterDescription(
+            @Nullable String compareValue,  boolean asSubString, boolean asRegEx,
+            boolean caseSensitive, boolean complement) {
+        this.compareValue = compareValue;
+        this.asSubString = asSubString;
+        this.asRegEx = asRegEx;
         this.caseSensitive = caseSensitive;
-        this.asRegex = asRegex;
-        this.subString = subString;
+        this.complement = complement;
     }
 
-    public IStringFilter getFilter() {
-        if (this.asRegex) {
-            assert this.toFind != null;
-            return new RegexStringFilter(this.toFind, this.caseSensitive);
-        }
-        if (this.subString)
-            return new SubStringFilter(this.toFind, this.caseSensitive);
-        return new ExactStringFilter(this.toFind, this.caseSensitive);
+    public StringFilterDescription(@Nullable String compareValue,  boolean asSubString, boolean asRegEx,
+            boolean caseSensitive) {
+        this(compareValue, asSubString, asRegEx, caseSensitive, false);
+    }
+
+    public StringFilterDescription(@Nullable String compareValue) {
+        this(compareValue, false, false, false, false);
     }
 }
+

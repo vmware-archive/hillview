@@ -18,45 +18,46 @@
 package org.hillview.test;
 
 import org.hillview.table.api.IStringFilter;
+import org.hillview.table.filters.StringFilterFactory;
 import org.hillview.table.filters.StringFilterDescription;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class StringFilterTest extends BaseTest {
+public class StringFilterFactoryTest extends BaseTest {
     @Test
     public void testStringFilter() {
         StringFilterDescription desc = new StringFilterDescription("bob", true, false, false);
-        IStringFilter filter = desc.getFilter();
-        Assert.assertTrue(filter.test("bob"));
-        Assert.assertFalse(filter.test("Bob"));
-        Assert.assertFalse(filter.test("mike"));
-
-        desc = new StringFilterDescription("bob", false, false, false);
-        filter = desc.getFilter();
+        IStringFilter filter = StringFilterFactory.getFilter(desc);
         Assert.assertTrue(filter.test("bob"));
         Assert.assertTrue(filter.test("Bob"));
         Assert.assertFalse(filter.test("mike"));
 
-        desc = new StringFilterDescription("^bo.*", true, true, false);
-        filter = desc.getFilter();
+        desc = new StringFilterDescription("bob", false, false, true);
+        filter = StringFilterFactory.getFilter(desc);
         Assert.assertTrue(filter.test("bob"));
         Assert.assertFalse(filter.test("Bob"));
         Assert.assertFalse(filter.test("mike"));
 
-        desc = new StringFilterDescription("bo.*", false, true, false);
-        filter = desc.getFilter();
+        desc = new StringFilterDescription("^bo.*", false, true, false);
+        filter = StringFilterFactory.getFilter(desc);
         Assert.assertTrue(filter.test("bob"));
         Assert.assertTrue(filter.test("Bob"));
+        Assert.assertFalse(filter.test("mike"));
+
+        desc = new StringFilterDescription("bo.*", false, true, true);
+        filter = StringFilterFactory.getFilter(desc);
+        Assert.assertTrue(filter.test("bob"));
+        Assert.assertFalse(filter.test("Bob"));
         Assert.assertFalse(filter.test("mike"));
 
         desc = new StringFilterDescription("bo", true, false, true);
-        filter = desc.getFilter();
+        filter = StringFilterFactory.getFilter(desc);
         Assert.assertTrue(filter.test("bob"));
         Assert.assertFalse(filter.test("Bob"));
         Assert.assertFalse(filter.test("mike"));
 
-        desc = new StringFilterDescription("bo", false, false, true);
-        filter = desc.getFilter();
+        desc = new StringFilterDescription("bo", true, false, false);
+        filter = StringFilterFactory.getFilter(desc);
         Assert.assertTrue(filter.test("bob"));
         Assert.assertTrue(filter.test("Bob"));
         Assert.assertFalse(filter.test("mike"));
