@@ -47,7 +47,7 @@ h1 {
 
 .console {
     font-family: monospace;
-    white-space: pre;
+    white-space: pre-wrap;
 }
 
 th {

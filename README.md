@@ -14,7 +14,7 @@ system in action.
 
 ## Software Dependencies
 
-* Back-end: Ubuntu Linux or MacOS
+* Back-end: Ubuntu Linux > 16 or MacOS
 * Java 8, Maven build system, various Java libraries
   (Maven will manage the libraries)
 * Front-end: Typescript, webpack, Tomcat app server, node.js;
@@ -271,6 +271,9 @@ for building and testing.
 $ cd bin
 $ ./install-dependencies.sh
 ```
+
+For old versions of Ubuntu this may fail, so you may have to install the required
+dependencies manually.
 
 ## Impala Java libraries
 

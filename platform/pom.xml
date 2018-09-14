@@ -306,7 +306,8 @@
             </extension>
         </extensions>
         <plugins>
-            <!-- ensure that maven dependences are correct -->
+            <!-- ensure that maven dependences are correct
+            This is currently disabled because it does not detect dependencies in tests.
             <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <version>2.8</version>
@@ -323,6 +324,7 @@
                     </execution>
                 </executions>
             </plugin>
+            -->
             <!-- for parallel junit tests -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

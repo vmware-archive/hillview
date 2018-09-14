@@ -236,16 +236,16 @@ export class FullPage implements IHtmlElement {
         return this.dataView;
     }
 
-    public reportError(error: string) {
+    public reportError(error: string): void {
         this.getErrorReporter().clear();
         this.getErrorReporter().reportError(error);
     }
 
-    public clearError() {
+    public clearError(): void {
         this.getErrorReporter().clear();
     }
 
-    public reportTime(timeInMs: number) {
+    public reportTime(timeInMs: number): void {
         this.reportError("Operation took " + significantDigits(timeInMs / 1000) + " seconds");
     }
 

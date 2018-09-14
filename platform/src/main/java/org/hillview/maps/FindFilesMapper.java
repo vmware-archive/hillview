@@ -67,10 +67,14 @@ public class FindFilesMapper implements IMap<Empty, List<IFileReference>> {
             throw new RuntimeException(e);
         }
         files = files.filter(f -> {
+            if (f == null)
+                return false;
             if (filenameRegex == null)
                 return true;
-            String filename = f.getFileName().toString();
-            return filename.matches(filenameRegex);
+            Path path = f.getFileName();
+            if (path == null)
+                return false;
+            return path.toString().matches(filenameRegex);
         });
         Stream<String> fileNames = files.map(Path::toString).sorted();
         if (this.description.repeat > 1)
