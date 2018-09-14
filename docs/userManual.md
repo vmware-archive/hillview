@@ -1,5 +1,4 @@
-<!-- automatically generated; please edit userManual.src
-and run the number-sections.py script -->
+<-- automatically generated from userManual.src by doc/number-sections.py-->
 # Hillview User Manual
 
 [Hillview](https://github.com/vmware/hillview) is a simple cloud-based
@@ -66,8 +65,9 @@ memory over distributed data.
 |3.5.1.|[Selection in 2D histograms](#351-selection-in-2d-histograms)|
 |3.6.|[Heatmap views](#36-heatmap-views)|
 |3.6.1.|[Selection from a heatmap](#361-selection-from-a-heatmap)|
-|3.7.|[Trellis plot views](#37-trellis-plot-views)|
-|3.8.|[Combining two views](#38-combining-two-views)|
+|3.7.|[Singular value spectrum views](#37-singular-value-spectrum-views)|
+|3.8.|[Trellis plot views](#38-trellis-plot-views)|
+|3.9.|[Combining two views](#39-combining-two-views)|
 ## 1. Basic concepts
 
 ### 1.1. System architecture
@@ -418,7 +418,7 @@ menu with the following options:
   colums
 
 * Combine: allows users to [combine data in two
-  views](#38-combining-two-views)
+  views](#39-combining-two-views)
 
 #### 3.1.1. Selecting columns
 
@@ -635,7 +635,7 @@ the current state of the display.
   will display the data in these columns as a [Heat-map
   view](#36-heatmap-views).  When three columns are selected the
   following menu allows the user to configure the data to display as a
-  [Trellis plot view](#37-trellis-plot-views).
+  [Trellis plot view](#38-trellis-plot-views).
 
   ![Heatmap array menu](heatmap-array-menu.png)
 
@@ -679,17 +679,8 @@ the current state of the display.
   ![Filter menu](filter-menu.png)
 
 * Plot singular value spectrum.  This operation requires a set of
-  numeric columns.  The operation computes the [singular-value
-  decomposition](https://en.wikipedia.org/wiki/Singular-value_decomposition)
-  of the matrix composed of these columns and plots the largest
-  singular values as a bar-chart.
-
-  ![Singular value spectrum](singular-value-spectrum.png)
-
-  The user can inspect the displayed spectrum of singular values and
-  choose how many values to use in a principal component analysis
-  (PCA), as described below.  In the picture above the first 3
-  singular values explain most of the variance of the data.
+  numeric columns.  This will display the singular values of the matrix formed
+  from these columns as a [Singular value spectrum view](#37-singular-value-spectrum-views).
 
 * PCA...: principal component analysis.  [Principal Component
   Analysis](https://en.wikipedia.org/wiki/Principal_component_analysis)
@@ -765,7 +756,7 @@ The table view has a menu that offers the following options:
 * Filter: allows the user [to filter data](#326-the-table-filter-menu) according
   to various criteria.
 
-* Combine: allows the user to [combine the data in two views](#38-combining-two-views).
+* Combine: allows the user to [combine the data in two views](#39-combining-two-views).
 
 ##### 3.2.5.1. The table view menu
 
@@ -915,7 +906,7 @@ Histogram views have a menu that offers to the users several operations:
 
 * View: [changing parameters](#342-the-histogram-view-menu) of the current view.
 
-* Combine: [combining the data](#38-combining-two-views) in the current view with
+* Combine: [combining the data](#39-combining-two-views) in the current view with
   another one.
 
 #### 3.4.2. The histogram view menu
@@ -1052,7 +1043,7 @@ following image.
 
 ![A normalized two-dimensional histogram](hillview-histogram-normalized.png)
 
-For a description of the combine menu see [combining two views](#38-combining-two-views).
+For a description of the combine menu see [combining two views](#39-combining-two-views).
 
 #### 3.5.1. Selection in 2D histograms
 
@@ -1112,10 +1103,10 @@ The heatmap view menu has the following operations:
   of the data in the two columns that are used for the heatmap
   display.
 
-* group by: Groups data by a third column creating a [Trellis plot] (#37-trellis-plot-views).
+* group by: Groups data by a third column creating a [Trellis plot] (#38-trellis-plot-views).
 
 
-For a description of the combine menu see [combining two views](#38-combining-two-views).
+For a description of the combine menu see [combining two views](#39-combining-two-views).
 
 #### 3.6.1. Selection from a heatmap
 
@@ -1123,7 +1114,21 @@ Users can select a rectangular area from a heatmap with the mouse.
 
 ![Selection from a heatmap](heatmap-selection.png)
 
-### 3.7. Trellis plot views
+### 3.7. Singular value spectrum views
+
+The view display the [singular-value
+decomposition](https://en.wikipedia.org/wiki/Singular-value_decomposition)
+of a matrix composed of a set of numeric columns.  The singular values
+are plotted as a bar-chart, as in the following figure:
+
+![Singular value spectrum](singular-value-spectrum.png)
+
+The user can inspect the displayed spectrum of singular values and
+choose how many values to use in a principal component analysis
+(PCA), as described below.  In the picture above the first 3
+singular values explain most of the variance of the data.
+
+### 3.8. Trellis plot views
 
 ![An array of heatmap views](hillview-heatmap-array.png)
 
@@ -1132,9 +1137,9 @@ currently is restricted to be a string column.
 Each heatmap is comprised of the rows that have a specific value in the third
 (string) column.
 
-*TODO* discuss missing values
+*TODO* add various Trellis plot descriptions
 
-### 3.8. Combining two views
+### 3.9. Combining two views
 
 Any view represents logically a subset of rows from an original table.
 Two different views can be combined by performing a set operation

@@ -16,6 +16,10 @@ class Headings:
         self.toc = []
         self.referenceRewrite = {}
 
+    def clearToc(self):
+        """Clear table of contents"""
+        self.toc = []
+
     def makeReference(self, ref):
         """Converts text into a suitable markdown reference"""
         ref = ref.strip()
@@ -73,8 +77,7 @@ class Headings:
         row = re.sub(refPattern, self.fixReference, row)
         return row
 
-def process(rows):
-    headings = Headings()
+def process(rows, headings, banner):
     outRows = []
     for row in rows:
         if row.startswith("#"):
@@ -84,30 +87,38 @@ def process(rows):
         row = headings.fixReferences(outRows[index])
         outRows[index] = row
 
-    result = ["<!-- automatically generated; please edit userManual.src\n",
-              "and run the number-sections.py script -->\n"]
+    result = [banner]
     index = 0
-    while not outRows[index].startswith("##"):
+    while index < len(outRows) and not outRows[index].startswith("##"):
         result.append(outRows[index])
         index += 1
-    result.append("# Contents\n")
-    result.append("|Section|Reference|\n")
-    result.append("|---:|:---|\n")
-    result.extend(headings.toc)
+    if len(headings.toc) > 0:
+        result.append("# Contents\n")
+        result.append("|Section|Reference|\n")
+        result.append("|---:|:---|\n")
+        result.extend(headings.toc)
     result.extend(outRows[index:])
     return result
 
-def rewrite(source, destination):
+def rewrite(source, destination, headings, commentStart, commentEnd):
+    headings.clearToc()
+    script = "doc/number-sections.py"
+    banner = commentStart + " automatically generated from " + source + \
+             " by " + script + commentEnd + "\n"
     with open(source, 'r') as f:
         rows = f.readlines()
-    rows = process(rows)
+    rows = process(rows, headings,  banner)
     with open(destination, 'w') as f:
         f.writelines(rows)
 
 def main():
+    headings = Headings()
     input="userManual.src"
     output="userManual.md"
-    rewrite(input, output)
+    rewrite(input, output, headings, "<--", "-->")
+    input = "../web/src/main/webapp/ui/helpUrl.src"
+    output = "../web/src/main/webapp/ui/helpUrl.ts"
+    rewrite(input, output, headings, "/*", "*/")
 
 if __name__ == "__main__":
     main()

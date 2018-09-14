@@ -22,22 +22,7 @@ import {ConsoleDisplay, ErrorReporter} from "./errReporter";
 import {TopMenu} from "./menu";
 import {ProgressManager} from "./progress";
 import {IHtmlElement, removeAllChildren, ViewKind} from "./ui";
-
-/**
- * Maps each ViewKind to a url anchor in the github userManual.
- */
-const helpUrl = {
-    "Table": "table-views",
-    "Histogram": "uni-dimensional-histogram-views",
-    "2DHistogram": "two-dimensional-histogram-views",
-    "Heatmap": "heatmap-views",
-    "Trellis": "trellis-plot-views",
-    "HeavyHitters": "heavy-hitter-views",
-    "LAMP": "lamp-projection",
-    "Schema": "data-schema-views",
-    "Load": "loading-data",
-    "SVD Spectrum": "svd-spectrum",
-};
+import {helpUrl} from "./helpUrl";
 
 const minus = "&#8722;";
 const plus = "+";
