@@ -1,6 +1,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+    </properties>
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.hillview</groupId>
     <artifactId>platform</artifactId>
@@ -8,6 +12,7 @@
     <version>1.0-SNAPSHOT</version>
     <name>platform</name>
     <url>http://maven.apache.org</url>
+
 
     <profiles>
         <!--
@@ -66,12 +71,6 @@
         </profile>
     </profiles>
     <dependencies>
-        <!-- for URI manipulation -->
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>4.5.3</version>
-        </dependency>
         <!-- MongoDB connector. -->
         <dependency>
             <groupId>org.mongodb</groupId>
@@ -135,8 +134,8 @@
         <!-- fast collections -->
         <dependency>
             <groupId>it.unimi.dsi</groupId>
-            <artifactId>dsiutils</artifactId>
-            <version>2.4.0</version>
+            <artifactId>fastutil</artifactId>
+            <version>8.2.1</version>
         </dependency>
         <!-- Comma-separated value file I/O -->
         <dependency>
@@ -189,8 +188,13 @@
             but Hadoop is listed above for Parquet. -->
         <dependency>
             <groupId>org.apache.orc</groupId>
-            <artifactId>orc-mapreduce</artifactId>
+            <artifactId>orc-core</artifactId>
             <version>1.1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-storage-api</artifactId>
+            <version>2.1.0-pre-orc</version>
         </dependency>
         <!-- Guava caching library -->
         <dependency>
@@ -201,18 +205,28 @@
         <!-- gRPC -->
         <dependency>
             <groupId>io.grpc</groupId>
-            <artifactId>grpc-netty</artifactId>
-            <version>1.14.0</version>
+            <artifactId>grpc-netty-shaded</artifactId>
+            <version>1.15.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-core</artifactId>
+            <version>1.15.0</version>
         </dependency>
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-protobuf</artifactId>
-            <version>1.14.0</version>
+            <version>1.15.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <version>3.5.1</version>
         </dependency>
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-stub</artifactId>
-            <version>1.14.0</version>
+            <version>1.15.0</version>
         </dependency>
         <!-- bzip support -->
         <dependency>
@@ -234,10 +248,10 @@
         </dependency>
         <!-- junit parallel testing annotation -->
         <dependency>
-            <groupId>com.github.stephenc.jcip</groupId>
+            <!-- annotations for parallel tests -->
+            <groupId>net.jcip</groupId>
             <artifactId>jcip-annotations</artifactId>
-            <version>1.0-1</version>
-            <scope>test</scope>
+            <version>1.0</version>
         </dependency>
         <!-- Java reactive APIs: Observables -->
         <dependency>
@@ -254,6 +268,16 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math3</artifactId>
             <version>3.6.1</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+            <version>2.6</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.4</version>
         </dependency>
         <!-- JSR-305 annotations -->
         <dependency>
@@ -282,6 +306,23 @@
             </extension>
         </extensions>
         <plugins>
+            <!-- ensure that maven dependences are correct -->
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>2.8</version>
+                <executions>
+                    <execution>
+                        <id>analyze</id>
+                        <goals>
+                            <goal>analyze-only</goal>
+                        </goals>
+                        <configuration>
+                            <failOnWarning>true</failOnWarning>
+                            <outputXML>true</outputXML>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <!-- for parallel junit tests -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

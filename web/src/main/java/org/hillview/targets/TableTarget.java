@@ -63,8 +63,6 @@ public final class TableTarget extends RpcTarget {
          * If not null, start at first tuple which contains this string in one of the
          * visible columns.
          */
-        @Nullable
-        String toFind;
         RecordOrder order = new RecordOrder();
         @Nullable
         Object[] firstRow;
@@ -87,9 +85,11 @@ public final class TableTarget extends RpcTarget {
     }
 
     static class FindArgs {
+        @Nullable
         RecordOrder order;
         @Nullable
         Object[] topRow;
+        @Nullable
         StringFilterDescription stringFilterDescription;
         boolean excludeTopRow;
         boolean next;
@@ -98,6 +98,8 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     public void find(RpcRequest request, RpcRequestContext context) {
         FindArgs args = request.parseArgs(FindArgs.class);
+        assert args.order != null;
+        assert args.stringFilterDescription != null;
         RowSnapshot rs = TableTarget.asRowSnapshot(args.topRow, args.order);
         FindSketch sk = new FindSketch(args.stringFilterDescription, rs, args.order,
                 args.excludeTopRow, args.next);

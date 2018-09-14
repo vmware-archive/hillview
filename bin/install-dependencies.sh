@@ -12,7 +12,7 @@ source $mydir/lib.sh
 echo "Installing programs needed to build"
 ${SUDO} ${INSTALL} install maven ${NODEJS} ${NPM} libgfortran3 unzip gzip
 echo "Installing typescript tools"
-${SUDO} npm install -g typescript@2.7.1 ts-loader@3.5.0 webpack@3.6.0
+${SUDO} npm install -g typescript@2.7.1 webpack@3.6.0
 
 cd ..
 if [ ! -d apache-tomcat-${TOMCATVERSION} ]; then
@@ -31,4 +31,5 @@ fi
 pushd web/src/main/webapp
 echo "Installing Javascript packages"
 npm install
+npm link typescript
 popd

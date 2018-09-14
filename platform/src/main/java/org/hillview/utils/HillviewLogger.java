@@ -17,8 +17,8 @@
 
 package org.hillview.utils;
 
-import io.netty.util.internal.logging.InternalLoggerFactory;
-import io.netty.util.internal.logging.JdkLoggerFactory;
+import io.grpc.netty.shaded.io.netty.util.internal.logging.InternalLoggerFactory;
+import io.grpc.netty.shaded.io.netty.util.internal.logging.JdkLoggerFactory;
 import org.apache.commons.lang.StringEscapeUtils;
 
 import javax.annotation.Nullable;
