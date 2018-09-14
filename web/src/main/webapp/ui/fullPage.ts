@@ -154,8 +154,10 @@ export class FullPage implements IHtmlElement {
      * @param {ViewKind} viewKind  Kind of view that help is sought for.
      */
     public static helpUrl(viewKind: ViewKind): string {
-        const ref = helpUrl[viewKind];
-        return "https://github.com/vmware/hillview/blob/master/docs/userManual.md#" + ref;
+        let ref = helpUrl[viewKind];
+        // strip parentheses from front and back
+        ref = ref.replace(/^\(/, "").replace(/\)$/, "");
+        return "https://github.com/vmware/hillview/blob/master/docs/userManual.md" + ref;
     }
 
     /**
