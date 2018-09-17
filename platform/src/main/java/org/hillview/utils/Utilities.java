@@ -20,6 +20,7 @@ package org.hillview.utils;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.PartialResult;
 
@@ -72,6 +73,13 @@ public class Utilities {
     }
 
     /**
+     * A string describing the current stack trace.
+     */
+    public static String stackTraceString() {
+        return ExceptionUtils.getStackTrace(new Throwable());
+    }
+
+    /**
      * Return a prefix of the argument if it is too long.
      */
     @Nullable
@@ -86,16 +94,6 @@ public class Utilities {
      */
     public static boolean isNullOrEmpty(@Nullable String s) {
         return s == null || s.isEmpty();
-    }
-
-    /**
-     * Returns null if the argument is null or empty.
-     */
-    @Nullable
-    public static String nullIfEmpty(@Nullable String s) {
-        if (s == null || s.isEmpty())
-            return null;
-        return s;
     }
 
     /**

@@ -94,6 +94,10 @@ th, td {
     text-decoration: underline;
 }
 
+.highlight {
+    background: yellow;
+}
+
 .hillviewPage {
     border: 2px solid grey;
     margin: 3px 1px;

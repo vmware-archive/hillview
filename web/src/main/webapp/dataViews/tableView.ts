@@ -21,7 +21,7 @@ import {
     ColumnSortOrientation,
     Comparison,
     ComparisonFilterDescription,
-    ContentsKind, FindNext,
+    ContentsKind,
     FindResult,
     IColumnDescription,
     kindIsNumeric,
@@ -43,7 +43,7 @@ import {FullPage} from "../ui/fullPage";
 import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
 import {IScrollTarget, ScrollBar} from "../ui/scroll";
 import {SelectionStateMachine} from "../ui/selectionStateMachine";
-import {missingHtml, Resolution} from "../ui/ui";
+import {missingHtml, Resolution, SpecialChars} from "../ui/ui";
 import {
     cloneToSet,
     Converters,
@@ -82,6 +82,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
     protected messageBox: HTMLElement;
 
     // The following elements are used for Find
+    protected findBarVisible: boolean;
     protected strFilter: StringFilterDescription;
     protected findInputBox: HTMLInputElement;
     protected substringsFindCheckbox: HTMLInputElement;
@@ -89,7 +90,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
     protected caseFindCheckbox: HTMLInputElement;
     protected startFromTopCheckbox: HTMLInputElement;
     protected findBar: HTMLElement;
-
+    protected foundCount: HTMLElement;
 
     public constructor(
         remoteObjectId: RemoteObjectId, rowCount: number, schema: SchemaClass, page: FullPage) {
@@ -101,7 +102,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
         this.topLevel.id = "tableContainer";
         this.topLevel.tabIndex = 1;  // necessary for keyboard events?
         this.topLevel.onkeydown = (e) => this.keyDown(e);
-        this.strFilter  = null;
+        this.strFilter = null;
 
         this.topLevel.style.flexDirection = "column";
         this.topLevel.style.display = "flex";
@@ -145,7 +146,16 @@ export class TableView extends TSViewBase implements IScrollTarget {
                     {
                         text: "Find...",
                         help: "Search for a string in the visible columns",
-                        action: () => this.findBar.style.display = "flex"},
+                        action: () => {
+                            if (this.order.length() === 0) {
+                                this.reportError(
+                                    "Find operates in the displayed column, " +
+                                    "but no column is currently visible.");
+                                return;
+                            }
+                            this.showFindBar(true);
+                        }
+                    },
                     {
                         text: "Filter...",
                         help: "Filter rows that contain a specific value",
@@ -183,63 +193,92 @@ export class TableView extends TSViewBase implements IScrollTarget {
         this.topLevel.appendChild(this.messageBox);
     }
 
-    private addSpace(num: number): void {
-        let div: HTMLElement = document.createElement("div");
-        let str: string = "";
-        for (let i =0; i < num; i++)
-            str += "&nbsp;";
-        div.innerHTML = str;
-        this.findBar.appendChild(div)
+    private showFindBar(show: boolean): void {
+        if (show) {
+            this.findBar.style.display = "flex";
+            this.findInputBox.focus();
+            this.findBarVisible = true;
+        } else {
+            this.findBar.style.display = "none";
+            this.findBarVisible = false;
+        }
     }
 
-    private addCheckbox(stringDesc: string ): HTMLInputElement{
+    private addSpace(num: number): void {
+        const div: HTMLElement = document.createElement("div");
+        let str: string = "";
+        for (let i = 0; i < num; i++)
+            str += "&nbsp;";
+        div.innerHTML = str;
+        this.findBar.appendChild(div);
+    }
+
+    private addCheckbox(stringDesc: string ): HTMLInputElement {
         this.addSpace(2);
-        let label = document.createElement("label");
+        const label = document.createElement("label");
         label.textContent = stringDesc;
         this.findBar.appendChild(label);
-        let checkBox: HTMLInputElement = document.createElement("input");
+        const checkBox: HTMLInputElement = document.createElement("input");
         checkBox.type = "checkbox";
         this.findBar.appendChild(checkBox);
-        let divEnd: HTMLElement = document.createElement("div");
-        divEnd.innerHTML = "&nbsp; | &nbsp;";
-        this.findBar.appendChild(divEnd)
+        const divEnd: HTMLElement = document.createElement("div");
+        divEnd.innerHTML = "&nbsp;&nbsp;";
+        this.findBar.appendChild(divEnd);
         return checkBox;
     }
 
     private initFindBar(): void {
+        this.findBarVisible = false;
         this.findBar = document.createElement("div");
         this.findBar.style.margin = "2px";
-        //this.findBar.style.backgroundColor = "yellow";
+        this.findBar.className = "highlight";
         this.findBar.style.flexDirection = "row";
         this.findBar.style.display = "none";
         this.findBar.style.flexWrap = "nowrap";
         this.findBar.style.justifyContent = "flex-start";
-        this.findBar.style.alignItems = "stretch";
+        this.findBar.style.alignItems = "center";
+
+        const label = document.createElement("label");
+        label.innerText = "Find: ";
+        this.findBar.appendChild(label);
 
         this.findInputBox = document.createElement("input");
         this.findBar.appendChild(this.findInputBox);
         this.addSpace(1);
 
-        let nextButton = this.findBar.appendChild(document.createElement("button"));
-        nextButton.innerText = "Next";
+        const nextButton = this.findBar.appendChild(document.createElement("button"));
+        nextButton.innerHTML = SpecialChars.downArrow;
         nextButton.onclick = () => this.find(true, false);
         this.addSpace(1);
 
-        let prevButton = this.findBar.appendChild(document.createElement("button"));
-        prevButton.innerText = "Previous";
+        const prevButton = this.findBar.appendChild(document.createElement("button"));
+        prevButton.innerHTML = SpecialChars.upArrow;
         prevButton.onclick = () => this.find(false, false);
         this.addSpace(1);
 
-        let topButton = this.findBar.appendChild(document.createElement("button"));
-        topButton.innerText = "Search from Top";
+        const topButton = this.findBar.appendChild(document.createElement("button"));
+        topButton.innerText = "Search from top";
         topButton.onclick = () => this.find(true, true);
         this.addSpace(1);
 
-        this.substringsFindCheckbox = this.addCheckbox("Match substrings: ");
-        this.regexFindCheckbox = this.addCheckbox("Treat as regular expression:")
-        this.caseFindCheckbox = this.addCheckbox("Case sensitive: ")
-        //this.startFromTopCheckbox = this.addCheckbox("Start searching from the top: ")
-        
+        this.substringsFindCheckbox = this.addCheckbox("Substrings:");
+        this.regexFindCheckbox = this.addCheckbox("Regex:");
+        this.caseFindCheckbox = this.addCheckbox("Match case:");
+
+        this.foundCount = document.createElement("div");
+        this.findBar.appendChild(this.foundCount);
+
+        const filler = document.createElement("div");
+        filler.style.flexGrow = "100";
+        this.findBar.appendChild(filler);
+
+        const close = document.createElement("span");
+        close.className = "close";
+        close.innerHTML = "&times;";
+        close.onclick = () => this.showFindBar(false);
+        close.title = "Cancel the find.";
+        this.findBar.appendChild(close);
+
         this.topLevel.appendChild(this.findBar);
     }
 
@@ -273,15 +312,18 @@ export class TableView extends TSViewBase implements IScrollTarget {
         return tableView;
     }
 
-    private compareFilters(a:StringFilterDescription, b: StringFilterDescription): boolean {
+    private static compareFilters(a: StringFilterDescription, b: StringFilterDescription): boolean {
         if ((a == null) || (b == null))
             return ((a == null) && (b == null));
         else
-            return ((a.compareValue == b.compareValue) && (a.asRegEx == b.asRegEx) && (a.asSubString == b.asSubString)
-                && (a.caseSensitive == b.caseSensitive) && (a.complement == b.complement));
+            return ((a.compareValue === b.compareValue) &&
+                (a.asRegEx === b.asRegEx) &&
+                (a.asSubString === b.asSubString) &&
+                (a.caseSensitive === b.caseSensitive) &&
+                (a.complement === b.complement));
     }
 
-    private find(next:boolean, fromTop: boolean): void {
+    private find(next: boolean, fromTop: boolean): void {
         if (this.order.length() === 0) {
             this.reportError("Find operates in the displayed column, but no column is currently visible.");
             return;
@@ -292,18 +334,18 @@ export class TableView extends TSViewBase implements IScrollTarget {
         }
         let excludeTopRow: boolean;
 
-        let newFilter: StringFilterDescription = {
+        const newFilter: StringFilterDescription = {
             compareValue: this.findInputBox.value,
             asRegEx: this.regexFindCheckbox.checked,
             asSubString: this.substringsFindCheckbox.checked,
             caseSensitive: this.caseFindCheckbox.checked,
             complement: false
         };
-        if (this.compareFilters(this.strFilter, newFilter)) {
+        if (TableView.compareFilters(this.strFilter, newFilter)) {
             excludeTopRow = true; // next search
         } else {
             this.strFilter = newFilter;
-            excludeTopRow = false; //new search
+            excludeTopRow = false; // new search
         }
         if (!next)
             excludeTopRow = true;
@@ -312,7 +354,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
             return;
         }
         const o = this.order.clone();
-        let topRow: any[] = (fromTop ? null: this.nextKList.rows[0].values);
+        const topRow: any[] = (fromTop ? null : this.nextKList.rows[0].values);
         const rr = this.createFindRequest(o, topRow, this.strFilter, excludeTopRow, next);
         rr.invoke(new FindReceiver(this.getPage(), rr, this, o));
     }
@@ -469,9 +511,9 @@ export class TableView extends TSViewBase implements IScrollTarget {
         if (asc == null)
             return "";
         else if (asc)
-            return "&dArr;";
+            return SpecialChars.downArrow;
         else
-            return "&uArr;";
+            return SpecialChars.upArrow;
     }
 
     private addHeaderCell(thr: Node, cd: IColumnDescription,
@@ -745,17 +787,18 @@ export class TableView extends TSViewBase implements IScrollTarget {
         if (perc !== "")
             perc = " (" + perc + ")";
 
-        let message = tableRowCount + " displayed rows represent " +
+        const message = tableRowCount + " displayed rows represent " +
             formatNumber(this.dataRowsDisplayed) +
             "/" + formatNumber(this.rowCount) + " data rows" + perc;
-        if (result != null)
-            message = result.before.toString() + " matching rows above, " + result.after.toString() +
-                " matching rows below the top row <br>";
-        else {
-            this.strFilter = null;
-            this.findBar.style.display = "none";
-        }
         this.messageBox.innerHTML = message;
+
+        if (result != null) {
+            this.foundCount.textContent = formatNumber(result.before) + " matching before, " +
+                formatNumber(result.after) + " after";
+        } else {
+            this.strFilter = null;
+            this.showFindBar(false);
+        }
 
         this.updateScrollBar();
         this.highlightSelectedColumns();
@@ -1021,6 +1064,64 @@ export class TableView extends TSViewBase implements IScrollTarget {
         rr.invoke(new NextKReceiver(this.page, this, rr, false, this.order, null));
     }
 
+    /**
+     * Hilight a table's cell text according to the current find.
+     * Returns an string representing the html of the innerHtml of the cell.
+     */
+    private highlight(text: string): string {
+        // result returned when there is no match.
+        const span = "<span>";
+        const end = "</span>";
+        const noMatch = span + text + end;
+        if (!this.findBarVisible)
+            return noMatch;
+
+        const start = "<span class=\"highlight\">";
+        const find = this.strFilter.compareValue;
+        if (find == null || find === "")
+            return noMatch;
+        if (this.strFilter.asRegEx) {
+            const modifier = this.strFilter.caseSensitive ? "g" : "ig";
+            let regex = new RegExp(find, modifier);
+            if (!this.strFilter.asSubString)
+                regex = new RegExp("^" + find + "$", modifier);
+            let result = "";
+            while (true) {
+                const match = regex.exec(text);
+                if (match == null)
+                    return result + span + text + span;
+                result = span + text.substr(0, match.index) + end +
+                    start + text.substr(match.index, regex.lastIndex - match.index) + end;
+                text = text.substr(regex.lastIndex);
+            }
+        } else {
+            if (this.strFilter.asSubString) {
+                let index: number;
+                let result = "";
+                while (true) {
+                    if (this.strFilter.caseSensitive)
+                        index = text.indexOf(find);
+                    else
+                        index = text.toLowerCase().indexOf(find.toLowerCase());
+                    if (index < 0)
+                        return result + span + text + span;
+                    result += span + text.substr(0, index) + end +
+                        start + text.substr(index, find.length) + end;
+                    text = text.substr(index + find.length);
+                }
+            } else {
+                if (this.strFilter.caseSensitive) {
+                    if (text === find)
+                        return start + text + end;
+                } else {
+                    if (text.toLowerCase() === find.toLowerCase())
+                        return start + text + end;
+                }
+            }
+        }
+        return noMatch;
+    }
+
     public addRow(row: RowSnapshot, cds: IColumnDescription[]): void {
         const trow = this.tBody.insertRow();
         const position = this.startPosition + this.dataRowsDisplayed;
@@ -1066,7 +1167,8 @@ export class TableView extends TSViewBase implements IScrollTarget {
                     cellValue = TableView.convert(row.values[dataIndex], cd.kind);
                     value = cellValue;
                 }
-                cell.textContent = cellValue;
+                const high = this.highlight(cellValue);
+                cell.innerHTML = high;
                 cell.title = "Right click will popup a menu.";
                 cell.oncontextmenu = (e) => {
                     this.contextMenu.clear();
@@ -1325,7 +1427,7 @@ export class FindReceiver extends OnCompleteReceiver<FindResult> {
     }
 
     public run(result: FindResult): void {
-        if (result.at == 0) {
+        if (result.at === 0) {
             this.page.reportError("No matches found.");
             return;
         }

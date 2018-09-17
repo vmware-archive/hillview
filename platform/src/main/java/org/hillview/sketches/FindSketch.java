@@ -141,7 +141,6 @@ public class FindSketch implements ISketch<ITable, FindSketch.Result> {
      */
     private final boolean next;
 
-
     public FindSketch(final StringFilterDescription stringFilterDescription,
                       final @Nullable RowSnapshot topRow, final RecordOrder recordOrder,
                       final boolean excludeTopRow, final boolean next) {
@@ -150,7 +149,7 @@ public class FindSketch implements ISketch<ITable, FindSketch.Result> {
                 throw new RuntimeException("Top Row cannot be null");
         this.topRow = topRow;
         this.recordOrder = next ? recordOrder: recordOrder.reverse();
-        this.excludeTopRow = next ? excludeTopRow: true;
+        this.excludeTopRow = !next || excludeTopRow;
         this.next = next;
     }
 
@@ -174,7 +173,6 @@ public class FindSketch implements ISketch<ITable, FindSketch.Result> {
         IRowIterator rowIt = data.getRowIterator();
         Schema toCheck = this.recordOrder.toSchema();
         IStringFilter stringFilter = StringFilterFactory.getFilter(this.stringFilterDescription);
-        assert(stringFilter != null);
         VirtualRowSnapshot vw = new VirtualRowSnapshot(data, toCheck);
         VirtualRowSnapshot smallestMatch = new VirtualRowSnapshot(data, toCheck);
         int compareTop, compareSmallest;

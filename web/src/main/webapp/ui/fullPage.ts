@@ -194,7 +194,6 @@ export class FullPage implements IHtmlElement {
             span.innerHTML = minus;
         } else {
             removeAllChildren(this.displayHolder);
-            this.clearError();
             this.minimized = true;
             span.innerHTML = plus;
         }

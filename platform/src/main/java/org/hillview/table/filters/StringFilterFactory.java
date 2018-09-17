@@ -42,12 +42,12 @@ public class StringFilterFactory {
     static class MissingValuesFilter implements IStringFilter {
         private StringFilterDescription stringFilterDescription;
 
-        public MissingValuesFilter(StringFilterDescription stringFilterDescription) {
+        MissingValuesFilter(StringFilterDescription stringFilterDescription) {
             this.stringFilterDescription = stringFilterDescription;
         }
 
         public boolean test(@Nullable String curString) {
-            return (curString == null)^this.stringFilterDescription.complement;
+            return (curString == null) ^ this.stringFilterDescription.complement;
         }
     }
 
@@ -55,16 +55,19 @@ public class StringFilterFactory {
         private StringFilterDescription stringFilterDescription;
         private final Pattern regEx;
 
-        public RegExFilter(StringFilterDescription stringFilterDescription){
+        RegExFilter(StringFilterDescription stringFilterDescription){
             this.stringFilterDescription = stringFilterDescription;
+            assert this.stringFilterDescription.compareValue != null;
+            String compare = this.stringFilterDescription.asSubString ?
+                    ".*" + this.stringFilterDescription.compareValue + ".*" :
+                    this.stringFilterDescription.compareValue;
             this.regEx = Pattern.compile(
-                    this.stringFilterDescription.compareValue,
-                    this.stringFilterDescription.caseSensitive ? 0 : Pattern.CASE_INSENSITIVE);
+                    compare, this.stringFilterDescription.caseSensitive ? 0 : Pattern.CASE_INSENSITIVE);
         }
 
         public boolean test(@Nullable String curString) {
             boolean result = (curString != null) && this.regEx.matcher(curString).matches();
-            return result^this.stringFilterDescription.complement;
+            return result ^ this.stringFilterDescription.complement;
         }
     }
 
@@ -72,8 +75,9 @@ public class StringFilterFactory {
         private StringFilterDescription stringFilterDescription;
         private final String compareTo;
 
-        public SubStringFilter(StringFilterDescription stringFilterDescription) {
+        SubStringFilter(StringFilterDescription stringFilterDescription) {
             this.stringFilterDescription = stringFilterDescription;
+            assert this.stringFilterDescription.compareValue != null;
             this.compareTo = stringFilterDescription.caseSensitive ?
                     stringFilterDescription.compareValue :
                     stringFilterDescription.compareValue.toLowerCase();
@@ -84,7 +88,7 @@ public class StringFilterFactory {
                     this.stringFilterDescription.caseSensitive ?
                     curString.contains(this.compareTo) :
                     StringUtils.containsIgnoreCase(curString, this.compareTo));
-            return result^this.stringFilterDescription.complement;
+            return result ^ this.stringFilterDescription.complement;
         }
     }
 
@@ -92,8 +96,9 @@ public class StringFilterFactory {
         private StringFilterDescription stringFilterDescription;
         private final String compareTo;
 
-        public ExactCompFilter(StringFilterDescription stringFilterDescription) {
+        ExactCompFilter(StringFilterDescription stringFilterDescription) {
             this.stringFilterDescription = stringFilterDescription;
+            assert this.stringFilterDescription.compareValue != null;
             this.compareTo = stringFilterDescription.caseSensitive ?
                     stringFilterDescription.compareValue :
                     stringFilterDescription.compareValue.toLowerCase();
@@ -104,7 +109,7 @@ public class StringFilterFactory {
                     this.stringFilterDescription.caseSensitive ?
                     curString.equals(this.compareTo) :
                     curString.equalsIgnoreCase(this.compareTo));
-            return result^this.stringFilterDescription.complement;
+            return result ^ this.stringFilterDescription.complement;
         }
     }
 }

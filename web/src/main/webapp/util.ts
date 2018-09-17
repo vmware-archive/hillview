@@ -213,7 +213,7 @@ export function significantDigits(n: number): string {
         suffix = "M";
         n = n / 1e6;
     } else if (absn > 10e4) {
-        // This will prevent many year values from being converted
+        // Using 10^4 will prevent many year values from being converted
         suffix = "K";
         n = n / 1e3;
     } else if (absn < .001) {

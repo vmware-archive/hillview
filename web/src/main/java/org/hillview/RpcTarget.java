@@ -302,6 +302,10 @@ public abstract class RpcTarget implements IJson {
      * @param <R> Type of data.
      */
     class CompleteSketchResultObserver<R, S extends IJson> extends ResultObserver<R> {
+        /**
+         * True when a result was received and send to client.
+         */
+        private boolean resultReceived;
         @Nullable
         private R last;
         private final BiFunction<R, HillviewComputation, S> postprocessing;
@@ -312,12 +316,14 @@ public abstract class RpcTarget implements IJson {
             super(name, request, target, context);
             this.last = null;
             this.postprocessing = postprocessing;
+            this.resultReceived = false;
         }
 
         @Override
         public void onNext(PartialResult<R> pr) {
             HillviewLogger.instance.info("Received partial sketch", "from {0}", this.name);
             this.last = pr.deltaValue;
+            this.resultReceived = true;
             Session session = this.context.getSessionIfOpen();
             if (session == null)
                 return;
@@ -330,8 +336,18 @@ public abstract class RpcTarget implements IJson {
             this.sendReply(reply);
         }
 
+        public void onError(Throwable t) {
+            super.onError(t);
+            this.resultReceived = true;
+        }
+
         @Override
         public void onCompleted() {
+            if (!this.resultReceived) {
+                HillviewLogger.instance.error(
+                        "Completing message without result", "for {0}:{1}",
+                        this.name, Utilities.stackTraceString());
+            }
             HillviewLogger.instance.info("Computation completed", "for {0}", this.name);
             JsonObject json = new JsonObject();
             json.addProperty("done", 1.0);
