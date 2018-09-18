@@ -21,19 +21,24 @@ import org.junit.Test;
 import org.apache.commons.cli.*;
 
 import java.io.*;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 import com.univocity.parsers.csv.CsvFormat;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
 
 
-public class DataUpload {
+public class DataUpload  {
 
     IAppendableColumn[] columns;
     boolean allowFewerColumns;
     int currentRow;
     int currentField = 0;
-    //String schemaPath;
+    Schema schema = null;
+    String schemaPath;
 
     private String[] createArgs() {
         String[] args = new String[4];
@@ -48,7 +53,7 @@ public class DataUpload {
 
 
 
-//    @Test
+    @Test
     public void uploadFile() {
         String[] args = createArgs();
         Options options = new Options();
@@ -87,12 +92,14 @@ public class DataUpload {
 
         try {
             ClusterConfig config = ClusterConfig.parse("/Users/uwieder/Projects/Bigdata/Hillview/Hillview/bin/config.json");
-            System.out.println(config.webserver);
             // todo: create the CsvFileLoader.Config object
             // todo: read the schema file if it exists
             // todo: chop_files()
             CsvFileLoader.Config parsConfig = new CsvFileLoader.Config();
-            chop_files("file.csv", "\\Users\\datafile_chop", 100000, parsConfig, null, false);
+            parsConfig.hasHeaderRow = true;
+            chop_files("/Users/uwieder/Projects/Bigdata/Hillview/data/pitchingTest.csv",
+                    "/Users/uwieder/Projects/Bigdata/Hillview/data",
+                    100, parsConfig,null, false);
             // todo: copy_files()
 
         } catch(IOException e) {
@@ -124,6 +131,16 @@ public class DataUpload {
             settings.setNullValue(null);
             settings.setReadInputOnSeparateThread(false);
             Schema actualSchema = null;
+            if (!Utilities.isNullOrEmpty(this.schemaPath))
+                actualSchema = Schema.readFromJsonFile(Paths.get(this.schemaPath));
+            else {
+                settings.setMaxColumns(50000);
+                CsvParser schemaParser = new CsvParser(settings);
+                actualSchema = this.guessSchema(file, schemaParser);
+            }
+
+
+
             boolean guessSchema = true;
 
             this.allowFewerColumns = config.allowFewerColumns;
@@ -138,6 +155,7 @@ public class DataUpload {
             myParser.beginParsing(file);
             this.currentRow = 0;
             String[] firstLine = null;
+
             if (guessSchema) {
                 if (config.hasHeaderRow) {
                     @javax.annotation.Nullable
@@ -156,7 +174,7 @@ public class DataUpload {
                     for (String col : line) {
                         if ((col == null) || col.isEmpty())
                             col = schema.newColumnName("Column_" + Integer.toString(index));
-                        col = schema.newColumnName(col);
+                        col = actualSchema.newColumnName(col);
                         ColumnDescription cd = new ColumnDescription(col, ContentsKind.String);
                         actualSchema.append(cd);
                         index++;
@@ -182,18 +200,20 @@ public class DataUpload {
 
             assert schema != null;
 
-            /* todo: Write a Schema file */
-
             this.columns = schema.createAppendableColumns();
 
             if (firstLine != null)
                 this.append(firstLine);
+            firstLine = null;
 
-            int chunknum = 0;
+            int chunk = 0;
             // Start Creating the Buffers
             // *********************************************
             boolean more_chunks = true;
+            ArrayList<Schema> schemaList = new ArrayList<>();
             while(more_chunks) {
+                if (this.columns == null)
+                    schema.createAppendableColumns();
                 for (int i = 0; i < lines; i++) {
                     @javax.annotation.Nullable
                     String[] line = null;
@@ -220,8 +240,7 @@ public class DataUpload {
                     if (guessSchema) {
                         GuessSchema gs = new GuessSchema();
                         GuessSchema.SchemaInfo info = gs.guess((IStringColumn) s);
-                        if (info.kind != ContentsKind.String &&
-                                info.kind != ContentsKind.None)  // all elements are null
+                        if (info.kind != ContentsKind.String && info.kind != ContentsKind.None)  // all elements are null
                             sealed[ci] = s.convertKind(info.kind, c.getName(), ms);
                         else
                             sealed[ci] = s;
@@ -230,10 +249,14 @@ public class DataUpload {
                     }
                     assert sealed[ci] != null;
                 }
-
-                writeTable(new Table(sealed, filename, null), destination.concat(Integer.toString(chunknum)), orc);
-                chunknum++;
+                Table table  = new Table(sealed, filename, null);
+                if (guessSchema)
+                    schemaList.add(table.getSchema());
+                writeTable(table, destination.concat(Integer.toString(chunk)), orc);
+                chunk++;
+                this.columns = schema.createAppendableColumns();
             }
+            myParser.stopParsing();
 
         } catch(Exception e) {
             this.error(e.getMessage());
@@ -248,11 +271,12 @@ public class DataUpload {
      * @param filename
      */
     private void writeTable(Table table, String filename, boolean orc) {
+        System.out.println("Writing table in " + filename);
         if (orc) {
-            OrcFileWriter writer = new OrcFileWriter(filename);
+            OrcFileWriter writer = new OrcFileWriter(filename + ".orc");
             writer.writeTable(table);
         } else {
-            CsvFileWriter writer = new CsvFileWriter(filename);
+            CsvFileWriter writer = new CsvFileWriter(filename + ".csv");
             writer.writeTable(table);
         }
     }
@@ -333,5 +357,10 @@ public class DataUpload {
 
     private void error(String mess) {
         System.out.println(mess);
+    }
+
+    private Schema guessSchema(Reader file, CsvParser myparser) {
+
+        return null;
     }
 }
