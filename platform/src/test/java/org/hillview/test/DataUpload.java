@@ -92,11 +92,22 @@ public class DataUpload  {
 
         try {
             ClusterConfig config = ClusterConfig.parse("/Users/uwieder/Projects/Bigdata/Hillview/Hillview/bin/config.json");
-            // todo: create the CsvFileLoader.Config object
-            // todo: read the schema file if it exists
-            // todo: chop_files()
+            // todo: create the CsvFileLoader.Config object. Should come from the command line.
+            // todo: read the schema file if it exists. Should come from the command line.
+
+            String filename = "/Users/uwieder/Projects/Bigdata/Hillview/data/pitchingTest.csv";
+
             CsvFileLoader.Config parsConfig = new CsvFileLoader.Config();
             parsConfig.hasHeaderRow = true;
+            Schema mySchema;
+            if (!Utilities.isNullOrEmpty(this.schemaPath))
+                mySchema = Schema.readFromJsonFile(Paths.get(this.schemaPath));
+            else {
+                mySchema = this.guessSchema(filename, parsConfig);
+            }
+
+
+
             chop_files("/Users/uwieder/Projects/Bigdata/Hillview/data/pitchingTest.csv",
                     "/Users/uwieder/Projects/Bigdata/Hillview/data",
                     100, parsConfig,null, false);
@@ -131,13 +142,6 @@ public class DataUpload  {
             settings.setNullValue(null);
             settings.setReadInputOnSeparateThread(false);
             Schema actualSchema = null;
-            if (!Utilities.isNullOrEmpty(this.schemaPath))
-                actualSchema = Schema.readFromJsonFile(Paths.get(this.schemaPath));
-            else {
-                settings.setMaxColumns(50000);
-                CsvParser schemaParser = new CsvParser(settings);
-                actualSchema = this.guessSchema(file, schemaParser);
-            }
 
 
 
@@ -359,7 +363,22 @@ public class DataUpload  {
         System.out.println(mess);
     }
 
-    private Schema guessSchema(Reader file, CsvParser myparser) {
+    private Schema guessSchema(String filename, CsvFileLoader.Config config) {
+        Reader file = null;
+        try {
+            file = this.getFileReader(filename);
+            CsvParserSettings settings = new CsvParserSettings();
+            CsvFormat format = new CsvFormat();
+            format.setDelimiter(config.separator);
+            settings.setFormat(format);
+            settings.setIgnoreTrailingWhitespaces(true);
+            settings.setEmptyValue("");
+            settings.setNullValue(null);
+            settings.setReadInputOnSeparateThread(false);
+        }
+        catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
 
         return null;
     }
