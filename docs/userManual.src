@@ -631,17 +631,8 @@ the current state of the display.
   ![Filter menu](filter-menu.png)
 
 * Plot singular value spectrum.  This operation requires a set of
-  numeric columns.  The operation computes the [singular-value
-  decomposition](https://en.wikipedia.org/wiki/Singular-value_decomposition)
-  of the matrix composed of these columns and plots the largest
-  singular values as a bar-chart.
-
-  ![Singular value spectrum](singular-value-spectrum.png)
-
-  The user can inspect the displayed spectrum of singular values and
-  choose how many values to use in a principal component analysis
-  (PCA), as described below.  In the picture above the first 3
-  singular values explain most of the variance of the data.
+  numeric columns.  This will display the singular values of the matrix formed
+  from these columns as a [Singular value spectrum view](#singular-value-spectrum-views).
 
 * PCA...: principal component analysis.  [Principal Component
   Analysis](https://en.wikipedia.org/wiki/Principal_component_analysis)
@@ -1075,6 +1066,20 @@ Users can select a rectangular area from a heatmap with the mouse.
 
 ![Selection from a heatmap](heatmap-selection.png)
 
+### Singular value spectrum views
+
+The view display the [singular-value
+decomposition](https://en.wikipedia.org/wiki/Singular-value_decomposition)
+of a matrix composed of a set of numeric columns.  The singular values
+are plotted as a bar-chart, as in the following figure:
+
+![Singular value spectrum](singular-value-spectrum.png)
+
+The user can inspect the displayed spectrum of singular values and
+choose how many values to use in a principal component analysis
+(PCA), as described below.  In the picture above the first 3
+singular values explain most of the variance of the data.
+
 ### Trellis plot views
 
 ![An array of heatmap views](hillview-heatmap-array.png)
@@ -1084,7 +1089,7 @@ currently is restricted to be a string column.
 Each heatmap is comprised of the rows that have a specific value in the third
 (string) column.
 
-*TODO* discuss missing values
+*TODO* add various Trellis plot descriptions
 
 ### Combining two views
 

@@ -22,22 +22,7 @@ import {ConsoleDisplay, ErrorReporter} from "./errReporter";
 import {TopMenu} from "./menu";
 import {ProgressManager} from "./progress";
 import {IHtmlElement, removeAllChildren, ViewKind} from "./ui";
-
-/**
- * Maps each ViewKind to a url anchor in the github userManual.
- */
-const helpUrl = {
-    "Table": "table-views",
-    "Histogram": "uni-dimensional-histogram-views",
-    "2DHistogram": "two-dimensional-histogram-views",
-    "Heatmap": "heatmap-views",
-    "Trellis": "trellis-plot-views",
-    "HeavyHitters": "heavy-hitter-views",
-    "LAMP": "lamp-projection",
-    "Schema": "data-schema-views",
-    "Load": "loading-data",
-    "SVD Spectrum": "svd-spectrum",
-};
+import {helpUrl} from "./helpUrl";
 
 const minus = "&#8722;";
 const plus = "+";
@@ -169,8 +154,10 @@ export class FullPage implements IHtmlElement {
      * @param {ViewKind} viewKind  Kind of view that help is sought for.
      */
     public static helpUrl(viewKind: ViewKind): string {
-        const ref = helpUrl[viewKind];
-        return "https://github.com/vmware/hillview/blob/master/docs/userManual.md#" + ref;
+        let ref = helpUrl[viewKind];
+        // strip parentheses from front and back
+        ref = ref.replace(/^\(/, "").replace(/\)$/, "");
+        return "https://github.com/vmware/hillview/blob/master/docs/userManual.md" + ref;
     }
 
     /**
@@ -207,7 +194,6 @@ export class FullPage implements IHtmlElement {
             span.innerHTML = minus;
         } else {
             removeAllChildren(this.displayHolder);
-            this.clearError();
             this.minimized = true;
             span.innerHTML = plus;
         }
@@ -236,16 +222,16 @@ export class FullPage implements IHtmlElement {
         return this.dataView;
     }
 
-    public reportError(error: string) {
+    public reportError(error: string): void {
         this.getErrorReporter().clear();
         this.getErrorReporter().reportError(error);
     }
 
-    public clearError() {
+    public clearError(): void {
         this.getErrorReporter().clear();
     }
 
-    public reportTime(timeInMs: number) {
+    public reportTime(timeInMs: number): void {
         this.reportError("Operation took " + significantDigits(timeInMs / 1000) + " seconds");
     }
 

@@ -15,27 +15,19 @@
  * limitations under the License.
  */
 
-package org.hillview.table.filters;
-
-import org.hillview.table.api.ITableFilter;
-
 /**
- * This filter executes two other filters and returns true when either returns true.
+ * Maps each ViewKind to a url anchor in the github userManual.
  */
-public class OrFilter implements ITableFilter {
-    private final ITableFilter first;
-    private final ITableFilter second;
-
-    OrFilter(ITableFilter first, ITableFilter second) {
-        this.first = first;
-        this.second = second;
-    }
-
-    public boolean test(int rowIndex) {
-        return this.first.test(rowIndex) || this.second.test(rowIndex);
-    }
-
-    public String toString() {
-        return "FilterOr(" + this.first.toString() + " || " + this.second.toString() + ")";
-    }
-}
+export const helpUrl = {
+    "Table": "(#table-views)",
+    "Histogram": "(#uni-dimensional-histogram-views)",
+    "2DHistogram": "(#two-dimensional-histogram-views)",
+    "Heatmap": "(#heatmap-views)",
+    "TrellisHistogram": "(#trellis-plot-views)",
+    "TrellisHeatmap": "(#trellis-plot-views)",
+    "Trellis2DHistogram": "(#trellis-plot-views)",
+    "HeavyHitters": "(#frequent-elements-views)",
+    "Schema": "(#schema-views)",
+    "Load": "(#loading-data)",
+    "SVD Spectrum": "(#singular-value-spectrum-views)"
+};

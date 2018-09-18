@@ -19,7 +19,8 @@ package org.hillview.test;
 
 import org.hillview.sketches.ColumnSortOrientation;
 import org.hillview.sketches.FindSketch;
-import org.hillview.table.*;
+import org.hillview.table.RecordOrder;
+import org.hillview.table.Table;
 import org.hillview.table.filters.StringFilterDescription;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.TestTables;
@@ -27,19 +28,20 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class FindSketchTest extends BaseTest {
+    boolean toPrint = false;
+
     @Test
     public void testFind1() {
         final Table table = TestTables.testTable();
         RecordOrder cso = new RecordOrder();
         for (String colName : table.getSchema().getColumnNames())
             cso.append(new ColumnSortOrientation(table.getSchema().getDescription(colName), true));
-
         StringFilterDescription sf = new StringFilterDescription("Mike", false, false, false);
         FindSketch fsk = new FindSketch(sf, null, cso);
         FindSketch.Result result = fsk.create(table);
-        Assert.assertEquals(result.count, 1);
-        Assert.assertNotNull(result.firstRow);
-        Assert.assertEquals("Mike,20", result.firstRow.toString());
+        if (toPrint)
+            printRes(table.getSchema().getColumnNames().get(0), result);
+        this.assertResult(0, 1, 0,"Mike,20", result);
     }
 
     @Test
@@ -48,12 +50,11 @@ public class FindSketchTest extends BaseTest {
         RecordOrder cso = new RecordOrder();
         for (String colName : table.getSchema().getColumnNames())
             cso.append(new ColumnSortOrientation(table.getSchema().getDescription(colName), true));
-
         StringFilterDescription sf = new StringFilterDescription("Noone", false, false, false);
         FindSketch fsk = new FindSketch(sf, null, cso);
         FindSketch.Result result = fsk.create(table);
-        Assert.assertEquals(result.count, 0);
-        Assert.assertNull(result.firstRow);
+        this.assertResult(0,0, 0,true, result);
+
     }
 
     @Test
@@ -62,13 +63,12 @@ public class FindSketchTest extends BaseTest {
         RecordOrder cso = new RecordOrder();
         for (String colName : table.getSchema().getColumnNames())
             cso.append(new ColumnSortOrientation(table.getSchema().getDescription(colName), true));
-
         StringFilterDescription sf = new StringFilterDescription("Bill", false, false, false);
         FindSketch fsk = new FindSketch(sf, null, cso);
         FindSketch.Result result = fsk.create(table);
-        Assert.assertEquals(result.count, 2);
-        Assert.assertNotNull(result.firstRow);
-        Assert.assertEquals("Bill,1", result.firstRow.toString());
+        if (toPrint)
+            printRes(table.getSchema().getColumnNames().get(0), result);
+        this.assertResult(0, 1, 1,"Bill,1", result);
     }
 
     @Test
@@ -79,12 +79,18 @@ public class FindSketchTest extends BaseTest {
             cso.append(new ColumnSortOrientation(table.getSchema().getDescription(colName), true));
 
         // start at row with index 2, which is larger than the first one in cso
-        RowSnapshot top = new RowSnapshot(table, 2, table.getSchema());
+        RowSnapshot top2 = new RowSnapshot(table, 2, table.getSchema());
         StringFilterDescription sf = new StringFilterDescription("Mike", false, false, false);
-        FindSketch fsk = new FindSketch(sf, top, cso);
+        FindSketch fsk = new FindSketch(sf, top2, cso, false);
         FindSketch.Result result = fsk.create(table);
-        Assert.assertEquals(result.count, 1);
-        Assert.assertNull(result.firstRow);
+        this.assertResult(1, 0, 0,true, result);
+        RowSnapshot top0 = new RowSnapshot(table, 0, table.getSchema());
+        fsk = new FindSketch(sf, top0, cso, false);
+        result = fsk.create(table);
+        this.assertResult(0, 1, 0, false, result);
+        fsk = new FindSketch(sf, top0, cso, true);
+        result = fsk.create(table);
+        this.assertResult(1, 0, 0, true, result);
     }
 
     @Test
@@ -94,13 +100,15 @@ public class FindSketchTest extends BaseTest {
         String colName = table.getSchema().getColumnNames().get(0);
         cso.append(new ColumnSortOrientation(table.getSchema().getDescription(colName), true));
 
-        // start at row with index 2, which is larger than the first one in cso
-        RowSnapshot top = new RowSnapshot(table, 2, table.getSchema());
-        StringFilterDescription sf = new StringFilterDescription("Mike", false, false, false);
-        FindSketch fsk = new FindSketch(sf, top, cso);
+        // start at row with index 3, which is larger than the first one in cso
+        RowSnapshot top = new RowSnapshot(table, 3, table.getSchema());
+        StringFilterDescription sf = new StringFilterDescription("Bi", true, false, true);
+        FindSketch fsk = new FindSketch(sf, top, cso, false);
         FindSketch.Result result = fsk.create(table);
-        Assert.assertEquals(result.count, 1);
-        Assert.assertNull(result.firstRow);
+        this.assertResult(0, 2, 0, "Bill", result);
+        fsk = new FindSketch(sf, top, cso, true);
+        result = fsk.create(table);
+        this.assertResult(2, 0, 0, true, result);
     }
 
     @Test
@@ -109,13 +117,11 @@ public class FindSketchTest extends BaseTest {
         RecordOrder cso = new RecordOrder();
         String colName = table.getSchema().getColumnNames().get(1);
         cso.append(new ColumnSortOrientation(table.getSchema().getDescription(colName), true));
-
         StringFilterDescription sf = new StringFilterDescription("Mike", false, false, false);
         FindSketch fsk = new FindSketch(sf, null, cso);
         FindSketch.Result result = fsk.create(table);
         // No matches on the second column
-        Assert.assertEquals(0, result.count);
-        Assert.assertNull(result.firstRow);
+        this.assertResult(0, 0, 0,true, result);
     }
 
     @Test
@@ -126,12 +132,57 @@ public class FindSketchTest extends BaseTest {
         cso.append(new ColumnSortOrientation(table.getSchema().getDescription(colName), true));
 
         // Search substring "i".
-        StringFilterDescription sf = new StringFilterDescription("i", false, false, true);
-        FindSketch fsk = new FindSketch(sf, null, cso);
+        StringFilterDescription sf = new StringFilterDescription("i", true, false, true);
+        RowSnapshot top = new RowSnapshot(table, 0, table.getSchema());
+        FindSketch fsk = new FindSketch(sf, top, cso, false, true);
+        // Search for strings geq Mike
         FindSketch.Result result = fsk.create(table);
-        // No matches on the second column
-        Assert.assertEquals(5, result.count);
-        Assert.assertNotNull(result.firstRow);
-        Assert.assertEquals("Bill", result.firstRow.toString());
+        this.assertResult(2, 1, 2, "Mike", result);
+        fsk = new FindSketch(sf, top, cso, true);
+        // Searching strings strictly greater than Mike
+        result = fsk.create(table);
+        this.assertResult(3, 1, 1, "Richard", result);
+        // Previous search from Mike
+        fsk = new FindSketch(sf, top, cso, true, false);
+        result = fsk.create(table);
+        if (toPrint)
+            printRes(top, colName, result);
+        this.assertResult(0, 2, 3, "Bill", result);
+        // Previous search from Smith
+        top = new RowSnapshot(table, 5, table.getSchema());
+        fsk = new FindSketch(sf, top, cso, true, false);
+        result = fsk.create(table);
+        if (toPrint)
+            printRes(top, colName, result);
+        this.assertResult(3, 1, 1, "Richard", result);
+    }
+
+    private void printRes(RowSnapshot topRow,  String colName, FindSketch.Result result) {
+        System.out.printf("TopRow: %s\n", topRow.getString(colName));
+        System.out.printf("First Row: %s, before %d, at %d, after %d\n",
+                result.firstMatchingRow.getString(colName), result.before, result.at,  result.after);
+    }
+
+    private void printRes(String colName, FindSketch.Result result) {
+        System.out.printf("First Row: %s, before %d, at %d, after %d\n",
+                result.firstMatchingRow.getString(colName), result.before, result.at,  result.after);
+    }
+    private void assertResult(long expBefore, long expAt, long expAfter, String expStr,
+                              FindSketch.Result result) {
+        Assert.assertEquals(expBefore, result.before);
+        Assert.assertEquals(expAt, result.at);
+        Assert.assertEquals(expAfter, result.after);
+        Assert.assertEquals(expStr, result.firstMatchingRow.toString());
+    }
+
+    private void assertResult(long expBefore, long expAt, long expAfter, Boolean isNull,
+                              FindSketch.Result result) {
+        Assert.assertEquals(expBefore, result.before);
+        Assert.assertEquals(expAt, result.at);
+        Assert.assertEquals(expAfter, result.after);
+        if (isNull)
+            Assert.assertNull(result.firstMatchingRow);
+        else
+            Assert.assertNotNull(result.firstMatchingRow);
     }
 }

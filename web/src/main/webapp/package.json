@@ -37,6 +37,7 @@
     "@types/d3-shape": "^1.2.2",
     "@types/d3-time": "^1.0.7",
     "@types/pako": "^1.0.0",
+    "ts-loader": "^3.5.0",
     "webpack": "^3.6.0"
   }
 }

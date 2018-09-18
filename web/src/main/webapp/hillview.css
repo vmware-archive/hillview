@@ -47,7 +47,7 @@ h1 {
 
 .console {
     font-family: monospace;
-    white-space: pre;
+    white-space: pre-wrap;
 }
 
 th {
@@ -92,6 +92,10 @@ th, td {
 .external-link {
     color: blue;
     text-decoration: underline;
+}
+
+.highlight {
+    background: yellow;
 }
 
 .hillviewPage {

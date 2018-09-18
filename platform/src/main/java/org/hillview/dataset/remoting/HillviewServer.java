@@ -24,10 +24,10 @@ import com.google.protobuf.ByteString;
 import io.grpc.Server;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import io.grpc.netty.NettyServerBuilder;
+import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
+import io.grpc.netty.shaded.io.netty.channel.EventLoopGroup;
+import io.grpc.netty.shaded.io.netty.channel.nio.NioEventLoopGroup;
 import io.grpc.stub.StreamObserver;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import org.apache.commons.lang3.SerializationUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hillview.dataset.api.DatasetMissing;
@@ -123,17 +123,17 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                                         .workerEventLoopGroup(workerElg)
                                         .bossEventLoopGroup(bossElg)
                                         .addService(this)
-                                        .maxMessageSize(MAX_MESSAGE_SIZE)
+                                        .maxInboundMessageSize(MAX_MESSAGE_SIZE)
                                         .build()
                                         .start();
-        this.dataSets = CacheBuilder.<Integer, IDataSet>newBuilder()
+        this.dataSets = CacheBuilder.newBuilder()
                 .expireAfterAccess(EXPIRE_TIME_IN_HOURS, TimeUnit.HOURS)
                 .removalListener(
                         (RemovalListener<Integer, IDataSet>) removalNotification ->
                                 HillviewLogger.instance.info("Removing reference to dataset", "{0}: {1}",
                                     removalNotification.getKey(), removalNotification.getValue().toString()))
                 .build();
-        this.toUnsubscribe = CacheBuilder.<UUID, Boolean>newBuilder()
+        this.toUnsubscribe = CacheBuilder.newBuilder()
                 .expireAfterAccess(EXPIRE_TIME_IN_HOURS, TimeUnit.HOURS)
                 .build();
     }

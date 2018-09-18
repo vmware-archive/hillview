@@ -1,7 +1,7 @@
 package org.hillview.utils;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import io.netty.util.concurrent.DefaultThreadFactory;
+import io.grpc.netty.shaded.io.netty.util.concurrent.DefaultThreadFactory;
 import rx.Scheduler;
 import rx.schedulers.Schedulers;
 

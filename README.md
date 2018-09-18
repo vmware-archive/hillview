@@ -12,9 +12,9 @@ system in action.
 
 # Developing Hillview
 
-## Software Dependences
+## Software Dependencies
 
-* Back-end: Ubuntu Linux or MacOS
+* Back-end: Ubuntu Linux > 16 or MacOS
 * Java 8, Maven build system, various Java libraries
   (Maven will manage the libraries)
 * Front-end: Typescript, webpack, Tomcat app server, node.js;
@@ -42,8 +42,8 @@ using a sample dataset.
 * First install all software required as described
   [below](#software-needed-for-deployment).
 
-* Check/edit the file `./bin/config.sh` and select the appropriate
-  versions for the software dependences.
+* Check/edit the file `./bin/lib.sh` and select the appropriate
+  versions for the software dependencies.
 
 * Build the software:
 
@@ -264,13 +264,16 @@ $ export JAVA_HOME="<path-to-jdk-folder>"
 
 ## Installing other software needed
 
-The following shell script will install the other required dependences
+The following shell script will install the other required dependencies
 for building and testing.
 
 ```
 $ cd bin
-$ ./install-dependences.sh
+$ ./install-dependencies.sh
 ```
+
+For old versions of Ubuntu this may fail, so you may have to install the required
+dependencies manually.
 
 ## Impala Java libraries
 

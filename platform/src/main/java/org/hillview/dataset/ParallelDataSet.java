@@ -196,6 +196,9 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
                             .map(e -> new Pair<Integer, PartialResult<IDataSet<S>>>(finalI, e));
             obs.add(i, ci);
         }
+
+        if (obs.isEmpty())
+            throw new RuntimeException("Empty children");
         // Merge the streams from all children
         final Observable<Pair<Integer, PartialResult<IDataSet<S>>>> merged =
                 // publish().autoConnect(2) ensures that the two consumers

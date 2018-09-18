@@ -46,6 +46,19 @@ public class RecordOrder implements Serializable {
     }
 
     /**
+     * Reverse the given RecordOrder.
+     * @return
+     */
+    public RecordOrder reverse() {
+        RecordOrder rev = new RecordOrder();
+        for (int i=0; i < this.getSize(); i++) {
+            ColumnSortOrientation ordCol = this.getOrientation(i);
+            rev.append(new ColumnSortOrientation(ordCol.columnDescription, !ordCol.isAscending));
+        }
+        return rev;
+    }
+
+    /**
      * Return a schema describing the columns in this sort order.
      */
     public Schema toSchema() {

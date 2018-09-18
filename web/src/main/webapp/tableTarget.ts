@@ -26,7 +26,7 @@ import {
     HistogramBase, HLogLog, IColumnDescription, kindIsString,
     NextKList, RangeArgs, RecordOrder, RemoteObjectId, Schema,
     TableSummary, TopList, NextKArgs, ComparisonFilterDescription,
-    EigenVal, EqualityFilterDescription, FindResult, Heatmap3D,
+    EigenVal, StringRowFilterDescription, FindResult, Heatmap3D, StringFilterDescription,
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
 import {FullPage} from "./ui/fullPage";
@@ -52,16 +52,14 @@ export class TableTargetAPI extends RemoteObject {
         return this.createStreamingRpcRequest<RemoteObjectId>("zip", r.remoteObjectId);
     }
 
-    public createFindRequest(order: RecordOrder, topRow: any[], toFind: string, regex: boolean,
-                             subString: boolean, caseSensitive: boolean):
+    public createFindRequest(order: RecordOrder, topRow: any[], strFilter: StringFilterDescription, excludeTopRow: boolean, next: boolean):
         RpcRequest<PartialResult<FindResult>> {
         return this.createStreamingRpcRequest<FindResult>("find", {
-            toFind: toFind,
-            regex: regex,
-            subString: subString,
-            topRow: topRow,
             order: order,
-            caseSensitive: caseSensitive
+            topRow: topRow,
+            stringFilterDescription: strFilter,
+            excludeTopRow: excludeTopRow,
+            next: next,
         });
     }
 
@@ -200,7 +198,7 @@ export class TableTargetAPI extends RemoteObject {
         });
     }
 
-    public createFilterEqualityRequest(filter: EqualityFilterDescription):
+    public createFilterEqualityRequest(filter: StringRowFilterDescription):
             RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<RemoteObjectId>("filterEquality", filter);
     }

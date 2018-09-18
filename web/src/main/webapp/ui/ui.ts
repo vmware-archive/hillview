@@ -71,6 +71,8 @@ export function textToDiv(text: string): HTMLElement {
 export class SpecialChars {
     /// Approximation sign.
     public static approx = "\u2248";
+    public static downArrow = "&dArr;";
+    public static upArrow = "&uArr;";
 }
 
 /**

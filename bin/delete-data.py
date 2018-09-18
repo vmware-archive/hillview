@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 # This script deletes a specific folder on all the machines in a Hillview cluster.
-
-from hillviewCommon import *
+# pylint: disable=unused-wildcard-import,invalid-name,missing-docstring,wildcard-import,superfluous-parens,unused-variable
 from optparse import OptionParser
+from hillviewCommon import RemoteHost, run_on_all_backends
 
 def delete_remote_folder(rh, folder):
     rh.run_remote_shell_command("rm -rf " + folder)
@@ -14,7 +14,7 @@ def delete_folder(config, folder):
 
 def main():
     parser = OptionParser(usage="%prog [options] config folderToDelete")
-    (options, args) = parser.parse_args()
+    (_, args) = parser.parse_args()
     if len(args) != 2:
         print("Two arguments must be supplied")
         usage(parser)

@@ -3,6 +3,7 @@
 
 # Bail out at first error
 set -e
+set -x
 
 mydir="$(dirname "$0")"
 if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
@@ -11,7 +12,7 @@ source $mydir/lib.sh
 echo "Installing programs needed to build"
 ${SUDO} ${INSTALL} install maven ${NODEJS} ${NPM} libgfortran3 unzip gzip
 echo "Installing typescript tools"
-${SUDO} npm install -g typescript@2.7.1 ts-loader@3.5.0 webpack@3.6.0
+${SUDO} npm install -g typescript@2.7.1 webpack@3.6.0
 
 cd ..
 if [ ! -d apache-tomcat-${TOMCATVERSION} ]; then
@@ -22,6 +23,7 @@ if [ ! -d apache-tomcat-${TOMCATVERSION} ]; then
     rm -rf ROOT*
     ln -s ../../web/target/web-1.0-SNAPSHOT.war ROOT.war
     popd
+    rm -rf apache-tomcat-${TOMCATVERSION}.tar.gz
 else
     echo "Tomcat already installed"
 fi
@@ -29,4 +31,5 @@ fi
 pushd web/src/main/webapp
 echo "Installing Javascript packages"
 npm install
+npm link typescript
 popd

@@ -24,11 +24,11 @@ import {
     ContentsKind,
     ConvertColumnInfo,
     CreateColumnInfo,
-    EqualityFilterDescription,
+    StringFilterDescription,
     HLogLog,
     IColumnDescription,
     RecordOrder,
-    RemoteObjectId,
+    RemoteObjectId, StringRowFilterDescription,
 } from "../javaBridge";
 import {OnCompleteReceiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
@@ -417,19 +417,26 @@ export abstract class TSViewBase extends BigTableView {
         const cd = this.schema.find(colName);
         const ef = new EqualityFilterDialog(cd, this.schema);
         ef.setAction(() => {
-            const filter = ef.getFilter();
-            const desc = this.schema.find(filter.column);
+            const rowFilter = ef.getFilter();
+            const strFilter = rowFilter.stringFilterDescription;
+            const desc = this.schema.find(rowFilter.colName);
             const o = order.clone();
             const so: ColumnSortOrientation = {
                 columnDescription: desc,
                 isAscending: true,
             };
             o.addColumn(so);
-            const rr = this.createFilterEqualityRequest(filter);
-            const title = "Filtered: " + filter.column + " is " +
-                (filter.complement ? "not " : "") +
-                TableView.convert(filter.compareValue, desc.kind);
-
+            const rr = this.createFilterEqualityRequest(rowFilter);
+            let title = "Filtered: " + rowFilter.colName;
+            if ((strFilter.asSubString || strFilter.asRegEx) && !strFilter.complement)
+                title += " contains ";
+            else if ((strFilter.asSubString || strFilter.asRegEx) && strFilter.complement)
+                title += " does not contain ";
+            else if (!(strFilter.asSubString || strFilter.asRegEx) && !strFilter.complement)
+                title += " equals ";
+            else if (!(strFilter.asSubString || strFilter.asRegEx) && strFilter.complement)
+                title += " does not equal ";
+            title += strFilter.compareValue;
             const newPage = this.dataset.newPage(title, this.page);
             rr.invoke(new TableOperationCompleted(newPage, rr, this.rowCount, this.schema, o, tableRowsDesired));
         });
@@ -523,14 +530,18 @@ class EqualityFilterDialog extends Dialog {
             this.addSelectField("column", "Column", cols, null, "Column that is filtered");
         }
         this.addTextField("query", "Find", FieldKind.String, null, "Value to search");
-        this.addBooleanField("asRegEx", "Interpret as Regular Expression", false, "Select "
+        this.addBooleanField("asSubString", "Match substrings", false, "Select "
+            + "checkbox to allow matching the search query as a substring");
+        this.addBooleanField("asRegEx", "Treat as regular expression", false, "Select "
             + "checkbox to interpret the search query as a regular expression");
+        this.addBooleanField("caseSensitive", "Case Sensitive", false, "Select checkbox "
+            + "to do a case sensitive search");
         this.addBooleanField("complement", "Exclude matches", false, "Select checkbox to "
             + "filter out all matches");
         this.setCacheTitle("EqualityFilterDialog");
     }
 
-    public getFilter(): EqualityFilterDescription {
+    public getFilter(): StringRowFilterDescription {
         let textQuery: string = this.getFieldValue("query");
         if (this.columnDescription == null) {
             const colName = this.getFieldValue("column");
@@ -540,13 +551,20 @@ class EqualityFilterDialog extends Dialog {
             const date = new Date(textQuery);
             textQuery = Converters.doubleFromDate(date).toString();
         }
+        const asSubString = this.getBooleanValue("asSubString");
         const asRegEx = this.getBooleanValue("asRegEx");
+        const caseSensitive = this.getBooleanValue("caseSensitive");
         const complement = this.getBooleanValue("complement");
-        return {
-            column: this.columnDescription.name,
+        const stringFilterDescription: StringFilterDescription = {
             compareValue: textQuery,
-            complement,
-            asRegEx,
+            asSubString: asSubString,
+            asRegEx: asRegEx,
+            caseSensitive: caseSensitive,
+            complement: complement,
+        };
+        return {
+            colName: this.columnDescription.name,
+            stringFilterDescription: stringFilterDescription,
         };
     }
 }

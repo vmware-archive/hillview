@@ -18,10 +18,10 @@
 package org.hillview.dataset;
 
 import com.google.protobuf.ByteString;
-import io.grpc.netty.NettyChannelBuilder;
+import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder;
+import io.grpc.netty.shaded.io.netty.channel.EventLoopGroup;
+import io.grpc.netty.shaded.io.netty.channel.nio.NioEventLoopGroup;
 import io.grpc.stub.StreamObserver;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import org.apache.commons.lang3.SerializationUtils;
 import org.hillview.dataset.api.*;
 import org.hillview.pb.Ack;
@@ -72,7 +72,7 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
                 .maxInboundMessageSize(HillviewServer.MAX_MESSAGE_SIZE)
                 .executor(executorService)
                 .eventLoopGroup(workerElg)
-                .usePlaintext(true)   // channel is unencrypted.
+                .usePlaintext()   // channel is unencrypted.
                 .build());
     }
 
@@ -288,6 +288,7 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
             PartialResult<Integer> pr = Converters.checkNull((PartialResult<Integer>)op.result);
             final IDataSet<S> ids = (pr.deltaValue == null) ? null :
                     new RemoteDataSet<S>(RemoteDataSet.this.serverEndpoint, pr.deltaValue);
+            HillviewLogger.instance.info("Receiving partial response: new dataset", "{0}", pr.deltaValue);
             return new PartialResult<IDataSet<S>>(pr.deltaDone, ids);
         }
     }
@@ -306,6 +307,7 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
             final OperationResponse op = SerializationUtils.deserialize(response
                     .getSerializedOp().toByteArray());
             assert op.result != null;
+            HillviewLogger.instance.info("Receiving partial sketch result", "{0}", op.result);
             return (PartialResult<S>)op.result;
         }
     }
