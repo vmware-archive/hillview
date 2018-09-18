@@ -329,9 +329,6 @@ export class RecordOrder {
     }
 }
 
-
-
-
 /**
  * Describes the a filter that checks for (in)equality again a search string/pattern.
  */
@@ -367,10 +364,14 @@ export interface ComparisonFilterDescription {
     /**
      * Column that is being filtered.
      */
-    column: string;
+    column: IColumnDescription;
     /**
-     * Value that is being tested.
+     * Value that is being tested if the column is a string column.
      */
-    compareValue: string;
+    stringValue: string;
+    /**
+     * Value that is being tested if the column is a numeric/date column.
+     */
+    doubleValue: number;
     comparison: Comparison;
 }

@@ -28,7 +28,7 @@ import {
     HLogLog,
     IColumnDescription,
     RecordOrder,
-    RemoteObjectId, StringRowFilterDescription,
+    RemoteObjectId, StringRowFilterDescription, kindIsString,
 } from "../javaBridge";
 import {OnCompleteReceiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
@@ -139,7 +139,8 @@ export abstract class TSViewBase extends BigTableView {
         dialog.addTextField(
             "outColName", "Column name", FieldKind.String, null, "Name to use for the generated column.");
         dialog.addSelectField(
-            "outColKind", "Data type", allContentsKind.filter((c) => c !== "Category"), "String", "Type of data in the generated column.");
+            "outColKind", "Data type", allContentsKind.filter((c) => c !== "Category"), "String",
+            "Type of data in the generated column.");
         dialog.addMultiLineTextField("function", "Function",
             "function map(row) {", "  return row['col'];", "}",
             "A JavaScript function that computes the values for each row of the generated column." +
@@ -459,18 +460,18 @@ export abstract class TSViewBase extends BigTableView {
 
     protected runComparisonFilter(
         filter: ComparisonFilterDescription, order: RecordOrder, tableRowsDesired: number): void {
-        const cd = this.schema.find(filter.column);
-        const kind = cd.kind;
+        const kind = filter.column.kind;
         const so: ColumnSortOrientation = {
-            columnDescription: cd, isAscending: true,
+            columnDescription: filter.column, isAscending: true,
         };
         const o = order.clone();
         o.addColumn(so);
 
         const rr = this.createFilterComparisonRequest(filter);
+        const value = kindIsString(kind) ? filter.stringValue : filter.doubleValue;
         const title = "Filtered: " +
-            TableView.convert(filter.compareValue, kind) + " " + filter.comparison + " " +
-            this.schema.displayName(filter.column);
+            TableView.convert(value, kind) + " " + filter.comparison + " " +
+            this.schema.displayName(filter.column.name);
 
         const newPage = this.dataset.newPage(title, this.page);
         rr.invoke(new TableOperationCompleted(newPage, rr, this.rowCount, this.schema, o, tableRowsDesired));
@@ -572,7 +573,7 @@ class EqualityFilterDialog extends Dialog {
 class ComparisonFilterDialog extends Dialog {
     private explanation: HTMLElement;
 
-    constructor(private columnDescription: IColumnDescription,
+    constructor(private columnDescription: IColumnDescription | null,
                 private displayName: string,
                 private schema: SchemaClass) {
         super("Compare", "Compare values");
@@ -606,19 +607,24 @@ class ComparisonFilterDialog extends Dialog {
     }
 
     public getFilter(): ComparisonFilterDescription {
-        let value: string = this.getFieldValue("value");
+        const value: string = this.getFieldValue("value");
+        let doubleValue: number = null;
+
         if (this.columnDescription == null) {
             const colName = this.getFieldValue("column");
             this.columnDescription = this.schema.findByDisplayName(colName);
         }
         if (this.columnDescription.kind === "Date") {
             const date = new Date(value);
-            value = Converters.doubleFromDate(date).toString();
+            doubleValue = Converters.doubleFromDate(date);
+        } else if (!kindIsString(this.columnDescription.kind)) {
+            doubleValue = parseFloat(value);
         }
         const comparison = this.getFieldValue("operation") as Comparison;
         return {
-            column: this.columnDescription.name,
-            compareValue: value,
+            column: this.columnDescription,
+            stringValue: kindIsString(this.columnDescription.kind) ? value : null,
+            doubleValue: doubleValue,
             comparison,
         };
     }

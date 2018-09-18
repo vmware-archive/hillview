@@ -57,7 +57,7 @@ export interface IElement {
     getDOMRepresentation(): Element;
 }
 
-export const missingHtml: string = "<div class='missingData'>missing</div>";
+export const missingHtml: string = "<span class='missingData'>missing</span>";
 
 export function textToDiv(text: string): HTMLElement {
     const div = document.createElement("div");

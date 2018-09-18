@@ -805,16 +805,11 @@ export class TableView extends TSViewBase implements IScrollTarget {
         this.page.reportTime(elapsedMs);
     }
 
-    public filterOnValue(colName: string, value: string, comparison: Comparison): void {
-        const cd = this.schema.find(colName);
-        if (value != null && cd.kind === "Date") {
-            // Parse the date in Javascript; the Java Date parser is very bad
-            const date = new Date(value);
-            value = Converters.doubleFromDate(date).toString();
-        }
+    public filterOnValue(cd: IColumnDescription, value: string | number, comparison: Comparison): void {
         const cfd: ComparisonFilterDescription = {
-            column: colName,
-            compareValue: value,
+            column: cd,
+            stringValue: kindIsString(cd.kind) ? value as string : null,
+            doubleValue: !kindIsString(cd.kind) ? value as number : null,
             comparison,
         };
         this.runComparisonFilter(cfd, this.order, this.tableRowsDesired);
@@ -1157,17 +1152,15 @@ export class TableView extends TSViewBase implements IScrollTarget {
             if (dataIndex === -1)
                 continue;
             if (this.isVisible(cd.name)) {
-                let value = row.values[dataIndex];
-
-                let cellValue: string;
+                const value = row.values[dataIndex];
+                let shownValue: string;
                 if (value == null) {
                     cell.classList.add("missingData");
-                    cellValue = "missing";
+                    shownValue = "missing";
                 } else {
-                    cellValue = TableView.convert(row.values[dataIndex], cd.kind);
-                    value = cellValue;
+                    shownValue = TableView.convert(row.values[dataIndex], cd.kind);
                 }
-                const high = this.highlight(cellValue);
+                const high = this.highlight(shownValue);
                 cell.innerHTML = high;
                 cell.title = "Right click will popup a menu.";
                 cell.oncontextmenu = (e) => {
@@ -1175,28 +1168,28 @@ export class TableView extends TSViewBase implements IScrollTarget {
                     // This menu shows the value to the right, but the filter
                     // takes the value to the left, so we have to flip all
                     // comparison signs.
-                    this.contextMenu.addItem({text: "Filter for " + cellValue,
-                        action: () => this.filterOnValue(cd.name, value, "=="),
+                    this.contextMenu.addItem({text: "Filter for " + shownValue,
+                        action: () => this.filterOnValue(cd, value, "=="),
                         help: "Keep only the rows that have this value in this column.",
                     }, true);
-                    this.contextMenu.addItem({text: "Filter for different from " + cellValue,
-                        action: () => this.filterOnValue(cd.name, value, "!="),
+                    this.contextMenu.addItem({text: "Filter for different from " + shownValue,
+                        action: () => this.filterOnValue(cd, value, "!="),
                         help: "Keep only the rows that have a different value in this column.",
                     }, true);
-                    this.contextMenu.addItem({text: "Filter for < " + cellValue,
-                        action: () => this.filterOnValue(cd.name, value, ">"),
+                    this.contextMenu.addItem({text: "Filter for < " + shownValue,
+                        action: () => this.filterOnValue(cd, value, ">"),
                         help: "Keep only the rows that have a a smaller value in this column.",
                     }, true);
-                    this.contextMenu.addItem({text: "Filter for > " + cellValue,
-                        action: () => this.filterOnValue(cd.name, value, "<"),
+                    this.contextMenu.addItem({text: "Filter for > " + shownValue,
+                        action: () => this.filterOnValue(cd, value, "<"),
                         help: "Keep only the rows that have a larger value in this column.",
                     }, true);
-                    this.contextMenu.addItem({text: "Filter for <= " + cellValue,
-                        action: () => this.filterOnValue(cd.name, value, ">="),
+                    this.contextMenu.addItem({text: "Filter for <= " + shownValue,
+                        action: () => this.filterOnValue(cd, value, ">="),
                         help: "Keep only the rows that have a smaller or equal value in this column.",
                     }, true);
-                    this.contextMenu.addItem({text: "Filter for >= " + cellValue,
-                        action: () => this.filterOnValue(cd.name, value, "<="),
+                    this.contextMenu.addItem({text: "Filter for >= " + shownValue,
+                        action: () => this.filterOnValue(cd, value, "<="),
                         help: "Keep only the rows that have a larger or equal in this column.",
                     }, true);
                     this.contextMenu.addItem({text: "Move to top",
