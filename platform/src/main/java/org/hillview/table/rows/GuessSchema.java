@@ -19,6 +19,8 @@ package org.hillview.table.rows;
 
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
+import org.hillview.table.ColumnDescription;
+import org.hillview.table.Schema;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IStringColumn;
 import org.hillview.utils.DateParsing;
@@ -33,6 +35,19 @@ import java.util.HashMap;
  * Helper class to guess the schema of data given a set of strings.
  */
 public class GuessSchema {
+
+    public String name;
+    private SchemaInfo myInfo;
+
+    public ColumnDescription getColumnDesc() {
+            return new ColumnDescription(this.name, myInfo.kind);
+    }
+
+    public void updateGuess(String value) {
+        if (value != null)
+            this.guess(value, this.myInfo);
+    }
+
     public static class SchemaInfo {
         public ContentsKind kind;
         public boolean      allowMissing;
@@ -83,8 +98,15 @@ public class GuessSchema {
     private
     DateParsing dateParser;
 
+
     public GuessSchema() {
         this.dateParser = null;
+        this.name = "";
+        this.myInfo = new GuessSchema.SchemaInfo(ContentsKind.None, false);
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     private void guess(@Nullable String value, SchemaInfo info) {

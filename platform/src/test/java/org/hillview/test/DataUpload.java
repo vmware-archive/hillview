@@ -19,12 +19,11 @@ import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Utilities;
 import org.junit.Test;
 import org.apache.commons.cli.*;
-
+import java.nio.file.Path;
 import java.io.*;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+
 
 import com.univocity.parsers.csv.CsvFormat;
 import com.univocity.parsers.csv.CsvParser;
@@ -35,10 +34,18 @@ public class DataUpload  {
 
     IAppendableColumn[] columns;
     boolean allowFewerColumns;
-    int currentRow;
-    int currentField = 0;
+    private int currentRow;
+    private int currentField = 0;
     Schema schema = null;
-    String schemaPath;
+    GuessSchema[] schemaGuesses;
+
+    @Nullable String schemaPath;
+    String directory;
+    String filename;
+    String destination;
+    boolean hasHeader;
+    int chunkSize;
+    int columnNumber;
 
     private String[] createArgs() {
         String[] args = new String[4];
@@ -48,9 +55,6 @@ public class DataUpload  {
         args[3] = "link";
         return args;
     }
-
-
-
 
 
     @Test
@@ -79,7 +83,6 @@ public class DataUpload  {
         catch (ParseException pe) {
             System.out.println("can't parse due to " + pe);
         }
-
         String theInput = cmd.getOptionValue('d');
         System.out.println("Got it, it's " + theInput);
         String theInput1 = cmd.getOptionValue('L');
@@ -90,15 +93,22 @@ public class DataUpload  {
         /* todo: Add usage conditional */
 
 
+
+
+
+        this.hasHeader = false;
+        this.directory = "/Users/uwieder/Projects/Bigdata/Hillview/data/";
+        this.filename = "/Users/uwieder/Projects/Bigdata/Hillview/data/tailPitching.csv";
+        this.destination = "/Users/uwieder/Projects/Bigdata/Hillview/data/";
+        this.schemaPath = null;
+
         try {
             ClusterConfig config = ClusterConfig.parse("/Users/uwieder/Projects/Bigdata/Hillview/Hillview/bin/config.json");
             // todo: create the CsvFileLoader.Config object. Should come from the command line.
             // todo: read the schema file if it exists. Should come from the command line.
 
-            String filename = "/Users/uwieder/Projects/Bigdata/Hillview/data/pitchingTest.csv";
-
             CsvFileLoader.Config parsConfig = new CsvFileLoader.Config();
-            parsConfig.hasHeaderRow = true;
+            parsConfig.hasHeaderRow = this.hasHeader;
             Schema mySchema;
             if (!Utilities.isNullOrEmpty(this.schemaPath))
                 mySchema = Schema.readFromJsonFile(Paths.get(this.schemaPath));
@@ -106,17 +116,93 @@ public class DataUpload  {
                 mySchema = this.guessSchema(filename, parsConfig);
             }
 
+            Path schemaPath  = Paths.get(this.destination + "bestGuess.schema");
+            mySchema.writeToJsonFile(schemaPath);
 
 
-            chop_files("/Users/uwieder/Projects/Bigdata/Hillview/data/pitchingTest.csv",
+            chop_files("/Users/uwieder/Projects/Bigdata/Hillview/data/tailPitching.csv",
                     "/Users/uwieder/Projects/Bigdata/Hillview/data",
-                    100, parsConfig,null, false);
+                    100, parsConfig, mySchema, false);
             // todo: copy_files()
 
         } catch(IOException e) {
             System.out.println(e);
         }
 
+    }
+
+    private Schema guessSchema(String filename, CsvFileLoader.Config config) {
+        Reader file = null;
+        try {
+            file = this.getFileReader(filename);
+            CsvParserSettings settings = new CsvParserSettings();
+            CsvFormat format = new CsvFormat();
+            format.setDelimiter(config.separator);
+            settings.setFormat(format);
+            settings.setIgnoreTrailingWhitespaces(true);
+            settings.setEmptyValue("");
+            settings.setNullValue(null);
+            settings.setReadInputOnSeparateThread(false);
+            settings.setMaxColumns(50000);
+            CsvParser myParser = new CsvParser(settings);
+            myParser.beginParsing(file);
+
+            @javax.annotation.Nullable
+            String[] line = null;
+            try {
+                line = myParser.parseNext();
+            } catch (Exception ex) {
+                System.out.println(ex);
+            }
+            if (line == null)
+                throw new RuntimeException("Missing header row " + filename);
+
+            this.columnNumber = line.length;
+            this.schemaGuesses = new GuessSchema[this.columnNumber];
+
+            if (config.hasHeaderRow)
+                HillviewLogger.instance.info("Creating schema from Header row");
+            else
+                HillviewLogger.instance.info("Creating schema from first row");
+
+            int index = 0;
+            for (String col : line) {
+                this.schemaGuesses[index] = new GuessSchema();
+                if (config.hasHeaderRow)
+                    this.schemaGuesses[index].setName(col);
+                else {
+                    this.schemaGuesses[index].setName("Column_" + Integer.toString(index));
+                    this.schemaGuesses[index].updateGuess(col);
+                }
+                index++;
+            }
+
+            while (true) {
+                @Nullable
+                String[] nextLine = null;
+                try {
+                    nextLine = myParser.parseNext();
+                } catch (Exception ex) {
+                    this.error(ex.getMessage());
+                }
+                if (nextLine == null)
+                    break;
+                index = 0;
+                for (String col : nextLine) {
+                    this.schemaGuesses[index].updateGuess(col);
+                    index++;
+                }
+            }
+            myParser.stopParsing();
+        }
+        catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+        Schema schema = new Schema();
+        for (int i = 0; i < columnNumber; i++) {
+            schema.append(this.schemaGuesses[i].getColumnDesc());
+        }
+        return schema;
     }
 
     /**
@@ -128,7 +214,7 @@ public class DataUpload  {
      * @param schema the schema of the file. Null if there is no schema and needs to be guessed.
      */
 
-    private void chop_files(String filename, String destination, int lines, CsvFileLoader.Config config, @Nullable Schema schema, boolean orc) {
+    private void chop_files(String filename, String destination, int lines, CsvFileLoader.Config config, Schema schema, boolean orc) {
 
         Reader file = null;
         try {
@@ -141,83 +227,37 @@ public class DataUpload  {
             settings.setEmptyValue("");
             settings.setNullValue(null);
             settings.setReadInputOnSeparateThread(false);
-            Schema actualSchema = null;
-
-
-
-            boolean guessSchema = true;
 
             this.allowFewerColumns = config.allowFewerColumns;
-            if (schema != null) {
-                settings.setMaxColumns(schema.getColumnCount());
-                guessSchema = false;
-            }
-            else {
-                settings.setMaxColumns(50000);
-            }
+            settings.setMaxColumns(schema.getColumnCount());
             CsvParser myParser = new CsvParser(settings);
             myParser.beginParsing(file);
+
             this.currentRow = 0;
             String[] firstLine = null;
 
-            if (guessSchema) {
-                if (config.hasHeaderRow) {
-                    @javax.annotation.Nullable
-                    String[] line = null;
-                    try {
-                        line = myParser.parseNext();
-                    } catch (Exception ex) {
-                        System.out.println(ex);
-                    }
-                    if (line == null)
-                        throw new RuntimeException("Missing header row " + filename);
 
-                    HillviewLogger.instance.info("Creating schema");
-                    actualSchema = new Schema();
-                    int index = 0;
-                    for (String col : line) {
-                        if ((col == null) || col.isEmpty())
-                            col = schema.newColumnName("Column_" + Integer.toString(index));
-                        col = actualSchema.newColumnName(col);
-                        ColumnDescription cd = new ColumnDescription(col, ContentsKind.String);
-                        actualSchema.append(cd);
-                        index++;
-                    }
-                        this.currentRow++;
-                } else { // create schema from first line
-
-                    int columnCount;
-                    actualSchema = new Schema();
-                    firstLine = myParser.parseNext();
-                    if (firstLine == null)
-                        throw new RuntimeException("Cannot create schema from empty CSV file");
-                    columnCount = firstLine.length;
-
-                    for (int i = 0; i < columnCount; i++) {
-                        ColumnDescription cd = new ColumnDescription("Column " + Integer.toString(i),
-                                ContentsKind.String);
-                        actualSchema.append(cd);
-                        }
+            if (config.hasHeaderRow) {
+                @javax.annotation.Nullable
+                String[] line = null;
+                try {
+                    line = myParser.parseNext();
+                } catch (Exception ex) {
+                    System.out.println(ex);
                 }
-                schema = actualSchema;
+                if (line == null)
+                    throw new RuntimeException("Missing header row " + filename);
+                this.currentRow++;
             }
-
-            assert schema != null;
-
             this.columns = schema.createAppendableColumns();
 
-            if (firstLine != null)
-                this.append(firstLine);
-            firstLine = null;
-
             int chunk = 0;
+
             // Start Creating the Buffers
             // *********************************************
             boolean more_chunks = true;
-            ArrayList<Schema> schemaList = new ArrayList<>();
             while(more_chunks) {
-                if (this.columns == null)
-                    schema.createAppendableColumns();
+
                 for (int i = 0; i < lines; i++) {
                     @javax.annotation.Nullable
                     String[] line = null;
@@ -234,29 +274,18 @@ public class DataUpload  {
                 }
 
                 IColumn[] sealed = new IColumn[this.columns.length];
-                //myParser.stopParsing();
                 IMembershipSet ms = null;
                 for (int ci = 0; ci < this.columns.length; ci++) {
                     IAppendableColumn c = this.columns[ci];
                     IColumn s = c.seal();
                     if (ms == null)
                         ms = new FullMembershipSet(s.sizeInRows());
-                    if (guessSchema) {
-                        GuessSchema gs = new GuessSchema();
-                        GuessSchema.SchemaInfo info = gs.guess((IStringColumn) s);
-                        if (info.kind != ContentsKind.String && info.kind != ContentsKind.None)  // all elements are null
-                            sealed[ci] = s.convertKind(info.kind, c.getName(), ms);
-                        else
-                            sealed[ci] = s;
-                    } else {
-                        sealed[ci] = s;
-                    }
+                    sealed[ci] = s;
                     assert sealed[ci] != null;
                 }
                 Table table  = new Table(sealed, filename, null);
-                if (guessSchema)
-                    schemaList.add(table.getSchema());
                 writeTable(table, destination.concat(Integer.toString(chunk)), orc);
+                // todo: send off file and delete it.
                 chunk++;
                 this.columns = schema.createAppendableColumns();
             }
@@ -361,25 +390,5 @@ public class DataUpload  {
 
     private void error(String mess) {
         System.out.println(mess);
-    }
-
-    private Schema guessSchema(String filename, CsvFileLoader.Config config) {
-        Reader file = null;
-        try {
-            file = this.getFileReader(filename);
-            CsvParserSettings settings = new CsvParserSettings();
-            CsvFormat format = new CsvFormat();
-            format.setDelimiter(config.separator);
-            settings.setFormat(format);
-            settings.setIgnoreTrailingWhitespaces(true);
-            settings.setEmptyValue("");
-            settings.setNullValue(null);
-            settings.setReadInputOnSeparateThread(false);
-        }
-        catch (Exception e) {
-            System.out.println(e.getMessage());
-        }
-
-        return null;
     }
 }
