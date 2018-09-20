@@ -1,6 +1,10 @@
 package org.hillview.test;
 
 import javax.annotation.Nullable;
+
+import com.jcraft.jsch.ChannelSftp;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.Session;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.io.ByteOrderMark;
@@ -23,6 +27,7 @@ import java.nio.file.Path;
 import java.io.*;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 
 import com.univocity.parsers.csv.CsvFormat;
@@ -96,18 +101,17 @@ public class DataUpload  {
 
 
 
-        this.hasHeader = false;
+        this.hasHeader = true;
         this.directory = "/Users/uwieder/Projects/Bigdata/Hillview/data/";
-        this.filename = "/Users/uwieder/Projects/Bigdata/Hillview/data/tailPitching.csv";
+        this.filename = "/Users/uwieder/Projects/Bigdata/Hillview/data/pitchingTest.csv";
         this.destination = "/Users/uwieder/Projects/Bigdata/Hillview/data/";
         this.schemaPath = null;
 
         try {
             ClusterConfig config = ClusterConfig.parse("/Users/uwieder/Projects/Bigdata/Hillview/Hillview/bin/config.json");
             // todo: create the CsvFileLoader.Config object. Should come from the command line.
-            // todo: read the schema file if it exists. Should come from the command line.
-
             CsvFileLoader.Config parsConfig = new CsvFileLoader.Config();
+
             parsConfig.hasHeaderRow = this.hasHeader;
             Schema mySchema;
             if (!Utilities.isNullOrEmpty(this.schemaPath))
@@ -115,14 +119,12 @@ public class DataUpload  {
             else {
                 mySchema = this.guessSchema(filename, parsConfig);
             }
-
             Path schemaPath  = Paths.get(this.destination + "bestGuess.schema");
             mySchema.writeToJsonFile(schemaPath);
 
+            //todo: Send the schema file to each of the machines
 
-            chop_files("/Users/uwieder/Projects/Bigdata/Hillview/data/tailPitching.csv",
-                    "/Users/uwieder/Projects/Bigdata/Hillview/data",
-                    100, parsConfig, mySchema, false);
+            chop_files(this.filename, this.destination,100, parsConfig, config, mySchema,false);
             // todo: copy_files()
 
         } catch(IOException e) {
@@ -214,7 +216,7 @@ public class DataUpload  {
      * @param schema the schema of the file. Null if there is no schema and needs to be guessed.
      */
 
-    private void chop_files(String filename, String destination, int lines, CsvFileLoader.Config config, Schema schema, boolean orc) {
+    private void chop_files(String filename, String destination, int lines, CsvFileLoader.Config config, ClusterConfig clusterConfig, Schema schema, boolean orc) {
 
         Reader file = null;
         try {
@@ -234,8 +236,6 @@ public class DataUpload  {
             myParser.beginParsing(file);
 
             this.currentRow = 0;
-            String[] firstLine = null;
-
 
             if (config.hasHeaderRow) {
                 @javax.annotation.Nullable
@@ -256,6 +256,9 @@ public class DataUpload  {
             // Start Creating the Buffers
             // *********************************************
             boolean more_chunks = true;
+            int currentHost = 0;
+            boolean[] sentSchema = new boolean [clusterConfig.backends.length];
+            Arrays.fill(sentSchema, Boolean.FALSE);
             while(more_chunks) {
 
                 for (int i = 0; i < lines; i++) {
@@ -284,8 +287,18 @@ public class DataUpload  {
                     assert sealed[ci] != null;
                 }
                 Table table  = new Table(sealed, filename, null);
-                writeTable(table, destination.concat(Integer.toString(chunk)), orc);
-                // todo: send off file and delete it.
+                String chunkName = destination.concat(Integer.toString(chunk));
+                if (orc)
+                    chunkName = chunkName.concat(".orc");
+                else
+                    chunkName = chunkName.concat(".csv");
+                writeTable(table, chunkName, orc);
+                String host = clusterConfig.backends[currentHost];
+                String remoteFolder = clusterConfig.service_folder;
+                if (!sentSchema[currentHost])
+                    sendFile(this.destination + " guessSchema.schema", remoteFolder, clusterConfig.user, host, false);
+                sendFile(chunkName, remoteFolder, clusterConfig.user, host,true);
+                currentHost = (currentHost + 1) % clusterConfig.backends.length;
                 chunk++;
                 this.columns = schema.createAppendableColumns();
             }
@@ -294,10 +307,29 @@ public class DataUpload  {
         } catch(Exception e) {
             this.error(e.getMessage());
         }
+    }
+
+    /**
+     * Send file to host using SSH
+     * @param filename file to send
+     * @param host host to send to
+     * @param deleteFile should the file be deleted after it is sent?
+     */
+    private void sendFile(String filename, String remoteFolder, String user, String host, boolean deleteFile ) {
+        JSch jsch = new JSch();
+        try {
+            Session session = jsch.getSession(user, host);
+            session.connect();
+            ChannelSftp sftpChannel = (ChannelSftp) session.openChannel("sftp");
+            sftpChannel.connect();
+
+            sftpChannel.put(filename, remoteFolder);
+        } catch(Exception e) {
+            this.error(e.getMessage());
+        }
 
 
     }
-
     /** Writes the table in ORC or CSV formatt
      *
      * @param table
@@ -306,12 +338,14 @@ public class DataUpload  {
     private void writeTable(Table table, String filename, boolean orc) {
         System.out.println("Writing table in " + filename);
         if (orc) {
-            OrcFileWriter writer = new OrcFileWriter(filename + ".orc");
+            OrcFileWriter writer = new OrcFileWriter(filename);
             writer.writeTable(table);
         } else {
-            CsvFileWriter writer = new CsvFileWriter(filename + ".csv");
+            CsvFileWriter writer = new CsvFileWriter(filename);
             writer.writeTable(table);
         }
+        // send file
+        // delete file
     }
 
     private void append(String[] data) {
