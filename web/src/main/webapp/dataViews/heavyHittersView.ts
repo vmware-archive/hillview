@@ -108,6 +108,8 @@ export class HeavyHittersView extends BigTableView {
     public static minString: string = "0.01%";
     public static switchToMG: number = 0.9;
     public static maxDisplay: number = 200; // Should match parameter maxDisplay in FreqKList.java
+    public static csBuckets = 500;
+    public static csTrials = 50;
 
     public contextMenu: ContextMenu;
     protected table: TabularDisplay;

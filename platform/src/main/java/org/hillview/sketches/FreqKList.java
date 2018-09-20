@@ -85,6 +85,7 @@ public class FreqKList implements Serializable {
     public NextKList getTop(Schema schema){
         return sortTopK(schema);
     }
+
     public List<Pair<RowSnapshot, Integer>> getSortedList() {
         this.hMap.forEach((rs, j) -> this.pList.add(new Pair<RowSnapshot, Integer>(rs, j)));
         this.pList.sort((p1, p2) -> Integer.compare(Converters.checkNull(p2.second),

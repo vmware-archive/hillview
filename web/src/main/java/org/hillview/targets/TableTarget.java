@@ -645,6 +645,32 @@ public final class TableTarget extends RpcTarget {
         RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(hhi.hittersId), true, observer);
     }
 
+    static class ExactCountSketchInfo {
+        String countSketchTargetId = "";
+    }
+
+    /**
+     * Runs the ExactFreqSketch method on a candidate list of heavy hitters.
+     */
+    @HillviewRpc
+    public void exactCS(RpcRequest request, RpcRequestContext context) {
+        ExactCountSketchInfo countSketchInfo = request.parseArgs(ExactCountSketchInfo.class);
+        Observer<RpcTarget> observer = new SingleObserver<RpcTarget>() {
+            @Override
+            public void onSuccess(RpcTarget rpcTarget) {
+                CountSketchTarget cst = (CountSketchTarget) rpcTarget;
+                ExactCountSketch csSketch = new ExactCountSketch(cst.result, 0.1);
+                TableTarget.this.runCompleteSketch(
+                        TableTarget.this.table, csSketch,
+                        (x, c) -> TableTarget.getTopList(x, cst.result.csDesc.schema, c),
+                        request, context);
+            }
+        };
+        RpcObjectManager.instance.retrieveTarget(
+                new RpcTarget.Id(countSketchInfo.countSketchTargetId),
+                true, observer);
+    }
+
     static class HLogLogInfo {
         String columnName = "";
         long seed;

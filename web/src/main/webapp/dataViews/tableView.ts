@@ -58,6 +58,7 @@ import {
 import {SchemaView} from "./schemaView";
 import {SpectrumReceiver} from "./spectrumView";
 import {ColumnConverter, ConverterDialog, TSViewBase} from "./tsViewBase";
+import {HeavyHittersReceiver} from "./heavyHittersView";
 
 // import {LAMPDialog} from "./lampView";
 
@@ -723,6 +724,11 @@ export class TableView extends TSViewBase implements IScrollTarget {
                     help: "Find the values that occur most frequently in the selected columns.",
                 }, true);
                 this.contextMenu.addItem({
+                    text: "Count Sketch",
+                    action: () => this.runCountSketch(),
+                    help: "Find the values that occur most frequently in the selected columns.",
+                }, true);
+                this.contextMenu.addItem({
                     text: "PCA...",
                     action: () => this.pca(true),
                     help: "Perform Principal Component Analysis on a set of numeric columns. " +
@@ -955,6 +961,20 @@ export class TableView extends TSViewBase implements IScrollTarget {
         } else {
             this.reportError("Not valid for PCA:" + message);
         }
+    }
+
+    protected runCountSketch(): void{
+        const columnsShown: IColumnDescription[] = [];
+        const cso: ColumnSortOrientation[] = [];
+        this.getSelectedColNames().forEach((v) => {
+            const colDesc = this.schema.find(v);
+            columnsShown.push(colDesc);
+            cso.push({columnDescription: colDesc, isAscending: true});
+        });
+        const order = new RecordOrder(cso);
+        const rr = this.createCountSketchRequest(columnsShown);
+        rr.invoke(new CountSketchReceiver(this.getPage(), this, rr, this.rowCount,
+            this.schema, columnsShown, order));
     }
 
     private spectrum(toSample: boolean): void {
@@ -1332,6 +1352,27 @@ export class CorrelationMatrixReceiver extends BaseRenderer {
         rr.invoke(new PCATableReceiver(
             this.page, rr, "Data with PCA projection columns", "Reading", this.tv, this.order,
             this.numComponents, this.tv.tableRowsDesired));
+    }
+}
+
+
+export class CountSketchReceiver extends BaseRenderer {
+    public constructor(page: FullPage,
+                       protected tv: TableView,
+                       operation: ICancellable<RemoteObjectId>,
+                       protected rowCount: number,
+                       protected schema: SchemaClass,
+                       protected columnsShown: IColumnDescription [],
+                       protected order: RecordOrder) {
+        super(page, operation, "Count Sketch Receiver", tv.dataset);
+    }
+
+    public run(): void {
+        super.run();
+        const rr = this.tv.createExactCSRequest(this.remoteObject);
+        rr.chain(this.operation);
+        rr.invoke(new HeavyHittersReceiver(this.page, this.tv, this.operation,
+        this.rowCount, this.schema, this.order, false, 0.1, this.columnsShown, false));
     }
 }
 

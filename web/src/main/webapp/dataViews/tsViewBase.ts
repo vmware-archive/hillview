@@ -478,6 +478,8 @@ export abstract class TSViewBase extends BigTableView {
         rr.invoke(new TableOperationCompleted(newPage, rr, this.rowCount, this.schema, o, tableRowsDesired));
     }
 
+
+
     protected runHeavyHitters(percent: number): void {
         if (percent == null || percent < HeavyHittersView.min || percent > 100) {
             this.reportError("Percentage must be between " + HeavyHittersView.min.toString() + " and 100");
