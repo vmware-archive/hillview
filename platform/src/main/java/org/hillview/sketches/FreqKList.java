@@ -25,6 +25,7 @@ import org.hillview.table.rows.RowSnapshotSet;
 import org.hillview.utils.Converters;
 import org.hillview.utils.MutableInteger;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +35,7 @@ import java.util.List;
  * It stores a hash-map which contains the elements and their counts, along with counts
  * of the size of the input and the desired accuracy parameter epsilon.
  */
-public abstract class FreqKList implements Serializable {
+public class FreqKList implements Serializable {
     /**
      * The size of the input table.
      */
@@ -48,7 +49,7 @@ public abstract class FreqKList implements Serializable {
     /**
      * Stores a filtered and sorted version of the hashmap. Created during post-processing.
      */
-    final List<Pair<RowSnapshot, Integer>> pList;
+    protected final List<Pair<RowSnapshot, Integer>> pList;
 
     public final double epsilon;
 
@@ -81,7 +82,16 @@ public abstract class FreqKList implements Serializable {
      * @param schema The schema of the RowSnapShots so that we can form a SmallTable.
      * @return A NextKList, which contains the top rows in sorted order of counts.
      */
-    public abstract NextKList getTop(Schema schema);
+    public NextKList getTop(Schema schema){
+        return sortTopK(schema);
+    }
+    public List<Pair<RowSnapshot, Integer>> getSortedList() {
+        this.hMap.forEach((rs, j) -> this.pList.add(new Pair<RowSnapshot, Integer>(rs, j)));
+        this.pList.sort((p1, p2) -> Integer.compare(Converters.checkNull(p2.second),
+                Converters.checkNull(p1.second)));
+        return this.pList;
+    }
+
 
     /**
      * Helper method that takes a List of <RowSnapShot, Integer> pairs, sorts them and puts them
@@ -141,7 +151,7 @@ public abstract class FreqKList implements Serializable {
      * the union of their entries. If an element occurs in both, the frequencies add. This is used
      * for both the Misra-Gries sketch and the sampling sketch. The hashmap is post-processed
      * differently by each of them.
-     * (FeqKListExact implements its own addition and does not use this.)
+     * (FreqKListExact implements its own addition and does not use this.)
      */
     static List<Object2ObjectMap.Entry<RowSnapshot, MutableInteger>>
     addLists(FreqKList left, FreqKList right) {
@@ -170,6 +180,15 @@ public abstract class FreqKList implements Serializable {
         pList.addAll(resultMap.object2ObjectEntrySet());
         pList.sort((p1, p2) -> Integer.compare(p2.getValue().get(), p1.getValue().get()));
         return pList;
+    }
+
+    static Object2IntOpenHashMap<RowSnapshot> getUnion(@Nullable FreqKList left, @Nullable FreqKList right) {
+        List<Object2ObjectMap.Entry<RowSnapshot, MutableInteger>> pList =
+                FreqKList.addLists(left, right);
+        Object2IntOpenHashMap<RowSnapshot> hm = new Object2IntOpenHashMap<RowSnapshot>(pList.size());
+        for (Object2ObjectMap.Entry<RowSnapshot, MutableInteger> aPList : pList)
+            hm.put(aPList.getKey(), aPList.getValue().get());
+        return hm;
     }
 
     @SuppressWarnings("ConstantConditions")

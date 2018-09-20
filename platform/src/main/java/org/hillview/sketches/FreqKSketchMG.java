@@ -26,7 +26,7 @@ import org.hillview.table.Schema;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;
 import org.hillview.table.rows.RowSnapshot;
-import org.hillview.table.rows.VirtualRowSnapshot;
+import org.hillview.table.rows.VirtualRowHashStrategy;
 import org.hillview.utils.MutableInteger;
 
 import javax.annotation.Nullable;
@@ -105,33 +105,16 @@ public class FreqKSketchMG implements ISketch<ITable, FreqKListMG> {
     }
 
     /**
-     * Creates the MG sketch, by the Misra-Gries algor  ithm.
+     * Creates the MG sketch, by the Misra-Gries algorithm.
      * @param data  Data to sketch.
      * @return A FreqKList.
      */
     @Override
     public FreqKListMG create(ITable data) {
-        IRowIterator rowIt = data.getRowIterator();
-        IntHash.Strategy hs = new IntHash.Strategy() {
-            final VirtualRowSnapshot vrs = new VirtualRowSnapshot(data, FreqKSketchMG.this.schema);
-            final VirtualRowSnapshot vrs1 = new VirtualRowSnapshot(data, FreqKSketchMG.this.schema);
-
-            @Override
-            public int hashCode(int index) {
-                this.vrs.setRow(index);
-                return this.vrs.computeHashCode(FreqKSketchMG.this.schema);
-            }
-
-            @Override
-            public boolean equals(int index, int otherIndex) {
-                this.vrs.setRow(index);
-                this.vrs1.setRow(otherIndex);
-                return this.vrs.compareForEquality(this.vrs1, FreqKSketchMG.this.schema);
-            }
-        };
-
-        Int2ObjectOpenCustomHashMap<MutableInteger> hMap = new Int2ObjectOpenCustomHashMap<MutableInteger>(hs);
+        VirtualRowHashStrategy hashStrategy = new VirtualRowHashStrategy(data, this.schema);
+        Int2ObjectOpenCustomHashMap<MutableInteger> hMap = new Int2ObjectOpenCustomHashMap<MutableInteger>(hashStrategy);
         IntSet toRemove = new IntOpenHashSet(this.maxSize);
+        IRowIterator rowIt = data.getRowIterator();
         int i = rowIt.getNextRow();
         /* An optimization to speed up the algorithm is that we batch the decrements together in
         variable dec. We only perform an actual decrement when the total decrements equal the minimum
@@ -167,12 +150,7 @@ public class FreqKSketchMG implements ISketch<ITable, FreqKListMG> {
             }
             i = rowIt.getNextRow();
         }
-        Object2IntOpenHashMap<RowSnapshot> hm = new Object2IntOpenHashMap<RowSnapshot>(this.maxSize);
-        for (ObjectIterator<Int2ObjectMap.Entry<MutableInteger>> it = hMap.int2ObjectEntrySet().fastIterator();
-             it.hasNext(); ) {
-            final Int2ObjectMap.Entry<MutableInteger> entry = it.next();
-            hm.put(new RowSnapshot(data, entry.getIntKey(), this.schema), entry.getValue().get());
-        }
+        Object2IntOpenHashMap<RowSnapshot> hm = hashStrategy.materializeHashMap(hMap);
         return new FreqKListMG(data.getNumOfRows(), this.epsilon, this.maxSize, hm);
     }
 }

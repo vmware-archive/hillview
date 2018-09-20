@@ -157,14 +157,14 @@ public class FindSketchTest extends BaseTest {
     }
 
     private void printRes(RowSnapshot topRow,  String colName, FindSketch.Result result) {
-        System.out.printf("TopRow: %s\n", topRow.getString(colName));
+        System.out.printf("TopRow: %s\n", topRow.asString(colName));
         System.out.printf("First Row: %s, before %d, at %d, after %d\n",
-                result.firstMatchingRow.getString(colName), result.before, result.at,  result.after);
+                result.firstMatchingRow.asString(colName), result.before, result.at,  result.after);
     }
 
     private void printRes(String colName, FindSketch.Result result) {
         System.out.printf("First Row: %s, before %d, at %d, after %d\n",
-                result.firstMatchingRow.getString(colName), result.before, result.at,  result.after);
+                result.firstMatchingRow.asString(colName), result.before, result.at,  result.after);
     }
     private void assertResult(long expBefore, long expAt, long expAfter, String expStr,
                               FindSketch.Result result) {
