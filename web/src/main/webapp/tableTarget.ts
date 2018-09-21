@@ -35,12 +35,13 @@ import {assert, ICancellable, Pair, PartialResult, Seed} from "./util";
 import {IDataView} from "./ui/dataview";
 import {SchemaClass} from "./schemaClass";
 import {PlottingSurface} from "./ui/plottingSurface";
-import {HeavyHittersView} from "./dataViews/heavyHittersView";
 
 /**
  * This class has methods that correspond directly to TableTarget.java methods.
  */
 export class TableTargetAPI extends RemoteObject {
+    csBuckets: number = 500;
+    csTrials: number = 50;
     /**
      * Create a reference to a remote table target.
      * @param remoteObjectId   Id of remote table on the web server.
@@ -151,8 +152,8 @@ export class TableTargetAPI extends RemoteObject {
 
     public createCountSketchRequest(columns: IColumnDescription[]):
     RpcRequest<PartialResult<RemoteObjectId>> {
-            return this.createStreamingRpcRequest<RemoteObjectId>("CountSketch",
-                { buckets: HeavyHittersView.csBuckets, trials: HeavyHittersView.csTrials, seed: Seed.instance.get(),
+            return this.createStreamingRpcRequest<RemoteObjectId>("runCountSketch",
+                { buckets: this.csBuckets, trials: this.csTrials, seed: Seed.instance.get(),
                     columns: columns });
     }
 

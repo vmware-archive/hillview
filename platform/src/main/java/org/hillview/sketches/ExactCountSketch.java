@@ -5,7 +5,6 @@ import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;
-import org.hillview.table.rows.BaseRowSnapshot;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.VirtualRowHashStrategy;
 import org.hillview.table.rows.VirtualRowSnapshot;
@@ -16,14 +15,12 @@ import javax.annotation.Nullable;
 public class ExactCountSketch implements ISketch<ITable, FreqKList> {
     public CountSketchResult result;
     public double threshold;
+    private final double cutoff;
 
     public ExactCountSketch(CountSketchResult result, double threshold) {
         this.result = result;
         this.threshold = threshold;
-    }
-
-    public boolean aboveThreshold(BaseRowSnapshot rss) {
-        return (this.result.estimateFreq(rss)> this.threshold*this.result.estimateNorm());
+        this.cutoff =  this.threshold*this.result.estimateNorm();
     }
 
     @Override
@@ -42,25 +39,30 @@ public class ExactCountSketch implements ISketch<ITable, FreqKList> {
                 val.set(val.get() + 1);
             } else {
                 vrs.setRow(i);
-                if (this.aboveThreshold(vrs))
+                if (this.result.estimateFreq(vrs)> this.cutoff)
                     hMap.put(i, new MutableInteger(1));
             }
             i = rowIt.getNextRow();
         }
         Object2IntOpenHashMap<RowSnapshot> hm =  hashStrategy.materializeHashMap(hMap);
-        return new FreqKList(data.getNumOfRows(), threshold, hm);
+        for (RowSnapshot rss : hm.keySet())
+            if (hm.getInt(rss) < this.cutoff)
+                hm.remove(rss, hm.getInt(rss));
+        FreqKList fkList = new FreqKList(data.getNumOfRows(), threshold, hm);
+        return fkList;
     }
 
     @Nullable
     @Override
     public FreqKList zero() {
-        return null;
+        return new FreqKList(0, this.threshold, new Object2IntOpenHashMap<>());
     }
 
     @Nullable
     @Override
     public FreqKList add(@Nullable FreqKList left, @Nullable FreqKList right) {
-        return new FreqKList(left.totalRows + right.totalRows, this.threshold,
+        FreqKList fkList =  new FreqKList(left.totalRows + right.totalRows, this.threshold,
                 FreqKList.getUnion(left, right));
+        return fkList;
     }
 }

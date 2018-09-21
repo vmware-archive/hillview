@@ -3,7 +3,9 @@ package org.hillview.sketches;
 import net.openhft.hashing.LongHashFunction;
 import org.hillview.table.Schema;
 
-public class CountSketchDescription {
+import java.io.Serializable;
+
+public class CountSketchDescription implements Serializable{
     public int buckets;
     public int trials;
     public LongHashFunction[] hashFunction;

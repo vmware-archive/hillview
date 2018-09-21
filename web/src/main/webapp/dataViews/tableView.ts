@@ -21,7 +21,7 @@ import {
     ColumnSortOrientation,
     Comparison,
     ComparisonFilterDescription,
-    ContentsKind, FindNext,
+    ContentsKind,
     FindResult,
     IColumnDescription,
     kindIsNumeric,
@@ -30,7 +30,8 @@ import {
     RecordOrder,
     RemoteObjectId,
     RowSnapshot,
-    Schema, StringFilterDescription,
+    Schema,
+    StringFilterDescription,
     TableSummary
 } from "../javaBridge";
 import {OnCompleteReceiver, Receiver} from "../rpc";
@@ -45,7 +46,7 @@ import {IScrollTarget, ScrollBar} from "../ui/scroll";
 import {SelectionStateMachine} from "../ui/selectionStateMachine";
 import {HtmlString, missingHtml, Resolution, SpecialChars} from "../ui/ui";
 import {
-    cloneToSet,
+    cloneToSet, convertToHtml,
     Converters,
     formatDate,
     formatNumber,
@@ -58,7 +59,7 @@ import {
 import {SchemaView} from "./schemaView";
 import {SpectrumReceiver} from "./spectrumView";
 import {ColumnConverter, ConverterDialog, TSViewBase} from "./tsViewBase";
-import {HeavyHittersReceiver} from "./heavyHittersView";
+import {CountSketchReceiver} from "./tsViewBase";
 
 // import {LAMPDialog} from "./lampView";
 
@@ -1068,23 +1069,6 @@ export class TableView extends TSViewBase implements IScrollTarget {
         newPage.setDataView(sv);
     }
 
-    /**
-     * Convert a value in the table to a html string representation.
-     * @param val                  Value to convert.
-     * @param {ContentsKind} kind  Type of value.
-     */
-    public static convert(val: any, kind: ContentsKind): HtmlString {
-        if (val == null)
-            return missingHtml;
-        if (kindIsNumeric(kind))
-            return String(val);
-        else if (kind === "Date")
-            return formatDate(Converters.dateFromDouble(val as number));
-        else if (kindIsString(kind))
-            return val as string;
-        else
-            return val.toString();  // TODO
-    }
 
     public moveRowToTop(row: RowSnapshot): void {
         const rr = this.createNextKRequest(this.order, row.values, this.tableRowsDesired);
@@ -1190,7 +1174,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
                     cell.classList.add("missingData");
                     shownValue = "missing";
                 } else {
-                    shownValue = TableView.convert(row.values[dataIndex], cd.kind);
+                    shownValue = convertToHtml(row.values[dataIndex], cd.kind);
                 }
                 const high = this.highlight(shownValue);
                 cell.innerHTML = high;
@@ -1355,26 +1339,6 @@ export class CorrelationMatrixReceiver extends BaseRenderer {
     }
 }
 
-
-export class CountSketchReceiver extends BaseRenderer {
-    public constructor(page: FullPage,
-                       protected tv: TableView,
-                       operation: ICancellable<RemoteObjectId>,
-                       protected rowCount: number,
-                       protected schema: SchemaClass,
-                       protected columnsShown: IColumnDescription [],
-                       protected order: RecordOrder) {
-        super(page, operation, "Count Sketch Receiver", tv.dataset);
-    }
-
-    public run(): void {
-        super.run();
-        const rr = this.tv.createExactCSRequest(this.remoteObject);
-        rr.chain(this.operation);
-        rr.invoke(new HeavyHittersReceiver(this.page, this.tv, this.operation,
-        this.rowCount, this.schema, this.order, false, 0.1, this.columnsShown, false));
-    }
-}
 
 // Receives the ID of a table that contains additional eigen vector projection columns.
 // Invokes a sketch to get the schema of this new table.

@@ -18,10 +18,9 @@ public class CountSketchTest {
         System.out.printf("Time: %d\n", oldEnd - oldStart);
         long [] estimate;
         for (Pair<RowSnapshot, Integer> pair: freqK.getSortedList()) {
-            estimate = cs.result.getTrace(pair.first);
             if (toPrint)
                 System.out.printf("%s: %d (%d)\n", pair.first.toString(), pair.second,
-                        estimate[cs.result.csDesc.trials/2]);
+                        cs.result.estimateFreq(pair.first));
         }
     }
 
@@ -36,10 +35,9 @@ public class CountSketchTest {
         FreqKList freqK = exactCS.create(table);
         long [] estimate;
         for (Pair<RowSnapshot, Integer> pair: freqK.getSortedList()) {
-        estimate = result.getTrace(pair.first);
         if (toPrint)
             System.out.printf("%s: %d (%d)\n", pair.first.toString(), pair.second,
-                    estimate[trials/2]);
+                    result.estimateFreq(pair.first));
         }
     }
 
@@ -106,10 +104,9 @@ public class CountSketchTest {
         System.out.printf("%d, %d, %d\n", freqKLeft.getSize(), freqKRight.getSize(), freqKSum.getSize());
         long [] estimate;
         for (Pair<RowSnapshot, Integer> pair: freqKSum.getSortedList()) {
-            estimate = sum.getTrace(pair.first);
             if (toPrint)
                 System.out.printf("%s: %d (%d)\n", pair.first.toString(), pair.second,
-                        estimate[trials/2]);
+                        sum.estimateFreq(pair.first));
         }
     }
 }

@@ -15,7 +15,7 @@ public class CountSketchResult implements Serializable {
         this.counts = new long[csDesc.trials][csDesc.buckets];
     }
 
-    public long[] getTrace(BaseRowSnapshot rss) {
+    public long estimateFreq(BaseRowSnapshot rss) {
         long item, hash;
         int sign, toBucket;
         long [] estimate = new long[this.csDesc.trials];
@@ -27,11 +27,7 @@ public class CountSketchResult implements Serializable {
             estimate[j] = this.counts[j][toBucket] * sign;
         }
         Arrays.sort(estimate);
-        return estimate;
-    }
-
-    public long estimateFreq(BaseRowSnapshot rss) {
-        return getTrace(rss)[this.csDesc.trials/2];
+        return estimate[this.csDesc.trials/2];
     }
 
     public double estimateNorm() {

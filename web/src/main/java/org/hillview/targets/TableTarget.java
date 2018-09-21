@@ -526,6 +526,7 @@ public final class TableTarget extends RpcTarget {
         long seed;
     }
 
+
     /**
      * This serializes the result of heavyHitterSketch for the front end.
      */
@@ -551,6 +552,21 @@ public final class TableTarget extends RpcTarget {
     private static TopList getTopList(FreqKList fkList, Schema schema, HillviewComputation computation) {
         TopList tl = new TopList();
         tl.top = fkList.getTop(schema);
+        tl.heavyHittersId = new HeavyHittersTarget(fkList, computation).getId().toString();
+        return tl;
+    }
+
+    /**
+     * Post-processing method applied to the result of a heavy hitters sketch before displaying the results. It will
+     * discard elements that are too low in (estimated) frequency.
+     * @param fkList The list of candidate heavy hitters
+     * @param schema The schema of the heavy hitters computation.
+     * @return A TopList
+     */
+    private static TopList getSortedList(FreqKList fkList, Schema schema, HillviewComputation computation) {
+        TopList tl = new TopList();
+        fkList.getSortedList();
+        tl.top = fkList.sortTopK(schema);
         tl.heavyHittersId = new HeavyHittersTarget(fkList, computation).getId().toString();
         return tl;
     }
@@ -645,12 +661,29 @@ public final class TableTarget extends RpcTarget {
         RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(hhi.hittersId), true, observer);
     }
 
+    static class CountSketchInfo {
+        int buckets;
+        int trials;
+        long seed;
+        Schema columns;
+    }
+
+    @HillviewRpc
+    public void runCountSketch(RpcRequest request, RpcRequestContext context) {
+        CountSketchInfo csInfo = request.parseArgs(CountSketchInfo.class);
+        CountSketchDescription csDesc = new
+                CountSketchDescription(csInfo.buckets, csInfo.trials, csInfo.seed, csInfo.columns);
+        CountSketch csSketch = new CountSketch(csDesc);
+        this.runCompleteSketch(this.table, csSketch, CountSketchTarget::new, request, context);
+    }
+
+
     static class ExactCountSketchInfo {
         String countSketchTargetId = "";
     }
 
     /**
-     * Runs the ExactFreqSketch method on a candidate list of heavy hitters.
+     * Runs the ExactCountSketch method on a candidate list of heavy hitters.
      */
     @HillviewRpc
     public void exactCS(RpcRequest request, RpcRequestContext context) {
@@ -662,12 +695,11 @@ public final class TableTarget extends RpcTarget {
                 ExactCountSketch csSketch = new ExactCountSketch(cst.result, 0.1);
                 TableTarget.this.runCompleteSketch(
                         TableTarget.this.table, csSketch,
-                        (x, c) -> TableTarget.getTopList(x, cst.result.csDesc.schema, c),
+                        (x, c) -> TableTarget.getSortedList(x, cst.result.csDesc.schema, c),
                         request, context);
             }
         };
-        RpcObjectManager.instance.retrieveTarget(
-                new RpcTarget.Id(countSketchInfo.countSketchTargetId),
+        RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(countSketchInfo.countSketchTargetId),
                 true, observer);
     }
 

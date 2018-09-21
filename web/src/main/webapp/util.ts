@@ -21,8 +21,10 @@
 
 import * as FileSaver from "file-saver";
 import {ErrorReporter} from "./ui/errReporter";
-import {HtmlString, Size} from "./ui/ui";
 import {NotifyDialog} from "./ui/dialog";
+import {HtmlString, missingHtml, Size} from "./ui/ui";
+import {ContentsKind, kindIsNumeric, kindIsString} from "./javaBridge";
+
 
 export interface Pair<T1, T2> {
     first: T1;
@@ -478,3 +480,21 @@ export interface IRawCancellable {
 // Typed version of the cancellable API, makes it easy to do
 // strong typing.
 export interface ICancellable<T> extends IRawCancellable {}
+
+/**
+ * Convert a value in the table to a html string representation.
+ * @param val                  Value to convert.
+ * @param {ContentsKind} kind  Type of value.
+ */
+export function convertToHtml(val: any, kind: ContentsKind): string {
+    if (val == null)
+        return missingHtml;
+    if (kindIsNumeric(kind))
+        return String(val);
+    else if (kind === "Date")
+        return formatDate(Converters.dateFromDouble(val as number));
+    else if (kindIsString(kind))
+        return val as string;
+    else
+        return val.toString();  // TODO
+}
