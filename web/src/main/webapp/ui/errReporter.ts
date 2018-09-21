@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {IHtmlElement} from "./ui";
+import {HtmlString, IHtmlElement} from "./ui";
 
 /**
  * Core interface for reporting errors.
@@ -64,7 +64,7 @@ export class ConsoleDisplay implements IHtmlElement, ErrorReporter {
         return this.topLevel;
     }
 
-    public reportError(htmlMessage: string): void {
+    public reportError(htmlMessage: HtmlString): void {
         this.topLevel.innerHTML += htmlMessage + "<br>";
     }
 

@@ -207,8 +207,9 @@ export abstract class TSViewBase extends BigTableView {
         let chartKind: ViewKind;
         if (heatmap)
             chartKind = "TrellisHeatmap";
-        else
+        else {
             chartKind = "Trellis2DHistogram";
+        }
         const rr = this.createDataRangesRequest(cds, this.page, chartKind);
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
             [0, 0, 0], cds, null, {

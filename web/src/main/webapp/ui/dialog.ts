@@ -19,7 +19,7 @@ import {drag as d3drag} from "d3-drag";
 import {event as d3event, select as d3select} from "d3-selection";
 import {cloneArray, makeId} from "../util";
 import {EditBox} from "./editBox";
-import {IHtmlElement, Point} from "./ui";
+import {HtmlString, IHtmlElement, Point} from "./ui";
 
 export enum FieldKind {
     String,
@@ -82,7 +82,7 @@ class DialogBase implements IHtmlElement {
      * @param title; header to show on top of the dialog.
      * @param toolTip: help message to display on mouseover.
      */
-    constructor(title: string, toolTip: string) {
+    constructor(title: HtmlString, toolTip: string) {
         // Tab indexes seem to be global to the whole DOM.
         // That's not good, since having an element with tabindex 2 will be behind all
         // other elements with tabindex 1, no matter where they are in the document.
@@ -99,7 +99,7 @@ class DialogBase implements IHtmlElement {
         this.topLevel.style.transform = "translate(-50%, -50%)";
 
         const titleElement = document.createElement("h1");
-        titleElement.textContent = title;
+        titleElement.innerHTML = title;
         this.topLevel.appendChild(titleElement);
 
         this.fieldsDiv = document.createElement("div");

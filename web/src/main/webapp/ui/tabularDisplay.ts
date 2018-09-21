@@ -17,7 +17,7 @@
 
 import {PlottingSurface} from "./plottingSurface";
 import {SelectionStateMachine} from "./selectionStateMachine";
-import {IHtmlElement} from "./ui";
+import {HtmlString, IHtmlElement} from "./ui";
 
 /**
  * A TabularDisplay is a visual representation that uses an HTML table to display
@@ -91,14 +91,14 @@ export class TabularDisplay implements IHtmlElement {
         return cell;
     }
 
-    public addRightClickHandler(colName: string, handler: (e: Event) => void) {
+    public addRightClickHandler(colName: string, handler: (e: Event) => void): void {
         this.colHeaderMap.get(colName).oncontextmenu = handler;
     }
 
     /**
      * Add a row of values; these are set as the innerHTML values of the cells.
      */
-    public addRow(data: string[], canClick: boolean = true): HTMLTableRowElement {
+    public addRow(data: HtmlString[], canClick: boolean = true): HTMLTableRowElement {
         const trow = this.insertRow(canClick);
         for (const d of data) {
             const cell = this.addRowCell(trow);
@@ -107,7 +107,7 @@ export class TabularDisplay implements IHtmlElement {
         return trow;
     }
 
-    public addFooter() {
+    public addFooter(): void {
         const footer = this.tbody.insertRow();
         const cell = footer.insertCell(0);
         cell.colSpan = this.columnCount;
@@ -127,7 +127,7 @@ export class TabularDisplay implements IHtmlElement {
         return trow;
     }
 
-    public excludeRow(val: number) {
+    public excludeRow(val: number): void {
         this.selectedRows.exclude(val);
     }
 

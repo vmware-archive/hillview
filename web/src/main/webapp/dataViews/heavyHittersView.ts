@@ -34,7 +34,7 @@ import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
 import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
 import {TabularDisplay} from "../ui/tabularDisplay";
-import {Resolution, SpecialChars, textToDiv} from "../ui/ui";
+import {Resolution, SpecialChars, textToSpan} from "../ui/ui";
 import {cloneSet, ICancellable, significantDigits} from "../util";
 import {TableOperationCompleted, TableView} from "./tableView";
 
@@ -272,13 +272,13 @@ export class HeavyHittersView extends BigTableView {
                     k++;
                 }
                 const row: Element[] = [];
-                row.push(textToDiv(k.toString()));
+                row.push(textToSpan(k.toString()));
                 for (let j = 0; j < this.columnsShown.length; j++) {
                     const value = nextKList.rows[i].values[j];
-                    row.push(textToDiv(TableView.convert(value, this.columnsShown[j].kind)));
+                    row.push(textToSpan(TableView.convert(value, this.columnsShown[j].kind)));
                 }
-                row.push(textToDiv(this.valueToString(nextKList.rows[i].count)));
-                row.push(textToDiv(this.valueToString((nextKList.rows[i].count / nextKList.rowsScanned) * 100)));
+                row.push(textToSpan(this.valueToString(nextKList.rows[i].count)));
+                row.push(textToSpan(this.valueToString((nextKList.rows[i].count / nextKList.rowsScanned) * 100)));
                 row.push(new DataRangeUI(position, nextKList.rows[i].count,
                     nextKList.rowsScanned).getDOMRepresentation());
                 const tRow: HTMLTableRowElement = this.table.addElementRow(row);
@@ -350,14 +350,14 @@ export class HeavyHittersView extends BigTableView {
 
     private showRest(k: number, position: number, restCount: number, total: number, table: TabularDisplay): void {
         const row: Element[] = [];
-        row.push(textToDiv(k.toString()));
+        row.push(textToSpan(k.toString()));
         for (let j = 0; j < this.columnsShown.length; j++) { // tslint:disable-line
-            const m = textToDiv("everything else");
+            const m = textToSpan("everything else");
             m.classList.add("missingData");
             row.push(m);
         }
-        row.push(textToDiv(this.valueToString(restCount)));
-        row.push(textToDiv(this.valueToString((restCount / total) * 100)));
+        row.push(textToSpan(this.valueToString(restCount)));
+        row.push(textToSpan(this.valueToString((restCount / total) * 100)));
         row.push(new DataRangeUI(position, restCount, total).getDOMRepresentation());
         const tRow: HTMLTableRowElement = table.addElementRow(row, false);
         tRow.onclick = (e) => e.preventDefault();

@@ -43,7 +43,7 @@ import {FullPage} from "../ui/fullPage";
 import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
 import {IScrollTarget, ScrollBar} from "../ui/scroll";
 import {SelectionStateMachine} from "../ui/selectionStateMachine";
-import {missingHtml, Resolution, SpecialChars} from "../ui/ui";
+import {HtmlString, missingHtml, Resolution, SpecialChars} from "../ui/ui";
 import {
     cloneToSet,
     Converters,
@@ -52,6 +52,7 @@ import {
     ICancellable,
     PartialResult,
     percent,
+    saveAs,
     significantDigits,
 } from "../util";
 import {SchemaView} from "./schemaView";
@@ -111,6 +112,15 @@ export class TableView extends TSViewBase implements IScrollTarget {
         this.topLevel.style.alignItems = "stretch";
 
         const menu = new TopMenu([
+            {
+                text: "Export",
+                help: "Save information from this view in a local file.",
+                subMenu: new SubMenu([{
+                    text: "Schema",
+                    help: "Saves the schema of this data JSON file.",
+                    action: () => { this.exportSchema(); },
+                }]),
+            },
             this.saveAsMenu(),
             {
                 text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
@@ -191,6 +201,10 @@ export class TableView extends TSViewBase implements IScrollTarget {
 
         this.messageBox = document.createElement("div");
         this.topLevel.appendChild(this.messageBox);
+    }
+
+    private exportSchema(): void {
+        saveAs("schema.json", JSON.stringify(this.schema.schema));
     }
 
     private showFindBar(show: boolean): void {
@@ -1041,7 +1055,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
      * @param val                  Value to convert.
      * @param {ContentsKind} kind  Type of value.
      */
-    public static convert(val: any, kind: ContentsKind): string {
+    public static convert(val: any, kind: ContentsKind): HtmlString {
         if (val == null)
             return missingHtml;
         if (kindIsNumeric(kind))
@@ -1063,7 +1077,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
      * Hilight a table's cell text according to the current find.
      * Returns an string representing the html of the innerHtml of the cell.
      */
-    private highlight(text: string): string {
+    private highlight(text: string): HtmlString {
         // result returned when there is no match.
         const span = "<span>";
         const end = "</span>";

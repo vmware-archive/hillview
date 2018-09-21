@@ -36,7 +36,7 @@ export class SchemaClass implements Serializable<SchemaClass> {
     private displayNameMap: Map<string, string>;
     private reverseDisplayNameMap: Map<string, string>;
 
-    private initialize() {
+    private initialize(): void {
         this.columnNames = [];
         this.columnMap = new Map<string, number>();
         for (let i = 0; i < this.schema.length; i++) {

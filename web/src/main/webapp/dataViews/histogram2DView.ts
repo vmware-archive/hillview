@@ -306,7 +306,6 @@ export class Histogram2DView extends HistogramViewBase {
         const lines: string[] = this.asCSV();
         const fileName = "histogram2d.csv";
         saveAs(fileName, lines.join("\n"));
-        this.page.reportError("Check the downloads folder for a file named '" + fileName + "'");
     }
 
     /**

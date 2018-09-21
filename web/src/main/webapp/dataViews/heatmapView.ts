@@ -268,7 +268,6 @@ export class HeatmapView extends ChartView {
         const lines: string[] = this.asCSV();
         const fileName = "heatmap.csv";
         saveAs(fileName, lines.join("\n"));
-        this.page.reportError("Check the downloads folder for a file named '" + fileName + "'");
     }
 
     /**

@@ -25,6 +25,12 @@
  */
 import {ScaleLinear as D3ScaleLinear, ScaleTime as D3ScaleTime} from "d3-scale";
 
+/**
+ * HTML strings are strings that represent an HTML fragment.
+ * They are usually assigned to innerHTML of a DOM object.
+ */
+export type HtmlString = string;
+
 export type ViewKind = "Table" | "Histogram" | "2DHistogram" | "Heatmap" |
     "TrellisHistogram" | "Trellis2DHistogram" | "TrellisHeatmap" |
     "HeavyHitters" | "Schema" | "Load" | "SVD Spectrum";
@@ -59,10 +65,10 @@ export interface IElement {
 
 export const missingHtml: string = "<span class='missingData'>missing</span>";
 
-export function textToDiv(text: string): HTMLElement {
-    const div = document.createElement("div");
-    div.innerHTML = text;
-    return div;
+export function textToSpan(text: HtmlString): HTMLElement {
+    const span = document.createElement("span");
+    span.innerHTML = text;
+    return span;
 }
 
 /**

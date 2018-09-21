@@ -21,7 +21,8 @@
 
 import * as FileSaver from "file-saver";
 import {ErrorReporter} from "./ui/errReporter";
-import {Size} from "./ui/ui";
+import {HtmlString, Size} from "./ui/ui";
+import {NotifyDialog} from "./ui/dialog";
 
 export interface Pair<T1, T2> {
     first: T1;
@@ -78,8 +79,12 @@ export interface Serializable<T> {
  * @param {string} contents  Contents to write in file.
  */
 export function saveAs(filename: string, contents: string): void {
-   const blob = new Blob([contents], {type: "text/plain;charset=utf-8"});
-   FileSaver.saveAs(blob, filename);
+    const blob = new Blob([contents], {type: "text/plain;charset=utf-8"});
+    FileSaver.saveAs(blob, filename);
+    const notify = new NotifyDialog("File has been saved.\n" +
+        "Look for file " + filename + " in the browser Downloads folder",
+        "File has been saved");
+    notify.show();
 }
 
 /**
@@ -198,7 +203,7 @@ export function makeId(text: string): string {
  * Convert a number to an html string by keeping only the most significant digits
  * and adding a suffix.
  */
-export function significantDigits(n: number): string {
+export function significantDigits(n: number): HtmlString {
     let suffix = "";
     if (n === 0)
         return "0";
