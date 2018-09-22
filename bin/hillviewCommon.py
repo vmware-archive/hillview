@@ -1,38 +1,37 @@
-# Common functions user by the Hillview deployment scripts
-# pylint: disable=unused-wildcard-import,invalid-name,missing-docstring,wildcard-import,superfluous-parens,unused-variable
+"""Common functions user by the Hillview deployment scripts"""
+
+# pylint: disable=invalid-name,too-few-public-methods
 import os.path
-from optparse import OptionParser
-from collections import namedtuple
 import subprocess
 import tempfile
 import json
 
-def usage(parser):
-    assert isinstance(parser, OptionParser)
-    print(parser.print_help())
-    exit(1)
-
 class Config(object):
-    """ Configuration class.  The fields are populated dynamically from a JSON configuration file."""
+    """ Configuration class.  The fields are populated dynamically
+    from a JSON configuration file."""
 
     def __init__(self, d):
+        """Create configuration from a dictionary"""
         for a, b in d.items():
             if isinstance(b, (list, tuple)):
-                setattr(self, a, [obj(x) if isinstance(x, dict) else x for x in b])
+                setattr(self, a, [Config(x) if isinstance(x, dict) else x for x in b])
             else:
-                setattr(self, a, obj(b) if isinstance(b, dict) else b)
+                setattr(self, a, Config(b) if isinstance(b, dict) else b)
 
     def __getitem__(self, key):
+        """Get a configuration field"""
         return self.__dict__[key]
 
     def has_key(self, k):
+        """Check if configuration has a specific field"""
         return k in self.__dict__
 
     def __contains__(self, item):
+        """Check if configuration has a specific field"""
         return item in self.__dict__
 
 
-def load_config(parser, file):
+def load_config(file):
     """Load the configuration file describing the Hillview deployment.
     """
     print("Importing configuration from", file)
@@ -61,6 +60,7 @@ def run_on_all_backends(config, function, parallel):
     run concurrently."""
     # Unfortunately there seems to be no way to reliably
     # run something in parallel in Python, so this is not working yet.
+    # pylint: disable=unused-argument
     parallel = False
     for h in config.backends:
         rh = RemoteHost(config.user, h)
@@ -108,11 +108,12 @@ class RemoteHost:
            copyOption can be -L to follow symlinks."""
         u = self.user
         if u is None:
-            user = ""
+            u = ""
         else:
             u = self.user + "@"
         command = "rsync -u " + copyOption + " " + source + " " + u + self.host + ":" + dest
         execute_command(command)
 
     def __str__(self):
+        """Converts host to a string"""
         return self.host

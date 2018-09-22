@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
-# This Python program stops the Hillview service on the machines specified in the
-# configuration file.
-# pylint: disable=unused-wildcard-import,invalid-name,missing-docstring,wildcard-import,superfluous-parens,unused-variable
+"""This Python program stops the Hillview service on the machines specified in the
+   configuration file."""
+# pylint: disable=invalid-name
 
-from optparse import OptionParser
-from hillviewCommon import *
+from argparse import ArgumentParser
+from hillviewCommon import RemoteHost, run_on_all_backends, load_config
 
 def stop_webserver(config):
     """Stops the Hillview web server"""
@@ -25,16 +25,15 @@ def stop_backend(rh):
         "pkill -f hillview-server; true")
 
 def stop_backends(config):
-    # pylint: disable=unnecessary-lambda
     """Stops all Hillview backend workers"""
-    run_on_all_backends(config, lambda rh: stop_backend(rh), True)
+    run_on_all_backends(config, stop_backend, True)
 
 def main():
-    parser = OptionParser(usage="%prog config_file")
-    (options, args) = parser.parse_args()
-    if len(args) != 1:
-        usage(parser)
-    config = load_config(parser, args[0])
+    """Main function"""
+    parser = ArgumentParser()
+    parser.add_argument("config", help="json cluster configuration file")
+    args = parser.parse_args()
+    config = load_config(args.config)
     stop_webserver(config)
     stop_backends(config)
 

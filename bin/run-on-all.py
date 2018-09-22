@@ -1,28 +1,27 @@
 #!/usr/bin/env python3
 # -*-python-*-
 
-# This script runs a command on all worker hosts of a Hillview
-# cluster.
-# pylint: disable=unused-wildcard-import,invalid-name,missing-docstring,wildcard-import,superfluous-parens,unused-variable
+"""This script runs a command on all worker hosts of a Hillview cluster."""
+# pylint: disable=invalid-name
 
-from optparse import OptionParser
-from hillviewCommon import *
+from argparse import ArgumentParser, REMAINDER
+from hillviewCommon import load_config, run_on_all_backends
 
 def execute_command_on_all(config, command, parallel):
+    """Executes command on all workers"""
     print("Executing `", command, "' on", len(config.backends), "hosts")
     lam = lambda rh: rh.run_remote_shell_command(command)
     run_on_all_backends(config, lam, parallel)
 
 def main():
-    parser = OptionParser(usage="%prog [options] configfile command")
-    parser.add_option("-p", action="store_true", help="Run in parallel", dest="parallel")
-    (options, args) = parser.parse_args()
-    if len(args) < 2:
-        print("You must specify a config file and a command to run")
-        usage(parser)
-    config = load_config(parser, args[0])
-    command = " ".join(args[1:])
-    execute_command_on_all(config, command, options.parallel)
+    """Main function"""
+    parser = ArgumentParser()
+    parser.add_argument("config", help="json cluster configuration file")
+    parser.add_argument("command", help="command to run", nargs=REMAINDER)
+    args = parser.parse_args()
+    config = load_config(args.config)
+    command = " ".join(args.command)
+    execute_command_on_all(config, command, False)
 
 if __name__ == "__main__":
     main()

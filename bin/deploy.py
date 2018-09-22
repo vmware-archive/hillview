@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
-# This python program deploys the files needed by the Hillview service
-# on the machines specified in the configuration file.
-# pylint: disable=unused-wildcard-import,invalid-name,missing-docstring,wildcard-import,superfluous-parens,unused-variable
-from optparse import OptionParser
+"""This python program deploys the files needed by the Hillview service
+   on the machines specified in the configuration file."""
+
+# pylint: disable=invalid-name
+from argparse import ArgumentParser
 import tempfile
-import os
-from hillviewCommon import *
+import os.path
+from hillviewCommon import RemoteHost, run_on_all_backends, load_config
 
 def prepare_webserver(config):
     """Deploys files needed by the Hillview web server"""
@@ -48,7 +49,6 @@ def prepare_webserver(config):
                                 config.service_folder + "/hillview/hillview-web.log")
 
 def prepare_backend(config, rh):
-    # pylint: disable=line-too-long
     """Prepares files needed by a Hillview service on a remote machine"""
     print("Preparing backend", rh)
 #    rh.run_remote_shell_command("sudo apt-get install libgfortran3")
@@ -57,7 +57,8 @@ def prepare_backend(config, rh):
     rh.create_remote_folder(config.service_folder + "/hillview")
     rh.copy_file_to_remote(
         config.scriptFolder +
-        "/../platform/target/hillview-server-jar-with-dependencies.jar", config.service_folder + "/hillview", "")
+        "/../platform/target/hillview-server-jar-with-dependencies.jar",
+        config.service_folder + "/hillview", "")
     if config.cleanup:
         rh.run_remote_shell_command(
             "cd " + config.service_folder + "/hillview;"
@@ -68,11 +69,11 @@ def prepare_backends(config):
     run_on_all_backends(config, lambda rh: prepare_backend(config, rh), True)
 
 def main():
-    parser = OptionParser(usage="%prog config_file")
-    (options, args) = parser.parse_args()
-    if len(args) != 1:
-        usage(parser)
-    config = load_config(parser, args[0])
+    """Main function"""
+    parser = ArgumentParser()
+    parser.add_argument("config", help="json cluster configuration file")
+    args = parser.parse_args()
+    config = load_config(args.config)
     prepare_webserver(config)
     prepare_backends(config)
 

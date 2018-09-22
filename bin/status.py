@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
-# This python checks if the Hillview service is running on all machines
-# specified in the configuration file.
-# pylint: disable=unused-wildcard-import,invalid-name,missing-docstring,wildcard-import,superfluous-parens,unused-variable
+"""This program checks if the Hillview service is running on all machines
+   specified in the configuration file."""
+# pylint: disable=invalid-name
 
-from optparse import OptionParser
-from hillviewCommon import *
+from argparse import ArgumentParser
+from hillviewCommon import RemoteHost, run_on_all_backends, load_config
 
 def check_webserver(config):
     """Checks if the Hillview web server is running"""
@@ -25,11 +25,11 @@ def check_backends(config):
     run_on_all_backends(config, lambda rh: check_backend(config, rh), True)
 
 def main():
-    parser = OptionParser(usage="%prog config_file")
-    (options, args) = parser.parse_args()
-    if len(args) != 1:
-        usage(parser)
-    config = load_config(parser, args[0])
+    """Main function"""
+    parser = ArgumentParser()
+    parser.add_argument("config", help="json cluster configuration file")
+    args = parser.parse_args()
+    config = load_config(args.config)
     check_webserver(config)
     check_backends(config)
 
