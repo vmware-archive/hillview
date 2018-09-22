@@ -49,6 +49,7 @@ import {HistogramDialog} from "./histogramView";
  * A base class for TableView and SchemaView.
  */
 export abstract class TSViewBase extends BigTableView {
+
     protected constructor(
         remoteObjectId: RemoteObjectId,
         rowCount: number,
@@ -728,6 +729,7 @@ export class ColumnConverter  {
 }
 
 export class CountSketchReceiver extends BaseRenderer {
+    private csThreshold: number = 0.01;
     public constructor(page: FullPage,
                        protected tv: TableView,
                        operation: ICancellable<RemoteObjectId>,
@@ -743,6 +745,6 @@ export class CountSketchReceiver extends BaseRenderer {
         const rr = this.tv.createExactCSRequest(this.remoteObject);
         rr.chain(this.operation);
         rr.invoke(new HeavyHittersReceiver(this.page, this.tv, this.operation,
-            this.rowCount, this.schema, this.order, false, 0.1, this.columnsShown, false));
+            this.rowCount, this.schema, this.order, false, this.csThreshold, this.columnsShown, false));
     }
 }

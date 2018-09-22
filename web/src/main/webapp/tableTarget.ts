@@ -40,7 +40,7 @@ import {PlottingSurface} from "./ui/plottingSurface";
  * This class has methods that correspond directly to TableTarget.java methods.
  */
 export class TableTargetAPI extends RemoteObject {
-    csBuckets: number = 500;
+    csBuckets: number = 1000;
     csTrials: number = 50;
     /**
      * Create a reference to a remote table target.

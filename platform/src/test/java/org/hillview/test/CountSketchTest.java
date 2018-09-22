@@ -102,7 +102,6 @@ public class CountSketchTest {
         FreqKList freqKRight = exactCS.create(rightTable);
         FreqKList freqKSum = exactCS.add(freqKLeft, freqKRight);
         System.out.printf("%d, %d, %d\n", freqKLeft.getSize(), freqKRight.getSize(), freqKSum.getSize());
-        long [] estimate;
         for (Pair<RowSnapshot, Integer> pair: freqKSum.getSortedList()) {
             if (toPrint)
                 System.out.printf("%s: %d (%d)\n", pair.first.toString(), pair.second,

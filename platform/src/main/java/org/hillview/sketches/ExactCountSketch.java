@@ -11,6 +11,7 @@ import org.hillview.table.rows.VirtualRowSnapshot;
 import org.hillview.utils.MutableInteger;
 
 import javax.annotation.Nullable;
+import java.util.Arrays;
 
 public class ExactCountSketch implements ISketch<ITable, FreqKList> {
     public CountSketchResult result;
@@ -33,13 +34,24 @@ public class ExactCountSketch implements ISketch<ITable, FreqKList> {
         IRowIterator rowIt = data.getRowIterator();
         int i = rowIt.getNextRow();
         MutableInteger val;
+        long item, hash;
+        int sign, toBucket;
+        long [] estimate = new long[this.result.csDesc.trials];
         while (i != -1) {
             val = hMap.get(i);
             if (val != null) {
                 val.set(val.get() + 1);
             } else {
                 vrs.setRow(i);
-                if (this.result.estimateFreq(vrs)> this.cutoff)
+                item = vrs.hashCode();
+                for (int j = 0; j < this.result.csDesc.trials; j++) {
+                    hash = this.result.csDesc.hashFunction[j].hashLong(item);
+                    sign = (hash % 2 == 0) ? 1 : -1;
+                    toBucket = (int) (Math.abs(hash / 2) % this.result.csDesc.buckets);
+                    estimate[j] = this.result.counts[j][toBucket] * sign;
+                }
+                Arrays.sort(estimate);
+                if (estimate[this.result.csDesc.trials/2] > this.cutoff)
                     hMap.put(i, new MutableInteger(1));
             }
             i = rowIt.getNextRow();
