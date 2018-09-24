@@ -79,11 +79,6 @@ export interface FindResult {
     firstMatchingRow: any[];
 }
 
-export interface FindNext {
-    strFilter: StringFilterDescription;
-    result: FindResult;
-}
-
 export interface JdbcConnectionInformation {
     host: string;
     database: string;

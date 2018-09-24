@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.hillview.sketches;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenCustomHashMap;
@@ -36,7 +53,7 @@ public class ExactCountSketch implements ISketch<ITable, FreqKList> {
         MutableInteger val;
         long item, hash;
         int sign, toBucket;
-        long [] estimate = new long[this.result.csDesc.trials];
+        long[] estimate = new long[this.result.csDesc.trials];
         while (i != -1) {
             val = hMap.get(i);
             if (val != null) {
@@ -46,7 +63,7 @@ public class ExactCountSketch implements ISketch<ITable, FreqKList> {
                 item = vrs.hashCode();
                 for (int j = 0; j < this.result.csDesc.trials; j++) {
                     hash = this.result.csDesc.hashFunction[j].hashLong(item);
-                    sign = (hash % 2 == 0) ? 1 : -1;
+                    sign = (int) hash & 1;
                     toBucket = (int) (Math.abs(hash / 2) % this.result.csDesc.buckets);
                     estimate[j] = this.result.counts[j][toBucket] * sign;
                 }

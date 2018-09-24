@@ -964,7 +964,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
         }
     }
 
-    protected runCountSketch(): void{
+    protected runCountSketch(): void {
         const columnsShown: IColumnDescription[] = [];
         const cso: ColumnSortOrientation[] = [];
         this.getSelectedColNames().forEach((v) => {

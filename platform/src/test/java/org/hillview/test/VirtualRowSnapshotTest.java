@@ -78,7 +78,7 @@ public class VirtualRowSnapshotTest extends BaseTest {
             rss = new RowSnapshot(data, i);
             hash = rss.hashCode();
             vrs.setRow(i);
-            vHash= vrs.hashCode();
+            vHash = vrs.hashCode();
             Assert.assertEquals(hash, vHash);
             i = rowIt.getNextRow();
         }

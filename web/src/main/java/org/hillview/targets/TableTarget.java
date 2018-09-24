@@ -526,7 +526,6 @@ public final class TableTarget extends RpcTarget {
         long seed;
     }
 
-
     /**
      * This serializes the result of heavyHitterSketch for the front end.
      */
@@ -668,6 +667,10 @@ public final class TableTarget extends RpcTarget {
         Schema columns;
     }
 
+    /**
+     * Runs the CountSketch method, stores the result in a CountSketchTarget where it will be used
+     * by  exactCS() to invoke ExactCountSketch.
+     */
     @HillviewRpc
     public void runCountSketch(RpcRequest request, RpcRequestContext context) {
         CountSketchInfo csInfo = request.parseArgs(CountSketchInfo.class);
@@ -676,7 +679,6 @@ public final class TableTarget extends RpcTarget {
         CountSketch csSketch = new CountSketch(csDesc);
         this.runCompleteSketch(this.table, csSketch, CountSketchTarget::new, request, context);
     }
-
 
     static class ExactCountSketchInfo {
         String countSketchTargetId = "";
@@ -687,12 +689,13 @@ public final class TableTarget extends RpcTarget {
      */
     @HillviewRpc
     public void exactCS(RpcRequest request, RpcRequestContext context) {
+        double threshold = 0.1;
         ExactCountSketchInfo countSketchInfo = request.parseArgs(ExactCountSketchInfo.class);
         Observer<RpcTarget> observer = new SingleObserver<RpcTarget>() {
             @Override
             public void onSuccess(RpcTarget rpcTarget) {
                 CountSketchTarget cst = (CountSketchTarget) rpcTarget;
-                ExactCountSketch csSketch = new ExactCountSketch(cst.result, 0.1);
+                ExactCountSketch csSketch = new ExactCountSketch(cst.result, threshold);
                 TableTarget.this.runCompleteSketch(
                         TableTarget.this.table, csSketch,
                         (x, c) -> TableTarget.getSortedList(x, cst.result.csDesc.schema, c),

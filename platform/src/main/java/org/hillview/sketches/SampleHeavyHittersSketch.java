@@ -13,7 +13,6 @@ import org.hillview.utils.MutableInteger;
 
 import javax.annotation.Nullable;
 
-import static org.hillview.sketches.FreqKList.getUnion;
 
 /**
  * A heavy hitters sketch where we sample each row in the database with a certain probability, and
@@ -58,7 +57,7 @@ public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKListSample
      */
     public FreqKListSample add(@Nullable FreqKListSample left, @Nullable FreqKListSample right) {
         return new FreqKListSample(left.totalRows + right.totalRows, this.epsilon,
-                left.sampleSize + right.sampleSize, getUnion(left, right));
+                left.sampleSize + right.sampleSize, FreqKList.getUnion(left, right));
     }
 
     /**

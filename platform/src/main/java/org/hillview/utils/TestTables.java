@@ -210,14 +210,14 @@ public class TestTables {
 
 
     /**
-         * A table of integers whose rows are typically distinct. Each row is sampled randomly from a
-         * domain of size 5^numCols*size. When numCols is small, some collisions are to be expected, but
-         * generally the elements are distinct (each row in the range has a probability of 5^{-numCols}
-         * of being sampled.)
-         * @param size The size of the desired table
-         * @param numCols The number of columns
-         * @return A table of random integers.
-         */
+     * A table of integers whose rows are typically distinct. Each row is sampled randomly from a
+     * domain of size 5^numCols*size. When numCols is small, some collisions are to be expected, but
+     * generally the elements are distinct (each row in the range has a probability of 5^{-numCols}
+     * of being sampled.)
+     * @param size The size of the desired table
+     * @param numCols The number of columns
+     * @return A table of random integers.
+     */
     public static SmallTable getIntTable(final int size, final int numCols) {
         final double exp = 1.0/numCols;
         final int range =  5*((int)Math.pow(size, exp));

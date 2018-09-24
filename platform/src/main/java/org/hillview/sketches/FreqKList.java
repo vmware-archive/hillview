@@ -83,7 +83,7 @@ public class FreqKList implements Serializable {
      * @return A NextKList, which contains the top rows in sorted order of counts.
      */
     public NextKList getTop(Schema schema){
-        return sortTopK(schema);
+        return this.sortTopK(schema);
     }
 
     public List<Pair<RowSnapshot, Integer>> getSortedList() {

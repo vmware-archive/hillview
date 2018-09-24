@@ -269,7 +269,6 @@ export class HeavyHittersView extends BigTableView {
                 row.push(textToSpan(k.toString()));
                 for (let j = 0; j < this.columnsShown.length; j++) {
                     const value = nextKList.rows[i].values[j];
-
                     row.push(textToSpan(convertToHtml(value, this.columnsShown[j].kind)));
                 }
                 row.push(textToSpan(this.valueToString(nextKList.rows[i].count)));

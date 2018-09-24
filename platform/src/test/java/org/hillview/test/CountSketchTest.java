@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.hillview.test;
 
 import org.hillview.dataset.api.Pair;
@@ -8,21 +25,7 @@ import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.TestTables;
 import org.junit.Test;
 
-public class CountSketchTest {
-    public boolean toPrint = true;
-
-    private void timeCreate(ExactCountSketch cs, ITable table) {
-        long oldStart = System.nanoTime();
-        FreqKList freqK = cs.create(table);
-        long oldEnd = System.nanoTime();
-        System.out.printf("Time: %d\n", oldEnd - oldStart);
-        long [] estimate;
-        for (Pair<RowSnapshot, Integer> pair: freqK.getSortedList()) {
-            if (toPrint)
-                System.out.printf("%s: %d (%d)\n", pair.first.toString(), pair.second,
-                        cs.result.estimateFreq(pair.first));
-        }
-    }
+public class CountSketchTest extends BaseTest {
 
     private void runCS(int buckets, int trials, double threshold, long seed, ITable table) {
         CountSketchDescription csDesc = new CountSketchDescription(buckets, trials, seed,
@@ -33,10 +36,9 @@ public class CountSketchTest {
             Math.ceil(threshold*result.estimateNorm()));
         ExactCountSketch exactCS = new ExactCountSketch(result, threshold);
         FreqKList freqK = exactCS.create(table);
-        long [] estimate;
         for (Pair<RowSnapshot, Integer> pair: freqK.getSortedList()) {
-        if (toPrint)
-            System.out.printf("%s: %d (%d)\n", pair.first.toString(), pair.second,
+            if (toPrint)
+                System.out.printf("%s: %d (%d)\n", pair.first.toString(), pair.second,
                     result.estimateFreq(pair.first));
         }
     }
@@ -66,7 +68,6 @@ public class CountSketchTest {
         double threshold = 0.1;
         this.runCS(buckets, trials, threshold, seed, table);
     }
-
 
     @Test
     public void testZipf() {
@@ -101,11 +102,12 @@ public class CountSketchTest {
         FreqKList freqKLeft = exactCS.create(leftTable);
         FreqKList freqKRight = exactCS.create(rightTable);
         FreqKList freqKSum = exactCS.add(freqKLeft, freqKRight);
-        System.out.printf("%d, %d, %d\n", freqKLeft.getSize(), freqKRight.getSize(), freqKSum.getSize());
-        for (Pair<RowSnapshot, Integer> pair: freqKSum.getSortedList()) {
-            if (toPrint)
+        if (toPrint) {
+            System.out.printf("%d, %d, %d\n", freqKLeft.getSize(), freqKRight.getSize(), freqKSum.getSize());
+            for (Pair<RowSnapshot, Integer> pair : freqKSum.getSortedList()) {
                 System.out.printf("%s: %d (%d)\n", pair.first.toString(), pair.second,
                         sum.estimateFreq(pair.first));
+            }
         }
     }
 }
