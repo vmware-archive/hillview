@@ -40,6 +40,8 @@ import {PlottingSurface} from "./ui/plottingSurface";
  * This class has methods that correspond directly to TableTarget.java methods.
  */
 export class TableTargetAPI extends RemoteObject {
+    csBuckets: number = 1000;
+    csTrials: number = 50;
     /**
      * Create a reference to a remote table target.
      * @param remoteObjectId   Id of remote table on the web server.
@@ -147,6 +149,14 @@ export class TableTargetAPI extends RemoteObject {
             { columnName: colName, seed: Seed.instance.get() });
     }
 
+
+    public createCountSketchRequest(columns: IColumnDescription[]):
+    RpcRequest<PartialResult<RemoteObjectId>> {
+            return this.createStreamingRpcRequest<RemoteObjectId>("runCountSketch",
+                { buckets: this.csBuckets, trials: this.csTrials, seed: Seed.instance.get(),
+                    columns: columns });
+    }
+
     public createHeavyHittersRequest(columns: IColumnDescription[],
                                      percent: number,
                                      totalRows: number,
@@ -187,6 +197,12 @@ export class TableTargetAPI extends RemoteObject {
                 includeSet: includeSet,
                 rowIndices: rowIndices
             });
+    }
+
+    public createExactCSRequest(r:RemoteObject): RpcRequest<PartialResult<NextKList>> {
+        return this.createStreamingRpcRequest<NextKList>("exactCS", {
+            countSketchTargetId: r.remoteObjectId
+        });
     }
 
     public createProjectToEigenVectorsRequest(r: RemoteObject, dimension: number, projectionName: string):

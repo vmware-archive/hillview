@@ -58,18 +58,39 @@ public class IntArrayGenerator {
     }
 
     /**
-     * @return An integer array containing numbers (1,.., range), where i occurs i^2 times.
+     * @return An integer array containing numbers (1,.., range), where i occurs i^exp times.
      */
-    static IntArrayColumn getSqIntArray(int range) {
+    static IntArrayColumn getPowerIntArray(int range, double exp) {
         final ColumnDescription desc = new ColumnDescription("Squares", ContentsKind.Integer);
-        final IntArrayColumn col = new IntArrayColumn(desc, (range * (range + 1)* (2 *range +1)/6));
+        int len = 0;
+        for (int i = 1; i <= range; i++)
+            for (int j = 0; j < Math.pow(i, exp); j++) {
+                len++;
+            }
+        final IntArrayColumn col = new IntArrayColumn(desc, len);
         int k = 0;
         for (int i = 1; i <= range; i++)
-            for (int j = 0; j < i*i; j++) {
+            for (int j = 0; j < Math.pow(i, exp); j++) {
                 col.set(k, i);
                 k++;
             }
-            return col;
+        return col;
+    }
+
+    static IntArrayColumn getZipfArray(int range, double exp) {
+        final ColumnDescription desc = new ColumnDescription("Zipf", ContentsKind.Integer);
+        double N =  Math.ceil(Math.pow((range -1), exp));
+        int size= 0;
+        for (int i = 1; i < range; i++)
+            size += (int) Math.ceil(N/Math.pow(i, exp));
+        final IntArrayColumn col = new IntArrayColumn(desc, size);
+        int num = 0;
+        for (int i = 1; i < range; i++)
+            for (int j = 0; j < Math.ceil(N/Math.pow(i, exp)); j++ ) {
+                col.set(num, i);
+                num += 1;
+            }
+        return col;
     }
 
     /**
@@ -83,9 +104,8 @@ public class IntArrayGenerator {
      * @return An IntArray Column as described above.
      */
     static IntArrayColumn getHeavyIntArray(final int size, final double base,
-                                                  final int range, final String name,
-                                                  Randomness rn) {
-        if(base <= 1)
+                                           final int range, final String name, Randomness rn) {
+        if (base <= 1)
             throw new InvalidParameterException("Base should be  greater than 1.");
         final ColumnDescription desc = new ColumnDescription(name, ContentsKind.Integer);
         final IntArrayColumn col = new IntArrayColumn(desc, size);

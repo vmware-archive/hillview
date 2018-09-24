@@ -16,15 +16,7 @@
  */
 
 import {HeavyHittersSerialization, IViewSerialization} from "../datasetView";
-import {
-    CombineOperators,
-    IColumnDescription,
-    NextKList,
-    RecordOrder,
-    RemoteObjectId,
-    TopList
-}
-    from "../javaBridge";
+import {CombineOperators, IColumnDescription, NextKList, RecordOrder, RemoteObjectId, TopList} from "../javaBridge";
 import {OnCompleteReceiver, RemoteObject} from "../rpc";
 import {SchemaClass} from "../schemaClass";
 import {BaseRenderer, BigTableView, TableTargetAPI} from "../tableTarget";
@@ -35,8 +27,8 @@ import {FullPage} from "../ui/fullPage";
 import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
 import {TabularDisplay} from "../ui/tabularDisplay";
 import {Resolution, SpecialChars, textToSpan} from "../ui/ui";
-import {cloneSet, ICancellable, significantDigits} from "../util";
-import {TableOperationCompleted, TableView} from "./tableView";
+import {cloneSet, convertToHtml, ICancellable, significantDigits} from "../util";
+import {TableOperationCompleted} from "./tableView";
 
 /**
  * This method handles the outcome of the sketch for finding Heavy Hitters.
@@ -108,6 +100,8 @@ export class HeavyHittersView extends BigTableView {
     public static minString: string = "0.01%";
     public static switchToMG: number = 0.9;
     public static maxDisplay: number = 200; // Should match parameter maxDisplay in FreqKList.java
+    public static csBuckets = 500;
+    public static csTrials = 50;
 
     public contextMenu: ContextMenu;
     protected table: TabularDisplay;
@@ -275,7 +269,7 @@ export class HeavyHittersView extends BigTableView {
                 row.push(textToSpan(k.toString()));
                 for (let j = 0; j < this.columnsShown.length; j++) {
                     const value = nextKList.rows[i].values[j];
-                    row.push(textToSpan(TableView.convert(value, this.columnsShown[j].kind)));
+                    row.push(textToSpan(convertToHtml(value, this.columnsShown[j].kind)));
                 }
                 row.push(textToSpan(this.valueToString(nextKList.rows[i].count)));
                 row.push(textToSpan(this.valueToString((nextKList.rows[i].count / nextKList.rowsScanned) * 100)));
@@ -449,3 +443,4 @@ export class HeavyHittersReceiver3 extends OnCompleteReceiver<TopList> {
             Resolution.tableRowsOnScreen));
     }
 }
+

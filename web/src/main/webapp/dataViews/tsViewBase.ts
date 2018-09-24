@@ -24,26 +24,22 @@ import {
     ContentsKind,
     ConvertColumnInfo,
     CreateColumnInfo,
-    StringFilterDescription,
     HLogLog,
     IColumnDescription,
+    kindIsString,
     RecordOrder,
-    RemoteObjectId, StringRowFilterDescription, kindIsString,
+    RemoteObjectId,
+    StringFilterDescription,
+    StringRowFilterDescription
 } from "../javaBridge";
 import {OnCompleteReceiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
-import {BigTableView} from "../tableTarget";
+import {BaseRenderer, BigTableView} from "../tableTarget";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
 import {SubMenu, TopMenuItem} from "../ui/menu";
 import {SpecialChars, ViewKind} from "../ui/ui";
-import {
-    cloneToSet,
-    Converters,
-    ICancellable,
-    mapToArray,
-    significantDigits,
-} from "../util";
+import {cloneToSet, Converters, convertToHtml, ICancellable, mapToArray, significantDigits} from "../util";
 import {HeavyHittersReceiver, HeavyHittersView} from "./heavyHittersView";
 import {DataRangesCollector} from "./dataRangesCollectors";
 import {TableOperationCompleted, TableView} from "./tableView";
@@ -53,6 +49,7 @@ import {HistogramDialog} from "./histogramView";
  * A base class for TableView and SchemaView.
  */
 export abstract class TSViewBase extends BigTableView {
+
     protected constructor(
         remoteObjectId: RemoteObjectId,
         rowCount: number,
@@ -471,12 +468,14 @@ export abstract class TSViewBase extends BigTableView {
         const rr = this.createFilterComparisonRequest(filter);
         const value = kindIsString(kind) ? filter.stringValue : filter.doubleValue;
         const title = "Filtered: " +
-            TableView.convert(value, kind) + " " + filter.comparison + " " +
+            convertToHtml(value, kind) + " " + filter.comparison + " " +
             this.schema.displayName(filter.column.name);
 
         const newPage = this.dataset.newPage(title, this.page);
         rr.invoke(new TableOperationCompleted(newPage, rr, this.rowCount, this.schema, o, tableRowsDesired));
     }
+
+
 
     protected runHeavyHitters(percent: number): void {
         if (percent == null || percent < HeavyHittersView.min || percent > 100) {
@@ -726,5 +725,26 @@ export class ColumnConverter  {
         o.addColumn({columnDescription: cd, isAscending: true});
         rr.invoke(new TableOperationCompleted(newPage, rr, this.table.rowCount, schema,
             o, this.table.tableRowsDesired));
+    }
+}
+
+export class CountSketchReceiver extends BaseRenderer {
+    private csThreshold: number = 0.01;
+    public constructor(page: FullPage,
+                       protected tv: TableView,
+                       operation: ICancellable<RemoteObjectId>,
+                       protected rowCount: number,
+                       protected schema: SchemaClass,
+                       protected columnsShown: IColumnDescription [],
+                       protected order: RecordOrder) {
+        super(page, operation, "Count Sketch Receiver", tv.dataset);
+    }
+
+    public run(): void {
+        super.run();
+        const rr = this.tv.createExactCSRequest(this.remoteObject);
+        rr.chain(this.operation);
+        rr.invoke(new HeavyHittersReceiver(this.page, this.tv, this.operation,
+            this.rowCount, this.schema, this.order, false, this.csThreshold, this.columnsShown, false));
     }
 }

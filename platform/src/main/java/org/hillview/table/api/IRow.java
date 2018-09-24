@@ -49,11 +49,13 @@ public interface IRow extends Map<String, Object> {
     @Nullable
     Object getObject(final String colName);
     @Nullable
-    String getString(String colName);
+    String asString(String colName);
     @Nullable
     Instant getDate(String colName);
     @Nullable
     Duration getDuration(String colName);
+    @Nullable
+    String getString(String colName);
     int getInt(String colName);
     double getDouble(String colName);
     boolean isMissing(final String colName);

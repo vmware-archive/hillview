@@ -30,7 +30,8 @@ import {
     RecordOrder,
     RemoteObjectId,
     RowSnapshot,
-    Schema, StringFilterDescription,
+    Schema,
+    StringFilterDescription,
     TableSummary
 } from "../javaBridge";
 import {OnCompleteReceiver, Receiver} from "../rpc";
@@ -45,7 +46,7 @@ import {IScrollTarget, ScrollBar} from "../ui/scroll";
 import {SelectionStateMachine} from "../ui/selectionStateMachine";
 import {HtmlString, missingHtml, Resolution, SpecialChars} from "../ui/ui";
 import {
-    cloneToSet,
+    cloneToSet, convertToHtml,
     Converters,
     formatDate,
     formatNumber,
@@ -58,6 +59,7 @@ import {
 import {SchemaView} from "./schemaView";
 import {SpectrumReceiver} from "./spectrumView";
 import {ColumnConverter, ConverterDialog, TSViewBase} from "./tsViewBase";
+import {CountSketchReceiver} from "./tsViewBase";
 
 // import {LAMPDialog} from "./lampView";
 
@@ -83,14 +85,13 @@ export class TableView extends TSViewBase implements IScrollTarget {
     protected messageBox: HTMLElement;
 
     // The following elements are used for Find
-    protected findBarVisible: boolean;
     protected strFilter: StringFilterDescription;
     protected findInputBox: HTMLInputElement;
     protected substringsFindCheckbox: HTMLInputElement;
     protected regexFindCheckbox: HTMLInputElement;
     protected caseFindCheckbox: HTMLInputElement;
-    protected startFromTopCheckbox: HTMLInputElement;
     protected findBar: HTMLElement;
+    protected findBarVisible: boolean;
     protected foundCount: HTMLElement;
 
     public constructor(
@@ -104,7 +105,6 @@ export class TableView extends TSViewBase implements IScrollTarget {
         this.topLevel.tabIndex = 1;  // necessary for keyboard events?
         this.topLevel.onkeydown = (e) => this.keyDown(e);
         this.strFilter = null;
-
         this.topLevel.style.flexDirection = "column";
         this.topLevel.style.display = "flex";
         this.topLevel.style.flexWrap = "nowrap";
@@ -725,6 +725,11 @@ export class TableView extends TSViewBase implements IScrollTarget {
                     help: "Find the values that occur most frequently in the selected columns.",
                 }, true);
                 this.contextMenu.addItem({
+                    text: "Count Sketch",
+                    action: () => this.runCountSketch(),
+                    help: "Find the values that occur most frequently in the selected columns.",
+                }, true);
+                this.contextMenu.addItem({
                     text: "PCA...",
                     action: () => this.pca(true),
                     help: "Perform Principal Component Analysis on a set of numeric columns. " +
@@ -959,6 +964,20 @@ export class TableView extends TSViewBase implements IScrollTarget {
         }
     }
 
+    protected runCountSketch(): void {
+        const columnsShown: IColumnDescription[] = [];
+        const cso: ColumnSortOrientation[] = [];
+        this.getSelectedColNames().forEach((v) => {
+            const colDesc = this.schema.find(v);
+            columnsShown.push(colDesc);
+            cso.push({columnDescription: colDesc, isAscending: true});
+        });
+        const order = new RecordOrder(cso);
+        const rr = this.createCountSketchRequest(columnsShown);
+        rr.invoke(new CountSketchReceiver(this.getPage(), this, rr, this.rowCount,
+            this.schema, columnsShown, order));
+    }
+
     private spectrum(toSample: boolean): void {
         const colNames = this.getSelectedColNames();
         const [valid, message] = this.checkNumericColumns(colNames, 2);
@@ -1050,23 +1069,6 @@ export class TableView extends TSViewBase implements IScrollTarget {
         newPage.setDataView(sv);
     }
 
-    /**
-     * Convert a value in the table to a html string representation.
-     * @param val                  Value to convert.
-     * @param {ContentsKind} kind  Type of value.
-     */
-    public static convert(val: any, kind: ContentsKind): HtmlString {
-        if (val == null)
-            return missingHtml;
-        if (kindIsNumeric(kind))
-            return String(val);
-        else if (kind === "Date")
-            return formatDate(Converters.dateFromDouble(val as number));
-        else if (kindIsString(kind))
-            return val as string;
-        else
-            return val.toString();  // TODO
-    }
 
     public moveRowToTop(row: RowSnapshot): void {
         const rr = this.createNextKRequest(this.order, row.values, this.tableRowsDesired);
@@ -1172,7 +1174,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
                     cell.classList.add("missingData");
                     shownValue = "missing";
                 } else {
-                    shownValue = TableView.convert(row.values[dataIndex], cd.kind);
+                    shownValue = convertToHtml(row.values[dataIndex], cd.kind);
                 }
                 const high = this.highlight(shownValue);
                 cell.innerHTML = high;
@@ -1336,6 +1338,7 @@ export class CorrelationMatrixReceiver extends BaseRenderer {
             this.numComponents, this.tv.tableRowsDesired));
     }
 }
+
 
 // Receives the ID of a table that contains additional eigen vector projection columns.
 // Invokes a sketch to get the schema of this new table.
