@@ -97,7 +97,6 @@ public class ComparisonFilterDescription implements ITableFilterDescription {
             }
 
             switch (this.column.getKind()) {
-                case Category:
                 case String:
                 case Json:
                     String s = ComparisonFilterDescription.this.stringValue;

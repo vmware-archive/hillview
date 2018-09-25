@@ -27,8 +27,8 @@ import org.hillview.table.Table;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
-import org.hillview.table.columns.IntListColumn;
 import org.hillview.table.columns.StringListColumn;
+import org.hillview.table.columns.IntListColumn;
 import org.junit.Assert;
 import org.junit.Test;
 

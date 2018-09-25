@@ -33,7 +33,6 @@ import {SchemaClassSerialization} from "./schemaClass";
 import {BigTableView, TableTargetAPI} from "./tableTarget";
 import {HillviewToplevel} from "./toplevel";
 import {IDataView} from "./ui/dataview";
-import {NotifyDialog} from "./ui/dialog";
 import {FullPage} from "./ui/fullPage";
 import {MenuItem, SubMenu, TopMenuItem} from "./ui/menu";
 import {IHtmlElement, ViewKind} from "./ui/ui";

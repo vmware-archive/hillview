@@ -52,7 +52,6 @@ public class OrcFileWriter implements ITableWriter {
                 case None:
                 default:
                     throw new RuntimeException("Unexpected data type " + cd.kind);
-                case Category:
                 case String:
                 case Json:
                     current = TypeDescription.createString();
@@ -101,7 +100,6 @@ public class OrcFileWriter implements ITableWriter {
                     switch (col.getKind()) {
                         case None:
                             break;
-                        case Category:
                         case String:
                         case Json:
                             String s = col.getString(nextRow);

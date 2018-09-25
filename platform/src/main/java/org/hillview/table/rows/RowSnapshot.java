@@ -114,7 +114,9 @@ public class RowSnapshot extends BaseRowSnapshot
     }
 
     public String asString(String colName) {
-        return this.getObject(colName).toString();
+        Object obj = this.getObject(colName);
+        assert obj != null;
+        return obj.toString();
     }
 
     public int getInt(String colName) {
@@ -149,12 +151,12 @@ public class RowSnapshot extends BaseRowSnapshot
             Object o = data[i];
             if (o == null) {
                 converted[i] = null;
-            } else if (cd.kind == ContentsKind.Date) {
-                converted[i] = Converters.toDate((double)o);
             } else if (cd.kind == ContentsKind.Integer) {
                 // In JSON everything is a double
                 converted[i] = (int)(double)o;
             } else {
+                // These should be doubles or strings.
+                // No conversion needed.
                 converted[i] = o;
             }
         }

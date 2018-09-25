@@ -37,7 +37,7 @@ public class DateListColumn
     private
     DateParsing dateParser;
 
-    DateListColumn(final ColumnDescription desc) {
+    public DateListColumn(final ColumnDescription desc) {
         super(desc);
         this.checkKind(ContentsKind.Date);
         this.dateParser = null;

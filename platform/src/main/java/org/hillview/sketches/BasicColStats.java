@@ -72,7 +72,6 @@ public class BasicColStats extends DataRange implements IJson {
 
         boolean extractString = false;
         switch (column.getKind()) {
-            case Category:
             case String:
             case Json:
                 extractString = this.computeStringMax;

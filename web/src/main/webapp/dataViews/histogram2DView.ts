@@ -357,7 +357,7 @@ export class Histogram2DView extends HistogramViewBase {
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
             reusePage: true, relative: this.relative,
-            chartKind: "Histogram", exact: this.samplingRate >= 1.0
+            chartKind: "2DHistogram", exact: this.samplingRate >= 1.0
         }));
     }
 

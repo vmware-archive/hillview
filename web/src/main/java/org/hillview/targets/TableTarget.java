@@ -139,7 +139,7 @@ public final class TableTarget extends RpcTarget {
     }
 
     static class RangeArgs {
-        // if this is Category, String, or Json we are sampling strings
+        // if this is String, or Json we are sampling strings
         ColumnDescription cd = new ColumnDescription();
         long seed;       // only used if sampling strings
         int stringsToSample;  // only used if sampling strings
@@ -722,7 +722,7 @@ public final class TableTarget extends RpcTarget {
         String colName = "";
         String newColName = "";
         int columnIndex;
-        ContentsKind newKind = ContentsKind.Category;
+        ContentsKind newKind = ContentsKind.None;
     }
 
     @HillviewRpc
@@ -756,7 +756,7 @@ public final class TableTarget extends RpcTarget {
         String jsFunction = "";
         Schema schema;
         String outputColumn;
-        ContentsKind outputKind = ContentsKind.Category;
+        ContentsKind outputKind = ContentsKind.None;
         /**
          * Map string->string described by a string array.
          */

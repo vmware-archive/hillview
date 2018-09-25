@@ -54,7 +54,9 @@ export class TableTargetAPI extends RemoteObject {
         return this.createStreamingRpcRequest<RemoteObjectId>("zip", r.remoteObjectId);
     }
 
-    public createFindRequest(order: RecordOrder, topRow: any[], strFilter: StringFilterDescription, excludeTopRow: boolean, next: boolean):
+    public createFindRequest(
+        order: RecordOrder, topRow: any[],
+        strFilter: StringFilterDescription, excludeTopRow: boolean, next: boolean):
         RpcRequest<PartialResult<FindResult>> {
         return this.createStreamingRpcRequest<FindResult>("find", {
             order: order,

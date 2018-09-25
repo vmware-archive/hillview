@@ -125,7 +125,7 @@ export class RpcRequest<T> implements ICancellable<T> {
      * the specified operation.  This is mostly useful for accounting the time
      * required for executing a chain of operations.
      */
-    public chain<S>(after: ICancellable<S>) {
+    public chain<S>(after: ICancellable<S>): void {
         if (after != null)
             this.setStartTime(after.startTime());
     }
@@ -345,7 +345,7 @@ export abstract class Receiver<T> implements Rx.Observer<PartialResult<T>> {
      * the progress bar.  Do not forget to call super.onNext() if you override
      * this method; otherwise the progress bar will not advance.
      */
-    public onNext(value: PartialResult<T>) {
+    public onNext(value: PartialResult<T>): void {
         this.progressBar.setPosition(value.done);
         if (this.operation != null)
             console.log("onNext after " + this.elapsedMilliseconds());
@@ -374,7 +374,7 @@ export abstract class OnCompleteReceiver<T> extends Receiver<T> {
         super(page, operation, description);
     }
 
-    public onNext(value: PartialResult<T>) {
+    public onNext(value: PartialResult<T>): void {
         super.onNext(value);
         if (value.data != null)
             this.value = value.data;

@@ -165,7 +165,7 @@ public class JdbcDatabase {
         switch (colType) {
             case Types.BOOLEAN:
             case Types.BIT:
-                kind = ContentsKind.Category;
+                kind = ContentsKind.String;
                 break;
             case Types.TINYINT:
             case Types.SMALLINT:

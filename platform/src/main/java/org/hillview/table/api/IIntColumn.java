@@ -70,7 +70,6 @@ public interface IIntColumn extends IColumn {
         IMutableColumn newColumn = this.allocateConvertedColumn(
                 kind, set, newColName);
         switch(kind) {
-            case Category:
             case Json:
             case String:
                 this.convert(newColumn, set, row -> Integer.toString(this.getInt(row)));
