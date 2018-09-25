@@ -90,6 +90,8 @@ export class Test {
             return;
         }
         const op = this.testProgram[this.programCounter];
+        if (op == null)
+            return;
 
         if (op.cond()) {
             console.log("Running test " + op.description);
@@ -214,7 +216,6 @@ export class Test {
                 col2.dispatchEvent(evt);
                 findElement("#hillviewPage1 .dropdown #Filter___").click();
                 (findElement(".dialog #query") as HTMLInputElement).value = "AA";
-                (findElement(".dialog #complement") as HTMLSelectElement).value = "Equality";
                 findElement(".dialog .confirm").click();
             },
         }, {

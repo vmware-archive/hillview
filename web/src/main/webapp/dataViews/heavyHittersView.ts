@@ -283,7 +283,6 @@ export class HeavyHittersView extends BigTableView {
                 this.showRest(nextKList.rows.length, position, this.restCount, nextKList.rowsScanned, this.table);
         }
         this.table.addFooter();
-        this.page.scrollIntoView();
         this.page.reportTime(elapsedMs);
         if (nextKList.rows.length >= HeavyHittersView.maxDisplay)
             HeavyHittersView.showLongDialog(nextKList.rows.length);
@@ -443,4 +442,3 @@ export class HeavyHittersReceiver3 extends OnCompleteReceiver<TopList> {
             Resolution.tableRowsOnScreen));
     }
 }
-

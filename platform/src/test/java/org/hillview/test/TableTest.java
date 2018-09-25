@@ -18,16 +18,23 @@
 package org.hillview.test;
 
 import org.hillview.table.*;
+import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ITable;
+import org.hillview.table.columns.DateListColumn;
 import org.hillview.table.columns.IntArrayColumn;
 import org.hillview.table.membership.FullMembershipSet;
+import org.hillview.utils.Converters;
 import org.hillview.utils.IntArrayGenerator;
 import org.hillview.utils.TestTables;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.Month;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -75,6 +82,21 @@ public class TableTest extends BaseTest {
         final IMembershipSet PMD = FM.filter(row -> (row % 2) == 0);
         final IColumn smallCol = col.compress(PMD);
         Assert.assertNotNull(smallCol);
+    }
+
+    @Test
+    public void dateColumnCompressTest() {
+        final DateListColumn dates = new DateListColumn(
+                new ColumnDescription("Test", ContentsKind.Date));
+        Instant first = LocalDate.of(2010, Month.APRIL, 1).atStartOfDay().toInstant(ZoneOffset.UTC);
+        dates.append(first);
+        dates.append(first.plusSeconds(10));
+        IMembershipSet set = new FullMembershipSet(2);
+        IColumn col = dates.compress(set);
+        double d = col.getDouble(0);
+        Instant i = col.getDate(0);
+        Assert.assertNotNull(i);
+        Assert.assertEquals(Converters.toDouble(i), d, .1);
     }
 
     @Test

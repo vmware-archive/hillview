@@ -288,7 +288,7 @@ export class SchemaView extends TSViewBase {
      */
     private typeAction(selectedType: string, action: string): void {
         for (let i = 0; i < this.schema.length; i++) {
-            let kind = this.schema.get(i).kind;
+            const kind = this.schema.get(i).kind;
             if (kind === selectedType) {
                 if (action === "Add")
                     this.display.selectedRows.add(i);

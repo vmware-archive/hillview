@@ -84,7 +84,7 @@ public class StringArrayColumn extends BaseArrayColumn
     @Nullable
     @Override
     public Object getObject(int rowIndex) {
-        return this.encoding.decode(this.data[rowIndex]);
+        return this.getString(rowIndex);
     }
 
     @Override

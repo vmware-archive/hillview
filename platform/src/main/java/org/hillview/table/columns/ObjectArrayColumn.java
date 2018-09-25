@@ -58,18 +58,12 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
             case String:
                 String str = this.getString(rowIndex);
                 return IStringColumn.stringToDouble(str);
-            case Date:
-                Instant date = this.getDate(rowIndex);
-                assert date != null;
-                return Converters.toDouble(date);
             case Integer:
                 return this.getInt(rowIndex);
+            case Date:
             case Double:
-                return this.getDouble(rowIndex);
             case Duration:
-                Duration duration = this.getDuration(rowIndex);
-                assert duration != null;
-                return Converters.toDouble(duration);
+                return this.getDouble(rowIndex);
             default:
                 throw new RuntimeException("Unexpected data type");
         }
@@ -141,6 +135,10 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
 
     @Override
     public double getDouble(final int rowIndex) {
+        if (this.getKind() == ContentsKind.Date)
+            return Converters.toDouble((Instant)this.data[rowIndex]);
+        else if (this.getKind() == ContentsKind.Duration)
+            return Converters.toDouble((Duration)this.data[rowIndex]);
         return (double)this.data[rowIndex];
     }
 

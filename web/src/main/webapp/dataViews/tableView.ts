@@ -24,7 +24,6 @@ import {
     ContentsKind,
     FindResult,
     IColumnDescription,
-    kindIsNumeric,
     kindIsString,
     NextKList,
     RecordOrder,
@@ -44,11 +43,9 @@ import {FullPage} from "../ui/fullPage";
 import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
 import {IScrollTarget, ScrollBar} from "../ui/scroll";
 import {SelectionStateMachine} from "../ui/selectionStateMachine";
-import {HtmlString, missingHtml, Resolution, SpecialChars} from "../ui/ui";
+import {HtmlString, Resolution, SpecialChars} from "../ui/ui";
 import {
     cloneToSet, convertToHtml,
-    Converters,
-    formatDate,
     formatNumber,
     ICancellable,
     PartialResult,
@@ -637,7 +634,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
             const cd = this.schema.get(i);
             cds.push(cd);
 
-            let kindString = cd.kind;
+            const kindString = cd.kind;
             const title = "Column type is " + kindString +
                 ".\nA mouse click with the right button will open a menu.";
             const name = this.schema.displayName(cd.name);
@@ -1065,8 +1062,8 @@ export class TableView extends TSViewBase implements IScrollTarget {
         const newPage = this.dataset.newPage("Schema", this.page);
         const sv = new SchemaView(this.remoteObjectId, newPage, this.rowCount, this.schema, 0);
         newPage.setDataView(sv);
+        newPage.scrollIntoView();
     }
-
 
     public moveRowToTop(row: RowSnapshot): void {
         const rr = this.createNextKRequest(this.order, row.values, this.tableRowsDesired);
@@ -1336,7 +1333,6 @@ export class CorrelationMatrixReceiver extends BaseRenderer {
             this.numComponents, this.tv.tableRowsDesired));
     }
 }
-
 
 // Receives the ID of a table that contains additional eigen vector projection columns.
 // Invokes a sketch to get the schema of this new table.
