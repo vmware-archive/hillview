@@ -88,7 +88,7 @@ public class JsonFileLoader extends TextFileLoader {
             throw new RuntimeException("Values must be simple " + e);
         JsonPrimitive prim = e.getAsJsonPrimitive();
         if (prim.isBoolean())
-            return ContentsKind.Category;
+            return ContentsKind.String;
         if (prim.isNumber())
             return ContentsKind.Double;
         if (prim.isString())
@@ -147,7 +147,7 @@ public class JsonFileLoader extends TextFileLoader {
             ContentsKind kind = e.getValue();
             if (kind == ContentsKind.None)
                 // This column is always null
-                kind = ContentsKind.Category;
+                kind = ContentsKind.String;
             ColumnDescription desc = new ColumnDescription(e.getKey(), kind);
             schema.append(desc);
         }

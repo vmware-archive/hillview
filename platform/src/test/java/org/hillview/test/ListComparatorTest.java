@@ -18,9 +18,9 @@
 package org.hillview.test;
 
 import org.hillview.table.ColumnDescription;
+import org.hillview.table.columns.StringArrayColumn;
 import org.hillview.table.columns.IntArrayColumn;
 import org.hillview.table.ListComparator;
-import org.hillview.table.columns.StringArrayColumn;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IndexComparator;

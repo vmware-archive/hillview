@@ -98,6 +98,11 @@ export class Test {
         }
     }
 
+    private next(): void {
+        this.programCounter++;
+        this.runNext();
+    }
+
     public runTests(): void {
         this.createTestProgram();
         this.runNext();
@@ -107,16 +112,16 @@ export class Test {
         this.addProgram([{
             description: "Load all flights",
             cond: () => true,
-            cont: () => findElement("#hillviewPage0 #topMenu #Flights__15_columns_").click(),
+            cont: () => findElement("#hillviewPage0 .topMenu #Flights__15_columns_").click(),
         }, /* {
         This menu has been disabled.
             description: "Show all columns",
             cond: () => findElement("#hillviewPage1 .idle") != null,
-            cont: () => findElement("#hillviewPage1 #topMenu #All_columns").click()
+            cont: () => findElement("#hillviewPage1 .topMenu #All_columns").click()
         }, */ {
             description: "Show no columns",
             cond: () => findElement("#hillviewPage1 .idle") != null,
-            cont: () => findElement("#hillviewPage1 #topMenu #No_columns").click(),
+            cont: () => findElement("#hillviewPage1 .topMenu #No_columns").click(),
         }, {
             description: "show column 0",
             cond: () => true,
@@ -148,7 +153,7 @@ export class Test {
             description: "Show schema view",
             cond: () => true,
             cont: () => {
-                findElement("#hillviewPage1 #topMenu #Schema").click();
+                findElement("#hillviewPage1 .topMenu #View #Schema").click();
                 // This does not involve an RPC; the result is available right away
                 // Select row 0
                 const row0 = findElement("#hillviewPage2 #row0");
@@ -161,7 +166,7 @@ export class Test {
                 const row3 = findElement("#hillviewPage2 #row3");
                 row3.dispatchEvent(evt);
                 // Select menu item to show the associated table
-                findElement("#hillviewPage2 #topMenu #Selected_columns").click();
+                findElement("#hillviewPage2 .topMenu #Selected_columns").click();
                 // Show a histogram
                 const col1 = findElement("#hillviewPage1 thead .col1");
                 const revt = contextMenuEvent();
@@ -216,10 +221,11 @@ export class Test {
             description: "Change buckets",
             cond: () => findElement("#hillviewPage7 .idle") != null,
             cont: () => {
-                const el2 = findElement("#hillviewPage6 #topMenu #__buckets___");
+                const el2 = findElement("#hillviewPage6 .topMenu #__buckets___");
                 el2.click();
                 (findElement(".dialog #n_buckets") as HTMLInputElement).value = "10";
                 findElement(".dialog .confirm").click();
+                this.next(); // changing buckets does not involve an RPC
             },
         }, {
             description: "Close some windows",

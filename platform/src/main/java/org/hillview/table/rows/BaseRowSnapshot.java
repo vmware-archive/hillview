@@ -58,7 +58,6 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
                 return false;
             boolean same;
             switch (kinds.get(i)) {
-                case Category:
                 case String:
                 case Json:
                     same = this.asString(cn).equals(other.asString(cn));
@@ -91,7 +90,6 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
             if (this.isMissing(cn))
                 continue;
             switch (kinds.get(i)) {
-                case Category:
                 case String:
                 case Json:
                     //noinspection ConstantConditions
@@ -150,7 +148,6 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
             else if (otherMissing)
                 c = -1;
             else switch (cso.columnDescription.kind) {
-                case Category:
                 case String:
                 case Json:
                     c = this.asString(cn).compareTo(other.asString(cn));

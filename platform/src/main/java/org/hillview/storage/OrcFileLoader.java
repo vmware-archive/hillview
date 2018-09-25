@@ -109,7 +109,7 @@ public class OrcFileLoader extends TextFileLoader {
     private static ContentsKind getKind(TypeDescription desc) {
         switch (desc.getCategory()) {
             case BOOLEAN:
-                return ContentsKind.Category;
+                return ContentsKind.String;
             case BYTE:
             case SHORT:
             case INT:
@@ -183,7 +183,6 @@ public class OrcFileLoader extends TextFileLoader {
                     long l = lcv.vector[row];
                     switch (to.getKind()) {
                         case None:
-                        case Category:
                         case Date:
                         case Duration:
                             throw new RuntimeException("Cannot convert long to " + to.getKind());
@@ -206,7 +205,6 @@ public class OrcFileLoader extends TextFileLoader {
                     double d = dcv.vector[row];
                     switch (to.getKind()) {
                         case None:
-                        case Category:
                         case Date:
                         case Duration:
                             throw new RuntimeException("Cannot convert double to " + to.getKind());
@@ -231,7 +229,6 @@ public class OrcFileLoader extends TextFileLoader {
                         case Date:
                         case Duration:
                             throw new RuntimeException("Cannot convert string to " + to.getKind());
-                        case Category:
                         case Json:
                         case String:
                             to.append(str);
@@ -258,7 +255,6 @@ public class OrcFileLoader extends TextFileLoader {
                         case Duration:
                             throw new RuntimeException("Cannot convert ORC date to "
                                     + to.getKind());
-                        case Category:
                         case Json:
                         case String:
                             to.append(value.toString());
@@ -284,7 +280,6 @@ public class OrcFileLoader extends TextFileLoader {
                         case Duration:
                             throw new RuntimeException("Cannot convert ORC timestamp to "
                                     + to.getKind());
-                        case Category:
                         case Json:
                         case String:
                             to.append(instant.toString());

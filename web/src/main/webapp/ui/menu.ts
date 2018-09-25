@@ -268,7 +268,6 @@ export class SubMenu extends BaseMenu<MenuItem> implements IHtmlElement {
     constructor(mis: MenuItem[]) {
         super();
         this.addItems(mis);
-        this.outer.id = "topMenu";
     }
 
     public show(): void {

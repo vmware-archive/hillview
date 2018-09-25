@@ -54,7 +54,6 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
     @Override
     public double asDouble(final int rowIndex) {
         switch (ObjectArrayColumn.this.description.kind) {
-            case Category:
             case Json:
             case String:
                 String str = this.getString(rowIndex);
@@ -97,7 +96,6 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
                 } else {
                     switch (ObjectArrayColumn.this.description.kind) {
                         case Json:
-                        case Category:
                         case String:
                             String si = ObjectArrayColumn.this.getString(i);
                             String sj = ObjectArrayColumn.this.getString(j);
@@ -206,7 +204,6 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
         if (this.isMissing(rowIndex))
             return MISSING_HASH_VALUE;
         switch (ObjectArrayColumn.this.description.kind) {
-            case Category:
             case Json:
             case String:
                 String str = this.getString(rowIndex);

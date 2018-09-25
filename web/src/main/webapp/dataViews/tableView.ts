@@ -638,8 +638,6 @@ export class TableView extends TSViewBase implements IScrollTarget {
             cds.push(cd);
 
             let kindString = cd.kind;
-            if (kindString === "Category")
-                kindString = "String";
             const title = "Column type is " + kindString +
                 ".\nA mouse click with the right button will open a menu.";
             const name = this.schema.displayName(cd.name);

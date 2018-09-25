@@ -136,7 +136,7 @@ export abstract class TSViewBase extends BigTableView {
         dialog.addTextField(
             "outColName", "Column name", FieldKind.String, null, "Name to use for the generated column.");
         dialog.addSelectField(
-            "outColKind", "Data type", allContentsKind.filter((c) => c !== "Category"), "String",
+            "outColKind", "Data type", allContentsKind, "String",
             "Type of data in the generated column.");
         dialog.addMultiLineTextField("function", "Function",
             "function map(row) {", "  return row['col'];", "}",
@@ -657,7 +657,7 @@ export class ConverterDialog extends Dialog {
         const cn = this.addSelectField("columnName", "Column: ", allColumns, columnName,
             "Column whose type is converted");
         const nk = this.addSelectField("newKind", "Convert to: ",
-            allContentsKind.filter((c) => c !== "Category"), null,
+            allContentsKind, null,
             "Type of data for the converted column.");
         const nn = this.addTextField("newColumnName", "New column name: ", FieldKind.String, null,
             "A name for the new column.  The name must be different from all other column names.");

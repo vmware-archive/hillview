@@ -62,7 +62,6 @@ public abstract class BaseArrayColumn extends BaseColumn implements Serializable
      */
     public static IMutableColumn create(ColumnDescription description, int size) {
         switch (description.kind) {
-            case Category:
             case Json:
             case String:
                 return new StringArrayColumn(description, size);

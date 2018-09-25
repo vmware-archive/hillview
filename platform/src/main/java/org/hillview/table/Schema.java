@@ -22,7 +22,6 @@ import org.hillview.dataset.api.IJson;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IAppendableColumn;
 import org.hillview.table.columns.BaseListColumn;
-import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;
@@ -71,13 +70,28 @@ public final class Schema implements Serializable, IJson {
     }
 
     public static class Deserializer implements JsonDeserializer<Schema> {
+        /**
+         * Legagy decoder of ColumnDescription.
+         */
+        static class StringPair {
+            String name = "";
+            String kind = "";
+        }
+
         public Schema deserialize(JsonElement json, Type typeOfT,
                                   JsonDeserializationContext context)
                 throws JsonParseException {
             Schema result = new Schema();
             for (JsonElement e: json.getAsJsonArray()) {
-                ColumnDescription cd = gsonInstance.fromJson(e, ColumnDescription.class);
-                result.append(Converters.checkNull(cd));
+                StringPair sp = gsonInstance.fromJson(e, StringPair.class);
+                if (sp == null)
+                    throw new RuntimeException(
+                            "Could not decode column description from json " + e.toString());
+                if (sp.kind.equals("Category"))
+                    sp.kind = "String";
+                ColumnDescription cd = new ColumnDescription(
+                        sp.name, ContentsKind.valueOf(sp.kind));
+                result.append(cd);
             }
             return result;
         }

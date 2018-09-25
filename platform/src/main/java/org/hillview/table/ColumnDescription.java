@@ -31,7 +31,7 @@ public class ColumnDescription implements Serializable, IJson {
 
     public ColumnDescription() {
         this.name = "";
-        this.kind = ContentsKind.Category;
+        this.kind = ContentsKind.None;
     }
 
     public ColumnDescription(final String name, final ContentsKind kind) {

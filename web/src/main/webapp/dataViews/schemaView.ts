@@ -121,7 +121,7 @@ export class SchemaView extends TSViewBase {
         /* Dialog box for selecting columns based on type*/
         const typeDialog = new Dialog("Select by type", "Allows selecting/deselecting columns based on type");
         typeDialog.addSelectField("selectedType", "Type",
-            allContentsKind.filter((c) => c !== "Category"), "String",
+            allContentsKind, "String",
             "Type of columns you wish to select");
         typeDialog.addSelectField("action", "Action", actions, "Add",
             "Add to or Remove from current selection");
@@ -142,7 +142,7 @@ export class SchemaView extends TSViewBase {
             const row = this.display.addRow([
                 (i + 1).toString(),
                 this.schema.displayName(cd.name),
-                cd.kind === "Category" ? "String" : cd.kind.toString()]);
+                cd.kind.toString()]);
             row.oncontextmenu = (e) => this.createAndShowContextMenu(e);
         }
         this.topLevel.appendChild(this.display.getHTMLRepresentation());
@@ -289,8 +289,6 @@ export class SchemaView extends TSViewBase {
     private typeAction(selectedType: string, action: string): void {
         for (let i = 0; i < this.schema.length; i++) {
             let kind = this.schema.get(i).kind;
-            if (kind === "Category")
-                kind = "String";
             if (kind === selectedType) {
                 if (action === "Add")
                     this.display.selectedRows.add(i);

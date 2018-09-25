@@ -153,7 +153,7 @@ public class ParquetFileLoader extends TextFileLoader {
                 kind = ContentsKind.Integer;
                 break;
             case BOOLEAN:
-                kind = ContentsKind.Category;
+                kind = ContentsKind.String;
                 break;
             case BINARY:
             case FIXED_LEN_BYTE_ARRAY:

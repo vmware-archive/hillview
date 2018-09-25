@@ -23,18 +23,14 @@ export type RemoteObjectId = string;
 
 export type Comparison = "==" | "!=" | "<" | ">" | "<=" | ">=";
 
-// TODO: remove Category kind
-export type ContentsKind = "Category" | "Json" | "String" | "Integer" |
+export type ContentsKind = "Json" | "String" | "Integer" |
     "Double" | "Date" | "Interval";
 
 /* We are not using an enum for ContentsKind because JSON deserialization does not
    return an enum from a string. */
-export const allContentsKind: ContentsKind[] = ["Category", "Json", "String", "Integer", "Double", "Date", "Interval"];
+export const allContentsKind: ContentsKind[] = ["Json", "String", "Integer", "Double", "Date", "Interval"];
 export function asContentsKind(kind: string): ContentsKind {
     switch (kind) {
-        case "Category": {
-            return "Category";
-        }
         case "Json": {
             return "Json";
         }
@@ -152,7 +148,7 @@ export function kindIsNumeric(kind: ContentsKind): boolean {
 }
 
 export function kindIsString(kind: ContentsKind): boolean {
-    return kind === "Category" || kind === "String" || kind === "Json";
+    return kind === "String" || kind === "Json";
 }
 
 export type Schema = IColumnDescription[];
