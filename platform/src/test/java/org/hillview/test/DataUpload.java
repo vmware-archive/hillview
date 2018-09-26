@@ -45,19 +45,20 @@ public class DataUpload  {
     GuessSchema[] schemaGuesses;
 
     @Nullable String schemaPath;
-    String directory;
-    String filename;
-    String destination;
+    String filename; // the file to be sent
+    String destination; // the destination path where the files will be put
     boolean hasHeader;
-    int chunkSize;
+    int chunkSize; // the nunber of lines in each shard.
     int columnNumber;
 
+    private void usage(String usage, Options options) {
+        System.out.println(usage);
+        System.out.println(options.getOptions());
+    }
+
     private String[] createArgs() {
-        String[] args = new String[4];
-        args[0] = "-d";
-        args[1] = "testing";
-        args[2] = "-L";
-        args[3] = "link";
+        String[] args = new String[]{"-c", "clusterConfig", "-f", "filename", "-d", "destination",
+                "-l", "1000", "-s", "schema", "-h"};
         return args;
     }
 
@@ -67,53 +68,87 @@ public class DataUpload  {
         String[] args = createArgs();
         Options options = new Options();
 
-        Option folder = new Option("d", "destination", true, "destination folder where output is written" +
-                " (if relative it is with respect to config.service_folder)");
-        folder.setRequired(true);
-        options.addOption(folder);
+        String usageString = "DataUpload " +
+                "-f" + " <filename> " +
+                "-d" + " <destination> " +
+                "-c <clusterConfig> " +
+                "-l <linenumber> " +
+                "-o (if orc) " +
+                "-s <schema> " +
+                "-h (if has header row)";
 
-        Option copyOption = new Option("L","L",true, "Follow symlinks instead of ignoring them)");
-        copyOption.setRequired(true);
-        options.addOption(copyOption);
+        Option o_filename = new Option("f", "filename", true, "path to file to distribute");
+        o_filename.setRequired(true);
+        options.addOption(o_filename);
 
-        Option everywhere = new Option("s","s",true, "File that is loaded to all machines");
-        everywhere.setRequired(false);
-        options.addOption(everywhere);
+        Option o_destination = new Option("d","destination",true, "relative path to remote folder");
+        o_destination.setRequired(true);
+        options.addOption(o_destination);
+
+        Option o_cluster = new Option("c","config",true, "path to cluster config json file");
+        o_cluster.setRequired(false);
+        options.addOption(o_cluster);
+
+        Option o_linenumber = new Option("l","lines",true, "number of lines in each chunk");
+        o_cluster.setRequired(false);
+        options.addOption(o_linenumber);
+
+        Option o_format = new Option("o","orc",false, "when appears the file will be saved as orc");
+        o_cluster.setRequired(false);
+        options.addOption(o_format);
+
+        Option o_schema = new Option("s","schema",true, "path to the schema file");
+        o_cluster.setRequired(false);
+        options.addOption(o_schema);
+
+        Option o_header = new Option("h","header",false, "indicates file has header row");
+        o_cluster.setRequired(false);
+        options.addOption(o_header);
 
         CommandLineParser parser = new BasicParser();
         CommandLine cmd = null;
         try {
             cmd = parser.parse(options, args);
+            if (cmd == null) {
+                throw new ParseException("empty command line");
+            }
+            String m_filename = cmd.getOptionValue('f');
+            String m_destination = cmd.getOptionValue('d');
+            String m_cluster = cmd.getOptionValue('c');
+            int m_line = Integer.parseInt(cmd.getOptionValue('l'));
+            String m_format;
+            if (cmd.hasOption('o'))
+                m_format = "orc";
+            else
+                m_format = "csv";
+            String m_schema = cmd.getOptionValue('s');
+            boolean m_header = cmd.hasOption('h');
+
+            System.out.println(m_filename + m_destination + m_cluster);
+            System.out.println(m_line);
+            System.out.println(m_format + m_schema);
+            System.out.println(m_header);
         }
         catch (ParseException pe) {
             System.out.println("can't parse due to " + pe);
+            usage(usageString, options);
         }
-        String theInput = cmd.getOptionValue('d');
-        System.out.println("Got it, it's " + theInput);
-        String theInput1 = cmd.getOptionValue('L');
-        System.out.println("Got it, it's " + theInput1);
-        String theInput2 = cmd.getOptionValue('s');
-        System.out.println("Got it, it's " + theInput2);
 
         /* todo: Add usage conditional */
 
 
-
-
-
         this.hasHeader = true;
-        this.directory = "/Users/uwieder/Projects/Bigdata/Hillview/data/";
-        this.filename = "/Users/uwieder/Projects/Bigdata/Hillview/data/pitchingTest.csv";
-        this.destination = "/Users/uwieder/Projects/Bigdata/Hillview/data/";
+        this.filename = "/Users/uwieder/Projects/Hillview/data/pitchingTest.csv";
+        this.destination = "/Users/uwieder/Projects/Hillview/data/";
         this.schemaPath = null;
 
         try {
-            ClusterConfig config = ClusterConfig.parse("/Users/uwieder/Projects/Bigdata/Hillview/Hillview/bin/config.json");
+            ClusterConfig config = ClusterConfig.parse("/Users/uwieder/Projects/Hillview/Hillview/bin/config.json");
             // todo: create the CsvFileLoader.Config object. Should come from the command line.
             CsvFileLoader.Config parsConfig = new CsvFileLoader.Config();
 
             parsConfig.hasHeaderRow = this.hasHeader;
-            Schema mySchema;
+         /*   Schema mySchema;
             if (!Utilities.isNullOrEmpty(this.schemaPath))
                 mySchema = Schema.readFromJsonFile(Paths.get(this.schemaPath));
             else {
@@ -127,6 +162,9 @@ public class DataUpload  {
             chop_files(this.filename, this.destination,100, parsConfig, config, mySchema,false);
             // todo: copy_files()
 
+            sendFile("/Users/uwieder/Projects/Playground/testfile.txt",
+                    "/Users/uwieder/Projects/Playground/testDir", "me", "him");
+         */
         } catch(IOException e) {
             System.out.println(e);
         }
@@ -296,8 +334,8 @@ public class DataUpload  {
                 String host = clusterConfig.backends[currentHost];
                 String remoteFolder = clusterConfig.service_folder;
                 if (!sentSchema[currentHost])
-                    sendFile(this.destination + " guessSchema.schema", remoteFolder, clusterConfig.user, host, false);
-                sendFile(chunkName, remoteFolder, clusterConfig.user, host,true);
+                    sendFile(this.destination + " guessSchema.schema", remoteFolder, clusterConfig.user, host);
+                sendFile(chunkName, remoteFolder, clusterConfig.user, host);
                 currentHost = (currentHost + 1) % clusterConfig.backends.length;
                 chunk++;
                 this.columns = schema.createAppendableColumns();
@@ -313,20 +351,20 @@ public class DataUpload  {
      * Send file to host using SSH
      * @param filename file to send
      * @param host host to send to
-     * @param deleteFile should the file be deleted after it is sent?
      */
-    private void sendFile(String filename, String remoteFolder, String user, String host, boolean deleteFile ) {
-        JSch jsch = new JSch();
+    private void sendFile(String filename, String remoteFolder, String user, String host) {
+        String[] commands= new String[]{"scp", filename, remoteFolder};
+        ProcessBuilder pb = new ProcessBuilder(commands);
+        pb.redirectErrorStream(true);
         try {
-            Session session = jsch.getSession(user, host);
-            session.connect();
-            ChannelSftp sftpChannel = (ChannelSftp) session.openChannel("sftp");
-            sftpChannel.connect();
-
-            sftpChannel.put(filename, remoteFolder);
-        } catch(Exception e) {
+            Process process = pb.start();
+            int err = process.waitFor();
+            if (err != 0)
+                throw new Exception("Scp stopped with error code " + Integer.toString(err));
+        } catch (Exception e) {
             this.error(e.getMessage());
         }
+
 
 
     }
