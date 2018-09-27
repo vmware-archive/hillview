@@ -45,13 +45,13 @@ import {IScrollTarget, ScrollBar} from "../ui/scroll";
 import {SelectionStateMachine} from "../ui/selectionStateMachine";
 import {HtmlString, Resolution, SpecialChars} from "../ui/ui";
 import {
-    cloneToSet, convertToHtml,
+    cloneToSet, convertToString,
     formatNumber,
-    ICancellable,
+    ICancellable, makeSpan,
     PartialResult,
     percent,
     saveAs,
-    significantDigits,
+    significantDigitsHtml,
 } from "../util";
 import {SchemaView} from "./schemaView";
 import {SpectrumReceiver} from "./spectrumView";
@@ -79,7 +79,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
     protected contextMenu: ContextMenu;
     protected cellsPerColumn: Map<string, HTMLElement[]>;
     protected selectedColumns = new SelectionStateMachine();
-    protected messageBox: HTMLElement;
+    protected message: HTMLElement;
 
     // The following elements are used for Find
     protected strFilter: StringFilterDescription;
@@ -155,7 +155,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
                         help: "Search for a string in the visible columns",
                         action: () => {
                             if (this.order.length() === 0) {
-                                this.reportError(
+                                this.page.reportError(
                                     "Find operates in the displayed column, " +
                                     "but no column is currently visible.");
                                 return;
@@ -196,8 +196,8 @@ export class TableView extends TSViewBase implements IScrollTarget {
 
         this.initFindBar();
 
-        this.messageBox = document.createElement("div");
-        this.topLevel.appendChild(this.messageBox);
+        this.message = document.createElement("div");
+        this.topLevel.appendChild(this.message);
     }
 
     private exportSchema(): void {
@@ -216,12 +216,12 @@ export class TableView extends TSViewBase implements IScrollTarget {
     }
 
     private addSpace(num: number): void {
-        const div: HTMLElement = document.createElement("div");
+        const span = makeSpan("", false);
         let str: string = "";
         for (let i = 0; i < num; i++)
             str += "&nbsp;";
-        div.innerHTML = str;
-        this.findBar.appendChild(div);
+        span.innerHTML = str;
+        this.findBar.appendChild(span);
     }
 
     private addCheckbox(stringDesc: string ): HTMLInputElement {
@@ -258,12 +258,12 @@ export class TableView extends TSViewBase implements IScrollTarget {
         this.addSpace(1);
 
         const nextButton = this.findBar.appendChild(document.createElement("button"));
-        nextButton.innerHTML = SpecialChars.downArrow;
+        nextButton.innerHTML = SpecialChars.downArrowHtml;
         nextButton.onclick = () => this.find(true, false);
         this.addSpace(1);
 
         const prevButton = this.findBar.appendChild(document.createElement("button"));
-        prevButton.innerHTML = SpecialChars.upArrow;
+        prevButton.innerHTML = SpecialChars.upArrowHtml;
         prevButton.onclick = () => this.find(false, false);
         this.addSpace(1);
 
@@ -336,11 +336,11 @@ export class TableView extends TSViewBase implements IScrollTarget {
 
     private find(next: boolean, fromTop: boolean): void {
         if (this.order.length() === 0) {
-            this.reportError("Find operates in the displayed column, but no column is currently visible.");
+            this.page.reportError("Find operates in the displayed column, but no column is currently visible.");
             return;
         }
         if (this.nextKList.rows.length === 0) {
-            this.reportError("No data to search in");
+            this.page.reportError("No data to search in");
             return;
         }
         let excludeTopRow: boolean;
@@ -361,7 +361,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
         if (!next)
             excludeTopRow = true;
         if (this.strFilter.compareValue === "") {
-            this.reportError("No current search string.");
+            this.page.reportError("No current search string.");
             return;
         }
         const o = this.order.clone();
@@ -427,7 +427,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
         if (this.nextKList == null || this.nextKList.rows.length === 0)
             return;
         if (this.startPosition <= 0) {
-            this.reportError("Already at the top");
+            this.page.reportError("Already at the top");
             return;
         }
         const order = this.order.invert();
@@ -439,7 +439,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
         if (this.nextKList == null || this.nextKList.rows.length === 0)
             return;
         if (this.startPosition <= 0) {
-            this.reportError("Already at the top");
+            this.page.reportError("Already at the top");
             return;
         }
         const o = this.order.clone();
@@ -451,7 +451,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
         if (this.nextKList == null || this.nextKList.rows.length === 0)
             return;
         if (this.startPosition + this.dataRowsDisplayed >= this.rowCount - 1) {
-            this.reportError("Already at the bottom");
+            this.page.reportError("Already at the bottom");
             return;
         }
         const order = this.order.invert();
@@ -463,7 +463,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
         if (this.nextKList == null || this.nextKList.rows.length === 0)
             return;
         if (this.startPosition + this.dataRowsDisplayed >= this.rowCount - 1) {
-            this.reportError("Already at the bottom");
+            this.page.reportError("Already at the bottom");
             return;
         }
         const o = this.order.clone();
@@ -479,7 +479,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
 
     protected showAllColumns(): void {
         if (this.schema == null) {
-            this.reportError("No data loaded");
+            this.page.reportError("No data loaded");
             return;
         }
 
@@ -531,15 +531,15 @@ export class TableView extends TSViewBase implements IScrollTarget {
                           displayName: string, help: string): HTMLElement {
         const thd = document.createElement("th");
         thd.classList.add("noselect");
-        let label = displayName;
+        thd.appendChild(makeSpan(displayName, false));
         if (!this.isVisible(cd.name)) {
             thd.style.fontWeight = "normal";
         } else {
-            label += " " +
-                this.getSortArrow(cd.name) + this.getSortIndex(cd.name);
+            const span = makeSpan("", false);
+            span.innerHTML = "&nbsp;" + this.getSortArrow(cd.name) + this.getSortIndex(cd.name);
+            thd.appendChild(span);
         }
         thd.title = help;
-        thd.innerHTML = label;
         thr.appendChild(thd);
         return thd;
     }
@@ -569,7 +569,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
 
     public refresh(): void {
         if (this.nextKList == null) {
-            this.reportError("Nothing to refresh");
+            this.page.reportError("Nothing to refresh");
             return;
         }
 
@@ -801,10 +801,10 @@ export class TableView extends TSViewBase implements IScrollTarget {
         if (perc !== "")
             perc = " (" + perc + ")";
 
-        const message = tableRowCount + " displayed rows represent " +
+        const message = new HtmlString(tableRowCount + " displayed rows represent " +
             formatNumber(this.dataRowsDisplayed) +
-            "/" + formatNumber(this.rowCount) + " data rows" + perc;
-        this.messageBox.innerHTML = message;
+            "/" + formatNumber(this.rowCount) + " data rows" + perc);
+        message.setInnerHtml(this.message);
 
         if (result != null) {
             this.foundCount.textContent = formatNumber(result.before) + " matching before, " +
@@ -890,7 +890,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
                 count++;
             }
         }
-        this.reportError(`Selected ${count} numeric columns.`);
+        this.page.reportError(`Selected ${count} numeric columns.`);
         this.highlightSelectedColumns();
     }
 
@@ -944,7 +944,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
                 const numComponents: number = pcaDialog.getFieldValueAsInt("numComponents");
                 const projectionName: string = pcaDialog.getFieldValue("projectionName");
                 if (numComponents < 1 || numComponents > colNames.length) {
-                    this.reportError("Number of components for PCA must be between 1 (incl.) " +
+                    this.page.reportError("Number of components for PCA must be between 1 (incl.) " +
                         "and the number of selected columns, " + colNames.length + " (incl.). (" +
                         numComponents + " does not satisfy this.)");
                     return;
@@ -955,7 +955,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
             });
             pcaDialog.show();
         } else {
-            this.reportError("Not valid for PCA:" + message);
+            this.page.reportError("Not valid for PCA:" + message);
         }
     }
 
@@ -982,7 +982,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
                 this.getPage(), this, this.remoteObjectId, this.rowCount,
                 this.schema, colNames, rr, false));
         } else {
-            this.reportError("Not valid for PCA:" + message);
+            this.page.reportError("Not valid for PCA:" + message);
         }
     }
 
@@ -994,7 +994,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
             let dialog = new LAMPDialog(colNames, this.getPage(), this.schema, this);
             dialog.show();
         } else {
-            this.reportError("Not valid for LAMP:" + message);
+            this.page.reportError("Not valid for LAMP:" + message);
         }
     }
     */
@@ -1072,60 +1072,59 @@ export class TableView extends TSViewBase implements IScrollTarget {
 
     /**
      * Hilight a table's cell text according to the current find.
-     * Returns an string representing the html of the innerHtml of the cell.
+     * Returns an HTML element that can be inserted in the table cell as a child.
      */
-    private highlight(text: string): HtmlString {
-        // result returned when there is no match.
-        const span = "<span>";
-        const end = "</span>";
-        const noMatch = span + text + end;
+    private highlight(text: string): HTMLElement {
         if (!this.findBarVisible)
-            return noMatch;
+            return makeSpan(text, false);
 
-        const start = "<span class=\"highlight\">";
         const find = this.strFilter.compareValue;
         if (find == null || find === "")
-            return noMatch;
+            return makeSpan(text, false);
+
+        const result = makeSpan(null, false);
         if (this.strFilter.asRegEx) {
             const modifier = this.strFilter.caseSensitive ? "g" : "ig";
             let regex = new RegExp(find, modifier);
             if (!this.strFilter.asSubString)
                 regex = new RegExp("^" + find + "$", modifier);
-            let result = "";
             while (true) {
                 const match = regex.exec(text);
-                if (match == null)
-                    return result + span + text + span;
-                result = span + text.substr(0, match.index) + end +
-                    start + text.substr(match.index, regex.lastIndex - match.index) + end;
+                if (match == null) {
+                    result.appendChild(makeSpan(text, false));
+                    return result;
+                }
+                result.appendChild(makeSpan(text.substr(0, match.index), false));
+                result.appendChild(makeSpan(text.substr(match.index, regex.lastIndex - match.index), true));
                 text = text.substr(regex.lastIndex);
             }
         } else {
             if (this.strFilter.asSubString) {
                 let index: number;
-                let result = "";
                 while (true) {
                     if (this.strFilter.caseSensitive)
                         index = text.indexOf(find);
                     else
                         index = text.toLowerCase().indexOf(find.toLowerCase());
-                    if (index < 0)
-                        return result + span + text + span;
-                    result += span + text.substr(0, index) + end +
-                        start + text.substr(index, find.length) + end;
+                    if (index < 0) {
+                        result.appendChild(makeSpan(text, false));
+                        return result;
+                    }
+                    result.appendChild(makeSpan(text.substr(0, index), false));
+                    result.appendChild(makeSpan(text.substr(index, find.length), true));
                     text = text.substr(index + find.length);
                 }
             } else {
                 if (this.strFilter.caseSensitive) {
                     if (text === find)
-                        return start + text + end;
+                        return makeSpan(text, true);
                 } else {
                     if (text.toLowerCase() === find.toLowerCase())
-                        return start + text + end;
+                        return makeSpan(text, true);
                 }
             }
         }
-        return noMatch;
+        return makeSpan(text, false);
     }
 
     public addRow(row: RowSnapshot, cds: IColumnDescription[]): void {
@@ -1145,7 +1144,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
 
         cell = trow.insertCell(1);
         cell.style.textAlign = "right";
-        cell.textContent = significantDigits(row.count);
+        significantDigitsHtml(row.count).setInnerHtml(cell);
         cell.title = "Number of rows that have these values: " + formatNumber(row.count);
 
         for (let i = 0; i < cds.length; i++) {
@@ -1160,19 +1159,17 @@ export class TableView extends TSViewBase implements IScrollTarget {
             this.cellsPerColumn.get(cd.name).push(cell);
 
             const dataIndex = this.order.find(cd.name);
-            if (dataIndex === -1)
-                continue;
             if (this.isVisible(cd.name)) {
                 const value = row.values[dataIndex];
                 let shownValue: string;
                 if (value == null) {
                     cell.classList.add("missingData");
-                    shownValue = "missing";
+                    cell.textContent = "missing";
                 } else {
-                    shownValue = convertToHtml(row.values[dataIndex], cd.kind);
+                    shownValue = convertToString(row.values[dataIndex], cd.kind);
+                    const high = this.highlight(shownValue);
+                    cell.appendChild(high);
                 }
-                const high = this.highlight(shownValue);
-                cell.innerHTML = high;
                 cell.title = "Right click will popup a menu.";
                 cell.oncontextmenu = (e) => {
                     this.contextMenu.clear();
@@ -1210,8 +1207,15 @@ export class TableView extends TSViewBase implements IScrollTarget {
                     this.contextMenu.show(e);
                 };
             } else {
-                // disable context menu
-                cell.oncontextmenu = () => false;
+                cell.oncontextmenu = (e) => {
+                    this.contextMenu.clear();
+                    this.contextMenu.addItem({
+                        text: "Move to top",
+                        action: () => this.moveRowToTop(row),
+                        help: "Move this row to the top of the view.",
+                    }, true);
+                    this.contextMenu.show(e);
+                };
             }
         }
         this.dataRowsDisplayed += row.count;

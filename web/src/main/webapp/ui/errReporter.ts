@@ -25,7 +25,12 @@ export interface ErrorReporter {
      * Report an error.
      * @param {string} htmlMessage   Error message as a HTML string.
      */
-    reportError(htmlMessage: string): void;
+    reportFormattedError(htmlMessage: HtmlString): void;
+    /**
+     * Report an error
+     * @param message  Text message.
+     */
+    reportError(message: string): void;
     /**
      * Clear all displayed error messages.
      * (May do nothing for some implementations, such as a console).
@@ -38,6 +43,10 @@ export interface ErrorReporter {
  */
 export class ConsoleErrorReporter implements ErrorReporter {
     public static instance: ConsoleErrorReporter = new ConsoleErrorReporter();
+
+    public reportFormattedError(message: HtmlString): void {
+        console.log(message.getString());  // this may be a html string, but that's all we can do
+    }
 
     public reportError(message: string): void {
         console.log(message);
@@ -64,11 +73,17 @@ export class ConsoleDisplay implements IHtmlElement, ErrorReporter {
         return this.topLevel;
     }
 
-    public reportError(htmlMessage: HtmlString): void {
-        this.topLevel.innerHTML += htmlMessage + "<br>";
+    public reportFormattedError(htmlMessage: HtmlString): void {
+        htmlMessage.setInnerHtml(this.topLevel);
+        this.topLevel.innerHTML += "<br>";
+    }
+
+    public reportError(message: string): void {
+        this.topLevel.textContent = message;
     }
 
     public clear(): void {
         this.topLevel.innerHTML = "";
+        this.topLevel.textContent = "";
     }
 }

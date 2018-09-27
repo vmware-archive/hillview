@@ -17,9 +17,9 @@
 
 import {drag as d3drag} from "d3-drag";
 import {event as d3event, select as d3select} from "d3-selection";
-import {cloneArray, makeId} from "../util";
+import {cloneArray, makeId, makeSpan} from "../util";
 import {EditBox} from "./editBox";
-import {HtmlString, IHtmlElement, Point} from "./ui";
+import {IHtmlElement, Point} from "./ui";
 
 export enum FieldKind {
     String,
@@ -82,7 +82,7 @@ class DialogBase implements IHtmlElement {
      * @param title; header to show on top of the dialog.
      * @param toolTip: help message to display on mouseover.
      */
-    constructor(title: HtmlString, toolTip: string) {
+    constructor(title: string, toolTip: string) {
         // Tab indexes seem to be global to the whole DOM.
         // That's not good, since having an element with tabindex 2 will be behind all
         // other elements with tabindex 1, no matter where they are in the document.
@@ -99,7 +99,7 @@ class DialogBase implements IHtmlElement {
         this.topLevel.style.transform = "translate(-50%, -50%)";
 
         const titleElement = document.createElement("h1");
-        titleElement.innerHTML = title;
+        titleElement.textContent = title;
         this.topLevel.appendChild(titleElement);
 
         this.fieldsDiv = document.createElement("div");
@@ -551,7 +551,7 @@ export class Dialog extends DialogBase {
  * Notifications have no input elements, just an OK button.
  */
 export class NotifyDialog extends DialogBase {
-    constructor(title: string, toolTip: string) {
+    constructor(title: string, message: string | null, toolTip: string) {
         super(title, toolTip);
 
         const confirmButton = document.createElement("button");
@@ -559,6 +559,9 @@ export class NotifyDialog extends DialogBase {
         confirmButton.classList.add("confirm");
         confirmButton.onclick = () => this.hide();
         this.buttonsDiv.appendChild(confirmButton);
+
+        if (message != null)
+            this.fieldsDiv.appendChild(makeSpan(message, false));
     }
 
     public show(): void {

@@ -36,7 +36,7 @@ import {HistogramPlot} from "../ui/histogramPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {HistogramOptions, Resolution} from "../ui/ui";
+import {HistogramOptions, HtmlString, Resolution} from "../ui/ui";
 import {
     formatNumber,
     ICancellable,
@@ -44,7 +44,7 @@ import {
     percent,
     reorder,
     saveAs,
-    significantDigits,
+    significantDigits, significantDigitsHtml,
 } from "../util";
 import {AxisData} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
@@ -236,18 +236,21 @@ export class HistogramView extends HistogramViewBase {
         this.pointDescription = new TextOverlay(this.surface.getChart(),
             this.surface.getActualChartSize(), pointDesc, 40);
 
-        let summary = "";
+        let summary = new HtmlString("");
         if (h.missingData !== 0)
-            summary = formatNumber(h.missingData) + " missing, ";
-        summary += formatNumber(this.rowCount) + " points";
+            summary = summary.appendString(formatNumber(h.missingData) + " missing, ");
+        summary = summary.appendString(formatNumber(this.rowCount) + " points");
         if (this.axisData != null &&
             this.axisData.range.leftBoundaries != null &&
             this.axisData.range.allStringsKnown)
-            summary += ", " + this.axisData.range.leftBoundaries.length + " distinct values";
-        summary += ", " + String(bucketCount) + " buckets";
+            summary = summary.appendString(
+                ", " + this.axisData.range.leftBoundaries.length + " distinct values");
+        summary = summary.appendString(
+            ", " + String(bucketCount) + " buckets");
         if (this.samplingRate < 1.0)
-            summary += ", sampling rate " + significantDigits(this.samplingRate);
-        this.summary.innerHTML = summary;
+            summary = summary.appendString(", sampling rate ")
+                .append(significantDigitsHtml(this.samplingRate));
+        summary.setInnerHtml(this.summary);
     }
 
     public trellis(): void {

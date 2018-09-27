@@ -17,7 +17,7 @@
 
 import {PlottingSurface} from "./plottingSurface";
 import {SelectionStateMachine} from "./selectionStateMachine";
-import {HtmlString, IHtmlElement} from "./ui";
+import {IHtmlElement} from "./ui";
 
 /**
  * A TabularDisplay is a visual representation that uses an HTML table to display
@@ -55,7 +55,7 @@ export class TabularDisplay implements IHtmlElement {
     }
 
     /**
-     * Create columns.  The column names are used as the innerHTML of the cells.
+     * Create columns with the specified names.
      */
     public setColumns(colNames: string[], toolTips: string[]): void {
         const tHead = this.table.createTHead();
@@ -65,7 +65,7 @@ export class TabularDisplay implements IHtmlElement {
             const tip = toolTips[index++];
             const thd = document.createElement("th");
             thd.title = tip;
-            thd.innerHTML = c;
+            thd.textContent = c;
             thr.appendChild(thd);
             thd.classList.add("noselect");
             this.columnCount++;
@@ -96,13 +96,13 @@ export class TabularDisplay implements IHtmlElement {
     }
 
     /**
-     * Add a row of values; these are set as the innerHTML values of the cells.
+     * Add a row of values; these are set as the text values of the cells.
      */
-    public addRow(data: HtmlString[], canClick: boolean = true): HTMLTableRowElement {
+    public addRow(data: string[], canClick: boolean = true): HTMLTableRowElement {
         const trow = this.insertRow(canClick);
         for (const d of data) {
             const cell = this.addRowCell(trow);
-            cell.innerHTML = d;
+            cell.textContent = d;
         }
         return trow;
     }

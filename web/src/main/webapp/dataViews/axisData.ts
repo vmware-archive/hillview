@@ -29,7 +29,13 @@ import {
     IColumnDescription,
     kindIsString
 } from "../javaBridge";
-import {assert, Converters, formatDate, formatNumber, significantDigits} from "../util";
+import {
+    assert,
+    Converters,
+    formatDate,
+    formatNumber,
+    significantDigits,
+} from "../util";
 import {AnyScale, D3Axis} from "../ui/ui";
 
 export enum AxisKind {

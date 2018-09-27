@@ -39,7 +39,14 @@ import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
 import {SubMenu, TopMenuItem} from "../ui/menu";
 import {SpecialChars, ViewKind} from "../ui/ui";
-import {cloneToSet, Converters, convertToHtml, ICancellable, mapToArray, significantDigits} from "../util";
+import {
+    cloneToSet,
+    Converters,
+    convertToString,
+    ICancellable,
+    mapToArray,
+    significantDigits,
+} from "../util";
 import {HeavyHittersReceiver, HeavyHittersView} from "./heavyHittersView";
 import {DataRangesCollector} from "./dataRangesCollectors";
 import {TableOperationCompleted, TableView} from "./tableView";
@@ -74,7 +81,7 @@ export abstract class TSViewBase extends BigTableView {
     public renameColumn(): void {
         const cols = this.getSelectedColNames();
         if (cols.length !== 1) {
-            this.reportError("Select only 1 column to rename");
+            this.page.reportError("Select only 1 column to rename");
             return;
         }
         const colName = cols[0];
@@ -89,14 +96,10 @@ export abstract class TSViewBase extends BigTableView {
     public doRenameColumn(from: string, to: string): void {
         this.schema = this.schema.clone();
         if (!this.schema.changeDisplayName(from, to)) {
-            this.reportError("Cannot rename column to " + to + " since the name is already used.");
+            this.page.reportError("Cannot rename column to " + to + " since the name is already used.");
             return;
         }
         this.resize();
-    }
-
-    public reportError(s: string): void {
-        this.page.reportError(s);
     }
 
     public saveAsOrc(schema: SchemaClass): void {
@@ -248,7 +251,7 @@ export abstract class TSViewBase extends BigTableView {
 
     protected heatmapSelected(): void {
         if (this.getSelectedColCount() !== 2) {
-            this.reportError("Must select 2 columns for heatmap");
+            this.page.reportError("Must select 2 columns for heatmap");
             return;
         }
         this.heatmap(this.getSelectedColNames());
@@ -256,7 +259,7 @@ export abstract class TSViewBase extends BigTableView {
 
     protected histogramSelected(): void {
         if (this.getSelectedColCount() < 1 || this.getSelectedColCount() > 2) {
-            this.reportError("Must select 1 or 2 columns for histogram");
+            this.page.reportError("Must select 1 or 2 columns for histogram");
             return;
         }
         this.histogram(this.getSelectedColNames());
@@ -264,7 +267,7 @@ export abstract class TSViewBase extends BigTableView {
 
     protected trellisSelected(heatmap: boolean): void {
         if (this.getSelectedColCount() < 2 || this.getSelectedColCount() > 3) {
-            this.reportError("Must select 1 or 2 columns for Trellis polots");
+            this.page.reportError("Must select 1 or 2 columns for Trellis polots");
             return;
         }
         this.trellis(this.getSelectedColNames(), heatmap);
@@ -272,7 +275,7 @@ export abstract class TSViewBase extends BigTableView {
 
     public twoDHistogramMenu(heatmap: boolean): void {
         if (this.schema.length < 2) {
-            this.reportError("Could not find two columns that can be charted.");
+            this.page.reportError("Could not find two columns that can be charted.");
             return;
         }
 
@@ -291,7 +294,7 @@ export abstract class TSViewBase extends BigTableView {
                 const c1 = dia.getFieldValue("columnName1");
                 const col1 = this.schema.fromDisplayName(c1);
                 if (col0 === col1) {
-                    this.reportError("The two columns must be distinct");
+                    this.page.reportError("The two columns must be distinct");
                     return;
                 }
                 if (heatmap)
@@ -306,7 +309,7 @@ export abstract class TSViewBase extends BigTableView {
     public trellisMenu(twoD: boolean, heatmap: boolean): void {
         const count = twoD ? 2 : 3;
         if (this.schema.length < count) {
-            this.reportError("Could not find enough columns that can be charted.");
+            this.page.reportError("Could not find enough columns that can be charted.");
             return;
         }
 
@@ -330,7 +333,7 @@ export abstract class TSViewBase extends BigTableView {
                 const c1 = dia.getFieldValue("columnName1");
                 const col1 = this.schema.fromDisplayName(c1);
                 if (col0 === col1) {
-                    this.reportError("The columns must be distinct");
+                    this.page.reportError("The columns must be distinct");
                     return;
                 }
                 let col2 = null;
@@ -340,7 +343,7 @@ export abstract class TSViewBase extends BigTableView {
                     const c2 = dia.getFieldValue("columnName2");
                     col2 = this.schema.fromDisplayName(c2);
                     if (col0 === col2 || col1 === col2) {
-                        this.reportError("The columns must be distinct");
+                        this.page.reportError("The columns must be distinct");
                         return;
                     }
                     colNames.push(col2);
@@ -353,7 +356,7 @@ export abstract class TSViewBase extends BigTableView {
 
     protected hLogLog(): void {
         if (this.getSelectedColCount() !== 1) {
-            this.reportError("Only one column must be selected");
+            this.page.reportError("Only one column must be selected");
             return;
         }
         const colName = this.getSelectedColNames()[0];
@@ -468,18 +471,16 @@ export abstract class TSViewBase extends BigTableView {
         const rr = this.createFilterComparisonRequest(filter);
         const value = kindIsString(kind) ? filter.stringValue : filter.doubleValue;
         const title = "Filtered: " +
-            convertToHtml(value, kind) + " " + filter.comparison + " " +
+            convertToString(value, kind) + " " + filter.comparison + " " +
             this.schema.displayName(filter.column.name);
 
         const newPage = this.dataset.newPage(title, this.page);
         rr.invoke(new TableOperationCompleted(newPage, rr, this.rowCount, this.schema, o, tableRowsDesired));
     }
 
-
-
     protected runHeavyHitters(percent: number): void {
         if (percent == null || percent < HeavyHittersView.min || percent > 100) {
-            this.reportError("Percentage must be between " + HeavyHittersView.min.toString() + " and 100");
+            this.page.reportError("Percentage must be between " + HeavyHittersView.min.toString() + " and 100");
             return;
         }
         const isApprox: boolean = true;
@@ -704,7 +705,7 @@ export class ColumnConverter  {
 
     public run(): void {
         if (this.table.schema.columnIndex(this.newColumnName) >= 0) {
-            this.table.reportError(`Column name ${this.newColumnName} already exists in table.`);
+            this.page.reportError(`Column name ${this.newColumnName} already exists in table.`);
             return;
         }
 

@@ -38,7 +38,7 @@ import {HistogramLegendPlot} from "../ui/legendPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {ChartOptions, D3SvgElement, Rectangle, Resolution} from "../ui/ui";
+import {ChartOptions, D3SvgElement, HtmlString, Rectangle, Resolution} from "../ui/ui";
 import {
     formatNumber,
     ICancellable,
@@ -46,8 +46,8 @@ import {
     PartialResult,
     percent,
     reorder,
-    saveAs,
-    significantDigits,
+    saveAs, significantDigits,
+    significantDigitsHtml,
 } from "../util";
 import {AxisData} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
@@ -197,17 +197,21 @@ export class Histogram2DView extends HistogramViewBase {
                 this.yData.description.name,
                 "y", "count", "%", "cdf"], 40);
         this.pointDescription.show(false);
-        let summary = formatNumber(this.plot.getDisplayedPoints()) + " data points";
+        let summary = new HtmlString(formatNumber(this.plot.getDisplayedPoints()) + " data points");
         if (heatmap.missingData !== 0)
-            summary += ", " + formatNumber(heatmap.missingData) + " missing both coordinates";
+            summary = summary.appendString(
+                ", " + formatNumber(heatmap.missingData) + " missing both coordinates");
         if (heatmap.histogramMissingX.missingData !== 0)
-            summary += ", " + formatNumber(heatmap.histogramMissingX.missingData) + " missing Y coordinate";
+            summary = summary.appendString(
+                ", " + formatNumber(heatmap.histogramMissingX.missingData) + " missing Y coordinate");
         if (heatmap.histogramMissingY.missingData !== 0)
-            summary += ", " + formatNumber(heatmap.histogramMissingY.missingData) + " missing X coordinate";
-        summary += ", " + String(bucketCount) + " buckets";
+            summary = summary.appendString(
+                ", " + formatNumber(heatmap.histogramMissingY.missingData) + " missing X coordinate");
+        summary = summary.appendString(", " + String(bucketCount) + " buckets");
         if (this.samplingRate < 1.0)
-            summary += ", sampling rate " + significantDigits(this.samplingRate);
-        this.summary.innerHTML = summary;
+            summary = summary.appendString(", sampling rate ")
+                .append(significantDigitsHtml(this.samplingRate));
+        summary.setInnerHtml(this.summary);
     }
 
     public serialize(): IViewSerialization {

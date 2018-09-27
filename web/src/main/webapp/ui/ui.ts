@@ -28,8 +28,33 @@ import {ScaleLinear as D3ScaleLinear, ScaleTime as D3ScaleTime} from "d3-scale";
 /**
  * HTML strings are strings that represent an HTML fragment.
  * They are usually assigned to innerHTML of a DOM object.
+ * These strings should  be "safe": i.e., the HTML they contain should
+ * be produced internally, and they should not come
+ * from external sources, because they can cause DOM injection attacks.
  */
-export type HtmlString = string;
+export class HtmlString {
+    constructor(private readonly value: string) {}
+
+    public appendString(str: string): HtmlString {
+        return new HtmlString(this.value + str);
+    }
+
+    public append(message: HtmlString): HtmlString {
+        return new HtmlString(this.value + message.value);
+    }
+
+    public prependString(str: string): HtmlString {
+        return new HtmlString(str + this.value);
+    }
+
+    public setInnerHtml(elem: HTMLElement): void {
+        elem.innerHTML = this.value;
+    }
+
+    public getString(): string {
+        return this.value;
+    }
+}
 
 export type ViewKind = "Table" | "Histogram" | "2DHistogram" | "Heatmap" |
     "TrellisHistogram" | "Trellis2DHistogram" | "TrellisHeatmap" |
@@ -63,13 +88,7 @@ export interface IElement {
     getDOMRepresentation(): Element;
 }
 
-export const missingHtml: string = "<span class='missingData'>missing</span>";
-
-export function textToSpan(text: HtmlString): HTMLElement {
-    const span = document.createElement("span");
-    span.innerHTML = text;
-    return span;
-}
+export const missingHtml: HtmlString = new HtmlString("<span class='missingData'>missing</span>");
 
 /**
  * A list of special unicode character codes.
@@ -77,8 +96,10 @@ export function textToSpan(text: HtmlString): HTMLElement {
 export class SpecialChars {
     /// Approximation sign.
     public static approx = "\u2248";
-    public static downArrow = "&dArr;";
-    public static upArrow = "&uArr;";
+    public static upArrow = "▲";
+    public static downArrow = "▼";
+    public static downArrowHtml = "&dArr;";
+    public static upArrowHtml = "&uArr;";
 }
 
 /**

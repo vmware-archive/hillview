@@ -26,8 +26,8 @@ import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
 import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
 import {TabularDisplay} from "../ui/tabularDisplay";
-import {Resolution, SpecialChars, textToSpan} from "../ui/ui";
-import {cloneSet, convertToHtml, ICancellable, significantDigits} from "../util";
+import {Resolution, SpecialChars} from "../ui/ui";
+import {cloneSet, convertToString, ICancellable, makeSpan, significantDigitsHtml} from "../util";
 import {TableOperationCompleted} from "./tableView";
 
 /**
@@ -266,13 +266,13 @@ export class HeavyHittersView extends BigTableView {
                     k++;
                 }
                 const row: Element[] = [];
-                row.push(textToSpan(k.toString()));
+                row.push(makeSpan(k.toString(), false));
                 for (let j = 0; j < this.columnsShown.length; j++) {
                     const value = nextKList.rows[i].values[j];
-                    row.push(textToSpan(convertToHtml(value, this.columnsShown[j].kind)));
+                    row.push(makeSpan(convertToString(value, this.columnsShown[j].kind), false));
                 }
-                row.push(textToSpan(this.valueToString(nextKList.rows[i].count)));
-                row.push(textToSpan(this.valueToString((nextKList.rows[i].count / nextKList.rowsScanned) * 100)));
+                row.push(this.valueToHtml(nextKList.rows[i].count));
+                row.push(this.valueToHtml((nextKList.rows[i].count / nextKList.rowsScanned) * 100));
                 row.push(new DataRangeUI(position, nextKList.rows[i].count,
                     nextKList.rowsScanned).getDOMRepresentation());
                 const tRow: HTMLTableRowElement = this.table.addElementRow(row);
@@ -343,25 +343,27 @@ export class HeavyHittersView extends BigTableView {
 
     private showRest(k: number, position: number, restCount: number, total: number, table: TabularDisplay): void {
         const row: Element[] = [];
-        row.push(textToSpan(k.toString()));
+        row.push(makeSpan(k.toString(), false));
         for (let j = 0; j < this.columnsShown.length; j++) { // tslint:disable-line
-            const m = textToSpan("everything else");
+            const m = makeSpan("everything else", false);
             m.classList.add("missingData");
             row.push(m);
         }
-        row.push(textToSpan(this.valueToString(restCount)));
-        row.push(textToSpan(this.valueToString((restCount / total) * 100)));
+        row.push(this.valueToHtml(restCount));
+        row.push(this.valueToHtml((restCount / total) * 100));
         row.push(new DataRangeUI(position, restCount, total).getDOMRepresentation());
         const tRow: HTMLTableRowElement = table.addElementRow(row, false);
         tRow.onclick = (e) => e.preventDefault();
         tRow.oncontextmenu = (e) => e.preventDefault();
     }
 
-    private valueToString(n: number): string {
-        let str = significantDigits(n);
+    private valueToHtml(n: number): HTMLElement {
+        const span = document.createElement("span");
+        let str = significantDigitsHtml(n);
         if (this.isApprox)
-            str = SpecialChars.approx + str;
-        return str;
+            str = str.prependString(SpecialChars.approx);
+        str.setInnerHtml(span);
+        return span;
     }
 
     private runWithThreshold(newPercent: number): void {

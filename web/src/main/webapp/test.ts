@@ -236,7 +236,7 @@ export class Test {
                     const el = findElement("#hillviewPage" + i.toString() + " .close");
                     el.click();
                 }
-                const dialog = new NotifyDialog("Tests are completed", "Done.");
+                const dialog = new NotifyDialog("Tests are completed", null, "Done.");
                 dialog.show();
             },
         },

@@ -16,12 +16,12 @@
  */
 
 import {DatasetView} from "../datasetView";
-import {openInNewTab, significantDigits} from "../util";
+import {openInNewTab, significantDigitsHtml} from "../util";
 import {IDataView} from "./dataview";
 import {ConsoleDisplay, ErrorReporter} from "./errReporter";
 import {TopMenu} from "./menu";
 import {ProgressManager} from "./progress";
-import {IHtmlElement, removeAllChildren, ViewKind} from "./ui";
+import {HtmlString, IHtmlElement, removeAllChildren, ViewKind} from "./ui";
 import {helpUrl} from "./helpUrl";
 
 const minus = "&#8722;";
@@ -232,7 +232,10 @@ export class FullPage implements IHtmlElement {
     }
 
     public reportTime(timeInMs: number): void {
-        this.reportError("Operation took " + significantDigits(timeInMs / 1000) + " seconds");
+        this.getErrorReporter().reportFormattedError(
+            new HtmlString("Operation took ")
+                .append(significantDigitsHtml(timeInMs / 1000))
+                .appendString(" seconds"));
     }
 
     public getWidthInPixels(): number {

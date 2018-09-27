@@ -118,7 +118,7 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
         if (mi.text === "---")
             cell.innerHTML = "<hr>";
         else
-            cell.innerHTML = mi.text;
+            cell.textContent = mi.text;
         cell.id = makeId(mi.text);
         cell.style.textAlign = "left";
         if (mi.help != null)

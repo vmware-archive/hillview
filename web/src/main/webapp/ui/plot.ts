@@ -19,7 +19,7 @@ import {PlottingSurface} from "./plottingSurface";
 import {AxisData} from "../dataViews/axisData";
 import {D3Axis, D3SvgElement, SpecialChars} from "./ui";
 import {interpolateRainbow as d3interpolateRainbow} from "d3-scale-chromatic";
-import {significantDigits} from "../util";
+import {significantDigits, significantDigitsHtml} from "../util";
 
 /**
  * Abstract base class for all plots.

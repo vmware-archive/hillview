@@ -22,9 +22,8 @@
 import * as FileSaver from "file-saver";
 import {ErrorReporter} from "./ui/errReporter";
 import {NotifyDialog} from "./ui/dialog";
-import {HtmlString, missingHtml, Size} from "./ui/ui";
+import {HtmlString, Size} from "./ui/ui";
 import {ContentsKind, kindIsNumeric, kindIsString} from "./javaBridge";
-
 
 export interface Pair<T1, T2> {
     first: T1;
@@ -59,6 +58,20 @@ export function findElement(cssselector: string): HTMLElement {
 }
 
 /**
+ * Returns a span element containing the specified text.
+ * @param text       Text to insert in span.
+ * @param highlight  If true the span has class highlight.
+ */
+export function makeSpan(text: string | null, highlight: boolean): HTMLElement {
+    const span = document.createElement("span");
+    if (text != null)
+        span.textContent = text;
+    if (highlight)
+        span.className = "highlight";
+    return span;
+}
+
+/**
  * Interface which is implemented by classes that know
  * how to serialize and deserialize themselves from objects.
  * T in general will be the class itself.
@@ -83,7 +96,7 @@ export interface Serializable<T> {
 export function saveAs(filename: string, contents: string): void {
     const blob = new Blob([contents], {type: "text/plain;charset=utf-8"});
     FileSaver.saveAs(blob, filename);
-    const notify = new NotifyDialog("File has been saved.\n" +
+    const notify = new NotifyDialog("File has been saved.",
         "Look for file " + filename + " in the browser Downloads folder",
         "File has been saved");
     notify.show();
@@ -205,7 +218,44 @@ export function makeId(text: string): string {
  * Convert a number to an html string by keeping only the most significant digits
  * and adding a suffix.
  */
-export function significantDigits(n: number): HtmlString {
+export function significantDigitsHtml(n: number): HtmlString {
+    let suffix = "";
+    if (n === 0)
+        return new HtmlString("0");
+    const absn = Math.abs(n);
+    if (absn > 1e12) {
+        suffix = "T";
+        n = n / 1e12;
+    } else if (absn > 1e9) {
+        suffix = "B";
+        n = n / 1e9;
+    } else if (absn > 1e6) {
+        suffix = "M";
+        n = n / 1e6;
+    } else if (absn > 10e4) {
+        // Using 10^4 will prevent many year values from being converted
+        suffix = "K";
+        n = n / 1e3;
+    } else if (absn < .001) {
+        let expo = 0;
+        while (n < .1) {
+            n = n * 10;
+            expo++;
+        }
+        suffix = "&times; 10<sup>-" + expo + "</sup>";
+    }
+    if (absn > 1)
+        n = Math.round(n * 100) / 100;
+    else
+        n = Math.round(n * 1000) / 1000;
+    return new HtmlString(String(n)).appendString(suffix);
+}
+
+/**
+ * Convert a number to an string by keeping only the most significant digits
+ * and adding a suffix.  Similar to the previous function, but returns a pure string.
+ */
+export function significantDigits(n: number): string {
     let suffix = "";
     if (n === 0)
         return "0";
@@ -229,7 +279,7 @@ export function significantDigits(n: number): HtmlString {
             n = n * 10;
             expo++;
         }
-        suffix = "* 10<sup>-" + expo + "</sup>";
+        suffix = "* 10e" + expo;
     }
     if (absn > 1)
         n = Math.round(n * 100) / 100;
@@ -482,13 +532,13 @@ export interface IRawCancellable {
 export interface ICancellable<T> extends IRawCancellable {}
 
 /**
- * Convert a value in the table to a html string representation.
+ * Convert a value in the table to a string representation.
  * @param val                  Value to convert.
  * @param {ContentsKind} kind  Type of value.
  */
-export function convertToHtml(val: any, kind: ContentsKind): string {
+export function convertToString(val: any, kind: ContentsKind): string {
     if (val == null)
-        return missingHtml;
+        return "";
     if (kindIsNumeric(kind))
         return String(val);
     else if (kind === "Date")
