@@ -81,6 +81,8 @@ public class HillviewLogs {
                     String line = reader.readLine();
                     if (line == null)
                         break;
+                    if (line.trim().isEmpty())
+                        continue;
                     this.parse(line, fields);
                     this.append(fields);
                 }
