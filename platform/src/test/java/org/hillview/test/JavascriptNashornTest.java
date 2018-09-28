@@ -39,12 +39,12 @@ import java.util.HashMap;
 /**
  * Test the Javascript Nashorn engine.
  */
-public class JavascriptTest {
+public class JavascriptNashornTest extends BaseTest {
     @Test
     public void helloWorldTest() throws ScriptException {
         ScriptEngineManager factory = new ScriptEngineManager();
         ScriptEngine engine = factory.getEngineByName("nashorn");
-        engine.eval("print('Hello, World from JavaScript!');");
+        engine.eval("print('Hello, World from Nashorn JavaScript!');");
     }
 
     @Test

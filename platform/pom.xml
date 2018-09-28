@@ -185,6 +185,12 @@
             <artifactId>parquet-hadoop</artifactId>
             <version>1.9.0</version>
         </dependency>
+        <!-- Mozilla Rhino javascript interpreter in Java -->
+        <dependency>
+            <groupId>org.mozilla</groupId>
+            <artifactId>rhino</artifactId>
+            <version>1.7.9</version>
+        </dependency>
         <!-- Apache ORC: Columnar storage.  This also requires hadoop,
             but Hadoop is listed above for Parquet. -->
         <dependency>

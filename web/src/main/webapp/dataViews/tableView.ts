@@ -1436,7 +1436,7 @@ export class FindReceiver extends OnCompleteReceiver<FindResult> {
 
     public run(result: FindResult): void {
         if (result.at === 0) {
-            this.page.reportError("No matches found.");
+            this.page.reportError("No other matches found.");
             return;
         }
         const rr = this.tv.createNextKRequest(this.order, result.firstMatchingRow, this.tv.tableRowsDesired);

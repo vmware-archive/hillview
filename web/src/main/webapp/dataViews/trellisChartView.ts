@@ -105,7 +105,8 @@ export abstract class TrellisChartView extends ChartView {
                         + this.surface.topMargin + (this.shape.headerHeight / 2))
                     .attr("text-anchor", "middle")
                     .attr("dominant-baseline", "middle")
-                    .attr("title", title);
+                    .append("title")
+                    .text(title);
                 const yCorner = y * (this.shape.size.height + this.shape.headerHeight)
                     + this.shape.headerHeight + this.surface.topMargin;
                 const surface = this.surface.createChildSurface(xCorner, yCorner);

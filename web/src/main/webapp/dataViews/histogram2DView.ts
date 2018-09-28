@@ -241,6 +241,8 @@ export class Histogram2DView extends HistogramViewBase {
 
         const hv = new Histogram2DView(ser.remoteObjectId, ser.rowCount, schema, samplingRate, page);
         hv.setAxes(new AxisData(cd0, null), new AxisData(cd1, null), relative);
+        hv.xPoints = xPoints;
+        hv.yPoints = yPoints;
         return hv;
     }
 
@@ -411,7 +413,7 @@ export class Histogram2DView extends HistogramViewBase {
         const rr = this.createDataRangesRequest(cds, this.page, "2DHistogram");
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
             [this.xPoints, this.yPoints], cds, null, {
-            reusePage: false, relative: false,
+            reusePage: true, relative: false,
             chartKind: "2DHistogram", exact: false
         }));
     }
@@ -497,7 +499,7 @@ export class Histogram2DView extends HistogramViewBase {
         this.cdfDot.attr("cy", (1 - pos) * this.surface.getChartHeight() + this.surface.topMargin);
         const cdf = percent(pos);
         this.pointDescription.update([xs, value, ys, size, percent(perc), cdf], mouseX, mouseY);
-        this.legendPlot.hilight(colorIndex);
+        this.legendPlot.highlight(colorIndex);
     }
 
     protected dragEnd(): boolean {

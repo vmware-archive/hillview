@@ -59,6 +59,7 @@ export class HistogramView extends HistogramViewBase {
     protected histogram: HistogramBase;
     protected axisData: AxisData;
     protected plot: HistogramPlot;
+    protected bucketCount: number;
 
     constructor(
         remoteObjectId: RemoteObjectId,
@@ -122,7 +123,7 @@ export class HistogramView extends HistogramViewBase {
         const result: HistogramSerialization = {
             ...super.serialize(),
             samplingRate: this.samplingRate,
-            bucketCount: this.histogram.buckets.length,
+            bucketCount: this.bucketCount,
             columnDescription: this.axisData.description,
         };
         return result;
@@ -137,6 +138,7 @@ export class HistogramView extends HistogramViewBase {
         const hv = new HistogramView(
             ser.remoteObjectId, ser.rowCount, schema, ser.samplingRate, page);
         hv.setAxes(new AxisData(ser.columnDescription, null));
+        hv.bucketCount = ser.bucketCount;
         return hv;
     }
 
@@ -210,6 +212,7 @@ export class HistogramView extends HistogramViewBase {
                     bucketCount,
                     this.axisData.range.max - this.axisData.range.min);
         }
+        this.bucketCount = bucketCount;
         const h = HistogramView.coarsen(cdf, bucketCount);
         this.cdf = cdf;
         this.histogram = h;
@@ -365,14 +368,14 @@ export class HistogramView extends HistogramViewBase {
     public resize(): void {
         if (this.cdf == null)
             return;
-        this.updateView(this.cdf, this.histogram.buckets.length, 0);
+        this.updateView(this.cdf, this.bucketCount, 0);
     }
 
     public refresh(): void {
         this.histogram1D(
             this.page.title,
             this.axisData.description,
-            this.histogram.buckets.length,
+            this.bucketCount,
             { exact: this.samplingRate >= 1, reusePage: true } );
     }
 
@@ -390,7 +393,7 @@ export class HistogramView extends HistogramViewBase {
         this.histogram1D(
             this.page.title,
             this.axisData.description,
-            this.histogram.buckets.length,
+            this.bucketCount,
             { exact: true, reusePage: true } );
     }
 

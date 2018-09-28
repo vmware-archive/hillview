@@ -192,7 +192,7 @@ export class HeavyHittersView extends BigTableView {
     }
 
     public refresh(): void {
-        const rr = this.createHeavyHittersRequest(
+        const rr = this.remoteTableObject.createHeavyHittersRequest(
             this.columnsShown, this.percent, this.rowCount, HeavyHittersView.switchToMG);
         rr.invoke(new HeavyHittersReceiver(
             this.getPage(), this, rr, this.rowCount, this.schema,

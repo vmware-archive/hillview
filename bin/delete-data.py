@@ -23,7 +23,7 @@ def main():
     parser.add_argument("folder", help="Folder to delete from all machines")
     args = parser.parse_args()
     config = load_config(args.config)
-    folder = config.folder
+    folder = args.folder
     if not os.path.isabs(folder):
         folder = os.path.join(config.service_folder, config.folder)
     delete_folder(config, folder)
