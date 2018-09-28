@@ -33,11 +33,16 @@ memory over distributed data.
 |2.2.|[Mouse-based selection](#22-mouse-based-selection)|
 |2.3.|[Loading data](#23-loading-data)|
 |2.3.1.|[Specifying the data schema](#231-specifying-the-data-schema)|
-|2.3.2.|[Reading CSV files](#232-reading-csv-files)|
-|2.3.3.|[Reading JSON files](#233-reading-json-files)|
-|2.3.4.|[Reading ORC files](#234-reading-orc-files)|
-|2.3.5.|[Reading data from SQL databases](#235-reading-data-from-sql-databases)|
-|2.3.6.|[Reading Parquet files](#236-reading-parquet-files)|
+|2.3.2.|[Specifying rules for parsing logs](#232-specifying-rules-for-parsing-logs)|
+|2.3.2.1.|[Example](#2321-example)|
+|2.3.2.2.|[Regular Expressions](#2322-regular-expressions)|
+|2.3.2.3.|[Custom Patterns](#2323-custom-patterns)|
+|2.3.3.|[Reading generic logs](#233-reading-generic-logs)|
+|2.3.4.|[Reading CSV files](#234-reading-csv-files)|
+|2.3.5.|[Reading JSON files](#235-reading-json-files)|
+|2.3.6.|[Reading ORC files](#236-reading-orc-files)|
+|2.3.7.|[Reading data from SQL databases](#237-reading-data-from-sql-databases)|
+|2.3.8.|[Reading Parquet files](#238-reading-parquet-files)|
 |2.4.|[Navigating multiple datasets](#24-navigating-multiple-datasets)|
 |3.|[Data views](#3-data-views)|
 |3.1.|[Schema views](#31-schema-views)|
@@ -167,7 +172,7 @@ Hillview supports reading data from multiple data-sources.
 
 When the program starts the user is presented with a Load menu.
 
-![Load menu](load-menu.png)
+![Load menu](load-data-menu.png)
 
 The load menu allows the user to specify a dataset to load from
 storage.
@@ -176,20 +181,23 @@ storage.
   produced by the Hillview system itself as a table with 9 columns.
   This is used to debug the Hillview system itself.
 
+* Generic logs: allows the user to [read logs from a set of log
+  files](#233-reading-generic-logs).
+
 * CSV files: allows the user to [read data from a set of CSV
-  files](#232-reading-csv-files).
+  files](#234-reading-csv-files).
 
 * JSON files: allows the user to [read the data from a set of JSON
-  files](#233-reading-json-files).
+  files](#235-reading-json-files).
 
 * Parquet files: allows the user to [read the data from a set of
-  Parquet files](#236-reading-parquet-files).
+  Parquet files](#238-reading-parquet-files).
 
 * ORC files: allows the user to [read the data from a set of ORC
-  files](#234-reading-orc-files).
+  files](#236-reading-orc-files).
 
 * DB tables: allows the user to [read data from a set of federated
-  databases using JDBC](#235-reading-data-from-sql-databases).
+  databases using JDBC](#237-reading-data-from-sql-databases).
 
 After the data loading is initiated the user will be presented with a
 view of the loaded table.  If the table has relatively few columns,
@@ -224,7 +232,73 @@ column description has two fields:
   kind is one of: "String", "JSON", "Double", "Integer",
   "Date", and "Interval".
 
-#### 2.3.2. Reading CSV files
+#### 2.3.2. Specifying rules for parsing logs
+
+We rely on the grok library for this purpose. For more info visit https://github.com/thekrakken/java-grok/blob/master/README.md
+
+Grok works by combining text patterns into something that matches your logs. 
+
+The syntax for a grok pattern is %{SYNTAX:NAME}
+
+* SYNTAX : The pattern that will match your text. For example, 3.44 will be matched
+by the "NUMBER" pattern and 55.3.244.1 will be matched by the "IP" pattern
+
+* NAME : An identifier naming the matched text. For example, 3.44 could be the duration
+of an event, so you could call it simply "duration". Further, a string 55.3.244.1 might
+identify the "client" making a request
+
+For the above example, your grok pattern would look something like this:
+```
+%{NUMBER:duration} %{IP:client}
+```
+For more patterns : https://github.com/thekrakken/java-grok/blob/master/src/main/resources/patterns/patterns
+
+##### 2.3.2.1. Example
+
+Given this line from a syslog log:
+```
+Sep 17 06:55:14,123 pndademocloud-hadoop-dn-3 CRON[25907]: (CRON) info (No MTA installed, discarding output)
+```
+
+This line can be parsed with the following pattern:
+```
+%{SYSLOGTIMESTAMP:timestamp} (?:%{SYSLOGFACILITY} )?%{SYSLOGHOST:logsource} %{GREEDYDATA:message}
+```
+
+This creates the following log record.
+```
+logsource : pndademocloud-hadoop-dn-3
+message   : CRON[25907]: (CRON) info (No MTA installed, discarding output)
+timestamp : Sep 17 06:55:14.123
+```
+
+##### 2.3.2.2. Regular Expressions
+
+Grok sits on top of regular expressions, so any regular expressions are valid in grok as well
+
+##### 2.3.2.3. Custom Patterns
+
+Hillview supports certain pre-defined log format patterns. You have an option to define custom log format patterns
+to suit your needs and specify the same in the logFormat field in the UI (under Generic Logs). Given a log pattern
+and a set of files, what you will get in Hillview is a table with columns corresponding to the names that you gave to the patterns.
+
+#### 2.3.3. Reading generic logs
+
+Hillview can read data from log files with diffrent log formats. The
+following menu allows the users to specify the files to load.  *The
+files must be resident on the worker machines where the Hillview service
+is deployed*.
+
+![Specifying log files](generic-log-menu.png)
+
+* Folder: Folder containing the files to load.
+
+* File name pattern: A shell expansion pattern that names the files to
+  load.  Multiple files may be loaded on each machine.
+
+* Log format: The [log format](#232-specifying-rules-for-parsing-logs) of the logs.
+
+#### 2.3.4. Reading CSV files
 
 Hillview can read data from comma- or tab-separated files. The
 following menu allows the users to specify the files to load.  *The
@@ -255,7 +329,7 @@ then they may contain newlines.  An empty field (contained between two
 consecutive commas, or between a comma and a newline) is translated to
 a 'missing' data value.
 
-#### 2.3.3. Reading JSON files
+#### 2.3.5. Reading JSON files
 
 Hillview can read data from JSON files. The following menu allows the
 users to specify the files to load.  *The files must be resident on
@@ -278,7 +352,7 @@ The assumed format is as follows:
 All the JSON files must have the same schema.  JSON files may be
 compressed.
 
-#### 2.3.4. Reading ORC files
+#### 2.3.6. Reading ORC files
 
 Hillview can read data from [Apache ORC
 files](https://github.com/apache/orc), a columnar storage format.
@@ -298,7 +372,7 @@ is an ORC struct with scalar types as fields.
   file must reside in same folder, and it must be compatible with the
   ORC schema.
 
-#### 2.3.5. Reading data from SQL databases
+#### 2.3.7. Reading data from SQL databases
 
 The following menu allows the user to load data from a set of
 federated databases that are exposed as a JDBC service.  *Each worker
@@ -336,7 +410,7 @@ Numeric values are converted either to integers (if they fit into
 32-bits) or to doubles.  Boolean values are read as strings
 containing two values, "true" and "false".
 
-#### 2.3.6. Reading Parquet files
+#### 2.3.8. Reading Parquet files
 
 Hillview can read data from [Apache Parquet
 files](http://parquet.apache.org), a columnar storage format.  The
@@ -490,7 +564,7 @@ of columns using the chart menu:
 ![Save-as menu](saveas-menu.png)
 
 * Save as ORC files: allows users to specify how data should be saved
-  in the [ORC file format](#234-reading-orc-files).
+  in the [ORC file format](#236-reading-orc-files).
 
 ![Save-as ORC menu](saveas-orc-menu.png)
 

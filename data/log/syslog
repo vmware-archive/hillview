@@ -1,0 +1,42 @@
+Oct  7 06:47:01 hillview-leaf-1 CRON[14098]: (root) CMD (test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.weekly ))
+Oct  7 06:57:36 hillview-leaf-1 systemd[1]: Starting Daily apt upgrade and clean activities...
+Oct  7 06:57:36 hillview-leaf-1 systemd[1]: Started Daily apt upgrade and clean activities.
+Oct  7 07:17:01 hillview-leaf-1 CRON[14176]: (root) CMD (   cd / && run-parts --report /etc/cron.hourly)
+Oct  7 08:17:01 hillview-leaf-1 CRON[14187]: (root) CMD (   cd / && run-parts --report /etc/cron.hourly)
+Oct  7 09:17:01 hillview-leaf-1 CRON[14198]: (root) CMD (   cd / && run-parts --report /etc/cron.hourly)
+Oct  7 10:17:01 hillview-leaf-1 CRON[14208]: (root) CMD (   cd / && run-parts --report /etc/cron.hourly)
+Oct  7 11:17:01 hillview-leaf-1 CRON[14220]: (root) CMD (   cd / && run-parts --report /etc/cron.hourly)
+Oct  7 12:17:01 hillview-leaf-1 CRON[14229]: (root) CMD (   cd / && run-parts --report /etc/cron.hourly)
+Oct  7 13:17:01 hillview-leaf-1 CRON[14240]: (root) CMD (   cd / && run-parts --report /etc/cron.hourly)
+Oct  7 14:17:01 hillview-leaf-1 CRON[14250]: (root) CMD (   cd / && run-parts --report /etc/cron.hourly)
+Oct  7 15:17:01 hillview-leaf-1 CRON[14262]: (root) CMD (   cd / && run-parts --report /etc/cron.hourly)
+Oct  7 16:17:01 hillview-leaf-1 CRON[14273]: (root) CMD (   cd / && run-parts --report /etc/cron.hourly)
+Oct  7 16:36:04 hillview-leaf-1 systemd[1]: Starting Daily apt download activities...
+Oct  7 16:36:20 hillview-leaf-1 systemd[1]: Started Daily apt download activities.
+Oct  7 17:17:01 hillview-leaf-1 CRON[14594]: (root) CMD (   cd / && run-parts --report /etc/cron.hourly)
+Oct  7 18:17:01 hillview-leaf-1 CRON[14605]: (root) CMD (   cd / && run-parts --report /etc/cron.hourly)
+Oct  7 19:17:01 hillview-leaf-1 CRON[14615]: (root) CMD (   cd / && run-parts --report /etc/cron.hourly)
+Oct  7 20:17:01 hillview-leaf-1 CRON[14627]: (root) CMD (   cd / && run-parts --report /etc/cron.hourly)
+Oct  7 21:17:01 hillview-leaf-1 CRON[14637]: (root) CMD (   cd / && run-parts --report /etc/cron.hourly)
+Oct  7 21:55:36 hillview-leaf-1 systemd[1]: Starting Daily apt download activities...
+Oct  7 21:55:37 hillview-leaf-1 systemd[1]: Started Daily apt download activities.
+Oct  7 22:17:01 hillview-leaf-1 CRON[14690]: (root) CMD (   cd / && run-parts --report /etc/cron.hourly)
+Oct  7 22:33:28 hillview-leaf-1 named[1115]: network unreachable resolving './DNSKEY/IN': 2001:500:2::c#53
+Oct  7 22:33:28 hillview-leaf-1 named[1115]: network unreachable resolving './NS/IN': 2001:500:2::c#53
+Oct  7 22:52:04 hillview-leaf-1 systemd[1]: Starting Cleanup of Temporary Directories...
+Oct  7 22:52:04 hillview-leaf-1 systemd-tmpfiles[14698]: [/usr/lib/tmpfiles.d/var.conf:14] Duplicate line for path "/var/log", ignoring.
+Oct  7 22:52:04 hillview-leaf-1 systemd[1]: Started Cleanup of Temporary Directories.
+Oct  7 23:17:01 hillview-leaf-1 CRON[14706]: (root) CMD (   cd / && run-parts --report /etc/cron.hourly)
+Oct  8 00:17:01 hillview-leaf-1 CRON[14715]: (root) CMD (   cd / && run-parts --report /etc/cron.hourly)
+Oct  8 01:17:01 hillview-leaf-1 CRON[14726]: (root) CMD (   cd / && run-parts --report /etc/cron.hourly)
+Oct  8 01:57:02 hillview-leaf-1 CRON[14733]: (root) CMD (   test -x /etc/cron.daily/popularity-contest && /etc/cron.daily/popularity-contest --crond)
+Oct  8 01:57:10 hillview-leaf-1 systemd[1]: Started Session 312 of user root.
+Oct  8 02:03:31 hillview-leaf-1 systemd[1]: Started Session 313 of user root.
+Oct  8 02:03:36 hillview-leaf-1 systemd[1]: Stopping User Manager for UID 0...
+Oct  8 02:03:37 hillview-leaf-1 systemd[13175]: Reached target Shutdown.
+Oct  8 02:03:37 hillview-leaf-1 systemd[13175]: Starting Exit the Session...
+Oct  8 02:03:37 hillview-leaf-1 systemd[13175]: Stopped target Default.
+Oct  8 02:03:37 hillview-leaf-1 systemd[13175]: Stopped target Basic System.
+Oct  8 02:03:37 hillview-leaf-1 systemd[13175]: Stopped target Timers.
+Oct  8 02:03:37 hillview-leaf-1 systemd[13175]: Stopped target Paths.
+Oct  8 02:03:37 hillview-leaf-1 systemd[13175]: Stopped target Sockets.
