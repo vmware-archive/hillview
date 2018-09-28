@@ -2,9 +2,6 @@ package org.hillview.test;
 
 import javax.annotation.Nullable;
 
-import com.jcraft.jsch.ChannelSftp;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.Session;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.io.ByteOrderMark;
@@ -13,7 +10,6 @@ import org.hillview.management.ClusterConfig;
 import org.hillview.storage.CsvFileLoader;
 import org.hillview.storage.CsvFileWriter;
 import org.hillview.storage.OrcFileWriter;
-import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.Table;
 import org.hillview.table.api.*;
@@ -23,12 +19,10 @@ import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Utilities;
 import org.junit.Test;
 import org.apache.commons.cli.*;
-import java.nio.file.Path;
 import java.io.*;
+import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
-
 
 import com.univocity.parsers.csv.CsvFormat;
 import com.univocity.parsers.csv.CsvParser;
@@ -37,17 +31,28 @@ import com.univocity.parsers.csv.CsvParserSettings;
 
 public class DataUpload  {
 
-    IAppendableColumn[] columns;
+    private IAppendableColumn[] columns;
     boolean allowFewerColumns;
-    private int currentRow;
     private int currentField = 0;
+    @Nullable
     Schema schema = null;
     GuessSchema[] schemaGuesses;
+    final int defaultChunkSize = 1000000;
+    final private String usageString = "Usage: DataUpload " +
+            "-f" + " <filename> " +
+            "-d" + " <destination> " +
+            "-c <clusterConfig> " +
+            "-l <linenumber> " +
+            "-o (if orc) " +
+            "-s <schema> " +
+            "-h (if has header row)";
 
     @Nullable String schemaPath;
     String filename; // the file to be sent
-    String destination; // the destination path where the files will be put
+    String remoteFolder; // the destination path where the files will be put
+    String cluster; // the path to the cluster config json file
     boolean hasHeader;
+    boolean orc; // true if saving as orc, otherwise save as csv;
     int chunkSize; // the nunber of lines in each shard.
     int columnNumber;
 
@@ -57,7 +62,7 @@ public class DataUpload  {
     }
 
     private String[] createArgs() {
-        String[] args = new String[]{"-c", "clusterConfig", "-f", "filename", "-d", "destination",
+        String[] args = new String[]{ "-f", "filename", "--cluster", "clusterConfig", "-d", "destination",
                 "-l", "1000", "-s", "schema", "-h"};
         return args;
     }
@@ -68,15 +73,6 @@ public class DataUpload  {
         String[] args = createArgs();
         Options options = new Options();
 
-        String usageString = "DataUpload " +
-                "-f" + " <filename> " +
-                "-d" + " <destination> " +
-                "-c <clusterConfig> " +
-                "-l <linenumber> " +
-                "-o (if orc) " +
-                "-s <schema> " +
-                "-h (if has header row)";
-
         Option o_filename = new Option("f", "filename", true, "path to file to distribute");
         o_filename.setRequired(true);
         options.addOption(o_filename);
@@ -85,61 +81,56 @@ public class DataUpload  {
         o_destination.setRequired(true);
         options.addOption(o_destination);
 
-        Option o_cluster = new Option("c","config",true, "path to cluster config json file");
-        o_cluster.setRequired(false);
+        Option o_cluster = new Option("c","cluster",true, "path to cluster config json file");
+        o_cluster.setRequired(true);
         options.addOption(o_cluster);
 
         Option o_linenumber = new Option("l","lines",true, "number of lines in each chunk");
-        o_cluster.setRequired(false);
+        o_linenumber.setRequired(false);
         options.addOption(o_linenumber);
 
         Option o_format = new Option("o","orc",false, "when appears the file will be saved as orc");
-        o_cluster.setRequired(false);
+        o_format.setRequired(false);
         options.addOption(o_format);
 
         Option o_schema = new Option("s","schema",true, "path to the schema file");
-        o_cluster.setRequired(false);
+        o_schema.setRequired(false);
         options.addOption(o_schema);
 
         Option o_header = new Option("h","header",false, "indicates file has header row");
-        o_cluster.setRequired(false);
+        o_header.setRequired(false);
         options.addOption(o_header);
 
         CommandLineParser parser = new BasicParser();
         CommandLine cmd = null;
         try {
             cmd = parser.parse(options, args);
-            if (cmd == null) {
-                throw new ParseException("empty command line");
+            this.filename = cmd.getOptionValue('f');
+            this.remoteFolder = cmd.getOptionValue('d');
+            this.cluster = cmd.getOptionValue("cluster");
+            if (cmd.hasOption('l')) {
+                try {
+                    this.chunkSize = Integer.parseInt(cmd.getOptionValue('l'));
+                } catch (NumberFormatException e) {
+                    this.error(e.getMessage());
+                    this.usage(usageString, options);
+                }
             }
-            String m_filename = cmd.getOptionValue('f');
-            String m_destination = cmd.getOptionValue('d');
-            String m_cluster = cmd.getOptionValue('c');
-            int m_line = Integer.parseInt(cmd.getOptionValue('l'));
-            String m_format;
-            if (cmd.hasOption('o'))
-                m_format = "orc";
             else
-                m_format = "csv";
-            String m_schema = cmd.getOptionValue('s');
-            boolean m_header = cmd.hasOption('h');
+                this.chunkSize = this.defaultChunkSize;
+            this.orc = cmd.hasOption('o');
 
-            System.out.println(m_filename + m_destination + m_cluster);
-            System.out.println(m_line);
-            System.out.println(m_format + m_schema);
-            System.out.println(m_header);
+            if (cmd.hasOption('s'))
+                this.schemaPath = cmd.getOptionValue('s');
+            this.hasHeader = cmd.hasOption('h');
         }
         catch (ParseException pe) {
             System.out.println("can't parse due to " + pe);
             usage(usageString, options);
         }
 
-        /* todo: Add usage conditional */
-
-
-        this.hasHeader = true;
         this.filename = "/Users/uwieder/Projects/Hillview/data/pitchingTest.csv";
-        this.destination = "/Users/uwieder/Projects/Hillview/data/";
+        this.remoteFolder = "/Users/uwieder/Projects/Hillview/data/";
         this.schemaPath = null;
 
         try {
@@ -148,23 +139,16 @@ public class DataUpload  {
             CsvFileLoader.Config parsConfig = new CsvFileLoader.Config();
 
             parsConfig.hasHeaderRow = this.hasHeader;
-         /*   Schema mySchema;
+            Schema mySchema;
             if (!Utilities.isNullOrEmpty(this.schemaPath))
                 mySchema = Schema.readFromJsonFile(Paths.get(this.schemaPath));
             else {
                 mySchema = this.guessSchema(filename, parsConfig);
+                this.schemaPath = "bestGuess.schema";
+                mySchema.writeToJsonFile(Paths.get(this.schemaPath));
             }
-            Path schemaPath  = Paths.get(this.destination + "bestGuess.schema");
-            mySchema.writeToJsonFile(schemaPath);
+            chop_files(this.filename, this.remoteFolder,100, parsConfig, config, mySchema,false);
 
-            //todo: Send the schema file to each of the machines
-
-            chop_files(this.filename, this.destination,100, parsConfig, config, mySchema,false);
-            // todo: copy_files()
-
-            sendFile("/Users/uwieder/Projects/Playground/testfile.txt",
-                    "/Users/uwieder/Projects/Playground/testDir", "me", "him");
-         */
         } catch(IOException e) {
             System.out.println(e);
         }
@@ -273,7 +257,7 @@ public class DataUpload  {
             CsvParser myParser = new CsvParser(settings);
             myParser.beginParsing(file);
 
-            this.currentRow = 0;
+            int currentRow = 0;
 
             if (config.hasHeaderRow) {
                 @javax.annotation.Nullable
@@ -285,7 +269,7 @@ public class DataUpload  {
                 }
                 if (line == null)
                     throw new RuntimeException("Missing header row " + filename);
-                this.currentRow++;
+                currentRow++;
             }
             this.columns = schema.createAppendableColumns();
 
@@ -312,6 +296,9 @@ public class DataUpload  {
                         break;
                     }
                     this.append(line);
+                    currentRow++;
+                    if (currentRow % 10000 == 0)
+                        System.out.print(".");
                 }
 
                 IColumn[] sealed = new IColumn[this.columns.length];
@@ -334,14 +321,14 @@ public class DataUpload  {
                 String host = clusterConfig.backends[currentHost];
                 String remoteFolder = clusterConfig.service_folder;
                 if (!sentSchema[currentHost])
-                    sendFile(this.destination + " guessSchema.schema", remoteFolder, clusterConfig.user, host);
+                    sendFile(this.schemaPath, remoteFolder, clusterConfig.user, host);
                 sendFile(chunkName, remoteFolder, clusterConfig.user, host);
+                
                 currentHost = (currentHost + 1) % clusterConfig.backends.length;
                 chunk++;
                 this.columns = schema.createAppendableColumns();
             }
             myParser.stopParsing();
-
         } catch(Exception e) {
             this.error(e.getMessage());
         }
@@ -364,9 +351,6 @@ public class DataUpload  {
         } catch (Exception e) {
             this.error(e.getMessage());
         }
-
-
-
     }
     /** Writes the table in ORC or CSV formatt
      *
@@ -382,8 +366,6 @@ public class DataUpload  {
             CsvFileWriter writer = new CsvFileWriter(filename);
             writer.writeTable(table);
         }
-        // send file
-        // delete file
     }
 
     private void append(String[] data) {
@@ -413,25 +395,10 @@ public class DataUpload  {
                         this.columns[i].parseAndAppendString(currentToken);
                 }
             }
-            this.currentRow++;
         } catch (Exception ex) {
             this.error(ex.getMessage());
         }
 
-    }
-
-    private void copy_files(ClusterConfig config, String folder, String[] fileList, String copyOption) {
-        System.out.println("Copying " + fileList.length + " files to all hosts");
-        int index = 0;
-        String f;
-        String host;
-        for (int i = 0; i < fileList.length; i++) {
-            f = fileList[i];
-            host = config.backends[index];
-            index = (index + 1) % ((config.backends).length);
-        //    rh = RemoteHost(config.user, host)
-        //    copy_file_to_remote_host(rh, f, folder, copyOption)
-        }
     }
 
     private Reader getFileReader(String filename) {
