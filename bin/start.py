@@ -5,7 +5,7 @@
 # pylint: disable=invalid-name
 
 from argparse import ArgumentParser
-from hillviewCommon import RemoteHost, ClusterConfiguration
+from hillviewCommon import RemoteHost, RemoteAggregator, ClusterConfiguration
 
 def start_webserver(config):
     """Starts the Hillview web server"""
@@ -43,7 +43,8 @@ def start_aggregator(config, agg):
         "cd " + config.service_folder + "/hillview; " + \
         "nohup java -Dlog4j.configurationFile=./log4j.properties -server " + \
         " -jar " + config.service_folder + \
-        "/hillview/hillview-server-jar-with-dependencies.jar workers 0.0.0.0:" + \
+        "/hillview/hillview-server-jar-with-dependencies.jar " + \
+        config.service_folder + "/workers 0.0.0.0:" + \
         str(config.aggregator_port) + " >nohup.agg 2>&1 &")
     # Check to see whether the remote service is still running.  Sometimes it fails right away
     agg.run_remote_shell_command("if pgrep -f hillview-server; then echo Started; else " +

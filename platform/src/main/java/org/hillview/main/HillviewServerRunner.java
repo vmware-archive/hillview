@@ -66,7 +66,7 @@ class HillviewServerRunner {
             HillviewLogger.instance.info("Created HillviewServer");
             Thread.currentThread().join();
         } catch (Exception ex) {
-            HillviewLogger.instance.error("Caught exception, exiting", ex);
+            HillviewLogger.instance.error("Caught exception; exiting", ex);
         }
     }
 }

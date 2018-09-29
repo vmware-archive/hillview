@@ -34,7 +34,7 @@
                                 <configuration>
                                     <archive>
                                         <manifest>
-                                            <mainClass>org.hillview.org.hillview.main.DemoDataCleaner</mainClass>
+                                            <mainClass>org.hillview.main.DemoDataCleaner</mainClass>
                                         </manifest>
                                     </archive>
                                     <descriptorRefs>
@@ -52,7 +52,7 @@
                                 <configuration>
                                     <archive>
                                         <manifest>
-                                            <mainClass>org.hillview.org.hillview.main.HistogramBenchmark</mainClass>
+                                            <mainClass>org.hillview.main.HistogramBenchmark</mainClass>
                                         </manifest>
                                     </archive>
                                     <descriptorRefs>
@@ -388,7 +388,7 @@
                         <configuration>
                             <archive>
                                 <manifest>
-                                    <mainClass>org.hillview.org.hillview.main.HillviewServerRunner</mainClass>
+                                    <mainClass>org.hillview.main.HillviewServerRunner</mainClass>
                                 </manifest>
                             </archive>
                             <descriptorRefs>

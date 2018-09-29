@@ -130,7 +130,7 @@ class ClusterConfiguration(object):
     def get_workers(self):
         """Returns an array of RemoteHost objects containing all workers"""
         if hasattr(self.jsonConfig, "aggregators"):
-            return [RemoteHost(self.jsonConfig.user, h)
+            return [RemoteHost(self.jsonConfig.user, h, self._get_heap_size(h))
                     for a in self.jsonConfig.aggregators
                     for h in a.workers]
         return [RemoteHost(self.jsonConfig.user, h, self._get_heap_size(h))
