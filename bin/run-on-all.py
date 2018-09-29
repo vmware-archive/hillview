@@ -5,13 +5,14 @@
 # pylint: disable=invalid-name
 
 from argparse import ArgumentParser, REMAINDER
-from hillviewCommon import load_config, run_on_all_backends
+from hillviewCommon import ClusterConfiguration
 
 def execute_command_on_all(config, command, parallel):
     """Executes command on all workers"""
-    print("Executing `", command, "' on", len(config.backends), "hosts")
+    assert isinstance(config, ClusterConfiguration)
+    print("Executing `", command, "' on", len(config.get_workers()), "hosts")
     lam = lambda rh: rh.run_remote_shell_command(command)
-    run_on_all_backends(config, lam, parallel)
+    config.run_on_all_workers(lam, parallel)
 
 def main():
     """Main function"""
@@ -19,7 +20,7 @@ def main():
     parser.add_argument("config", help="json cluster configuration file")
     parser.add_argument("command", help="command to run", nargs=REMAINDER)
     args = parser.parse_args()
-    config = load_config(args.config)
+    config = ClusterConfiguration(args.config)
     command = " ".join(args.command)
     execute_command_on_all(config, command, False)
 

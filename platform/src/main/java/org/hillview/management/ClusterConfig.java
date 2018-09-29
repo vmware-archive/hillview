@@ -24,12 +24,20 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
  * This class represents a subset of the cluster configuration information.
  */
 public class ClusterConfig {
+    public static class AggregatorConfig {
+        @Nullable
+        String name;
+        String[] workers;
+    }
+
     /**
      * Host running the web server.
      */
@@ -39,7 +47,12 @@ public class ClusterConfig {
      * Hosts running the back-end workers.
      */
     @Nullable
-    public String[] backends;
+    public String[] workers;
+    /**
+     * Aggregators in front of the workers
+     */
+    @Nullable
+    public AggregatorConfig[] aggregators;
     /**
      * Folder where the hillview service is installed on each worker.
      */
@@ -53,7 +66,11 @@ public class ClusterConfig {
     /**
      * Network port used by backend workers.
      */
-    public int backend_port = -1;
+    public int worker_port = -1;
+    /**
+     * Network port used by aggregators.
+     */
+    public int aggregator_port = -1;
     /**
      * True if we need to delete log files when deploying.
      */
@@ -62,10 +79,10 @@ public class ClusterConfig {
     private void validate() {
         if (this.webserver == null)
             throw new RuntimeException("webserver not defined");
-        if (this.backends == null)
-            throw new RuntimeException("backends not defined");
-        if (this.backend_port == -1)
-            throw new RuntimeException("backend_port not defined");
+        if (this.getWorkers() == null)
+            throw new RuntimeException("workers not defined");
+        if (this.worker_port == -1)
+            throw new RuntimeException("worker_port not defined");
         if (this.user == null)
             throw new RuntimeException("user not defined");
         // Other fields are not mandatory for now
@@ -76,6 +93,17 @@ public class ClusterConfig {
         if (index < 0)
             return s;
         return s.substring(0, index);
+    }
+
+    public String[] getWorkers() {
+        if (this.workers != null)
+            return this.workers;
+        assert this.aggregators != null;
+        List<String> workers = new ArrayList<String>();
+        for (AggregatorConfig a : this.aggregators) {
+            Collections.addAll(workers, a.workers);
+        }
+        return workers.toArray(new String[1]);
     }
 
     /**

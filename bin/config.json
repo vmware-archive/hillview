@@ -6,14 +6,28 @@
   "webserver": "web.server.name",
   // Names of the machines hosting the workers; the web
   // server machine can also act as a worker
-  "backends": [
-    "worker1.name",
-    "worker2.name"
-    // etc.
+  "aggregators": [
+    // The "aggregators" level is optional; if it is
+    // missing the configuration should contain just an array of workers
+    {
+      "name": "aggregator1.name",
+      "workers": [
+        "worker1.name",
+        "worker2.name"
+      ]
+    }, {
+      "name": "aggregator2.name",
+      "workers": [
+        "worker3.name",
+        "worker4.name"
+      ]
+    }
   ],
-  // Network port where the servers listen for requests
-  "backend_port": 3569,
-  // Java heap size for Hillview service
+  // Network port where the workers listen for requests
+  "worker_port": 3569,
+  // Network port where aggregators listen for requests
+  "aggregator_port": 3570,
+  // Java heap size for Hillview workers
   "default_heap_size": "25G",
   // User account for running the Hillview service
   "user": "hillview",
@@ -26,7 +40,7 @@
   // If true delete old log files
   "cleanup": false,
   // This can be used to override the default_heap_size for specific machines.
-  "backends_heapsize": {
+  "workers_heapsize": {
     "worker1.name": "25G"
   }
 }

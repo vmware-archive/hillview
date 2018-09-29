@@ -5,7 +5,7 @@
 
 import os.path
 from argparse import ArgumentParser
-from hillviewCommon import run_on_all_backends, load_config
+from hillviewCommon import ClusterConfiguration
 
 def delete_remote_folder(rh, folder):
     """Deletes folder on the remote host"""
@@ -13,8 +13,9 @@ def delete_remote_folder(rh, folder):
 
 def delete_folder(config, folder):
     """Delete a folder on all remote hosts"""
+    assert isinstance(config, ClusterConfiguration)
     print("Deleting", folder, "from all hosts")
-    run_on_all_backends(config, lambda rh: delete_remote_folder(rh, folder), True)
+    config.run_on_all_workers(lambda rh: delete_remote_folder(rh, folder), True)
 
 def main():
     """Main function"""
@@ -22,10 +23,10 @@ def main():
     parser.add_argument("config", help="json cluster configuration file")
     parser.add_argument("folder", help="Folder to delete from all machines")
     args = parser.parse_args()
-    config = load_config(args.config)
+    config = ClusterConfiguration(args.config)
     folder = args.folder
     if not os.path.isabs(folder):
-        folder = os.path.join(config.service_folder, config.folder)
+        folder = os.path.join(config.service_folder, folder)
     delete_folder(config, folder)
 
 if __name__ == "__main__":

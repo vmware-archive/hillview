@@ -18,7 +18,6 @@
 package org.hillview.targets;
 
 import org.hillview.*;
-import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.*;
 import org.hillview.dataset.remoting.HillviewServer;
@@ -31,13 +30,8 @@ import org.hillview.utils.*;
 import javax.annotation.Nullable;
 import javax.websocket.Session;
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class InitialObjectTarget extends RpcTarget {
     private static final String LOCALHOST = "127.0.0.1";
@@ -60,12 +54,8 @@ public class InitialObjectTarget extends RpcTarget {
             try {
                 HillviewLogger.instance.info(
                         "Initializing cluster descriptor from file", "{0}", clusterFile);
-                final List<String> lines = Files.readAllLines(Paths.get(clusterFile), Charset.defaultCharset());
-                final List<HostAndPort> hostAndPorts = lines.stream()
-                                                            .map(HostAndPort::fromString)
-                                                            .collect(Collectors.toList());
-                desc = new ClusterDescription(hostAndPorts);
-                HillviewLogger.instance.info("Backend servers", "{0}", lines);
+                desc = ClusterDescription.fromFile(clusterFile);
+                HillviewLogger.instance.info("Backend servers", "{0}", desc.getServerList().size());
                 this.initialize(desc);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -77,14 +67,7 @@ public class InitialObjectTarget extends RpcTarget {
     }
 
     private void initialize(final ClusterDescription description) {
-        final int numServers = description.getServerList().size();
-        if (numServers <= 0) {
-            throw new IllegalArgumentException("ClusterDescription must contain one or more servers");
-        }
-        HillviewLogger.instance.info("Creating parallel dataset");
-        final ArrayList<IDataSet<Empty>> emptyDatasets = new ArrayList<IDataSet<Empty>>(numServers);
-        description.getServerList().forEach(server -> emptyDatasets.add(new RemoteDataSet<Empty>(server)));
-        this.emptyDataset = new ParallelDataSet<Empty>(emptyDatasets);
+        this.emptyDataset = RemoteDataSet.createCluster(description);
     }
 
     @HillviewRpc

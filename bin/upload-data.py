@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""This script takes a set of files and a set of machines.
+"""This script takes a set of files and a cluster configuration describing a set of machines.
    It uploads the files to the given machines in round-robin fashion.
    The script can also be given an optional schema file.
    This file will be uploaded to all machines.
@@ -9,7 +9,7 @@
 
 from argparse import ArgumentParser, REMAINDER
 import os.path
-from hillviewCommon import RemoteHost, load_config, run_on_all_backends
+from hillviewCommon import ClusterConfiguration
 
 created_folders = set()
 
@@ -28,18 +28,19 @@ def copy_file_to_remote_host(rh, source, folder, copyOption):
 
 def copy_everywhere(config, file, folder, copyOption):
     """Copy specified file to all worker machines"""
+    assert isinstance(config, ClusterConfiguration)
     print("Copying", file, "to all hosts")
-    run_on_all_backends(config,
-                        lambda rh: copy_file_to_remote_host(rh, file, folder, copyOption), True)
+    config.run_on_all_workers(lambda rh: copy_file_to_remote_host(rh, file, folder, copyOption))
 
 def copy_files(config, folder, filelist, copyOption):
     """Copy a set of files to all remote hosts"""
+    assert isinstance(config, ClusterConfiguration)
     print("Copying", len(filelist), "files to all hosts")
     index = 0
+    workers = config.get_workers()
     for f in filelist:
-        host = config.backends[index]
-        index = (index + 1) % len(config.backends)
-        rh = RemoteHost(config.user, host)
+        rh = workers[index]
+        index = (index + 1) % len(workers)
         copy_file_to_remote_host(rh, f, folder, copyOption)
 
 def main():
@@ -55,7 +56,7 @@ def main():
     parser.add_argument("--common", "-s", help="File that is loaded to all machines")
     parser.add_argument("files", help="Files to copy", nargs=REMAINDER)
     args = parser.parse_args()
-    config = load_config(args.config)
+    config = ClusterConfiguration(args.config)
     folder = args.directory
     if folder is None:
         print("Directory argument is mandatory")

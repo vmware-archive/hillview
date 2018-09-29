@@ -31,10 +31,13 @@ public class ConfigGrammarTest extends BaseTest {
     public void testConfigLoading() throws IOException {
         ClusterConfig config = ClusterConfig.parse("../bin/config.json");
         Assert.assertEquals("web.server.name", config.webserver);
-        Assert.assertNotNull(config.backends);
-        Assert.assertEquals(2, config.backends.length);
-        Assert.assertEquals("worker1.name", config.backends[0]);
-        Assert.assertEquals(3569, config.backend_port);
+        String[] workers = config.getWorkers();
+        Assert.assertNotNull(workers);
+        Assert.assertEquals(4, workers.length);
+        Assert.assertNotNull(config.aggregators);
+        Assert.assertEquals(2, config.aggregators.length);
+        Assert.assertEquals("worker1.name", workers[0]);
+        Assert.assertEquals(3569, config.worker_port);
         Assert.assertEquals("/home/hillview", config.service_folder);
     }
 }

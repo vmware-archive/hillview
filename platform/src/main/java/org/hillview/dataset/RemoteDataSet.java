@@ -34,6 +34,7 @@ import rx.Observable;
 import rx.subjects.PublishSubject;
 import rx.subjects.SerializedSubject;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -62,6 +63,21 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
 
     public RemoteDataSet(final HostAndPort serverEndpoint) {
         this(serverEndpoint, ROOT_DATASET_INDEX);
+    }
+
+    /**
+     * Creates a parallel dataset with one representative for each machine in the
+     * specified cluster
+     */
+    public static IDataSet<Empty> createCluster(final ClusterDescription description) {
+        final int numServers = description.getServerList().size();
+        if (numServers <= 0) {
+            throw new IllegalArgumentException("ClusterDescription must contain one or more servers");
+        }
+        HillviewLogger.instance.info("Creating parallel dataset");
+        final ArrayList<IDataSet<Empty>> emptyDatasets = new ArrayList<IDataSet<Empty>>(numServers);
+        description.getServerList().forEach(server -> emptyDatasets.add(new RemoteDataSet<Empty>(server)));
+        return new ParallelDataSet<Empty>(emptyDatasets);
     }
 
     public RemoteDataSet(final HostAndPort serverEndpoint, final int remoteHandle) {
