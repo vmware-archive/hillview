@@ -9,7 +9,7 @@ from argparse import ArgumentParser
 import os.path
 import os
 import errno
-from hillviewCommon import execute_command, load_config, run_on_all_backends
+from hillviewCommon import execute_command, ClusterConfiguration
 
 def copy_from_remote_host(rh, pattern):
     """Copy files matching the pattern from the remote machine"""
@@ -28,9 +28,8 @@ def copy_from_remote_host(rh, pattern):
 
 def copy_files(config, pattern):
     """Copy files matching the specified pattern from all worker machines"""
-    run_on_all_backends(config,
-                        lambda rh: copy_from_remote_host(rh, pattern),
-                        False)
+    assert isinstance(config, ClusterConfiguration)
+    config.run_on_all_workers(lambda rh: copy_from_remote_host(rh, pattern))
 
 def main():
     """Main function"""
@@ -38,7 +37,7 @@ def main():
     parser.add_argument("config", help="json cluster configuration file")
     parser.add_argument("pattern", help="Filename pattern to download")
     args = parser.parse_args()
-    config = load_config(args.config)
+    config = ClusterConfiguration(args.config)
     pattern = args.pattern
     copy_files(config, pattern)
     print("Done.")

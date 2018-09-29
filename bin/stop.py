@@ -5,35 +5,38 @@
 # pylint: disable=invalid-name
 
 from argparse import ArgumentParser
-from hillviewCommon import RemoteHost, run_on_all_backends, load_config
+from hillviewCommon import ClusterConfiguration
 
 def stop_webserver(config):
     """Stops the Hillview web server"""
-    print("Stopping web server", config.webserver)
-    rh = RemoteHost(config.user, config.webserver)
+    assert isinstance(config, ClusterConfiguration)
+    rh = config.get_webserver()
+    print("Stopping web server", rh)
     rh.run_remote_shell_command(
         config.service_folder + "/" + config.tomcat + "/bin/shutdown.sh")
     rh.run_remote_shell_command(
         # The true is there to ignore the exit code of pkill
         "pkill -f Bootstrap; true")
 
-def stop_backend(rh):
-    """Stops a Hillview service on a remote machine"""
-    print("Stopping backend", rh.host)
+def stop_worker(rh):
+    """Stops a Hillview service on a remote worker machine"""
+    print("Stopping ", rh.host)
     rh.run_remote_shell_command(
         # The true is there to ignore the exit code of pkill
         "pkill -f hillview-server; true")
 
 def stop_backends(config):
-    """Stops all Hillview backend workers"""
-    run_on_all_backends(config, stop_backend, True)
+    """Stops all Hillview workers"""
+    assert isinstance(config, ClusterConfiguration)
+    config.run_on_all_workers(stop_worker, True)
+    config.run_on_all_aggregators(stop_worker, True)
 
 def main():
     """Main function"""
     parser = ArgumentParser()
     parser.add_argument("config", help="json cluster configuration file")
     args = parser.parse_args()
-    config = load_config(args.config)
+    config = ClusterConfiguration(args.config)
     stop_webserver(config)
     stop_backends(config)
 

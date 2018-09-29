@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2018 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +22,7 @@
 @ParametersAreNonnullByDefault
 @FieldsAreNonnullByDefault
 @MethodsAreNonnullByDefault
-package org.hillview.management;
+package org.hillview.main;
 
 import org.hillview.utils.FieldsAreNonnullByDefault;
 import org.hillview.utils.MethodsAreNonnullByDefault;

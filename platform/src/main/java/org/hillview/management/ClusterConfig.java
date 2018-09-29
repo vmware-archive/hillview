@@ -39,7 +39,7 @@ public class ClusterConfig {
      * Hosts running the back-end workers.
      */
     @Nullable
-    public String[] backends;
+    public String[] workers;
     /**
      * Folder where the hillview service is installed on each worker.
      */
@@ -53,7 +53,7 @@ public class ClusterConfig {
     /**
      * Network port used by backend workers.
      */
-    public int backend_port = -1;
+    public int worker_port = -1;
     /**
      * True if we need to delete log files when deploying.
      */
@@ -62,10 +62,10 @@ public class ClusterConfig {
     private void validate() {
         if (this.webserver == null)
             throw new RuntimeException("webserver not defined");
-        if (this.backends == null)
-            throw new RuntimeException("backends not defined");
-        if (this.backend_port == -1)
-            throw new RuntimeException("backend_port not defined");
+        if (this.workers == null)
+            throw new RuntimeException("workers not defined");
+        if (this.worker_port == -1)
+            throw new RuntimeException("worker_port not defined");
         if (this.user == null)
             throw new RuntimeException("user not defined");
         // Other fields are not mandatory for now

@@ -1,0 +1,147 @@
+************* Module delete-data
+I:  4, 0: Locally disabling invalid-name (C0103) (locally-disabled)
+************* Module deploy
+I:  6, 0: Locally disabling invalid-name (C0103) (locally-disabled)
+************* Module download-data
+I:  6, 0: Locally disabling invalid-name (C0103) (locally-disabled)
+************* Module hillviewCommon
+I:  3, 0: Locally disabling invalid-name (C0103) (locally-disabled)
+I:  3, 0: Locally disabling too-few-public-methods (R0903) (locally-disabled)
+I:150, 0: Locally disabling unused-argument (W0613) (locally-disabled)
+I:158, 0: Locally disabling unused-argument (W0613) (locally-disabled)
+************* Module run-on-all
+I:  5, 0: Locally disabling invalid-name (C0103) (locally-disabled)
+************* Module start
+I:  5, 0: Locally disabling invalid-name (C0103) (locally-disabled)
+C: 34, 0: Line too long (102/100) (line-too-long)
+C: 50, 0: Line too long (108/100) (line-too-long)
+E: 39,27: Undefined variable 'RemoteAggregator' (undefined-variable)
+************* Module status
+I:  5, 0: Locally disabling invalid-name (C0103) (locally-disabled)
+************* Module stop
+I:  5, 0: Locally disabling invalid-name (C0103) (locally-disabled)
+************* Module upload-data
+I:  8, 0: Locally disabling invalid-name (C0103) (locally-disabled)
+R:  1, 0: Similar lines in 4 files
+==deploy:107
+==start:62
+==status:31
+==stop:33
+def main():
+    """Main function"""
+    parser = ArgumentParser()
+    parser.add_argument("config", help="json cluster configuration file")
+    args = parser.parse_args()
+    config = ClusterConfiguration(args.config) (duplicate-code)
+
+
+Report
+======
+372 statements analysed.
+
+Statistics by type
+------------------
+
++---------+-------+-----------+-----------+------------+---------+
+|type     |number |old number |difference |%documented |%badname |
++=========+=======+===========+===========+============+=========+
+|module   |9      |9          |=          |100.00      |55.56    |
++---------+-------+-----------+-----------+------------+---------+
+|class    |4      |4          |=          |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+|method   |19     |19         |=          |100.00      |5.26     |
++---------+-------+-----------+-----------+------------+---------+
+|function |34     |34         |=          |100.00      |0.00     |
++---------+-------+-----------+-----------+------------+---------+
+
+
+
+External dependencies
+---------------------
+::
+
+    hillviewCommon (download-data,run-on-all,start,status,upload-data,stop,delete-data,deploy)
+
+
+
+Raw metrics
+-----------
+
++----------+-------+------+---------+-----------+
+|type      |number |%     |previous |difference |
++==========+=======+======+=========+===========+
+|code      |416    |64.40 |416      |=          |
++----------+-------+------+---------+-----------+
+|docstring |115    |17.80 |115      |=          |
++----------+-------+------+---------+-----------+
+|comment   |29     |4.49  |29       |=          |
++----------+-------+------+---------+-----------+
+|empty     |86     |13.31 |86       |=          |
++----------+-------+------+---------+-----------+
+
+
+
+Duplication
+-----------
+
++-------------------------+------+---------+-----------+
+|                         |now   |previous |difference |
++=========================+======+=========+===========+
+|nb duplicated lines      |18    |18       |=          |
++-------------------------+------+---------+-----------+
+|percent duplicated lines |2.866 |2.866    |=          |
++-------------------------+------+---------+-----------+
+
+
+
+Messages by category
+--------------------
+
++-----------+-------+---------+-----------+
+|type       |number |previous |difference |
++===========+=======+=========+===========+
+|convention |2      |2        |=          |
++-----------+-------+---------+-----------+
+|refactor   |1      |1        |=          |
++-----------+-------+---------+-----------+
+|warning    |0      |1        |-1.00      |
++-----------+-------+---------+-----------+
+|error      |1      |3        |-2.00      |
++-----------+-------+---------+-----------+
+
+
+
+% errors / warnings by module
+-----------------------------
+
++------------+-------+--------+---------+-----------+
+|module      |error  |warning |refactor |convention |
++============+=======+========+=========+===========+
+|start       |100.00 |0.00    |0.00     |100.00     |
++------------+-------+--------+---------+-----------+
+|upload-data |0.00   |0.00    |100.00   |0.00       |
++------------+-------+--------+---------+-----------+
+
+
+
+Messages
+--------
+
++-------------------+------------+
+|message id         |occurrences |
++===================+============+
+|locally-disabled   |12          |
++-------------------+------------+
+|line-too-long      |2           |
++-------------------+------------+
+|undefined-variable |1           |
++-------------------+------------+
+|duplicate-code     |1           |
++-------------------+------------+
+
+
+
+Global evaluation
+-----------------
+Your code has been rated at 9.78/10 (previous run: 9.49/10, +0.30)
+
