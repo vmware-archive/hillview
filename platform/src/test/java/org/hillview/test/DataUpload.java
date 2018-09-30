@@ -40,6 +40,7 @@ public class DataUpload  {
             "-s <schema> " +
             "-h (if has header row)" +
             "-w (if allow fewer columns)";
+    private final String defaultSchemaName = "schema.schema";
     @Nullable
     private String schemaPath = null;
     private String filename = ""; // the file to be sent
@@ -133,7 +134,7 @@ public class DataUpload  {
                 mySchema = Schema.readFromJsonFile(Paths.get(this.schemaPath));
             else {
                 mySchema = this.guessSchema(filename, parsConfig);
-                this.schemaPath = "bestGuess.schema";
+                this.schemaPath = this.defaultSchemaName;
                 mySchema.writeToJsonFile(Paths.get(this.schemaPath));
             }
             chop_files(parsConfig, config, mySchema);
@@ -301,7 +302,7 @@ public class DataUpload  {
 
     private void createDir(String user, String host) throws Exception {
         HillviewLogger.instance.info("Creating folder " + this.remoteFolder + " at " + host);
-        String[] commands = new String[]{"ssh", user + "@" + host, "mkdir -p " + this.remoteFolder};
+        String[] commands = new String[]{"ssh", user + "@" + host, "mkdir", "-p", this.remoteFolder};
         ProcessBuilder pb = new ProcessBuilder(commands);
         pb.redirectErrorStream(true);
         Process process = pb.start();
@@ -326,6 +327,7 @@ public class DataUpload  {
             if (err != 0)
                 throw new RuntimeException("Scp stopped with error code " + Integer.toString(err));
     }
+    
     /** Writes the table in ORC or CSV formatt
      *
      * @param table
@@ -381,7 +383,6 @@ public class DataUpload  {
             // The buffered input stream is needed by the CompressorStream
             // to detect the compression method at runtime.
             InputStream fis = bufferedInputStream;
-
             if (Utilities.isCompressed(filename)) {
                 InputStream compressedStream = new CompressorStreamFactory()
                         .createCompressorInputStream(fis);
