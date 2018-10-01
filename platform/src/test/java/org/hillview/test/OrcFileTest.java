@@ -160,7 +160,7 @@ public class OrcFileTest extends BaseTest {
     public void readOrcFileTestWithSchema() {
         String orcFile = orcFolder + orcOutFile;
         Table ref = TestTables.testRepTable();
-        Schema schema = ref.getSchema();  // Uses Category for a column
+        Schema schema = ref.getSchema();
         String tmpSchema = "tmpOrcSchema";
         schema.writeToJsonFile(Paths.get(tmpSchema));
 

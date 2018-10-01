@@ -17,7 +17,8 @@
 
 import {select as d3select} from "d3-selection";
 import {FullPage} from "./fullPage";
-import {D3SvgElement, IHtmlElement, Size} from "./ui";
+import {D3SvgElement, HtmlString, IHtmlElement, Size} from "./ui";
+import {ErrorReporter} from "./errReporter";
 
 /**
  * A plotting surface contains an SVG element on top of which various charts are drawn.
@@ -70,6 +71,10 @@ export abstract class PlottingSurface {
         this.size = PlottingSurface.getDefaultCanvasSize(this.page.getWidthInPixels());
         // The minimum width can be overridden by calling directly setSize.
         this.size.width = Math.max(PlottingSurface.minCanvasWidth, this.size.width);
+    }
+
+    public reportError(message: string): void {
+        this.page.reportError(message);
     }
 
     public static getDefaultCanvasSize(pageWidth: number): Size {
@@ -156,10 +161,6 @@ export abstract class PlottingSurface {
             this.leftMargin = left;
         if (bottom != null)
             this.bottomMargin = bottom;
-    }
-
-    public reportError(message: string): void {
-        this.page.reportError(message);
     }
 
     protected createObjects(root: D3SvgElement): void {

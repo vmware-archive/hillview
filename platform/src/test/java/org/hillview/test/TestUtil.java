@@ -19,9 +19,9 @@ package org.hillview.test;
 import org.hillview.table.*;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
+import org.hillview.table.columns.StringArrayColumn;
 import org.hillview.table.columns.DateArrayColumn;
 import org.hillview.table.columns.DoubleArrayColumn;
-import org.hillview.table.columns.StringArrayColumn;
 import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.utils.Randomness;
 

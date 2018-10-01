@@ -75,7 +75,6 @@ public interface IDateColumn extends IColumn {
         IMutableColumn newColumn = this.allocateConvertedColumn(
                 kind, set, newColName);
         switch(kind) {
-            case Category:
             case Json:
             case String:
                 //noinspection ConstantConditions

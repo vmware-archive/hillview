@@ -24,7 +24,6 @@ import java.io.Serializable;
  */
 public enum ContentsKind implements Serializable {
     None,     /* Data kind is unknown */
-    Category, /* Categories and strings are the same, but strings cannot be histogrammed */
     String,
     Date,  /* java.time.LocalDateTime values */
     Integer,
@@ -38,7 +37,6 @@ public enum ContentsKind implements Serializable {
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean isObject() {
         switch (this) {
-            case Category:
             case String:
             case Json:
             case None:
@@ -55,7 +53,6 @@ public enum ContentsKind implements Serializable {
 
     public boolean isString() {
         switch (this) {
-            case Category:
             case String:
             case Json:
                 return true;

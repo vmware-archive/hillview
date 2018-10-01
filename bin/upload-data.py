@@ -1,68 +1,76 @@
 #!/usr/bin/env python3
 
-# This script takes a set of files and a set of machines.
-# It uploads the files to the given machines in round-robin fashion.
-# The script can also be given an optional schema file.
-# This file will be uploaded to all machines.
-# The list of machines is provided in a Hillview configuration file.
-# pylint: disable=unused-wildcard-import,invalid-name,missing-docstring,wildcard-import,superfluous-parens,unused-variable
+"""This script takes a set of files and a cluster configuration describing a set of machines.
+   It uploads the files to the given machines in round-robin fashion.
+   The script can also be given an optional schema file.
+   This file will be uploaded to all machines.
+   The list of machines is provided in a Hillview configuration file."""
+# pylint: disable=invalid-name
 
-from optparse import OptionParser
+from argparse import ArgumentParser, REMAINDER
 import os.path
-from hillviewCommon import *
+from hillviewCommon import ClusterConfiguration
 
 created_folders = set()
 
 def create_remote_folder(remoteHost, folder):
-    # pylint: disable=unnecessary-semicolon
-    shortcut = "" + remoteHost.host + ":" + folder;
+    """Creates a folder on a remote machine"""
+    shortcut = "" + remoteHost.host + ":" + folder
     if shortcut in created_folders:
         return
     remoteHost.create_remote_folder(folder)
     created_folders.add(shortcut)
 
 def copy_file_to_remote_host(rh, source, folder, copyOption):
+    """Copy files in the specified folder to the remote machine"""
     create_remote_folder(rh, folder)
     rh.copy_file_to_remote(source, folder, copyOption)
 
-def copy_schema(config, schema, folder, copyOption):
-    # pylint: disable=line-too-long
-    print("Copying", schema, "to all hosts")
-    run_on_all_backends(config, lambda rh: copy_file_to_remote_host(rh, schema, folder, copyOption), True)
+def copy_everywhere(config, file, folder, copyOption):
+    """Copy specified file to all worker machines"""
+    assert isinstance(config, ClusterConfiguration)
+    print("Copying", file, "to all hosts")
+    config.run_on_all_workers(lambda rh: copy_file_to_remote_host(rh, file, folder, copyOption))
 
 def copy_files(config, folder, filelist, copyOption):
+    """Copy a set of files to all remote hosts"""
+    assert isinstance(config, ClusterConfiguration)
     print("Copying", len(filelist), "files to all hosts")
     index = 0
+    workers = config.get_workers()
     for f in filelist:
-        host = config.backends[index]
-        index = (index + 1) % len(config.backends)
-        rh = RemoteHost(config.user, host)
+        rh = workers[index]
+        index = (index + 1) % len(workers)
         copy_file_to_remote_host(rh, f, folder, copyOption)
 
 def main():
-    # pylint: disable=line-too-long,unnecessary-semicolon
-    parser = OptionParser(usage="%prog [options] config fileList\n" + \
-                          "files in the list are uploaded in round-robin to the worker machines in the cluster")
-    parser.add_option("-d", help="destination folder where output is written" +\
-                      "  (if relative it is with respect to config.service_folder)",
-                      dest="folder")
-    parser.add_option("-L", help="Follow symlinks instead of ignoring them",
-                      action="store_const", const="-L", dest="copyOption", default="");
-    parser.add_option("-s", help="File that is loaded to all machines", dest="everywhere")
-    (options, args) = parser.parse_args()
-    if len(args) < 1:
-        print("Not enough arguments supplied")
-        usage(parser)
-    config = load_config(parser, args[0])
-    folder = options.folder
+    """Main function"""
+    parser = ArgumentParser(epilog="The argument in the list are uploaded in round-robin " +
+                            "to the worker machines in the cluster")
+    parser.add_argument("config", help="json cluster configuration file")
+    parser.add_argument("-d", "--directory",
+                        help="destination folder where output is written" +\
+                        "  (if relative it is with respect to config.service_folder)")
+    parser.add_argument("-L", "--symlinks", help="Follow symlinks instead of ignoring them",
+                        action="store_true")
+    parser.add_argument("--common", "-s", help="File that is loaded to all machines")
+    parser.add_argument("files", help="Files to copy", nargs=REMAINDER)
+    args = parser.parse_args()
+    config = ClusterConfiguration(args.config)
+    folder = args.directory
     if folder is None:
-        print("Destination folder is mandatory")
-        usage(parser)
+        print("Directory argument is mandatory")
+        parser.print_help()
+        exit(1)
+    if args.symlinks:
+        copyOptions = "-L"
+    else:
+        copyOptions = ""
     if not os.path.isabs(folder):
         folder = os.path.join(config.service_folder, folder)
-    if options.everywhere != None:
-        copy_schema(config, options.everywhere, folder, options.copyOption)
-    copy_files(config, folder, args[1:], options.copyOption)
+    if args.common != None:
+        copy_everywhere(config, args.common, folder, copyOptions)
+    copy_files(config, folder, args.files, copyOptions)
     print("Done.")
 
 if __name__ == "__main__":

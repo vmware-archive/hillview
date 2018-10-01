@@ -21,8 +21,8 @@ import org.hillview.dataset.api.IMap;
 import org.hillview.maps.ConvertColumnMap;
 import org.hillview.table.*;
 import org.hillview.table.api.*;
-import org.hillview.table.columns.IntArrayColumn;
 import org.hillview.table.columns.StringArrayColumn;
+import org.hillview.table.columns.IntArrayColumn;
 import org.hillview.utils.TestUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -46,13 +46,13 @@ public class ToCatMapTest extends BaseTest {
         ITable table = ToCatMapTest.tableWithStringColumn();
         TestUtils.printTable("Table before conversion:", table);
         IMap<ITable, ITable> map = new ConvertColumnMap(
-                "Name", "Name Categorical", ContentsKind.Category, 1);
+                "Name", "Name Categorical", ContentsKind.String, 1);
         ITable result = map.apply(table);
         TestUtils.printTable("Table after conversion:", result);
         IColumn nameCC = result.getLoadedColumn("Name");
         IColumn nameCatCC = result.getLoadedColumn("Name Categorical");
 
-        Assert.assertSame(nameCatCC.getDescription().kind, ContentsKind.Category);
+        Assert.assertSame(nameCatCC.getDescription().kind, ContentsKind.String);
         IRowIterator rowIt = result.getRowIterator();
         int row = rowIt.getNextRow();
         while (row >= 0) {

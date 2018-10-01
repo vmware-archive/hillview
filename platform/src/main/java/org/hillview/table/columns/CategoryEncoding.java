@@ -49,4 +49,9 @@ class CategoryEncoding {
         this.intDecoding.put(encoding, value);
         return encoding;
     }
+
+    public void clear() {
+        this.intDecoding.clear();
+        this.intDecoding.clear();
+    }
 }

@@ -36,14 +36,14 @@ import {HeatmapLegendPlot} from "../ui/legendPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {Resolution} from "../ui/ui";
+import {HtmlString, Resolution} from "../ui/ui";
 import {
     formatNumber,
     ICancellable,
     PartialResult,
     reorder,
     saveAs,
-    significantDigits,
+    significantDigitsHtml,
 } from "../util";
 import {AxisData} from "./axisData";
 import {NextKReceiver, TableView} from "./tableView";
@@ -188,21 +188,23 @@ export class HeatmapView extends ChartView {
         this.pointDescription = new TextOverlay(this.surface.getChart(),
             this.surface.getActualChartSize(),
             [this.xAxisData.description.name, this.yAxisData.description.name, "count"], 40);
-        let summary = formatNumber(this.plot.getVisiblePoints()) + " data points";
+        let summary = new HtmlString(formatNumber(this.plot.getVisiblePoints()) + " data points");
         if (heatmap.missingData !== 0) {
-            summary += ", " + formatNumber(heatmap.missingData) + " missing";
+            summary = summary.appendString(", " + formatNumber(heatmap.missingData) + " missing");
         }
         if (heatmap.histogramMissingX.missingData !== 0) {
-            summary += ", " + formatNumber(heatmap.histogramMissingX.missingData) + " missing Y coordinate";
+            summary = summary.appendString(
+                ", " + formatNumber(heatmap.histogramMissingX.missingData) + " missing Y coordinate");
         }
         if (heatmap.histogramMissingY.missingData !== 0) {
-            summary += ", " + formatNumber(heatmap.histogramMissingY.missingData) + " missing X coordinate";
+            summary = summary.appendString(
+                ", " + formatNumber(heatmap.histogramMissingY.missingData) + " missing X coordinate");
         }
-        summary += ", " + formatNumber(this.plot.getDistinct()) + " distinct dots";
+        summary = summary.appendString(", " + formatNumber(this.plot.getDistinct()) + " distinct dots");
         if (this.samplingRate < 1.0) {
-            summary += ", sampling rate " + significantDigits(this.samplingRate);
+            summary = summary.appendString(", sampling rate ").append(significantDigitsHtml(this.samplingRate));
         }
-        this.summary.innerHTML = summary;
+        summary.setInnerHtml(this.summary);
     }
 
     public serialize(): IViewSerialization {
@@ -238,7 +240,7 @@ export class HeatmapView extends ChartView {
             [0, 0], cds, null, {
             reusePage: false,
             relative: false,
-            chartKind: "Histogram",
+            chartKind: "2DHistogram",
             exact: true
         }));
     }
@@ -268,7 +270,6 @@ export class HeatmapView extends ChartView {
         const lines: string[] = this.asCSV();
         const fileName = "heatmap.csv";
         saveAs(fileName, lines.join("\n"));
-        this.page.reportError("Check the downloads folder for a file named '" + fileName + "'");
     }
 
     /**

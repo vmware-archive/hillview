@@ -36,7 +36,7 @@ export class SchemaClass implements Serializable<SchemaClass> {
     private displayNameMap: Map<string, string>;
     private reverseDisplayNameMap: Map<string, string>;
 
-    private initialize() {
+    private initialize(): void {
         this.columnNames = [];
         this.columnMap = new Map<string, number>();
         for (let i = 0; i < this.schema.length; i++) {
@@ -88,7 +88,9 @@ export class SchemaClass implements Serializable<SchemaClass> {
     /**
      * Get the display name of the specified column.
      */
-    public displayName(name: string): string {
+    public displayName(name: string | null): string | null {
+        if (name == null)
+            return null;
         if (this.displayNameMap.has(name))
             return this.displayNameMap.get(name);
         return name;
@@ -97,7 +99,9 @@ export class SchemaClass implements Serializable<SchemaClass> {
     /**
      * Given a display name get the real column name.
      */
-    public fromDisplayName(name: string): string {
+    public fromDisplayName(name: string | null): string | null {
+        if (name == null)
+            return null;
         if (this.reverseDisplayNameMap.has(name))
             return this.reverseDisplayNameMap.get(name);
         console.assert(this.columnMap.has(name));

@@ -4,6 +4,7 @@
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.hillview</groupId>
@@ -33,7 +34,7 @@
                                 <configuration>
                                     <archive>
                                         <manifest>
-                                            <mainClass>org.hillview.DemoDataCleaner</mainClass>
+                                            <mainClass>org.hillview.main.DemoDataCleaner</mainClass>
                                         </manifest>
                                     </archive>
                                     <descriptorRefs>
@@ -51,7 +52,7 @@
                                 <configuration>
                                     <archive>
                                         <manifest>
-                                            <mainClass>org.hillview.HistogramBenchmark</mainClass>
+                                            <mainClass>org.hillview.main.HistogramBenchmark</mainClass>
                                         </manifest>
                                     </archive>
                                     <descriptorRefs>
@@ -183,6 +184,12 @@
             <groupId>org.apache.parquet</groupId>
             <artifactId>parquet-hadoop</artifactId>
             <version>1.9.0</version>
+        </dependency>
+        <!-- Mozilla Rhino javascript interpreter in Java -->
+        <dependency>
+            <groupId>org.mozilla</groupId>
+            <artifactId>rhino</artifactId>
+            <version>1.7.9</version>
         </dependency>
         <!-- Apache ORC: Columnar storage.  This also requires hadoop,
             but Hadoop is listed above for Parquet. -->
@@ -381,7 +388,7 @@
                         <configuration>
                             <archive>
                                 <manifest>
-                                    <mainClass>org.hillview.HillviewServerRunner</mainClass>
+                                    <mainClass>org.hillview.main.HillviewServerRunner</mainClass>
                                 </manifest>
                             </archive>
                             <descriptorRefs>

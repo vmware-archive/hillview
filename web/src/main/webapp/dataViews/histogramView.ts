@@ -36,7 +36,7 @@ import {HistogramPlot} from "../ui/histogramPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {HistogramOptions, Resolution} from "../ui/ui";
+import {HistogramOptions, HtmlString, Resolution} from "../ui/ui";
 import {
     formatNumber,
     ICancellable,
@@ -44,7 +44,7 @@ import {
     percent,
     reorder,
     saveAs,
-    significantDigits,
+    significantDigits, significantDigitsHtml,
 } from "../util";
 import {AxisData} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
@@ -59,6 +59,7 @@ export class HistogramView extends HistogramViewBase {
     protected histogram: HistogramBase;
     protected axisData: AxisData;
     protected plot: HistogramPlot;
+    protected bucketCount: number;
 
     constructor(
         remoteObjectId: RemoteObjectId,
@@ -122,7 +123,7 @@ export class HistogramView extends HistogramViewBase {
         const result: HistogramSerialization = {
             ...super.serialize(),
             samplingRate: this.samplingRate,
-            bucketCount: this.histogram.buckets.length,
+            bucketCount: this.bucketCount,
             columnDescription: this.axisData.description,
         };
         return result;
@@ -137,6 +138,7 @@ export class HistogramView extends HistogramViewBase {
         const hv = new HistogramView(
             ser.remoteObjectId, ser.rowCount, schema, ser.samplingRate, page);
         hv.setAxes(new AxisData(ser.columnDescription, null));
+        hv.bucketCount = ser.bucketCount;
         return hv;
     }
 
@@ -210,6 +212,7 @@ export class HistogramView extends HistogramViewBase {
                     bucketCount,
                     this.axisData.range.max - this.axisData.range.min);
         }
+        this.bucketCount = bucketCount;
         const h = HistogramView.coarsen(cdf, bucketCount);
         this.cdf = cdf;
         this.histogram = h;
@@ -236,18 +239,21 @@ export class HistogramView extends HistogramViewBase {
         this.pointDescription = new TextOverlay(this.surface.getChart(),
             this.surface.getActualChartSize(), pointDesc, 40);
 
-        let summary = "";
+        let summary = new HtmlString("");
         if (h.missingData !== 0)
-            summary = formatNumber(h.missingData) + " missing, ";
-        summary += formatNumber(this.rowCount) + " points";
+            summary = summary.appendString(formatNumber(h.missingData) + " missing, ");
+        summary = summary.appendString(formatNumber(this.rowCount) + " points");
         if (this.axisData != null &&
             this.axisData.range.leftBoundaries != null &&
             this.axisData.range.allStringsKnown)
-            summary += ", " + this.axisData.range.leftBoundaries.length + " distinct values";
-        summary += ", " + String(bucketCount) + " buckets";
+            summary = summary.appendString(
+                ", " + this.axisData.range.leftBoundaries.length + " distinct values");
+        summary = summary.appendString(
+            ", " + String(bucketCount) + " buckets");
         if (this.samplingRate < 1.0)
-            summary += ", sampling rate " + significantDigits(this.samplingRate);
-        this.summary.innerHTML = summary;
+            summary = summary.appendString(", sampling rate ")
+                .append(significantDigitsHtml(this.samplingRate));
+        summary.setInnerHtml(this.summary);
     }
 
     public trellis(): void {
@@ -316,7 +322,6 @@ export class HistogramView extends HistogramViewBase {
         const lines: string[] = this.asCSV();
         const fileName = "histogram.csv";
         saveAs(fileName, lines.join("\n"));
-        this.page.reportError("Check the downloads folder for a file named '" + fileName + "'");
     }
 
     /**
@@ -363,14 +368,14 @@ export class HistogramView extends HistogramViewBase {
     public resize(): void {
         if (this.cdf == null)
             return;
-        this.updateView(this.cdf, this.histogram.buckets.length, 0);
+        this.updateView(this.cdf, this.bucketCount, 0);
     }
 
     public refresh(): void {
         this.histogram1D(
             this.page.title,
             this.axisData.description,
-            this.histogram.buckets.length,
+            this.bucketCount,
             { exact: this.samplingRate >= 1, reusePage: true } );
     }
 
@@ -388,7 +393,7 @@ export class HistogramView extends HistogramViewBase {
         this.histogram1D(
             this.page.title,
             this.axisData.description,
-            this.histogram.buckets.length,
+            this.bucketCount,
             { exact: true, reusePage: true } );
     }
 

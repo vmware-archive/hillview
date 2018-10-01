@@ -40,13 +40,13 @@ public class HillviewLogs {
 
     static {
         HillviewLogs.schema.append(new ColumnDescription("Time", ContentsKind.Date));
-        HillviewLogs.schema.append(new ColumnDescription("Role", ContentsKind.Category));
-        HillviewLogs.schema.append(new ColumnDescription("Level", ContentsKind.Category));
-        HillviewLogs.schema.append(new ColumnDescription("Machine", ContentsKind.Category));
-        HillviewLogs.schema.append(new ColumnDescription("Thread", ContentsKind.Category));
-        HillviewLogs.schema.append(new ColumnDescription("Class", ContentsKind.Category));
-        HillviewLogs.schema.append(new ColumnDescription("Method", ContentsKind.Category));
-        HillviewLogs.schema.append(new ColumnDescription("Message", ContentsKind.Category));
+        HillviewLogs.schema.append(new ColumnDescription("Role", ContentsKind.String));
+        HillviewLogs.schema.append(new ColumnDescription("Level", ContentsKind.String));
+        HillviewLogs.schema.append(new ColumnDescription("Machine", ContentsKind.String));
+        HillviewLogs.schema.append(new ColumnDescription("Thread", ContentsKind.String));
+        HillviewLogs.schema.append(new ColumnDescription("Class", ContentsKind.String));
+        HillviewLogs.schema.append(new ColumnDescription("Method", ContentsKind.String));
+        HillviewLogs.schema.append(new ColumnDescription("Message", ContentsKind.String));
         HillviewLogs.schema.append(new ColumnDescription("Arguments", ContentsKind.String));
     }
 
@@ -81,6 +81,8 @@ public class HillviewLogs {
                     String line = reader.readLine();
                     if (line == null)
                         break;
+                    if (line.trim().isEmpty())
+                        continue;
                     this.parse(line, fields);
                     this.append(fields);
                 }

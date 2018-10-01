@@ -308,6 +308,7 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                 break;
             }
             case "Trellis2DHistogram": {
+                this.page.reportError("Not yet implemented");
                 const args: HistogramArgs[] = [];
                 const maxXBucketCount = Math.floor(trellisShape.size.width / Resolution.minDotSize);
                 const maxYBucketCount = Resolution.maxBucketCount;

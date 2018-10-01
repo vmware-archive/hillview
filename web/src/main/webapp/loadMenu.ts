@@ -46,6 +46,7 @@ export class LoadMenu extends RemoteObject implements IDataView {
         super(init.remoteObjectId);
         this.viewKind = "Load";
         this.advanced = false;
+
         this.top = document.createElement("div");
         this.testDatasetsMenu = new SubMenu([
             { text: "Flights (15 columns)",
@@ -78,20 +79,6 @@ export class LoadMenu extends RemoteObject implements IDataView {
                 },
                 help: "The US flights dataset.",
             },
-            { text: "Flights (all columns)",
-                action: () => {
-                    const files: FileSetDescription = {
-                        folder: "../data/ontime_big",
-                        fileNamePattern: "*.csv.gz",
-                        schemaFile: "schema",
-                        headerRow: true,
-                        repeat: 1,
-                        name: "Flights",
-                        fileKind: "csv",
-                    };
-                    this.init.loadFiles(files, this.page);
-                },
-                help: "The US flights dataset -- all 110 columns." },
             { text: "Flights (all columns, ORC)",
                 action: () => {
                     const files: FileSetDescription = {
@@ -106,34 +93,6 @@ export class LoadMenu extends RemoteObject implements IDataView {
                     this.init.loadFiles(files, this.page);
                 },
                 help: "The US flights dataset -- all 110 columns." },
-            { text: "10 x Flights",
-                action: () => {
-                    const files: FileSetDescription = {
-                        folder: "../data/ontime_big",
-                        fileNamePattern: "*.csv.gz",
-                        schemaFile: "schema",
-                        headerRow: true,
-                        repeat: 10,
-                        name: "10 x Flights",
-                        fileKind: "csv",
-                    };
-                    this.init.loadFiles(files, this.page);
-                },
-                help: "10 times the US flights dataset." },
-            { text: "10 x Flights (ORC)",
-                action: () => {
-                    const files: FileSetDescription = {
-                        folder: "../data/ontime_big_orc",
-                        fileNamePattern: "*.orc",
-                        schemaFile: "schema",
-                        headerRow: true,
-                        repeat: 10,
-                        name: "10 x Flights (ORC)",
-                        fileKind: "orc",
-                    };
-                    this.init.loadFiles(files, this.page);
-                },
-                help: "10 times the US flights dataset (from ORC files)." },
         ]);
         this.loadMenu = new SubMenu([
             { text: "System logs",
@@ -266,12 +225,12 @@ export class LoadMenu extends RemoteObject implements IDataView {
     public showAdvanced(show: boolean): void {
         this.menu.enable("Manage", show);
         this.menu.enable("Test", show);
-        /*
-        let special: string[] = [ "MNIST", "Image segmentation" ];
-        for (let s of special)
-            this.testDatasetsMenu.enable(s, show);
-        */
+        this.testDatasetsMenu.enable("Flights (15 columns)", show);
         this.loadMenu.enable("DB tables...", show);
+        this.loadMenu.enable("CSV files...", show);
+        this.loadMenu.enable("JSON files...", show);
+        this.loadMenu.enable("Parquet files...", show);
+        this.loadMenu.enable("ORC files...", show);
     }
 
     // noinspection JSMethodCanBeStatic

@@ -97,7 +97,6 @@ public class CreateColumnJSMap extends AppendColumnMap {
                     switch (kind) {
                         case None:
                             col.set(r, value);
-                        case Category:
                         case String:
                         case Json:
                             col.set(r, value.toString());

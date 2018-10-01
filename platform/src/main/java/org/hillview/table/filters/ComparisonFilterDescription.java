@@ -17,6 +17,7 @@
 
 package org.hillview.table.filters;
 
+import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.*;
 
 import javax.annotation.Nullable;
@@ -26,22 +27,29 @@ import java.util.function.Predicate;
  * A filter that describes how values in a column should be compared with a constant.
  */
 public class ComparisonFilterDescription implements ITableFilterDescription {
-    private final String column;
+    private final ColumnDescription column;
+    // Only one of the two below is set, depending on the column kind.
     @Nullable
-    private final String compareValue;
+    private final String stringValue;
+    @Nullable
+    private final Double doubleValue;
     private final String comparison;
 
     /**
      * Make a filter that accepts rows that have a specified value in the specified
      * column.
      * @param column Column that is compared.
-     * @param compareValue Value that is compared.  The value will be to the left of the comparison.
+     * @param stringValue String value that is compared.  May be null.
+     * @param doubleValue Double value that is compared.  May be null.
+     *                    The value will be to the left of the comparison.
      * @param comparison Operation for comparison: one of "==", "!=", "<", ">", "<=", ">="
      */
     public ComparisonFilterDescription(
-            String column, @Nullable String compareValue, String comparison) {
+            ColumnDescription column, @Nullable String stringValue,
+            @Nullable Double doubleValue, String comparison) {
         this.column = column;
-        this.compareValue = compareValue;
+        this.doubleValue = doubleValue;
+        this.stringValue = stringValue;
         this.comparison = comparison;
     }
 
@@ -59,8 +67,14 @@ public class ComparisonFilterDescription implements ITableFilterDescription {
         private final Predicate<Integer> comparator;
 
         ComparisonFilter(ITable table) {
-            this.column = table.getLoadedColumn(ComparisonFilterDescription.this.column);
-            if (ComparisonFilterDescription.this.compareValue == null) {
+            boolean isNull;
+            if (ComparisonFilterDescription.this.column.kind.isString())
+                isNull = ComparisonFilterDescription.this.stringValue == null;
+            else
+                isNull = ComparisonFilterDescription.this.doubleValue == null;
+
+            this.column = table.getLoadedColumn(ComparisonFilterDescription.this.column.name);
+            if (isNull) {
                 switch (ComparisonFilterDescription.this.comparison) {
                     case "<":
                     case "<=":
@@ -83,10 +97,10 @@ public class ComparisonFilterDescription implements ITableFilterDescription {
             }
 
             switch (this.column.getKind()) {
-                case Category:
                 case String:
                 case Json:
-                    String s = ComparisonFilterDescription.this.compareValue;
+                    String s = ComparisonFilterDescription.this.stringValue;
+                    assert s != null;
                     switch (ComparisonFilterDescription.this.comparison) {
                         case "==":
                             this.comparator = index -> {
@@ -147,7 +161,8 @@ public class ComparisonFilterDescription implements ITableFilterDescription {
                                     ComparisonFilterDescription.this.comparison);
                     }
                 case Integer:
-                    int i = Integer.parseInt(ComparisonFilterDescription.this.compareValue);
+                    assert ComparisonFilterDescription.this.doubleValue != null;
+                    int i = (int)(double)ComparisonFilterDescription.this.doubleValue;
                     switch (ComparisonFilterDescription.this.comparison) {
                         case "==":
                             this.comparator = index -> {
@@ -204,7 +219,8 @@ public class ComparisonFilterDescription implements ITableFilterDescription {
                 case Double:
                 case Duration:
                 case Date:
-                    double d = Double.parseDouble(ComparisonFilterDescription.this.compareValue);
+                    assert ComparisonFilterDescription.this.doubleValue != null;
+                    double d = ComparisonFilterDescription.this.doubleValue;
                     switch (ComparisonFilterDescription.this.comparison) {
                         case "==":
                             this.comparator = index -> {

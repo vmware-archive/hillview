@@ -58,10 +58,9 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
                 return false;
             boolean same;
             switch (kinds.get(i)) {
-                case Category:
                 case String:
                 case Json:
-                    same = this.getString(cn).equals(other.getString(cn));
+                    same = this.asString(cn).equals(other.asString(cn));
                     break;
                 case Integer:
                     same = this.getInt(cn) == other.getInt(cn);
@@ -83,7 +82,6 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
     public int computeHashCode(Schema schema) {
         if (!this.exists())
             return 0;
-
         int hashCode = 31;
         List<String> columns = schema.getColumnNames();
         List<ContentsKind> kinds = schema.getColumnKinds();
@@ -92,11 +90,10 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
             if (this.isMissing(cn))
                 continue;
             switch (kinds.get(i)) {
-                case Category:
                 case String:
                 case Json:
                     //noinspection ConstantConditions
-                    hashCode = HashUtil.murmurHash3(hashCode, this.getString(cn).hashCode());
+                    hashCode = HashUtil.murmurHash3(hashCode, this.asString(cn).hashCode());
                     break;
                 case Integer:
                     hashCode = HashUtil.murmurHash3(hashCode, this.getInt(cn));
@@ -122,7 +119,7 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
             return false;
         List<String> columns = this.getColumnNames();
         for (String column : columns) {
-            String field = this.getString(column);
+            String field = this.asString(column);
             if (filter.test(field))
                 return true;
         }
@@ -151,22 +148,17 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
             else if (otherMissing)
                 c = -1;
             else switch (cso.columnDescription.kind) {
-                case Category:
                 case String:
                 case Json:
-                    c = this.getString(cn).compareTo(other.getString(cn));
-                    break;
-                case Date:
-                    c = this.getDate(cn).compareTo(other.getDate(cn));
+                    c = this.asString(cn).compareTo(other.asString(cn));
                     break;
                 case Integer:
                     c = Integer.compare(this.getInt(cn), other.getInt(cn));
                     break;
+                case Date:
                 case Double:
-                    c = Double.compare(this.getDouble(cn), other.getDouble(cn));
-                    break;
                 case Duration:
-                    c = this.getDuration(cn).compareTo(other.getDuration(cn));
+                    c = Double.compare(this.getDouble(cn), other.getDouble(cn));
                     break;
                 default:
                     throw new RuntimeException("Unexpected kind " + cso.columnDescription.kind);
@@ -183,7 +175,6 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
     public String toString() {
         if (!this.exists())
             return "<no such row>";
-
         final StringBuilder builder = new StringBuilder();
         boolean first = true;
         for (String cn : this.getColumnNames()) {

@@ -39,12 +39,12 @@ import java.util.HashMap;
 /**
  * Test the Javascript Nashorn engine.
  */
-public class JavascriptTest {
+public class JavascriptNashornTest extends BaseTest {
     @Test
     public void helloWorldTest() throws ScriptException {
         ScriptEngineManager factory = new ScriptEngineManager();
         ScriptEngine engine = factory.getEngineByName("nashorn");
-        engine.eval("print('Hello, World from JavaScript!');");
+        engine.eval("print('Hello, World from Nashorn JavaScript!');");
     }
 
     @Test
@@ -88,7 +88,7 @@ public class JavascriptTest {
     public void testMap() {
         ITable table = ToCatMapTest.tableWithStringColumn();
         LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);
-        ColumnDescription outCol = new ColumnDescription("IsAdult", ContentsKind.Category);
+        ColumnDescription outCol = new ColumnDescription("IsAdult", ContentsKind.String);
         String function = "function map(row) { return row['Age'] > 18 ? 'true' : 'false'; }";
         CreateColumnJSMap map = new CreateColumnJSMap(function, table.getSchema(), null, outCol);
         IDataSet<ITable> mapped = lds.blockingMap(map);

@@ -60,11 +60,8 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
     private final Schema schema;
     private final HashMap<String, IColumn> columns;
 
-    public VirtualRowSnapshot(
-            final ITable table,
-            final Schema schema,
-            @Nullable
-            final HashMap<String, String> columnRenameMap) {
+    public VirtualRowSnapshot(final ITable table, final Schema schema,
+            @Nullable final HashMap<String, String> columnRenameMap) {
         this.table = table;
         this.schema = schema;
         this.columns = new HashMap<String, IColumn>();
@@ -106,7 +103,7 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
 
     @Override
     public int hashCode() {
-        return computeHashCode(this.schema);
+        return this.computeHashCode(this.schema);
     }
 
     @Override
@@ -181,6 +178,11 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
 
     @Override
     public String getString(String colName) {
+        return this.getColumnChecked(colName).getString(this.rowIndex);
+    }
+
+    @Override
+    public String asString(String colName) {
         return this.getColumnChecked(colName).asString(this.rowIndex);
     }
 

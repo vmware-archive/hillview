@@ -16,15 +16,7 @@
  */
 
 import {HeavyHittersSerialization, IViewSerialization} from "../datasetView";
-import {
-    CombineOperators,
-    IColumnDescription,
-    NextKList,
-    RecordOrder,
-    RemoteObjectId,
-    TopList
-}
-    from "../javaBridge";
+import {CombineOperators, IColumnDescription, NextKList, RecordOrder, RemoteObjectId, TopList} from "../javaBridge";
 import {OnCompleteReceiver, RemoteObject} from "../rpc";
 import {SchemaClass} from "../schemaClass";
 import {BaseRenderer, BigTableView, TableTargetAPI} from "../tableTarget";
@@ -34,9 +26,9 @@ import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
 import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
 import {TabularDisplay} from "../ui/tabularDisplay";
-import {Resolution, SpecialChars, textToDiv} from "../ui/ui";
-import {cloneSet, ICancellable, significantDigits} from "../util";
-import {TableOperationCompleted, TableView} from "./tableView";
+import {Resolution, SpecialChars} from "../ui/ui";
+import {cloneSet, convertToString, ICancellable, makeSpan, significantDigitsHtml} from "../util";
+import {TableOperationCompleted} from "./tableView";
 
 /**
  * This method handles the outcome of the sketch for finding Heavy Hitters.
@@ -108,6 +100,8 @@ export class HeavyHittersView extends BigTableView {
     public static minString: string = "0.01%";
     public static switchToMG: number = 0.9;
     public static maxDisplay: number = 200; // Should match parameter maxDisplay in FreqKList.java
+    public static csBuckets = 500;
+    public static csTrials = 50;
 
     public contextMenu: ContextMenu;
     protected table: TabularDisplay;
@@ -198,7 +192,7 @@ export class HeavyHittersView extends BigTableView {
     }
 
     public refresh(): void {
-        const rr = this.createHeavyHittersRequest(
+        const rr = this.remoteTableObject.createHeavyHittersRequest(
             this.columnsShown, this.percent, this.rowCount, HeavyHittersView.switchToMG);
         rr.invoke(new HeavyHittersReceiver(
             this.getPage(), this, rr, this.rowCount, this.schema,
@@ -272,13 +266,13 @@ export class HeavyHittersView extends BigTableView {
                     k++;
                 }
                 const row: Element[] = [];
-                row.push(textToDiv(k.toString()));
+                row.push(makeSpan(k.toString(), false));
                 for (let j = 0; j < this.columnsShown.length; j++) {
                     const value = nextKList.rows[i].values[j];
-                    row.push(textToDiv(TableView.convert(value, this.columnsShown[j].kind)));
+                    row.push(makeSpan(convertToString(value, this.columnsShown[j].kind), false));
                 }
-                row.push(textToDiv(this.valueToString(nextKList.rows[i].count)));
-                row.push(textToDiv(this.valueToString((nextKList.rows[i].count / nextKList.rowsScanned) * 100)));
+                row.push(this.valueToHtml(nextKList.rows[i].count));
+                row.push(this.valueToHtml((nextKList.rows[i].count / nextKList.rowsScanned) * 100));
                 row.push(new DataRangeUI(position, nextKList.rows[i].count,
                     nextKList.rowsScanned).getDOMRepresentation());
                 const tRow: HTMLTableRowElement = this.table.addElementRow(row);
@@ -289,7 +283,6 @@ export class HeavyHittersView extends BigTableView {
                 this.showRest(nextKList.rows.length, position, this.restCount, nextKList.rowsScanned, this.table);
         }
         this.table.addFooter();
-        this.page.scrollIntoView();
         this.page.reportTime(elapsedMs);
         if (nextKList.rows.length >= HeavyHittersView.maxDisplay)
             HeavyHittersView.showLongDialog(nextKList.rows.length);
@@ -350,25 +343,27 @@ export class HeavyHittersView extends BigTableView {
 
     private showRest(k: number, position: number, restCount: number, total: number, table: TabularDisplay): void {
         const row: Element[] = [];
-        row.push(textToDiv(k.toString()));
+        row.push(makeSpan(k.toString(), false));
         for (let j = 0; j < this.columnsShown.length; j++) { // tslint:disable-line
-            const m = textToDiv("everything else");
+            const m = makeSpan("everything else", false);
             m.classList.add("missingData");
             row.push(m);
         }
-        row.push(textToDiv(this.valueToString(restCount)));
-        row.push(textToDiv(this.valueToString((restCount / total) * 100)));
+        row.push(this.valueToHtml(restCount));
+        row.push(this.valueToHtml((restCount / total) * 100));
         row.push(new DataRangeUI(position, restCount, total).getDOMRepresentation());
         const tRow: HTMLTableRowElement = table.addElementRow(row, false);
         tRow.onclick = (e) => e.preventDefault();
         tRow.oncontextmenu = (e) => e.preventDefault();
     }
 
-    private valueToString(n: number): string {
-        let str = significantDigits(n);
+    private valueToHtml(n: number): HTMLElement {
+        const span = document.createElement("span");
+        let str = significantDigitsHtml(n);
         if (this.isApprox)
-            str = SpecialChars.approx + str;
-        return str;
+            str = str.prependString(SpecialChars.approx);
+        str.setInnerHtml(span);
+        return span;
     }
 
     private runWithThreshold(newPercent: number): void {

@@ -1,25 +1,30 @@
 #!/usr/bin/env python3
 
-# This script deletes a specific folder on all the machines in a Hillview cluster.
-# pylint: disable=unused-wildcard-import,invalid-name,missing-docstring,wildcard-import,superfluous-parens,unused-variable
-from optparse import OptionParser
-from hillviewCommon import RemoteHost, run_on_all_backends
+"""This script deletes a specific folder on all the machines in a Hillview cluster."""
+# pylint: disable=invalid-name
+
+import os.path
+from argparse import ArgumentParser
+from hillviewCommon import ClusterConfiguration
 
 def delete_remote_folder(rh, folder):
+    """Deletes folder on the remote host"""
     rh.run_remote_shell_command("rm -rf " + folder)
 
 def delete_folder(config, folder):
+    """Delete a folder on all remote hosts"""
+    assert isinstance(config, ClusterConfiguration)
     print("Deleting", folder, "from all hosts")
-    run_on_all_backends(config, lambda rh: delete_remote_folder(rh, folder), True)
+    config.run_on_all_workers(lambda rh: delete_remote_folder(rh, folder), True)
 
 def main():
-    parser = OptionParser(usage="%prog [options] config folderToDelete")
-    (_, args) = parser.parse_args()
-    if len(args) != 2:
-        print("Two arguments must be supplied")
-        usage(parser)
-    config = load_config(parser, args[0])
-    folder = args[1]
+    """Main function"""
+    parser = ArgumentParser()
+    parser.add_argument("config", help="json cluster configuration file")
+    parser.add_argument("folder", help="Folder to delete from all machines")
+    args = parser.parse_args()
+    config = ClusterConfiguration(args.config)
+    folder = args.folder
     if not os.path.isabs(folder):
         folder = os.path.join(config.service_folder, folder)
     delete_folder(config, folder)

@@ -42,21 +42,21 @@ public class RowSnapshot extends BaseRowSnapshot
      */
     private final LinkedHashMap<String, Object> fields =
             new LinkedHashMap<String, Object>();
-    private List<String> fieldNames = new ArrayList<String>(0);
     private final int cachedHashcode;
+    private final Schema schema;
 
     public RowSnapshot(final ITable data, final int rowIndex, final Schema schema) {
         List<IColumn> columns = data.getColumns(schema);
-        this.fieldNames = new ArrayList<String>(columns.size());
+        this.schema = schema;
         for (IColumn c: columns) {
-            this.fields.put(c.getName(), c.getObject(rowIndex));
-            this.fieldNames.add(c.getName());
+            ContentsKind kind = c.getKind();
+            if (kind == ContentsKind.Date || kind == ContentsKind.Duration)
+                this.fields.put(c.getName(), c.getDouble(rowIndex));
+            else
+                this.fields.put(c.getName(), c.getObject(rowIndex));
         }
-        this.cachedHashcode = this.fields.hashCode();
+        this.cachedHashcode = this.computeHashCode(schema);
     }
-
-    @Override
-    public boolean exists() { return true; }
 
     /**
      * Creates a row snapshot taking the data from the specified table.
@@ -76,14 +76,16 @@ public class RowSnapshot extends BaseRowSnapshot
         if (schema.getColumnCount() != data.length)
             throw new RuntimeException("Mismatched schema");
         int index = 0;
-        this.fieldNames = new ArrayList<String>(schema.getColumnCount());
+        this.schema = schema;
         for (String col: schema.getColumnNames()) {
             this.fields.put(col, data[index]);
-            this.fieldNames.add(col);
             index++;
         }
-        this.cachedHashcode = this.fields.hashCode();
+        this.cachedHashcode = this.computeHashCode(schema);
     }
+
+    @Override
+    public boolean exists() { return true; }
 
     public boolean isMissing(String colName) { return (this.fields.get(colName) == null); }
 
@@ -94,16 +96,27 @@ public class RowSnapshot extends BaseRowSnapshot
 
     @Override
     public List<String> getColumnNames() {
-        return this.fieldNames;
+        return this.schema.getColumnNames();
     }
 
     @Override
     public Object getObject(String colName) {
+        ContentsKind kind = this.schema.getKind(colName);
+        if (kind == ContentsKind.Date)
+            return Converters.toDate(this.getDouble(colName));
+        else if (kind == ContentsKind.Duration)
+            return Converters.toDuration(this.getDouble(colName));
         return this.fields.get(colName);
     }
 
     public String getString(String colName) {
         return (String) this.fields.get(colName);
+    }
+
+    public String asString(String colName) {
+        Object obj = this.getObject(colName);
+        assert obj != null;
+        return obj.toString();
     }
 
     public int getInt(String colName) {
@@ -115,11 +128,11 @@ public class RowSnapshot extends BaseRowSnapshot
     }
 
     public Instant getDate(String colName) {
-        return (Instant)this.fields.get(colName);
+        return Converters.toDate(this.getDouble(colName));
     }
 
-    public Duration getDuration( String colName) {
-        return (Duration) this.fields.get(colName);
+    public Duration getDuration(String colName) {
+        return Converters.toDuration(this.getDouble(colName));
     }
 
     /**
@@ -138,12 +151,12 @@ public class RowSnapshot extends BaseRowSnapshot
             Object o = data[i];
             if (o == null) {
                 converted[i] = null;
-            } else if (cd.kind == ContentsKind.Date) {
-                converted[i] = Converters.toDate((double)o);
             } else if (cd.kind == ContentsKind.Integer) {
                 // In JSON everything is a double
                 converted[i] = (int)(double)o;
             } else {
+                // These should be doubles or strings.
+                // No conversion needed.
                 converted[i] = o;
             }
         }

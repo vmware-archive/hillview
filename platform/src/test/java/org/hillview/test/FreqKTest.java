@@ -105,7 +105,7 @@ public class FreqKTest extends BaseTest {
     public void testTopKSq() {
         final int range = 10;
         double epsilon = 0.02;
-        SmallTable leftTable = TestTables.getSqIntTable(range);
+        SmallTable leftTable = TestTables.getPowerIntTable(range);
         fkCreate(leftTable, epsilon);
         shhCreate(leftTable, epsilon);
     }

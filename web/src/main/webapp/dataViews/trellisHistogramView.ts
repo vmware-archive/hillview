@@ -27,7 +27,13 @@ import {
 import {FullPage} from "../ui/fullPage";
 import {BaseRenderer, TableTargetAPI} from "../tableTarget";
 import {SchemaClass} from "../schemaClass";
-import {ICancellable, PartialResult, percent, reorder, significantDigits} from "../util";
+import {
+    ICancellable,
+    PartialResult,
+    percent,
+    reorder,
+    significantDigits,
+} from "../util";
 import {AxisData, AxisKind} from "./axisData";
 import {IViewSerialization, TrellisHistogramSerialization} from "../datasetView";
 import {IDataView} from "../ui/dataview";

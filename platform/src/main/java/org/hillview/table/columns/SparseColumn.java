@@ -61,7 +61,6 @@ public class SparseColumn extends BaseColumn
     public double asDouble(int rowIndex) {
         assert !this.isMissing(rowIndex);
         switch (this.description.kind) {
-            case Category:
             case String:
             case Json:
                 return IStringColumn.stringToDouble(this.getString(rowIndex));
@@ -105,7 +104,6 @@ public class SparseColumn extends BaseColumn
                 return -1;
 
             switch (SparseColumn.this.description.kind) {
-                case Category:
                 case String:
                 case Json:
                     return SparseColumn.this.getString(o1).compareTo(
@@ -136,7 +134,6 @@ public class SparseColumn extends BaseColumn
     public long hashCode64(int rowIndex, LongHashFunction hash) {
         assert !isMissing(rowIndex);
         switch (this.description.kind) {
-            case Category:
             case String:
             case Json:
                 return hash.hashChars(this.getString(rowIndex));
@@ -215,7 +212,6 @@ public class SparseColumn extends BaseColumn
     public IColumn convertKind(
             ContentsKind kind, String newColName, IMembershipSet set) {
         switch (this.description.kind) {
-            case Category:
             case String:
             case Json:
                 return IStringColumn.super.convertKind(kind, newColName, set);

@@ -24,13 +24,13 @@ import {
     ContentsKind,
     FindResult,
     IColumnDescription,
-    kindIsNumeric,
     kindIsString,
     NextKList,
     RecordOrder,
     RemoteObjectId,
     RowSnapshot,
-    Schema, StringFilterDescription,
+    Schema,
+    StringFilterDescription,
     TableSummary
 } from "../javaBridge";
 import {OnCompleteReceiver, Receiver} from "../rpc";
@@ -43,20 +43,20 @@ import {FullPage} from "../ui/fullPage";
 import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
 import {IScrollTarget, ScrollBar} from "../ui/scroll";
 import {SelectionStateMachine} from "../ui/selectionStateMachine";
-import {missingHtml, Resolution, SpecialChars} from "../ui/ui";
+import {HtmlString, Resolution, SpecialChars} from "../ui/ui";
 import {
-    cloneToSet,
-    Converters,
-    formatDate,
+    cloneToSet, convertToString,
     formatNumber,
-    ICancellable,
+    ICancellable, makeSpan,
     PartialResult,
     percent,
-    significantDigits,
+    saveAs,
+    significantDigitsHtml,
 } from "../util";
 import {SchemaView} from "./schemaView";
 import {SpectrumReceiver} from "./spectrumView";
 import {ColumnConverter, ConverterDialog, TSViewBase} from "./tsViewBase";
+import {CountSketchReceiver} from "./tsViewBase";
 
 // import {LAMPDialog} from "./lampView";
 
@@ -79,17 +79,16 @@ export class TableView extends TSViewBase implements IScrollTarget {
     protected contextMenu: ContextMenu;
     protected cellsPerColumn: Map<string, HTMLElement[]>;
     protected selectedColumns = new SelectionStateMachine();
-    protected messageBox: HTMLElement;
+    protected message: HTMLElement;
 
     // The following elements are used for Find
-    protected findBarVisible: boolean;
     protected strFilter: StringFilterDescription;
     protected findInputBox: HTMLInputElement;
     protected substringsFindCheckbox: HTMLInputElement;
     protected regexFindCheckbox: HTMLInputElement;
     protected caseFindCheckbox: HTMLInputElement;
-    protected startFromTopCheckbox: HTMLInputElement;
     protected findBar: HTMLElement;
+    protected findBarVisible: boolean;
     protected foundCount: HTMLElement;
 
     public constructor(
@@ -103,7 +102,6 @@ export class TableView extends TSViewBase implements IScrollTarget {
         this.topLevel.tabIndex = 1;  // necessary for keyboard events?
         this.topLevel.onkeydown = (e) => this.keyDown(e);
         this.strFilter = null;
-
         this.topLevel.style.flexDirection = "column";
         this.topLevel.style.display = "flex";
         this.topLevel.style.flexWrap = "nowrap";
@@ -111,6 +109,15 @@ export class TableView extends TSViewBase implements IScrollTarget {
         this.topLevel.style.alignItems = "stretch";
 
         const menu = new TopMenu([
+            {
+                text: "Export",
+                help: "Save information from this view in a local file.",
+                subMenu: new SubMenu([{
+                    text: "Schema",
+                    help: "Saves the schema of this data JSON file.",
+                    action: () => { this.exportSchema(); },
+                }]),
+            },
             this.saveAsMenu(),
             {
                 text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
@@ -148,7 +155,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
                         help: "Search for a string in the visible columns",
                         action: () => {
                             if (this.order.length() === 0) {
-                                this.reportError(
+                                this.page.reportError(
                                     "Find operates in the displayed column, " +
                                     "but no column is currently visible.");
                                 return;
@@ -189,8 +196,12 @@ export class TableView extends TSViewBase implements IScrollTarget {
 
         this.initFindBar();
 
-        this.messageBox = document.createElement("div");
-        this.topLevel.appendChild(this.messageBox);
+        this.message = document.createElement("div");
+        this.topLevel.appendChild(this.message);
+    }
+
+    private exportSchema(): void {
+        saveAs("schema.json", JSON.stringify(this.schema.schema));
     }
 
     private showFindBar(show: boolean): void {
@@ -205,12 +216,12 @@ export class TableView extends TSViewBase implements IScrollTarget {
     }
 
     private addSpace(num: number): void {
-        const div: HTMLElement = document.createElement("div");
+        const span = makeSpan("", false);
         let str: string = "";
         for (let i = 0; i < num; i++)
             str += "&nbsp;";
-        div.innerHTML = str;
-        this.findBar.appendChild(div);
+        span.innerHTML = str;
+        this.findBar.appendChild(span);
     }
 
     private addCheckbox(stringDesc: string ): HTMLInputElement {
@@ -247,12 +258,12 @@ export class TableView extends TSViewBase implements IScrollTarget {
         this.addSpace(1);
 
         const nextButton = this.findBar.appendChild(document.createElement("button"));
-        nextButton.innerHTML = SpecialChars.downArrow;
+        nextButton.innerHTML = SpecialChars.downArrowHtml;
         nextButton.onclick = () => this.find(true, false);
         this.addSpace(1);
 
         const prevButton = this.findBar.appendChild(document.createElement("button"));
-        prevButton.innerHTML = SpecialChars.upArrow;
+        prevButton.innerHTML = SpecialChars.upArrowHtml;
         prevButton.onclick = () => this.find(false, false);
         this.addSpace(1);
 
@@ -325,11 +336,11 @@ export class TableView extends TSViewBase implements IScrollTarget {
 
     private find(next: boolean, fromTop: boolean): void {
         if (this.order.length() === 0) {
-            this.reportError("Find operates in the displayed column, but no column is currently visible.");
+            this.page.reportError("Find operates in the displayed column, but no column is currently visible.");
             return;
         }
         if (this.nextKList.rows.length === 0) {
-            this.reportError("No data to search in");
+            this.page.reportError("No data to search in");
             return;
         }
         let excludeTopRow: boolean;
@@ -350,7 +361,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
         if (!next)
             excludeTopRow = true;
         if (this.strFilter.compareValue === "") {
-            this.reportError("No current search string.");
+            this.page.reportError("No current search string.");
             return;
         }
         const o = this.order.clone();
@@ -416,7 +427,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
         if (this.nextKList == null || this.nextKList.rows.length === 0)
             return;
         if (this.startPosition <= 0) {
-            this.reportError("Already at the top");
+            this.page.reportError("Already at the top");
             return;
         }
         const order = this.order.invert();
@@ -428,7 +439,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
         if (this.nextKList == null || this.nextKList.rows.length === 0)
             return;
         if (this.startPosition <= 0) {
-            this.reportError("Already at the top");
+            this.page.reportError("Already at the top");
             return;
         }
         const o = this.order.clone();
@@ -440,7 +451,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
         if (this.nextKList == null || this.nextKList.rows.length === 0)
             return;
         if (this.startPosition + this.dataRowsDisplayed >= this.rowCount - 1) {
-            this.reportError("Already at the bottom");
+            this.page.reportError("Already at the bottom");
             return;
         }
         const order = this.order.invert();
@@ -452,7 +463,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
         if (this.nextKList == null || this.nextKList.rows.length === 0)
             return;
         if (this.startPosition + this.dataRowsDisplayed >= this.rowCount - 1) {
-            this.reportError("Already at the bottom");
+            this.page.reportError("Already at the bottom");
             return;
         }
         const o = this.order.clone();
@@ -468,7 +479,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
 
     protected showAllColumns(): void {
         if (this.schema == null) {
-            this.reportError("No data loaded");
+            this.page.reportError("No data loaded");
             return;
         }
 
@@ -520,15 +531,15 @@ export class TableView extends TSViewBase implements IScrollTarget {
                           displayName: string, help: string): HTMLElement {
         const thd = document.createElement("th");
         thd.classList.add("noselect");
-        let label = displayName;
+        thd.appendChild(makeSpan(displayName, false));
         if (!this.isVisible(cd.name)) {
             thd.style.fontWeight = "normal";
         } else {
-            label += " " +
-                this.getSortArrow(cd.name) + this.getSortIndex(cd.name);
+            const span = makeSpan("", false);
+            span.innerHTML = "&nbsp;" + this.getSortArrow(cd.name) + this.getSortIndex(cd.name);
+            thd.appendChild(span);
         }
         thd.title = help;
-        thd.innerHTML = label;
         thr.appendChild(thd);
         return thd;
     }
@@ -558,7 +569,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
 
     public refresh(): void {
         if (this.nextKList == null) {
-            this.reportError("Nothing to refresh");
+            this.page.reportError("Nothing to refresh");
             return;
         }
 
@@ -623,9 +634,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
             const cd = this.schema.get(i);
             cds.push(cd);
 
-            let kindString = cd.kind;
-            if (kindString === "Category")
-                kindString = "String";
+            const kindString = cd.kind;
             const title = "Column type is " + kindString +
                 ".\nA mouse click with the right button will open a menu.";
             const name = this.schema.displayName(cd.name);
@@ -711,6 +720,11 @@ export class TableView extends TSViewBase implements IScrollTarget {
                     help: "Find the values that occur most frequently in the selected columns.",
                 }, true);
                 this.contextMenu.addItem({
+                    text: "Count Sketch",
+                    action: () => this.runCountSketch(),
+                    help: "Find the values that occur most frequently in the selected columns.",
+                }, true);
+                this.contextMenu.addItem({
                     text: "PCA...",
                     action: () => this.pca(true),
                     help: "Perform Principal Component Analysis on a set of numeric columns. " +
@@ -787,10 +801,10 @@ export class TableView extends TSViewBase implements IScrollTarget {
         if (perc !== "")
             perc = " (" + perc + ")";
 
-        const message = tableRowCount + " displayed rows represent " +
+        const message = new HtmlString(tableRowCount + " displayed rows represent " +
             formatNumber(this.dataRowsDisplayed) +
-            "/" + formatNumber(this.rowCount) + " data rows" + perc;
-        this.messageBox.innerHTML = message;
+            "/" + formatNumber(this.rowCount) + " data rows" + perc);
+        message.setInnerHtml(this.message);
 
         if (result != null) {
             this.foundCount.textContent = formatNumber(result.before) + " matching before, " +
@@ -805,16 +819,11 @@ export class TableView extends TSViewBase implements IScrollTarget {
         this.page.reportTime(elapsedMs);
     }
 
-    public filterOnValue(colName: string, value: string, comparison: Comparison): void {
-        const cd = this.schema.find(colName);
-        if (value != null && cd.kind === "Date") {
-            // Parse the date in Javascript; the Java Date parser is very bad
-            const date = new Date(value);
-            value = Converters.doubleFromDate(date).toString();
-        }
+    public filterOnValue(cd: IColumnDescription, value: string | number, comparison: Comparison): void {
         const cfd: ComparisonFilterDescription = {
-            column: colName,
-            compareValue: value,
+            column: cd,
+            stringValue: kindIsString(cd.kind) ? value as string : null,
+            doubleValue: !kindIsString(cd.kind) ? value as number : null,
             comparison,
         };
         this.runComparisonFilter(cfd, this.order, this.tableRowsDesired);
@@ -881,7 +890,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
                 count++;
             }
         }
-        this.reportError(`Selected ${count} numeric columns.`);
+        this.page.reportError(`Selected ${count} numeric columns.`);
         this.highlightSelectedColumns();
     }
 
@@ -935,7 +944,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
                 const numComponents: number = pcaDialog.getFieldValueAsInt("numComponents");
                 const projectionName: string = pcaDialog.getFieldValue("projectionName");
                 if (numComponents < 1 || numComponents > colNames.length) {
-                    this.reportError("Number of components for PCA must be between 1 (incl.) " +
+                    this.page.reportError("Number of components for PCA must be between 1 (incl.) " +
                         "and the number of selected columns, " + colNames.length + " (incl.). (" +
                         numComponents + " does not satisfy this.)");
                     return;
@@ -946,8 +955,22 @@ export class TableView extends TSViewBase implements IScrollTarget {
             });
             pcaDialog.show();
         } else {
-            this.reportError("Not valid for PCA:" + message);
+            this.page.reportError("Not valid for PCA:" + message);
         }
+    }
+
+    protected runCountSketch(): void {
+        const columnsShown: IColumnDescription[] = [];
+        const cso: ColumnSortOrientation[] = [];
+        this.getSelectedColNames().forEach((v) => {
+            const colDesc = this.schema.find(v);
+            columnsShown.push(colDesc);
+            cso.push({columnDescription: colDesc, isAscending: true});
+        });
+        const order = new RecordOrder(cso);
+        const rr = this.createCountSketchRequest(columnsShown);
+        rr.invoke(new CountSketchReceiver(this.getPage(), this, rr, this.rowCount,
+            this.schema, columnsShown, order));
     }
 
     private spectrum(toSample: boolean): void {
@@ -959,7 +982,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
                 this.getPage(), this, this.remoteObjectId, this.rowCount,
                 this.schema, colNames, rr, false));
         } else {
-            this.reportError("Not valid for PCA:" + message);
+            this.page.reportError("Not valid for PCA:" + message);
         }
     }
 
@@ -971,7 +994,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
             let dialog = new LAMPDialog(colNames, this.getPage(), this.schema, this);
             dialog.show();
         } else {
-            this.reportError("Not valid for LAMP:" + message);
+            this.page.reportError("Not valid for LAMP:" + message);
         }
     }
     */
@@ -1039,24 +1062,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
         const newPage = this.dataset.newPage("Schema", this.page);
         const sv = new SchemaView(this.remoteObjectId, newPage, this.rowCount, this.schema, 0);
         newPage.setDataView(sv);
-    }
-
-    /**
-     * Convert a value in the table to a html string representation.
-     * @param val                  Value to convert.
-     * @param {ContentsKind} kind  Type of value.
-     */
-    public static convert(val: any, kind: ContentsKind): string {
-        if (val == null)
-            return missingHtml;
-        if (kindIsNumeric(kind))
-            return String(val);
-        else if (kind === "Date")
-            return formatDate(Converters.dateFromDouble(val as number));
-        else if (kindIsString(kind))
-            return val as string;
-        else
-            return val.toString();  // TODO
+        newPage.scrollIntoView();
     }
 
     public moveRowToTop(row: RowSnapshot): void {
@@ -1066,60 +1072,59 @@ export class TableView extends TSViewBase implements IScrollTarget {
 
     /**
      * Hilight a table's cell text according to the current find.
-     * Returns an string representing the html of the innerHtml of the cell.
+     * Returns an HTML element that can be inserted in the table cell as a child.
      */
-    private highlight(text: string): string {
-        // result returned when there is no match.
-        const span = "<span>";
-        const end = "</span>";
-        const noMatch = span + text + end;
+    private highlight(text: string): HTMLElement {
         if (!this.findBarVisible)
-            return noMatch;
+            return makeSpan(text, false);
 
-        const start = "<span class=\"highlight\">";
         const find = this.strFilter.compareValue;
         if (find == null || find === "")
-            return noMatch;
+            return makeSpan(text, false);
+
+        const result = makeSpan(null, false);
         if (this.strFilter.asRegEx) {
             const modifier = this.strFilter.caseSensitive ? "g" : "ig";
             let regex = new RegExp(find, modifier);
             if (!this.strFilter.asSubString)
                 regex = new RegExp("^" + find + "$", modifier);
-            let result = "";
             while (true) {
                 const match = regex.exec(text);
-                if (match == null)
-                    return result + span + text + span;
-                result = span + text.substr(0, match.index) + end +
-                    start + text.substr(match.index, regex.lastIndex - match.index) + end;
+                if (match == null) {
+                    result.appendChild(makeSpan(text, false));
+                    return result;
+                }
+                result.appendChild(makeSpan(text.substr(0, match.index), false));
+                result.appendChild(makeSpan(text.substr(match.index, regex.lastIndex - match.index), true));
                 text = text.substr(regex.lastIndex);
             }
         } else {
             if (this.strFilter.asSubString) {
                 let index: number;
-                let result = "";
                 while (true) {
                     if (this.strFilter.caseSensitive)
                         index = text.indexOf(find);
                     else
                         index = text.toLowerCase().indexOf(find.toLowerCase());
-                    if (index < 0)
-                        return result + span + text + span;
-                    result += span + text.substr(0, index) + end +
-                        start + text.substr(index, find.length) + end;
+                    if (index < 0) {
+                        result.appendChild(makeSpan(text, false));
+                        return result;
+                    }
+                    result.appendChild(makeSpan(text.substr(0, index), false));
+                    result.appendChild(makeSpan(text.substr(index, find.length), true));
                     text = text.substr(index + find.length);
                 }
             } else {
                 if (this.strFilter.caseSensitive) {
                     if (text === find)
-                        return start + text + end;
+                        return makeSpan(text, true);
                 } else {
                     if (text.toLowerCase() === find.toLowerCase())
-                        return start + text + end;
+                        return makeSpan(text, true);
                 }
             }
         }
-        return noMatch;
+        return makeSpan(text, false);
     }
 
     public addRow(row: RowSnapshot, cds: IColumnDescription[]): void {
@@ -1139,7 +1144,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
 
         cell = trow.insertCell(1);
         cell.style.textAlign = "right";
-        cell.textContent = significantDigits(row.count);
+        significantDigitsHtml(row.count).setInnerHtml(cell);
         cell.title = "Number of rows that have these values: " + formatNumber(row.count);
 
         for (let i = 0; i < cds.length; i++) {
@@ -1154,49 +1159,45 @@ export class TableView extends TSViewBase implements IScrollTarget {
             this.cellsPerColumn.get(cd.name).push(cell);
 
             const dataIndex = this.order.find(cd.name);
-            if (dataIndex === -1)
-                continue;
             if (this.isVisible(cd.name)) {
-                let value = row.values[dataIndex];
-
-                let cellValue: string;
+                const value = row.values[dataIndex];
+                let shownValue: string;
                 if (value == null) {
                     cell.classList.add("missingData");
-                    cellValue = "missing";
+                    cell.textContent = "missing";
                 } else {
-                    cellValue = TableView.convert(row.values[dataIndex], cd.kind);
-                    value = cellValue;
+                    shownValue = convertToString(row.values[dataIndex], cd.kind);
+                    const high = this.highlight(shownValue);
+                    cell.appendChild(high);
                 }
-                const high = this.highlight(cellValue);
-                cell.innerHTML = high;
                 cell.title = "Right click will popup a menu.";
                 cell.oncontextmenu = (e) => {
                     this.contextMenu.clear();
                     // This menu shows the value to the right, but the filter
                     // takes the value to the left, so we have to flip all
                     // comparison signs.
-                    this.contextMenu.addItem({text: "Filter for " + cellValue,
-                        action: () => this.filterOnValue(cd.name, value, "=="),
+                    this.contextMenu.addItem({text: "Filter for " + shownValue,
+                        action: () => this.filterOnValue(cd, value, "=="),
                         help: "Keep only the rows that have this value in this column.",
                     }, true);
-                    this.contextMenu.addItem({text: "Filter for different from " + cellValue,
-                        action: () => this.filterOnValue(cd.name, value, "!="),
+                    this.contextMenu.addItem({text: "Filter for different from " + shownValue,
+                        action: () => this.filterOnValue(cd, value, "!="),
                         help: "Keep only the rows that have a different value in this column.",
                     }, true);
-                    this.contextMenu.addItem({text: "Filter for < " + cellValue,
-                        action: () => this.filterOnValue(cd.name, value, ">"),
+                    this.contextMenu.addItem({text: "Filter for < " + shownValue,
+                        action: () => this.filterOnValue(cd, value, ">"),
                         help: "Keep only the rows that have a a smaller value in this column.",
                     }, true);
-                    this.contextMenu.addItem({text: "Filter for > " + cellValue,
-                        action: () => this.filterOnValue(cd.name, value, "<"),
+                    this.contextMenu.addItem({text: "Filter for > " + shownValue,
+                        action: () => this.filterOnValue(cd, value, "<"),
                         help: "Keep only the rows that have a larger value in this column.",
                     }, true);
-                    this.contextMenu.addItem({text: "Filter for <= " + cellValue,
-                        action: () => this.filterOnValue(cd.name, value, ">="),
+                    this.contextMenu.addItem({text: "Filter for <= " + shownValue,
+                        action: () => this.filterOnValue(cd, value, ">="),
                         help: "Keep only the rows that have a smaller or equal value in this column.",
                     }, true);
-                    this.contextMenu.addItem({text: "Filter for >= " + cellValue,
-                        action: () => this.filterOnValue(cd.name, value, "<="),
+                    this.contextMenu.addItem({text: "Filter for >= " + shownValue,
+                        action: () => this.filterOnValue(cd, value, "<="),
                         help: "Keep only the rows that have a larger or equal in this column.",
                     }, true);
                     this.contextMenu.addItem({text: "Move to top",
@@ -1206,8 +1207,15 @@ export class TableView extends TSViewBase implements IScrollTarget {
                     this.contextMenu.show(e);
                 };
             } else {
-                // disable context menu
-                cell.oncontextmenu = () => false;
+                cell.oncontextmenu = (e) => {
+                    this.contextMenu.clear();
+                    this.contextMenu.addItem({
+                        text: "Move to top",
+                        action: () => this.moveRowToTop(row),
+                        help: "Move this row to the top of the view.",
+                    }, true);
+                    this.contextMenu.show(e);
+                };
             }
         }
         this.dataRowsDisplayed += row.count;
@@ -1428,7 +1436,7 @@ export class FindReceiver extends OnCompleteReceiver<FindResult> {
 
     public run(result: FindResult): void {
         if (result.at === 0) {
-            this.page.reportError("No matches found.");
+            this.page.reportError("No other matches found.");
             return;
         }
         const rr = this.tv.createNextKRequest(this.order, result.firstMatchingRow, this.tv.tableRowsDesired);

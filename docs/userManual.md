@@ -218,7 +218,7 @@ column description has two fields:
 
 * kind: A string describing the type of data in the column,
   corresponding to the types in the [data model](#13-data-model).  The
-  kind is one of: "String", "Category", "JSON", "Double", "Integer",
+  kind is one of: "String", "JSON", "Double", "Integer",
   "Date", and "Interval".
 
 #### 2.3.2. Reading CSV files

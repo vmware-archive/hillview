@@ -25,6 +25,37 @@
  */
 import {ScaleLinear as D3ScaleLinear, ScaleTime as D3ScaleTime} from "d3-scale";
 
+/**
+ * HTML strings are strings that represent an HTML fragment.
+ * They are usually assigned to innerHTML of a DOM object.
+ * These strings should  be "safe": i.e., the HTML they contain should
+ * be produced internally, and they should not come
+ * from external sources, because they can cause DOM injection attacks.
+ */
+export class HtmlString {
+    constructor(private readonly value: string) {}
+
+    public appendString(str: string): HtmlString {
+        return new HtmlString(this.value + str);
+    }
+
+    public append(message: HtmlString): HtmlString {
+        return new HtmlString(this.value + message.value);
+    }
+
+    public prependString(str: string): HtmlString {
+        return new HtmlString(str + this.value);
+    }
+
+    public setInnerHtml(elem: HTMLElement): void {
+        elem.innerHTML = this.value;
+    }
+
+    public getString(): string {
+        return this.value;
+    }
+}
+
 export type ViewKind = "Table" | "Histogram" | "2DHistogram" | "Heatmap" |
     "TrellisHistogram" | "Trellis2DHistogram" | "TrellisHeatmap" |
     "HeavyHitters" | "Schema" | "Load" | "SVD Spectrum";
@@ -57,13 +88,7 @@ export interface IElement {
     getDOMRepresentation(): Element;
 }
 
-export const missingHtml: string = "<div class='missingData'>missing</div>";
-
-export function textToDiv(text: string): HTMLElement {
-    const div = document.createElement("div");
-    div.innerHTML = text;
-    return div;
-}
+export const missingHtml: HtmlString = new HtmlString("<span class='missingData'>missing</span>");
 
 /**
  * A list of special unicode character codes.
@@ -71,8 +96,10 @@ export function textToDiv(text: string): HTMLElement {
 export class SpecialChars {
     /// Approximation sign.
     public static approx = "\u2248";
-    public static downArrow = "&dArr;";
-    public static upArrow = "&uArr;";
+    public static upArrow = "▲";
+    public static downArrow = "▼";
+    public static downArrowHtml = "&dArr;";
+    public static upArrowHtml = "&uArr;";
 }
 
 /**

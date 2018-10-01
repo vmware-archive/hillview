@@ -18,6 +18,8 @@
 package org.hillview.test;
 
 import org.hillview.maps.FilterMap;
+import org.hillview.table.ColumnDescription;
+import org.hillview.table.Schema;
 import org.hillview.table.Table;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IRowIterator;
@@ -31,8 +33,10 @@ public class ComparisonFilterTest extends BaseTest {
     @Test
     public void testFilterStringColumn() {
         Table table = TestTables.testRepTable();
+        Schema schema = table.getSchema();
+        ColumnDescription namecd = schema.getDescription("Name");
         ComparisonFilterDescription filter = new ComparisonFilterDescription(
-                "Name", "Ed", "==");
+                namecd, "Ed", null, "==");
         FilterMap filterMap = new FilterMap(filter);
         ITable result = filterMap.apply(table);
 
@@ -45,7 +49,7 @@ public class ComparisonFilterTest extends BaseTest {
         }
 
         filter = new ComparisonFilterDescription(
-                "Name", "Ed", "<=");
+                namecd, "Ed", null, "<=");
         filterMap = new FilterMap(filter);
         result = filterMap.apply(table);
         it = result.getMembershipSet().getIterator();
@@ -57,7 +61,7 @@ public class ComparisonFilterTest extends BaseTest {
         }
 
         filter = new ComparisonFilterDescription(
-                "Name", "Ed", ">=");
+                namecd, "Ed", null, ">=");
         filterMap = new FilterMap(filter);
         result = filterMap.apply(table);
         it = result.getMembershipSet().getIterator();
@@ -70,7 +74,7 @@ public class ComparisonFilterTest extends BaseTest {
         }
 
         filter = new ComparisonFilterDescription(
-                "Name", "Ed", "!=");
+                namecd, "Ed", null, "!=");
         filterMap = new FilterMap(filter);
         result = filterMap.apply(table);
         it = result.getMembershipSet().getIterator();
@@ -82,7 +86,7 @@ public class ComparisonFilterTest extends BaseTest {
         }
 
         filter = new ComparisonFilterDescription(
-                "Name", "Ed", "<");
+                namecd, "Ed", null, "<");
         filterMap = new FilterMap(filter);
         result = filterMap.apply(table);
         it = result.getMembershipSet().getIterator();
@@ -94,7 +98,7 @@ public class ComparisonFilterTest extends BaseTest {
         }
 
         filter = new ComparisonFilterDescription(
-                "Name", "Ed", ">");
+                namecd, "Ed", null, ">");
         filterMap = new FilterMap(filter);
         result = filterMap.apply(table);
         it = result.getMembershipSet().getIterator();
@@ -110,8 +114,11 @@ public class ComparisonFilterTest extends BaseTest {
     @Test
     public void testFilterIntColumn() {
         Table table = TestTables.testRepTable();
+        Schema schema = table.getSchema();
+        ColumnDescription agecd = schema.getDescription("Age");
+
         ComparisonFilterDescription filter = new ComparisonFilterDescription(
-                "Age", "10", "==");
+                agecd, null, 10.0, "==");
         FilterMap filterMap = new FilterMap(filter);
         ITable result = filterMap.apply(table);
 
@@ -124,7 +131,7 @@ public class ComparisonFilterTest extends BaseTest {
         }
 
         filter = new ComparisonFilterDescription(
-                "Age", "10", "<=");
+                agecd, null, 10.0, "<=");
         filterMap = new FilterMap(filter);
         result = filterMap.apply(table);
         it = result.getMembershipSet().getIterator();
@@ -138,7 +145,7 @@ public class ComparisonFilterTest extends BaseTest {
         }
 
         filter = new ComparisonFilterDescription(
-                "Age", "10", ">=");
+                agecd, null, 10.0, ">=");
         filterMap = new FilterMap(filter);
         result = filterMap.apply(table);
         it = result.getMembershipSet().getIterator();
@@ -151,7 +158,7 @@ public class ComparisonFilterTest extends BaseTest {
         }
 
         filter = new ComparisonFilterDescription(
-                "Age", "10", "!=");
+                agecd, null, 10.0, "!=");
         filterMap = new FilterMap(filter);
         result = filterMap.apply(table);
         it = result.getMembershipSet().getIterator();
@@ -165,7 +172,7 @@ public class ComparisonFilterTest extends BaseTest {
         }
 
         filter = new ComparisonFilterDescription(
-                "Age", "10", "<");
+                agecd, null, 10.0, "<");
         filterMap = new FilterMap(filter);
         result = filterMap.apply(table);
         it = result.getMembershipSet().getIterator();
@@ -179,7 +186,7 @@ public class ComparisonFilterTest extends BaseTest {
         }
 
         filter = new ComparisonFilterDescription(
-                "Age", "10", ">");
+                agecd, null, 10.0, ">");
         filterMap = new FilterMap(filter);
         result = filterMap.apply(table);
         it = result.getMembershipSet().getIterator();

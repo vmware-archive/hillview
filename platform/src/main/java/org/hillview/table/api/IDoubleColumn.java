@@ -66,7 +66,6 @@ public interface IDoubleColumn extends IColumn {
         IMutableColumn newColumn = this.allocateConvertedColumn(
                 kind, set, newColName);
         switch(kind) {
-            case Category:
             case Json:
             case String:
                 this.convert(newColumn, set, row -> Double.toString(this.getDouble(row)));

@@ -62,6 +62,29 @@ public class VirtualRowSnapshotTest extends BaseTest {
     }
 
     @Test
+    public void testVrsHashing() {
+        final int numCols = 1;
+        final int size = 1000;
+        final double base  = 1.1;
+        final int range = 20;
+        ITable data = TestTables.getIntTable(size, numCols);
+        VirtualRowSnapshot vrs = new VirtualRowSnapshot(data, data.getSchema());
+        IRowIterator rowIt = data.getRowIterator();
+        int i = rowIt.getNextRow();
+        long vHash, hash;
+        RowSnapshot rss;
+        int num = 10;
+        while (i != -1 && i < num) {
+            rss = new RowSnapshot(data, i);
+            hash = rss.hashCode();
+            vrs.setRow(i);
+            vHash = vrs.hashCode();
+            Assert.assertEquals(hash, vHash);
+            i = rowIt.getNextRow();
+        }
+    }
+
+    @Test
     public void VRSTest1() {
         testSnapshots(TestTables.testRepTable());
         testSnapshots(TestTables.getHeavyIntTable(2, 10000, 1.4, 20));

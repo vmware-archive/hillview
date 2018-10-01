@@ -18,7 +18,7 @@
 package org.hillview.test;
 
 import org.hillview.table.ColumnDescription;
-import org.hillview.table.columns.CategoryListColumn;
+import org.hillview.table.columns.StringListColumn;
 import org.hillview.table.columns.DoubleListColumn;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.columns.IntArrayColumn;
@@ -63,9 +63,9 @@ public class ColumnTest extends BaseTest {
     }
 
     @Test
-    public void testCategoryColumn() {
-        ColumnDescription desc = new ColumnDescription("Cat", ContentsKind.Category);
-        CategoryListColumn col = new CategoryListColumn(desc);
+    public void testStringColumn() {
+        ColumnDescription desc = new ColumnDescription("Cat", ContentsKind.String);
+        StringListColumn col = new StringListColumn(desc);
         col.append("First");
         col.append("First");
         col.append((String) null);
@@ -92,6 +92,7 @@ public class ColumnTest extends BaseTest {
         Assert.assertEquals(col.getString(266), "First");
         Assert.assertEquals(col.getString(100004), "First");
 
+        Assert.assertEquals(200005, col.sizeInRows());
         int nulls = 0;
         int firstCount = 0;
         int otherCount = 0;

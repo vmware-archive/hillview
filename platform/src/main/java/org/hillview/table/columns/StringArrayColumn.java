@@ -21,35 +21,75 @@ import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.*;
 
 import javax.annotation.Nullable;
-import java.security.InvalidParameterException;
 
-/**
- * Column of Strings, implemented as an array of strings and a bit vector of missing values.
- * Allows ContentsKind String or Json
- */
-public final class StringArrayColumn
-        extends BaseArrayColumn implements IStringColumn, IMutableColumn {
-    private final String[] data;
+public class StringArrayColumn extends BaseArrayColumn
+        implements IStringColumn, IMutableColumn {
+    private final int[] data;
+    private final CategoryEncoding encoding;
 
-    private void validate() {
-        if ((this.description.kind != ContentsKind.String) &&
-                (this.description.kind != ContentsKind.Json) &&
-                (this.description.kind != ContentsKind.Category))
-            throw new InvalidParameterException("Kind should be String or Json "
-                    + this.description.kind);
-    }
-
-    public StringArrayColumn(final ColumnDescription description, final int size) {
+    public StringArrayColumn(ColumnDescription description, final int size) {
         super(description, size);
-        this.validate();
-        this.data = new String[size];
+        if (!description.kind.isString())
+            throw new RuntimeException("Unexpected kind for string column: " + description.kind);
+        this.encoding = new CategoryEncoding();
+        this.data = new int[size];
     }
 
-    public StringArrayColumn(final ColumnDescription description,
-                             final String[] data) {
+    public StringArrayColumn(ColumnDescription description, String[] values) {
+        super(description, values.length);
+        if (!description.kind.isString())
+            throw new RuntimeException("Unexpected kind for string column: " + description.kind);
+        this.encoding = new CategoryEncoding();
+        this.data = new int[values.length];
+
+        int i = 0;
+        for (String value : values) {
+            this.set(i, value);
+            i++;
+        }
+    }
+
+    private StringArrayColumn(ColumnDescription description,
+                              int[] data, CategoryEncoding encoding) {
         super(description, data.length);
-        this.validate();
         this.data = data;
+        this.encoding = encoding;
+    }
+
+    @Override
+    public IColumn seal() { return this; }
+
+    @Override
+    public boolean isMissing(final int rowIndex) {
+        return this.getString(rowIndex) == null;
+    }
+
+    @Override
+    public void set(int rowIndex, @Nullable Object value) {
+        if (value == null || value instanceof String)
+            this.set(rowIndex, (String)value);
+        else
+            throw new UnsupportedOperationException("Wrong value type");
+    }
+
+    public void setMissing(int rowIndex) {
+        this.set(rowIndex, (String)null);
+    }
+
+    @Override
+    public void set(int rowIndex, @Nullable String value) {
+        this.data[rowIndex] = this.encoding.encode(value);
+    }
+
+    @Nullable
+    @Override
+    public Object getObject(int rowIndex) {
+        return this.getString(rowIndex);
+    }
+
+    @Override
+    public String getString(int rowIndex) {
+        return this.encoding.decode(this.data[rowIndex]);
     }
 
     @Override
@@ -59,32 +99,8 @@ public final class StringArrayColumn
 
     @Override
     public IColumn rename(String newName) {
-        return new StringArrayColumn(this.description.rename(newName), this.data);
+        return new StringArrayColumn(
+                this.description.rename(newName),
+                this.data, this.encoding);
     }
-
-    @Nullable
-    @Override
-    public String getString(final int rowIndex) {
-        return this.data[rowIndex];
-    }
-
-    @Override
-    public IColumn seal() {
-        return this;
-    }
-
-    @Override
-    public void set(int rowIndex, @Nullable Object value) {
-        this.set(rowIndex, (String)value);
-    }
-
-    public void set(final int rowIndex, @Nullable final String value) {
-        this.data[rowIndex] = value;
-    }
-
-    @Override
-    public boolean isMissing(final int rowIndex){ return this.getString(rowIndex) == null;}
-
-    @Override
-    public void setMissing(final int rowIndex) { this.set(rowIndex, (String)null); }
 }

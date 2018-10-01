@@ -33,6 +33,7 @@ import java.util.logging.Level;
 @Ignore
 public class BaseTest {
     private static boolean initialized = false;
+    protected static boolean toPrint = false;
 
     @BeforeClass
     public static void setup() {

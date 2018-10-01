@@ -29,7 +29,13 @@ import {
     IColumnDescription,
     kindIsString
 } from "../javaBridge";
-import {assert, Converters, formatDate, formatNumber, significantDigits} from "../util";
+import {
+    assert,
+    Converters,
+    formatDate,
+    formatNumber,
+    significantDigits,
+} from "../util";
 import {AnyScale, D3Axis} from "../ui/ui";
 
 export enum AxisKind {
@@ -50,7 +56,6 @@ class BucketBoundary {
 
     public toString(): string {
         switch (this.kind) {
-            case "Category":
             case "Json":
             case "String":
                 return this.value.toString();
@@ -224,8 +229,7 @@ export class AxisData {
                 break;
             }
             case "Json":
-            case "String":
-            case "Category": {
+            case "String": {
                 const ticks: number[] = [];
                 const labels: string[] = [];
                 // note: this is without adjustment.

@@ -60,7 +60,6 @@ public interface IColumn extends Serializable {
         if (this.isMissing(rowIndex)) { return null; }
         switch (this.getDescription().kind) {
             case Json:
-            case Category:
             case String:
                 return this.getString(rowIndex);
             case Date:
@@ -142,8 +141,6 @@ public interface IColumn extends Serializable {
             return new SparseColumn(cd, this.sizeInRows());
 
         switch (kind) {
-            case Category:
-                return new CategoryArrayColumn(cd, this.sizeInRows());
             case Json:
             case String:
                 return new StringArrayColumn(cd, this.sizeInRows());

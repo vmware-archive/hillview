@@ -7,7 +7,7 @@ application for browsing large datasets.  The hillview user interface
 executes in a browser.  Currently the software is alpha quality,
 under active development.  For more information and examples see the
 [Hillview user manual](docs/userManual.md).  Here is a [short
-video](https://1drv.ms/v/s!AlywK8G1COQ_jbF-il8AQvIkOdW2dw) of the
+video](https://1drv.ms/v/s!AlywK8G1COQ_jeRQatBqla3tvgk4FQ) of the
 system in action.
 
 # Developing Hillview
@@ -120,14 +120,28 @@ configuration file; there is a sample file `bin/config.json`.
   "webserver": "web.server.name",
   // Names of the machines hosting the workers; the web
   // server machine can also act as a worker
-  "backends": [
-    "worker1.name",
-    "worker2.name"
-    // etc.
+  "aggregators": [
+    // The "aggregators" level is optional; if it is
+    // missing the configuration should contain just an array of workers
+    {
+      "name": "aggregator1.name",
+      "workers": [
+        "worker1.name",
+        "worker2.name"
+      ]
+    }, {
+      "name": "aggregator2.name",
+      "workers": [
+        "worker3.name",
+        "worker4.name"
+      ]
+    }
   ],
-  // Network port where the servers listen for requests
-  "backend_port": 3569,
-  // Java heap size for Hillview service
+  // Network port where the workers listen for requests
+  "worker_port": 3569,
+  // Network port where aggregators listen for requests
+  "aggregator_port": 3570,
+  // Java heap size for Hillview workers
   "default_heap_size": "25G",
   // User account for running the Hillview service
   "user": "hillview",
@@ -140,7 +154,7 @@ configuration file; there is a sample file `bin/config.json`.
   // If true delete old log files
   "cleanup": false,
   // This can be used to override the default_heap_size for specific machines.
-  "backends_heapsize": {
+  "workers_heapsize": {
     "worker1.name": "25G"
   }
 }

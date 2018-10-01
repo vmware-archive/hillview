@@ -81,7 +81,9 @@ export class HistogramLegendPlot extends Plot {
                 .attr("height", this.height)
                 .style("fill", color)
                 .attr("x", x)
-                .attr("y", this.y);
+                .attr("y", this.y)
+                .append("title")
+                .text(this.axisData.bucketDescription(i));
             x += this.colorWidth;
         }
 
@@ -129,11 +131,11 @@ export class HistogramLegendPlot extends Plot {
     }
 
     /**
-     * Hilight the color with the specified index.  Special values:
+     * Highlight the color with the specified index.  Special values:
      * - colorIndex is < 0: missing box
      * - colorIndex is null: nothing
      */
-    public hilight(colorIndex: number): void {
+    public highlight(colorIndex: number): void {
         if (colorIndex == null) {
             this.hilightRect
                 .attr("width", 0);

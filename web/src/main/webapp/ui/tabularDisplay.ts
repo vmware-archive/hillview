@@ -55,7 +55,7 @@ export class TabularDisplay implements IHtmlElement {
     }
 
     /**
-     * Create columns.  The column names are used as the innerHTML of the cells.
+     * Create columns with the specified names.
      */
     public setColumns(colNames: string[], toolTips: string[]): void {
         const tHead = this.table.createTHead();
@@ -65,7 +65,7 @@ export class TabularDisplay implements IHtmlElement {
             const tip = toolTips[index++];
             const thd = document.createElement("th");
             thd.title = tip;
-            thd.innerHTML = c;
+            thd.textContent = c;
             thr.appendChild(thd);
             thd.classList.add("noselect");
             this.columnCount++;
@@ -91,23 +91,23 @@ export class TabularDisplay implements IHtmlElement {
         return cell;
     }
 
-    public addRightClickHandler(colName: string, handler: (e: Event) => void) {
+    public addRightClickHandler(colName: string, handler: (e: Event) => void): void {
         this.colHeaderMap.get(colName).oncontextmenu = handler;
     }
 
     /**
-     * Add a row of values; these are set as the innerHTML values of the cells.
+     * Add a row of values; these are set as the text values of the cells.
      */
     public addRow(data: string[], canClick: boolean = true): HTMLTableRowElement {
         const trow = this.insertRow(canClick);
         for (const d of data) {
             const cell = this.addRowCell(trow);
-            cell.innerHTML = d;
+            cell.textContent = d;
         }
         return trow;
     }
 
-    public addFooter() {
+    public addFooter(): void {
         const footer = this.tbody.insertRow();
         const cell = footer.insertCell(0);
         cell.colSpan = this.columnCount;
@@ -127,7 +127,7 @@ export class TabularDisplay implements IHtmlElement {
         return trow;
     }
 
-    public excludeRow(val: number) {
+    public excludeRow(val: number): void {
         this.selectedRows.exclude(val);
     }
 

@@ -26,8 +26,13 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import org.hillview.dataset.api.IJson;
 
+import java.io.IOException;
 import java.lang.reflect.Type;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Describes the list of hosts that comprise a cluster. The corresponding Json representation
@@ -60,5 +65,13 @@ public final class ClusterDescription implements IJson {
                 throws JsonParseException {
             return HostAndPort.fromString(json.getAsString());
         }
+    }
+
+    public static ClusterDescription fromFile(String filename) throws IOException {
+        final List<String> lines = Files.readAllLines(Paths.get(filename), Charset.defaultCharset());
+        final List<HostAndPort> hostAndPorts = lines.stream()
+                .map(HostAndPort::fromString)
+                .collect(Collectors.toList());
+        return new ClusterDescription(hostAndPorts);
     }
 }

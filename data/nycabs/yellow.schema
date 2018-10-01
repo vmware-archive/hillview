@@ -5,7 +5,7 @@
 {name:"passenger_count",kind:Integer},
 {name:"trip_distance",kind:Double},
 {name:"RatecodeID",kind:Integer},
-{name:"store_and_fwd_flag",kind:Category},
+{name:"store_and_fwd_flag",kind:String},
 {name:"PULocationID",kind:Double},
 {name:"DOLocationID",kind:Double},
 {name:"payment_type",kind:Integer},

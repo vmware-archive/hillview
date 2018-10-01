@@ -76,7 +76,6 @@ public abstract class BaseListColumn extends BaseColumn implements IAppendableCo
             return;
         }
         switch (this.description.kind) {
-            case Category:
             case String:
             case Json:
                 this.append((String)obj);
@@ -123,8 +122,6 @@ public abstract class BaseListColumn extends BaseColumn implements IAppendableCo
 
     public static BaseListColumn create(ColumnDescription desc) {
         switch (desc.kind) {
-            case Category:
-                return new CategoryListColumn(desc);
             case String:
             case Json:
                 return new StringListColumn(desc);

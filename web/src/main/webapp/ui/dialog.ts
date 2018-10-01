@@ -17,7 +17,7 @@
 
 import {drag as d3drag} from "d3-drag";
 import {event as d3event, select as d3select} from "d3-selection";
-import {cloneArray, makeId} from "../util";
+import {cloneArray, makeId, makeSpan} from "../util";
 import {EditBox} from "./editBox";
 import {IHtmlElement, Point} from "./ui";
 
@@ -551,7 +551,7 @@ export class Dialog extends DialogBase {
  * Notifications have no input elements, just an OK button.
  */
 export class NotifyDialog extends DialogBase {
-    constructor(title: string, toolTip: string) {
+    constructor(title: string, message: string | null, toolTip: string) {
         super(title, toolTip);
 
         const confirmButton = document.createElement("button");
@@ -559,6 +559,9 @@ export class NotifyDialog extends DialogBase {
         confirmButton.classList.add("confirm");
         confirmButton.onclick = () => this.hide();
         this.buttonsDiv.appendChild(confirmButton);
+
+        if (message != null)
+            this.fieldsDiv.appendChild(makeSpan(message, false));
     }
 
     public show(): void {
