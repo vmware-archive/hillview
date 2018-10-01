@@ -34,7 +34,7 @@ done
 export MAVEN_OPTS="-Xmx2048M"
 EXTRAARGS=""
 if [ $SKIP -eq "1" ]; then
-    EXTRAARGS="-Dskiptests "$EXTRAARGS
+    EXTRAARGS="-DskipTests "$EXTRAARGS
 fi
 if [ $TOOLS -eq "1" ]; then
     EXTRAARGS="-P tools "$EXTRAARGS
