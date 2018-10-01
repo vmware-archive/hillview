@@ -7,7 +7,7 @@ application for browsing large datasets.  The hillview user interface
 executes in a browser.  Currently the software is alpha quality,
 under active development.  For more information and examples see the
 [Hillview user manual](docs/userManual.md).  Here is a [short
-video](https://1drv.ms/v/s!AlywK8G1COQ_jbF-il8AQvIkOdW2dw) of the
+video](https://1drv.ms/v/s!AlywK8G1COQ_jeRQatBqla3tvgk4FQ) of the
 system in action.
 
 # Developing Hillview
