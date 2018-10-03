@@ -6,6 +6,8 @@
 
 from argparse import ArgumentParser
 from hillviewCommon import ClusterConfiguration, RemoteHost
+import sys
+from os import path
 
 def check_webserver(config):
     """Checks if the Hillview web server is running"""
@@ -34,6 +36,13 @@ def main():
     parser = ArgumentParser()
     parser.add_argument("config", help="json cluster configuration file")
     args = parser.parse_args()
+    if 'config.json' not in args.config:
+        print("Please provide config.json")
+        print("Run : python3 status.py config.json")
+        sys.exit(1)
+    if not path.exists(args.config):
+        print("File " + args.config + " does not exists")
+        sys.exit(1)
     config = ClusterConfiguration(args.config)
     check_webserver(config)
     check_workers(config)
