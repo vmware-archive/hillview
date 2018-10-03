@@ -49,9 +49,10 @@ export class HillviewToplevel implements IHtmlElement {
         this.topLevel.appendChild(page.getHTMLRepresentation());
         const menu = new LoadMenu(InitialObject.instance, page);
         page.setDataView(menu);
-        page.getTitleElement().onclick = () => menu.toggleAdvanced();
+        page.getTitleElement().ondblclick = () => menu.toggleAdvanced();
 
         const tabStrip = document.createElement("div");
+        this.topLevel.appendChild(document.createElement("hr"));
         this.topLevel.appendChild(tabStrip);
         this.strip = document.createElement("div");
         this.strip.className = "tabs-strip";

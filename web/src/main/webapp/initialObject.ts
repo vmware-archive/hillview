@@ -140,11 +140,11 @@ export class InitialObject extends RemoteObject {
 
     // noinspection JSUnusedLocalSymbols
     private constructor() {
-        // The "0" argument is the object id for the initial object.
+        // The "-1" argument is the object id for the initial object.
         // It must match the id of the object declared in RpcServer.java.
         // This is a "well-known" name used for bootstrapping the system.
         // noinspection JSUnusedLocalSymbols
-        super("0");
+        super("-1");
     }
 
     public loadFiles(files: FileSetDescription, loadMenuPage: FullPage): void {

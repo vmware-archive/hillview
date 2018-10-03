@@ -16,12 +16,14 @@ def execute_command(command):
 
 class RemoteHost(object):
     """Abstraction for a remote host"""
-    def __init__(self, user, host, heapsize="2G"):
+    def __init__(self, user, host, parent, heapsize="200M"):
         """Create a remote host"""
         assert isinstance(user, str)
         assert isinstance(host, str)
+        assert parent == None or isinstance(parent, RemoteHost)
         self.host = host
         self.user = user
+        self.parent = parent
         self.heapsize = heapsize
 
     def uh(self):
@@ -70,9 +72,9 @@ class RemoteHost(object):
 
 class RemoteAggregator(RemoteHost):
     """Abstraction for an aggregator"""
-    def __init__(self, user, host, children):
+    def __init__(self, user, host, parent, children):
         "Create a remote aggregator"""
-        super().__init__(user, host)
+        super().__init__(user, host, parent)
         self.children = children
 
 class JsonConfig(object):
@@ -115,9 +117,10 @@ class ClusterConfiguration(object):
         self.scriptFolder = os.path.dirname(os.path.abspath(__file__))
         self.service_folder = self.jsonConfig.service_folder
         self.worker_port = self.jsonConfig.worker_port
-        self.aggregator_port = self.jsonConfig.aggregator_port
         self.tomcat = self.jsonConfig.tomcat
         self.tomcat_version = self.jsonConfig.tomcat_version
+        if hasattr(self.jsonConfig, "aggregator_port"):
+            self.aggregator_port = self.jsonConfig.aggregator_port
 
     def get_user(self):
         return self.jsonConfig.user
@@ -129,22 +132,26 @@ class ClusterConfiguration(object):
 
     def get_workers(self):
         """Returns an array of RemoteHost objects containing all workers"""
+        webserver = self.get_webserver()
         if hasattr(self.jsonConfig, "aggregators"):
-            return [RemoteHost(self.jsonConfig.user, h, self._get_heap_size(h))
+            return [RemoteHost(self.jsonConfig.user, h,
+                               RemoteHost(self.jsonConfig.user, a.name, webserver),
+                               self._get_heap_size(h))
                     for a in self.jsonConfig.aggregators
                     for h in a.workers]
-        return [RemoteHost(self.jsonConfig.user, h, self._get_heap_size(h))
+        return [RemoteHost(self.jsonConfig.user, h, webserver, self._get_heap_size(h))
                 for h in self.jsonConfig.workers]
 
     def get_webserver(self):
         """Returns a remote host representing the web server"""
-        return RemoteHost(self.jsonConfig.user, self.jsonConfig.webserver)
+        return RemoteHost(self.jsonConfig.user, self.jsonConfig.webserver, None)
 
     def get_aggregators(self):
         """Returns an array of RemoteAggregator objects"""
         if not hasattr(self.jsonConfig, "aggregators"):
             return []
-        return [RemoteAggregator(self.jsonConfig.user, h.name, h.workers)
+        webserver = self.get_webserver()
+        return [RemoteAggregator(self.jsonConfig.user, h.name, webserver, h.workers)
                 for h in self.jsonConfig.aggregators]
 
     def cleanup_on_install(self):

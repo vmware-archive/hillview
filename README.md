@@ -4,11 +4,14 @@
 
 Hillview: a big data spreadsheet.  Hillview is a cloud-based
 application for browsing large datasets.  The hillview user interface
-executes in a browser.  Currently the software is alpha quality,
-under active development.  For more information and examples see the
-[Hillview user manual](docs/userManual.md).  Here is a [short
-video](https://1drv.ms/v/s!AlywK8G1COQ_jbF-il8AQvIkOdW2dw) of the
-system in action.
+executes in a browser.  Currently the software is alpha quality, under
+active development.  There is a [Hillview user
+manual](docs/userManual.md).  A [short
+video](https://1drv.ms/v/s!AlywK8G1COQ_jbF-il8AQvIkOdW2dw) shows the
+system in action in real-time.  You can [test demo
+version](http://ec2-18-217-136-170.us-east-2.compute.amazonaws.com:8080/)
+of the system running on 15 Amazon machines (2 cores and 7GB RAM
+each).
 
 # Developing Hillview
 

@@ -37,7 +37,7 @@ export class TabularDisplay implements IHtmlElement {
     constructor() {
         this.topLevel = document.createElement("div");
         this.topLevel.style.maxHeight = PlottingSurface.canvasHeight.toString() + "px";
-        this.topLevel.style.overflowY = "auto";
+        this.topLevel.style.overflowY = "scroll";  // This should be auto, but it looks bad on Mozilla
         this.topLevel.style.display =  "inline-block";
 
         this.table = document.createElement("table");

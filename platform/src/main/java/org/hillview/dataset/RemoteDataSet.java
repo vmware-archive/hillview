@@ -40,8 +40,6 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static org.hillview.dataset.remoting.HillviewServer.ROOT_DATASET_INDEX;
-
 /**
  * An IDataSet that is a proxy for a DataSet on a remote machine. The remote IDataSet
  * is pointed to by (serverEndpoint, remoteHandle). Any RemoteDataSet instantiated
@@ -60,24 +58,30 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
     // requests with high priority.
     private static final ExecutorService executorService =
             ExecutorUtils.newNamedThreadPool("rds-shared-executor", 5, Thread.MAX_PRIORITY);
-
-    public RemoteDataSet(final HostAndPort serverEndpoint) {
-        this(serverEndpoint, ROOT_DATASET_INDEX);
-    }
+    /**
+     * When the service is deployed with a single initial dataset this is the index used.
+     */
+    public static final int defaultDatasetIndex = -1;
 
     /**
      * Creates a parallel dataset with one representative for each machine in the
-     * specified cluster
+     * specified cluster.
+     * @param index   Index of dataset on remote machine.  Must be a negative number.
      */
-    public static IDataSet<Empty> createCluster(final ClusterDescription description) {
+    public static IDataSet<Empty> createCluster(final ClusterDescription description, int index) {
         final int numServers = description.getServerList().size();
         if (numServers <= 0) {
             throw new IllegalArgumentException("ClusterDescription must contain one or more servers");
         }
         HillviewLogger.instance.info("Creating parallel dataset");
         final ArrayList<IDataSet<Empty>> emptyDatasets = new ArrayList<IDataSet<Empty>>(numServers);
-        description.getServerList().forEach(server -> emptyDatasets.add(new RemoteDataSet<Empty>(server)));
+        description.getServerList().forEach(server -> emptyDatasets.add(
+                new RemoteDataSet<Empty>(server, index)));
         return new ParallelDataSet<Empty>(emptyDatasets);
+    }
+
+    public RemoteDataSet(final HostAndPort serverEndpoint) {
+        this(serverEndpoint, -1);
     }
 
     public RemoteDataSet(final HostAndPort serverEndpoint, final int remoteHandle) {

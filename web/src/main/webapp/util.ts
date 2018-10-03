@@ -72,6 +72,16 @@ export function makeSpan(text: string | null, highlight: boolean): HTMLElement {
 }
 
 /**
+ * Creates an HTML element that displays as missing data.
+ */
+export function makeMissing(): HTMLElement {
+    const span = document.createElement("span");
+    span.textContent = "missing";
+    span.className = "missingData";
+    return span;
+}
+
+/**
  * Interface which is implemented by classes that know
  * how to serialize and deserialize themselves from objects.
  * T in general will be the class itself.

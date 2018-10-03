@@ -20,7 +20,7 @@ def stop_webserver(config):
 
 def stop_worker(rh):
     """Stops a Hillview service on a remote worker machine"""
-    print("Stopping ", rh.host)
+    print("Stopping", rh.host)
     rh.run_remote_shell_command(
         # The true is there to ignore the exit code of pkill
         "pkill -f hillview-server; true")

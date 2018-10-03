@@ -185,6 +185,8 @@ export abstract class PlottingSurface {
     }
 
     public select(add: boolean): void {
+        if (this.selectionBorder == null)
+            return;
         if (add)
             this.selectionBorder
                 .attr("fill", "pink");

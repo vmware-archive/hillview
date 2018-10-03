@@ -12,6 +12,9 @@ def execute_command(command):
         print("Exit code returned:", exitcode)
         exit(exitcode)
 
+def canonical_name(year, month):
+    return "On_Time_On_Time_Performance_" + str(year) + "_" + str(month)
+
 def download(startyear, startmonth, endyear, endmonth):
     months = (endyear - startyear) * 12 + endmonth - startmonth + 1;
     if months < 0:
@@ -20,20 +23,23 @@ def download(startyear, startmonth, endyear, endmonth):
         inMonths = startyear*12 + startmonth + i - 1
         year = inMonths / 12
         month = (inMonths % 12) + 1
-        basename="On_Time_On_Time_Performance_" + str(year) + "_" + str(month)
-        if not os.path.exists(basename + ".csv.gz"):
+        basename="On_Time_Reporting_Carrier_On_Time_Performance_1987_present_" + str(year) + "_" + str(month)
+        canonical = canonical_name(year, month)
+        if not os.path.exists(canonical + ".csv.gz"):
             filename=basename + ".zip"
             url="https://transtats.bts.gov/PREZIP/" + filename
             execute_command("wget -q " + url)
             execute_command("unzip -o " + filename)
             os.unlink(filename)
             os.unlink("readme.html")
-            execute_command("gzip " + basename + ".csv")
+            actualname = basename.replace("1987_present", "(1987_present)")
+            os.rename(actualname + ".csv", canonical + ".csv")
+            execute_command("gzip " + canonical + ".csv")
         else:
             print("Already having " + basename)
 
 def main():
-    download(2016, 1, 2016, 2)
+    download(1987, 1, 1987, 1)
 
 if __name__ == "__main__":
     main()

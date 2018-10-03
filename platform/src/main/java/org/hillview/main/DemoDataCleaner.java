@@ -19,6 +19,7 @@ package org.hillview.main;
 
 import org.hillview.storage.CsvFileLoader;
 import org.hillview.storage.CsvFileWriter;
+import org.hillview.storage.OrcFileWriter;
 import org.hillview.table.Schema;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.HillviewLogger;
@@ -34,7 +35,6 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * TODO: delete this class
  * This entry point is only used for preparing some data files for a demo.
  * It takes files named like data/ontime/On_Time_On_Time_Performance_*_*.csv and
  * removes some columns from them.  Optionally, it can also split these into
@@ -56,7 +56,7 @@ class DemoDataCleaner {
         String prefix = "On_Time_On_Time_Performance_";
         Path folder = Paths.get(dataFolder);
         Stream<Path> files = Files.walk(folder, 1);
-        Schema[] schema = new Schema[1];
+        Schema schema = Schema.readFromJsonFile(Paths.get(dataFolder, "short.schema"));
 
         files.filter(f -> {
             String filename = f.getFileName().toString();
@@ -70,26 +70,29 @@ class DemoDataCleaner {
                     CsvFileLoader.Config config = new CsvFileLoader.Config();
                     config.allowFewerColumns = false;
                     config.hasHeaderRow = true;
-                    CsvFileLoader r = new CsvFileLoader(filename, config, null);
+                    CsvFileLoader r = new CsvFileLoader(filename, config, dataFolder + "/On_Time.schema");
 
                     System.out.println("Reading " + f);
                     ITable tbl = r.load();
-
-                    if (schema[0] == null) {
-                        Schema fullSchema = tbl.getSchema();
-                        fullSchema.writeToJsonFile(Paths.get(dataFolder, "On_Time.schema"));
-                        schema[0] = fullSchema.project(columns::contains);
-                        schema[0].writeToJsonFile(Paths.get(dataFolder, "short.schema"));
-                    }
-                    ITable p = tbl.project(schema[0]);
+                    ITable p = tbl.project(schema);
 
                     String end = filename.replace(prefix, "");
                     if (end.endsWith(".gz"))
                         // the output is uncompressed
-                        end = end.replace(".gz", "");
+                        end = end.replace(".gz", "");                   
                     CsvFileWriter writer = new CsvFileWriter(end);
                     System.out.println("Writing " + end);
                     writer.writeTable(p);
+                    /*
+                    OrcFileWriter owriter = new OrcFileWriter(end);
+                    System.out.println("Writing " + end);
+                    owriter.writeTable(p);
+
+                    String big = filename.replace(".csv.gz", ".orc");
+                    owriter = new OrcFileWriter(big);
+                    System.out.println("Writing " + big);
+                    owriter.writeTable(tbl);
+	            */
                 });
     }
 }

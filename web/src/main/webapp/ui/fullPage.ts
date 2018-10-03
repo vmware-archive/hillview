@@ -48,7 +48,7 @@ export class FullPage implements IHtmlElement {
     protected console: ConsoleDisplay;
     public pageTopLevel: HTMLElement;
     private readonly menuSlot: HTMLElement;
-    private readonly h1: HTMLElement;
+    private readonly h2: HTMLElement;
     private minimized: boolean;
     private readonly displayHolder: HTMLElement;
     protected titleRow: HTMLDivElement;
@@ -85,20 +85,20 @@ export class FullPage implements IHtmlElement {
         this.menuSlot = document.createElement("div");
         this.addCell(this.menuSlot, true);
 
-        const h1 = document.createElement("h1");
+        const h2 = document.createElement("h2");
         if (title != null)
-            h1.innerHTML = (this.pageId > 0 ? (this.pageId.toString() + ". ") : "") + title;
-        h1.style.textOverflow = "ellipsis";
-        h1.style.textAlign = "center";
-        h1.style.margin = "0";
-        this.h1 = h1;
-        this.addCell(h1, false);
+            h2.innerHTML = (this.pageId > 0 ? (this.pageId.toString() + ". ") : "") + title;
+        h2.style.textOverflow = "ellipsis";
+        h2.style.textAlign = "center";
+        h2.style.margin = "0";
+        this.h2 = h2;
+        this.addCell(h2, false);
 
         if (sourcePageId != null) {
-            h1.innerHTML += " from ";
+            h2.innerHTML += " from ";
             const refLink = this.pageReference(sourcePageId);
             refLink.title = "View which produced this one.";
-            h1.appendChild(refLink);
+            h2.appendChild(refLink);
         }
 
         this.help = document.createElement("button");
@@ -146,7 +146,7 @@ export class FullPage implements IHtmlElement {
     }
 
     public getTitleElement(): HTMLElement {
-        return this.h1;
+        return this.h2;
     }
 
     /**

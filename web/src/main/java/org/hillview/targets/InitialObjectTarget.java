@@ -67,7 +67,7 @@ public class InitialObjectTarget extends RpcTarget {
     }
 
     private void initialize(final ClusterDescription description) {
-        this.emptyDataset = RemoteDataSet.createCluster(description);
+        this.emptyDataset = RemoteDataSet.createCluster(description, RemoteDataSet.defaultDatasetIndex);
     }
 
     @HillviewRpc
