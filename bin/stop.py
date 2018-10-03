@@ -11,20 +11,21 @@ def stop_webserver(config):
     """Stops the Hillview web server"""
     assert isinstance(config, ClusterConfiguration)
     rh = config.get_webserver()
-    print("Stopping web server", rh)
-    rh.run_remote_shell_command(
-        config.service_folder + "/" + config.tomcat + "/bin/shutdown.sh")
+    print("Stopping web server on", rh)
+    rh.run_remote_shell_command("if pgrep -f tomcat; then " + config.service_folder + "/" +
+                                config.tomcat + "/bin/shutdown.sh; echo Stopped; else " +
+                                " echo \"Web server already stopped on " + str(rh.host) +"\"; " +
+                                " true; fi")
     rh.run_remote_shell_command(
         # The true is there to ignore the exit code of pkill
         "pkill -f Bootstrap; true")
 
 def stop_worker(rh):
     """Stops a Hillview service on a remote worker machine"""
-    print("Stopping", rh.host)
-    rh.run_remote_shell_command(
-        # The true is there to ignore the exit code of pkill
-        "pkill -f hillview-server; true")
-
+    print("Stopping hillview on ", rh.host)
+    rh.run_remote_shell_command("if pgrep -f hillview-server; then pkill -f hillview-server; true; " +
+                                "echo Stopped ; else echo \"Hillview already stopped on " +
+                                str(rh.host) +"\"; true; fi")
 def stop_backends(config):
     """Stops all Hillview workers"""
     assert isinstance(config, ClusterConfiguration)
