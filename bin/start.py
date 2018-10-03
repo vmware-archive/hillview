@@ -29,6 +29,9 @@ def start_worker(config, rh):
         " -jar " + config.service_folder + \
         "/hillview/hillview-server-jar-with-dependencies.jar " + rh.host + ":" + \
         str(config.worker_port) + " >nohup.out 2>&1 &")
+    rh.run_remote_shell_command("if pgrep -f hillview-server; then echo Worker started; else " +
+                                " echo \"Worker not started on " + str(rh.host) +"\"; " +
+                                " cat " + config.service_folder + "/hillview/nohup.out; false; fi")
 
 def start_aggregator(config, agg):
     """Starts a Hillview aggregator"""
