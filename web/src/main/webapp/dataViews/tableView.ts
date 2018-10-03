@@ -719,11 +719,13 @@ export class TableView extends TSViewBase implements IScrollTarget {
                     action: () => this.heavyHittersDialog(),
                     help: "Find the values that occur most frequently in the selected columns.",
                 }, true);
+                /*
                 this.contextMenu.addItem({
                     text: "Count Sketch",
                     action: () => this.runCountSketch(),
                     help: "Find the values that occur most frequently in the selected columns.",
                 }, true);
+                */
                 this.contextMenu.addItem({
                     text: "PCA...",
                     action: () => this.pca(true),

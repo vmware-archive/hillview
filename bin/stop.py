@@ -5,7 +5,7 @@
 # pylint: disable=invalid-name
 
 from argparse import ArgumentParser
-from hillviewCommon import ClusterConfiguration
+from hillviewCommon import ClusterConfiguration, get_config
 
 def stop_webserver(config):
     """Stops the Hillview web server"""
@@ -36,7 +36,7 @@ def main():
     parser = ArgumentParser()
     parser.add_argument("config", help="json cluster configuration file")
     args = parser.parse_args()
-    config = ClusterConfiguration(args.config)
+    config = get_config(parser, args)
     stop_webserver(config)
     stop_backends(config)
 

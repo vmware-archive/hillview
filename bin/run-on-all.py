@@ -5,7 +5,7 @@
 # pylint: disable=invalid-name
 
 from argparse import ArgumentParser, REMAINDER
-from hillviewCommon import ClusterConfiguration
+from hillviewCommon import ClusterConfiguration, get_config
 
 def execute_command_on_all(config, command, parallel):
     """Executes command on all workers"""
@@ -20,7 +20,7 @@ def main():
     parser.add_argument("config", help="json cluster configuration file")
     parser.add_argument("command", help="command to run", nargs=REMAINDER)
     args = parser.parse_args()
-    config = ClusterConfiguration(args.config)
+    config = get_config(parser, args)
     command = " ".join(args.command)
     execute_command_on_all(config, command, False)
 

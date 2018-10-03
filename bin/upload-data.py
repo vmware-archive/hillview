@@ -9,7 +9,7 @@
 
 from argparse import ArgumentParser, REMAINDER
 import os.path
-from hillviewCommon import ClusterConfiguration
+from hillviewCommon import ClusterConfiguration, get_config
 
 created_folders = set()
 
@@ -56,7 +56,7 @@ def main():
     parser.add_argument("--common", "-s", help="File that is loaded to all machines")
     parser.add_argument("files", help="Files to copy", nargs=REMAINDER)
     args = parser.parse_args()
-    config = ClusterConfiguration(args.config)
+    config = get_config(parser, args)
     folder = args.directory
     if folder is None:
         print("Directory argument is mandatory")
@@ -68,9 +68,9 @@ def main():
         copyOptions = ""
     if not os.path.isabs(folder):
         folder = os.path.join(config.service_folder, folder)
+        print("Folder is relative, using", folder)
     if args.common != None:
         copy_everywhere(config, args.common, folder, copyOptions)
-    copy_files(config, folder, args.files, copyOptions)
     print("Done.")
 
 if __name__ == "__main__":

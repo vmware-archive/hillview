@@ -5,7 +5,7 @@
 # pylint: disable=invalid-name
 
 from argparse import ArgumentParser
-from hillviewCommon import RemoteHost, RemoteAggregator, ClusterConfiguration
+from hillviewCommon import RemoteHost, RemoteAggregator, ClusterConfiguration, get_config
 
 def start_webserver(config):
     """Starts the Hillview web server"""
@@ -58,7 +58,7 @@ def main():
     parser = ArgumentParser()
     parser.add_argument("config", help="json cluster configuration file")
     args = parser.parse_args()
-    config = ClusterConfiguration(args.config)
+    config = get_config(parser, args)
     start_webserver(config)
     start_workers(config)
     start_aggregators(config)

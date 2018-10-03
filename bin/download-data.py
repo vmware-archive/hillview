@@ -9,7 +9,7 @@ from argparse import ArgumentParser
 import os.path
 import os
 import errno
-from hillviewCommon import execute_command, ClusterConfiguration
+from hillviewCommon import execute_command, ClusterConfiguration, get_config
 
 def copy_from_remote_host(rh, pattern):
     """Copy files matching the pattern from the remote machine"""
@@ -37,7 +37,7 @@ def main():
     parser.add_argument("config", help="json cluster configuration file")
     parser.add_argument("pattern", help="Filename pattern to download")
     args = parser.parse_args()
-    config = ClusterConfiguration(args.config)
+    config = get_config(parser, args)
     pattern = args.pattern
     copy_files(config, pattern)
     print("Done.")

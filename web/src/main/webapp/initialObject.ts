@@ -95,7 +95,7 @@ class FileSizeReceiver extends OnCompleteReceiver<FileSizeSketchInfo> {
             return;
         }
         const fileSize = "Loading " + size.fileCount + " file(s), total size " +
-            significantDigits(size.totalSize);
+            significantDigits(size.totalSize) + " bytes";
         const rr = this.remoteObj.createStreamingRpcRequest<RemoteObjectId>("loadTable", null);
         rr.chain(this.operation);
         const observer = new RemoteTableReceiver(this.page, rr, this.data, fileSize, false);
