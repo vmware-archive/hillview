@@ -5,7 +5,7 @@
 
 import os.path
 from argparse import ArgumentParser
-from hillviewCommon import ClusterConfiguration
+from hillviewCommon import ClusterConfiguration, get_config
 
 def delete_remote_folder(rh, folder):
     """Deletes folder on the remote host"""
@@ -23,7 +23,7 @@ def main():
     parser.add_argument("config", help="json cluster configuration file")
     parser.add_argument("folder", help="Folder to delete from all machines")
     args = parser.parse_args()
-    config = ClusterConfiguration(args.config)
+    config = get_config(parser, args)
     folder = args.folder
     if not os.path.isabs(folder):
         folder = os.path.join(config.service_folder, folder)

@@ -587,7 +587,7 @@ the current state of the display.
   will display the data in these columns as a [Heat-map
   view](#heatmap-views).  When three columns are selected the
   following menu allows the user to configure the data to display as a
-  [Trellis plot view](#trellis-plot-views).
+  [Trellis plot view](#trellis-plots-of-heatmaps).
 
   ![Heatmap array menu](heatmap-array-menu.png)
 
@@ -880,6 +880,10 @@ The "View" menu from a histogram display has the following functions:
   of buckets; the histogram will be redrawn using the specified number
   of buckets.
 
+* group by: select a second column and draw a [Trellis plot of a
+  series of histograms](#trellis-plots-of-1d-histograms) with the data
+  grouped on the values in the second column
+
 * correlate: allows the user to specify a second column and switches
   the display to a [two-dimensional
   histogram](#two-dimensional-histogram-views)
@@ -990,8 +994,12 @@ The "view" menu for a 2D histogram offers the following operations:
   same two columns as in the current histogram.
 
 * relative/absolute: This toggles between displaying the 2D histogram
-bars with relative sizes or normalized all to 100% height, as in the
-following image.
+  bars with relative sizes or normalized all to 100% height, as in the
+  following image.
+
+* group by: choose a third column and group the data into a set of 2D
+  histograms displayed as a [Trellis plot of 2D
+  histograms](#trellis-plots-of-2d-histograms).
 
 ![A normalized two-dimensional histogram](hillview-histogram-normalized.png)
 
@@ -1055,8 +1063,8 @@ The heatmap view menu has the following operations:
   of the data in the two columns that are used for the heatmap
   display.
 
-* group by: Groups data by a third column creating a [Trellis plot] (#trellis-plot-views).
-
+* group by: Groups data by a third column creating a [Trellis plot]
+  (#trellis-plots-of-heatmaps).
 
 For a description of the combine menu see [combining two views](#combining-two-views).
 
@@ -1080,16 +1088,56 @@ choose how many values to use in a principal component analysis
 (PCA), as described below.  In the picture above the first 3
 singular values explain most of the variance of the data.
 
-### Trellis plot views
+## Trellis plots
 
-![An array of heatmap views](hillview-heatmap-array.png)
+Hillview can display multiple histograms or heatmaps in a grid view
+called a Trellis plot.  Each plot corresponds to a contiguous range of
+values from a column.  For example, the figure below shows a Trellis
+plot of histograms of the arrival delay, where each histogram is drawn
+for a different state.
 
-A Trellis plot is an array of heatmaps, grouped by a third column, which
-currently is restricted to be a string column.
-Each heatmap is comprised of the rows that have a specific value in the third
-(string) column.
+Selection in a Trellis plot can be done in several ways:
+* dragging the mouse within a single plot will perform selection on
+  the X axis of that plot.
 
-*TODO* add various Trellis plot descriptions
+![Selection within a single plot](trellis-simple-selection.png)
+
+* dragging the mouse across multiple plots will select the data
+  corresponding the all plots congiguously between the first one
+  selected and the last one selected
+
+![Selection across multiple plots](trellis-complex-selection.png)
+
+### Trellis plots of 1D histograms
+
+Hillview can display multiple histograms in a grid, using a so-called
+Trellis plot view.
+
+![A Trellis plot of 1D histograms](hillview-histogram-array.png)
+
+The following operations are available from the View menu of a Trellis histogram view:
+
+![View operations on Trellis histograms](trellis-histogram-view-menu.png)
+
+* refresh: will redraw the view
+* table: will display the underlying data in a [tabular view](#table-views).
+* exact: will compute and display the histograms without approximation
+* # buckets: allows the user to change the number of buckets displayed for each histogram
+* # groups: allows the user to change the number of groups used for displaying the Trellis plot
+* correlate...: allows the user to specify a second column that is used for displaying a Trellis plot
+  of 2D histograms
+
+### Trellis plots of 2D histograms
+
+*Currently not yet implemented*
+
+### Trellis plots of heatmaps
+
+![A Trellis plot of heatmap views](hillview-heatmap-array.png)
+
+A Trellis plot is an array of heatmaps, grouped by a third column.
+Each heatmap displays data that corresponds to a range of values in
+the grouping column.
 
 ### Combining two views
 

@@ -7,7 +7,7 @@
 from argparse import ArgumentParser
 import tempfile
 import os.path
-from hillviewCommon import ClusterConfiguration
+from hillviewCommon import ClusterConfiguration, get_config
 
 def prepare_webserver(config):
     """Deploys files needed by the Hillview web server"""
@@ -110,7 +110,7 @@ def main():
     parser = ArgumentParser()
     parser.add_argument("config", help="json cluster configuration file")
     args = parser.parse_args()
-    config = ClusterConfiguration(args.config)
+    config = get_config(parser, args)
     prepare_webserver(config)
     prepare_aggregators(config)
     prepare_workers(config)

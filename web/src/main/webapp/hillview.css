@@ -21,6 +21,14 @@ html {
     overflow-y: scroll;
 }
 
+/* This is tuned to align the title with the logo. */
+.hillviewTitle > div {
+    display: inline-block;
+    vertical-align: top;
+    margin-top: 5px;
+    margin-left: 0;
+}
+
 body {
     font-family: sans-serif;
     margin: 1px;
@@ -41,6 +49,11 @@ body {
 }
 
 h1 {
+    margin: 5px;
+    font-size: 1.6em;
+}
+
+h2 {
     margin: 5px;
     font-size: 1.4em;
 }

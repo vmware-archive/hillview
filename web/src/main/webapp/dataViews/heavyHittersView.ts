@@ -27,7 +27,14 @@ import {FullPage} from "../ui/fullPage";
 import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
 import {TabularDisplay} from "../ui/tabularDisplay";
 import {Resolution, SpecialChars} from "../ui/ui";
-import {cloneSet, convertToString, ICancellable, makeSpan, significantDigitsHtml} from "../util";
+import {
+    cloneSet,
+    convertToString,
+    ICancellable,
+    makeMissing,
+    makeSpan,
+    significantDigitsHtml
+} from "../util";
 import {TableOperationCompleted} from "./tableView";
 
 /**
@@ -269,7 +276,10 @@ export class HeavyHittersView extends BigTableView {
                 row.push(makeSpan(k.toString(), false));
                 for (let j = 0; j < this.columnsShown.length; j++) {
                     const value = nextKList.rows[i].values[j];
-                    row.push(makeSpan(convertToString(value, this.columnsShown[j].kind), false));
+                    if (value == null)
+                        row.push(makeMissing());
+                    else
+                        row.push(makeSpan(convertToString(value, this.columnsShown[j].kind), false));
                 }
                 row.push(this.valueToHtml(nextKList.rows[i].count));
                 row.push(this.valueToHtml((nextKList.rows[i].count / nextKList.rowsScanned) * 100));

@@ -55,7 +55,7 @@ class HillviewServerRunner {
                 // aggregator node
                 HillviewLogger.initialize("aggregator", "hillview-agg.log");
                 ClusterDescription cluster = ClusterDescription.fromFile(args[0]);
-                initial = RemoteDataSet.createCluster(cluster);
+                initial = RemoteDataSet.createCluster(cluster, RemoteDataSet.defaultDatasetIndex);
                 hostAndPort = args[1];
             } else {
                 usage();

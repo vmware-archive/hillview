@@ -61,7 +61,7 @@ public abstract class RpcTarget implements IJson {
         }
 
         static Id initialId() {
-            return new RpcTarget.Id("0");
+            return new RpcTarget.Id(Integer.toString(RemoteDataSet.defaultDatasetIndex));
         }
 
         @Override
@@ -84,7 +84,7 @@ public abstract class RpcTarget implements IJson {
         }
 
         boolean isInitial() {
-            return this.objectId.equals("0");
+            return this.objectId.equals(Id.initialId().objectId);
         }
     }
 

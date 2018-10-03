@@ -1,10 +1,11 @@
 """Common functions user by the Hillview deployment scripts"""
 
-# pylint: disable=invalid-name,too-few-public-methods
+# pylint: disable=invalid-name,too-few-public-methods, bare-except
 import os.path
 import subprocess
 import tempfile
 import json
+from argparse import ArgumentParser
 
 def execute_command(command):
     """Executes the specified command using a shell"""
@@ -16,12 +17,14 @@ def execute_command(command):
 
 class RemoteHost(object):
     """Abstraction for a remote host"""
-    def __init__(self, user, host, heapsize="2G"):
+    def __init__(self, user, host, parent, heapsize="200M"):
         """Create a remote host"""
         assert isinstance(user, str)
         assert isinstance(host, str)
+        assert parent is None or isinstance(parent, RemoteHost)
         self.host = host
         self.user = user
+        self.parent = parent
         self.heapsize = heapsize
 
     def uh(self):
@@ -31,7 +34,7 @@ class RemoteHost(object):
         else:
             return self.host
 
-    def run_remote_shell_command(self, command):
+    def run_remote_shell_command(self, command, verbose=True):
         """Executes a command on a remote machine"""
         file = tempfile.NamedTemporaryFile(mode="w", delete=False)
         file.write(command)
@@ -39,7 +42,8 @@ class RemoteHost(object):
 
         f = open(file.name)
         text = f.read()
-        print("On", self.host, ":", text)
+        if verbose:
+            print("On", self.host, ":", text)
         f.close()
 
         command = "ssh " + self.uh() + " bash -s < " + file.name
@@ -70,9 +74,9 @@ class RemoteHost(object):
 
 class RemoteAggregator(RemoteHost):
     """Abstraction for an aggregator"""
-    def __init__(self, user, host, children):
+    def __init__(self, user, host, parent, children):
         "Create a remote aggregator"""
-        super().__init__(user, host)
+        super().__init__(user, host, parent)
         self.children = children
 
 class JsonConfig(object):
@@ -103,10 +107,17 @@ class ClusterConfiguration(object):
 
     def __init__(self, file):
         """Load the configuration file describing the Hillview deployment."""
-        print("Importing configuration from", file)
-        with open(file) as contents:
-            stripped = "".join(line.partition("//")[0] for line in contents)
-        self.jsonConfig = json.loads(stripped, object_hook=JsonConfig)
+        print("Reading cluster configuration from", file)
+        if not os.path.exists(file):
+            print("Configuration file `" + file + "' does not exist")
+            exit(1)
+        try:
+            with open(file) as contents:
+                stripped = "".join(line.partition("//")[0] for line in contents)
+            self.jsonConfig = json.loads(stripped, object_hook=JsonConfig)
+        except:
+            print("Error parsing configuration file", file)
+            exit(1)
         if not os.path.isabs(self.jsonConfig.service_folder):
             print("service_folder must be an absolute path in configuration file",
                   self.jsonConfig.service_folder)
@@ -115,36 +126,43 @@ class ClusterConfiguration(object):
         self.scriptFolder = os.path.dirname(os.path.abspath(__file__))
         self.service_folder = self.jsonConfig.service_folder
         self.worker_port = self.jsonConfig.worker_port
-        self.aggregator_port = self.jsonConfig.aggregator_port
         self.tomcat = self.jsonConfig.tomcat
         self.tomcat_version = self.jsonConfig.tomcat_version
+        if hasattr(self.jsonConfig, "aggregator_port"):
+            self.aggregator_port = self.jsonConfig.aggregator_port
 
     def get_user(self):
+        """Returns the user used by the hillview service"""
         return self.jsonConfig.user
 
     def _get_heap_size(self, hostname):
+        """The heap size used for the specified host"""
         if hostname in self.jsonConfig.workers_heapsize:
             return self.jsonConfig.workers_heapsize[hostname]
         return self.jsonConfig.default_heap_size
 
     def get_workers(self):
         """Returns an array of RemoteHost objects containing all workers"""
+        webserver = self.get_webserver()
         if hasattr(self.jsonConfig, "aggregators"):
-            return [RemoteHost(self.jsonConfig.user, h, self._get_heap_size(h))
+            return [RemoteHost(self.jsonConfig.user, h,
+                               RemoteHost(self.jsonConfig.user, a.name, webserver),
+                               self._get_heap_size(h))
                     for a in self.jsonConfig.aggregators
                     for h in a.workers]
-        return [RemoteHost(self.jsonConfig.user, h, self._get_heap_size(h))
+        return [RemoteHost(self.jsonConfig.user, h, webserver, self._get_heap_size(h))
                 for h in self.jsonConfig.workers]
 
     def get_webserver(self):
         """Returns a remote host representing the web server"""
-        return RemoteHost(self.jsonConfig.user, self.jsonConfig.webserver)
+        return RemoteHost(self.jsonConfig.user, self.jsonConfig.webserver, None)
 
     def get_aggregators(self):
         """Returns an array of RemoteAggregator objects"""
         if not hasattr(self.jsonConfig, "aggregators"):
             return []
-        return [RemoteAggregator(self.jsonConfig.user, h.name, h.workers)
+        webserver = self.get_webserver()
+        return [RemoteAggregator(self.jsonConfig.user, h.name, webserver, h.workers)
                 for h in self.jsonConfig.aggregators]
 
     def cleanup_on_install(self):
@@ -168,3 +186,15 @@ class ClusterConfiguration(object):
         # run something in parallel in Python, so this is not working yet.
         for rh in self.get_workers():
             function(rh)
+
+def get_config(parser, args):
+    """Given an argument parser and the results obtained by parsing,
+       this function loads the cluster configuration.  This is always
+       the config argument of the parser."""
+    assert isinstance(parser, ArgumentParser)
+    try:
+        config = ClusterConfiguration(args.config)
+        return config
+    except:
+        parser.print_help()
+        exit(1)

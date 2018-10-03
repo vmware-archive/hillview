@@ -83,7 +83,7 @@ export class SchemaView extends TSViewBase {
             help: "Select Columns by type.",
         }]);
         const menu = new TopMenu([
-            this.saveAsMenu(),
+            // this.saveAsMenu(),
             {text: "View", subMenu: viewMenu, help: "Change the way the data is displayed."},
             {text: "Select", subMenu: selectMenu, help: "Select columns based on attributes."},
             this.chartMenu(),

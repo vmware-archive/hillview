@@ -47,7 +47,7 @@ import {HtmlString, Resolution, SpecialChars} from "../ui/ui";
 import {
     cloneToSet, convertToString,
     formatNumber,
-    ICancellable, makeSpan,
+    ICancellable, makeMissing, makeSpan,
     PartialResult,
     percent,
     saveAs,
@@ -118,7 +118,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
                     action: () => { this.exportSchema(); },
                 }]),
             },
-            this.saveAsMenu(),
+            // this.saveAsMenu(),
             {
                 text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
                     { text: "Refresh",
@@ -719,11 +719,13 @@ export class TableView extends TSViewBase implements IScrollTarget {
                     action: () => this.heavyHittersDialog(),
                     help: "Find the values that occur most frequently in the selected columns.",
                 }, true);
+                /*
                 this.contextMenu.addItem({
                     text: "Count Sketch",
                     action: () => this.runCountSketch(),
                     help: "Find the values that occur most frequently in the selected columns.",
                 }, true);
+                */
                 this.contextMenu.addItem({
                     text: "PCA...",
                     action: () => this.pca(true),
@@ -1163,8 +1165,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
                 const value = row.values[dataIndex];
                 let shownValue: string;
                 if (value == null) {
-                    cell.classList.add("missingData");
-                    cell.textContent = "missing";
+                    cell.appendChild(makeMissing());
                 } else {
                     shownValue = convertToString(row.values[dataIndex], cd.kind);
                     const high = this.highlight(shownValue);

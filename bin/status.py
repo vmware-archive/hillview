@@ -5,7 +5,7 @@
 # pylint: disable=invalid-name
 
 from argparse import ArgumentParser
-from hillviewCommon import ClusterConfiguration, RemoteHost
+from hillviewCommon import ClusterConfiguration, RemoteHost, get_config
 
 def check_webserver(config):
     """Checks if the Hillview web server is running"""
@@ -34,7 +34,7 @@ def main():
     parser = ArgumentParser()
     parser.add_argument("config", help="json cluster configuration file")
     args = parser.parse_args()
-    config = ClusterConfiguration(args.config)
+    config = get_config(parser, args)
     check_webserver(config)
     check_workers(config)
 

@@ -209,7 +209,8 @@ export abstract class TrellisChartView extends ChartView {
     protected selectSurfaces(start: number, end: number): void {
         for (let index = 0; index < this.shape.bucketCount; index++) {
             const selected = index >= start && index <= end;
-            this.surfaces[index].select(selected);
+            if (index < this.surfaces.length)
+                this.surfaces[index].select(selected);
         }
     }
 

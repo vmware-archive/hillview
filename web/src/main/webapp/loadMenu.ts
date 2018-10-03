@@ -49,11 +49,11 @@ export class LoadMenu extends RemoteObject implements IDataView {
 
         this.top = document.createElement("div");
         this.testDatasetsMenu = new SubMenu([
-            { text: "Flights (15 columns)",
+            { text: "Flights (15 columns, CSV)",
                 action: () => {
                     const files: FileSetDescription = {
                         folder: "../data/ontime",
-                        fileNamePattern: "????_*.csv",
+                        fileNamePattern: "????_*.csv*",
                         schemaFile: "short.schema",
                         headerRow: true,
                         repeat: 1,
@@ -225,7 +225,6 @@ export class LoadMenu extends RemoteObject implements IDataView {
     public showAdvanced(show: boolean): void {
         this.menu.enable("Manage", show);
         this.menu.enable("Test", show);
-        this.testDatasetsMenu.enable("Flights (15 columns)", show);
         this.loadMenu.enable("DB tables...", show);
         this.loadMenu.enable("CSV files...", show);
         this.loadMenu.enable("JSON files...", show);

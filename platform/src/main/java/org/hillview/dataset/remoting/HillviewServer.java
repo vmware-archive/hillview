@@ -46,6 +46,7 @@ import rx.Subscription;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -56,10 +57,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * If memoization is enabled, it caches the results of (operation, dataset-index) types.
  */
 public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
-    /**
-     * Index of remote initial dataset, containing just the Empty object.
-     */
-    public static final int ROOT_DATASET_INDEX = 0;
     public static final int DEFAULT_PORT = 3569;
     private static final int NUM_THREADS = 5;
     public static final int MAX_MESSAGE_SIZE = 20971520;
@@ -85,9 +82,12 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     private final EventLoopGroup bossElg = new NioEventLoopGroup(1,
             ExecutorUtils.newFastLocalThreadFactory("boss"));
     private final Server server;
-    private final AtomicInteger dsIndex = new AtomicInteger(ROOT_DATASET_INDEX + 1);
+    private final AtomicInteger dsIndex = new AtomicInteger(1);
 
-    private final IDataSet initialDataset;
+    /**
+     * We reserve datasets with negative indexes.  These are never garbage-collected.
+     */
+    private final HashMap<Integer, IDataSet> initialDatasets;
     /**
      * Maps a dataset number to the actual dataset.  This is the only handle that
      * one can hold to an IDataSet on the server-side, so once an entry is removed
@@ -114,7 +114,8 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     private final MemoizedResults memoizedCommands;
 
     public HillviewServer(final HostAndPort listenAddress, final IDataSet initialDataset) throws IOException {
-        this.initialDataset = initialDataset;
+        this.initialDatasets = new HashMap<Integer, IDataSet>();
+        this.addInitialDataset(initialDataset);
         this.listenAddress = listenAddress;
         this.memoizedCommands = new MemoizedResults();
         this.server = NettyServerBuilder.forAddress(new InetSocketAddress(listenAddress.getHost(),
@@ -136,6 +137,12 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
         this.toUnsubscribe = CacheBuilder.newBuilder()
                 .expireAfterAccess(EXPIRE_TIME_IN_HOURS, TimeUnit.HOURS)
                 .build();
+    }
+
+    int addInitialDataset(final IDataSet initial) {
+        int index = -this.initialDatasets.size() - 1;
+        this.initialDatasets.put(index, initial);
+        return index;
     }
 
     private UUID getId(Command command) {
@@ -178,7 +185,12 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
 
     synchronized private int save(IDataSet dataSet) {
         int index = this.dsIndex.getAndIncrement();
+        if (index < 0)
+            index = 0;
         HillviewLogger.instance.info("Inserting dataset", "{0}", index);
+        if (this.dataSets.getIfPresent(index) != null)
+            // This means we have created more than 2B datasets which haven't expired yet!
+            throw new RuntimeException("Dataset index overflow: " + index);
         this.dataSets.put(index, dataSet);
         return index;
     }
@@ -192,8 +204,8 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     @Nullable
     synchronized private IDataSet getIfValid(final int index,
                                              final StreamObserver<PartialResponse> observer) {
-        if (index == ROOT_DATASET_INDEX)
-            return this.initialDataset;
+        if (index < 0)
+            return this.initialDatasets.get(index);
         IDataSet ds = this.dataSets.getIfPresent(index);
         if (ds == null)
             observer.onError(asStatusRuntimeException(
@@ -202,7 +214,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     }
 
     /**
-     * Delete all stored datasets (except the one with index ROOT_DATASET_INDEX).
+     * Delete all stored datasets (except the initial ones).
      * @return The number of deleted datasets.
      */
     synchronized public int deleteAllDatasets() {
