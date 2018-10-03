@@ -16,33 +16,28 @@ import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.table.rows.GuessSchema;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Utilities;
-import org.junit.Test;
 import org.apache.commons.cli.*;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import com.univocity.parsers.csv.CsvFormat;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
 
 public class DataUpload  {
     private static class params {
-        public final int defaultChunkSize = 1000000;
+        final int defaultChunkSize = 1000000;
+        final String defaultSchemaName = "schema";
         @Nullable
-        public String schemaPath = null;
-        public String filename; //the file to be sent
-        public String remoteFolder; //the destination path where the files will be put
-        public String cluster; //the path to the cluster config json file
-        public boolean hasHeader; //true if file has a header row
-        public boolean orc; //true if saving as orc, otherwise save as csv;
-        public int chunkSize = defaultChunkSize; //the number of lines in each shard.
-        public boolean allowFewerColumns;
-
-        static void params() {}
+        String schemaPath = null;
+        String filename; //the file to be sent
+        String remoteFolder; //the destination path where the files will be put
+        String cluster; //the path to the cluster config json file
+        boolean hasHeader; //true if file has a header row
+        boolean orc; //true if saving as orc, otherwise save as csv;
+        int chunkSize = defaultChunkSize; //the number of lines in each shard.
+        boolean allowFewerColumns;
     }
-
-    private static final String defaultSchemaName = "schema.schema";
 
     private static void usage(@Nullable Options options) {
          final String usageString = "Usage: DataUpload " +
@@ -59,7 +54,7 @@ public class DataUpload  {
             System.out.println(options.getOptions());
     }
 
-    private static CommandLine parseCommand(String[] args) {
+    private static params parseCommand(String[] args) {
         Options options = new Options();
         Option o_filename = new Option("f", "filename", true, "path to file to distribute");
         o_filename.setRequired(true);
@@ -96,24 +91,7 @@ public class DataUpload  {
             System.out.println("can't parse due to " + pe);
             usage(options);
         }
-        return cmd;
-    }
-
-
-    public static void main(String args[]) {
-      /*  final int defaultChunkSize = 1000000;
-        @Nullable
-        String schemaPath = null;
-        String filename; //the file to be sent
-        String remoteFolder; //the destination path where the files will be put
-        String cluster; //the path to the cluster config json file
-        boolean hasHeader; //true if file has a header row
-        boolean orc; //true if saving as orc, otherwise save as csv;
-        int chunkSize = defaultChunkSize; //the number of lines in each shard.
-        boolean allowFewerColumns;
-*/
         params parameters = new params();
-        CommandLine cmd = parseCommand(args);
         parameters.filename = cmd.getOptionValue('f');
         parameters.remoteFolder = cmd.getOptionValue('d');
         parameters.cluster = cmd.getOptionValue("cluster");
@@ -130,7 +108,11 @@ public class DataUpload  {
             parameters.schemaPath = cmd.getOptionValue('s');
         parameters.hasHeader = cmd.hasOption('h');
         parameters.allowFewerColumns = cmd.hasOption('w');
+        return parameters;
+    }
 
+    public static void main(String args[]) {
+        params parameters = parseCommand(args);
         try {
             ClusterConfig config = ClusterConfig.parse(parameters.cluster);
             CsvFileLoader.Config parsConfig = new CsvFileLoader.Config();
@@ -141,7 +123,7 @@ public class DataUpload  {
                 mySchema = Schema.readFromJsonFile(Paths.get(parameters.schemaPath));
             else {
                 mySchema = guessSchema(parameters.filename, parsConfig);
-                parameters.schemaPath = defaultSchemaName;
+                parameters.schemaPath = parameters.defaultSchemaName;
                 mySchema.writeToJsonFile(Paths.get(parameters.schemaPath));
             }
             chop_files(parsConfig, config, mySchema, parameters);
@@ -150,6 +132,12 @@ public class DataUpload  {
         }
     }
 
+    /**
+     * Guesses the schema of a table written as a csv file by streaming through the file.
+     * @param filename name of the file containing the table
+     * @param config configuration file for the parser
+     * @return
+     */
     private static Schema guessSchema(String filename, CsvFileLoader.Config config) {
         Reader file = null;
         GuessSchema[] schemaGuesses = null;
@@ -222,13 +210,14 @@ public class DataUpload  {
     }
 
     /**
-     *
+     * creates a directory in each remote host and places the schema there. Then it chops the file into shards and
+     * sends the shards to remote hosts in round robin fashion. This is done with one streaming pass of the file.
      * @param config the configuration fo the parser to be used
-     * @param schema the schema of the file. Null if there is no schema and needs to be guessed.
+     * @param schema the schema of the file.
+     * @param parameters the parameters taken from the command line, include file path and destination
      */
     private static void chop_files(CsvFileLoader.Config config, ClusterConfig clusterConfig,
                                    Schema schema, params parameters) {
-
         Reader file = null;
         IAppendableColumn[] columns = null;
         int progress = 0;
@@ -258,13 +247,12 @@ public class DataUpload  {
             }
             columns = schema.createAppendableColumns();
             int chunk = 0;
-            // Start Creating the chunks
-            // *********************************************
+            //Create directories and place the schema
             for (String host : clusterConfig.workers) {
                 createDir(clusterConfig.user, host, parameters.remoteFolder);
                 sendFile(parameters.schemaPath, clusterConfig.user, host, parameters.remoteFolder);
             }
-
+            //Create and send the shards
             boolean more_chunks = true;
             int currentHost = 0;
             while(more_chunks) {
@@ -362,7 +350,6 @@ public class DataUpload  {
 
     private static void append(String[] data, IAppendableColumn[] columns, boolean allowFewerColumns) {
         try {
-            assert columns != null;
             int columnCount = columns.length;
             int currentColumn = 0;
             String currentToken;
@@ -410,6 +397,7 @@ public class DataUpload  {
             throw new RuntimeException(e);
         }
     }
+
     private static void error(String mess) {
         System.out.println(mess);
     }
