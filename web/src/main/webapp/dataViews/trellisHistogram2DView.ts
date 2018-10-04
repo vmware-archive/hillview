@@ -257,7 +257,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
         // We draw the axes after drawing the data
         this.xAxisData.setResolution(this.shape.size.width, AxisKind.Bottom);
         const yAxis = this.hps[0].getYAxis();
-        this.drawAxes(this.xAxisData, yAxis);
+        this.drawAxes(this.xAxisData.axis.axis, yAxis.axis);
         this.setupMouse();
         this.page.reportTime(elapsedMs);
     }
