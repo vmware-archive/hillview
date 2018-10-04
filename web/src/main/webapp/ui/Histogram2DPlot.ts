@@ -18,7 +18,7 @@
 import {axisLeft as d3axisLeft} from "d3-axis";
 import {format as d3format} from "d3-format";
 import {scaleLinear as d3scaleLinear} from "d3-scale";
-import {AxisData, AxisKind} from "../dataViews/axisData";
+import {AxisData, AxisDescription, AxisKind} from "../dataViews/axisData";
 import {Heatmap} from "../javaBridge";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
@@ -117,8 +117,8 @@ export class Histogram2DPlot extends Plot {
             this.yScale.domain([0, 100]);
         else
             this.yScale.domain([0, max]);
-        this.yAxis = d3axisLeft(this.yScale)
-            .tickFormat(d3format(".2s"));
+        this.yAxis = new AxisDescription(
+            d3axisLeft(this.yScale).tickFormat(d3format(".2s")), 1, false, null);
 
         const bucketCount = xPoints;
         this.xAxisData.setResolution(this.getChartWidth(), AxisKind.Bottom);
@@ -172,7 +172,7 @@ export class Histogram2DPlot extends Plot {
         this.drawAxes();
     }
 
-    public getYAxis(): D3Axis {
+    public getYAxis(): AxisDescription {
         return this.yAxis;
     }
 

@@ -16,10 +16,10 @@
  */
 
 import {PlottingSurface} from "./plottingSurface";
-import {AxisData} from "../dataViews/axisData";
-import {D3Axis, D3SvgElement, SpecialChars} from "./ui";
+import {AxisData, AxisDescription} from "../dataViews/axisData";
+import {D3SvgElement, SpecialChars} from "./ui";
 import {interpolateRainbow as d3interpolateRainbow} from "d3-scale-chromatic";
-import {significantDigits, significantDigitsHtml} from "../util";
+import {significantDigits} from "../util";
 
 /**
  * Abstract base class for all plots.
@@ -57,12 +57,12 @@ export abstract class Plot {
         this.plottingSurface.create();
     }
 
-    public getXAxis(): D3Axis {
+    public getXAxis(): AxisDescription {
         // default implementation
         return this.xAxisData.axis;
     }
 
-    public getYAxis(): D3Axis {
+    public getYAxis(): AxisDescription {
         // default implementation
         return this.yAxisData.axis;
     }
@@ -89,13 +89,14 @@ export abstract class Plot {
             this.yAxisRepresentation = this.plottingSurface.getChart()
                 .append("g")
                 .attr("class", "y-axis")
-                .call(yAxis);
+                .call(yAxis.axis);
         if (xAxis != null) {
-            this.xAxisRepresentation = this.plottingSurface.getChart()
-                .append("g")
-                .attr("class", "x-axis")
-                .attr("transform", `translate(0, ${this.getChartHeight()})`)
-                .call(xAxis);
+            this.xAxisRepresentation =
+                xAxis.draw(
+                    this.plottingSurface.getChart()
+                        .append("g")
+                        .attr("transform", `translate(0, ${this.getChartHeight()})`)
+                        .attr("class", "x-axis"));
         }
     }
 

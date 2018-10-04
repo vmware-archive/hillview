@@ -115,7 +115,7 @@ def main():
     headings = Headings()
     input="userManual.src"
     output="userManual.md"
-    rewrite(input, output, headings, "<--", "-->")
+    rewrite(input, output, headings, "<!--", "-->")
     input = "../web/src/main/webapp/ui/helpUrl.src"
     output = "../web/src/main/webapp/ui/helpUrl.ts"
     rewrite(input, output, headings, "/*", "*/")

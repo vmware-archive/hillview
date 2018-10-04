@@ -278,7 +278,7 @@ export class HistogramView extends HistogramViewBase {
     private showTrellis(colName: string): void {
         const groupBy = this.schema.findByDisplayName(colName);
         const cds: IColumnDescription[] = [this.axisData.description, groupBy];
-        const rr = this.createDataRangesRequest(cds, this.page, "2DHistogram");
+        const rr = this.createDataRangesRequest(cds, this.page, "TrellisHistogram");
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
             reusePage: false, relative: false,

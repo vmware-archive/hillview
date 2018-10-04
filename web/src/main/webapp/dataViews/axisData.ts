@@ -36,7 +36,8 @@ import {
     formatNumber,
     significantDigits,
 } from "../util";
-import {AnyScale, D3Axis} from "../ui/ui";
+import {AnyScale, D3Axis, D3SvgElement, SpecialChars} from "../ui/ui";
+import {PlottingSurface} from "../ui/plottingSurface";
 
 export enum AxisKind {
     Bottom,
@@ -136,13 +137,39 @@ class BucketBoundaries {
     }
 }
 
+export class AxisDescription {
+    constructor(
+        public readonly axis: D3Axis,
+        public readonly majorTickPeriod: number,
+        public readonly rotate: boolean,
+        // The labels are only available for some axes (strings)
+        public readonly majorLabels: string[] | null) {}
+
+    public draw(onElement: D3SvgElement): D3SvgElement {
+        const result = onElement.call(this.axis);
+        if (this.rotate)
+            result.selectAll("text")
+                .style("text-anchor", "start")
+                .attr("transform", () => `rotate(20)`);
+        if (this.majorLabels != null)
+            result.selectAll("text")
+                .append("title")
+                .text((d, i) => this.majorLabels[i]);
+        if (this.majorTickPeriod !== 1)
+            result.selectAll("line")
+                .filter((d, i) => i % this.majorTickPeriod === 0)
+                .attr("y2", 12);
+        return result;
+    }
+}
+
 /**
  * Contains all information required to build an axis and a d3 scale associated to it.
  */
 export class AxisData {
     public readonly distinctStrings: string[];
     public scale: AnyScale;
-    public axis: D3Axis;
+    public axis: AxisDescription;
     public bucketCount: number;
 
     public constructor(public description: IColumnDescription,
@@ -225,31 +252,50 @@ export class AxisData {
                 this.scale = d3scaleLinear()
                     .domain(domain)
                     .range([0, pixels]);
-                this.axis = axisCreator(this.scale);
+                this.axis = new AxisDescription(axisCreator(this.scale), 1, false, null);
                 break;
             }
             case "Json":
             case "String": {
                 const ticks: number[] = [];
                 const labels: string[] = [];
-                // note: this is without adjustment.
+                const fullLabels: string[] = [];
                 const tickCount = Math.ceil(this.range.max - this.range.min);
-                const minLabelWidth = 40;  // pixels
-                const maxLabelCount = pixels / minLabelWidth;
+                const minLabelSpace = 20;  // We reserve at least this many pixels
+                const maxLabelCount = pixels / minLabelSpace;
                 const labelPeriod = Math.ceil(tickCount / maxLabelCount);
                 // On a legend the leftmost and rightmost ticks are at the ends
                 // On a plot axis the ticks are offset .5 from the ends.
                 const totalIntervals = axisKind === AxisKind.Legend ? (tickCount - 1) : tickCount;
-                const tickWidth = pixels / totalIntervals;
+                const tickSpan = pixels / totalIntervals;
+                const maxLabelWidthInPixels = 180;  // X labels are rotated, so they can be wider
+                // This is actually just a guess for the width
+                // of a letter used to draw axes.  We use d3 axes, which
+                // have a default font size of 10.  Normally we should
+                // measure the size of a string, but this is much simpler.
+                const fontWidth = 8;
+                const maxLabelWidthInChars = Math.floor(bottom ?
+                    maxLabelWidthInPixels / fontWidth :
+                    // TODO: get rid of the hardwired leftMargin
+                    PlottingSurface.leftMargin / fontWidth);
+                console.assert(maxLabelWidthInChars > 2);
+                let rotate = false;
 
                 for (let i = 0; i < tickCount; i++) {
-                    ticks.push((i + adjust) * tickWidth);
+                    ticks.push((i + adjust) * tickSpan);
                     let label = "";
                     if (i % labelPeriod === 0) {
                         label = this.getString(this.range.min + .5 + i, false);
                         if (label === null)
                             label = "";
+                        if (label.length * fontWidth > tickSpan * labelPeriod)
+                            rotate = true;
+                        if (label.length > maxLabelWidthInChars) {
+                            label = label.substr(0, maxLabelWidthInChars - 1) +
+                                SpecialChars.ellipsis;
+                        }
                     }
+                    fullLabels.push(label);
                     labels.push(label);
                 }
                 if (!bottom)
@@ -262,9 +308,10 @@ export class AxisData {
                 this.scale = d3scaleLinear()
                     .domain(domain)
                     .range([0, pixels]);
-                this.axis = axisCreator(manual)
+                const axis = axisCreator(manual)
                     .tickValues(ticks)
                     .tickFormat((d, i) => labels[i]);
+                this.axis = new AxisDescription(axis, labelPeriod, rotate, fullLabels);
                 break;
             }
             case "Date": {
@@ -273,7 +320,7 @@ export class AxisData {
                 this.scale = d3scaleTime()
                     .domain([minDate, maxDate])
                     .range([0, pixels]);
-                this.axis = axisCreator(this.scale);
+                this.axis = new AxisDescription(axisCreator(this.scale), 1, false, null);
                 break;
             }
             default: {

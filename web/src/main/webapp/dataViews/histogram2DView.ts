@@ -376,7 +376,7 @@ export class Histogram2DView extends HistogramViewBase {
             [this.xPoints, this.yPoints], cds, this.page.title, {
             reusePage: true,
             relative: this.relative,
-            chartKind: "Histogram",
+            chartKind: "2DHistogram",
             exact: true
         }));
     }
@@ -388,7 +388,7 @@ export class Histogram2DView extends HistogramViewBase {
             [bucketCount, this.yPoints], cds, null, {
             reusePage: true,
             relative: this.relative,
-            chartKind: "Histogram",
+            chartKind: "2DHistogram",
             exact: true
         }));
     }

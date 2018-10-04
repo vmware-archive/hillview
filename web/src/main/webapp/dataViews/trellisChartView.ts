@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-import {AxisData} from "./axisData";
+import {AxisData, AxisDescription} from "./axisData";
 import {FilterDescription, RemoteObjectId} from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
 import {FullPage} from "../ui/fullPage";
-import {D3Axis, Point, Resolution, ViewKind} from "../ui/ui";
+import {Point, Resolution, ViewKind} from "../ui/ui";
 import {ChartView} from "./chartView";
 import {TrellisShape} from "./dataRangesCollectors";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
@@ -125,28 +125,28 @@ export abstract class TrellisChartView extends ChartView {
         }
     }
 
-    protected drawAxes(xAxis: D3Axis, yAxis: D3Axis): void {
+    protected drawAxes(xAxis: AxisDescription, yAxis: AxisDescription): void {
         for (let i = 0; i < this.shape.xNum; i++) {
-            this.surface
+            const g = this.surface
                 .getCanvas()
                 .append("g")
                 .attr("class", "x-axis")
                 .attr("transform", `translate(
                     ${this.surface.leftMargin + i * this.shape.size.width}, 
                     ${this.surface.topMargin +
-                     (this.shape.size.height + this.shape.headerHeight) * this.shape.yNum})`)
-                .call(xAxis);
+                     (this.shape.size.height + this.shape.headerHeight) * this.shape.yNum})`);
+            xAxis.draw(g);
         }
 
         for (let i = 0; i < this.shape.yNum; i++) {
-            this.surface.getCanvas()
+            const g = this.surface.getCanvas()
                 .append("g")
                 .attr("class", "y-axis")
                 .attr("transform", `translate(
                     ${this.surface.leftMargin},
                     ${this.surface.topMargin + this.shape.headerHeight +
-                      i * (this.shape.size.height + this.shape.headerHeight)})`)
-                .call(yAxis);
+                      i * (this.shape.size.height + this.shape.headerHeight)})`);
+            yAxis.draw(g);
         }
     }
 
