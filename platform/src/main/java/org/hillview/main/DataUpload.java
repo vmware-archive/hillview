@@ -20,6 +20,8 @@ import org.apache.commons.cli.*;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+
 import com.univocity.parsers.csv.CsvFormat;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
@@ -30,7 +32,11 @@ public class DataUpload  {
         final String defaultSchemaName = "schema";
         @Nullable
         String schemaPath = null;
+        @Nullable
         String filename; //the file to be sent
+        @Nullable
+        String directory;
+        ArrayList<String> fileList = new ArrayList<>();
         String remoteFolder; //the destination path where the files will be put
         String cluster; //the path to the cluster config json file
         boolean hasHeader; //true if file has a header row
@@ -53,6 +59,13 @@ public class DataUpload  {
         if (options != null)
             System.out.println(options.getOptions());
     }
+
+    /**
+     * Parses the command line and fills up the parameters data structure
+     * todo: support the -D directory option for a list of files. Currently it is parsed but not used.
+     * @param args
+     * @return
+     */
 
     private static params parseCommand(String[] args) {
         Options options = new Options();
@@ -80,6 +93,11 @@ public class DataUpload  {
         Option o_fewercolumns = new Option("w","fewer",false, "indicates if fewer columns are allowed");
         o_fewercolumns.setRequired(false);
         options.addOption(o_fewercolumns);
+        Option o_directory = new Option("D", "Directory", true,
+                "path to directory with the files to send");
+        o_directory.setRequired(false);
+        options.addOption(o_directory);
+
         CommandLineParser parser = new BasicParser();
         CommandLine cmd = null;
         try {
@@ -92,7 +110,24 @@ public class DataUpload  {
             usage(options);
         }
         params parameters = new params();
-        parameters.filename = cmd.getOptionValue('f');
+        try{
+            if (cmd.hasOption('f') == cmd.hasOption('D'))
+                throw new RuntimeException("need either file or directory");
+            if (cmd.hasOption('f')) {
+                parameters.filename = cmd.getOptionValue('f');
+                parameters.fileList.add(cmd.getOptionValue('f'));
+            }
+            else {
+                parameters.directory = cmd.getOptionValue('D');
+                File folder = new File(cmd.getOptionValue('D'));
+                File[] lFiles = folder.listFiles();
+                for (int i = 0; i < lFiles.length; i++)
+                    if (lFiles[i].isFile())
+                        parameters.fileList.add(parameters.directory + lFiles[i].getName());
+                }
+        } catch (RuntimeException e) {
+            error(e);
+        }
         parameters.remoteFolder = cmd.getOptionValue('d');
         parameters.cluster = cmd.getOptionValue("cluster");
         if (cmd.hasOption('l')) {
@@ -128,7 +163,7 @@ public class DataUpload  {
             }
             chop_files(parsConfig, config, mySchema, parameters);
         } catch(IOException e) {
-            System.out.println(e);
+            error(e);
         }
     }
 
@@ -160,7 +195,7 @@ public class DataUpload  {
             try {
                 line = myParser.parseNext();
             } catch (Exception ex) {
-                System.out.println(ex);
+                error(ex);
             }
             if (line == null)
                 throw new RuntimeException("Missing header row " + filename);
@@ -187,7 +222,7 @@ public class DataUpload  {
                 try {
                     nextLine = myParser.parseNext();
                 } catch (RuntimeException ex) {
-                    error(ex.getMessage());
+                    error(ex);
                 }
                 if (nextLine == null)
                     break;
@@ -200,7 +235,7 @@ public class DataUpload  {
             myParser.stopParsing();
         }
         catch (Exception e) {
-            System.out.println(e.getMessage());
+            error(e);
         }
         Schema schema = new Schema();
         for (int i = 0; i < colnum; i++) {
@@ -240,7 +275,7 @@ public class DataUpload  {
                 try {
                     line = myParser.parseNext();
                 } catch (Exception ex) {
-                    System.out.println(ex);
+                    error(ex);
                 }
                 if (line == null)
                     throw new RuntimeException("Missing header row " + parameters.filename);
@@ -262,7 +297,7 @@ public class DataUpload  {
                     try {
                         line = myParser.parseNext();
                     } catch (Exception ex) {
-                        System.out.println(ex.getMessage());
+                        error(ex);
                     }
                     if (line == null) {
                         more_chunks = false;
@@ -300,7 +335,7 @@ public class DataUpload  {
             }
             myParser.stopParsing();
         } catch(Exception e) {
-            error(e.getMessage());
+            error(e);
         }
     }
 
@@ -354,22 +389,22 @@ public class DataUpload  {
             int currentColumn = 0;
             String currentToken;
             if (data.length > columnCount)
-                error("Too many columns " + data.length + " vs " + columnCount);
+                throw new RuntimeException("Too many columns " + data.length + " vs " + columnCount);
             for (currentColumn = 0; currentColumn < data.length; currentColumn++) {
                 currentToken = data[currentColumn];
                 columns[currentColumn].parseAndAppendString(currentToken);
             }
             if (data.length < columnCount) {
                 if (!allowFewerColumns)
-                    error("Too few columns " + data.length + " vs " + columnCount);
+                    throw new RuntimeException("Too few columns " + data.length + " vs " + columnCount);
                 else {
                     currentToken = "";
                     for (int i = data.length; i < columnCount; i++)
                         columns[i].parseAndAppendString(currentToken);
                 }
             }
-        } catch (Exception ex) {
-            error(ex.getMessage());
+        } catch (RuntimeException ex) {
+            error(ex);
         }
     }
 
@@ -398,7 +433,7 @@ public class DataUpload  {
         }
     }
 
-    private static void error(String mess) {
-        System.out.println(mess);
+    private static void error(Exception ex) {
+        System.out.println(ex.getMessage());
     }
 }
