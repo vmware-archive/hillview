@@ -98,6 +98,7 @@ export class SpecialChars {
     public static approx = "\u2248";
     public static upArrow = "▲";
     public static downArrow = "▼";
+    public static ellipsis = "…";
     public static downArrowHtml = "&dArr;";
     public static upArrowHtml = "&uArr;";
 }

@@ -18,7 +18,7 @@
 import {axisLeft as d3axisLeft} from "d3-axis";
 import {format as d3format} from "d3-format";
 import {scaleLinear as d3scaleLinear} from "d3-scale";
-import {AxisData, AxisKind} from "../dataViews/axisData";
+import {AxisData, AxisDescription, AxisKind} from "../dataViews/axisData";
 import {HistogramBase} from "../javaBridge";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
@@ -113,8 +113,8 @@ export class HistogramPlot extends Plot {
             this.drawAxes();
     }
 
-    public getYAxis(): D3Axis {
-        return this.yAxis;
+    public getYAxis(): AxisDescription {
+        return new AxisDescription(this.yAxis, 1, false, null);
     }
 
     public getYScale(): D3Scale {

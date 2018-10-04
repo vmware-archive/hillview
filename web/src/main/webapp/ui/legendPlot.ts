@@ -22,7 +22,7 @@ import {
     interpolateWarm as d3interpolateWarm
 } from "d3-scale-chromatic";
 import {event as d3event} from "d3-selection";
-import {AxisData, AxisKind} from "../dataViews/axisData";
+import {AxisData, AxisDescription, AxisKind} from "../dataViews/axisData";
 import {assert} from "../util";
 import {ContextMenu} from "./menu";
 import {Plot} from "./plot";
@@ -88,10 +88,11 @@ export class HistogramLegendPlot extends Plot {
         }
 
         this.axisData.setResolution(this.legendRect.width(), AxisKind.Legend);
-        canvas.append("g")
+        const g = canvas.append("g")
             .attr("transform", `translate(${this.legendRect.lowerLeft().x},
                                           ${this.legendRect.lowerLeft().y})`)
-            .call(this.axisData.axis);
+            .attr("class", "x-axis");
+        this.axisData.axis.draw(g);
 
         if (this.missingLegend) {
             if (this.legendRect != null) {
@@ -317,8 +318,8 @@ export class HeatmapLegendPlot extends Plot {
         this.xAxis = d3axisBottom(scale).ticks(ticks);
     }
 
-    public getXAxis(): D3Axis {
-        return this.xAxis;
+    public getXAxis(): AxisDescription {
+        return new AxisDescription(this.xAxis, 1, false, null);
     }
 
     public getColor(v: number): string {
@@ -379,6 +380,6 @@ export class HeatmapLegendPlot extends Plot {
         this.legendRectangle.on("contextmenu", () => this.showContextMenu(d3event));
         this.axisElement = canvas.append("g")
             .attr("transform", `translate(${x}, ${this.barHeight})`)
-            .call(this.getXAxis());
+            .call(this.getXAxis().axis);
     }
 }
