@@ -18,6 +18,6 @@
 * delete-data.py: delete a folder from all machines in a Hillview cluster
 * run-on-all.py: run a command on a set of remote machines
 
-* prepare.py: copy the binaries to all machines in a Hillview cluster
+* deploy.py: copy the binaries to all machines in a Hillview cluster
 * start.py: start the Hillview service on a remote cluster
 * stop.py: stop the Hillview service on a remote cluster
