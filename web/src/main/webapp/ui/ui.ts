@@ -94,7 +94,7 @@ export const missingHtml: HtmlString = new HtmlString("<span class='missingData'
  * A list of special unicode character codes.
  */
 export class SpecialChars {
-    /// Approximation sign.
+    // Approximation sign.
     public static approx = "\u2248";
     public static upArrow = "▲";
     public static downArrow = "▼";
