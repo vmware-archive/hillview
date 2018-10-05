@@ -69,7 +69,7 @@ def main():
     if not os.path.isabs(folder):
         folder = os.path.join(config.service_folder, folder)
         print("Folder is relative, using", folder)
-    if args.common != None:
+    if args.common is not None:
         copy_everywhere(config, args.common, folder, copyOptions)
     print("Done.")
 
