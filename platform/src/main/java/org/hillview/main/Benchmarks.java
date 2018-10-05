@@ -20,9 +20,11 @@ package org.hillview.main;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.RemoteDataSet;
-import org.hillview.dataset.api.IDataSet;
-import org.hillview.dataset.api.ISketch;
+import org.hillview.dataset.api.*;
 import org.hillview.dataset.remoting.HillviewServer;
+import org.hillview.management.ClusterConfig;
+import org.hillview.management.PurgeLeafDatasets;
+import org.hillview.management.SetMemoization;
 import org.hillview.sketches.*;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Table;
@@ -30,9 +32,12 @@ import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.DoubleArrayColumn;
+import org.hillview.table.columns.StringArrayColumn;
 import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.HostAndPort;
+import org.hillview.utils.HostList;
+import org.hillview.utils.Parallelizer;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -43,11 +48,11 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
- * This is a set of Java files used to benchmark the performance of histograms.
+ * This code is used to run performance benchmarks.
  * These form a separate main entry point, and should be built into a separate binary.
  * They are meant only for measurements, and are not part of the actual Hillview service.
  */
-class HistogramBenchmark {
+class Benchmarks {
     private static final ColumnDescription desc = new
             ColumnDescription("SQRT", ContentsKind.Double);
 
@@ -74,6 +79,26 @@ class HistogramBenchmark {
         return col;
     }
 
+    public static class GenerateStringColumnMapper implements IMap<Empty, ITable> {
+        private final int distinctValues;
+        private final int totalElements;
+
+        GenerateStringColumnMapper(int distinctValues, int totalElements) {
+            this.distinctValues = distinctValues;
+            this.totalElements = totalElements;
+        }
+
+        @Override
+        public ITable apply(Empty data) {
+            ColumnDescription desc = new ColumnDescription("Strings", ContentsKind.String);
+            StringArrayColumn col = new StringArrayColumn(desc, this.totalElements);
+            for (int i = 0; i < this.totalElements; i++)
+                col.set(i, "s" + Integer.toString(i % this.distinctValues));
+            IColumn[] cols = new IColumn[] { col };
+            return new Table(cols, null, null);
+        }
+    }
+
     private static long time(Runnable runnable) {
         long start = System.nanoTime();
         runnable.run();
@@ -95,12 +120,14 @@ class HistogramBenchmark {
         for (int i=0; i < count; i++)
             if (times[i] < times[minIndex])
                 minIndex = i;
-        System.out.println(message);
-        System.out.println("Time (ms),Melems/s,Percent slower");
+        System.out.println("Bench,Time (ms),Melems/s,Percent slower");
         for (int i=0; i < count; i++) {
             double speed = (double)(elemCount) / (times[i] / 1000.0);
             double percent = 100 * ((double)times[i] - times[minIndex]) / times[minIndex];
-            System.out.println((times[i]/(1000.0 * 1000.0)) + "," + twoDigits(speed) + "," + twoDigits(percent) + "%");
+            System.out.println(message + "," +
+                    (times[i]/(1000.0 * 1000.0)) + "," +
+                    twoDigits(speed) + "," +
+                    twoDigits(percent) + "%");
         }
     }
 
@@ -111,8 +138,9 @@ class HistogramBenchmark {
         return new Table(cols, fMap, null, null);
     }
 
-    public static void main(String[] args) throws IOException, InterruptedException {
-        // Testing the performance of histogram computations
+    // Testing the performance of histogram computations
+    private static void benchmarkHistogram(
+            String[] args) throws IOException, InterruptedException {
         System.out.println(Arrays.toString(args));
         final int runCount = Integer.parseInt(args[1]);
         final int parallelism = Integer.parseInt(args[3]);
@@ -164,9 +192,9 @@ class HistogramBenchmark {
                                     .mapToObj((i) -> new LocalDataSet<ITable>(createTable(colSize,
                                                          generateDoubleArray(colSize, 100))))
                                     .collect(Collectors.toList());
-            final IDataSet<ITable> lds = new ParallelDataSet<>(tables);
+            final IDataSet<ITable> lds = new ParallelDataSet<ITable>(tables);
             final HillviewServer server = new HillviewServer(serverAddress, lds);
-            server.toggleMemoization();
+            server.setMemoization(false);
 
             // Setup client
             final IDataSet<ITable> remoteIds = new RemoteDataSet<ITable>(serverAddress);
@@ -185,9 +213,9 @@ class HistogramBenchmark {
                             generateDoubleArray(colSize, 100)));
                     })
                     .collect(Collectors.toList());
-            final IDataSet<ITable> lds = new ParallelDataSet<>(tables);
+            final IDataSet<ITable> lds = new ParallelDataSet<ITable>(tables);
             final HillviewServer server = new HillviewServer(serverAddress, lds);
-            server.toggleMemoization();
+            server.setMemoization(false);
             Thread.currentThread().join();
         }
 
@@ -216,5 +244,53 @@ class HistogramBenchmark {
         }
 
         System.exit(0);
+    }
+
+    // Testing the performance of string quantiles computation
+    private static void benchmarkQuantiles(String[] args) throws IOException {
+        IDataSet<Empty> original;
+        int cores = 2;
+        if (false)
+            original = new LocalDataSet<Empty>(Empty.getInstance());
+        else {
+            if (args.length != 1)
+                throw new RuntimeException("Expected 1 argument: cluster configuration");
+            String file = args[0];
+            ClusterConfig config = ClusterConfig.parse(file);
+            HostList workers = config.getWorkers();
+            original = RemoteDataSet.createCluster(workers, RemoteDataSet.defaultDatasetIndex);
+            original = original.blockingFlatMap(new Parallelizer(cores));
+        }
+
+        original.blockingManage(new SetMemoization(false));
+        SummarySketch summary = new SummarySketch();
+        int total = 1000 * 1000 * 10;
+        int runCount = 5;
+        int quantiles = 100;
+        for (int i = 5; i < 24; i++) {
+            int distinct = 1 << i;
+            GenerateStringColumnMapper generator = new GenerateStringColumnMapper(distinct, total);
+            IDataSet<ITable> data = original.blockingMap(generator);
+            SummarySketch.TableSummary s = data.blockingSketch(summary);
+            System.out.println("Table has " + s.rowCount + " rows");
+
+            ISketch<ITable, DistinctStringsSketch.DistinctStrings> sk =
+                    new DistinctStringsSketch("Strings");
+            Runnable r = () -> data.blockingSketch(sk).getQuantiles(quantiles);
+            runNTimes(r, runCount, "Naive " + distinct + " distinct", total);
+
+            SampleDistinctElementsSketch scs = new SampleDistinctElementsSketch("Strings", 0, quantiles);
+            r = () -> data.blockingSketch(scs).getLeftBoundaries(100);
+            runNTimes(r, runCount, "Smart " + distinct + " distinct", total);
+        }
+        original.blockingManage(new PurgeLeafDatasets());
+    }
+
+    public static void main(String[] args) throws IOException, InterruptedException {
+        HillviewLogger.instance.setLogLevel(Level.WARNING);
+        if (false)
+            benchmarkHistogram(args);
+        else
+            benchmarkQuantiles(args);
     }
 }

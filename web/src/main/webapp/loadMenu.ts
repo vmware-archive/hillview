@@ -147,28 +147,27 @@ export class LoadMenu extends RemoteObject implements IDataView {
                         text: "List machines",
                         action: () => this.ping(),
                         help: "Produces a list of all worker machines.",
-                    },
-                    {
-                        text: "Toggle memoization",
-                        action: () => this.command("toggleMemoization"),
-                        help: "Asks the workers to memoize/not memoize query results.",
-                    },
-                    {
+                    }, {
+                        text: "Set memoization",
+                        action: () => this.command("setMemoization"),
+                        help: "Asks the workers to memoize query results.",
+                    }, {
+                        text: "Unset memoization",
+                        action: () => this.command("unsetMemoization"),
+                        help: "Asks the workers not to memoize query results.",
+                    }, {
                         text: "Memory use",
                         action: () => this.command("memoryUse"),
                         help: "Reports Java memory use for each worker.",
-                    },
-                    {
+                    }, {
                         text: "Purge memoized",
                         action: () => this.command("purgeMemoization"),
                         help: "Remove all memoized datasets from the workers.",
-                    },
-                    {
+                    }, {
                         text: "Purge root datasets",
                         action: () => this.command("purgeDatasets"),
                         help: "Remove all datasets stored at the root node.",
-                    },
-                    {
+                    }, {
                         text: "Purge leaf datasets",
                         action: () => this.command("purgeLeafDatasets"),
                         help: "Remove all datasets stored at the worker nodes.",

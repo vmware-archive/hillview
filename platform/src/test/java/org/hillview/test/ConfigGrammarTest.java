@@ -18,6 +18,7 @@
 package org.hillview.test;
 
 import org.hillview.management.ClusterConfig;
+import org.hillview.utils.HostList;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -31,12 +32,12 @@ public class ConfigGrammarTest extends BaseTest {
     public void testConfigLoading() throws IOException {
         ClusterConfig config = ClusterConfig.parse("../bin/config.json");
         Assert.assertEquals("web.server.name", config.webserver);
-        String[] workers = config.getWorkers();
+        HostList workers = config.getWorkers();
         Assert.assertNotNull(workers);
-        Assert.assertEquals(4, workers.length);
+        Assert.assertEquals(4, workers.size());
         Assert.assertNotNull(config.aggregators);
         Assert.assertEquals(2, config.aggregators.length);
-        Assert.assertEquals("worker1.name", workers[0]);
+        Assert.assertEquals("worker1.name", workers.get(0).host);
         Assert.assertEquals(3569, config.worker_port);
         Assert.assertEquals("/home/hillview", config.service_folder);
     }

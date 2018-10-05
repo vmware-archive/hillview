@@ -40,8 +40,8 @@ public class SummarySketch implements ISketch<ITable, SummarySketch.TableSummary
         // So we need a way to represent a "zero" schema.  An empty schema is in principle
         // legal for a table, so we use a null to represent a yet "unknown" schema.
         @Nullable
-        final Schema schema;
-        final long   rowCount;
+        public final Schema schema;
+        public final long   rowCount;
 
         TableSummary(@Nullable Schema schema, long rowCount) {
             this.schema = schema;

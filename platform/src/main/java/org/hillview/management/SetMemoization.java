@@ -21,12 +21,18 @@ import org.hillview.dataset.api.ControlMessage;
 import org.hillview.dataset.remoting.HillviewServer;
 
 /**
- * This control message causes the remote servers to toggle their memoization.
- * It returns the current memoization state.
+ * This control message causes the servers to change the way they memoize
+ * results of computations.
  */
-public class ToggleMemoization extends ControlMessage {
+public class SetMemoization extends ControlMessage {
+    private boolean state;
+
+    public SetMemoization(boolean state) {
+        this.state = state;
+    }
+
     public Status remoteServerAction(HillviewServer server) {
-        boolean b = server.toggleMemoization();
-        return new Status("memoizing=" + Boolean.toString(b));
+        server.setMemoization(this.state);
+        return new Status("OK");
     }
 }

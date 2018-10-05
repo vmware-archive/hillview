@@ -68,7 +68,7 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
      * specified cluster.
      * @param index   Index of dataset on remote machine.  Must be a negative number.
      */
-    public static IDataSet<Empty> createCluster(final ClusterDescription description, int index) {
+    public static IDataSet<Empty> createCluster(final HostList description, int index) {
         final int numServers = description.getServerList().size();
         if (numServers <= 0) {
             throw new IllegalArgumentException("ClusterDescription must contain one or more servers");

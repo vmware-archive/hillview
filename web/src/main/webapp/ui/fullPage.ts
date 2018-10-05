@@ -239,7 +239,7 @@ export class FullPage implements IHtmlElement {
     }
 
     public getWidthInPixels(): number {
-        return this.pageTopLevel.getBoundingClientRect().width;
+        return Math.floor(this.pageTopLevel.getBoundingClientRect().width);
     }
 
     public scrollIntoView(): void {

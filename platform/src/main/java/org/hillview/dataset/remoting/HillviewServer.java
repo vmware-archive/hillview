@@ -230,11 +230,9 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
 
     /**
      * Change memoization policy.
-     * @return Current state of memoization.
      */
-    public boolean toggleMemoization() {
-        this.MEMOIZE = !this.MEMOIZE;
-        return this.MEMOIZE;
+    public void setMemoization(boolean to) {
+        this.MEMOIZE = to;
     }
 
     /**

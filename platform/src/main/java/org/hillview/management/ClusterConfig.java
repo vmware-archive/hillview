@@ -18,6 +18,8 @@
 package org.hillview.management;
 
 import org.hillview.dataset.api.IJson;
+import org.hillview.utils.HostAndPort;
+import org.hillview.utils.HostList;
 import org.hillview.utils.Linq;
 
 import javax.annotation.Nullable;
@@ -95,17 +97,6 @@ public class ClusterConfig {
         return s.substring(0, index);
     }
 
-    public String[] getWorkers() {
-        if (this.workers != null)
-            return this.workers;
-        assert this.aggregators != null;
-        List<String> workers = new ArrayList<String>();
-        for (AggregatorConfig a : this.aggregators) {
-            Collections.addAll(workers, a.workers);
-        }
-        return workers.toArray(new String[1]);
-    }
-
     /**
      * Parse a cluster configuration file and create a Java
      * ClusterConfig object.
@@ -117,5 +108,31 @@ public class ClusterConfig {
         ClusterConfig result = IJson.gsonInstance.fromJson(contents, ClusterConfig.class);
         result.validate();
         return result;
+    }
+
+    public HostList getWorkers() {
+        List<HostAndPort> workers = new ArrayList<HostAndPort>();
+        if (this.workers != null) {
+            for (String w : this.workers)
+                 workers.add(new HostAndPort(w, this.worker_port));
+        } else {
+            assert this.aggregators != null;
+            for (AggregatorConfig a : this.aggregators) {
+                for (String w : a.workers)
+                    workers.add(new HostAndPort(w, this.worker_port));
+            }
+        }
+        return new HostList(workers);
+    }
+
+    public HostList getAggregators() {
+        List<HostAndPort> agg = new ArrayList<HostAndPort>();
+        if (this.aggregators == null)
+            return new HostList(agg);
+        for (AggregatorConfig a : this.aggregators) {
+            assert a.name != null;
+            agg.add(new HostAndPort(a.name, this.aggregator_port));
+        }
+        return new HostList(agg);
     }
 }

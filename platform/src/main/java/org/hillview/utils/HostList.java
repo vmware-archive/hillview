@@ -35,21 +35,27 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Describes the list of hosts that comprise a cluster. The corresponding Json representation
- * would be:
+ * Describes the list of hosts running the hillview service.
+ * The corresponding Json representation is:
  *          {
- *              "serverList": ["127.0.0.1:1234", "127.0.0.1:1235"]
+ *              "serverList": ["192.168.0.1:1234", "192.168.0.2:1234"]
  *          }
  */
-public final class ClusterDescription implements IJson {
+public final class HostList implements IJson {
     private final List<HostAndPort> serverList;
 
-    public ClusterDescription(final List<HostAndPort> serverList) {
+    public int size() { return this.serverList.size(); }
+
+    public HostList(final List<HostAndPort> serverList) {
         this.serverList = serverList;
     }
 
     public List<HostAndPort> getServerList() {
         return this.serverList;
+    }
+
+    public HostAndPort get(int index) {
+        return this.serverList.get(index);
     }
 
     public static class HostAndPortSerializer implements JsonSerializer<HostAndPort> {
@@ -67,11 +73,11 @@ public final class ClusterDescription implements IJson {
         }
     }
 
-    public static ClusterDescription fromFile(String filename) throws IOException {
+    public static HostList fromFile(String filename) throws IOException {
         final List<String> lines = Files.readAllLines(Paths.get(filename), Charset.defaultCharset());
         final List<HostAndPort> hostAndPorts = lines.stream()
                 .map(HostAndPort::fromString)
                 .collect(Collectors.toList());
-        return new ClusterDescription(hostAndPorts);
+        return new HostList(hostAndPorts);
     }
 }

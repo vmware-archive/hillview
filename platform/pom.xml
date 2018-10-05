@@ -52,13 +52,13 @@
                                 <configuration>
                                     <archive>
                                         <manifest>
-                                            <mainClass>org.hillview.main.HistogramBenchmark</mainClass>
+                                            <mainClass>org.hillview.main.Benchmarks</mainClass>
                                         </manifest>
                                     </archive>
                                     <descriptorRefs>
                                         <descriptorRef>jar-with-dependencies</descriptorRef>
                                     </descriptorRefs>
-                                    <finalName>histogram-benchmark</finalName>
+                                    <finalName>benchmarks</finalName>
                                 </configuration>
                                 <phase>package</phase>
                                 <goals>

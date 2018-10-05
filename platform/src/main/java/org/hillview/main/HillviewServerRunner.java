@@ -22,7 +22,7 @@ import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.remoting.HillviewServer;
-import org.hillview.utils.ClusterDescription;
+import org.hillview.utils.HostList;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.HostAndPort;
 
@@ -54,7 +54,7 @@ class HillviewServerRunner {
             } else if (args.length == 2) {
                 // aggregator node
                 HillviewLogger.initialize("aggregator", "hillview-agg.log");
-                ClusterDescription cluster = ClusterDescription.fromFile(args[0]);
+                HostList cluster = HostList.fromFile(args[0]);
                 initial = RemoteDataSet.createCluster(cluster, RemoteDataSet.defaultDatasetIndex);
                 hostAndPort = args[1];
             } else {

@@ -1,4 +1,4 @@
-<-- automatically generated from userManual.src by doc/number-sections.py-->
+<!-- automatically generated from userManual.src by doc/number-sections.py-->
 # Hillview User Manual
 
 [Hillview](https://github.com/vmware/hillview) is a simple cloud-based
@@ -1173,8 +1173,8 @@ The following operations are available from the View menu of a Trellis histogram
 * refresh: will redraw the view
 * table: will display the underlying data in a [tabular view](#32-table-views).
 * exact: will compute and display the histograms without approximation
-* # buckets: allows the user to change the number of buckets displayed for each histogram
-* # groups: allows the user to change the number of groups used for displaying the Trellis plot
+* \#buckets: allows the user to change the number of buckets displayed for each histogram
+* \#groups: allows the user to change the number of groups used for displaying the Trellis plot
 * correlate...: allows the user to specify a second column that is used for displaying a Trellis plot
   of 2D histograms
 
