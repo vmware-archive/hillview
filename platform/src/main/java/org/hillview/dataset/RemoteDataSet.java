@@ -50,12 +50,16 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
     private final int remoteHandle;
     private final HostAndPort serverEndpoint;
     private final HillviewServerGrpc.HillviewServerStub stub;
-    // To avoid epoll CPU utilization problems, we could use PollSelectorProvider().
-    // See: https://github.com/netty/netty/issues/327
+    /*
+     * To avoid epoll CPU utilization problems, we could use PollSelectorProvider().
+     * See: https://github.com/netty/netty/issues/327
+     */
     private static final EventLoopGroup workerElg = new NioEventLoopGroup(1,
             ExecutorUtils.newFastLocalThreadFactory("rds-shared-worker"));
-    // The high priority for the executor is needed to handle unsubscription
-    // requests with high priority.
+    /*
+     * The high priority for the executor is needed to handle unsubscription
+     * requests with high priority.
+     */
     private static final ExecutorService executorService =
             ExecutorUtils.newNamedThreadPool("rds-shared-executor", 5, Thread.MAX_PRIORITY);
     /**
