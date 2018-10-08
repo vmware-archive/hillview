@@ -37,7 +37,7 @@ def prepare_webserver(config):
         tomcatFolder + "/webapps/ROOT.war", "")
     tmp = tempfile.NamedTemporaryFile(mode="w", delete=False)
     agg = config.get_aggregators()
-    if len(agg) > 0:
+    if agg:
         for a in agg:
             tmp.write(a.host + ":" + str(config.aggregator_port) + "\n")
     else:
