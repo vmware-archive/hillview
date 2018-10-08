@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # Downloads some of the OnTime flights database
+# pylint: disable=invalid-name,missing-docstring
 
 import os
 import subprocess
@@ -16,23 +17,23 @@ def canonical_name(year, month):
     return "On_Time_On_Time_Performance_" + str(year) + "_" + str(month)
 
 def download(startyear, startmonth, endyear, endmonth):
-    months = (endyear - startyear) * 12 + endmonth - startmonth + 1;
+    months = (endyear - startyear) * 12 + endmonth - startmonth + 1
     if months < 0:
-        print("Illegal time range");
+        print("Illegal time range")
     for i in range(0, months):
         inMonths = startyear*12 + startmonth + i - 1
         year = inMonths / 12
         month = (inMonths % 12) + 1
         if year >= 2018:
-            basename="On_Time_Reporting_Carrier_On_Time_Performance_1987_present_" + str(year) + "_" + str(month)
+            basename = "On_Time_Reporting_Carrier_On_Time_Performance_1987_present_" + str(year) + "_" + str(month)
         else:
             # Unfortunately currently the website no longer has these files and it is not
             # clear what name they should have
-            basename="On_Time_On_Time_Performance_" + str(year) + "_" + str(month)
+            basename = "On_Time_On_Time_Performance_" + str(year) + "_" + str(month)
         canonical = canonical_name(year, month)
         if not os.path.exists(canonical + ".csv.gz"):
-            filename=basename + ".zip"
-            url="https://transtats.bts.gov/PREZIP/" + filename
+            filename = basename + ".zip"
+            url = "https://transtats.bts.gov/PREZIP/" + filename
             execute_command("wget -q " + url)
             execute_command("unzip -o " + filename)
             os.unlink(filename)

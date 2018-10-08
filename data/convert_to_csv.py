@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # convert adapted from: http://pjreddie.com/projects/mnist-in-csv/
-
+# pylint: disable=invalid-name,missing-docstring
 
 def convert(imgf, labelf, outf, n):
     f = open(imgf, "rb")
