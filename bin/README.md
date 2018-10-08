@@ -21,3 +21,4 @@
 * deploy.py: copy the binaries to all machines in a Hillview cluster
 * start.py: start the Hillview service on a remote cluster
 * stop.py: stop the Hillview service on a remote cluster
+* status.py: check the Hillview service on a remote cluster
