@@ -1,6 +1,6 @@
 This folder contains Java code for implementing the Hillview back-end services.
 
-To build the project from the commandline:
+To build the project from the command-line:
 
 > $: mvn install
 
