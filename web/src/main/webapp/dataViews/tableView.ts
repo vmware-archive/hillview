@@ -1045,9 +1045,11 @@ export class TableView extends TSViewBase implements IScrollTarget {
 
     protected changeTableSize(): void {
         const dialog = new Dialog("Number of rows", "Choose number of rows to display");
-        dialog.addTextField("rows", "Rows", FieldKind.Integer,
+        const field = dialog.addTextField("rows", "Rows", FieldKind.Integer,
             Resolution.tableRowsOnScreen.toString(),
             "Number of rows to show (between 10 and 200)");
+        field.min = "10";
+        field.max = "200";
         dialog.setAction(() => {
             const rowCount = dialog.getFieldValueAsInt("rows");
             if (rowCount < 10 || rowCount > 200) {
