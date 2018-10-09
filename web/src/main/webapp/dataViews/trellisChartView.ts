@@ -323,8 +323,10 @@ export abstract class TrellisChartView extends ChartView {
 export class GroupsDialog extends Dialog {
     constructor(protected maxGroups: number) {
         super("Set groups", "Change the number of groups.");
-        this.addTextField("groups", "Number of groups:", FieldKind.Integer, null,
+        const groups = this.addTextField("groups", "Number of groups:", FieldKind.Integer, null,
             "The number of groups to use; must be between 1 and " + maxGroups);
+        groups.min = "1";
+        groups.max = maxGroups.toString();
         this.setCacheTitle("GroupsDialog");
     }
 

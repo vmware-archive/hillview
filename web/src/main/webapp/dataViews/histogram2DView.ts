@@ -110,8 +110,7 @@ export class Histogram2DView extends HistogramViewBase {
             }, {
                 text: "# buckets...",
                 action: () => this.chooseBuckets(),
-                help: "Change the number of buckets used for drawing the histogram." +
-                    "The number must be between 1 and " + Resolution.maxBucketCount,
+                help: "Change the number of buckets used for drawing the histogram.",
             }, {
                 text: "swap axes",
                 action: () => { this.swapAxes(); },

@@ -99,8 +99,10 @@ export abstract class HistogramViewBase extends ChartView {
 export class BucketDialog extends Dialog {
     constructor() {
         super("Set buckets", "Change the number of buckets (bars) used to display the histogram.");
-        this.addTextField("n_buckets", "Number of buckets:", FieldKind.Integer, null,
-            "The number of buckets to use; must be between 1 and " + Resolution.maxBucketCount);
+        const input = this.addTextField("n_buckets", "Number of buckets:", FieldKind.Integer, null,
+            "The number of buckets to use.");
+        input.min = "1";
+        input.max = Resolution.maxBucketCount.toString();
         this.setCacheTitle("BucketDialog");
     }
 

@@ -389,9 +389,11 @@ export class HeavyHittersView extends BigTableView {
         const percentDialog = new Dialog("Change the frequency threshold",
             "Changes the frequency threshold above which elements are considered frequent");
         percentDialog.addText("Enter a percentage between " + HeavyHittersView.minString + " and 100%");
-        percentDialog.addTextField("newPercent", "Threshold (%)", FieldKind.Double,
+        const perc = percentDialog.addTextField("newPercent", "Threshold (%)", FieldKind.Double,
             this.percent.toString(), "All values that appear with a frequency above this value " +
             "(as a percent) will be considered frequent elements.  Must be at least " + HeavyHittersView.minString);
+        perc.min = HeavyHittersView.minString;
+        perc.max = "100";
         percentDialog.setAction(() => {
             const newPercent = percentDialog.getFieldValueAsNumber("newPercent");
             if (newPercent != null) this.runWithThreshold(newPercent);

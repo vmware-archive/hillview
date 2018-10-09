@@ -89,9 +89,11 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
         const pcaDialog = new Dialog("Principal Component Analysis",
             "Projects a set of numeric columns to a smaller set of numeric columns while preserving the 'shape' " +
             " of the data as much as possible.");
-        pcaDialog.addTextField("numComponents", "Number of components", FieldKind.Integer, "2",
+        const components = pcaDialog.addTextField("numComponents", "Number of components", FieldKind.Integer, "2",
             "Number of dimensions to project to.  Must be an integer bigger than 1 and " +
             "smaller than" + this.colNames.length);
+        components.min = "1";
+        components.max = this.colNames.length.toString();
         pcaDialog.addTextField("projectionName", "Name for Projected columns", FieldKind.String,
             "PCA",
             "The projected columns will appear with this name followed by a number starting from 0");

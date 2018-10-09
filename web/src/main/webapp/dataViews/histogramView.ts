@@ -95,8 +95,7 @@ export class HistogramView extends HistogramViewBase {
                 },
                 { text: "# buckets...",
                     action: () => this.chooseBuckets(),
-                    help: "Change the number of buckets used to draw this histogram. " +
-                        "The number of buckets must be between 1 and " + Resolution.maxBucketCount,
+                    help: "Change the number of buckets used to draw this histogram. ",
                 },
                 { text: "correlate...",
                     action: () => this.chooseSecondColumn(),
