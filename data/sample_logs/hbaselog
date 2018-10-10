@@ -1,0 +1,200 @@
+2018-09-30 09:43:42,265 INFO  [main] util.VersionInfo: HBase 1.1.2.2.6.5.0-292
+2018-09-30 09:43:42,266 INFO  [main] util.VersionInfo: Source code repository git://ctr-e138-1518143905142-227583-01-000005.hwx.site/grid/0/jenkins/workspace/HDP-parallel-centos7/SOURCES/hbase revision=897822d4dd5956ca186974c10382e9094683fa29
+2018-09-30 09:43:42,266 INFO  [main] util.VersionInfo: Compiled by jenkins on Fri May 11 08:00:59 UTC 2018
+2018-09-30 09:43:42,266 INFO  [main] util.VersionInfo: From source with checksum 57528cabbce50eee309a3ca4c6616a22
+2018-09-30 09:43:42,544 INFO  [main] util.ServerCommandLine: env:PATH=/usr/sbin:/sbin:/usr/lib/ambari-server/*:/sbin:/usr/sbin:/bin:/usr/bin:/var/lib/ambari-agent
+2018-09-30 09:43:42,545 INFO  [main] util.ServerCommandLine: env:HISTCONTROL=ignoredups
+2018-09-30 09:43:42,545 INFO  [main] util.ServerCommandLine: env:HBASE_PID_DIR=/var/run/hbase
+2018-09-30 09:43:42,545 INFO  [main] util.ServerCommandLine: env:HBASE_REGIONSERVER_OPTS= -Xmn152m -XX:CMSInitiatingOccupancyFraction=50 -XX:+UseCMSInitiatingOccupancyOnly -Xms768m -Xmx768m
+2018-09-30 09:43:42,545 INFO  [main] util.ServerCommandLine: env:HBASE_CONF_DIR=/usr/hdp/current/hbase-master/conf
+2018-09-30 09:43:42,545 INFO  [main] util.ServerCommandLine: env:MAIL=/var/spool/mail/hbase
+2018-09-30 09:43:42,545 INFO  [main] util.ServerCommandLine: env:LD_LIBRARY_PATH=::/usr/hdp/2.6.5.0-292/hadoop/lib/native/Linux-amd64-64:/usr/hdp/2.6.5.0-292/hadoop/lib/native/Linux-amd64-64:/usr/hdp/2.6.5.0-292/hadoop/lib/native
+2018-09-30 09:43:42,545 INFO  [main] util.ServerCommandLine: env:LOGNAME=hbase
+2018-09-30 09:43:42,545 INFO  [main] util.ServerCommandLine: env:HBASE_REST_OPTS=
+2018-09-30 09:43:42,545 INFO  [main] util.ServerCommandLine: env:PWD=/home/hbase
+2018-09-30 09:43:42,545 INFO  [main] util.ServerCommandLine: env:HBASE_ROOT_LOGGER=INFO,RFA
+2018-09-30 09:43:42,545 INFO  [main] util.ServerCommandLine: env:LESSOPEN=||/usr/bin/lesspipe.sh %s
+2018-09-30 09:43:42,545 INFO  [main] util.ServerCommandLine: env:SHELL=/bin/bash
+2018-09-30 09:43:42,545 INFO  [main] util.ServerCommandLine: env:QT_GRAPHICSSYSTEM_CHECKED=1
+2018-09-30 09:43:42,545 INFO  [main] util.ServerCommandLine: env:HBASE_ENV_INIT=true
+2018-09-30 09:43:42,545 INFO  [main] util.ServerCommandLine: env:QTINC=/usr/lib64/qt-3.3/include
+2018-09-30 09:43:42,545 INFO  [main] util.ServerCommandLine: env:HBASE_MASTER_OPTS= -Xmx384m
+2018-09-30 09:43:42,545 INFO  [main] util.ServerCommandLine: env:HBASE_MANAGES_ZK=false
+2018-09-30 09:43:42,545 INFO  [main] util.ServerCommandLine: env:HBASE_REGIONSERVERS=/usr/hdp/current/hbase-master/conf/regionservers
+2018-09-30 09:43:42,545 INFO  [main] util.ServerCommandLine: env:HADOOP_HOME=/usr/hdp/2.6.5.0-292/hadoop
+2018-09-30 09:43:42,545 INFO  [main] util.ServerCommandLine: env:HBASE_NICENESS=0
+2018-09-30 09:43:42,545 INFO  [main] util.ServerCommandLine: env:HBASE_OPTS=-Dhdp.version=2.6.5.0-292  -XX:+UseConcMarkSweepGC -XX:ErrorFile=/var/log/pnda/hbase/hs_err_pid%p.log -Djava.io.tmpdir=/tmp -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps -Xloggc:/var/log/pnda/hbase/gc.log-201809300943  -Xmx384m   -Dhbase.log.dir=/var/log/pnda/hbase -Dhbase.log.file=hbase-hbase-master-jana-hadoop-mgr-1.log -Dhbase.home.dir=/usr/hdp/current/hbase-master/bin/.. -Dhbase.id.str=hbase -Dhbase.root.logger=INFO,RFA -Djava.library.path=:/usr/hdp/2.6.5.0-292/hadoop/lib/native/Linux-amd64-64:/usr/hdp/2.6.5.0-292/hadoop/lib/native/Linux-amd64-64:/usr/hdp/2.6.5.0-292/hadoop/lib/native -Dhbase.security.logger=INFO,RFAS
+2018-09-30 09:43:42,546 INFO  [main] util.ServerCommandLine: env:HBASE_START_FILE=/var/run/hbase/hbase-hbase-master.autorestart
+2018-09-30 09:43:42,546 INFO  [main] util.ServerCommandLine: env:HBASE_SECURITY_LOGGER=INFO,RFAS
+2018-09-30 09:43:42,546 INFO  [main] util.ServerCommandLine: env:SHLVL=3
+2018-09-30 09:43:42,546 INFO  [main] util.ServerCommandLine: env:ZOOKEEPER_HOME=/usr/hdp/2.6.5.0-292/zookeeper
+2018-09-30 09:43:42,546 INFO  [main] util.ServerCommandLine: env:HBASE_LOGFILE=hbase-hbase-master-jana-hadoop-mgr-1.log
+2018-09-30 09:43:42,546 INFO  [main] util.ServerCommandLine: env:HISTSIZE=1000
+2018-09-30 09:43:42,546 INFO  [main] util.ServerCommandLine: env:JAVA_HOME=/usr/share/java/jdk1.8.0_131/
+2018-09-30 09:43:42,546 INFO  [main] util.ServerCommandLine: env:HDP_VERSION=2.6.5.0-292
+2018-09-30 09:43:42,546 INFO  [main] util.ServerCommandLine: env:XFILESEARCHPATH=/usr/dt/app-defaults/%L/Dt
+2018-09-30 09:43:42,546 INFO  [main] util.ServerCommandLine: env:LANG=en_US.UTF-8
+2018-09-30 09:43:42,546 INFO  [main] util.ServerCommandLine: env:XDG_SESSION_ID=c56
+2018-09-30 09:43:42,546 INFO  [main] util.ServerCommandLine: env:COBBLER_SERVER=192.168.1.5
+2018-09-30 09:43:42,546 INFO  [main] util.ServerCommandLine: env:HBASE_CLASSPATH=/usr/hdp/2.6.5.0-292/hadoop/conf:/usr/hdp/2.6.5.0-292/hadoop/*:/usr/hdp/2.6.5.0-292/hadoop/lib/*:/usr/hdp/2.6.5.0-292/zookeeper/*::/usr/hdp/current/ext/hbase/*
+2018-09-30 09:43:42,546 INFO  [main] util.ServerCommandLine: env:HBASE_IDENT_STRING=hbase
+2018-09-30 09:43:42,546 INFO  [main] util.ServerCommandLine: env:HBASE_ZNODE_FILE=/var/run/hbase/hbase-hbase-master.znode
+        at org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos$ClientNamenodeProtocol$2.callBlockingMethod(ClientNamenodeProtocolProtos.java)
+        at org.apache.hadoop.ipc.ProtobufRpcEngine$Server$ProtoBufRpcInvoker.call(ProtobufRpcEngine.java:640)
+        at org.apache.hadoop.ipc.RPC$Server.call(RPC.java:982)
+        at org.apache.hadoop.ipc.Server$Handler$1.run(Server.java:2351)
+        at org.apache.hadoop.ipc.Server$Handler$1.run(Server.java:2347)
+        at java.security.AccessController.doPrivileged(Native Method)
+        at javax.security.auth.Subject.doAs(Subject.java:422)
+        at org.apache.hadoop.security.UserGroupInformation.doAs(UserGroupInformation.java:1869)
+        at org.apache.hadoop.ipc.Server$Handler.run(Server.java:2347)
+
+        at org.apache.hadoop.ipc.Client.getRpcResponse(Client.java:1554)
+        at org.apache.hadoop.ipc.Client.call(Client.java:1498)
+        at org.apache.hadoop.ipc.Client.call(Client.java:1398)
+        at org.apache.hadoop.ipc.ProtobufRpcEngine$Invoker.invoke(ProtobufRpcEngine.java:233)
+        at com.sun.proxy.$Proxy16.create(Unknown Source)
+        at org.apache.hadoop.hdfs.protocolPB.ClientNamenodeProtocolTranslatorPB.create(ClientNamenodeProtocolTranslatorPB.java:313)
+        at sun.reflect.GeneratedMethodAccessor49.invoke(Unknown Source)
+        at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+        at java.lang.reflect.Method.invoke(Method.java:498)
+        at org.apache.hadoop.io.retry.RetryInvocationHandler.invokeMethod(RetryInvocationHandler.java:290)
+        at org.apache.hadoop.io.retry.RetryInvocationHandler.invoke(RetryInvocationHandler.java:202)
+        at org.apache.hadoop.io.retry.RetryInvocationHandler.invoke(RetryInvocationHandler.java:184)
+        at com.sun.proxy.$Proxy17.create(Unknown Source)
+        at sun.reflect.GeneratedMethodAccessor49.invoke(Unknown Source)
+        at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+        at java.lang.reflect.Method.invoke(Method.java:498)
+        at org.apache.hadoop.hbase.fs.HFileSystem$1.invoke(HFileSystem.java:280)
+        at com.sun.proxy.$Proxy18.create(Unknown Source)
+        at org.apache.hadoop.hdfs.DFSOutputStream.newStreamForCreate(DFSOutputStream.java:1828)
+        at org.apache.hadoop.hdfs.DFSClient.create(DFSClient.java:1712)
+        at org.apache.hadoop.hdfs.DFSClient.create(DFSClient.java:1681)
+        at org.apache.hadoop.hdfs.DistributedFileSystem$9.doCall(DistributedFileSystem.java:527)
+        at org.apache.hadoop.hdfs.DistributedFileSystem$9.doCall(DistributedFileSystem.java:523)
+        at org.apache.hadoop.fs.FileSystemLinkResolver.resolve(FileSystemLinkResolver.java:81)
+        at org.apache.hadoop.hdfs.DistributedFileSystem.createNonRecursive(DistributedFileSystem.java:538)
+        at org.apache.hadoop.fs.FileSystem.createNonRecursive(FileSystem.java:1135)
+        at org.apache.hadoop.fs.FileSystem.createNonRecursive(FileSystem.java:1111)
+        at org.apache.hadoop.hbase.regionserver.wal.ProtobufLogWriter.init(ProtobufLogWriter.java:90)
+        at org.apache.hadoop.hbase.wal.DefaultWALProvider.createWriter(DefaultWALProvider.java:363)
+        ... 4 more
+        at org.apache.hadoop.hbase.master.MasterFileSystem.checkFileSystem(MasterFileSystem.java:202)
+        at org.apache.hadoop.hbase.master.MasterFileSystem.getLogDirs(MasterFileSystem.java:372)
+        at org.apache.hadoop.hbase.master.MasterFileSystem.splitLog(MasterFileSystem.java:425)
+        at org.apache.hadoop.hbase.master.MasterFileSystem.splitMetaLog(MasterFileSystem.java:339)
+        at org.apache.hadoop.hbase.master.MasterFileSystem.splitMetaLog(MasterFileSystem.java:330)
+        at org.apache.hadoop.hbase.master.handler.MetaServerShutdownHandler.process(MetaServerShutdownHandler.java:77)
+        at org.apache.hadoop.hbase.executor.EventHandler.run(EventHandler.java:129)
+        at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+        at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+        at java.lang.Thread.run(Thread.java:748)
+2018-10-08 10:18:06,099 INFO  [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-0] regionserver.HRegionServer: STOPPED: Shutting down HBase cluster: file system not available
+2018-10-08 10:18:06,099 INFO  [master/jana-hadoop-mgr-1.node.dc1.pnda.local/192.168.1.62:16000] regionserver.HRegionServer: Stopping infoServer
+2018-10-08 10:18:06,099 ERROR [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-0] handler.MetaServerShutdownHandler: Caught M_META_SERVER_SHUTDOWN, count=1
+java.io.IOException: failed log splitting for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482, will retry
+        at org.apache.hadoop.hbase.master.handler.MetaServerShutdownHandler.process(MetaServerShutdownHandler.java:84)
+        at org.apache.hadoop.hbase.executor.EventHandler.run(EventHandler.java:129)
+        at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)
+        at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)
+        at java.lang.Thread.run(Thread.java:748)
+Caused by: java.io.EOFException: End of File Exception between local host is: "jana-hadoop-mgr-1/192.168.1.62"; destination host is: "jana-hadoop-mgr-1.node.dc1.pnda.local":8020; : java.io.EOFException; For more details see:  http://wiki.apache.org/hadoop/EOFException
+        at sun.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+        at sun.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:62)
+        at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+        at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+        at org.apache.hadoop.net.NetUtils.wrapWithMessage(NetUtils.java:801)
+        at org.apache.hadoop.net.NetUtils.wrapException(NetUtils.java:765)
+        at org.apache.hadoop.ipc.Client.getRpcResponse(Client.java:1558)
+        at org.apache.hadoop.ipc.Client.call(Client.java:1498)
+        at org.apache.hadoop.ipc.Client.call(Client.java:1398)
+        at org.apache.hadoop.ipc.ProtobufRpcEngine$Invoker.invoke(ProtobufRpcEngine.java:233)
+        at com.sun.proxy.$Proxy16.getFileInfo(Unknown Source)
+        at org.apache.hadoop.hdfs.protocolPB.ClientNamenodeProtocolTranslatorPB.getFileInfo(ClientNamenodeProtocolTranslatorPB.java:823)
+        at sun.reflect.GeneratedMethodAccessor1.invoke(Unknown Source)
+        at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+        at java.lang.reflect.Method.invoke(Method.java:498)
+        at org.apache.hadoop.io.retry.RetryInvocationHandler.invokeMethod(RetryInvocationHandler.java:290)
+        at org.apache.hadoop.io.retry.RetryInvocationHandler.invoke(RetryInvocationHandler.java:202)
+        at org.apache.hadoop.io.retry.RetryInvocationHandler.invoke(RetryInvocationHandler.java:184)
+        at com.sun.proxy.$Proxy17.getFileInfo(Unknown Source)
+        at sun.reflect.GeneratedMethodAccessor1.invoke(Unknown Source)
+        at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+        at java.lang.reflect.Method.invoke(Method.java:498)
+        at org.apache.hadoop.hbase.fs.HFileSystem$1.invoke(HFileSystem.java:280)
+        at com.sun.proxy.$Proxy18.getFileInfo(Unknown Source)
+        at org.apache.hadoop.hdfs.DFSClient.getFileInfo(DFSClient.java:2177)
+        at org.apache.hadoop.hdfs.DistributedFileSystem$26.doCall(DistributedFileSystem.java:1442)
+        at org.apache.hadoop.hdfs.DistributedFileSystem$26.doCall(DistributedFileSystem.java:1438)
+        at org.apache.hadoop.fs.FileSystemLinkResolver.resolve(FileSystemLinkResolver.java:81)
+        at org.apache.hadoop.hdfs.DistributedFileSystem.getFileStatus(DistributedFileSystem.java:1454)
+        at org.apache.hadoop.fs.FileSystem.exists(FileSystem.java:1448)
+        at org.apache.hadoop.hbase.master.MasterFileSystem.getLogDirs(MasterFileSystem.java:359)
+        at org.apache.hadoop.hbase.master.MasterFileSystem.splitLog(MasterFileSystem.java:425)
+        at org.apache.hadoop.hbase.master.MasterFileSystem.splitMetaLog(MasterFileSystem.java:339)
+        at org.apache.hadoop.hbase.master.MasterFileSystem.splitMetaLog(MasterFileSystem.java:330)
+        at org.apache.hadoop.hbase.master.handler.MetaServerShutdownHandler.process(MetaServerShutdownHandler.java:77)
+        ... 4 more
+Caused by: java.io.EOFException
+        at java.io.DataInputStream.readInt(DataInputStream.java:392)
+        at org.apache.hadoop.ipc.Client$Connection.receiveRpcResponse(Client.java:1119)
+        at org.apache.hadoop.ipc.Client$Connection.run(Client.java:1014)
+2018-10-08 10:18:06,101 INFO  [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-1] handler.MetaServerShutdownHandler: Splitting hbase:meta logs for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482
+2018-10-08 10:18:06,104 INFO  [master/jana-hadoop-mgr-1.node.dc1.pnda.local/192.168.1.62:16000] mortbay.log: Stopped SelectChannelConnector@0.0.0.0:16010
+2018-10-08 10:18:06,112 ERROR [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-1] handler.MetaServerShutdownHandler: Caught M_META_SERVER_SHUTDOWN, count=2; failed log splitting for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482, will retry; stack trace shows every 100th time.
+2018-10-08 10:18:06,112 INFO  [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-2] handler.MetaServerShutdownHandler: Splitting hbase:meta logs for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482
+2018-10-08 10:18:06,116 ERROR [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-2] handler.MetaServerShutdownHandler: Caught M_META_SERVER_SHUTDOWN, count=3; failed log splitting for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482, will retry; stack trace shows every 100th time.
+2018-10-08 10:18:06,116 INFO  [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-3] handler.MetaServerShutdownHandler: Splitting hbase:meta logs for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482
+2018-10-08 10:18:06,119 ERROR [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-3] handler.MetaServerShutdownHandler: Caught M_META_SERVER_SHUTDOWN, count=4; failed log splitting for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482, will retry; stack trace shows every 100th time.
+2018-10-08 10:18:06,120 INFO  [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-4] handler.MetaServerShutdownHandler: Splitting hbase:meta logs for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482
+2018-10-08 10:18:06,124 ERROR [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-4] handler.MetaServerShutdownHandler: Caught M_META_SERVER_SHUTDOWN, count=5; failed log splitting for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482, will retry; stack trace shows every 100th time.
+2018-10-08 10:18:06,124 INFO  [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-4] handler.MetaServerShutdownHandler: Splitting hbase:meta logs for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482
+2018-10-08 10:18:06,127 ERROR [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-4] handler.MetaServerShutdownHandler: Caught M_META_SERVER_SHUTDOWN, count=6; failed log splitting for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482, will retry; stack trace shows every 100th time.
+2018-10-08 10:18:06,127 INFO  [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-1] handler.MetaServerShutdownHandler: Splitting hbase:meta logs for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482
+2018-10-08 10:18:06,130 ERROR [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-1] handler.MetaServerShutdownHandler: Caught M_META_SERVER_SHUTDOWN, count=7; failed log splitting for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482, will retry; stack trace shows every 100th time.
+2018-10-08 10:18:06,130 INFO  [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-2] handler.MetaServerShutdownHandler: Splitting hbase:meta logs for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482
+2018-10-08 10:18:06,133 ERROR [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-2] handler.MetaServerShutdownHandler: Caught M_META_SERVER_SHUTDOWN, count=8; failed log splitting for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482, will retry; stack trace shows every 100th time.
+2018-10-08 10:18:06,133 INFO  [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-2] handler.MetaServerShutdownHandler: Splitting hbase:meta logs for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482
+2018-10-08 10:18:06,136 ERROR [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-2] handler.MetaServerShutdownHandler: Caught M_META_SERVER_SHUTDOWN, count=9; failed log splitting for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482, will retry; stack trace shows every 100th time.
+2018-10-08 10:18:06,136 INFO  [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-2] handler.MetaServerShutdownHandler: Splitting hbase:meta logs for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482
+2018-10-08 10:18:06,141 ERROR [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-2] handler.MetaServerShutdownHandler: Caught M_META_SERVER_SHUTDOWN, count=10; failed log splitting for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482, will retry; stack trace shows every 100th time.
+2018-10-08 10:18:06,141 INFO  [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-2] handler.MetaServerShutdownHandler: Splitting hbase:meta logs for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482
+2018-10-08 10:18:06,145 ERROR [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-2] handler.MetaServerShutdownHandler: Caught M_META_SERVER_SHUTDOWN, count=11; failed log splitting for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482, will retry; stack trace shows every 100th time.
+2018-10-08 10:18:06,145 INFO  [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-1] handler.MetaServerShutdownHandler: Splitting hbase:meta logs for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482
+2018-10-08 10:18:06,148 ERROR [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-1] handler.MetaServerShutdownHandler: Caught M_META_SERVER_SHUTDOWN, count=12; failed log splitting for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482, will retry; stack trace shows every 100th time.
+2018-10-08 10:18:06,148 INFO  [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-1] handler.MetaServerShutdownHandler: Splitting hbase:meta logs for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482
+2018-10-08 10:18:06,183 ERROR [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-1] handler.MetaServerShutdownHandler: Caught M_META_SERVER_SHUTDOWN, count=13; failed log splitting for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482, will retry; stack trace shows every 100th time.
+2018-10-08 10:18:06,183 INFO  [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-0] handler.MetaServerShutdownHandler: Splitting hbase:meta logs for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482
+2018-10-08 10:18:06,187 ERROR [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-0] handler.MetaServerShutdownHandler: Caught M_META_SERVER_SHUTDOWN, count=14; failed log splitting for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482, will retry; stack trace shows every 100th time.
+2018-10-08 10:18:06,187 INFO  [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-0] handler.MetaServerShutdownHandler: Splitting hbase:meta logs for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482
+2018-10-08 10:18:06,191 ERROR [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-0] handler.MetaServerShutdownHandler: Caught M_META_SERVER_SHUTDOWN, count=15; failed log splitting for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482, will retry; stack trace shows every 100th time.
+2018-10-08 10:18:06,191 INFO  [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-0] handler.MetaServerShutdownHandler: Splitting hbase:meta logs for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482
+2018-10-08 10:18:06,193 ERROR [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-0] handler.MetaServerShutdownHandler: Caught M_META_SERVER_SHUTDOWN, count=16; failed log splitting for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482, will retry; stack trace shows every 100th time.
+2018-10-08 10:18:06,193 INFO  [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-3] handler.MetaServerShutdownHandler: Splitting hbase:meta logs for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482
+2018-10-08 10:18:06,196 ERROR [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-3] handler.MetaServerShutdownHandler: Caught M_META_SERVER_SHUTDOWN, count=17; failed log splitting for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482, will retry; stack trace shows every 100th time.
+2018-10-08 10:18:06,196 INFO  [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-1] handler.MetaServerShutdownHandler: Splitting hbase:meta logs for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482
+2018-10-08 10:18:06,200 ERROR [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-1] handler.MetaServerShutdownHandler: Caught M_META_SERVER_SHUTDOWN, count=18; failed log splitting for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482, will retry; stack trace shows every 100th time.
+2018-10-08 10:18:06,200 INFO  [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-4] handler.MetaServerShutdownHandler: Splitting hbase:meta logs for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482
+2018-10-08 10:18:06,202 ERROR [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-4] handler.MetaServerShutdownHandler: Caught M_META_SERVER_SHUTDOWN, count=19; failed log splitting for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482, will retry; stack trace shows every 100th time.
+2018-10-08 10:18:06,202 INFO  [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-2] handler.MetaServerShutdownHandler: Splitting hbase:meta logs for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482
+2018-10-08 10:18:06,204 ERROR [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-2] handler.MetaServerShutdownHandler: Caught M_META_SERVER_SHUTDOWN, count=20; failed log splitting for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482, will retry; stack trace shows every 100th time.
+2018-10-08 10:18:06,204 INFO  [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-0] handler.MetaServerShutdownHandler: Splitting hbase:meta logs for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482
+2018-10-08 10:18:06,205 INFO  [master/jana-hadoop-mgr-1.node.dc1.pnda.local/192.168.1.62:16000] procedure2.ProcedureExecutor: Stopping the procedure executor
+2018-10-08 10:18:06,206 INFO  [master/jana-hadoop-mgr-1.node.dc1.pnda.local/192.168.1.62:16000] wal.WALProcedureStore: Stopping the WAL Procedure Store
+2018-10-08 10:18:06,211 ERROR [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-0] handler.MetaServerShutdownHandler: Caught M_META_SERVER_SHUTDOWN, count=21; failed log splitting for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482, will retry; stack trace shows every 100th time.
+2018-10-08 10:18:06,211 INFO  [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-0] handler.MetaServerShutdownHandler: Splitting hbase:meta logs for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482
+2018-10-08 10:18:06,214 ERROR [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-0] handler.MetaServerShutdownHandler: Caught M_META_SERVER_SHUTDOWN, count=22; failed log splitting for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482, will retry; stack trace shows every 100th time.
+2018-10-08 10:18:06,214 INFO  [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-1] handler.MetaServerShutdownHandler: Splitting hbase:meta logs for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482
+2018-10-08 10:18:06,217 ERROR [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-1] handler.MetaServerShutdownHandler: Caught M_META_SERVER_SHUTDOWN, count=23; failed log splitting for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482, will retry; stack trace shows every 100th time.
+2018-10-08 10:18:06,217 INFO  [MASTER_META_SERVER_OPERATIONS-jana-hadoop-mgr-1:16000-4] handler.MetaServerShutdownHandler: Splitting hbase:meta logs for jana-hadoop-dn-0.node.dc1.pnda.local,16020,1538301058482
+2018-10-08 10:18:06,219 WARN  [Thread-14609] hdfs.DFSClient: DataStreamer Exception
+org.apache.hadoop.ipc.RemoteException(org.apache.hadoop.hdfs.server.namenode.SafeModeException): Cannot add block to /apps/hbase/data/MasterProcWALs/state-00000000000000000194.log. Name node is in safe mode.
+The reported blocks 0 needs additional 2061 blocks to reach the threshold 1.0000 of total blocks 2060.
+The number of live datanodes 1 has reached the minimum number 0. Safe mode will be turned off automatically once the thresholds have been reached.
+        at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.checkNameNodeSafeMode(FSNamesystem.java:1422)
+        at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.analyzeFileState(FSNamesystem.java:3475)
+        at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.getNewBlockTargets(FSNamesystem.java:3336)
+        at org.apache.hadoop.hdfs.server.namenode.FSNamesystem.getAdditionalBlock(FSNamesystem.java:3296)
+        at org.apache.hadoop.hdfs.server.namenode.NameNodeRpcServer.addBlock(NameNodeRpcServer.java:850)
+        at org.apache.hadoop.hdfs.protocolPB.ClientNamenodeProtocolServerSideTranslatorPB.addBlock(ClientNamenodeProtocolServerSideTranslatorPB.java:504)
+	at org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos$ClientNamenodeProtocol$2.callBlockingMethod(ClientNamenodeProtocolProtos.java)

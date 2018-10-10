@@ -31,6 +31,8 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.File;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 import io.krakens.grok.api.*;
 
@@ -42,6 +44,13 @@ public class GenericLogs {
     private Schema schema;
     private Grok grok;
     private String logFormat;
+    private static final Pattern datePattern = Pattern.compile("(?:Jan(?:uary)?|Feb(?:ruary)?|" +
+            "Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ob" +
+            "er)?|Nov(?:ember)?|Dec(?:ember)?)\\s* (?:(?:0[1-9])|(?:[12][0-9])|(?:3[01])|[1-9]" +
+            ")|(?:0?[1-9]|1[0-2])[/-](?:(?:0[1-9])|(?:[12][0-9])|(?:3[01])|[1-9])[/-](?>\\d\\d" +
+            "){1,2}|(?:(?:0[1-9])|(?:[12][0-9])|(?:3[01])|[1-9])[./-](?:0?[1-9]|1[0-2])[./-](?" +
+            ">\\d\\d){1,2}(?!<[0-9])(?:2[0123]|[01]?[0-9]):(?:[0-5][0-9])(?::(?:(?:[0-5]?[0-9]" +
+            "|60)(?:[:.,][0-9]+)?))(?![0-9])");
 
     GenericLogs(String logFormat) {
         this.logFormat = logFormat;
@@ -58,6 +67,8 @@ public class GenericLogs {
 
     public static class LogFileLoader extends TextFileLoader {
         private GenericLogs genLog;
+        private String multiLine = "";
+        private int matchCount = 0;
         LogFileLoader(final String path, GenericLogs genLog) {
             super(path);
             this.genLog = genLog;
@@ -70,7 +81,7 @@ public class GenericLogs {
                 output[0] = GenericLogs.hostName;
                 int index = 1;
                 for (Map.Entry<String,Object> entry : capture.entrySet()) {
-                    output[index] = entry.getValue().toString();
+                    output[index] = entry.getValue().toString().replace("\\n", "\n");
                     index += 1;
 		}
             }
@@ -95,12 +106,30 @@ public class GenericLogs {
                 String[] fields = new String[this.columns.length];
                 while (true) {
                     String line = reader.readLine();
-                    if (line == null)
+                    if (line == null) {
+                        this.parse(this.multiLine, fields);
+                        this.append(fields);
                         break;
+                    }
                     if (line.trim().isEmpty())
                         continue;
-                    this.parse(line, fields);
-                    this.append(fields);
+                    Matcher matchDate = datePattern.matcher(line);
+                    if (matchDate.find()) {
+                        if (this.matchCount > 0) {
+                            this.parse(this.multiLine, fields);
+                            this.append(fields);
+                            this.multiLine = "";
+                            this.multiLine += line;
+                        } else {
+                            this.multiLine += line;
+                            this.matchCount += 1;
+                        }
+                    } else {
+                        if (this.matchCount > 0) {
+                            this.multiLine += "\\n";
+                            this.multiLine += line;
+                        }
+                    }
                 }
             } catch (IOException e) {
                 throw new RuntimeException(e);
