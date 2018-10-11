@@ -38,11 +38,12 @@ memory over distributed data.
 |2.3.2.2.|[Regular Expressions](#2322-regular-expressions)|
 |2.3.2.3.|[Custom Patterns](#2323-custom-patterns)|
 |2.3.3.|[Reading generic logs](#233-reading-generic-logs)|
-|2.3.4.|[Reading CSV files](#234-reading-csv-files)|
-|2.3.5.|[Reading JSON files](#235-reading-json-files)|
-|2.3.6.|[Reading ORC files](#236-reading-orc-files)|
-|2.3.7.|[Reading data from SQL databases](#237-reading-data-from-sql-databases)|
-|2.3.8.|[Reading Parquet files](#238-reading-parquet-files)|
+|2.3.4.|[Reading bookmarked data files](#234-reading-bookmarked-data-files)|
+|2.3.5.|[Reading CSV files](#235-reading-csv-files)|
+|2.3.6.|[Reading JSON files](#236-reading-json-files)|
+|2.3.7.|[Reading ORC files](#237-reading-orc-files)|
+|2.3.8.|[Reading data from SQL databases](#238-reading-data-from-sql-databases)|
+|2.3.9.|[Reading Parquet files](#239-reading-parquet-files)|
 |2.4.|[Navigating multiple datasets](#24-navigating-multiple-datasets)|
 |3.|[Data views](#3-data-views)|
 |3.1.|[Schema views](#31-schema-views)|
@@ -184,20 +185,23 @@ storage.
 * Generic logs: allows the user to [read logs from a set of log
   files](#233-reading-generic-logs).
 
+* Bookmarked data: allows the user to [read data from a bookmarked
+  data file](#234-reading-bookmarked-data-files).
+
 * CSV files: allows the user to [read data from a set of CSV
-  files](#234-reading-csv-files).
+  files](#235-reading-csv-files).
 
 * JSON files: allows the user to [read the data from a set of JSON
-  files](#235-reading-json-files).
+  files](#236-reading-json-files).
 
 * Parquet files: allows the user to [read the data from a set of
-  Parquet files](#238-reading-parquet-files).
+  Parquet files](#239-reading-parquet-files).
 
 * ORC files: allows the user to [read the data from a set of ORC
-  files](#236-reading-orc-files).
+  files](#237-reading-orc-files).
 
 * DB tables: allows the user to [read data from a set of federated
-  databases using JDBC](#237-reading-data-from-sql-databases).
+  databases using JDBC](#238-reading-data-from-sql-databases).
 
 After the data loading is initiated the user will be presented with a
 view of the loaded table.  If the table has relatively few columns,
@@ -298,7 +302,18 @@ is deployed*.
 
 * Log format: The [log format](#232-specifying-rules-for-parsing-logs) of the logs.
 
-#### 2.3.4. Reading CSV files
+#### 2.3.4. Reading bookmarked data files
+
+Hillview can read the bookmarked data. The
+following menu allows the users to specify the files to load.
+
+![Specifying bookmarked files](bookmarked-data-menu.png)
+
+* File: A file containing the bookmarked data to load.
+
+* Tab label: A name to display for dataset.
+
+#### 2.3.5. Reading CSV files
 
 Hillview can read data from comma- or tab-separated files. The
 following menu allows the users to specify the files to load.  *The
@@ -329,7 +344,7 @@ then they may contain newlines.  An empty field (contained between two
 consecutive commas, or between a comma and a newline) is translated to
 a 'missing' data value.
 
-#### 2.3.5. Reading JSON files
+#### 2.3.6. Reading JSON files
 
 Hillview can read data from JSON files. The following menu allows the
 users to specify the files to load.  *The files must be resident on
@@ -352,7 +367,7 @@ The assumed format is as follows:
 All the JSON files must have the same schema.  JSON files may be
 compressed.
 
-#### 2.3.6. Reading ORC files
+#### 2.3.7. Reading ORC files
 
 Hillview can read data from [Apache ORC
 files](https://github.com/apache/orc), a columnar storage format.
@@ -372,7 +387,7 @@ is an ORC struct with scalar types as fields.
   file must reside in same folder, and it must be compatible with the
   ORC schema.
 
-#### 2.3.7. Reading data from SQL databases
+#### 2.3.8. Reading data from SQL databases
 
 The following menu allows the user to load data from a set of
 federated databases that are exposed as a JDBC service.  *Each worker
@@ -410,7 +425,7 @@ Numeric values are converted either to integers (if they fit into
 32-bits) or to doubles.  Boolean values are read as strings
 containing two values, "true" and "false".
 
-#### 2.3.8. Reading Parquet files
+#### 2.3.9. Reading Parquet files
 
 Hillview can read data from [Apache Parquet
 files](http://parquet.apache.org), a columnar storage format.  The
@@ -564,7 +579,7 @@ of columns using the chart menu:
 ![Save-as menu](saveas-menu.png)
 
 * Save as ORC files: allows users to specify how data should be saved
-  in the [ORC file format](#236-reading-orc-files).
+  in the [ORC file format](#237-reading-orc-files).
 
 ![Save-as ORC menu](saveas-orc-menu.png)
 

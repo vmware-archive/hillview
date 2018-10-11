@@ -128,6 +128,9 @@ storage.
 * Generic logs: allows the user to [read logs from a set of log
   files](#reading-generic-logs).
 
+* Bookmarked data: allows the user to [read data from a bookmarked
+  data file](#reading-bookmarked-data-files).
+
 * CSV files: allows the user to [read data from a set of CSV
   files](#reading-csv-files).
 
@@ -241,6 +244,17 @@ is deployed*.
   load.  Multiple files may be loaded on each machine.
 
 * Log format: The [log format](#specifying-rules-for-parsing-logs) of the logs.
+
+#### Reading bookmarked data files
+
+Hillview can read the bookmarked data. The
+following menu allows the users to specify the files to load.
+
+![Specifying bookmarked files](bookmarked-data-menu.png)
+
+* File: A file containing the bookmarked data to load.
+
+* Tab label: A name to display for dataset.
 
 #### Reading CSV files
 
