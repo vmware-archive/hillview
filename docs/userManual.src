@@ -791,6 +791,8 @@ The view menu offers the following options.
 
 * Schema: displays [the table schema](#schema-views).
 
+* Change table size: this changes the number of rows displayed.
+
 #### The table filter menu
 
 The table filter menu allows the user to find specific values or
