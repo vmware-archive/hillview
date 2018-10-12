@@ -29,6 +29,7 @@ import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.VirtualRowSnapshot;
 import org.hillview.utils.Converters;
 import org.hillview.utils.DateParsing;
+import org.hillview.utils.TestTables;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -63,7 +64,7 @@ public class JavascriptNashornTest extends BaseTest {
 
     @Test
     public void testFunctionAccess() throws ScriptException, NoSuchMethodException {
-        ITable table = ToCatMapTest.tableWithStringColumn();
+        ITable table = TestTables.testRepTable();
         RowSnapshot row = new RowSnapshot(table, 0);
         ScriptEngineManager factory = new ScriptEngineManager();
         ScriptEngine engine = factory.getEngineByName("nashorn");
@@ -86,7 +87,7 @@ public class JavascriptNashornTest extends BaseTest {
 
     @Test
     public void testMap() {
-        ITable table = ToCatMapTest.tableWithStringColumn();
+        ITable table = TestTables.testRepTable();
         LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);
         ColumnDescription outCol = new ColumnDescription("IsAdult", ContentsKind.String);
         String function = "function map(row) { return row['Age'] > 18 ? 'true' : 'false'; }";
@@ -102,7 +103,7 @@ public class JavascriptNashornTest extends BaseTest {
 
     @Test
     public void testDate() {
-        ITable table = ToCatMapTest.tableWithStringColumn();
+        ITable table = TestTables.testRepTable();
         LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);
         ColumnDescription outCol = new ColumnDescription("Date", ContentsKind.Date);
         String function = "function map(row) { return new Date(1970 + row['Age'], 0, 1); }";
@@ -128,7 +129,7 @@ public class JavascriptNashornTest extends BaseTest {
 
     @Test
     public void testInteger() {
-        ITable table = ToCatMapTest.tableWithStringColumn();
+        ITable table = TestTables.testRepTable();
         LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);
         ColumnDescription outCol = new ColumnDescription("Older", ContentsKind.Integer);
         String function = "function map(row) { return row['Age'] + 10; }";
@@ -144,7 +145,7 @@ public class JavascriptNashornTest extends BaseTest {
 
     @Test
     public void testRename() {
-        ITable table = ToCatMapTest.tableWithStringColumn();
+        ITable table = TestTables.testRepTable();
         LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);
         ColumnDescription outCol = new ColumnDescription("Older", ContentsKind.Integer);
         String function = "function map(row) { return row['NewAge'] + 10; }";
@@ -163,7 +164,7 @@ public class JavascriptNashornTest extends BaseTest {
 
     @Test
     public void testFilter() {
-        ITable table = ToCatMapTest.tableWithStringColumn();
+        ITable table = TestTables.testRepTable();
         SparseMembershipSet set = new SparseMembershipSet(table.getMembershipSet().getMax(), 2);
         set.add(0);
         set.add(1);
@@ -182,7 +183,7 @@ public class JavascriptNashornTest extends BaseTest {
 
     @Test
     public void testDateOutput() {
-        ITable table = ToCatMapTest.tableWithStringColumn();
+        ITable table = TestTables.testRepTable();
         LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);
         // Add a date column
         ColumnDescription outCol = new ColumnDescription("Date", ContentsKind.Date);

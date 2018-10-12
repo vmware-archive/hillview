@@ -24,7 +24,9 @@ import org.hillview.table.columns.DateArrayColumn;
 import org.hillview.table.columns.DoubleArrayColumn;
 import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.utils.Randomness;
+import org.junit.Assert;
 
+import java.lang.reflect.Field;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -33,8 +35,27 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
-class TestUtil {
+public class TestUtil {
     private static boolean silent = true;
+
+    /**
+     * Provides access to private members in classes for testing.
+     */
+    public static Object getPrivateField (Object o, String fieldName) {
+        final Field fields[] = o.getClass().getDeclaredFields();
+        for (Field field : fields) {
+            if (fieldName.equals(field.getName())) {
+                try {
+                    field.setAccessible(true);
+                    return field.get(o);
+                } catch (IllegalAccessException ex) {
+                    Assert.fail("IllegalAccessException accessing " + fieldName);
+                }
+            }
+        }
+        Assert.fail ("Field '" + fieldName + "' not found");
+        return null;
+    }
 
     private static void Percentiles(final long[] R1) {
         Arrays.sort(R1);
@@ -49,7 +70,7 @@ class TestUtil {
      * Takes a lambda and measures its running time num times,
      * then prints a percentiles report.  TODO: should check for regressions automatically.
      **/
-    static void runPerfTest(String test, final Consumer<Integer> testing, final int num) {
+    public static void runPerfTest(String test, final Consumer<Integer> testing, final int num) {
         if (!silent)
             System.out.println(test);
         final int tmp = 0;
@@ -62,30 +83,6 @@ class TestUtil {
             results[j] = endTime - startTime;
         }
         Percentiles(results);
-    }
-
-    /**
-     * @param size the number of rows in the table
-     * @return a table with size rows and 3 columns. A date column named "DOB". A string column
-     * named "Name" and a double column named "Income".
-     */
-    static Table createTable(int size) {
-        final int numCols = 3;
-        final List<IColumn> columns = new ArrayList<IColumn>(numCols);
-        columns.add(getRandDateArray(size, "DOB"));
-        columns.add(getStringArray(size, "Name"));
-        columns.add(generateDoubleArray(size, "Income"));
-        final FullMembershipSet full = new FullMembershipSet(size);
-        return new Table(columns, full, null, null);
-    }
-
-    static SmallTable createSmallTable(int size) {
-        final int numCols = 3;
-        final List<IColumn> columns = new ArrayList<IColumn>(numCols);
-        columns.add(getRandDateArray(size, "DOB"));
-        columns.add(getStringArray(size, "Name"));
-        columns.add(generateDoubleArray(size, "Income"));
-        return new SmallTable(columns);
     }
 
     private static IColumn getRandDateArray(int size, String colName) {
@@ -121,5 +118,33 @@ class TestUtil {
             col.set(i, Math.exp(rn.nextDouble()) * 100000);
         }
         return col;
+    }
+
+    /**
+     * Compare current run time of test to saved run time.
+     */
+    @SuppressWarnings("EmptyMethod")
+    private static void printPerf(final String testName, final long time) {
+        // TODO
+        /*System.out.println(testName + " took " + time/1000 + " us");*/
+    }
+
+    /**
+     * Compare current run time of calling function to saved run time.
+     * @param time This is the time taken by the calling function.
+     */
+    public static void comparePerf(final long time) {
+        final StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+        final int callerIndex = 2;
+        final String name = stack[callerIndex].getClassName() + "." + stack[callerIndex].getMethodName();
+        printPerf(name, time);
+    }
+
+    public static void comparePerf(final String printThis, final long time) {
+        final StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+        final int callerIndex = 2;
+        final String name = stack[callerIndex].getClassName() + "."
+                + stack[callerIndex].getMethodName() + printThis;
+        printPerf(name, time);
     }
 }
