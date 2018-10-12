@@ -17,10 +17,10 @@
 
 package org.hillview.utils;
 
+import org.apache.commons.math3.random.MersenneTwister;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.api.IDataSet;
-import org.hillview.dataset.api.Pair;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.SmallTable;
 import org.hillview.table.Table;
@@ -128,7 +128,7 @@ public class TestTables {
      */
     public static List<String> randStringList(int suppSize, int length) {
         String aToZ = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        Random random = new Random(1276449);
+        MersenneTwister random = new MersenneTwister(2);
         ArrayList<String> names = new ArrayList<String>();
         for (int i = 0; i < suppSize; i++) {
             StringBuilder nextName = new StringBuilder();
@@ -149,24 +149,21 @@ public class TestTables {
      * @return A table containing a single column. Each row of this column is drawn randomly from
      * randString.
      */
-    public static Pair<Table, SortedMap<String, Integer> > randStringTable(int num, List<String> randString) {
-        int suppSize = randString.size();
+    public static Table randStringTable(int num, List<String> randString) {
         ArrayList<String> names = new ArrayList<String>();
         Random random = new Random(112358);
-        int [] count = new int[suppSize];
-        for (int i = 0; i< num; i++) {
-            int index = random.nextInt(suppSize);
-            names.add(randString.get(index));
-            count[index] += 1;
+        int i;
+        int len = randString.size();
+        for (i = 0; i < Math.min(num, len); i++) {
+            names.add(randString.get(i));
         }
-        SortedMap<String, Integer> dist= new TreeMap<>();
-        for (int i = 0 ; i < suppSize; i++)
-            if (count[i] > 0)
-                dist.put(randString.get(i), count[i]);
+        for (; i < num; i++) {
+            int index = random.nextInt(len);
+            names.add(randString.get(index));
+        }
         ColumnDescription c0 = new ColumnDescription("Name", ContentsKind.String);
         StringArrayColumn sac = new StringArrayColumn(c0, names.toArray(new String[0]));
-        Table randStringTable = new Table(Arrays.asList(sac), null, null);
-        return new Pair<Table, SortedMap<String, Integer>>(randStringTable, dist);
+        return new Table(Arrays.asList(sac), null, null);
     }
 
     /**
@@ -175,10 +172,10 @@ public class TestTables {
      */
     public static List<Integer> getRanks(List<String> inpList, List<String> allStrings) {
         Collections.sort(allStrings);
-        SortedMap<String, Integer> sortedStrings= new TreeMap<>();
+        SortedMap<String, Integer> sortedStrings = new TreeMap<String, Integer>();
         for (int i = 0; i < allStrings.size(); i++)
             sortedStrings.put(allStrings.get(i), i);
-        List<Integer> ranks = new ArrayList<>();
+        List<Integer> ranks = new ArrayList<Integer>();
         for (String anInpList : inpList) {
             if (sortedStrings.get(anInpList) != null)
                 ranks.add(sortedStrings.get(anInpList));

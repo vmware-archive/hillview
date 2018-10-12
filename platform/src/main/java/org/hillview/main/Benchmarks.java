@@ -23,6 +23,7 @@ import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.*;
 import org.hillview.dataset.remoting.HillviewServer;
 import org.hillview.management.ClusterConfig;
+import org.hillview.management.MemoryUse;
 import org.hillview.management.PurgeLeafDatasets;
 import org.hillview.management.SetMemoization;
 import org.hillview.sketches.*;
@@ -32,12 +33,8 @@ import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.DoubleArrayColumn;
-import org.hillview.table.columns.StringArrayColumn;
 import org.hillview.table.membership.FullMembershipSet;
-import org.hillview.utils.HillviewLogger;
-import org.hillview.utils.HostAndPort;
-import org.hillview.utils.HostList;
-import org.hillview.utils.Parallelizer;
+import org.hillview.utils.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -82,6 +79,7 @@ class Benchmarks {
     public static class GenerateStringColumnMapper implements IMap<Empty, ITable> {
         private final int distinctValues;
         private final int totalElements;
+        private final int length = 20;
 
         GenerateStringColumnMapper(int distinctValues, int totalElements) {
             this.distinctValues = distinctValues;
@@ -90,12 +88,8 @@ class Benchmarks {
 
         @Override
         public ITable apply(Empty data) {
-            ColumnDescription desc = new ColumnDescription("Strings", ContentsKind.String);
-            StringArrayColumn col = new StringArrayColumn(desc, this.totalElements);
-            for (int i = 0; i < this.totalElements; i++)
-                col.set(i, "s" + Integer.toString(i % this.distinctValues));
-            IColumn[] cols = new IColumn[] { col };
-            return new Table(cols, null, null);
+            List<String> randomString = TestTables.randStringList(this.distinctValues, length);
+            return TestTables.randStringTable(this.totalElements, randomString);
         }
     }
 
@@ -120,7 +114,6 @@ class Benchmarks {
         for (int i=0; i < count; i++)
             if (times[i] < times[minIndex])
                 minIndex = i;
-        System.out.println("Bench,Time (ms),Melems/s,Percent slower");
         for (int i=0; i < count; i++) {
             double speed = (double)(elemCount) / (times[i] / 1000.0);
             double percent = 100 * ((double)times[i] - times[minIndex]) / times[minIndex];
@@ -157,6 +150,7 @@ class Benchmarks {
         ISketch<ITable, Histogram> sk = new HistogramSketch(
                         buckDes, col.getName(), rateParameter, 0);
 
+        System.out.println("Bench,Time (ms),Melems/s,Percent slower");
         if (args[0].equals("noseparatethread")) {
             final IDataSet<ITable> ds = new LocalDataSet<ITable>(table, false);
             Runnable r = () -> ds.blockingSketch(sk);
@@ -246,51 +240,169 @@ class Benchmarks {
         System.exit(0);
     }
 
-    // Testing the performance of string quantiles computation
-    private static void benchmarkQuantiles(String[] args) throws IOException {
+    private static IDataSet<Empty> createInitialDataset(String[] args)
+            throws IOException {
         IDataSet<Empty> original;
         int cores = 2;
         if (false)
+            // This runs locally - for testing
             original = new LocalDataSet<Empty>(Empty.getInstance());
         else {
+            // This runs on the cluster - for measurements
             if (args.length != 1)
                 throw new RuntimeException("Expected 1 argument: cluster configuration");
-            String file = args[0];
-            ClusterConfig config = ClusterConfig.parse(file);
+            ClusterConfig config = ClusterConfig.parse(args[0]);
             HostList workers = config.getWorkers();
             original = RemoteDataSet.createCluster(workers, RemoteDataSet.defaultDatasetIndex);
             original = original.blockingFlatMap(new Parallelizer(cores));
         }
-
         original.blockingManage(new SetMemoization(false));
-        SummarySketch summary = new SummarySketch();
-        int total = 1000 * 1000 * 10;
-        int runCount = 5;
+        return original;
+    }
+
+    // Testing the performance of string quantiles computation
+    private static void benchmarkQuantiles(String[] args) throws IOException {
+        IDataSet<Empty> original = createInitialDataset(args);
+        System.out.println("Bench,Time (ms),Melems/s,Percent slower");
+        int elementsPerPartition = 1000 * 1000 * 10;
+        int runCount = 11;
         int quantiles = 100;
         for (int i = 5; i < 24; i++) {
             int distinct = 1 << i;
-            GenerateStringColumnMapper generator = new GenerateStringColumnMapper(distinct, total);
+            GenerateStringColumnMapper generator = new GenerateStringColumnMapper(distinct, elementsPerPartition);
             IDataSet<ITable> data = original.blockingMap(generator);
+            SummarySketch summary = new SummarySketch();
             SummarySketch.TableSummary s = data.blockingSketch(summary);
-            System.out.println("Table has " + s.rowCount + " rows");
-
+            String colName = s.schema.getColumnNames().get(0);
             ISketch<ITable, DistinctStringsSketch.DistinctStrings> sk =
-                    new DistinctStringsSketch("Strings");
+                    new DistinctStringsSketch(colName);
             Runnable r = () -> data.blockingSketch(sk).getQuantiles(quantiles);
-            runNTimes(r, runCount, "Naive " + distinct + " distinct", total);
+            runNTimes(r, runCount, "Naive " + distinct + " distinct", elementsPerPartition);
 
-            SampleDistinctElementsSketch scs = new SampleDistinctElementsSketch("Strings", 0, quantiles);
-            r = () -> data.blockingSketch(scs).getLeftBoundaries(100);
-            runNTimes(r, runCount, "Smart " + distinct + " distinct", total);
+            SampleDistinctElementsSketch scs = new SampleDistinctElementsSketch(colName, 0, quantiles * quantiles);
+            r = () -> data.blockingSketch(scs).getLeftBoundaries(quantiles);
+            runNTimes(r, runCount, "Smart " + distinct + " distinct", elementsPerPartition);
         }
         original.blockingManage(new PurgeLeafDatasets());
     }
 
+    private static double getMaxErr(int suppSize, List<Integer> ranks) {
+        int maxErr = 0;
+        int numBuckets = ranks.size();
+        assert ranks.get(0) == 0;
+        for (int i = 1; i < numBuckets; i++) {
+            int rankI = ranks.get(i);
+            int expected = MinKSet.getIntegerRank(i, numBuckets, suppSize - 1);
+            int err = Math.abs(rankI - expected);
+            if (err >= maxErr)
+                maxErr = err;
+        }
+        return (double)maxErr / suppSize;
+    }
+
+    // Compare the tradeoff in performance/accuracy for the quantiles computation.
+    private static void quantilesTimeTradeoff(String[] args) throws IOException {
+        IDataSet<Empty> original = createInitialDataset(args);
+        System.out.println("Bench,Time (ms),Melems/s,Percent slower");
+        int elementsPerPartition = 1000 * 1000 * 10;
+        int runCount = 11;
+        int quantiles = 100;
+        double[] factors = new double[]{10., 5., 2, 1, .5, .2, .1};
+
+        for (int i = 8; i < 24; i++) {
+            int distinct = 1 << i;
+
+            GenerateStringColumnMapper generator = new GenerateStringColumnMapper(distinct, elementsPerPartition);
+            IDataSet<ITable> data = original.blockingMap(generator);
+            SummarySketch summary = new SummarySketch();
+            SummarySketch.TableSummary s = data.blockingSketch(summary);
+            String colName = s.schema.getColumnNames().get(0);
+            ISketch<ITable, DistinctStringsSketch.DistinctStrings> sk =
+                    new DistinctStringsSketch(colName);
+            DistinctStringsSketch.DistinctStrings strings = data.blockingSketch(sk);
+            List<String> uniqueStrings = new ArrayList<String>();
+            strings.getStrings().forEach(uniqueStrings::add);
+
+            for (double factor : factors) {
+                int sampled = (int) (quantiles * quantiles * factor);
+                SampleDistinctElementsSketch scs = new SampleDistinctElementsSketch(colName, i, sampled);
+                Runnable r = () -> data.blockingSketch(scs).getLeftBoundaries(quantiles);
+                runNTimes(r, runCount, "Sampled " + sampled + "/" + distinct + " distinct", elementsPerPartition);
+            }
+            original.blockingManage(new PurgeLeafDatasets());
+            original.blockingManage(new MemoryUse());
+        }
+    }
+
+    private static void quantilesError(String[] args) throws IOException {
+        IDataSet<Empty> original = createInitialDataset(args);
+        int elementsPerPartition = 1000 * 1000 * 10;
+        int runCount = 11;
+        int quantiles = 100;
+        double[] factors = new double[]{10., 5., 2, 1, .5, .2, .1};
+
+        System.out.println("Sampled,Distinct,Error");
+        for (int i = 12; i < 24; i++) {
+            int distinct = 1 << i;
+            GenerateStringColumnMapper generator = new GenerateStringColumnMapper(distinct, elementsPerPartition);
+            IDataSet<ITable> data = original.blockingMap(generator);
+            SummarySketch summary = new SummarySketch();
+            SummarySketch.TableSummary s = data.blockingSketch(summary);
+            String colName = s.schema.getColumnNames().get(0);
+            ISketch<ITable, DistinctStringsSketch.DistinctStrings> sk =
+                    new DistinctStringsSketch(colName);
+            DistinctStringsSketch.DistinctStrings strings = data.blockingSketch(sk);
+            List<String> uniqueStrings = new ArrayList<String>();
+            strings.getStrings().forEach(uniqueStrings::add);
+
+            for (double factor : factors) {
+                int sampled = (int)(quantiles * quantiles * factor);
+                if (distinct < sampled) {
+                    for (int k = 0; k < runCount; k++)
+                        System.out.println("" + sampled + "," + distinct + "," + 0.0);
+                    continue;
+                }
+                for (int k = 0; k < runCount; k++) {
+                    SampleDistinctElementsSketch scs = new SampleDistinctElementsSketch(colName, k, sampled);
+                    MinKSet<String> samples = data.blockingSketch(scs);
+                    JsonList<String> boundaries = samples.getLeftBoundaries(quantiles);
+                    List<Integer> ranks = TestTables.getRanks(boundaries, uniqueStrings);
+                    double maxErr = getMaxErr(uniqueStrings.size(), ranks);
+                    System.out.println("" + sampled + "," + distinct + "," + maxErr);
+                }
+            }
+            original.blockingManage(new PurgeLeafDatasets());
+            original.blockingManage(new MemoryUse());
+        }
+    }
+
     public static void main(String[] args) throws IOException, InterruptedException {
         HillviewLogger.instance.setLogLevel(Level.WARNING);
-        if (false)
-            benchmarkHistogram(args);
-        else
-            benchmarkQuantiles(args);
+        String bench;
+        if (args.length == 0)
+            bench = "quantilesError";
+        else {
+            bench = args[0];
+            String[] elimFirst = new String[args.length - 1];
+            for (int i = 1; i < args.length; i++)
+                elimFirst[i - 1] = args[i];
+            args = elimFirst;
+        }
+        switch (bench) {
+            case "histogram":
+                benchmarkHistogram(args);
+                break;
+            case "quantilesNaive":
+                benchmarkQuantiles(args);
+                break;
+            case "quantilesTime":
+                quantilesTimeTradeoff(args);
+                break;
+            case "quantilesError":
+                quantilesError(args);
+                break;
+            default:
+                throw new RuntimeException("Unexpected benchmark: " + bench);
+        }
     }
 }

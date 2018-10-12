@@ -40,6 +40,10 @@ public class DistinctStringsSketch implements ISketch<ITable, DistinctStringsSke
             this.uniqueStrings = new ObjectOpenHashSet<String>();
         }
 
+        private DistinctStrings(ObjectOpenHashSet<String> hash) {
+            this.uniqueStrings = hash;
+        }
+
         public void add(@Nullable String string) {
             this.uniqueStrings.add(string);
         }
@@ -51,12 +55,11 @@ public class DistinctStringsSketch implements ISketch<ITable, DistinctStringsSke
          * of them allow for unbounded size (maxSize = 0) then so does the union.
          */
         public DistinctStrings union(final DistinctStrings otherSet) {
-            DistinctStrings result = new DistinctStrings();
-            for (String item: this.uniqueStrings)
-                result.add(item);
-            for (String item : otherSet.uniqueStrings)
-                result.add(item);
-            return result;
+            ObjectOpenHashSet<String> hash = new ObjectOpenHashSet<String>(
+                    Math.max(this.uniqueStrings.size(), otherSet.uniqueStrings.size()));
+            hash.addAll(this.uniqueStrings);
+            hash.addAll(otherSet.uniqueStrings);
+            return new DistinctStrings(hash);
         }
 
         public Iterable<String> getStrings() {

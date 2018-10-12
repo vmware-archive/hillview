@@ -51,6 +51,7 @@ import {HeavyHittersReceiver, HeavyHittersView} from "./heavyHittersView";
 import {DataRangesCollector} from "./dataRangesCollectors";
 import {TableOperationCompleted, TableView} from "./tableView";
 import {HistogramDialog} from "./histogramView";
+import {ErrorReporter} from "../ui/errReporter";
 
 /**
  * A base class for TableView and SchemaView.
@@ -447,20 +448,24 @@ export abstract class TSViewBase extends BigTableView {
 
     /**
      * Show a dialog to compare values on the specified column.
-     * @param displayName  Column name.  If null the user will select the column.
-     * @param order   Current record ordering.
+     * @param displayName       Column name.  If null the user will select the column.
+     * @param order             Current record ordering.
      * @param tableRowsDesired  Number of table rows to display.
      */
     protected showCompareDialog(
         displayName: string, order: RecordOrder, tableRowsDesired: number): void {
         const cd = this.schema.findByDisplayName(displayName);
-        const cfd = new ComparisonFilterDialog(cd, displayName, this.schema);
+        const cfd = new ComparisonFilterDialog(cd, displayName, this.schema, this.page.getErrorReporter());
         cfd.setAction(() => this.runComparisonFilter(cfd.getFilter(), order, tableRowsDesired));
         cfd.show();
     }
 
     protected runComparisonFilter(
-        filter: ComparisonFilterDescription, order: RecordOrder, tableRowsDesired: number): void {
+        filter: ComparisonFilterDescription | null, order: RecordOrder, tableRowsDesired: number): void {
+        if (filter == null)
+            // Some error occurred
+            return;
+
         const kind = filter.column.kind;
         const so: ColumnSortOrientation = {
             columnDescription: filter.column, isAscending: true,
@@ -576,7 +581,8 @@ class ComparisonFilterDialog extends Dialog {
 
     constructor(private columnDescription: IColumnDescription | null,
                 private displayName: string,
-                private schema: SchemaClass) {
+                private schema: SchemaClass,
+                private reporter: ErrorReporter) {
         super("Compare", "Compare values");
         this.explanation = this.addText("Value == row[" + displayName + "]");
 
@@ -607,7 +613,7 @@ class ComparisonFilterDialog extends Dialog {
             " row[" + this.getColName() + "]";
     }
 
-    public getFilter(): ComparisonFilterDescription {
+    public getFilter(): ComparisonFilterDescription | null {
         const value: string = this.getFieldValue("value");
         let doubleValue: number = null;
 
@@ -617,9 +623,17 @@ class ComparisonFilterDialog extends Dialog {
         }
         if (this.columnDescription.kind === "Date") {
             const date = new Date(value);
+            if (date == null) {
+                this.reporter.reportError("Could not parse '" + value + "' as a date");
+                return null;
+            }
             doubleValue = Converters.doubleFromDate(date);
         } else if (!kindIsString(this.columnDescription.kind)) {
             doubleValue = parseFloat(value);
+            if (doubleValue == null) {
+                this.reporter.reportError("Could not parse '" + value + "' as a number");
+                return null;
+            }
         }
         const comparison = this.getFieldValue("operation") as Comparison;
         return {

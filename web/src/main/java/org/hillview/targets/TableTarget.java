@@ -664,6 +664,7 @@ public final class TableTarget extends RpcTarget {
         int buckets;
         int trials;
         long seed;
+        @Nullable
         Schema columns;
     }
 
@@ -674,6 +675,7 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     public void runCountSketch(RpcRequest request, RpcRequestContext context) {
         CountSketchInfo csInfo = request.parseArgs(CountSketchInfo.class);
+        assert csInfo.columns != null;
         CountSketchDescription csDesc = new
                 CountSketchDescription(csInfo.buckets, csInfo.trials, csInfo.seed, csInfo.columns);
         CountSketch csSketch = new CountSketch(csDesc);

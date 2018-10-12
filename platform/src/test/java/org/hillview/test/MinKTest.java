@@ -3,7 +3,6 @@ package org.hillview.test;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.api.IDataSet;
-import org.hillview.dataset.api.Pair;
 import org.hillview.sketches.SampleDistinctElementsSketch;
 import org.hillview.sketches.MinKSet;
 import org.hillview.table.Table;
@@ -14,22 +13,22 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.SortedMap;
 
 public class MinKTest {
     private Boolean printOn = false;
 
-    private double getMaxErr(int suppSize, int numBuckets, List<Integer> ranks) {
+    private double getMaxErr(int suppSize, List<Integer> ranks) {
+        int numBuckets = ranks.size() - 1;
         double maxErr = 0;
         Assert.assertEquals((int) ranks.get(0), 0);
         if (printOn) {
             System.out.printf("Min rank: %d\n", ranks.get(0));
         }
         for (int i = 1; i < numBuckets; i++) {
-            double err = Math.abs((ranks.get(i)/(suppSize - 1.0)) - i/((float) numBuckets));
+            double err = Math.abs((ranks.get(i)/(suppSize - 1.0)) - i/((double) numBuckets));
             if (printOn)
                 System.out.printf("%d has Rank %f, Error %f\n", i,
-                        (ranks.get(i)/((float) suppSize -1.0)), err);
+                        (ranks.get(i)/((double) suppSize - 1.0)), err);
             if (err > maxErr)
                 maxErr = err;
         }
@@ -57,19 +56,17 @@ public class MinKTest {
         int length = 6;
         List<String> randomString = TestTables.randStringList(suppSize, length);
         int num = Math.max(10*suppSize, suppSize*((int) Math.ceil(Math.log(suppSize))));
-        Pair<Table, SortedMap<String, Integer>> pair = TestTables.randStringTable(num, randomString);
+        Table table = TestTables.randStringTable(num, randomString);
         int numSamples = 10000;
         SampleDistinctElementsSketch bks = new SampleDistinctElementsSketch("Name", 176864, numSamples);
-        assert pair.first != null;
-        MinKSet<String> mks = bks.create(pair.first);
+        MinKSet<String> mks = bks.create(table);
         if (printOn)
             System.out.printf("Table size: %d, non-null %d\n", num, mks.presentCount);
         int maxBuckets = 100;
         List<String> boundaries = mks.getLeftBoundaries(maxBuckets);
-        int numBuckets = boundaries.size();
         List<Integer> ranks = TestTables.getRanks(boundaries, randomString);
         this.printBoundaries(boundaries, ranks);
-        double maxErr = this.getMaxErr(suppSize, numBuckets - 1, ranks);
+        double maxErr = this.getMaxErr(suppSize, ranks);
         double bound = this.getErrBound(numSamples);
         Assert.assertTrue(maxErr < bound);
     }
@@ -97,21 +94,18 @@ public class MinKTest {
                 Part1.add(randomString.get(i));
         }
         int num = suppSize*((int) Math.ceil(Math.log(suppSize)));
-        Pair<Table, SortedMap<String, Integer>> pair1 = TestTables.randStringTable(num, Part1);
-        Pair<Table, SortedMap<String, Integer>> pair2 = TestTables.randStringTable(num, Part2);
+        Table table1 = TestTables.randStringTable(num, Part1);
+        Table table2 = TestTables.randStringTable(num, Part2);
         int numSamples = 5000;
         SampleDistinctElementsSketch bks = new SampleDistinctElementsSketch("Name", 17864, numSamples);
-        assert pair1.first != null;
-        assert pair2.first != null;
-        MinKSet<String> mks1 = bks.create(pair1.first);
-        MinKSet<String> mks2 = bks.create(pair2.first);
+        MinKSet<String> mks1 = bks.create(table1);
+        MinKSet<String> mks2 = bks.create(table2);
         MinKSet<String> mks3 = bks.add(mks1, mks2);
         assert mks3 != null;
         int maxBuckets = 50;
         List<String> boundaries = mks3.getLeftBoundaries(maxBuckets);
-        int numBuckets = boundaries.size();
         List<Integer> ranks = TestTables.getRanks(boundaries, randomString);
-        double maxErr = this.getMaxErr(suppSize, numBuckets - 1, ranks);
+        double maxErr = this.getMaxErr(suppSize, ranks);
         double bound = this.getErrBound(numSamples);
         Assert.assertTrue(maxErr < bound);
     }
@@ -123,10 +117,7 @@ public class MinKTest {
         int length = 6;
         List<String> randomString = TestTables.randStringList(suppSize, length);
         int num = Math.max(10*suppSize, suppSize*((int) Math.ceil(Math.log(suppSize))));
-        Pair<Table, SortedMap<String, Integer>> pair = TestTables.randStringTable(num, randomString);
-        Table t = pair.first;
-        assert t != null;
-
+        Table t = TestTables.randStringTable(num, randomString);
         final int parts = 4;
         List<IDataSet<ITable>> fragments = new ArrayList<IDataSet<ITable>>();
         for (int i = 0; i < parts; i++) {
@@ -139,10 +130,9 @@ public class MinKTest {
         MinKSet<String> mks = big.blockingSketch(bks);
         int maxBuckets = 100;
         List<String> boundaries = mks.getLeftBoundaries(maxBuckets);
-        int numBuckets = boundaries.size();
         List<Integer> ranks = TestTables.getRanks(boundaries, randomString);
         this.printBoundaries(boundaries, ranks);
-        double maxErr = this.getMaxErr(suppSize, numBuckets - 1, ranks);
+        double maxErr = this.getMaxErr(suppSize, ranks);
         double bound = this.getErrBound(numSamples);
         Assert.assertTrue(maxErr < bound);
     }

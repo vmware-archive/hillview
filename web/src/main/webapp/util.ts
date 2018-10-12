@@ -43,6 +43,7 @@ export class Converters {
     }
 
     public static doubleFromDate(value: Date): number {
+        assert(value != null);
         return value.getTime();
     }
 }

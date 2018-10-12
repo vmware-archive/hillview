@@ -66,6 +66,7 @@ export class HeavyHittersReceiver extends OnCompleteReceiver<TopList> {
                 this.order, this.isApprox, this.percent, this.columnsShown);
             newPage.setDataView(hhv);
             hhv.updateView(data.top, this.elapsedMilliseconds());
+            hhv.page.scrollIntoView();
         }
     }
 
