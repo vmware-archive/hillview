@@ -66,9 +66,8 @@ public class DateListColumn
         if ((s == null) || s.isEmpty())
             this.parseEmptyOrNull();
         else {
-            if (this.dateParser == null) {
+            if (this.dateParser == null)
                 this.dateParser = new DateParsing(s);
-            }
             try {
                 Instant dt = this.dateParser.parse(s);
                 this.append(dt);
