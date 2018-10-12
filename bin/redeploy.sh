@@ -1,5 +1,10 @@
 #!/bin/bash
-# Compile and deploy program
+# A small shell script which
+# stops the Hillview service on a remote cluster
+# rebuilds both projects that compose Hillview
+# copies the binaries to all machines in a Hillview cluster
+# starts the Hillview service on a remote cluster
+# checks the Hillview service on a remote cluster
 
 mydir="$(dirname "$0")"
 if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
