@@ -67,7 +67,7 @@ public class GenericLogs {
                 for (Map.Entry<String,Object> entry : capture.entrySet()) {
                     output[index] = entry.getValue().toString().replace("\\n", "\n");
                     index += 1;
-		        }
+                }
             }
         }
 
