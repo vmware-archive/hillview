@@ -23,8 +23,8 @@ def stop_webserver(config):
 def stop_worker(rh):
     """Stops a Hillview service on a remote worker machine"""
     print("Stopping hillview on ", rh.host)
-    rh.run_remote_shell_command("if pgrep -f hillview-server; then pkill -f hillview-server; true; " +
-                                "echo Stopped ; else echo \"Hillview already stopped on " +
+    rh.run_remote_shell_command("if pgrep -f hillview-server; then pkill -f hillview-server; "+
+                                "true; echo Stopped ; else echo \"Hillview already stopped on " +
                                 str(rh.host) +"\"; true; fi")
 def stop_backends(config):
     """Stops all Hillview workers"""
