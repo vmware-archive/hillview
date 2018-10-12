@@ -1,3 +1,4 @@
+#!/bin/bash
 # Part of the Hillview configuration
 # This is a shell script which only defines some variables used by other scripts.
 
