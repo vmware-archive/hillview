@@ -15,7 +15,7 @@ def execute_command(command):
         print("Exit code returned:", exitcode)
         exit(exitcode)
 
-class RemoteHost(object):
+class RemoteHost:
     """Abstraction for a remote host"""
     def __init__(self, user, host, parent, heapsize="200M"):
         """Create a remote host"""
@@ -31,8 +31,7 @@ class RemoteHost(object):
         """user@host"""
         if self.user is not None:
             return self.user + "@" + self.host
-        else:
-            return self.host
+        return self.host
 
     def run_remote_shell_command(self, command, verbose=True):
         """Executes a command on a remote machine"""
@@ -79,7 +78,7 @@ class RemoteAggregator(RemoteHost):
         super().__init__(user, host, parent)
         self.children = children
 
-class JsonConfig(object):
+class JsonConfig:
     """ Configuration read from a JSON file."""
 
     def __init__(self, d):
@@ -102,7 +101,7 @@ class JsonConfig(object):
         """Check if configuration has a specific field"""
         return item in self.__dict__
 
-class ClusterConfiguration(object):
+class ClusterConfiguration:
     """Represents a Hillview cluster"""
 
     def __init__(self, file):
