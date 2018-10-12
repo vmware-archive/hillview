@@ -80,11 +80,12 @@ public class GenericLogs {
         public ITable load() {
             try (BufferedReader reader = new BufferedReader(
                     this.getFileReader())) {
+                String line = null;
                 if (new File(this.filename).length() == 0)
                     this.error("File " + this.filename + " is empty!");
                 if (this.genLog.schema.getColumnCount() == 0) {
                     this.genLog.schema.append(new ColumnDescription("Host", ContentsKind.String));
-                    String line = reader.readLine();
+                    line = reader.readLine();
                     Match gmatch = this.genLog.grok.match(line);
                     final Map<String, Object> capture = gmatch.capture();
                     for (Map.Entry<String,Object> entry : capture.entrySet()) {
@@ -94,13 +95,13 @@ public class GenericLogs {
                 }
                 String[] fields = new String[this.columns.length];
                 while (true) {
-                    String line = reader.readLine();
                     if (line == null)
                         break;
                     if (line.trim().isEmpty())
                         continue;
                     this.parse(line, fields);
                     this.append(fields);
+                    line = reader.readLine();
                 }
             } catch (IOException e) {
                 throw new RuntimeException(e);
