@@ -62,7 +62,7 @@ public class MinKSet<T> extends BucketsInfo {
     }
 
     /**
-     * Rescale an an index from 0-maxBuckets to 0-totalElements.
+     * Rescale an index from 0-maxBuckets to 0-totalElements.
      * Rank 0 is mapped to 0, rank maxBuckets is mapped to totalElements.
      * The other values of rank are interpolated in between.
      * @param rank            Rank of an element between 0 and maxBuckets.

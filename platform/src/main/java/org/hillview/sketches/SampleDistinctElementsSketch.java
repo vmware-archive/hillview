@@ -65,8 +65,8 @@ public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<Str
         }
 
         Long2ObjectRBTreeMap<String> map = new Long2ObjectRBTreeMap<String>();
-        for (long hashKey: mkRows.treeMap.keySet())
-            map.put(hashKey, col.getString(mkRows.treeMap.get(hashKey)));
+        for (long hashKey: mkRows.hashMap.keySet())
+            map.put(hashKey, col.getString(mkRows.hashMap.get(hashKey)));
         return new MinKSet<String>(this.maxSize, map, Comparator.naturalOrder(),
                 minString, maxString, numPresent, numMissing);
     }
