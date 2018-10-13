@@ -79,7 +79,7 @@ class Benchmarks {
     public static class GenerateStringColumnMapper implements IMap<Empty, ITable> {
         private final int distinctValues;
         private final int totalElements;
-        private final int length = 20;
+        private final int length = 10;
 
         GenerateStringColumnMapper(int distinctValues, int totalElements) {
             this.distinctValues = distinctValues;
@@ -267,7 +267,7 @@ class Benchmarks {
         int elementsPerPartition = 1000 * 1000 * 10;
         int runCount = 11;
         int quantiles = 100;
-        for (int i = 5; i < 24; i++) {
+        for (int i = 5; i < 22; i++) {
             int distinct = 1 << i;
             GenerateStringColumnMapper generator = new GenerateStringColumnMapper(distinct, elementsPerPartition);
             IDataSet<ITable> data = original.blockingMap(generator);
@@ -309,13 +309,14 @@ class Benchmarks {
         int quantiles = 100;
         double[] factors = new double[]{10., 5., 2, 1, .5, .2, .1};
 
-        for (int i = 8; i < 24; i++) {
+        for (int i = 5; i < 22; i++) {
             int distinct = 1 << i;
 
             GenerateStringColumnMapper generator = new GenerateStringColumnMapper(distinct, elementsPerPartition);
             IDataSet<ITable> data = original.blockingMap(generator);
             SummarySketch summary = new SummarySketch();
             SummarySketch.TableSummary s = data.blockingSketch(summary);
+            System.out.println("Table has " + s.rowCount + " rows");
             String colName = s.schema.getColumnNames().get(0);
             ISketch<ITable, DistinctStringsSketch.DistinctStrings> sk =
                     new DistinctStringsSketch(colName);
@@ -329,11 +330,14 @@ class Benchmarks {
                 Runnable r = () -> data.blockingSketch(scs).getLeftBoundaries(quantiles);
                 runNTimes(r, runCount, "Sampled " + sampled + "/" + distinct + " distinct", elementsPerPartition);
             }
+            /*
             original.blockingManage(new PurgeLeafDatasets());
             original.blockingManage(new MemoryUse());
+            */
         }
     }
 
+    // Compute the precision of the quantiles as a function of the sampling rate
     private static void quantilesError(String[] args) throws IOException {
         IDataSet<Empty> original = createInitialDataset(args);
         int elementsPerPartition = 1000 * 1000 * 10;
@@ -342,7 +346,7 @@ class Benchmarks {
         double[] factors = new double[]{10., 5., 2, 1, .5, .2, .1};
 
         System.out.println("Sampled,Distinct,Error");
-        for (int i = 12; i < 24; i++) {
+        for (int i = 12; i < 22; i++) {
             int distinct = 1 << i;
             GenerateStringColumnMapper generator = new GenerateStringColumnMapper(distinct, elementsPerPartition);
             IDataSet<ITable> data = original.blockingMap(generator);
@@ -371,8 +375,6 @@ class Benchmarks {
                     System.out.println("" + sampled + "," + distinct + "," + maxErr);
                 }
             }
-            original.blockingManage(new PurgeLeafDatasets());
-            original.blockingManage(new MemoryUse());
         }
     }
 

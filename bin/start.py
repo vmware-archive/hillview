@@ -27,7 +27,7 @@ def start_worker(config, rh):
         "nohup java -Dlog4j.configurationFile=./log4j.properties -server -Xms" + rh.heapsize + \
         " -Xmx" + rh.heapsize + " -Xloggc:" + gclog + \
         " -jar " + config.service_folder + \
-        "/hillview/hillview-server-jar-with-dependencies.jar " + rh.host + ":" + \
+        "/hillview/hillview-server-jar-with-dependencies.jar " + "0.0.0.0:" + \
         str(config.worker_port) + " >nohup.out 2>&1 &")
 
 def start_aggregator(config, agg):

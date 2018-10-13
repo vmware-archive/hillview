@@ -129,9 +129,11 @@ public class FileSetDescription implements Serializable, IJson {
                     loader = new HillviewLogs.LogFileLoader(this.pathname);
                     break;
                 case "genericlog":
-                    GenericLogs genLog = new GenericLogs(FileSetDescription.this.getLogFormat());
-                    loader = new GenericLogs.LogFileLoader(this.pathname, genLog);
-                    break; 
+                    String format = FileSetDescription.this.getLogFormat();
+                    assert format != null;
+                    GenericLogs genLog = new GenericLogs(format);
+                    loader = genLog.getFileLoader(this.pathname);
+                    break;
                 default:
                     throw new RuntimeException(
                             "Unexpected file kind " + FileSetDescription.this.fileKind);
