@@ -1,6 +1,7 @@
 package org.hillview.sketches;
 
-import it.unimi.dsi.fastutil.longs.Long2IntRBTreeMap;
+import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongHeapPriorityQueue;
 
 /**
  * A data structure that stores a set of row indices. These row indices represent a
@@ -28,33 +29,42 @@ public class MinKRows {
     /**
      * A hashmap consisting of <hashValue, rowIndex> pairs.
      */
-    Long2IntRBTreeMap treeMap;
+    Long2IntOpenHashMap hashMap;
+    /**
+     * A priority queue of negated hashValues (we use negations since it dequeues the smallest key).
+     */
+    LongHeapPriorityQueue priorityQueue;
 
     MinKRows(final int maxSize) {
         this.maxSize = maxSize;
-        this.treeMap = new Long2IntRBTreeMap();
+        this.hashMap = new Long2IntOpenHashMap(maxSize);
+        this.priorityQueue = new LongHeapPriorityQueue(maxSize);
         this.curSize = 0;
         this.cutoff = 0;
     }
 
     public void push(long hashKey, int row) {
         if (this.curSize == 0) {
-            this.treeMap.put(hashKey, row);
+            this.hashMap.put(hashKey, row);
+            this.priorityQueue.enqueue(-hashKey);
             this.cutoff = hashKey;
             this.curSize += 1;
         }
-        if (!treeMap.containsKey(hashKey)) { // Does not have it already
+        if (!hashMap.containsKey(hashKey)) { // Does not have it already
             if (hashKey < this.cutoff) {  // It is below cutoff
-                this.treeMap.put(hashKey, row);
+                this.hashMap.put(hashKey, row);
+                this.priorityQueue.enqueue(-hashKey);
                 if (this.curSize == this.maxSize) {
-                    this.treeMap.remove(this.cutoff);
-                    this.cutoff = this.treeMap.lastLongKey();
+                    this.hashMap.remove(this.cutoff);
+                    this.priorityQueue.dequeueLong();
+                    this.cutoff = -this.priorityQueue.firstLong();
                 } else
                     this.curSize += 1;
             } else { // we ignore hash collisions.
                 if (this.curSize < this.maxSize) {
                     this.curSize += 1;
-                    this.treeMap.put(hashKey, row);
+                    this.hashMap.put(hashKey, row);
+                    this.priorityQueue.enqueue(-hashKey);
                     this.cutoff = hashKey;
                 }
             }
