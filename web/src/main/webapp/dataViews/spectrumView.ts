@@ -94,9 +94,11 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
             "smaller than" + this.colNames.length);
         components.min = "1";
         components.max = this.colNames.length.toString();
-        pcaDialog.addTextField("projectionName", "Name for Projected columns", FieldKind.String,
+        components.required = true;
+        const name = pcaDialog.addTextField("projectionName", "Name for Projected columns", FieldKind.String,
             "PCA",
             "The projected columns will appear with this name followed by a number starting from 0");
+        name.required = true;
         pcaDialog.setCacheTitle("PCADialog");
         pcaDialog.setAction(() => {
             const numComponents: number = pcaDialog.getFieldValueAsInt("numComponents");

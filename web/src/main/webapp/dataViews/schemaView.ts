@@ -102,8 +102,9 @@ export class SchemaView extends TSViewBase {
         /* Dialog box for selecting columns based on name */
         const nameDialog = new Dialog("Select by name",
             "Allows selecting/deselecting columns by name using regular expressions");
-        nameDialog.addTextField("selected", "Name", FieldKind.String, "",
+        const name = nameDialog.addTextField("selected", "Name", FieldKind.String, "",
             "Names of columns to select (regular expressions allowed)");
+        name.required = true;
         const actions: string[] = ["Add", "Remove"];
         nameDialog.addSelectField("action", "Action", actions, "Add",
             "Add to or Remove from current selection");

@@ -200,8 +200,11 @@ export class LoadMenu extends RemoteObject implements IDataView {
 
     public loadSavedDialog(): void {
         const dialog = new Dialog("Load saved view", "Load a view from a file");
-        dialog.addFileField("File", "File", "File containing saved view");
-        dialog.addTextField("Name", "Tab label", FieldKind.String, "Saved", "Name to display for dataset");
+        const file = dialog.addFileField("File", "File", "File containing saved view");
+        file.required = true;
+        const fname = dialog.addTextField("Name", "Tab label", FieldKind.String,
+            "Saved", "Name to display for dataset");
+        fname.required = true;
         dialog.setAction(() =>  {
             const files = dialog.getFieldValueAsFiles("File");
             const name = dialog.getFieldValue("Name");
@@ -314,10 +317,12 @@ class CSVFileDialog extends Dialog {
     constructor() {
         super("Load CSV files",
             "Loads comma-separated value (CSV) files from all machines that are part of the service.");
-        this.addTextField("folder", "Folder", FieldKind.String, "/",
+        const folder = this.addTextField("folder", "Folder", FieldKind.String, "/",
             "Folder on the remote machines where all the CSV files are found.");
-        this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "*.csv",
+        folder.required = true;
+        const pattern = this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "*.csv",
             "Shell pattern that describes the names of the files to load.");
+        pattern.required = true;
         this.addTextField("schemaFile", "Schema file (optional)", FieldKind.String, "schema",
             "The name of a JSON file that contains the schema of the data (leave empty if no schema file exists).");
         this.addBooleanField("hasHeader", "Header row", false, "True if first row in each file is a header row");
@@ -342,15 +347,19 @@ class GenericLogDialog extends Dialog {
     constructor() {
         super("Load Generic Logs",
             "Loads log files from all machines that are part of the service.");
-        this.addTextField("folder", "Folder", FieldKind.String, "/",
+        const folder = this.addTextField("folder", "Folder", FieldKind.String, "/",
             "Folder on the remote machines where all the log files are found.");
-        this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "*.log",
+        folder.required = true;
+        const pattern = this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "*.log",
             "Shell pattern that describes the names of the files to load.");
-        this.addTextField("logFormat", "Log format", FieldKind.String, "%{SYSLOG}",
-            "Log format : https://github.com/vmware/hillview/blob/master/docs/userManual.md#232-specifying-rules-for-parsing-logs");
+        pattern.required = true;
+        const format = this.addTextField("logFormat", "Log format", FieldKind.String, "%{SYSLOG}",
+            "Log format : https://github.com/vmware/hillview/blob/master/docs/userManual.md" +
+            "#232-specifying-rules-for-parsing-logs");
+        format.required = true;
         this.setCacheTitle("GenericLogDialog");
     }
-  
+
     public getFiles(): FileSetDescription {
         return {
             schemaFile: null,
@@ -373,10 +382,12 @@ class JsonFileDialog extends Dialog {
         super("Load JSON files", "Loads JSON files from all machines that are part of the service.  Each file should " +
             "contain a JSON array of JSON objects.  All JSON objects should have the same schema.  Each JSON object" +
             "field becomes a separate column.  The schema of all JSON files loaded should be the same.");
-        this.addTextField("folder", "Folder", FieldKind.String, "/",
+        const folder = this.addTextField("folder", "Folder", FieldKind.String, "/",
             "Folder on the remote machines where all the CSV files are found.");
-        this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "*.json",
+        folder.required = true;
+        const pattern = this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "*.json",
             "Shell pattern that describes the names of the files to load.");
+        pattern.required = true;
         this.addTextField("schemaFile", "Schema file (optional)", FieldKind.String, "data.schema",
             "The name of a JSON file that contains the schema of the data (leave empty if no schema file exists).");
         this.setCacheTitle("JsonFileDialog");
@@ -403,10 +414,12 @@ class ParquetFileDialog extends Dialog {
     constructor() {
         super("Load Parquet files", "Loads Parquet files from all machines that are part of the service." +
             "The schema of all Parquet files loaded should be the same.");
-        this.addTextField("folder", "Folder", FieldKind.String, "/",
+        const folder = this.addTextField("folder", "Folder", FieldKind.String, "/",
             "Folder on the remote machines where all the CSV files are found.");
-        this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "*.parquet",
+        folder.required = true;
+        const pattern = this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "*.parquet",
             "Shell pattern that describes the names of the files to load.");
+        pattern.required = true;
         this.setCacheTitle("ParquetFileDialog");
     }
 
@@ -431,10 +444,12 @@ class OrcFileDialog extends Dialog {
     constructor() {
         super("Load ORC files", "Loads ORC files from all machines that are part of the service." +
             "The schema of all ORC files loaded should be the same.");
-        this.addTextField("folder", "Folder", FieldKind.String, "/",
+        const folder = this.addTextField("folder", "Folder", FieldKind.String, "/",
             "Folder on the remote machines where all the CSV files are found.");
-        this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "*.orc",
+        folder.required = true;
+        const pattern = this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "*.orc",
             "Shell pattern that describes the names of the files to load.");
+        pattern.required = true;
         this.addTextField("schemaFile", "Schema file (optional)", FieldKind.String, "schema",
             "The name of a JSON file that contains the schema of the data " +
             "(if empty the ORC file schema will be used).");
@@ -464,14 +479,18 @@ class DBDialog extends Dialog {
         const sel = this.addSelectField("databaseKind", "Database kind", ["mysql", "impala"], "mysql",
             "The kind of database.");
         sel.onchange = () => this.dbChanged();
-        this.addTextField("host", "Host", FieldKind.String, "localhost",
+        const host = this.addTextField("host", "Host", FieldKind.String, "localhost",
             "Machine name where database is located; each machine will open a connection to this host");
-        this.addTextField("port", "Port", FieldKind.Integer, "3306",
+        host.required = true;
+        const port = this.addTextField("port", "Port", FieldKind.Integer, "3306",
             "Network port to connect to database.");
-        this.addTextField("database", "Database", FieldKind.String, null,
+        port.required = true;
+        const database = this.addTextField("database", "Database", FieldKind.String, null,
             "Name of database to load.");
-        this.addTextField("table", "Table", FieldKind.String, null,
+        database.required = true;
+        const table = this.addTextField("table", "Table", FieldKind.String, null,
             "The name of the table to load.");
+        table.required = true;
         this.addTextField("user", "User", FieldKind.String, null,
             "(Optional) The name of the user opening the connection.");
         this.addTextField("password", "Password", FieldKind.Password, null,

@@ -88,8 +88,9 @@ export abstract class TSViewBase extends BigTableView {
         const colName = cols[0];
         const dialog = new Dialog("Rename column",
             "Choose a new name for column " + this.schema.displayName(colName));
-        dialog.addTextField("name", "New name",
+        const name = dialog.addTextField("name", "New name",
             FieldKind.String, this.schema.displayName(colName), "New name to use for column");
+        name.required = true;
         dialog.setAction(() => this.doRenameColumn(colName, dialog.getFieldValue("name")));
         dialog.show();
     }
@@ -106,8 +107,9 @@ export abstract class TSViewBase extends BigTableView {
     public saveAsOrc(schema: SchemaClass): void {
         const dialog = new Dialog("Save as ORC files",
             "Describe the set of ORC files where data will be saved.");
-        dialog.addTextField("folderName", "Folder", FieldKind.String, "/",
+        const folder = dialog.addTextField("folderName", "Folder", FieldKind.String, "/",
             "All ORC files will be written to this folder on each of the remote machines.");
+        folder.required = true;
         dialog.setCacheTitle("saveAsDialog");
 
         class SaveReceiver extends OnCompleteReceiver<boolean> {
@@ -137,12 +139,13 @@ export abstract class TSViewBase extends BigTableView {
     public createColumnDialog(order: RecordOrder, tableRowsDesired: number): void {
         const dialog = new Dialog(
             "Add column", "Specify a JavaScript function which computes the values in a new column.");
-        dialog.addTextField(
+        const name = dialog.addTextField(
             "outColName", "Column name", FieldKind.String, null, "Name to use for the generated column.");
+        name.required = true;
         dialog.addSelectField(
             "outColKind", "Data type", allContentsKind, "String",
             "Type of data in the generated column.");
-        dialog.addMultiLineTextField("function", "Function",
+        const func = dialog.addMultiLineTextField("function", "Function",
             "function map(row) {", "  return row['col'];", "}",
             "A JavaScript function that computes the values for each row of the generated column." +
             "The function has a single argument 'row'.  The row is a JavaScript map that can be indexed with " +
@@ -513,10 +516,13 @@ export abstract class TSViewBase extends BigTableView {
             title += cols.length + " columns";
         }
         const d = new Dialog(title, "Find the most frequent values in the selected columns.");
-        d.addTextField("percent", "Threshold (%)", FieldKind.Double, "1",
+        const perc = d.addTextField("percent", "Threshold (%)", FieldKind.Double, "1",
             "All values that appear in the dataset with a frequency above this value (as a percent) " +
             "will be considered frequent elements.  Must be a number between " + HeavyHittersView.minString +
             " and 100%.");
+        perc.min = HeavyHittersView.minString;
+        perc.max = "100";
+        perc.required = true;
         d.setAction(() => {
             const amount = d.getFieldValueAsNumber("percent");
             if (amount != null)
@@ -595,6 +601,7 @@ class ComparisonFilterDialog extends Dialog {
         }
         const val = this.addTextField("value", "Value", FieldKind.String, "?", "Value to compare");
         val.onchange = () => this.selectionChanged();
+        val.required = true;
         const op = this.addSelectField("operation", "Compare", ["==", "!=", "<", ">", "<=", ">="], "<",
             "Operation that is used to compare; the value is used at the right in the comparison.");
         op.onchange = () => this.selectionChanged();
@@ -676,6 +683,7 @@ export class ConverterDialog extends Dialog {
             "Type of data for the converted column.");
         const nn = this.addTextField("newColumnName", "New column name: ", FieldKind.String, null,
             "A name for the new column.  The name must be different from all other column names.");
+        nn.required = true;
         cn.onchange = () => this.generateColumnName();
         nk.onchange = () => this.generateColumnName();
         // If the user types a column name don't attempt to change it
