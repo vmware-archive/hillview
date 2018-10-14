@@ -33,9 +33,9 @@ def copy_everywhere(config, file, folder, copyOption):
     config.run_on_all_workers(lambda rh: copy_file_to_remote_host(rh, file, folder, copyOption))
 
 def copy_files(config, folder, filelist, copyOption):
-    """Copy a set of files to all remote hosts"""
+    """Copy the files to the given machines in round-robin fashion"""
     assert isinstance(config, ClusterConfiguration)
-    print("Copying", len(filelist), "files to all hosts")
+    print("Copying", len(filelist), "files to all hosts in round-robin")
     index = 0
     workers = config.get_workers()
     for f in filelist:
@@ -71,6 +71,10 @@ def main():
         print("Folder is relative, using", folder)
     if args.common is not None:
         copy_everywhere(config, args.common, folder, copyOptions)
+    if args.files:
+        copy_files(config, folder, args.files, copyOptions)
+    else:
+        print("No files to upload to the machines provided in a Hillview configuration")
     print("Done.")
 
 if __name__ == "__main__":
