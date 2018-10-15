@@ -69,7 +69,7 @@ public class GenericLogsTest extends BaseTest {
     @Test
     public void testDataNodeLog() {
         String path = "../data/sample_logs/datanodelog";
-        GenericLogs logs = new GenericLogs("%{HBASELOG}");
+        GenericLogs logs = new GenericLogs("%{DATANODELOG}");
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
