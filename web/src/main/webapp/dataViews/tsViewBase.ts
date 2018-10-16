@@ -124,9 +124,9 @@ export abstract class TSViewBase extends BigTableView {
         }
 
         dialog.setAction(() => {
-            const folder = dialog.getFieldValue("folderName");
+            const folderName = dialog.getFieldValue("folderName");
             const rr = this.createStreamingRpcRequest<boolean>("saveAsOrc", {
-                folder,
+                folderName,
                 schema: schema.schema,
                 renameMap: mapToArray(schema.getRenameMap()),
             });
@@ -145,7 +145,7 @@ export abstract class TSViewBase extends BigTableView {
         dialog.addSelectField(
             "outColKind", "Data type", allContentsKind, "String",
             "Type of data in the generated column.");
-        const func = dialog.addMultiLineTextField("function", "Function",
+        dialog.addMultiLineTextField("function", "Function",
             "function map(row) {", "  return row['col'];", "}",
             "A JavaScript function that computes the values for each row of the generated column." +
             "The function has a single argument 'row'.  The row is a JavaScript map that can be indexed with " +

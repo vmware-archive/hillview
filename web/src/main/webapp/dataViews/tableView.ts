@@ -1055,6 +1055,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
             "Number of rows to show (between 10 and 200)");
         field.min = "10";
         field.max = "200";
+        field.required = true;
         dialog.setAction(() => {
             const rowCount = dialog.getFieldValueAsInt("rows");
             if (rowCount < 10 || rowCount > 200) {
