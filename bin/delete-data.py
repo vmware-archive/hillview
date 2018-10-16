@@ -9,7 +9,10 @@ from hillviewCommon import ClusterConfiguration, get_config
 
 def delete_remote_folder(rh, folder):
     """Deletes folder on the remote host"""
-    rh.run_remote_shell_command("rm -rf " + folder)
+    rh.run_remote_shell_command("if [ -d " + folder + " ]; then " +
+                                "rm -rf " + folder + "; echo Deleted " +
+                                "; else echo \"Directory " + str(folder) +
+                                " doesn't exist.\"; fi")
 
 def delete_folder(config, folder):
     """Delete a folder on all remote hosts"""
@@ -28,6 +31,7 @@ def main():
     if not os.path.isabs(folder):
         folder = os.path.join(config.service_folder, folder)
     delete_folder(config, folder)
+    print("Done")
 
 if __name__ == "__main__":
     main()
