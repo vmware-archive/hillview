@@ -10,7 +10,17 @@ TOMCATVERSION="9.0.4"
 # Sets various variables to the names of the software packages needed
 
 case "$OSTYPE" in
-    linux*) INSTALL="apt-get"; SUDO="sudo"; NODEJS="nodejs-legacy"; NPM="npm" ;;
+    linux*) if [ "$(cat /etc/*-release | grep -c ubuntu)" -ne 0 ];
+	    then
+	    	INSTALL="apt-get"; SUDO="sudo"; NODEJS="nodejs-legacy"; NPM="npm";
+	    elif [ "$(cat /etc/*-release | grep -c -e centos -e rhel )" -ne 0 ];
+	    then
+	        INSTALL="yum"; SUDO="sudo"; NODEJS="nodejs"; NPM="npm";
+	    else
+		echo "Unhandled operating system"; exit 1;
+	    fi
+	    ;;
     darwin*) INSTALL="brew"; SUDO=""; NODEJS="node"; NPM="" ;;
     *) echo "Unhandled operating system $OSTYPE"; exit 1;;
 esac
+
