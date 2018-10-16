@@ -24,6 +24,9 @@ import org.hillview.test.BaseTest;
 import org.junit.Assert;
 import org.junit.Test;
 
+/**
+ * Various tests for reading Generic logs into ITable.
+ */
 public class GenericLogsTest extends BaseTest {
     @Test
     public void testSyslog() {
