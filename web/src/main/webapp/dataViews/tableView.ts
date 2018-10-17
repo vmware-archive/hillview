@@ -935,12 +935,17 @@ export class TableView extends TSViewBase implements IScrollTarget {
             const pcaDialog = new Dialog("Principal Component Analysis",
                 "Projects a set of numeric columns to a smaller set of numeric columns while preserving the 'shape' " +
                 " of the data as much as possible.");
-            pcaDialog.addTextField("numComponents", "Number of components", FieldKind.Integer, "2",
+            const components = pcaDialog.addTextField("numComponents", "Number of components",
+                FieldKind.Integer, "2",
                 "Number of dimensions to project to.  Must be an integer bigger than 1 and " +
                 "smaller than the number of selected columns");
-            pcaDialog.addTextField("projectionName", "Name for Projected columns", FieldKind.String,
+            components.required = true;
+            components.min = "2";
+            components.max = colNames.length.toString();
+            const name = pcaDialog.addTextField("projectionName", "Name for Projected columns", FieldKind.String,
                 "PCA",
                 "The projected columns will appear with this name followed by a number starting from 0");
+            name.required = true;
             pcaDialog.setCacheTitle("PCADialog");
             pcaDialog.setAction(() => {
                 const numComponents: number = pcaDialog.getFieldValueAsInt("numComponents");
@@ -1050,6 +1055,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
             "Number of rows to show (between 10 and 200)");
         field.min = "10";
         field.max = "200";
+        field.required = true;
         dialog.setAction(() => {
             const rowCount = dialog.getFieldValueAsInt("rows");
             if (rowCount < 10 || rowCount > 200) {

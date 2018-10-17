@@ -327,6 +327,7 @@ export class GroupsDialog extends Dialog {
             "The number of groups to use; must be between 1 and " + maxGroups);
         groups.min = "1";
         groups.max = maxGroups.toString();
+        groups.required = true;
         this.setCacheTitle("GroupsDialog");
     }
 

@@ -66,7 +66,7 @@ class DialogValues {
  * Base class for implementing dialogs.
  */
 class DialogBase implements IHtmlElement {
-    protected readonly topLevel: HTMLDivElement;
+    protected readonly topLevel: HTMLFormElement;
     protected tabIndex: number;
     protected dragging: boolean;
     protected readonly buttonsDiv: HTMLDivElement;
@@ -91,7 +91,7 @@ class DialogBase implements IHtmlElement {
         // tab keypress in an event handler.
         this.tabIndex = 10;
         this.dragging = false;
-        this.topLevel = document.createElement("div");
+        this.topLevel = document.createElement("form");
         this.topLevel.title = toolTip;
         this.topLevel.classList.add("dialog");
         this.topLevel.style.left = "50%";
@@ -143,7 +143,7 @@ class DialogBase implements IHtmlElement {
         this.topLevel.remove();
     }
 
-    public getHTMLRepresentation(): HTMLDivElement {
+    public getHTMLRepresentation(): HTMLElement {
         return this.topLevel;
     }
 
@@ -169,7 +169,7 @@ export class Dialog extends DialogBase {
      * Maps a field name to the fieldsDiv that contains all the corresponding visual elements.
      */
     private line: Map<string, HTMLElement>;
-    private readonly confirmButton: HTMLButtonElement;
+    private readonly confirmButton: HTMLInputElement;
     /**
      * Optional string which is used as an index in the dialogValueCache to
      * populate a dialog with its previous values.
@@ -208,7 +208,8 @@ export class Dialog extends DialogBase {
         d3select(cancelButton).call(nodrag);
         this.buttonsDiv.appendChild(cancelButton);
 
-        this.confirmButton = document.createElement("button");
+        this.confirmButton = document.createElement("input");
+        this.confirmButton.type = "submit";
         this.confirmButton.textContent = "Confirm";
         this.confirmButton.classList.add("confirm");
         d3select(this.confirmButton).call(nodrag);
@@ -269,9 +270,11 @@ export class Dialog extends DialogBase {
         this.onConfirm = onConfirm;
         if (onConfirm != null)
             this.confirmButton.onclick = () => {
-                this.hide();
-                this.cacheValues();
-                this.onConfirm();
+                if (this.topLevel.checkValidity()) {
+                    this.hide();
+                    this.cacheValues();
+                    this.onConfirm();
+                }
             };
     }
 
