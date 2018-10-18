@@ -568,7 +568,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             if (subscription != null) {
                 subscription.unsubscribe();
             } else {
-                HillviewLogger.instance.warn("Could not find subscription", "{0}", unsubscribeOp.id);
+                HillviewLogger.instance.info("Could not find subscription", "{0}", unsubscribeOp.id);
                 this.toUnsubscribe.put(unsubscribeOp.id, true);
             }
         } catch (final Exception e) {

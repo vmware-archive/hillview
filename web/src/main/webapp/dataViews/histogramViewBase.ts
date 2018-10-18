@@ -25,15 +25,17 @@ import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
 import {D3SvgElement, Resolution, ViewKind} from "../ui/ui";
 import {ChartView} from "./chartView";
+import {IScrollTarget, ScrollBar} from "../ui/scroll";
 
 /**
  * This is a base class that contains code common to various histogram renderings.
  */
-export abstract class HistogramViewBase extends ChartView {
+export abstract class HistogramViewBase extends ChartView implements IScrollTarget {
     protected summary: HTMLElement;
     protected cdfDot: D3SvgElement;
     protected cdfPlot: CDFPlot;
     protected chartDiv: HTMLDivElement;
+    protected scrollBar: ScrollBar;
 
     protected constructor(
         remoteObjectId: RemoteObjectId,
@@ -48,9 +50,14 @@ export abstract class HistogramViewBase extends ChartView {
         this.topLevel.appendChild(this.chartDiv);
         this.chartDiv.style.display = "flex";
         this.chartDiv.style.flexDirection = "column";
+        this.scrollBar = new ScrollBar(this, true);
+        this.topLevel.appendChild(this.scrollBar.getHTMLRepresentation());
 
         this.summary = document.createElement("div");
         this.topLevel.appendChild(this.summary);
+
+        // TODO: this should not be here.
+        this.page.getTitleElement().ondblclick = () => this.scrollBar.setPosition(0.3, 0.6);
     }
 
     protected abstract showTable(): void;
@@ -90,6 +97,18 @@ export abstract class HistogramViewBase extends ChartView {
             .attr("width", width)
             .attr("height", height);
         return true;
+    }
+
+    public pageDown(): void {
+        // TODO
+    }
+
+    public pageUp(): void {
+        // TODO
+    }
+
+    public scrolledTo(position: number): void {
+        // TODO
     }
 }
 

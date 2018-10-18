@@ -243,7 +243,7 @@ class Benchmarks {
     private static IDataSet<Empty> createInitialDataset(String[] args)
             throws IOException {
         IDataSet<Empty> original;
-        int cores = 2;
+        int cores = 2 * 14;
         if (false)
             // This runs locally - for testing
             original = new LocalDataSet<Empty>(Empty.getInstance());
@@ -267,7 +267,7 @@ class Benchmarks {
         int elementsPerPartition = 1000 * 1000 * 10;
         int runCount = 11;
         int quantiles = 100;
-        for (int i = 5; i < 22; i++) {
+        for (int i = 12; i < 23; i++) {
             int distinct = 1 << i;
             GenerateStringColumnMapper generator = new GenerateStringColumnMapper(distinct, elementsPerPartition);
             IDataSet<ITable> data = original.blockingMap(generator);
@@ -283,7 +283,6 @@ class Benchmarks {
             r = () -> data.blockingSketch(scs).getLeftBoundaries(quantiles);
             runNTimes(r, runCount, "Smart " + distinct + " distinct", elementsPerPartition);
         }
-        original.blockingManage(new PurgeLeafDatasets());
     }
 
     private static double getMaxErr(int suppSize, List<Integer> ranks) {
@@ -302,16 +301,15 @@ class Benchmarks {
 
     // Compare the tradeoff in performance/accuracy for the quantiles computation.
     private static void quantilesTimeTradeoff(String[] args) throws IOException {
-        IDataSet<Empty> original = createInitialDataset(args);
         System.out.println("Bench,Time (ms),Melems/s,Percent slower");
         int elementsPerPartition = 1000 * 1000 * 10;
         int runCount = 11;
         int quantiles = 100;
         double[] factors = new double[]{10., 5., 2, 1, .5, .2, .1};
+        IDataSet<Empty> original = createInitialDataset(args);
 
-        for (int i = 5; i < 22; i++) {
+        for (int i = 12; i < 23; i++) {
             int distinct = 1 << i;
-
             GenerateStringColumnMapper generator = new GenerateStringColumnMapper(distinct, elementsPerPartition);
             IDataSet<ITable> data = original.blockingMap(generator);
             SummarySketch summary = new SummarySketch();
@@ -330,10 +328,6 @@ class Benchmarks {
                 Runnable r = () -> data.blockingSketch(scs).getLeftBoundaries(quantiles);
                 runNTimes(r, runCount, "Sampled " + sampled + "/" + distinct + " distinct", elementsPerPartition);
             }
-            /*
-            original.blockingManage(new PurgeLeafDatasets());
-            original.blockingManage(new MemoryUse());
-            */
         }
     }
 
@@ -346,7 +340,7 @@ class Benchmarks {
         double[] factors = new double[]{10., 5., 2, 1, .5, .2, .1};
 
         System.out.println("Sampled,Distinct,Error");
-        for (int i = 12; i < 22; i++) {
+        for (int i = 12; i < 23; i++) {
             int distinct = 1 << i;
             GenerateStringColumnMapper generator = new GenerateStringColumnMapper(distinct, elementsPerPartition);
             IDataSet<ITable> data = original.blockingMap(generator);

@@ -180,8 +180,8 @@ export class TableView extends TSViewBase implements IScrollTarget {
         this.contextMenu = new ContextMenu(this.topLevel);
         this.topLevel.appendChild(document.createElement("hr"));
         this.htmlTable = document.createElement("table");
-        this.htmlTable.className = "tabularDisplay";
-        this.scrollBar = new ScrollBar(this);
+        this.htmlTable.className = "tableView";
+        this.scrollBar = new ScrollBar(this, false);
 
         // to force the scroll bar next to the table we put them in yet another div
         const tblAndBar = document.createElement("div");
@@ -786,10 +786,15 @@ export class TableView extends TSViewBase implements IScrollTarget {
         cds.forEach((cd) => this.cellsPerColumn.set(cd.name, []));
         let tableRowCount = 0;
         // Add row data
+        let previousRow: RowSnapshot = null;
         if (nextKList.rows != null) {
             tableRowCount = nextKList.rows.length;
-            for (const row of nextKList.rows)
-                this.addRow(row, cds);
+            let index = 0;
+            for (const row of nextKList.rows) {
+                this.addRow(row, previousRow, cds, index === nextKList.rows.length - 1);
+                previousRow = row;
+                index++;
+            }
         }
 
         let perc = "";
@@ -1131,25 +1136,54 @@ export class TableView extends TSViewBase implements IScrollTarget {
         return makeSpan(text, false);
     }
 
-    public addRow(row: RowSnapshot, cds: IColumnDescription[]): void {
+    public addRow(row: RowSnapshot, previousRow: RowSnapshot | null,
+                  cds: IColumnDescription[], last: boolean): void {
         const trow = this.tBody.insertRow();
         const position = this.startPosition + this.dataRowsDisplayed;
-        let cell = trow.insertCell(0);
-        const dataRange = new DataRangeUI(position, row.count, this.rowCount);
-        cell.appendChild(dataRange.getDOMRepresentation());
-        cell.oncontextmenu = (e) => {
+        const moveToTop = (e: PointerEvent) => {
             this.contextMenu.clear();
-            this.contextMenu.addItem({text: "Move to top",
+            this.contextMenu.addItem({
+                text: "Move to top",
                 action: () => this.moveRowToTop(row),
                 help: "Move this row to the top of the view.",
             }, true);
             this.contextMenu.show(e);
         };
 
+        let cell = trow.insertCell(0);
+        const dataRange = new DataRangeUI(position, row.count, this.rowCount);
+        cell.appendChild(dataRange.getDOMRepresentation());
+        cell.classList.add("all");
+        cell.classList.add("meta");
+        cell.oncontextmenu = moveToTop;
+
         cell = trow.insertCell(1);
+        cell.classList.add("all");
+        cell.classList.add("meta");
         cell.style.textAlign = "right";
+        cell.oncontextmenu = moveToTop;
         significantDigitsHtml(row.count).setInnerHtml(cell);
         cell.title = "Number of rows that have these values: " + formatNumber(row.count);
+
+        // Maps a column name to a boolean indicating whether the
+        // value is the same as in the previous row.  Must be computed
+        // in sorted order.
+        const isSame = new Map<string, boolean>();
+        let previousSame = true;
+        for (const o of this.order.sortOrientationList) {
+            const name = o.columnDescription.name;
+            if (!previousSame || previousRow == null) {
+                isSame.set(name, false);
+            } else {
+                const index = this.order.find(name);
+                if (previousRow.values[index] === row.values[index]) {
+                    isSame.set(name, true);
+                } else {
+                    previousSame = false;
+                    isSame.set(name, false);
+                }
+            }
+        }
 
         for (let i = 0; i < cds.length; i++) {
             const cd = cds[i];
@@ -1165,6 +1199,22 @@ export class TableView extends TSViewBase implements IScrollTarget {
             const dataIndex = this.order.find(cd.name);
             if (this.isVisible(cd.name)) {
                 const value = row.values[dataIndex];
+                if (previousRow == null) {
+                    if (last)
+                        cell.classList.add("all");
+                    else
+                        cell.classList.add("top");
+                } else if (last) {
+                    if (isSame.get(cd.name))
+                        cell.classList.add("bottom");
+                    else
+                        cell.classList.add("all");
+                } else {
+                    if (isSame.get(cd.name))
+                        cell.classList.add("middle");
+                    else
+                        cell.classList.add("top");
+                }
                 let shownValue: string;
                 if (value == null) {
                     cell.appendChild(makeMissing());
@@ -1210,15 +1260,19 @@ export class TableView extends TSViewBase implements IScrollTarget {
                     this.contextMenu.show(e);
                 };
             } else {
-                cell.oncontextmenu = (e) => {
-                    this.contextMenu.clear();
-                    this.contextMenu.addItem({
-                        text: "Move to top",
-                        action: () => this.moveRowToTop(row),
-                        help: "Move this row to the top of the view.",
-                    }, true);
-                    this.contextMenu.show(e);
-                };
+                cell.classList.add("empty");
+                if (previousRow == null) {
+                    if (last)
+                        cell.classList.add("all");
+                    else
+                        cell.classList.add("top");
+                } else {
+                    if (last)
+                        cell.classList.add("bottom");
+                    else
+                        cell.classList.add("middle");
+                }
+                cell.oncontextmenu = moveToTop;
             }
         }
         this.dataRowsDisplayed += row.count;

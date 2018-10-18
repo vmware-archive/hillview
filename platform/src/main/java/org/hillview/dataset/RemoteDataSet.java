@@ -275,6 +275,7 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
 
         @Override
         public void onNext(final PartialResponse response) {
+            HillviewLogger.instance.info("OperationObserver onNext");
             S result = this.processResponse(response);
             this.subject.onNext(result);
         }
@@ -289,6 +290,7 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
 
         @Override
         public void onCompleted() {
+            HillviewLogger.instance.info("OperationObserver has completed");
             this.subject.onCompleted();
         }
 

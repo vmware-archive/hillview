@@ -42,7 +42,7 @@ const plus = "+";
  * -------------------------------------------------
  */
 export class FullPage implements IHtmlElement {
-    public dataView: IDataView;
+    public dataView: IDataView | null;
     public bottomContainer: HTMLElement;
     public progressManager: ProgressManager;
     protected console: ConsoleDisplay;
@@ -66,6 +66,7 @@ export class FullPage implements IHtmlElement {
                        public readonly title: string,
                        public readonly sourcePageId: number | null,
                        public readonly dataset: DatasetView) {
+        this.dataView = null;
         this.console = new ConsoleDisplay();
         this.progressManager = new ProgressManager();
         this.minimized = false;
@@ -189,7 +190,8 @@ export class FullPage implements IHtmlElement {
 
     public minimize(span: HTMLElement): void {
         if (this.minimized) {
-            this.displayHolder.appendChild(this.dataView.getHTMLRepresentation());
+            if (this.dataView != null)
+                this.displayHolder.appendChild(this.dataView.getHTMLRepresentation());
             this.minimized = false;
             span.innerHTML = minus;
         } else {
@@ -200,7 +202,8 @@ export class FullPage implements IHtmlElement {
     }
 
     public onResize(): void {
-        this.dataView.resize();
+        if (this.dataView != null)
+            this.dataView.resize();
     }
 
     public getHTMLRepresentation(): HTMLElement {
@@ -211,11 +214,13 @@ export class FullPage implements IHtmlElement {
         return this.console;
     }
 
-    public setDataView(hdv: IDataView): void {
+    public setDataView(hdv: IDataView | null): void {
         this.dataView = hdv;
         removeAllChildren(this.displayHolder);
-        this.displayHolder.appendChild(hdv.getHTMLRepresentation());
-        this.setViewKind(hdv.viewKind);
+        if (hdv != null) {
+            this.displayHolder.appendChild(hdv.getHTMLRepresentation());
+            this.setViewKind(hdv.viewKind);
+        }
     }
 
     public getDataView(): IDataView | null {

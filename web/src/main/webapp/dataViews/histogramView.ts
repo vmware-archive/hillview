@@ -50,11 +50,12 @@ import {AxisData} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
 import {FilterReceiver, DataRangesCollector} from "./dataRangesCollectors";
+import {IScrollTarget} from "../ui/scroll";
 
 /**
  * A HistogramView is responsible for showing a one-dimensional histogram on the screen.
  */
-export class HistogramView extends HistogramViewBase {
+export class HistogramView extends HistogramViewBase implements IScrollTarget {
     protected cdf: HistogramBase;
     protected histogram: HistogramBase;
     protected axisData: AxisData;
@@ -472,6 +473,18 @@ export class HistogramView extends HistogramViewBase {
             exact: this.samplingRate >= 1, reusePage: false, relative: false, chartKind: "Histogram"
             });
         rr.invoke(renderer);
+    }
+
+    public pageDown(): void {
+        // TODO
+    }
+
+    public pageUp(): void {
+        // TODO
+    }
+
+    public scrolledTo(position: number): void {
+        // TODO
     }
 }
 

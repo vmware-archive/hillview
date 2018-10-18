@@ -147,7 +147,7 @@ public class StringListColumn extends BaseListColumn implements IStringColumn {
 
             if (this.firstShortSegment != Integer.MAX_VALUE) {
                 if (encoding > 65535) {
-                    HillviewLogger.instance.warn(
+                    HillviewLogger.instance.info(
                             "Switching column to dense encoding", "{0}", this);
                     ArrayList<String[]> segments = new ArrayList<String[]>(segmentId);
                     for (int i = 0; i <= segmentId; i++) {
