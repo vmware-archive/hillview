@@ -22,7 +22,7 @@ import {SchemaClass} from "../schemaClass";
 import {BaseRenderer, BigTableView, TableTargetAPI} from "../tableTarget";
 import {DataRangeUI} from "../ui/dataRangeUI";
 import {IDataView} from "../ui/dataview";
-import {Dialog, FieldKind} from "../ui/dialog";
+import {Dialog, FieldKind, NotifyDialog} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
 import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
 import {TabularDisplay} from "../ui/tabularDisplay";
@@ -75,10 +75,11 @@ export class HeavyHittersReceiver extends OnCompleteReceiver<TopList> {
         percentDialog.addText("No elements found with frequency above " + this.percent.toString() + "%.");
         if (this.percent > HeavyHittersView.min) {
             percentDialog.addText("Lower the threshold? Can take any value above " + HeavyHittersView.minString);
-            percentDialog.addTextField("newPercent", "Threshold (%)", FieldKind.Double,
+            const perc = percentDialog.addTextField("newPercent", "Threshold (%)", FieldKind.Double,
                 HeavyHittersView.min.toString(),
                 "All values that appear in the dataset with a frequency above this value (as a percent) " +
                 "will be considered frequent elements.  Must be at least " + HeavyHittersView.minString);
+            perc.required = true;
             percentDialog.setAction(() => {
                 const newPercent = percentDialog.getFieldValueAsNumber("newPercent");
                 if (newPercent != null) {
@@ -300,12 +301,11 @@ export class HeavyHittersView extends BigTableView {
     }
 
     private static showLongDialog(total: number): void {
-        const longListDialog = new Dialog("Too Many Frequent Elements", "");
-        longListDialog.addText("Showing the top " + HeavyHittersView.maxDisplay.toString() +
-            " elements out of " + total);
-        longListDialog.addText("Use the 'View as Table' menu option to see the entire list");
-        longListDialog.setAction(() => {});
-        longListDialog.setCacheTitle("longListDialog");
+        const longListDialog = new NotifyDialog("Too Many Frequent Elements",
+            "Showing the top " + HeavyHittersView.maxDisplay.toString() +
+            " elements out of " + total + "\n" +
+            "Use the 'View as Table' menu option to see the entire list",
+            "");
         longListDialog.show();
     }
 
@@ -395,6 +395,7 @@ export class HeavyHittersView extends BigTableView {
             "(as a percent) will be considered frequent elements.  Must be at least " + HeavyHittersView.minString);
         perc.min = HeavyHittersView.minString;
         perc.max = "100";
+        perc.required = true;
         percentDialog.setAction(() => {
             const newPercent = percentDialog.getFieldValueAsNumber("newPercent");
             if (newPercent != null) this.runWithThreshold(newPercent);

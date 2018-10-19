@@ -122,6 +122,7 @@ export class BucketDialog extends Dialog {
             "The number of buckets to use.");
         input.min = "1";
         input.max = Resolution.maxBucketCount.toString();
+        input.required = true;
         this.setCacheTitle("BucketDialog");
     }
 
