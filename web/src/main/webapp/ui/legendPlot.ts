@@ -28,6 +28,7 @@ import {ContextMenu} from "./menu";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {D3Axis, D3Scale, D3SvgElement, Rectangle, Resolution} from "./ui";
+import {SchemaClass} from "../schemaClass";
 
 /**
  * Displays a legend for a 2D histogram.
@@ -46,6 +47,7 @@ export class HistogramLegendPlot extends Plot {
     protected x: number;
     protected y: number;
     protected width: number;
+    protected schema: SchemaClass;
 
     public constructor(surface) {
         super(surface);
@@ -54,7 +56,7 @@ export class HistogramLegendPlot extends Plot {
     public draw(): void {
         this.plottingSurface.getCanvas()
             .append("text")
-            .text(this.axisData.description.name)
+            .text(this.schema.displayName(this.axisData.description.name))
             .attr("transform", `translate(${this.getChartWidth() / 2}, 0)`)
             .attr("text-anchor", "middle")
             .attr("dominant-baseline", "text-before-edge");
@@ -153,9 +155,10 @@ export class HistogramLegendPlot extends Plot {
         }
     }
 
-    public setData(axis: AxisData, missingLegend: boolean): void {
+    public setData(axis: AxisData, missingLegend: boolean, schema: SchemaClass): void {
         this.axisData = axis;
         this.missingLegend = missingLegend;
+        this.schema = schema;
     }
 
     public legendRectangle(): Rectangle {

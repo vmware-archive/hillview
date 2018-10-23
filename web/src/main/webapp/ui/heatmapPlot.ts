@@ -21,6 +21,7 @@ import {regression} from "../util";
 import {HeatmapLegendPlot} from "./legendPlot";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
+import {SchemaClass} from "../schemaClass";
 
 interface Dot {
     x: number;
@@ -36,6 +37,7 @@ export class HeatmapPlot extends Plot {
     protected visible: number;
     protected distinct: number;
     protected dots: Dot[];
+    protected schema: SchemaClass;
 
     public constructor(surface: PlottingSurface,
                        protected legendPlot: HeatmapLegendPlot,
@@ -53,10 +55,10 @@ export class HeatmapPlot extends Plot {
         const canvas = this.plottingSurface.getCanvas();
         if (this.showAxes) {
             canvas.append("text")
-                .text(this.yAxisData.description.name)
+                .text(this.schema.displayName(this.yAxisData.description.name))
                 .attr("dominant-baseline", "text-before-edge");
             canvas.append("text")
-                .text(this.xAxisData.description.name)
+                .text(this.schema.displayName(this.xAxisData.description.name))
                 .attr("x", this.getChartWidth() / 2)
                 .attr("y", this.getChartHeight() + this.plottingSurface.topMargin +
                         this.plottingSurface.bottomMargin / 2)
@@ -131,10 +133,11 @@ export class HeatmapPlot extends Plot {
         return this.distinct;
     }
 
-    public setData(heatmap: Heatmap, xData: AxisData, yData: AxisData): void {
+    public setData(heatmap: Heatmap, xData: AxisData, yData: AxisData, schema: SchemaClass): void {
         this.heatmap = heatmap;
         this.xAxisData = xData;
         this.yAxisData = yData;
+        this.schema = schema;
         this.xAxisData.setResolution(this.getChartWidth(), AxisKind.Bottom);
         this.yAxisData.setResolution(this.getChartHeight(), AxisKind.Left);
 

@@ -188,7 +188,7 @@ export class SchemaView extends TSViewBase {
             action: () => this.trellisSelected(false),
             help: "Plot the data in the selected columns as a Trellis plot of histograms. " +
                 "Applies to two or three columns only.",
-        }, selectedCount >= 2 || selectedCount <= 3);
+        }, selectedCount >= 2 && selectedCount <= 3);
         this.contextMenu.addItem({
             text: "Trellis heatmaps",
             action: () => this.trellisSelected(true),

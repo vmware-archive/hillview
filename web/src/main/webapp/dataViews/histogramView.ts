@@ -303,7 +303,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
             const col = this.schema.get(i);
             if (col.name === this.axisData.description.name)
                 continue;
-            columns.push(col.name);
+            columns.push(this.schema.displayName(col.name));
         }
         if (columns.length === 0) {
             this.page.reportError("No other acceptable columns found");
@@ -330,7 +330,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
      */
     public asCSV(): string[] {
         const lines: string[] = [];
-        let line = this.axisData.description.name + ",count";
+        let line = this.schema.displayName(this.axisData.description.name) + ",count";
         lines.push(line);
         for (let x = 0; x < this.histogram.buckets.length; x++) {
             const bx = this.axisData.bucketDescription(x);
@@ -343,7 +343,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
     }
 
     private showSecondColumn(colName: string): void {
-        const oc = this.schema.find(colName);
+        const oc = this.schema.findByDisplayName(colName);
         const cds: IColumnDescription[] = [this.axisData.description, oc];
         const rr = this.createDataRangesRequest(cds, this.page, "2DHistogram");
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
@@ -467,7 +467,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
             complement: d3event.sourceEvent.ctrlKey,
         };
         const rr = this.createFilterRequest(filter);
-        const title = "Filtered " + this.axisData.description.name;
+        const title = "Filtered " + this.schema.displayName(this.axisData.description.name);
         const renderer = new FilterReceiver(title, [this.axisData.description], this.schema,
             [0], this.page, rr, this.dataset, {
             exact: this.samplingRate >= 1, reusePage: false, relative: false, chartKind: "Histogram"

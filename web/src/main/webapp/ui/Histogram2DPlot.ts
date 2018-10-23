@@ -23,6 +23,7 @@ import {Heatmap} from "../javaBridge";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {D3Axis, D3Scale} from "./ui";
+import {SchemaClass} from "../schemaClass";
 
 /**
  * Represents an SVG rectangle drawn on the screen.
@@ -56,18 +57,22 @@ export class Histogram2DPlot extends Plot {
     protected barWidth: number;
     protected yScale: D3Scale;
     protected yAxis: D3Axis;
+    protected schema: SchemaClass;
 
     public constructor(protected plottingSurface: PlottingSurface) {
         super(plottingSurface);
     }
 
     public setData(heatmap: Heatmap,
-                   xAxisData: AxisData, samplingRate: number,
-                   normalized: boolean): void {
+                   xAxisData: AxisData,
+                   samplingRate: number,
+                   normalized: boolean,
+                   schema: SchemaClass): void {
         this.heatmap = heatmap;
         this.xAxisData = xAxisData;
         this.samplingRate = samplingRate;
         this.normalized = normalized;
+        this.schema = schema;
     }
 
     public draw(): void {
@@ -124,7 +129,7 @@ export class Histogram2DPlot extends Plot {
         this.xAxisData.setResolution(this.getChartWidth(), AxisKind.Bottom);
 
         this.plottingSurface.getCanvas().append("text")
-            .text(this.xAxisData.description.name)
+            .text(this.schema.displayName(this.xAxisData.description.name))
             .attr("transform", `translate(${this.getChartWidth() / 2},
             ${this.getChartHeight() + this.plottingSurface.topMargin + this.plottingSurface.bottomMargin / 2})`)
             .attr("text-anchor", "middle")

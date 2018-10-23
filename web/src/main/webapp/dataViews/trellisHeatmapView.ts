@@ -242,7 +242,7 @@ export class TrellisHeatmapView extends TrellisChartView {
             };
             const plot = this.hps[i];
             // The order of these operations is important
-            plot.setData(heatmap, this.xAxisData, this.yAxisData);
+            plot.setData(heatmap, this.xAxisData, this.yAxisData, this.schema);
             max = Math.max(max, plot.getMaxCount());
         }
 
@@ -261,18 +261,18 @@ export class TrellisHeatmapView extends TrellisChartView {
         this.setupMouse();
         this.pointDescription = new TextOverlay(this.surface.getCanvas(),
             this.surface.getActualChartSize(),
-            [this.xAxisData.description.name,
-                this.yAxisData.description.name,
-                this.groupByAxisData.description.name,
+            [this.schema.displayName(this.xAxisData.description.name),
+                this.schema.displayName(this.yAxisData.description.name),
+                this.schema.displayName(this.groupByAxisData.description.name),
                 "count"], 40);
 
         // Axis labels
         const canvas = this.surface.getCanvas();
         canvas.append("text")
-            .text(this.yAxisData.description.name)
+            .text(this.schema.displayName(this.yAxisData.description.name))
             .attr("dominant-baseline", "text-before-edge");
         canvas.append("text")
-            .text(this.xAxisData.description.name)
+            .text(this.schema.displayName(this.xAxisData.description.name))
             .attr("transform", `translate(${this.surface.getChartWidth() / 2},
                       ${this.surface.getChartHeight() + this.surface.topMargin +
             this.surface.bottomMargin / 2})`)
@@ -345,13 +345,15 @@ export class TrellisHeatmapView extends TrellisChartView {
                 complement: d3event.sourceEvent.ctrlKey,
             };
             rr = this.createFilter2DRequest(xRange, yRange);
-            title = "Filtered on " + this.xAxisData.description.name + " and " + this.yAxisData.description.name;
+            title = "Filtered on " +
+                this.schema.displayName(this.xAxisData.description.name) +
+                " and " + this.schema.displayName(this.yAxisData.description.name);
         } else {
             const filter = this.getGroupBySelectionFilter();
             if (filter == null)
                 return;
             rr = this.createFilterRequest(filter);
-            title = "Filtered on " + this.groupByAxisData.description.name;
+            title = "Filtered on " + this.schema.displayName(this.groupByAxisData.description.name);
         }
         const renderer = new FilterReceiver(title,
             [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description],

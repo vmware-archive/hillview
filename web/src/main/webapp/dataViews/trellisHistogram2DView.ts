@@ -250,7 +250,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
         for (let i = 0; i < data.length; i++) {
             const histo = data[i];
             const plot = this.hps[i];
-            plot.setData(histo, this.xAxisData, this.samplingRate, false);
+            plot.setData(histo, this.xAxisData, this.samplingRate, false, this.schema);
             plot.draw();
         }
 
@@ -281,7 +281,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
         if (filter == null)
             return;
         const rr = this.createFilterRequest(filter);
-        const title = "Filtered on " + this.groupByAxisData.description.name;
+        const title = "Filtered on " + this.schema.displayName(this.groupByAxisData.description.name);
         const renderer = new FilterReceiver(title,
             [this.xAxisData.description, this.legendAxisData.description,
                 this.groupByAxisData.description],
