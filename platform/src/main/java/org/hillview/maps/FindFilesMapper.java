@@ -67,7 +67,7 @@ public class FindFilesMapper implements IMap<Empty, List<IFileReference>> {
             else
                 return Collections.emptyList();
         } catch (IOException e) {
-            throw new RuntimeException(e); 
+            throw new RuntimeException(e);
         }
         files = files.filter(f -> {
             if (f == null)
