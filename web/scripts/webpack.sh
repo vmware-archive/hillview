@@ -9,9 +9,9 @@ source $mydir/../../bin/lib.sh
 # Helper script to run webpack from maven
 
 pushd src/main/webapp/
-#echo "Installing npm packages"
+echo "Installing npm packages"
 #npm install
-rm -rf bundle*
+#rm -rf bundle*
 echo "Running webpack command in src/main/webapp"
-webpack --display-modules
+./node_modules/.bin/webpack --display-modules
 popd

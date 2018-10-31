@@ -24,7 +24,7 @@ def start_worker(config, rh):
     gclog = config.service_folder + "/hillview/gc.log"
     rh.run_remote_shell_command(
         "cd " + config.service_folder + "/hillview; " + \
-        "nohup java -Dlog4j.configurationFile=./log4j.properties -server -Xms" + rh.heapsize + \
+        "nohup java -Dlog4j.configurationFile=./log4j.properties -server " + \
         " -Xmx" + rh.heapsize + " -Xloggc:" + gclog + \
         " -jar " + config.service_folder + \
         "/hillview/hillview-server-jar-with-dependencies.jar " + "0.0.0.0:" + \
