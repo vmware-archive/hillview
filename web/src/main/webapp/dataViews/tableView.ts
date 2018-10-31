@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import ColumnResizer = require("column-resizer");
+import {default as ColumnResizer} from "../ColumnResizer";
 import {DatasetView, IViewSerialization, TableSerialization} from "../datasetView";
 import {
     asContentsKind,
@@ -79,6 +79,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
     protected cellsPerColumn: Map<string, HTMLElement[]>;
     protected selectedColumns = new SelectionStateMachine();
     protected message: HTMLElement;
+    protected static readonly defaultColumnWidth = 60;  // pixels
 
     // The following elements are used for Find
     protected strFilter: StringFilterDescription;
@@ -100,7 +101,8 @@ export class TableView extends TSViewBase implements IScrollTarget {
         disabledColumns: [0, 1],
         removePadding: false,
         postbackSafe: true,
-        partialRefresh: true
+        partialRefresh: true,
+        minWidth: 10
     };
 
     public constructor(
@@ -114,13 +116,6 @@ export class TableView extends TSViewBase implements IScrollTarget {
         this.topLevel.tabIndex = 1;  // necessary for keyboard events?
         this.topLevel.onkeydown = (e) => this.keyDown(e);
         this.strFilter = null;
-        /*
-        this.topLevel.style.flexDirection = "column";
-        this.topLevel.style.display = "flex";
-        this.topLevel.style.flexWrap = "nowrap";
-        this.topLevel.style.justifyContent = "flex-start";
-        this.topLevel.style.alignItems = "stretch";
-        */
 
         const menu = new TopMenu([
             {
@@ -551,19 +546,20 @@ export class TableView extends TSViewBase implements IScrollTarget {
 
     private addHeaderCell(thr: Node, cd: IColumnDescription,
                           displayName: string, help: string): HTMLElement {
-        const thd = document.createElement("th");
-        thd.classList.add("noselect");
-        thd.appendChild(makeSpan(displayName, false));
+        const th = document.createElement("th");
+        th.classList.add("noselect");
         if (!this.isVisible(cd.name)) {
-            thd.style.fontWeight = "normal";
+            th.style.fontWeight = "normal";
         } else {
             const span = makeSpan("", false);
-            span.innerHTML = "&nbsp;" + this.getSortArrow(cd.name) + this.getSortIndex(cd.name);
-            thd.appendChild(span);
+            span.innerHTML = this.getSortIndex(cd.name) + this.getSortArrow(cd.name);
+            th.appendChild(span);
         }
-        thd.title = help;
-        thr.appendChild(thd);
-        return thd;
+        th.appendChild(makeSpan(displayName, false));
+        th.style.overflow = "hidden";
+        th.title = help;
+        thr.appendChild(th);
+        return th;
     }
 
     public showColumns(order: number, first: boolean): void {
@@ -649,8 +645,10 @@ export class TableView extends TSViewBase implements IScrollTarget {
             // Create column headers
             let thd = this.addHeaderCell(thr, posCd, posCd.name, "Position within sorted order.");
             thd.oncontextmenu = () => {};
+            thd.style.width = DataRangeUI.width + "px";
             thd = this.addHeaderCell(thr, ctCd, ctCd.name, "Number of occurrences.");
             thd.oncontextmenu = () => {};
+            thd.style.width = "75px";
             if (this.schema == null)
                 return;
         }
@@ -665,6 +663,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
             const name = this.schema.displayName(cd.name);
             const thd = this.addHeaderCell(thr, cd, name, title);
             thd.className = this.columnClass(cd.name);
+            thd.style.width = TableView.defaultColumnWidth + "px";
             thd.onclick = (e) => this.columnClick(i, e);
             thd.oncontextmenu = (e) => {
                 this.columnClick(i, e);
@@ -840,8 +839,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
         this.highlightSelectedColumns();
         this.page.reportTime(elapsedMs);
         if (this.resizer == null) {
-            // noinspection JSPotentiallyInvalidConstructorUsage
-            this.resizer = new ColumnResizer.default(this.htmlTable, this.draggingProperties);
+            this.resizer = new ColumnResizer(this.htmlTable, this.draggingProperties);
         } else {
             this.resizer.reset(this.draggingProperties);
         }
@@ -1216,6 +1214,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
             const cd = cds[i];
             cell = trow.insertCell(i + 2);
             cell.classList.add(this.columnClass(cd.name));
+            cell.style.overflow = "hidden";
             let align = "right";
             if (kindIsString(cd.kind))
                 align = "left";
