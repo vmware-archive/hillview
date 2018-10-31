@@ -553,6 +553,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
         } else {
             const span = makeSpan("", false);
             span.innerHTML = this.getSortIndex(cd.name) + this.getSortArrow(cd.name);
+            span.onclick = () => this.swapOrder(cd.name);
             th.appendChild(span);
         }
         th.appendChild(makeSpan(displayName, false));
@@ -560,6 +561,11 @@ export class TableView extends TSViewBase implements IScrollTarget {
         th.title = help;
         thr.appendChild(th);
         return th;
+    }
+
+    protected swapOrder(colName: string): void {
+        const o = this.order.toggle(colName);
+        this.setOrder(o);
     }
 
     public showColumns(order: number, first: boolean): void {

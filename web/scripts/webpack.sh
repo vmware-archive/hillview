@@ -4,7 +4,6 @@ set -e
 
 mydir="$(dirname "$0")"
 if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
-source $mydir/../../bin/lib.sh
 
 # Helper script to run webpack from maven
 
