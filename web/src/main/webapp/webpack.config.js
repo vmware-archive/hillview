@@ -21,18 +21,23 @@ module.exports = {
     output: {
         filename: "./bundle.js"
     },
+    performance: {
+        hints: false
+    },
     // This is needed to find ts-loader which is installed globally
     resolve: {
         // Add '.ts' and '.tsx' as a resolvable extension.
         extensions: [".ts", ".tsx", ".js"]
     },
+    mode: "production",
     module: {
         rules: [
             // all files with a '.ts' or '.tsx' extension will be handled by 'ts-loader'
             {
                 test: /\.tsx?$/,
                 loader: "ts-loader"
-            }
+            },
+            {   test: /ColumnResizer\.js/, use: [{loader: "babel-loader"}]  }
         ]
     },
     devtool: "source-map"

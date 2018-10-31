@@ -116,10 +116,6 @@ td.all {
     padding: 1px;
 }
 
-.tableView td.meta:hover {
-    border-left: 1px solid black;
-}
-
 .tableView td.meta {
     background-color: #fafafa;
 }
@@ -129,10 +125,6 @@ td.all {
     border-right: 1px solid black;
     border-top: 1px solid black;
     padding: 1px;
-}
-
-.tableView td:hover {
-    border: 1px solid red;
 }
 
 .missingData {
@@ -181,7 +173,8 @@ td.all {
 }
 
 .tableView {
-    display: block;
+    /* display: block; */
+    table-layout: fixed;
     overflow-x: auto;
 }
 
@@ -314,7 +307,6 @@ td.all {
 }
 
 svg.dataRange {
-    width: 100px;
     height: 10px;
     display: inline-block;
 }
@@ -364,7 +356,6 @@ table.menu td.selected {
 
 table.dropdown {
     position: fixed;  /* relative to browser window */
-    z-index: 1;
 }
 
 .hidden {

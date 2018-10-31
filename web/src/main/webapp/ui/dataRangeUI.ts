@@ -24,6 +24,7 @@ import {IElement} from "./ui";
  */
 export class DataRangeUI implements IElement {
     private readonly topLevel: Element;
+    public static readonly width = 80;  // pixels
 
     /**
      * @param position: Beginning of data range.
@@ -33,6 +34,7 @@ export class DataRangeUI implements IElement {
     constructor(position: number, count: number, totalCount: number) {
         this.topLevel = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         this.topLevel.classList.add("dataRange");
+        this.topLevel.setAttribute("width", DataRangeUI.width + "px");
         // If the range represents < 1 % of the total count, use 1% of the
         // bar's width, s.t. it is still visible.
         const w = Math.max(0.01, count / totalCount);
