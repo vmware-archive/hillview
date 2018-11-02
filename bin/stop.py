@@ -6,12 +6,16 @@
 
 from argparse import ArgumentParser
 from hillviewCommon import ClusterConfiguration, get_config
+from hillviewConsoleLog import get_logger
+
+logger = get_logger("stop")
 
 def stop_webserver(config):
     """Stops the Hillview web server"""
     assert isinstance(config, ClusterConfiguration)
     rh = config.get_webserver()
-    print("Stopping web server on", rh)
+    message = "Stopping web server on " + str(rh)
+    logger.info(message)
     rh.run_remote_shell_command("if pgrep -f tomcat; then " + config.service_folder + "/" +
                                 config.tomcat + "/bin/shutdown.sh; echo Stopped; else " +
                                 " echo \"Web server already stopped on " + str(rh.host) +"\"; " +
@@ -22,7 +26,8 @@ def stop_webserver(config):
 
 def stop_worker(rh):
     """Stops a Hillview service on a remote worker machine"""
-    print("Stopping hillview on ", rh.host)
+    message = "Stopping hillview on " + str(rh.host)
+    logger.info(message)
     rh.run_remote_shell_command("if pgrep -f hillview-server; then pkill -f hillview-server; "+
                                 "true; echo Stopped ; else echo \"Hillview already stopped on " +
                                 str(rh.host) +"\"; true; fi")
