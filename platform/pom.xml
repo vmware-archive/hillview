@@ -318,7 +318,7 @@
             </extension>
         </extensions>
         <plugins>
-            <!-- ensure that maven dependences are correct
+            <!-- ensure that maven dependencies are correct
             This is currently disabled because it does not detect dependencies in tests.
             <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
