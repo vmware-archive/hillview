@@ -6,11 +6,15 @@
 
 from argparse import ArgumentParser, REMAINDER
 from hillviewCommon import ClusterConfiguration, get_config
+from hillviewConsoleLog import get_logger
+
+logger = get_logger("run-on-all")
 
 def execute_command_on_all(config, command, parallel):
     """Executes command on all workers"""
     assert isinstance(config, ClusterConfiguration)
-    print("Executing `", command, "' on", len(config.get_workers()), "hosts")
+    message = "Executing `" + str(command) + "' on " + str(len(config.get_workers())) + " hosts"
+    logger.info(message)
     lam = lambda rh: rh.run_remote_shell_command(command)
     config.run_on_all_workers(lam, parallel)
 

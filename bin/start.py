@@ -6,12 +6,16 @@
 
 from argparse import ArgumentParser
 from hillviewCommon import RemoteHost, RemoteAggregator, ClusterConfiguration, get_config
+from hillviewConsoleLog import get_logger
+
+logger = get_logger("start")
 
 def start_webserver(config):
     """Starts the Hillview web server"""
     assert isinstance(config, ClusterConfiguration)
     rh = config.get_webserver()
-    print("Starting web server", rh)
+    message = "Starting web server " + str(rh)
+    logger.info(message)
     rh.run_remote_shell_command(
         "export WEB_CLUSTER_DESCRIPTOR=serverlist; cd " + config.service_folder + "; nohup " + \
         config.tomcat + "/bin/startup.sh &")
@@ -20,7 +24,8 @@ def start_worker(config, rh):
     """Starts the Hillview worker on a remote machine"""
     assert isinstance(rh, RemoteHost)
     assert isinstance(config, ClusterConfiguration)
-    print("Starting worker", rh)
+    message = "Starting worker " + str(rh)
+    logger.info(message)
     gclog = config.service_folder + "/hillview/gc.log"
     rh.run_remote_shell_command(
         "cd " + config.service_folder + "/hillview; " + \
@@ -34,7 +39,8 @@ def start_aggregator(config, agg):
     """Starts a Hillview aggregator"""
     assert isinstance(agg, RemoteAggregator)
     assert isinstance(config, ClusterConfiguration)
-    print("Starting aggregator", agg)
+    message = "Starting aggregator " + str(agg)
+    logger.info(message)
     agg.run_remote_shell_command(
         "cd " + config.service_folder + "/hillview; " + \
         "nohup java -Dlog4j.configurationFile=./log4j.properties -server " + \

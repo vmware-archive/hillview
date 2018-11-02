@@ -6,13 +6,17 @@ import subprocess
 import tempfile
 import json
 from argparse import ArgumentParser
+from hillviewConsoleLog import get_logger
+
+logger = get_logger("hillviewCommon")
 
 def execute_command(command):
     """Executes the specified command using a shell"""
-    print(command)
+    logger.info(command)
     exitcode = subprocess.call(command, shell=True)
     if exitcode != 0:
-        print("Exit code returned:", exitcode)
+        error = "Exit code returned:" + str(exitcode)
+        logger.error(error)
         exit(exitcode)
 
 class RemoteHost:
@@ -42,13 +46,15 @@ class RemoteHost:
         f = open(file.name)
         text = f.read()
         if verbose:
-            print("On", self.host, ":", text)
+            message = "On " + str(self.host) + ": " + text
+            logger.info(message)
         f.close()
 
         command = "ssh " + self.uh() + " bash -s < " + file.name
         exitcode = subprocess.call(command, shell=True)
         if exitcode != 0:
-            print("Exit code returned:", exitcode)
+            error = "Exit code returned: " + str(exitcode)
+            logger.error(error)
             exit(exitcode)
         os.unlink(file.name)
 
@@ -106,20 +112,24 @@ class ClusterConfiguration:
 
     def __init__(self, file):
         """Load the configuration file describing the Hillview deployment."""
-        print("Reading cluster configuration from", file)
+        message = "Reading cluster configuration from " + file
+        logger.info(message)
         if not os.path.exists(file):
-            print("Configuration file `" + file + "' does not exist")
+            error = "Configuration file '" + file + "' does not exist"
+            logger.info(error)
             exit(1)
         try:
             with open(file) as contents:
                 stripped = "".join(line.partition("//")[0] for line in contents)
             self.jsonConfig = json.loads(stripped, object_hook=JsonConfig)
         except:
-            print("Error parsing configuration file", file)
+            error = "Error parsing configuration file " + file
+            logger.error(error)
             exit(1)
         if not os.path.isabs(self.jsonConfig.service_folder):
-            print("service_folder must be an absolute path in configuration file",
-                  self.jsonConfig.service_folder)
+            error = "service_folder must be an absolute path in configuration file " + \
+                    self.jsonConfig.service_folder
+            logger.error(error)
             exit(1)
         # The path where the current script is installed
         self.scriptFolder = os.path.dirname(os.path.abspath(__file__))
