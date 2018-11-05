@@ -62,7 +62,10 @@ public class FindFilesMapper implements IMap<Empty, List<IFileReference>> {
 
         Stream<Path> files;
         try {
-            files = Files.walk(dir, 1, FileVisitOption.FOLLOW_LINKS);
+            if(Files.exists(dir))
+                files = Files.walk(dir, 1, FileVisitOption.FOLLOW_LINKS);
+            else
+                return Collections.emptyList();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

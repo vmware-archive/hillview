@@ -225,6 +225,7 @@ public abstract class RpcTarget implements IJson {
             if (reconstructing ||
                     this.context.session == null ||
                     !this.context.session.isOpen()) return;
+            HillviewLogger.instance.info("Sending exception to user", "{0}", this.name);
             RpcReply reply = this.request.createReply(throwable);
             this.sendReply(reply);
         }

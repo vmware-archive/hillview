@@ -10,9 +10,14 @@ if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
 source $mydir/lib.sh
 
 echo "Installing programs needed to build"
+case "$OSTYPE" in
+    linux*)
+    # Location where node.js version 11 resides.
+	curl -sL https://deb.nodesource.com/setup_11.x | ${SUDO} -E bash -
+esac
 ${SUDO} ${INSTALL} install maven ${NODEJS} ${NPM} libgfortran3 unzip gzip
-echo "Installing typescript tools"
-${SUDO} npm install -g typescript@2.7.1 webpack@3.6.0
+echo "Installing typescript compiler"
+${SUDO} npm install -g typescript@3.1.5
 
 cd ..
 if [ ! -d apache-tomcat-${TOMCATVERSION} ]; then
@@ -30,6 +35,7 @@ fi
 
 pushd web/src/main/webapp
 echo "Installing Javascript packages"
+rm -f node_modules/typescript
 npm install
 npm link typescript
 popd

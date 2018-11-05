@@ -47,7 +47,7 @@ public class BaseTest {
     /**
      * Called when an exception should be ignored.
      */
-    void ignoringException(String message, Throwable t) {
+    public void ignoringException(String message, Throwable t) {
          System.out.println(message);
          t.printStackTrace();
     }
@@ -55,7 +55,7 @@ public class BaseTest {
     /**
      * Randomness is actually not thread-safe!
      */
-    Randomness getRandomness() {
+    public Randomness getRandomness() {
         return new Randomness(0);
     }
 }

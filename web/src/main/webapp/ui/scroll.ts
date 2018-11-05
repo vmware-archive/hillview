@@ -31,13 +31,15 @@ export interface IScrollTarget {
 }
 
 /**
- * A custom scroll-bar.  Currently only vertical scrollbars are supported.
+ * A custom scroll-bar.
+ * The terminology is as if the scroll-bar is vertical,
+ * but it can also be horizontal.
  */
 export class ScrollBar implements IHtmlElement {
-    public static readonly minimumSize = 10;
-    public static readonly barWidth = 16;
-    public static readonly handleHeight = 6;
-    public static readonly handleWidth = 12;
+    private static readonly minimumSize = 10;
+    private static readonly barWidth = 16;
+    private static readonly handleHeight = 6;
+    private static readonly handleWidth = 12;
 
     /**
      * Starting position; the range is 0-1.
@@ -61,11 +63,17 @@ export class ScrollBar implements IHtmlElement {
     private height: number;
     private readonly target: IScrollTarget;
 
+    private heightAttr: string;
+    private widthAttr: string;
+    private xAttr: string;
+    private yAttr: string;
+
     /**
      * Build a scroll-bar.
-     * @param {IScrollTarget} target  Object that is notified when scrolling happens.
+     * @param target  Object that is notified when scrolling happens.
+     * @param horizontal  If true the scroll-bar will be drawn horizontally.
      */
-    constructor(target: IScrollTarget) {
+    constructor(target: IScrollTarget, private horizontal: boolean = false) {
         this.topLevel = document.createElement("div");
         this.topLevel.classList.add("scrollBar");
         this.target = target;
@@ -77,33 +85,45 @@ export class ScrollBar implements IHtmlElement {
             .on("drag", () => this.dragMove())
             .on("end", () => this.dragEnd());
 
+        if (this.horizontal) {
+            this.heightAttr = "width";
+            this.widthAttr = "height";
+            this.xAttr = "y";
+            this.yAttr = "x";
+        } else {
+            this.heightAttr = "height";
+            this.widthAttr = "width";
+            this.xAttr = "x";
+            this.yAttr = "y";
+        }
+
         this.svg = d3select(this.topLevel)
             .append("svg")
-            .attr("width", ScrollBar.barWidth)
-            .attr("height", "100%");
+            .attr(this.widthAttr, ScrollBar.barWidth)
+            .attr(this.heightAttr, "100%");
 
         this.beforeG = this.svg.append("g");
         this.beforeG
             .append("svg:title")
-            .text("Clicking in this area will move one page up.");
+            .text("Clicking in this area will move one page " + (this.horizontal ? "left" : "up"));
         this.before = this.beforeG
             .append("rect")
-            .attr("width", "100%")
-            .attr("height", 0)
-            .attr("x", 0)
-            .attr("y", 0)
+            .attr(this.widthAttr, "100%")
+            .attr(this.heightAttr, 0)
+            .attr(this.xAttr, 0)
+            .attr(this.yAttr, 0)
             .attr("fill", "lightgrey")
             .on("click", () => this.target.pageUp());
         this.afterG = this.svg.append("g");
         this.afterG
             .append("svg:title")
-            .text("Clicking in this area will move one page down.");
+            .text("Clicking in this area will move one page " + (this.horizontal ? "right" : "down"));
         this.after = this.afterG
             .append("rect")
-            .attr("width", "100%")
-            .attr("height", 0)
-            .attr("x", 0)
-            .attr("y", 0)
+            .attr(this.widthAttr, "100%")
+            .attr(this.heightAttr, 0)
+            .attr(this.xAttr, 0)
+            .attr(this.yAttr, 0)
             .attr("fill", "lightgrey")
             .on("click", () => this.target.pageDown());
         // This is drawn last; it may overlap with the other two
@@ -113,10 +133,10 @@ export class ScrollBar implements IHtmlElement {
             .append("svg:title");
         this.bar = this.barG
             .append("rect")
-            .attr("width", "100%")
-            .attr("height", 0)
-            .attr("x", 0)
-            .attr("y", 0)
+            .attr(this.widthAttr, "100%")
+            .attr(this.heightAttr, 0)
+            .attr(this.xAttr, 0)
+            .attr(this.yAttr, 0)
             .attr("fill", "darkgrey");
 
         this.handleG = this.svg.append("g");
@@ -125,25 +145,25 @@ export class ScrollBar implements IHtmlElement {
             .text("Drag this handle with the mouse to scroll.");
         this.handle = this.handleG
             .append("rect")
-            .attr("width", "80%")
-            .attr("height", 6)
-            .attr("x", (ScrollBar.barWidth - ScrollBar.handleWidth) / 2)
-            .attr("y", 0)
+            .attr(this.widthAttr, "80%")
+            .attr(this.heightAttr, 6)
+            .attr(this.xAttr, (ScrollBar.barWidth - ScrollBar.handleWidth) / 2)
+            .attr(this.yAttr, 0)
             .attr("stroke", "black")
             .attr("stroke-width", 1)
             .attr("fill", "darkgrey")
-            .attr("cursor", "ns-resize")
+            .attr("cursor", this.horizontal ? "ew-resize" : "ns-resize")
             .call(drag);
     }
 
     public dragStart(): void {
-        this.bar.attr("height", "0");
-        this.before.attr("height", this.height);
-        this.before.attr("y", 0);
+        this.bar.attr(this.heightAttr, "0");
+        this.before.attr(this.heightAttr, this.height);
+        this.before.attr(this.yAttr, 0);
     }
 
     public dragEnd(): void {
-        const position = this.handle.attr("y");
+        const position = this.handle.attr(this.yAttr);
         let perc = position / this.height;
         if (position >= this.height - ScrollBar.handleHeight)
             perc = 1;
@@ -153,12 +173,16 @@ export class ScrollBar implements IHtmlElement {
 
     public dragMove(): void {
         const position = d3mouse(this.svg.node());
-        let y = position[1];
+        let y;
+        if (this.horizontal)
+            y = position[0];
+        else
+            y = position[1];
         if (y < 0)
             y = 0;
         if (y > this.height - ScrollBar.handleHeight)
             y = this.height - ScrollBar.handleHeight;
-        this.handle.attr("y", y);
+        this.handle.attr(this.yAttr, y);
     }
 
     public getHTMLRepresentation(): HTMLElement {
@@ -173,7 +197,9 @@ export class ScrollBar implements IHtmlElement {
             this.topLevel.classList.remove("hidden");
         }
 
-        this.height = this.topLevel.getBoundingClientRect().height;
+        this.height = this.horizontal ?
+            this.topLevel.getBoundingClientRect().width :
+            this.topLevel.getBoundingClientRect().height;
         let barHeight = (this.end - this.start) * this.height;
         let barY = this.start * this.height;
         if (barHeight < ScrollBar.minimumSize) {
@@ -182,19 +208,19 @@ export class ScrollBar implements IHtmlElement {
                 barY = this.height - barHeight;
         }
         this.before
-            .attr("height", this.start * this.height);
+            .attr(this.heightAttr, this.start * this.height);
         this.barG
             .select("title")
             .text(percent(this.start) + " - " + percent(this.end));
         this.bar
-            .attr("height", barHeight)
-            .attr("y", barY);
+            .attr(this.heightAttr, barHeight)
+            .attr(this.yAttr, barY);
         this.after
-            .attr("height", (1 - this.end) * this.height)
-            .attr("y", this.end * this.height);
+            .attr(this.heightAttr, (1 - this.end) * this.height)
+            .attr(this.yAttr, this.end * this.height);
         // handle in the middle of the bar
         this.handle
-            .attr("y", barY + ((barHeight - ScrollBar.handleHeight) / 2));
+            .attr(this.yAttr, barY + ((barHeight - ScrollBar.handleHeight) / 2));
     }
 
     public setPosition(start: number, end: number): void {

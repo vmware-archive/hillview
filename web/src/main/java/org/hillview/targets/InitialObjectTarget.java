@@ -43,18 +43,18 @@ public class InitialObjectTarget extends RpcTarget {
     public InitialObjectTarget() {
         // Get the base naming context
         final String clusterFile = System.getenv(ENV_VARIABLE);
-        final ClusterDescription desc;
+        final HostList desc;
         if (clusterFile == null) {
             HillviewLogger.instance.info(
                     "No cluster description file specified; creating singleton");
-            desc = new ClusterDescription(Collections.singletonList(HostAndPort.fromParts(LOCALHOST,
+            desc = new HostList(Collections.singletonList(HostAndPort.fromParts(LOCALHOST,
                                                                     HillviewServer.DEFAULT_PORT)));
             this.initialize(desc);
         } else {
             try {
                 HillviewLogger.instance.info(
                         "Initializing cluster descriptor from file", "{0}", clusterFile);
-                desc = ClusterDescription.fromFile(clusterFile);
+                desc = HostList.fromFile(clusterFile);
                 HillviewLogger.instance.info("Backend servers", "{0}", desc.getServerList().size());
                 this.initialize(desc);
             } catch (IOException e) {
@@ -66,7 +66,7 @@ public class InitialObjectTarget extends RpcTarget {
         RpcObjectManager.instance.addObject(this);
     }
 
-    private void initialize(final ClusterDescription description) {
+    private void initialize(final HostList description) {
         this.emptyDataset = RemoteDataSet.createCluster(description, RemoteDataSet.defaultDatasetIndex);
     }
 
@@ -117,8 +117,14 @@ public class InitialObjectTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    public void toggleMemoization(RpcRequest request, RpcRequestContext context) {
-        ToggleMemoization tm = new ToggleMemoization();
+    public void setMemoization(RpcRequest request, RpcRequestContext context) {
+        SetMemoization tm = new SetMemoization(true);
+        this.runManage(Converters.checkNull(this.emptyDataset), tm, request, context);
+    }
+
+    @HillviewRpc
+    public void unsetMemoization(RpcRequest request, RpcRequestContext context) {
+        SetMemoization tm = new SetMemoization(false);
         this.runManage(Converters.checkNull(this.emptyDataset), tm, request, context);
     }
 

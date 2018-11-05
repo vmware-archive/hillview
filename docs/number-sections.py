@@ -2,6 +2,7 @@
 # This script numbers the section in a markdown document
 # It makes some simplifying assumptions about the structure
 # of the document: i.e., no references occur in quoted blocks
+# pylint: disable=invalid-name,missing-docstring
 
 import re
 import os
@@ -9,7 +10,7 @@ import os
 class Headings:
     def __init__(self):
         self.headingCounters = {}
-        self.maxDepth = 5;
+        self.maxDepth = 5
         for i in range(0, self.maxDepth):
             self.headingCounters[i] = 1
         self.lastDepth = 0
@@ -29,11 +30,11 @@ class Headings:
         """If row is a heading (starting with a number of #s) it is prepended
            with the position in the hierarcy"""
         depth = 0
-        while (row[depth] == "#"):
-            depth = depth+1
+        while row[depth] == "#":
+            depth = depth + 1
         result = row
 
-        depth -= 1;
+        depth -= 1
         if depth == 0:
             pass
         elif depth == self.lastDepth:
@@ -83,7 +84,7 @@ def process(rows, headings, banner):
         if row.startswith("#"):
             row = headings.getHeading(row)
         outRows.append(row)
-    for index in range(0, len(outRows)-1):
+    for index in range(0, len(outRows) - 1):
         row = headings.fixReferences(outRows[index])
         outRows[index] = row
 
@@ -92,7 +93,7 @@ def process(rows, headings, banner):
     while index < len(outRows) and not outRows[index].startswith("##"):
         result.append(outRows[index])
         index += 1
-    if len(headings.toc) > 0:
+    if headings.toc:
         result.append("# Contents\n")
         result.append("|Section|Reference|\n")
         result.append("|---:|:---|\n")
@@ -107,14 +108,14 @@ def rewrite(source, destination, headings, commentStart, commentEnd):
              " by " + script + commentEnd + "\n"
     with open(source, 'r') as f:
         rows = f.readlines()
-    rows = process(rows, headings,  banner)
+    rows = process(rows, headings, banner)
     with open(destination, 'w') as f:
         f.writelines(rows)
 
 def main():
     headings = Headings()
-    input="userManual.src"
-    output="userManual.md"
+    input = "userManual.src"
+    output = "userManual.md"
     rewrite(input, output, headings, "<!--", "-->")
     input = "../web/src/main/webapp/ui/helpUrl.src"
     output = "../web/src/main/webapp/ui/helpUrl.ts"

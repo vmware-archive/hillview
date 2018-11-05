@@ -134,8 +134,8 @@ public class Utilities {
             java.net.InetAddress localMachine = java.net.InetAddress.getLocalHost();
             return localMachine.getHostName();
         } catch (java.net.UnknownHostException e) {
-            HillviewLogger.instance.error("Cannot get host name");
-            return "?";
+            HillviewLogger.instance.error("Cannot get host name", e);
+            return e.getLocalizedMessage();
         }
     }
 

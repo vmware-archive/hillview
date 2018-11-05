@@ -46,6 +46,10 @@ public class MinKSet<T> extends BucketsInfo {
         return samples;
     }
 
+    public int size() {
+        return this.data.size();
+    }
+
     /**
      * Returns true if we have fewer or equal strings to the number of buckets.
      * @param buckets Number of buckets we want.
@@ -55,6 +59,18 @@ public class MinKSet<T> extends BucketsInfo {
             // no non-null values
             return true;
         return this.data.size() <= buckets;
+    }
+
+    /**
+     * Rescale an index from 0-maxBuckets to 0-totalElements.
+     * Rank 0 is mapped to 0, rank maxBuckets is mapped to totalElements.
+     * The other values of rank are interpolated in between.
+     * @param rank            Rank of an element between 0 and maxBuckets.
+     * @param maxBuckets      Number of ranks desired.
+     * @param totalElements   Number of elements from which we extract the rank.
+     */
+    public static int getIntegerRank(int rank, int maxBuckets, int totalElements) {
+        return (int) Math.ceil(totalElements * rank / ((double)maxBuckets));
     }
 
     /**
@@ -82,8 +98,9 @@ public class MinKSet<T> extends BucketsInfo {
             boundaries.addAll(samples);
         } else {
             for (int i = 1; i < maxBuckets; i++) {
-                int j = (int) Math.ceil(numSamples * i / ((float) maxBuckets)) - 1;
-                boundaries.add(samples.get(j));
+                int j = getIntegerRank(i, maxBuckets, numSamples);
+                // The samples list does not contain the minimum anymore.
+                boundaries.add(samples.get(j - 1));
             }
         }
         return boundaries;

@@ -17,10 +17,12 @@ public class ExecutorUtils {
     @Nullable
     private static ExecutorService computeExecutorService = null;
 
-    // This machinery is used to create a separate thread to handle unsubscriptions.
-    // If we don't do this unsubscriptions are queued behind on the thread that
-    // performs the computations, and they are executed too late.
-    // See https://stackoverflow.com/questions/40496565/what-thread-is-unsubscribeon-called-should-we-call-it
+    /**
+     * This machinery is used to create a separate thread to handle unsubscriptions.
+     * If we don't do this unsubscriptions are queued behind on the thread that
+     * performs the computations, and they are executed too late.
+     * See https://stackoverflow.com/questions/40496565/what-thread-is-unsubscribeon-called-should-we-call-it
+     */
     private static final ExecutorService unsubExecutor =
             ExecutorUtils.newNamedThreadPool("unsub", 1, Thread.MAX_PRIORITY);
     private static final Scheduler unsubScheduler = Schedulers.from(unsubExecutor);

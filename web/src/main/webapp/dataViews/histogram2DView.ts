@@ -110,8 +110,7 @@ export class Histogram2DView extends HistogramViewBase {
             }, {
                 text: "# buckets...",
                 action: () => this.chooseBuckets(),
-                help: "Change the number of buckets used for drawing the histogram." +
-                    "The number must be between 1 and " + Resolution.maxBucketCount,
+                help: "Change the number of buckets used for drawing the histogram.",
             }, {
                 text: "swap axes",
                 action: () => { this.swapAxes(); },
@@ -169,13 +168,13 @@ export class Histogram2DView extends HistogramViewBase {
         this.legendSurface.getCanvas()
             .call(legendDrag);
 
-        this.plot.setData(heatmap, this.xAxisData, this.samplingRate, this.relative);
+        this.plot.setData(heatmap, this.xAxisData, this.samplingRate, this.relative, this.schema);
         this.plot.draw();
         const discrete = kindIsString(this.xAxisData.description.kind) ||
             this.xAxisData.description.kind === "Integer";
         this.cdfPlot.setData(cdf, discrete);
         this.cdfPlot.draw();
-        this.legendPlot.setData(this.yData, this.plot.getMissingDisplayed() > 0);
+        this.legendPlot.setData(this.yData, this.plot.getMissingDisplayed() > 0, this.schema);
         this.legendPlot.draw();
 
         this.setupMouse();
@@ -193,8 +192,8 @@ export class Histogram2DView extends HistogramViewBase {
 
         this.pointDescription = new TextOverlay(this.surface.getChart(),
             this.surface.getActualChartSize(),
-            [   this.xAxisData.description.name,
-                this.yData.description.name,
+            [   this.schema.displayName(this.xAxisData.description.name),
+                this.schema.displayName(this.yData.description.name),
                 "y", "count", "%", "cdf"], 40);
         this.pointDescription.show(false);
         let summary = new HtmlString(formatNumber(this.plot.getDisplayedPoints()) + " data points");
@@ -323,14 +322,14 @@ export class Histogram2DView extends HistogramViewBase {
         let line = "";
         for (let y = 0; y < this.yData.bucketCount; y++) {
             const by = this.yData.bucketDescription(y);
-            line += "," + JSON.stringify(this.yData.description.name + " " + by);
+            line += "," + JSON.stringify(this.schema.displayName(this.yData.description.name) + " " + by);
         }
         line += ",missing";
         lines.push(line);
         for (let x = 0; x < this.xAxisData.bucketCount; x++) {
             const data = this.heatMap.buckets[x];
             const bx = this.xAxisData.bucketDescription(x);
-            let l = JSON.stringify(this.xAxisData.description.name + " " + bx);
+            let l = JSON.stringify(this.schema.displayName(this.xAxisData.description.name) + " " + bx);
             for (const y of data)
                 l += "," + y;
             l += "," + this.heatMap.histogramMissingY.buckets[x];
@@ -607,7 +606,7 @@ export class Histogram2DView extends HistogramViewBase {
         };
         const rr = this.createFilterRequest(filter);
         const renderer = new FilterReceiver(
-            "Filtered on " + selectedAxis.description.name,
+            "Filtered on " + this.schema.displayName(selectedAxis.description.name),
             [this.xAxisData.description, this.yData.description],
             this.schema,
             [inLegend ? this.xPoints : 0, this.yPoints], this.page, rr,

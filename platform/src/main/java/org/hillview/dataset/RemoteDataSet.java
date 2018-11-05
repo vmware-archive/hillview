@@ -50,12 +50,16 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
     private final int remoteHandle;
     private final HostAndPort serverEndpoint;
     private final HillviewServerGrpc.HillviewServerStub stub;
-    // To avoid epoll CPU utilization problems, we could use PollSelectorProvider().
-    // See: https://github.com/netty/netty/issues/327
+    /*
+     * To avoid epoll CPU utilization problems, we could use PollSelectorProvider().
+     * See: https://github.com/netty/netty/issues/327
+     */
     private static final EventLoopGroup workerElg = new NioEventLoopGroup(1,
             ExecutorUtils.newFastLocalThreadFactory("rds-shared-worker"));
-    // The high priority for the executor is needed to handle unsubscription
-    // requests with high priority.
+    /*
+     * The high priority for the executor is needed to handle unsubscription
+     * requests with high priority.
+     */
     private static final ExecutorService executorService =
             ExecutorUtils.newNamedThreadPool("rds-shared-executor", 5, Thread.MAX_PRIORITY);
     /**
@@ -68,7 +72,7 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
      * specified cluster.
      * @param index   Index of dataset on remote machine.  Must be a negative number.
      */
-    public static IDataSet<Empty> createCluster(final ClusterDescription description, int index) {
+    public static IDataSet<Empty> createCluster(final HostList description, int index) {
         final int numServers = description.getServerList().size();
         if (numServers <= 0) {
             throw new IllegalArgumentException("ClusterDescription must contain one or more servers");
@@ -271,6 +275,7 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
 
         @Override
         public void onNext(final PartialResponse response) {
+            HillviewLogger.instance.info("OperationObserver onNext");
             S result = this.processResponse(response);
             this.subject.onNext(result);
         }
@@ -285,6 +290,7 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
 
         @Override
         public void onCompleted() {
+            HillviewLogger.instance.info("OperationObserver has completed");
             this.subject.onCompleted();
         }
 

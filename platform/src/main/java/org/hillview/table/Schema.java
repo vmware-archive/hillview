@@ -41,9 +41,12 @@ import java.util.function.Predicate;
  */
 public final class Schema implements Serializable, IJson {
     private final LinkedHashMap<String, ColumnDescription> columns;
-    // Read below about how these variables are mutated even
-    // if the schema is supposed to be immutable.
-    // cachedColumnNames is also used as a boolean flag.
+
+    /*
+     * Read below about how these variables are mutated even
+     * if the schema is supposed to be immutable.
+     * cachedColumnNames is also used as a boolean flag.
+     */
     @Nullable
     private List<String> cachedColumnNames;
     @Nullable

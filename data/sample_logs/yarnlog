@@ -1,0 +1,200 @@
+2018-09-30 09:44:10,802 INFO  resourcemanager.ResourceManager (LogAdapter.java:info(45)) - registered UNIX signal handlers for [TERM, HUP, INT]
+2018-09-30 09:44:11,036 INFO  conf.Configuration (Configuration.java:getConfResourceAsInputStream(2468)) - found resource core-site.xml at file:/etc/hadoop/2.6.5.0-292/0/core-site.xml
+2018-09-30 09:44:11,234 WARN  conf.Configuration (Configuration.java:loadProperty(2825)) - java.io.BufferedInputStream@2ddc8ecb:an attempt to override final parameter: fs.defaultFS;  Ignoring.
+2018-09-30 09:44:11,244 INFO  conf.Configuration (Configuration.java:getConfResourceAsInputStream(2468)) - found resource yarn-site.xml at file:/etc/hadoop/2.6.5.0-292/0/yarn-site.xml
+2018-09-30 09:44:11,268 INFO  event.AsyncDispatcher (AsyncDispatcher.java:register(209)) - Registering class org.apache.hadoop.yarn.server.resourcemanager.RMFatalEventType for class org.apache.hadoop.yarn.server.resourcemanager.ResourceManager$RMFatalEventDispatcher
+2018-09-30 09:44:11,418 INFO  security.NMTokenSecretManagerInRM (NMTokenSecretManagerInRM.java:<init>(75)) - NMTokenKeyRollingInterval: 86400000ms and NMTokenKeyActivationDelay: 900000ms
+2018-09-30 09:44:11,425 INFO  security.RMContainerTokenSecretManager (RMContainerTokenSecretManager.java:<init>(77)) - ContainerTokenKeyRollingInterval: 86400000ms and ContainerTokenKeyActivationDelay: 900000ms
+2018-09-30 09:44:11,429 INFO  security.AMRMTokenSecretManager (AMRMTokenSecretManager.java:<init>(94)) - AMRMTokenKeyRollingInterval: 86400000ms and AMRMTokenKeyActivationDelay: 900000 ms
+2018-09-30 09:44:11,467 INFO  recovery.RMStateStoreFactory (RMStateStoreFactory.java:getStore(33)) - Using RMStateStore implementation - class org.apache.hadoop.yarn.server.resourcemanager.recovery.ZKRMStateStore
+2018-09-30 09:44:11,471 INFO  event.AsyncDispatcher (AsyncDispatcher.java:register(209)) - Registering class org.apache.hadoop.yarn.server.resourcemanager.recovery.RMStateStoreEventType for class org.apache.hadoop.yarn.server.resourcemanager.recovery.RMStateStore$ForwardingEventHandler
+2018-09-30 09:44:11,485 INFO  event.AsyncDispatcher (AsyncDispatcher.java:register(209)) - Registering class org.apache.hadoop.yarn.server.resourcemanager.NodesListManagerEventType for class org.apache.hadoop.yarn.server.resourcemanager.NodesListManager
+2018-09-30 09:44:11,485 INFO  resourcemanager.ResourceManager (ResourceManager.java:createScheduler(302)) - Using Scheduler: org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CapacityScheduler
+2018-09-30 09:44:11,504 INFO  event.AsyncDispatcher (AsyncDispatcher.java:register(209)) - Registering class org.apache.hadoop.yarn.server.resourcemanager.scheduler.event.SchedulerEventType for class org.apache.hadoop.yarn.server.resourcemanager.ResourceManager$SchedulerEventDispatcher
+2018-09-30 09:44:11,504 INFO  event.AsyncDispatcher (AsyncDispatcher.java:register(209)) - Registering class org.apache.hadoop.yarn.server.resourcemanager.rmapp.RMAppEventType for class org.apache.hadoop.yarn.server.resourcemanager.ResourceManager$ApplicationEventDispatcher
+2018-09-30 09:44:11,505 INFO  event.AsyncDispatcher (AsyncDispatcher.java:register(209)) - Registering class org.apache.hadoop.yarn.server.resourcemanager.rmapp.attempt.RMAppAttemptEventType for class org.apache.hadoop.yarn.server.resourcemanager.ResourceManager$ApplicationAttemptEventDispatcher
+2018-09-30 09:44:11,507 INFO  event.AsyncDispatcher (AsyncDispatcher.java:register(209)) - Registering class org.apache.hadoop.yarn.server.resourcemanager.rmnode.RMNodeEventType for class org.apache.hadoop.yarn.server.resourcemanager.ResourceManager$NodeEventDispatcher
+2018-09-30 09:44:11,559 INFO  impl.MetricsConfig (MetricsConfig.java:loadFirst(112)) - loaded properties from hadoop-metrics2.properties
+2018-09-30 09:44:11,741 INFO  timeline.HadoopTimelineMetricsSink (HadoopTimelineMetricsSink.java:init(82)) - Initializing Timeline metrics sink.
+2018-09-30 09:44:11,742 INFO  timeline.HadoopTimelineMetricsSink (HadoopTimelineMetricsSink.java:init(102)) - Identified hostname = jana-hadoop-mgr-1.node.dc1.pnda.local, serviceName = resourcemanager
+2018-09-30 09:44:11,794 INFO  availability.MetricSinkWriteShardHostnameHashingStrategy (MetricSinkWriteShardHostnameHashingStrategy.java:findCollectorShard(42)) - Calculated collector shard jana-hadoop-edge.node.dc1.pnda.local based on hostname: jana-hadoop-mgr-1.node.dc1.pnda.local
+2018-09-30 09:44:11,794 INFO  timeline.HadoopTimelineMetricsSink (HadoopTimelineMetricsSink.java:init(125)) - Collector Uri: http://jana-hadoop-edge.node.dc1.pnda.local:6188/ws/v1/timeline/metrics
+2018-09-30 09:44:11,794 INFO  timeline.HadoopTimelineMetricsSink (HadoopTimelineMetricsSink.java:init(126)) - Container Metrics Uri: http://jana-hadoop-edge.node.dc1.pnda.local:6188/ws/v1/timeline/containermetrics
+2018-09-30 09:44:11,801 INFO  impl.MetricsSinkAdapter (MetricsSinkAdapter.java:start(206)) - Sink timeline started
+2018-09-30 09:44:11,853 INFO  impl.MetricsSystemImpl (MetricsSystemImpl.java:startTimer(376)) - Scheduled snapshot period at 10 second(s).
+2018-09-30 09:44:11,853 INFO  impl.MetricsSystemImpl (MetricsSystemImpl.java:start(192)) - ResourceManager metrics system started
+2018-09-30 09:44:11,864 INFO  security.YarnAuthorizationProvider (YarnAuthorizationProvider.java:getInstance(57)) - org.apache.hadoop.yarn.security.ConfiguredYarnAuthorizer is instiantiated.
+2018-09-30 09:44:11,866 INFO  event.AsyncDispatcher (AsyncDispatcher.java:register(209)) - Registering class org.apache.hadoop.yarn.server.resourcemanager.RMAppManagerEventType for class org.apache.hadoop.yarn.server.resourcemanager.RMAppManager
+2018-09-30 09:44:11,872 INFO  event.AsyncDispatcher (AsyncDispatcher.java:register(209)) - Registering class org.apache.hadoop.yarn.server.resourcemanager.amlauncher.AMLauncherEventType for class org.apache.hadoop.yarn.server.resourcemanager.amlauncher.ApplicationMasterLauncher
+2018-09-30 09:44:11,874 INFO  resourcemanager.RMNMInfo (RMNMInfo.java:<init>(63)) - Registered RMNMInfo MBean
+2018-09-30 09:44:11,878 INFO  util.HostsFileReader (HostsFileReader.java:refresh(132)) - Refreshing hosts (include/exclude) list
+2018-09-30 09:44:11,957 INFO  capacity.ParentQueue (ParentQueue.java:<init>(96)) - Initialized parent-queue root name=root, fullname=root
+2018-09-30 09:44:11,960 INFO  capacity.CapacitySchedulerConfiguration (CapacitySchedulerConfiguration.java:getMaximumAllocationPerQueue(680)) - max alloc mb per queue for root.applications is undefined
+2018-09-30 09:44:11,961 INFO  capacity.CapacitySchedulerConfiguration (CapacitySchedulerConfiguration.java:getMaximumAllocationPerQueue(684)) - max alloc vcore per queue for root.applications is undefined
+2018-09-30 09:44:11,961 INFO  capacity.ParentQueue (ParentQueue.java:setupQueueConfigs(131)) - applications, capacity=0.01, asboluteCapacity=0.01, maxCapacity=1.0, asboluteMaxCapacity=1.0, state=RUNNING, acls=ADMINISTER_QUEUE: SUBMIT_APP: , labels=*,
+, reservationsContinueLooking=true, orderingPolicy=utilization, priority=0
+2018-09-30 09:44:11,961 INFO  capacity.ParentQueue (ParentQueue.java:<init>(96)) - Initialized parent-queue applications name=applications, fullname=root.applications
+2018-09-30 09:44:11,970 INFO  capacity.CapacitySchedulerConfiguration (CapacitySchedulerConfiguration.java:getMaximumAllocationPerQueue(680)) - max alloc mb per queue for root.applications.dev is undefined
+2018-09-30 09:44:11,970 INFO  capacity.CapacitySchedulerConfiguration (CapacitySchedulerConfiguration.java:getMaximumAllocationPerQueue(684)) - max alloc vcore per queue for root.applications.dev is undefined
+2018-09-30 09:44:11,973 INFO  capacity.LeafQueue (LeafQueue.java:setupQueueConfigs(214)) - Initializing dev
+capacity = 0.01 [= (float) configuredCapacity / 100 ]
+asboluteCapacity = 1.0E-4 [= parentAbsoluteCapacity * capacity ]
+maxCapacity = 1.0 [= configuredMaxCapacity ]
+absoluteMaxCapacity = 1.0 [= 1.0 maximumCapacity undefined, (parentAbsoluteMaxCapacity * maximumCapacity) / 100 otherwise ]
+userLimit = 100 [= configuredUserLimit ]
+userLimitFactor = 10000.0 [= configuredUserLimitFactor ]
+maxApplications = 100000000 [= configuredMaximumSystemApplicationsPerQueue or (int)(configuredMaximumSystemApplications * absoluteCapacity)]
+maxApplicationsPerUser = 100000000 [= (int)(maxApplications * (userLimit / 100.0f) * userLimitFactor) ]
+usedCapacity = 0.0 [= usedResourcesMemory / (clusterResourceMemory * absoluteCapacity)]
+absoluteUsedCapacity = 0.0 [= usedResourcesMemory / clusterResourceMemory]
+maxAMResourcePerQueuePercent = 0.5 [= configuredMaximumAMResourcePercent ]
+minimumAllocationFactor = 0.9375 [= (float)(maximumAllocationMemory - minimumAllocationMemory) / maximumAllocationMemory ]
+maximumAllocation = <memory:4096, vCores:8> [= configuredMaxAllocation ]
+numContainers = 0 [= currentNumContainers ]
+state = RUNNING [= configuredState ]
+acls = ADMINISTER_QUEUE: dev,prodSUBMIT_APP: dev,prod [= configuredAcls ]
+nodeLocalityDelay = 40
+labels=*,
+nodeLocalityDelay = 40
+reservationsContinueLooking = true
+preemptionDisabled = true
+
+2018-09-30 09:44:11,974 INFO  capacity.CapacityScheduler (CapacityScheduler.java:parseQueue(637)) - Initialized queue: dev: capacity=0.01, absoluteCapacity=1.0E-4, usedResources=<memory:0, vCores:0>, usedCapacity=0.0, absoluteUsedCapacity=0.0, numApps=0, numContainers=0
+2018-09-30 09:44:11,976 INFO  capacity.CapacitySchedulerConfiguration (CapacitySchedulerConfiguration.java:getMaximumAllocationPerQueue(680)) - max alloc mb per queue for root.applications.prod is undefined
+2018-09-30 09:44:11,976 INFO  capacity.CapacitySchedulerConfiguration (CapacitySchedulerConfiguration.java:getMaximumAllocationPerQueue(684)) - max alloc vcore per queue for root.applications.prod is undefined
+2018-09-30 09:44:11,977 INFO  capacity.LeafQueue (LeafQueue.java:setupQueueConfigs(214)) - Initializing prod
+capacity = 0.99 [= (float) configuredCapacity / 100 ]
+asboluteCapacity = 0.0099 [= parentAbsoluteCapacity * capacity ]
+maxCapacity = 1.0 [= configuredMaxCapacity ]
+absoluteMaxCapacity = 1.0 [= 1.0 maximumCapacity undefined, (parentAbsoluteMaxCapacity * maximumCapacity) / 100 otherwise ]
+userLimit = 100 [= configuredUserLimit ]
+userLimitFactor = 100.0 [= configuredUserLimitFactor ]
+maxApplications = 1000000 [= configuredMaximumSystemApplicationsPerQueue or (int)(configuredMaximumSystemApplications * absoluteCapacity)]
+maxApplicationsPerUser = 1000000 [= (int)(maxApplications * (userLimit / 100.0f) * userLimitFactor) ]
+usedCapacity = 0.0 [= usedResourcesMemory / (clusterResourceMemory * absoluteCapacity)]
+absoluteUsedCapacity = 0.0 [= usedResourcesMemory / clusterResourceMemory]
+maxAMResourcePerQueuePercent = 0.5 [= configuredMaximumAMResourcePercent ]
+minimumAllocationFactor = 0.9375 [= (float)(maximumAllocationMemory - minimumAllocationMemory) / maximumAllocationMemory ]
+maximumAllocation = <memory:4096, vCores:8> [= configuredMaxAllocation ]
+numContainers = 0 [= currentNumContainers ]
+state = RUNNING [= configuredState ]
+acls = ADMINISTER_QUEUE: prodSUBMIT_APP: prod [= configuredAcls ]
+nodeLocalityDelay = 40
+labels=*,
+nodeLocalityDelay = 40
+reservationsContinueLooking = true
+preemptionDisabled = true
+
+2018-09-30 09:44:11,977 INFO  capacity.CapacityScheduler (CapacityScheduler.java:parseQueue(637)) - Initialized queue: prod: capacity=0.99, absoluteCapacity=0.0099, usedResources=<memory:0, vCores:0>, usedCapacity=0.0, absoluteUsedCapacity=0.0, numApps=0, numContainers=0
+2018-09-30 09:44:11,977 INFO  capacity.CapacityScheduler (CapacityScheduler.java:parseQueue(637)) - Initialized queue: applications: numChildQueue= 2, capacity=0.01, absoluteCapacity=0.01, usedResources=<memory:0, vCores:0>usedCapacity=0.0, numApps=0, numContainers=0
+2018-09-30 09:44:11,979 INFO  capacity.CapacitySchedulerConfiguration (CapacitySchedulerConfiguration.java:getMaximumAllocationPerQueue(680)) - max alloc mb per queue for root.default is undefined
+2018-10-11 06:42:59,799 INFO  ipc.Server (Server.java:logException(2435)) - IPC Server handler 33 on 8030, call org.apache.hadoop.yarn.api.ApplicationMasterProtocolPB.allocate from 192.168.1.63:38648 Call#1080 Retry#0
+org.apache.hadoop.yarn.exceptions.ApplicationAttemptNotFoundException: Application attempt appattempt_1539063784214_0242_000001 doesn't exist in ApplicationMasterService cache.
+        at org.apache.hadoop.yarn.server.resourcemanager.ApplicationMasterService.allocate(ApplicationMasterService.java:445)
+        at org.apache.hadoop.yarn.api.impl.pb.service.ApplicationMasterProtocolPBServiceImpl.allocate(ApplicationMasterProtocolPBServiceImpl.java:60)
+        at org.apache.hadoop.yarn.proto.ApplicationMasterProtocol$ApplicationMasterProtocolService$2.callBlockingMethod(ApplicationMasterProtocol.java:99)
+        at org.apache.hadoop.ipc.ProtobufRpcEngine$Server$ProtoBufRpcInvoker.call(ProtobufRpcEngine.java:640)
+        at org.apache.hadoop.ipc.RPC$Server.call(RPC.java:982)
+        at org.apache.hadoop.ipc.Server$Handler$1.run(Server.java:2351)
+        at org.apache.hadoop.ipc.Server$Handler$1.run(Server.java:2347)
+        at java.security.AccessController.doPrivileged(Native Method)
+        at javax.security.auth.Subject.doAs(Subject.java:422)
+        at org.apache.hadoop.security.UserGroupInformation.doAs(UserGroupInformation.java:1869)
+        at org.apache.hadoop.ipc.Server$Handler.run(Server.java:2347)
+2018-10-08 10:48:44,295 INFO  ipc.Server (Server.java:logException(2435)) - IPC Server handler 6 on 8050, call org.apache.hadoop.yarn.api.ApplicationClientProtocolPB.submitApplication from 192.168.1.65:45228 Call#52 Retry#0
+org.apache.hadoop.yarn.exceptions.InvalidResourceRequestException: Invalid resource request, requested memory < 0, or requested memory > max configured, requestedMemory=7680, maxMemory=4096
+        at org.apache.hadoop.yarn.server.resourcemanager.scheduler.SchedulerUtils.validateResourceRequest(SchedulerUtils.java:293)
+        at org.apache.hadoop.yarn.server.resourcemanager.scheduler.SchedulerUtils.normalizeAndValidateRequest(SchedulerUtils.java:258)
+        at org.apache.hadoop.yarn.server.resourcemanager.scheduler.SchedulerUtils.normalizeAndValidateRequest(SchedulerUtils.java:223)
+        at org.apache.hadoop.yarn.server.resourcemanager.RMAppManager.validateAndCreateResourceRequest(RMAppManager.java:438)
+        at org.apache.hadoop.yarn.server.resourcemanager.RMAppManager.createAndPopulateNewRMApp(RMAppManager.java:354)
+        at org.apache.hadoop.yarn.server.resourcemanager.RMAppManager.submitApplication(RMAppManager.java:291)
+        at org.apache.hadoop.yarn.server.resourcemanager.ClientRMService.submitApplication(ClientRMService.java:612)
+        at org.apache.hadoop.yarn.api.impl.pb.service.ApplicationClientProtocolPBServiceImpl.submitApplication(ApplicationClientProtocolPBServiceImpl.java:218)
+        at org.apache.hadoop.yarn.proto.ApplicationClientProtocol$ApplicationClientProtocolService$2.callBlockingMethod(ApplicationClientProtocol.java:419)
+        at org.apache.hadoop.ipc.ProtobufRpcEngine$Server$ProtoBufRpcInvoker.call(ProtobufRpcEngine.java:640)
+        at org.apache.hadoop.ipc.RPC$Server.call(RPC.java:982)
+        at org.apache.hadoop.ipc.Server$Handler$1.run(Server.java:2351)
+        at org.apache.hadoop.ipc.Server$Handler$1.run(Server.java:2347)
+        at java.security.AccessController.doPrivileged(Native Method)
+        at javax.security.auth.Subject.doAs(Subject.java:422)
+        at org.apache.hadoop.security.UserGroupInformation.doAs(UserGroupInformation.java:1869)
+        at org.apache.hadoop.ipc.Server$Handler.run(Server.java:2347)
+2018-10-08 11:00:07,231 INFO  resourcemanager.ClientRMService (ClientRMService.java:getNewApplicationId(297)) - Allocated new applicationId: 8
+2018-10-08 11:00:34,709 ERROR resourcemanager.ResourceManager (LogAdapter.java:error(69)) - RECEIVED SIGNAL 15: SIGTERM
+2018-10-08 11:14:05,544 ERROR resourcemanager.ApplicationMasterService (ApplicationMasterService.java:allocate(444)) - Application attempt appattempt_1538996442439_0002_000001 doesn't exist in ApplicationMasterService cache.
+2018-10-08 11:14:05,545 INFO  ipc.Server (Server.java:logException(2435)) - IPC Server handler 17 on 8030, call org.apache.hadoop.yarn.api.ApplicationMasterProtocolPB.allocate from 192.168.1.63:44800 Call#1211 Retry#0
+org.apache.hadoop.yarn.exceptions.ApplicationAttemptNotFoundException: Application attempt appattempt_1538996442439_0002_000001 doesn't exist in ApplicationMasterService cache.
+        at org.apache.hadoop.yarn.server.resourcemanager.ApplicationMasterService.allocate(ApplicationMasterService.java:445)
+        at org.apache.hadoop.yarn.api.impl.pb.service.ApplicationMasterProtocolPBServiceImpl.allocate(ApplicationMasterProtocolPBServiceImpl.java:60)
+        at org.apache.hadoop.yarn.proto.ApplicationMasterProtocol$ApplicationMasterProtocolService$2.callBlockingMethod(ApplicationMasterProtocol.java:99)
+        at org.apache.hadoop.ipc.ProtobufRpcEngine$Server$ProtoBufRpcInvoker.call(ProtobufRpcEngine.java:640)
+        at org.apache.hadoop.ipc.RPC$Server.call(RPC.java:982)
+        at org.apache.hadoop.ipc.Server$Handler$1.run(Server.java:2351)
+        at org.apache.hadoop.ipc.Server$Handler$1.run(Server.java:2347)
+        at java.security.AccessController.doPrivileged(Native Method)
+        at javax.security.auth.Subject.doAs(Subject.java:422)
+        at org.apache.hadoop.security.UserGroupInformation.doAs(UserGroupInformation.java:1869)
+        at org.apache.hadoop.ipc.Server$Handler.run(Server.java:2347)
+2018-10-08 11:14:05,575 INFO  scheduler.AbstractYarnScheduler (AbstractYarnScheduler.java:completedContainer(491)) - Container container_e03_1538996442439_0002_01_000001 completed with event FINISHED, but corresponding RMContainer doesn't exist.
+2018-10-08 11:14:05,576 INFO  rmcontainer.RMContainerImpl (RMContainerImpl.java:handle(422)) - container_e03_1538996442439_0003_01_000001 Container Transitioned from NEW to ALLOCATED
+2018-10-08 11:14:05,576 INFO  scheduler.SchedulerNode (SchedulerNode.java:allocateContainer(152)) - Assigned container container_e03_1538996442439_0003_01_000001 of capacity <memory:7680, vCores:1> on host jana-hadoop-dn-0.node.dc1.pnda.local:45454, which has 1 containers, <memory:7680, vCores:1> used and <memory:16128, vCores:7> available after allocation
+2018-10-08 11:14:05,576 INFO  allocator.AbstractContainerAllocator (AbstractContainerAllocator.java:getCSAssignmentFromAllocateResult(89)) - assignedContainer application attempt=appattempt_1538996442439_0003_000001 container=container_e03_1538996442439_0003_01_000001 queue=org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.allocator.RegularContainerAllocator@39785d97 clusterResource=<memory:23808, vCores:8> type=OFF_SWITCH
+2018-10-08 11:14:05,577 INFO  security.NMTokenSecretManagerInRM (NMTokenSecretManagerInRM.java:createAndGetNMToken(200)) - Sending NMToken for nodeId : jana-hadoop-dn-0.node.dc1.pnda.local:45454 for container : container_e03_1538996442439_0003_01_000001
+2018-09-30 09:44:12,317 INFO  zookeeper.ZooKeeper (Environment.java:logEnv(100)) - Client environment:java.io.tmpdir=/var/lib/ambari-agent/tmp/hadoop_java_io_tmpdir
+2018-09-30 09:44:12,317 INFO  zookeeper.ZooKeeper (Environment.java:logEnv(100)) - Client environment:java.compiler=<NA>
+2018-09-30 09:44:12,317 INFO  zookeeper.ZooKeeper (Environment.java:logEnv(100)) - Client environment:os.name=Linux
+2018-09-30 09:44:12,318 INFO  zookeeper.ZooKeeper (Environment.java:logEnv(100)) - Client environment:os.arch=amd64
+2018-09-30 09:44:12,318 INFO  zookeeper.ZooKeeper (Environment.java:logEnv(100)) - Client environment:os.version=3.10.0-862.el7.x86_64
+2018-09-30 09:44:12,318 INFO  zookeeper.ZooKeeper (Environment.java:logEnv(100)) - Client environment:user.name=yarn
+2018-09-30 09:44:12,318 INFO  zookeeper.ZooKeeper (Environment.java:logEnv(100)) - Client environment:user.home=/home/yarn
+2018-09-30 09:44:12,319 INFO  zookeeper.ZooKeeper (Environment.java:logEnv(100)) - Client environment:user.dir=/usr/hdp/2.6.5.0-292/hadoop-yarn
+2018-09-30 09:44:12,321 INFO  zookeeper.ZooKeeper (ZooKeeper.java:<init>(438)) - Initiating client connection, connectString=jana-hadoop-mgr-1.node.dc1.pnda.local:2181 sessionTimeout=10000 watcher=null
+2018-09-30 09:44:12,335 INFO  recovery.ZKRMStateStore (ZKRMStateStore.java:createConnection(1276)) - Created new ZK connection
+2018-09-30 09:44:12,353 INFO  zookeeper.ClientCnxn (ClientCnxn.java:logStartConnect(1019)) - Opening socket connection to server jana-hadoop-mgr-1.node.dc1.pnda.local/192.168.1.62:2181. Will not attempt to authenticate using SASL (unknown error)
+2018-09-30 09:44:12,361 INFO  zookeeper.ClientCnxn (ClientCnxn.java:primeConnection(864)) - Socket connection established, initiating session, client: /192.168.1.62:34736, server: jana-hadoop-mgr-1.node.dc1.pnda.local/192.168.1.62:2181
+2018-09-30 09:44:12,371 INFO  zookeeper.ClientCnxn (ClientCnxn.java:onConnected(1279)) - Session establishment complete on server jana-hadoop-mgr-1.node.dc1.pnda.local/192.168.1.62:2181, sessionid = 0x16629dc6519000a, negotiated timeout = 10000
+2018-09-30 09:44:12,396 INFO  recovery.ZKRMStateStore (ZKRMStateStore.java:run(359)) - Fencing node /rmstore/ZKRMStateRoot/RM_ZK_FENCING_LOCK doesn't exist to delete
+2018-09-30 09:44:12,404 INFO  resourcemanager.ResourceManager (ResourceManager.java:serviceStart(598)) - Recovery started
+2018-09-30 09:44:12,404 INFO  recovery.ZKRMStateStore (ZKRMStateStore.java:processWatchEvent(918)) - Watcher event type: None with state:SyncConnected for path:null for Service org.apache.hadoop.yarn.server.resourcemanager.recovery.RMStateStore in state org.apache.hadoop.yarn.server.resourcemanager.recovery.RMStateStore: STARTED
+2018-09-30 09:44:12,405 INFO  recovery.ZKRMStateStore (ZKRMStateStore.java:processWatchEvent(926)) - ZKRMStateStore Session connected
+2018-09-30 09:44:12,408 INFO  recovery.ZKRMStateStore (ZKRMStateStore.java:processResult(122)) - ZooKeeper sync operation succeeded. path: /rmstore/ZKRMStateRoot
+2018-09-30 09:44:12,408 INFO  recovery.RMStateStore (RMStateStore.java:checkVersion(639)) - Loaded RM state version info null
+2018-09-30 09:44:12,408 INFO  recovery.RMStateStore (RMStateStore.java:checkVersion(648)) - Storing RM state version info 1.2
+2018-09-30 09:44:12,422 WARN  recovery.ZKRMStateStore (ZKRMStateStore.java:loadAMRMTokenSecretManagerState(482)) - There is no data saved
+2018-09-30 09:44:12,422 INFO  security.RMDelegationTokenSecretManager (RMDelegationTokenSecretManager.java:recover(178)) - recovering RMDelegationTokenSecretManager.
+2018-09-30 09:44:12,422 INFO  resourcemanager.RMAppManager (RMAppManager.java:recover(465)) - Recovering 0 applications
+2018-09-30 09:44:12,422 INFO  resourcemanager.ResourceManager (ResourceManager.java:serviceStart(605)) - Recovery ended
+2018-09-30 09:44:12,430 INFO  recovery.RMStateStore (RMStateStore.java:transition(471)) - Updating AMRMToken
+2018-09-30 09:44:12,433 INFO  security.RMContainerTokenSecretManager (RMContainerTokenSecretManager.java:rollMasterKey(105)) - Rolling master-key for container-tokens
+2018-09-30 09:44:12,433 INFO  security.NMTokenSecretManagerInRM (NMTokenSecretManagerInRM.java:rollMasterKey(95)) - Rolling master-key for nm-tokens
+2018-09-30 09:44:12,434 INFO  delegation.AbstractDelegationTokenSecretManager (AbstractDelegationTokenSecretManager.java:updateCurrentKey(325)) - Updating the current master key for generating delegation tokens
+2018-09-30 09:44:12,434 INFO  security.RMDelegationTokenSecretManager (RMDelegationTokenSecretManager.java:storeNewMasterKey(86)) - storing master key with keyID 1
+2018-09-30 09:44:12,434 INFO  recovery.RMStateStore (RMStateStore.java:transition(422)) - Storing RMDTMasterKey.
+2018-09-30 09:44:12,441 INFO  delegation.AbstractDelegationTokenSecretManager (AbstractDelegationTokenSecretManager.java:run(638)) - Starting expired delegation token remover thread, tokenRemoverScanInterval=60 min(s)
+2018-09-30 09:44:12,441 INFO  delegation.AbstractDelegationTokenSecretManager (AbstractDelegationTokenSecretManager.java:updateCurrentKey(325)) - Updating the current master key for generating delegation tokens
+2018-09-30 09:44:12,441 INFO  security.RMDelegationTokenSecretManager (RMDelegationTokenSecretManager.java:storeNewMasterKey(86)) - storing master key with keyID 2
+2018-09-30 09:44:12,441 INFO  recovery.RMStateStore (RMStateStore.java:transition(422)) - Storing RMDTMasterKey.
+2018-09-30 09:44:12,442 INFO  event.AsyncDispatcher (AsyncDispatcher.java:register(209)) - Registering class org.apache.hadoop.yarn.nodelabels.event.NodeLabelsStoreEventType for class org.apache.hadoop.yarn.nodelabels.CommonNodeLabelsManager$ForwardingEventHandler
+2018-09-30 09:44:12,517 INFO  ipc.CallQueueManager (CallQueueManager.java:<init>(75)) - Using callQueue: class java.util.concurrent.LinkedBlockingQueue scheduler: class org.apache.hadoop.ipc.DefaultRpcScheduler
+2018-09-30 09:44:12,524 INFO  ipc.Server (Server.java:run(821)) - Starting Socket Reader #1 for port 8025
+2018-09-30 09:44:12,564 INFO  pb.RpcServerFactoryPBImpl (RpcServerFactoryPBImpl.java:createServer(174)) - Adding protocol org.apache.hadoop.yarn.server.api.ResourceTrackerPB to the server
+2018-09-30 09:44:12,565 INFO  ipc.Server (Server.java:run(1064)) - IPC Server Responder: starting
+2018-09-30 09:44:12,565 INFO  ipc.Server (Server.java:run(900)) - IPC Server listener on 8025: starting
+2018-09-30 09:44:12,630 INFO  ipc.CallQueueManager (CallQueueManager.java:<init>(75)) - Using callQueue: class java.util.concurrent.LinkedBlockingQueue scheduler: class org.apache.hadoop.ipc.DefaultRpcScheduler
+2018-09-30 09:44:12,636 INFO  ipc.Server (Server.java:run(821)) - Starting Socket Reader #1 for port 8030
+2018-09-30 09:44:12,643 INFO  pb.RpcServerFactoryPBImpl (RpcServerFactoryPBImpl.java:createServer(174)) - Adding protocol org.apache.hadoop.yarn.api.ApplicationMasterProtocolPB to the server
+2018-09-30 09:44:12,644 INFO  ipc.Server (Server.java:run(1064)) - IPC Server Responder: starting
+2018-09-30 09:44:12,644 INFO  ipc.Server (Server.java:run(900)) - IPC Server listener on 8030: starting
+2018-09-30 09:44:12,740 INFO  ipc.CallQueueManager (CallQueueManager.java:<init>(75)) - Using callQueue: class java.util.concurrent.LinkedBlockingQueue scheduler: class org.apache.hadoop.ipc.DefaultRpcScheduler
+2018-09-30 09:44:12,742 INFO  ipc.Server (Server.java:run(821)) - Starting Socket Reader #1 for port 8050
+2018-09-30 09:44:12,749 INFO  pb.RpcServerFactoryPBImpl (RpcServerFactoryPBImpl.java:createServer(174)) - Adding protocol org.apache.hadoop.yarn.api.ApplicationClientProtocolPB to the server
+2018-09-30 09:44:12,750 INFO  ipc.Server (Server.java:run(1064)) - IPC Server Responder: starting
+2018-09-30 09:44:12,750 INFO  ipc.Server (Server.java:run(900)) - IPC Server listener on 8050: starting
+2018-09-30 09:44:12,778 INFO  resourcemanager.ResourceManager (ResourceManager.java:transitionToActive(1120)) - Transitioned to active state
+2018-09-30 09:44:12,780 INFO  resourcemanager.ResourceManager (ResourceManager.java:startWepApp(1010)) - Using authentication filters: org.apache.hadoop.security.AuthenticationFilterInitializer,org.apache.hadoop.http.lib.StaticUserWebFilter,org.apache.hadoop.security.HttpCrossOriginFilterInitializer
+2018-09-30 09:44:12,851 INFO  mortbay.log (Slf4jLog.java:info(67)) - Logging to org.slf4j.impl.Log4jLoggerAdapter(org.mortbay.log) via org.mortbay.log.Slf4jLog
+2018-09-30 09:44:12,858 INFO  server.AuthenticationFilter (AuthenticationFilter.java:constructSecretProvider(296)) - Unable to initialize FileSignerSecretProvider, falling back to use random secrets.
+2018-09-30 09:44:12,863 INFO  http.HttpRequestLog (HttpRequestLog.java:getRequestLog(80)) - Http request log for http.requests.resourcemanager is not defined
+2018-09-30 09:44:12,869 INFO  http.HttpServer2 (HttpServer2.java:addGlobalFilter(788)) - Added global filter 'safety' (class=org.apache.hadoop.http.HttpServer2$QuotingInputFilter)
+2018-09-30 09:44:12,870 INFO  http.HttpServer2 (HttpServer2.java:addFilter(763)) - Added filter authentication (class=org.apache.hadoop.security.authentication.server.AuthenticationFilter) to context cluster

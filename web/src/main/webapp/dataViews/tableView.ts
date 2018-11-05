@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import {default as ColumnResizer} from "../ColumnResizer";
 import {DatasetView, IViewSerialization, TableSerialization} from "../datasetView";
 import {
     asContentsKind,
@@ -58,8 +59,6 @@ import {SpectrumReceiver} from "./spectrumView";
 import {ColumnConverter, ConverterDialog, TSViewBase} from "./tsViewBase";
 import {CountSketchReceiver} from "./tsViewBase";
 
-// import {LAMPDialog} from "./lampView";
-
 /**
  * Displays a table in the browser.
  */
@@ -80,6 +79,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
     protected cellsPerColumn: Map<string, HTMLElement[]>;
     protected selectedColumns = new SelectionStateMachine();
     protected message: HTMLElement;
+    protected static readonly defaultColumnWidth = 60;  // pixels
 
     // The following elements are used for Find
     protected strFilter: StringFilterDescription;
@@ -90,6 +90,20 @@ export class TableView extends TSViewBase implements IScrollTarget {
     protected findBar: HTMLElement;
     protected findBarVisible: boolean;
     protected foundCount: HTMLElement;
+    // Support for column resizing
+    protected resizer: ColumnResizer;
+    // See the documentation for ColumnResizer: https://github.com/MonsantoCo/column-resizer
+    protected readonly draggingProperties = {
+        disable: false,
+        resizeMode: "overflow",
+        liveDrag: true,
+        draggingClass: "dragging",
+        disabledColumns: [0, 1],
+        removePadding: false,
+        postbackSafe: true,
+        partialRefresh: true,
+        minWidth: 10
+    };
 
     public constructor(
         remoteObjectId: RemoteObjectId, rowCount: number, schema: SchemaClass, page: FullPage) {
@@ -102,11 +116,6 @@ export class TableView extends TSViewBase implements IScrollTarget {
         this.topLevel.tabIndex = 1;  // necessary for keyboard events?
         this.topLevel.onkeydown = (e) => this.keyDown(e);
         this.strFilter = null;
-        this.topLevel.style.flexDirection = "column";
-        this.topLevel.style.display = "flex";
-        this.topLevel.style.flexWrap = "nowrap";
-        this.topLevel.style.justifyContent = "flex-start";
-        this.topLevel.style.alignItems = "stretch";
 
         const menu = new TopMenu([
             {
@@ -180,19 +189,27 @@ export class TableView extends TSViewBase implements IScrollTarget {
         this.contextMenu = new ContextMenu(this.topLevel);
         this.topLevel.appendChild(document.createElement("hr"));
         this.htmlTable = document.createElement("table");
-        this.htmlTable.className = "tabularDisplay";
-        this.scrollBar = new ScrollBar(this);
+        this.htmlTable.className = "tableView";
+        this.scrollBar = new ScrollBar(this, false);
 
         // to force the scroll bar next to the table we put them in yet another div
-        const tblAndBar = document.createElement("div");
-        tblAndBar.style.flexDirection = "row";
-        tblAndBar.style.display = "flex";
-        tblAndBar.style.flexWrap = "nowrap";
-        tblAndBar.style.justifyContent = "flex-start";
-        tblAndBar.style.alignItems = "stretch";
-        this.topLevel.appendChild(tblAndBar);
-        tblAndBar.appendChild(this.htmlTable);
-        tblAndBar.appendChild(this.scrollBar.getHTMLRepresentation());
+        const tblAndScrollBar = document.createElement("div");
+        tblAndScrollBar.style.flexDirection = "row";
+        tblAndScrollBar.style.display = "flex";
+        tblAndScrollBar.style.flexWrap = "nowrap";
+        tblAndScrollBar.style.justifyContent = "flex-start";
+        tblAndScrollBar.style.alignItems = "stretch";
+        this.topLevel.appendChild(tblAndScrollBar);
+        tblAndScrollBar.appendChild(this.scrollBar.getHTMLRepresentation());
+        const htmlTableParent = document.createElement("div");
+        // The column resizer will put other stuff in this div
+        htmlTableParent.appendChild(this.htmlTable);
+        htmlTableParent.style.overflowX = "scroll";
+        htmlTableParent.style.width = "100%";
+        htmlTableParent.style.position = "relative";
+        tblAndScrollBar.appendChild(htmlTableParent);
+        // noinspection JSPotentiallyInvalidConstructorUsage
+        this.resizer = null;
 
         this.initFindBar();
 
@@ -529,19 +546,26 @@ export class TableView extends TSViewBase implements IScrollTarget {
 
     private addHeaderCell(thr: Node, cd: IColumnDescription,
                           displayName: string, help: string): HTMLElement {
-        const thd = document.createElement("th");
-        thd.classList.add("noselect");
-        thd.appendChild(makeSpan(displayName, false));
+        const th = document.createElement("th");
+        th.classList.add("noselect");
         if (!this.isVisible(cd.name)) {
-            thd.style.fontWeight = "normal";
+            th.style.fontWeight = "normal";
         } else {
             const span = makeSpan("", false);
-            span.innerHTML = "&nbsp;" + this.getSortArrow(cd.name) + this.getSortIndex(cd.name);
-            thd.appendChild(span);
+            span.innerHTML = this.getSortIndex(cd.name) + this.getSortArrow(cd.name);
+            span.onclick = () => this.swapOrder(cd.name);
+            th.appendChild(span);
         }
-        thd.title = help;
-        thr.appendChild(thd);
-        return thd;
+        th.appendChild(makeSpan(displayName, false));
+        th.style.overflow = "hidden";
+        th.title = help;
+        thr.appendChild(th);
+        return th;
+    }
+
+    protected swapOrder(colName: string): void {
+        const o = this.order.toggle(colName);
+        this.setOrder(o);
     }
 
     public showColumns(order: number, first: boolean): void {
@@ -581,8 +605,13 @@ export class TableView extends TSViewBase implements IScrollTarget {
         rr.invoke(new NextKReceiver(this.page, this, rr, false, this.order, null));
     }
 
-    public updateView(nextKList: NextKList, revert: boolean, order: RecordOrder, result: FindResult,
+    public updateView(nextKList: NextKList,
+                      revert: boolean,
+                      order: RecordOrder,
+                      result: FindResult,
                       elapsedMs: number): void {
+        if (this.resizer != null)
+            this.resizer.reset({ disable: true });
         this.selectedColumns.clear();
         this.rowCount = nextKList.rowsScanned;
         this.nextKList = nextKList;
@@ -621,11 +650,11 @@ export class TableView extends TSViewBase implements IScrollTarget {
         {
             // Create column headers
             let thd = this.addHeaderCell(thr, posCd, posCd.name, "Position within sorted order.");
-            thd.oncontextmenu = () => {
-            };
+            thd.oncontextmenu = () => {};
+            thd.style.width = DataRangeUI.width + "px";
             thd = this.addHeaderCell(thr, ctCd, ctCd.name, "Number of occurrences.");
-            thd.oncontextmenu = () => {
-            };
+            thd.oncontextmenu = () => {};
+            thd.style.width = "75px";
             if (this.schema == null)
                 return;
         }
@@ -635,11 +664,12 @@ export class TableView extends TSViewBase implements IScrollTarget {
             cds.push(cd);
 
             const kindString = cd.kind;
-            const title = "Column type is " + kindString +
-                ".\nA mouse click with the right button will open a menu.";
+            const title = cd.name + ".\nType is " + kindString +
+                ".\nRight mouse click opens a menu.";
             const name = this.schema.displayName(cd.name);
             const thd = this.addHeaderCell(thr, cd, name, title);
             thd.className = this.columnClass(cd.name);
+            thd.style.width = TableView.defaultColumnWidth + "px";
             thd.onclick = (e) => this.columnClick(i, e);
             thd.oncontextmenu = (e) => {
                 this.columnClick(i, e);
@@ -739,16 +769,6 @@ export class TableView extends TSViewBase implements IScrollTarget {
                     help: "Plot singular values for the selected columns. ",
                 }, selectedCount > 1 &&
                     this.getSelectedColNames().reduce((a, b) => a && this.isNumericColumn(b), true));
-                /*
-                this.contextMenu.addItem({
-                    text: "LAMP...",
-                    action: () => this.lamp(),
-                    help: "Perform a Local Affine Multidimensional Projection of the data in a set " +
-                    "of numeric columns. This produces a 2D view of the data which can be manually " +
-                    "adjusted.  Note: this operation is rather slow."
-                }, selectedCount > 1 &&
-                    this.getSelectedColNames().reduce( (a, b) => a && this.isNumericColumn(b), true) );
-                    */
                 this.contextMenu.addItem({
                     text: "Filter...",
                     action: () => {
@@ -786,10 +806,15 @@ export class TableView extends TSViewBase implements IScrollTarget {
         cds.forEach((cd) => this.cellsPerColumn.set(cd.name, []));
         let tableRowCount = 0;
         // Add row data
+        let previousRow: RowSnapshot = null;
         if (nextKList.rows != null) {
             tableRowCount = nextKList.rows.length;
-            for (const row of nextKList.rows)
-                this.addRow(row, cds);
+            let index = 0;
+            for (const row of nextKList.rows) {
+                this.addRow(row, previousRow, cds, index === nextKList.rows.length - 1);
+                previousRow = row;
+                index++;
+            }
         }
 
         let perc = "";
@@ -819,6 +844,11 @@ export class TableView extends TSViewBase implements IScrollTarget {
         this.updateScrollBar();
         this.highlightSelectedColumns();
         this.page.reportTime(elapsedMs);
+        if (this.resizer == null) {
+            this.resizer = new ColumnResizer(this.htmlTable, this.draggingProperties);
+        } else {
+            this.resizer.reset(this.draggingProperties);
+        }
     }
 
     public filterOnValue(cd: IColumnDescription, value: string | number, comparison: Comparison): void {
@@ -935,12 +965,17 @@ export class TableView extends TSViewBase implements IScrollTarget {
             const pcaDialog = new Dialog("Principal Component Analysis",
                 "Projects a set of numeric columns to a smaller set of numeric columns while preserving the 'shape' " +
                 " of the data as much as possible.");
-            pcaDialog.addTextField("numComponents", "Number of components", FieldKind.Integer, "2",
+            const components = pcaDialog.addTextField("numComponents", "Number of components",
+                FieldKind.Integer, "2",
                 "Number of dimensions to project to.  Must be an integer bigger than 1 and " +
                 "smaller than the number of selected columns");
-            pcaDialog.addTextField("projectionName", "Name for Projected columns", FieldKind.String,
+            components.required = true;
+            components.min = "2";
+            components.max = colNames.length.toString();
+            const name = pcaDialog.addTextField("projectionName", "Name for Projected columns", FieldKind.String,
                 "PCA",
                 "The projected columns will appear with this name followed by a number starting from 0");
+            name.required = true;
             pcaDialog.setCacheTitle("PCADialog");
             pcaDialog.setAction(() => {
                 const numComponents: number = pcaDialog.getFieldValueAsInt("numComponents");
@@ -1045,9 +1080,12 @@ export class TableView extends TSViewBase implements IScrollTarget {
 
     protected changeTableSize(): void {
         const dialog = new Dialog("Number of rows", "Choose number of rows to display");
-        dialog.addTextField("rows", "Rows", FieldKind.Integer,
+        const field = dialog.addTextField("rows", "Rows", FieldKind.Integer,
             Resolution.tableRowsOnScreen.toString(),
             "Number of rows to show (between 10 and 200)");
+        field.min = "10";
+        field.max = "200";
+        field.required = true;
         dialog.setAction(() => {
             const rowCount = dialog.getFieldValueAsInt("rows");
             if (rowCount < 10 || rowCount > 200) {
@@ -1129,30 +1167,60 @@ export class TableView extends TSViewBase implements IScrollTarget {
         return makeSpan(text, false);
     }
 
-    public addRow(row: RowSnapshot, cds: IColumnDescription[]): void {
+    public addRow(row: RowSnapshot, previousRow: RowSnapshot | null,
+                  cds: IColumnDescription[], last: boolean): void {
         const trow = this.tBody.insertRow();
         const position = this.startPosition + this.dataRowsDisplayed;
-        let cell = trow.insertCell(0);
-        const dataRange = new DataRangeUI(position, row.count, this.rowCount);
-        cell.appendChild(dataRange.getDOMRepresentation());
-        cell.oncontextmenu = (e) => {
+        const moveToTop = (e: PointerEvent) => {
             this.contextMenu.clear();
-            this.contextMenu.addItem({text: "Move to top",
+            this.contextMenu.addItem({
+                text: "Move to top",
                 action: () => this.moveRowToTop(row),
                 help: "Move this row to the top of the view.",
             }, true);
             this.contextMenu.show(e);
         };
 
+        let cell = trow.insertCell(0);
+        const dataRange = new DataRangeUI(position, row.count, this.rowCount);
+        cell.appendChild(dataRange.getDOMRepresentation());
+        cell.classList.add("all");
+        cell.classList.add("meta");
+        cell.oncontextmenu = moveToTop;
+
         cell = trow.insertCell(1);
+        cell.classList.add("all");
+        cell.classList.add("meta");
         cell.style.textAlign = "right";
+        cell.oncontextmenu = moveToTop;
         significantDigitsHtml(row.count).setInnerHtml(cell);
         cell.title = "Number of rows that have these values: " + formatNumber(row.count);
+
+        // Maps a column name to a boolean indicating whether the
+        // value is the same as in the previous row.  Must be computed
+        // in sorted order.
+        const isSame = new Map<string, boolean>();
+        let previousSame = true;
+        for (const o of this.order.sortOrientationList) {
+            const name = o.columnDescription.name;
+            if (!previousSame || previousRow == null) {
+                isSame.set(name, false);
+            } else {
+                const index = this.order.find(name);
+                if (previousRow.values[index] === row.values[index]) {
+                    isSame.set(name, true);
+                } else {
+                    previousSame = false;
+                    isSame.set(name, false);
+                }
+            }
+        }
 
         for (let i = 0; i < cds.length; i++) {
             const cd = cds[i];
             cell = trow.insertCell(i + 2);
             cell.classList.add(this.columnClass(cd.name));
+            cell.style.overflow = "hidden";
             let align = "right";
             if (kindIsString(cd.kind))
                 align = "left";
@@ -1163,6 +1231,22 @@ export class TableView extends TSViewBase implements IScrollTarget {
             const dataIndex = this.order.find(cd.name);
             if (this.isVisible(cd.name)) {
                 const value = row.values[dataIndex];
+                if (previousRow == null) {
+                    if (last)
+                        cell.classList.add("all");
+                    else
+                        cell.classList.add("top");
+                } else if (last) {
+                    if (isSame.get(cd.name))
+                        cell.classList.add("bottom");
+                    else
+                        cell.classList.add("all");
+                } else {
+                    if (isSame.get(cd.name))
+                        cell.classList.add("middle");
+                    else
+                        cell.classList.add("top");
+                }
                 let shownValue: string;
                 if (value == null) {
                     cell.appendChild(makeMissing());
@@ -1171,7 +1255,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
                     const high = this.highlight(shownValue);
                     cell.appendChild(high);
                 }
-                cell.title = "Right click will popup a menu.";
+                cell.title = shownValue + "\nRight click will popup a menu.";
                 cell.oncontextmenu = (e) => {
                     this.contextMenu.clear();
                     // This menu shows the value to the right, but the filter
@@ -1208,15 +1292,19 @@ export class TableView extends TSViewBase implements IScrollTarget {
                     this.contextMenu.show(e);
                 };
             } else {
-                cell.oncontextmenu = (e) => {
-                    this.contextMenu.clear();
-                    this.contextMenu.addItem({
-                        text: "Move to top",
-                        action: () => this.moveRowToTop(row),
-                        help: "Move this row to the top of the view.",
-                    }, true);
-                    this.contextMenu.show(e);
-                };
+                cell.classList.add("empty");
+                if (previousRow == null) {
+                    if (last)
+                        cell.classList.add("all");
+                    else
+                        cell.classList.add("top");
+                } else {
+                    if (last)
+                        cell.classList.add("bottom");
+                    else
+                        cell.classList.add("middle");
+                }
+                cell.oncontextmenu = moveToTop;
             }
         }
         this.dataRowsDisplayed += row.count;

@@ -6,11 +6,16 @@
 
 from argparse import ArgumentParser
 from hillviewCommon import ClusterConfiguration, RemoteHost, get_config
+from hillviewConsoleLog import get_logger
+
+logger = get_logger("status")
 
 def check_webserver(config):
     """Checks if the Hillview web server is running"""
     assert isinstance(config, ClusterConfiguration)
     rh = config.get_webserver()
+    message = "Checking hillview status on " + str(rh)
+    logger.info(message)
     rh.run_remote_shell_command("if pgrep -f tomcat; then true; else " +
                                 " echo \"Web server not running on " + str(rh.host) +"\"; " +
                                 " false; fi")
@@ -19,6 +24,8 @@ def check_worker(config, rh):
     """Checks if the Hillview service is running on a remote machine"""
     assert isinstance(config, ClusterConfiguration)
     assert isinstance(rh, RemoteHost)
+    message = "Checking hillview status on " + str(rh.host)
+    logger.info(message)
     rh.run_remote_shell_command("if pgrep -f hillview-server; then true; else " +
                                 " echo \"Hillview not running on " + str(rh.host) +"\"; " +
                                 " cat " + config.service_folder + "/hillview/nohup.out; false; fi")

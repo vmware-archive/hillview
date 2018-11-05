@@ -152,6 +152,11 @@ public interface IDataSet<T> {
         return reduce(getValues(this.sketch(sketch)), sketch);
     }
 
+    default Observable<ControlMessage.StatusList> singleManage(
+            final ControlMessage message) {
+        return reduce(getValues(this.manage(message)), new ControlMessage.StatusListMonoid());
+    }
+
     /**
      * Run a map synchronously.
      * @param mapper  Mapper to run.
@@ -189,5 +194,9 @@ public interface IDataSet<T> {
      */
     default <R> R blockingSketch(final ISketch<T, R> sketch) {
         return this.singleSketch(sketch).toBlocking().single();
+    }
+
+    default ControlMessage.StatusList blockingManage(final ControlMessage message) {
+        return this.singleManage(message).toBlocking().single();
     }
 }

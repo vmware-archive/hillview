@@ -116,7 +116,7 @@ Hillview supports reading data from multiple data-sources.
 
 When the program starts the user is presented with a Load menu.
 
-![Load menu](load-menu.png)
+![Load menu](load-data-menu.png)
 
 The load menu allows the user to specify a dataset to load from
 storage.
@@ -124,6 +124,12 @@ storage.
 * System logs: when this option is selected Hillview loads the logs
   produced by the Hillview system itself as a table with 9 columns.
   This is used to debug the Hillview system itself.
+
+* Generic logs: allows the user to [read logs from a set of log
+  files](#reading-generic-logs).
+
+* Bookmarked data: allows the user to [read data from a bookmarked
+  data file](#reading-bookmarked-data-files).
 
 * CSV files: allows the user to [read data from a set of CSV
   files](#reading-csv-files).
@@ -172,6 +178,83 @@ column description has two fields:
   corresponding to the types in the [data model](#data-model).  The
   kind is one of: "String", "JSON", "Double", "Integer",
   "Date", and "Interval".
+
+#### Specifying rules for parsing logs
+
+We rely on the grok library for this purpose. For more info visit https://github.com/thekrakken/java-grok/blob/master/README.md
+
+Grok works by combining text patterns into something that matches your logs. 
+
+The syntax for a grok pattern is %{SYNTAX:NAME}
+
+* SYNTAX : The pattern that will match your text. For example, 3.44 will be matched
+by the "NUMBER" pattern and 55.3.244.1 will be matched by the "IP" pattern
+
+* NAME : An identifier naming the matched text. For example, 3.44 could be the duration
+of an event, so you could call it simply "duration". Further, a string 55.3.244.1 might
+identify the "client" making a request
+
+For the above example, your grok pattern would look something like this:
+```
+%{NUMBER:duration} %{IP:client}
+```
+For more patterns : https://github.com/thekrakken/java-grok/blob/master/src/main/resources/patterns/patterns
+
+##### Example
+
+Given this line from a syslog log:
+```
+Sep 17 06:55:14,123 pndademocloud-hadoop-dn-3 CRON[25907]: (CRON) info (No MTA installed, discarding output)
+```
+
+This line can be parsed with the following pattern:
+```
+%{SYSLOGTIMESTAMP:timestamp} (?:%{SYSLOGFACILITY} )?%{SYSLOGHOST:logsource} %{GREEDYDATA:message}
+```
+
+This creates the following log record.
+```
+logsource : pndademocloud-hadoop-dn-3
+message   : CRON[25907]: (CRON) info (No MTA installed, discarding output)
+timestamp : Sep 17 06:55:14.123
+```
+
+##### Regular Expressions
+
+Grok sits on top of regular expressions, so any regular expressions are valid in grok as well
+
+##### Custom Patterns
+
+Hillview supports certain pre-defined log format patterns. You have an option to define custom log format patterns
+to suit your needs and specify the same in the logFormat field in the UI (under Generic Logs). Given a log pattern
+and a set of files, what you will get in Hillview is a table with columns corresponding to the names that you gave to the patterns.
+
+#### Reading generic logs
+
+Hillview can read data from log files with diffrent log formats. The
+following menu allows the users to specify the files to load.  *The
+files must be resident on the worker machines where the Hillview service
+is deployed*.
+
+![Specifying log files](generic-log-menu.png)
+
+* Folder: Folder containing the files to load.
+
+* File name pattern: A shell expansion pattern that names the files to
+  load.  Multiple files may be loaded on each machine.
+
+* Log format: The [log format](#specifying-rules-for-parsing-logs) of the logs.
+
+#### Reading bookmarked data files
+
+Hillview can read the bookmarked data. The
+following menu allows the users to specify the files to load.
+
+![Specifying bookmarked files](bookmarked-data-menu.png)
+
+* File: A file containing the bookmarked data to load.
+
+* Tab label: A name to display for dataset.
 
 #### Reading CSV files
 
@@ -721,6 +804,8 @@ The view menu offers the following options.
 * No columns: all columns will be hidden.
 
 * Schema: displays [the table schema](#schema-views).
+
+* Change table size: this changes the number of rows displayed.
 
 #### The table filter menu
 

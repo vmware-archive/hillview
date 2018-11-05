@@ -51,6 +51,7 @@ import {HeavyHittersReceiver, HeavyHittersView} from "./heavyHittersView";
 import {DataRangesCollector} from "./dataRangesCollectors";
 import {TableOperationCompleted, TableView} from "./tableView";
 import {HistogramDialog} from "./histogramView";
+import {ErrorReporter} from "../ui/errReporter";
 
 /**
  * A base class for TableView and SchemaView.
@@ -87,8 +88,9 @@ export abstract class TSViewBase extends BigTableView {
         const colName = cols[0];
         const dialog = new Dialog("Rename column",
             "Choose a new name for column " + this.schema.displayName(colName));
-        dialog.addTextField("name", "New name",
+        const name = dialog.addTextField("name", "New name",
             FieldKind.String, this.schema.displayName(colName), "New name to use for column");
+        name.required = true;
         dialog.setAction(() => this.doRenameColumn(colName, dialog.getFieldValue("name")));
         dialog.show();
     }
@@ -105,8 +107,9 @@ export abstract class TSViewBase extends BigTableView {
     public saveAsOrc(schema: SchemaClass): void {
         const dialog = new Dialog("Save as ORC files",
             "Describe the set of ORC files where data will be saved.");
-        dialog.addTextField("folderName", "Folder", FieldKind.String, "/",
+        const folder = dialog.addTextField("folderName", "Folder", FieldKind.String, "/",
             "All ORC files will be written to this folder on each of the remote machines.");
+        folder.required = true;
         dialog.setCacheTitle("saveAsDialog");
 
         class SaveReceiver extends OnCompleteReceiver<boolean> {
@@ -121,9 +124,9 @@ export abstract class TSViewBase extends BigTableView {
         }
 
         dialog.setAction(() => {
-            const folder = dialog.getFieldValue("folderName");
+            const folderName = dialog.getFieldValue("folderName");
             const rr = this.createStreamingRpcRequest<boolean>("saveAsOrc", {
-                folder,
+                folderName,
                 schema: schema.schema,
                 renameMap: mapToArray(schema.getRenameMap()),
             });
@@ -136,8 +139,9 @@ export abstract class TSViewBase extends BigTableView {
     public createColumnDialog(order: RecordOrder, tableRowsDesired: number): void {
         const dialog = new Dialog(
             "Add column", "Specify a JavaScript function which computes the values in a new column.");
-        dialog.addTextField(
+        const name = dialog.addTextField(
             "outColName", "Column name", FieldKind.String, null, "Name to use for the generated column.");
+        name.required = true;
         dialog.addSelectField(
             "outColKind", "Data type", allContentsKind, "String",
             "Type of data in the generated column.");
@@ -447,20 +451,24 @@ export abstract class TSViewBase extends BigTableView {
 
     /**
      * Show a dialog to compare values on the specified column.
-     * @param displayName  Column name.  If null the user will select the column.
-     * @param order   Current record ordering.
+     * @param displayName       Column name.  If null the user will select the column.
+     * @param order             Current record ordering.
      * @param tableRowsDesired  Number of table rows to display.
      */
     protected showCompareDialog(
         displayName: string, order: RecordOrder, tableRowsDesired: number): void {
         const cd = this.schema.findByDisplayName(displayName);
-        const cfd = new ComparisonFilterDialog(cd, displayName, this.schema);
+        const cfd = new ComparisonFilterDialog(cd, displayName, this.schema, this.page.getErrorReporter());
         cfd.setAction(() => this.runComparisonFilter(cfd.getFilter(), order, tableRowsDesired));
         cfd.show();
     }
 
     protected runComparisonFilter(
-        filter: ComparisonFilterDescription, order: RecordOrder, tableRowsDesired: number): void {
+        filter: ComparisonFilterDescription | null, order: RecordOrder, tableRowsDesired: number): void {
+        if (filter == null)
+            // Some error occurred
+            return;
+
         const kind = filter.column.kind;
         const so: ColumnSortOrientation = {
             columnDescription: filter.column, isAscending: true,
@@ -508,10 +516,13 @@ export abstract class TSViewBase extends BigTableView {
             title += cols.length + " columns";
         }
         const d = new Dialog(title, "Find the most frequent values in the selected columns.");
-        d.addTextField("percent", "Threshold (%)", FieldKind.Double, "1",
+        const perc = d.addTextField("percent", "Threshold (%)", FieldKind.Double, "1",
             "All values that appear in the dataset with a frequency above this value (as a percent) " +
             "will be considered frequent elements.  Must be a number between " + HeavyHittersView.minString +
             " and 100%.");
+        perc.min = HeavyHittersView.minString;
+        perc.max = "100";
+        perc.required = true;
         d.setAction(() => {
             const amount = d.getFieldValueAsNumber("percent");
             if (amount != null)
@@ -576,7 +587,8 @@ class ComparisonFilterDialog extends Dialog {
 
     constructor(private columnDescription: IColumnDescription | null,
                 private displayName: string,
-                private schema: SchemaClass) {
+                private schema: SchemaClass,
+                private reporter: ErrorReporter) {
         super("Compare", "Compare values");
         this.explanation = this.addText("Value == row[" + displayName + "]");
 
@@ -589,6 +601,7 @@ class ComparisonFilterDialog extends Dialog {
         }
         const val = this.addTextField("value", "Value", FieldKind.String, "?", "Value to compare");
         val.onchange = () => this.selectionChanged();
+        val.required = true;
         const op = this.addSelectField("operation", "Compare", ["==", "!=", "<", ">", "<=", ">="], "<",
             "Operation that is used to compare; the value is used at the right in the comparison.");
         op.onchange = () => this.selectionChanged();
@@ -607,7 +620,7 @@ class ComparisonFilterDialog extends Dialog {
             " row[" + this.getColName() + "]";
     }
 
-    public getFilter(): ComparisonFilterDescription {
+    public getFilter(): ComparisonFilterDescription | null {
         const value: string = this.getFieldValue("value");
         let doubleValue: number = null;
 
@@ -617,9 +630,17 @@ class ComparisonFilterDialog extends Dialog {
         }
         if (this.columnDescription.kind === "Date") {
             const date = new Date(value);
+            if (date == null) {
+                this.reporter.reportError("Could not parse '" + value + "' as a date");
+                return null;
+            }
             doubleValue = Converters.doubleFromDate(date);
         } else if (!kindIsString(this.columnDescription.kind)) {
             doubleValue = parseFloat(value);
+            if (doubleValue == null) {
+                this.reporter.reportError("Could not parse '" + value + "' as a number");
+                return null;
+            }
         }
         const comparison = this.getFieldValue("operation") as Comparison;
         return {
@@ -662,6 +683,7 @@ export class ConverterDialog extends Dialog {
             "Type of data for the converted column.");
         const nn = this.addTextField("newColumnName", "New column name: ", FieldKind.String, null,
             "A name for the new column.  The name must be different from all other column names.");
+        nn.required = true;
         cn.onchange = () => this.generateColumnName();
         nk.onchange = () => this.generateColumnName();
         // If the user types a column name don't attempt to change it

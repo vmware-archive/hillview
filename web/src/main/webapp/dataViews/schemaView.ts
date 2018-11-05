@@ -102,8 +102,9 @@ export class SchemaView extends TSViewBase {
         /* Dialog box for selecting columns based on name */
         const nameDialog = new Dialog("Select by name",
             "Allows selecting/deselecting columns by name using regular expressions");
-        nameDialog.addTextField("selected", "Name", FieldKind.String, "",
+        const name = nameDialog.addTextField("selected", "Name", FieldKind.String, "",
             "Names of columns to select (regular expressions allowed)");
+        name.required = true;
         const actions: string[] = ["Add", "Remove"];
         nameDialog.addSelectField("action", "Action", actions, "Add",
             "Add to or Remove from current selection");
@@ -187,7 +188,7 @@ export class SchemaView extends TSViewBase {
             action: () => this.trellisSelected(false),
             help: "Plot the data in the selected columns as a Trellis plot of histograms. " +
                 "Applies to two or three columns only.",
-        }, selectedCount >= 2 || selectedCount <= 3);
+        }, selectedCount >= 2 && selectedCount <= 3);
         this.contextMenu.addItem({
             text: "Trellis heatmaps",
             action: () => this.trellisSelected(true),

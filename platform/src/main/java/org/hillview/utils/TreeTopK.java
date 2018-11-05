@@ -62,7 +62,7 @@ public class TreeTopK<T> implements ITopK<T> {
         final int gt = this.greater.compare(newVal, this.cutoff);
         if (gt <= 0) {
             final MutableInteger counter = this.data.get(newVal);
-            if (counter != null) { //Already in Top K, increase count. Size, cutoff do not change
+            if (counter != null) { // Already in Top K, increase count. Size, cutoff do not change
                 final int count = counter.get() + 1;
                 counter.set(count);
             } else { // Add a new key to Top K

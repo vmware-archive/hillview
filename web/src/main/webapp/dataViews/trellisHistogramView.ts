@@ -94,8 +94,7 @@ export class TrellisHistogramView extends TrellisChartView {
                 },
                 { text: "# buckets...",
                     action: () => this.chooseBuckets(),
-                    help: "Change the number of buckets used to draw the histograms. " +
-                        "The number of buckets must be between 1 and " + Resolution.maxBucketCount,
+                    help: "Change the number of buckets used to draw the histograms. ",
                 }, { text: "# groups",
                     action: () => this.changeGroups(),
                     help: "Change the number of groups."
@@ -186,7 +185,7 @@ export class TrellisHistogramView extends TrellisChartView {
             if (col.name === this.xAxisData.description.name ||
                 col.name === this.groupByAxisData.description.name)
                 continue;
-            columns.push(col.name);
+            columns.push(this.schema.displayName(col.name));
         }
         if (columns.length === 0) {
             this.page.reportError("No other acceptable columns found");
@@ -203,7 +202,7 @@ export class TrellisHistogramView extends TrellisChartView {
     }
 
     protected showSecondColumn(colName: string): void {
-        const col = this.schema.find(colName);
+        const col = this.schema.findByDisplayName(colName);
         const cds = [this.xAxisData.description, col, this.groupByAxisData.description];
         const rr = this.createDataRangesRequest(cds, this.page, "Trellis2DHistogram");
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
@@ -305,8 +304,8 @@ export class TrellisHistogramView extends TrellisChartView {
         this.setupMouse();
         this.pointDescription = new TextOverlay(this.surface.getCanvas(),
             this.surface.getActualChartSize(),
-            [this.xAxisData.description.name,
-                this.groupByAxisData.description.name,
+            [this.schema.displayName(this.xAxisData.description.name),
+                this.schema.displayName(this.groupByAxisData.description.name),
                 "count", "cdf"], 40);
         this.page.reportTime(elapsedMs);
         this.cdfDot = this.surface.getChart()
@@ -386,13 +385,13 @@ export class TrellisHistogramView extends TrellisChartView {
                 complement: d3event.sourceEvent.ctrlKey,
             };
             rr = this.createFilterRequest(filter);
-            title = "Filtered on " + this.xAxisData.description.name;
+            title = "Filtered on " + this.schema.displayName(this.xAxisData.description.name);
         } else {
             const filter = this.getGroupBySelectionFilter();
             if (filter == null)
                 return;
             rr = this.createFilterRequest(filter);
-            title = "Filtered on " + this.groupByAxisData.description.name;
+            title = "Filtered on " + this.schema.displayName(this.groupByAxisData.description.name);
 
         }
         const renderer = new FilterReceiver(title,

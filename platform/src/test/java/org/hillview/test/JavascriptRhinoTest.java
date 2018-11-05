@@ -23,6 +23,7 @@ import org.hillview.table.api.ITable;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.Converters;
 import org.hillview.utils.DateParsing;
+import org.hillview.utils.TestTables;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mozilla.javascript.*;
@@ -65,7 +66,7 @@ public class JavascriptRhinoTest extends BaseTest {
     //@Test
     // This test fails: JS does not access Java objects implementing Map in this way
     public void testRhinoFunctionAccess() {
-        ITable table = ToCatMapTest.tableWithStringColumn();
+        ITable table = TestTables.testRepTable();
         RowSnapshot row = new RowSnapshot(table, 0);
         Context mozillaJsContext = Context.enter();
         try {

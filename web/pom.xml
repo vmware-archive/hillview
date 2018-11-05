@@ -82,7 +82,7 @@
     </dependencies>
     <build>
         <plugins>
-            <!-- ensure that maven dependences are correct -->
+            <!-- ensure that maven dependencies are correct -->
             <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <version>2.8</version>

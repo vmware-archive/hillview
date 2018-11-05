@@ -8,13 +8,17 @@ from argparse import ArgumentParser
 import tempfile
 import os.path
 from hillviewCommon import ClusterConfiguration, get_config
+from hillviewConsoleLog import get_logger
+
+logger = get_logger("deploy")
 
 def prepare_webserver(config):
     """Deploys files needed by the Hillview web server"""
-    print("Creating web service folder")
+    logger.info("Creating web service folder")
     assert isinstance(config, ClusterConfiguration)
     rh = config.get_webserver()
-    print("Preparing web server", rh)
+    message = "Preparing web server " + str(rh)
+    logger.info(message)
     rh.create_remote_folder(config.service_folder)
     rh.run_remote_shell_command("chown " + config.get_user() + " " + config.service_folder)
     rh.create_remote_folder(config.service_folder + "/hillview")
@@ -37,7 +41,7 @@ def prepare_webserver(config):
         tomcatFolder + "/webapps/ROOT.war", "")
     tmp = tempfile.NamedTemporaryFile(mode="w", delete=False)
     agg = config.get_aggregators()
-    if len(agg) > 0:
+    if agg:
         for a in agg:
             tmp.write(a.host + ":" + str(config.aggregator_port) + "\n")
     else:
@@ -57,8 +61,9 @@ def prepare_webserver(config):
 def prepare_worker(config, rh):
     """Prepares files needed by a Hillview worker on a remote machine"""
     assert isinstance(config, ClusterConfiguration)
-    print("Preparing worker", rh)
-#    rh.run_remote_shell_command("sudo apt-get install libgfortran3")
+    message = "Preparing worker " + str(rh)
+    logger.info(message)
+    # rh.run_remote_shell_command("sudo apt-get install libgfortran3")
     rh.create_remote_folder(config.service_folder)
     rh.run_remote_shell_command("chown " + config.get_user() + " " + config.service_folder)
     rh.create_remote_folder(config.service_folder + "/hillview")
@@ -74,7 +79,8 @@ def prepare_worker(config, rh):
 def prepare_aggregator(config, rh):
     """Prepares files needed by a Hillview aggregator on a remote machine"""
     assert isinstance(config, ClusterConfiguration)
-    print("Preparing aggregator", rh)
+    message = "Preparing aggregator " + str(rh)
+    logger.info(message)
     rh.create_remote_folder(config.service_folder)
     rh.run_remote_shell_command("chown " + config.get_user() + " " + config.service_folder)
     rh.create_remote_folder(config.service_folder + "/hillview")

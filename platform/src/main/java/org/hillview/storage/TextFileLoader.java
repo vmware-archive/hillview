@@ -35,7 +35,7 @@ import java.io.*;
  * track of the current position within the file.  These loaders are
  * only allocated where the data is, they are not serializable.
  */
-abstract class TextFileLoader {
+public abstract class TextFileLoader {
     final String filename;
     int currentRow;
     int currentColumn;

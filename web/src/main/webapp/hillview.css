@@ -80,8 +80,50 @@ table {
     font-family: sans-serif;
 }
 
-th, td {
+th {
     border: 1px solid black;
+    padding: 1px;
+}
+
+.tabularDisplay td {
+    border: 1px solid black;
+    padding: 1px;
+}
+
+.tableView td.middle {
+    border-left: 1px solid black;
+    border-right: 1px solid black;
+    padding: 1px;
+}
+
+.tableView td.bottom {
+    border-left: 1px solid black;
+    border-right: 1px solid black;
+    border-bottom: 1px solid black;
+    padding: 1px;
+}
+
+.tableView td.empty {
+    background-color: #f0f0f0;
+}
+
+.tableView td.empty.selected {
+    background-color: lightcyan;
+}
+
+td.all {
+    border: 1px solid black;
+    padding: 1px;
+}
+
+.tableView td.meta {
+    background-color: #fafafa;
+}
+
+.tableView td.top {
+    border-left: 1px solid black;
+    border-right: 1px solid black;
+    border-top: 1px solid black;
     padding: 1px;
 }
 
@@ -130,8 +172,9 @@ th, td {
     margin: 1px;
 }
 
-.tabularDisplay {
-    display: block;
+.tableView {
+    /* display: block; */
+    table-layout: fixed;
     overflow-x: auto;
 }
 
@@ -264,7 +307,6 @@ th, td {
 }
 
 svg.dataRange {
-    width: 100px;
     height: 10px;
     display: inline-block;
 }
@@ -314,7 +356,6 @@ table.menu td.selected {
 
 table.dropdown {
     position: fixed;  /* relative to browser window */
-    z-index: 1;
 }
 
 .hidden {

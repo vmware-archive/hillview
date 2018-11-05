@@ -18,7 +18,7 @@
 package org.hillview.dataset.api;
 
 import com.google.gson.*;
-import org.hillview.utils.ClusterDescription;
+import org.hillview.utils.HostList;
 import org.hillview.sketches.NextKList;
 import org.hillview.table.Schema;
 import org.hillview.utils.Converters;
@@ -61,8 +61,8 @@ public interface IJson extends Serializable {
             .registerTypeAdapter(Schema.class, new Schema.Deserializer())
             .registerTypeAdapter(NextKList.class, new NextKSerializer())
             .registerTypeAdapter(Instant.class, new DateSerializer())
-            .registerTypeAdapter(HostAndPort.class, new ClusterDescription.HostAndPortSerializer())
-            .registerTypeAdapter(HostAndPort.class, new ClusterDescription.HostAndPortDeserializer());
+            .registerTypeAdapter(HostAndPort.class, new HostList.HostAndPortSerializer())
+            .registerTypeAdapter(HostAndPort.class, new HostList.HostAndPortDeserializer());
     Gson gsonInstance = builder.serializeNulls().create();
 
     /**

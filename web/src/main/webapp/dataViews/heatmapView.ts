@@ -166,7 +166,7 @@ export class HeatmapView extends ChartView {
         }
 
         // The order of these operations is important
-        this.plot.setData(heatmap, this.xAxisData, this.yAxisData);
+        this.plot.setData(heatmap, this.xAxisData, this.yAxisData, this.schema);
         if (!keepColorMap) {
             this.colorLegend.setData(1, this.plot.getMaxCount());
         }
@@ -187,7 +187,8 @@ export class HeatmapView extends ChartView {
         this.setupMouse();
         this.pointDescription = new TextOverlay(this.surface.getChart(),
             this.surface.getActualChartSize(),
-            [this.xAxisData.description.name, this.yAxisData.description.name, "count"], 40);
+            [this.schema.displayName(this.xAxisData.description.name),
+                this.schema.displayName(this.yAxisData.description.name), "count"], 40);
         let summary = new HtmlString(formatNumber(this.plot.getVisiblePoints()) + " data points");
         if (heatmap.missingData !== 0) {
             summary = summary.appendString(", " + formatNumber(heatmap.missingData) + " missing");
@@ -278,10 +279,10 @@ export class HeatmapView extends ChartView {
      */
     public asCSV(): string[] {
         const lines: string[] = [
-            JSON.stringify(this.xAxisData.description.name + "_range") + "," +
-            JSON.stringify(this.xAxisData.description.name) + "," +
-            JSON.stringify(this.yAxisData.description.name + "_range") + "," +
-            JSON.stringify(this.yAxisData.description.name) + "," +
+            JSON.stringify(this.schema.displayName(this.xAxisData.description.name) + "_range") + "," +
+            JSON.stringify(this.schema.displayName(this.xAxisData.description.name)) + "," +
+            JSON.stringify(this.schema.displayName(this.yAxisData.description.name) + "_range") + "," +
+            JSON.stringify(this.schema.displayName(this.yAxisData.description.name)) + "," +
                 "count",
         ];
         for (let x = 0; x < this.heatmap.buckets.length; x++) {
@@ -439,8 +440,8 @@ export class HeatmapView extends ChartView {
         };
         const rr = this.createFilter2DRequest(xRange, yRange);
         const renderer = new FilterReceiver(
-            "Filtered on " + this.xAxisData.description.name + " and " +
-            this.yAxisData.description.name,
+            "Filtered on " + this.schema.displayName(this.xAxisData.description.name) + " and " +
+            this.schema.displayName(this.yAxisData.description.name),
             [this.xAxisData.description, this.yAxisData.description],
             this.schema, [0, 0], this.page, rr, this.dataset, {
             exact: this.samplingRate >= 1, chartKind: "Heatmap",

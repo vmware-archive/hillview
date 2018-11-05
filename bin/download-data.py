@@ -10,6 +10,9 @@ import os.path
 import os
 import errno
 from hillviewCommon import execute_command, ClusterConfiguration, get_config
+from hillviewConsoleLog import get_logger
+
+logger = get_logger("download-data")
 
 def copy_from_remote_host(rh, pattern):
     """Copy files matching the pattern from the remote machine"""
@@ -24,6 +27,8 @@ def copy_from_remote_host(rh, pattern):
     else:
         u = rh.user + "@"
     command = "scp -r " + u + rh.host + ":" + pattern + " " + rh.host
+    message = "Copying the files from the remote machine " + str(rh.host)
+    logger.info(message)
     execute_command(command)
 
 def copy_files(config, pattern):
@@ -40,7 +45,7 @@ def main():
     config = get_config(parser, args)
     pattern = args.pattern
     copy_files(config, pattern)
-    print("Done.")
+    logger.info("Done.")
 
 if __name__ == "__main__":
     main()

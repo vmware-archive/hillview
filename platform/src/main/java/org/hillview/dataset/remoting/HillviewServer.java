@@ -230,11 +230,9 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
 
     /**
      * Change memoization policy.
-     * @return Current state of memoization.
      */
-    public boolean toggleMemoization() {
-        this.MEMOIZE = !this.MEMOIZE;
-        return this.MEMOIZE;
+    public void setMemoization(boolean to) {
+        this.MEMOIZE = to;
     }
 
     /**
@@ -570,7 +568,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             if (subscription != null) {
                 subscription.unsubscribe();
             } else {
-                HillviewLogger.instance.warn("Could not find subscription", "{0}", unsubscribeOp.id);
+                HillviewLogger.instance.info("Could not find subscription", "{0}", unsubscribeOp.id);
                 this.toUnsubscribe.put(unsubscribeOp.id, true);
             }
         } catch (final Exception e) {

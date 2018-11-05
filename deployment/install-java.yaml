@@ -1,6 +1,7 @@
 ---
 # Installs Oracle Java on the remote machines using Ansible
 # From https://github.com/malk/ansible-java8-oracle
+# Use with ansible-playbook -i hosts -u user install-java.yaml
 
 - hosts: backends web
   tasks:

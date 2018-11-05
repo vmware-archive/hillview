@@ -48,7 +48,7 @@ export interface TrellisShape {
     yNum: number;
     /** The size of the header in pixels. */
     headerHeight: number;
-    /// The size of a plot in pixels, excluding the header.
+    // The size of a plot in pixels, excluding the header.
     size: Size;
     /** The fraction of available display used by the trellis display. This is the
      * parameter that our algorithm optimizes, subject to constraints on the aspect ratio and minimum

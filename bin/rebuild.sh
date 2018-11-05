@@ -43,5 +43,5 @@ pushd $mydir/../platform
 mvn $EXTRAARGS clean install
 popd
 pushd $mydir/../web
-mvn $EXTRAARGS clean package
+mvn clean package
 popd

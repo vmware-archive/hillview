@@ -86,7 +86,7 @@ export interface JdbcConnectionInformation {
     lazyLoading: boolean;
 }
 
-export type DataKinds = "csv" | "orc" | "parquet" | "json" | "hillviewlog" | "db";
+export type DataKinds = "csv" | "orc" | "parquet" | "json" | "hillviewlog" | "db" | "genericlog";
 
 export interface FileSetDescription {
     fileKind: DataKinds;
@@ -97,6 +97,7 @@ export interface FileSetDescription {
     cookie?: string;
     repeat: number;
     name: string;  // not used on the Java side
+    logFormat: string;
 }
 
 export interface HLogLog {
@@ -272,7 +273,7 @@ export class RecordOrder {
     public hide(col: string): void {
         const index = this.find(col);
         if (index === -1)
-        // already hidden
+            // already hidden
             return;
         this.sortOrientationList.splice(index, 1);
     }
@@ -289,6 +290,16 @@ export class RecordOrder {
         if (index !== -1)
             this.sortOrientationList.splice(index, 1);
         this.sortOrientationList.push(cso);
+    }
+
+    public toggle(col: string): RecordOrder {
+        const result = this.clone();
+        const index = result.find(col);
+        if (index === -1)
+            return this;
+        result.sortOrientationList[index].isAscending =
+            !result.sortOrientationList[index].isAscending;
+        return result;
     }
 
     public addColumnIfNotVisible(cso: ColumnSortOrientation): void {
