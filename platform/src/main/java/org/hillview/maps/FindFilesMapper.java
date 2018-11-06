@@ -53,23 +53,48 @@ public class FindFilesMapper implements IMap<Empty, List<IFileReference>> {
      */
     @Override
     public List<IFileReference> apply(Empty empty) {
-        Path dir = Paths.get(this.description.folder);
+        String folders = this.description.folder;
+        // Paths for multiple directories
+        Path paths[];
+        String dirs[];
+        if (!folders.contains(",")) {
+            paths = new Path[1];
+            dirs = new String[1];
+            dirs[0] = this.description.folder;
+            paths[0] = Paths.get(this.description.folder);
+        } else {
+            dirs = folders.split(",");
+            paths = new Path[dirs.length];
+            for (int i = 0; i < dirs.length; i++) {
+                paths[i] = Paths.get(dirs[i]);
+            }
+        }
         @Nullable
         String filenameRegex = this.description.getRegexPattern();
-        HillviewLogger.instance.info("Find files", "folder: {0}, absfolder: {1}, regex: {2}",
-                this.description.folder, dir.toAbsolutePath().toString(),
-                filenameRegex);
+        for (int i = 0; i < paths.length; i++) {
+            HillviewLogger.instance.info("Find files", "folder: {0}, absfolder: {1}, regex: {2}", dirs[i],
+            paths[i].toAbsolutePath().toString(), filenameRegex);
+        }
 
-        Stream<Path> files;
+        Stream<Path> files = null;
+        Stream<Path> result = null;
         try {
-            if(Files.exists(dir))
-                files = Files.walk(dir, 1, FileVisitOption.FOLLOW_LINKS);
-            else
+            for (int i = 0; i < paths.length; i++) {
+                if (Files.exists(paths[i])) {
+                    files = Files.walk(paths[i], 1, FileVisitOption.FOLLOW_LINKS);
+                    if (result == null)
+                        result = files;
+                    else
+                        result = Stream.concat(result, files);
+                 }
+            }
+            if (result == null) {
                 return Collections.emptyList();
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        files = files.filter(f -> {
+        result = result.filter(f -> {
             if (f == null)
                 return false;
             if (filenameRegex == null)
@@ -79,7 +104,7 @@ public class FindFilesMapper implements IMap<Empty, List<IFileReference>> {
                 return false;
             return path.toString().matches(filenameRegex);
         });
-        Stream<String> fileNames = files.map(Path::toString).sorted();
+        Stream<String> fileNames = result.map(Path::toString).sorted();
         if (this.description.repeat > 1)
             fileNames = fileNames.flatMap(
                     n -> Collections.nCopies(this.description.repeat, n).stream());
@@ -91,9 +116,9 @@ public class FindFilesMapper implements IMap<Empty, List<IFileReference>> {
         List<String> list = fileNames.collect(Collectors.toList());
         String allNames = String.join(",", list);
         HillviewLogger.instance.info("Files found", "{0}: {1}", list.size(), allNames);
-        List<IFileReference> result = new ArrayList<IFileReference>();
+        List<IFileReference> finalResult = new ArrayList<IFileReference>();
         for (String n: list)
-            result.add(this.description.createFileReference(n));
-        return result;
+            finalResult.add(this.description.createFileReference(n));
+        return finalResult;
     }
 }
