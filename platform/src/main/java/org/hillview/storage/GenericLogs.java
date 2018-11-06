@@ -139,10 +139,14 @@ public class GenericLogs {
             // Create a new column for the host
             IColumn host = new ConstantStringColumn(
                     new ColumnDescription("Host", ContentsKind.String), size, Utilities.getHostName());
-            IColumn[] cols = new IColumn[columnCount + 1];
+            // Create a new column for the FileName
+            IColumn fileName = new ConstantStringColumn(
+                    new ColumnDescription("FileName", ContentsKind.String), size, this.filename);
+            IColumn[] cols = new IColumn[columnCount + 2];
             cols[0] = host;
+            cols[1] = fileName;
             if (columnCount > 0)
-                System.arraycopy(this.columns, 0, cols, 1, columnCount);
+                System.arraycopy(this.columns, 0, cols, 2, columnCount);
             return new Table(cols, this.filename, null);
         }
     }
