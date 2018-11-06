@@ -34,6 +34,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.regex.Pattern;
 
 /**
  * Scans a folder and finds files matching a pattern.
@@ -77,7 +78,7 @@ public class FindFilesMapper implements IMap<Empty, List<IFileReference>> {
             Path path = f.getFileName();
             if (path == null)
                 return false;
-            return path.toString().matches(filenameRegex);
+            return Pattern.matches(filenameRegex, path.toString());
         });
         Stream<String> fileNames = files.map(Path::toString).sorted();
         if (this.description.repeat > 1)
