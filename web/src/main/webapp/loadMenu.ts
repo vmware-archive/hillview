@@ -26,7 +26,7 @@ import {ConsoleDisplay} from "./ui/errReporter";
 import {FullPage} from "./ui/fullPage";
 import {SubMenu, TopMenu, TopMenuItem} from "./ui/menu";
 import {ViewKind} from "./ui/ui";
-import {ICancellable, loadFile} from "./util";
+import {Converters, ICancellable, loadFile} from "./util";
 
 /**
  * The load menu is the first menu that is displayed on the screen.
@@ -60,6 +60,8 @@ export class LoadMenu extends RemoteObject implements IDataView {
                         name: "Flights (15 columns)",
                         fileKind: "csv",
                         logFormat: null,
+                        startTime: null,
+                        endTime: null
                     };
                     this.init.loadFiles(files, this.page);
                 },
@@ -76,6 +78,8 @@ export class LoadMenu extends RemoteObject implements IDataView {
                         name: "Flights (15 columns, ORC)",
                         fileKind: "orc",
                         logFormat: null,
+                        startTime: null,
+                        endTime: null
                     };
                     this.init.loadFiles(files, this.page);
                 },
@@ -92,6 +96,8 @@ export class LoadMenu extends RemoteObject implements IDataView {
                         name: "Flights (ORC)",
                         fileKind: "orc",
                         logFormat: null,
+                        startTime: null,
+                        endTime: null
                     };
                     this.init.loadFiles(files, this.page);
                 },
@@ -339,6 +345,8 @@ class CSVFileDialog extends Dialog {
             name: null,
             fileKind: "csv",
             logFormat: null,
+            startTime: null,
+            endTime: null
         };
     }
 }
@@ -357,6 +365,10 @@ class GenericLogDialog extends Dialog {
             "Log format : https://github.com/vmware/hillview/blob/master/docs/userManual.md" +
             "#232-specifying-rules-for-parsing-logs");
         format.required = true;
+        this.addDateTimeField("startTime", "Start time", new Date(),
+            "Log records prior to this date will be ignored");
+        this.addDateTimeField("endTime", "End time", new Date(Date.now() - 30 * 60 * 100),
+            "Log records after this date will be ignored");
         this.setCacheTitle("GenericLogDialog");
     }
 
@@ -370,6 +382,8 @@ class GenericLogDialog extends Dialog {
             repeat: 1,
             name: null,
             fileKind: "genericlog",
+            startTime: Converters.doubleFromDate(this.getDateTimeValue("startTime")),
+            endTime: Converters.doubleFromDate(this.getDateTimeValue("endTime"))
         };
     }
 }
@@ -403,6 +417,8 @@ class JsonFileDialog extends Dialog {
             name: null,
             fileKind: "json",
             logFormat: null,
+            startTime: null,
+            endTime: null
         };
     }
 }
@@ -433,6 +449,8 @@ class ParquetFileDialog extends Dialog {
             name: null,
             fileKind: "parquet",
             logFormat: null,
+            startTime: null,
+            endTime: null
         };
     }
 }
@@ -466,6 +484,8 @@ class OrcFileDialog extends Dialog {
             name: null,
             fileKind: "orc",
             logFormat: null,
+            startTime: null,
+            endTime: null
         };
     }
 }

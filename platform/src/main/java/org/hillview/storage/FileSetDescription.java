@@ -19,6 +19,7 @@ package org.hillview.storage;
 
 import org.hillview.dataset.api.IJson;
 import org.hillview.table.api.ITable;
+import org.hillview.utils.Converters;
 import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
@@ -73,6 +74,11 @@ public class FileSetDescription implements Serializable, IJson {
     @Nullable
     public String logFormat = null;
     @Nullable
+    public Double startTime;
+    @Nullable
+    public Double endTime;
+
+    @Nullable
     private String getSchemaPath() {
         if (Utilities.isNullOrEmpty(this.schemaFile))
             return null;
@@ -83,7 +89,7 @@ public class FileSetDescription implements Serializable, IJson {
     public String getLogFormat() {
         return this.logFormat;
     }
- 
+
     @Nullable
     public String getRegexPattern() {
         if (this.fileNamePattern == null)
@@ -132,7 +138,9 @@ public class FileSetDescription implements Serializable, IJson {
                     String format = FileSetDescription.this.getLogFormat();
                     assert format != null;
                     GenericLogs genLog = new GenericLogs(format);
-                    loader = genLog.getFileLoader(this.pathname);
+                    loader = genLog.getFileLoader(this.pathname,
+                            Converters.toDate(FileSetDescription.this.startTime),
+                            Converters.toDate(FileSetDescription.this.endTime));
                     break;
                 default:
                     throw new RuntimeException(

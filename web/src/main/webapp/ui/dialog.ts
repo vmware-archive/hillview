@@ -28,6 +28,7 @@ export enum FieldKind {
     Boolean,
     Password,
     File,
+    Datetime
 }
 
 /**
@@ -414,6 +415,30 @@ export class Dialog extends DialogBase {
     }
 
     /**
+     * Add a datetime-local input field.
+     * @param fieldName: Internal name. Has to be used when parsing the input.
+     * @param labelText: Text in the dialog for this field.
+     * @param value: Initial default value.
+     * @param toolTip:  Help message to show as a tool-tip.
+     * @return       The input element created for the user to type the text.
+     */
+    public addDateTimeField(fieldName: string, labelText: string,
+                            value: Date | null,
+                            toolTip: string): HTMLInputElement {
+        const fieldDiv = this.createRowContainer(fieldName, labelText, toolTip);
+        const input: HTMLInputElement = document.createElement("input");
+        input.tabIndex = this.tabIndex++;
+        input.style.flexGrow = "100";
+        input.id = makeId(fieldName);
+        fieldDiv.appendChild(input);
+        input.type = "datetime-local";
+        this.fields.set(fieldName, { html: input, type: FieldKind.Datetime });
+        if (value != null)
+            input.valueAsDate = value;
+        return input;
+    }
+
+    /**
      * Add a drop-down selection field with the given options.
      * @param fieldName: Internal name. Has to be used when parsing the input.
      * @param labelText: Text in the dialog for this field.
@@ -495,6 +520,14 @@ export class Dialog extends DialogBase {
      */
     public getBooleanValue(field: string): boolean {
         return (this.fields.get(field).html as HTMLInputElement).checked;
+    }
+
+    /**
+     * The value associated with a datetime field.
+     * @param {string} field  Field name whose value is sought.
+     */
+    public getDateTimeValue(field: string): Date | null {
+        return (this.fields.get(field).html as HTMLInputElement).valueAsDate;
     }
 
     /**

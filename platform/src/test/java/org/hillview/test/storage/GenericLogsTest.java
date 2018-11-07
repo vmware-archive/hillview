@@ -17,17 +17,35 @@
 
 package org.hillview.test.storage;
 
+import io.krakens.grok.api.Grok;
+import io.krakens.grok.api.GrokCompiler;
+import io.krakens.grok.api.Match;
 import org.hillview.storage.GenericLogs;
 import org.hillview.storage.TextFileLoader;
 import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;
+import org.hillview.utils.DateParsing;
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.time.Instant;
 
 /**
  * Various tests for reading Generic logs into ITable.
  */
 public class GenericLogsTest extends BaseTest {
+    //@Test
+    public void findTimestamp() {
+        GrokCompiler grokCompiler = GrokCompiler.newInstance();
+        grokCompiler.registerDefaultPatterns();
+        grokCompiler.registerPatternFromClasspath("/patterns/log-patterns");
+        Grok grok = grokCompiler.compile("%{TSONLY}", true);
+        Match gm = grok.match("Oct 7 05:24:10 Rest of lime");
+        Assert.assertFalse(gm.isNull());
+        Object ts = gm.capture().get("Timestamp");
+        Assert.assertEquals("Oct 7 05:24:10", ts);
+    }
+
     @Test
     public void testSyslog() {
         String path = "../data/sample_logs/syslog";

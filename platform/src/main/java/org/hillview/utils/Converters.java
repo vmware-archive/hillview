@@ -50,6 +50,13 @@ public class Converters {
         return baseTime.plus(span);
     }
 
+    @Nullable
+    public static Instant toDate(@Nullable final Double d) {
+        if (d == null)
+            return null;
+        return toDate((double)d);
+    }
+
     public static Duration toDuration(final double d) {
         return Duration.ofMillis((long)d);
     }

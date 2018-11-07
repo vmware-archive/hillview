@@ -98,6 +98,8 @@ export interface FileSetDescription {
     repeat: number;
     name: string;  // not used on the Java side
     logFormat: string;
+    startTime: number | null;
+    endTime: number | null;
 }
 
 export interface HLogLog {

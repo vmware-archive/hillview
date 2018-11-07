@@ -24,42 +24,50 @@ import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.ConstantStringColumn;
+import org.hillview.utils.DateParsing;
 import org.hillview.utils.Utilities;
 
+import java.time.Instant;
 import java.util.Map;
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
 
 import io.krakens.grok.api.*;
+
+import javax.annotation.Nullable;
 
 /**
  * Reads Generic logs into ITable objects.
  */
 public class GenericLogs {
     private Grok grok;
-    private static final Pattern datePattern = Pattern.compile("(?:Jan(?:uary)?|Feb(?:ruary)?|" +
-            "Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ob" +
-            "er)?|Nov(?:ember)?|Dec(?:ember)?)\\s* (?:(?:0[1-9])|(?:[12][0-9])|(?:3[01])|[1-9]" +
-            ")|(?:0?[1-9]|1[0-2])[/-](?:(?:0[1-9])|(?:[12][0-9])|(?:3[01])|[1-9])[/-](?>\\d\\d" +
-            "){1,2}|(?:(?:0[1-9])|(?:[12][0-9])|(?:3[01])|[1-9])[./-](?:0?[1-9]|1[0-2])[./-](?" +
-            ">\\d\\d){1,2}(?!<[0-9])(?:2[0123]|[01]?[0-9]):(?:[0-5][0-9])(?::(?:(?:[0-5]?[0-9]" +
-            "|60)(?:[:.,][0-9]+)?))(?![0-9])");
+    private GrokCompiler grokCompiler;
 
     public GenericLogs(String logFormat) {
-        GrokCompiler grokCompiler = GrokCompiler.newInstance();
-        grokCompiler.registerDefaultPatterns();
-        grokCompiler.registerPatternFromClasspath("/patterns/log-patterns");
+        this.grokCompiler = GrokCompiler.newInstance();
+        this.grokCompiler.registerDefaultPatterns();
+        this.grokCompiler.registerPatternFromClasspath("/patterns/log-patterns");
         this.grok = grokCompiler.compile(logFormat, true);
     }
 
     public class LogFileLoader extends TextFileLoader {
-        LogFileLoader(final String path) {
+        @Nullable
+        private final Instant start;
+        @Nullable
+        private final Instant end;
+        @Nullable
+        DateParsing dateTimeParser = null;
+        private final Grok dateTime;
+
+        LogFileLoader(final String path, @Nullable Instant start, @Nullable Instant end) {
             super(path);
+            this.start = start;
+            this.end = end;
+            this.dateTime = GenericLogs.this.grokCompiler.compile("%{TSONLY}", true);
         }
 
         void parse(String line, String[] output) {
+            // TODO: convert date column into a proper type
             Match gm = GenericLogs.this.grok.match(line);
             final Map<String, Object> capture = gm.capture();
             if (capture.size() > 0) {
@@ -87,15 +95,27 @@ public class GenericLogs {
                     if (fileLine != null) {
                         if (fileLine.trim().isEmpty())
                             continue;
+                        Match gm = this.dateTime.match(fileLine);
+                        boolean hasDate = !gm.isNull();
 
                         // If there is no date in a fileLine we consider heuristically that it
                         // is a continuation of the previous logLine.
-                        Matcher matchDate = datePattern.matcher(fileLine);
-                        if (!matchDate.find()) {
+                        if (!hasDate) {
                             if (logLine.length() != 0)
                                 logLine.append("\\n");
                             logLine.append(fileLine);
                             continue;
+                        } else {
+                            if (this.start != null || this.end != null) {
+                                String date = gm.capture().get("Timestamp").toString();
+                                if (this.dateTimeParser == null)
+                                    this.dateTimeParser = new DateParsing(date);
+                                Instant parsed = this.dateTimeParser.parse(date);
+                                if (this.start != null && this.start.isAfter(parsed))
+                                    continue;
+                                if (this.end != null && this.end.isBefore(parsed))
+                                    continue;
+                            }
                         }
                     }
 
@@ -151,7 +171,11 @@ public class GenericLogs {
         }
     }
 
+    public TextFileLoader getFileLoader(String path, @Nullable Instant start, @Nullable Instant end) {
+        return new LogFileLoader(path, start, end);
+    }
+
     public TextFileLoader getFileLoader(String path) {
-        return new LogFileLoader(path);
+        return this.getFileLoader(path, null, null);
     }
 }

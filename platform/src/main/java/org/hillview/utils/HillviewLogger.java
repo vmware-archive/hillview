@@ -55,9 +55,9 @@ public class HillviewLogger {
     static {
         InternalLoggerFactory.setDefaultFactory(JdkLoggerFactory.INSTANCE);
         GRPC_LOGGER = Logger.getLogger("io.grpc");
-        GRPC_LOGGER.setLevel(Level.WARNING);
+        GRPC_LOGGER.setLevel(Level.INFO);
         NETTY_LOGGER = Logger.getLogger("io.grpc.netty.NettyServerHandler");
-        NETTY_LOGGER.setLevel(Level.WARNING);
+        NETTY_LOGGER.setLevel(Level.INFO);
     }
 
     /**
@@ -68,7 +68,7 @@ public class HillviewLogger {
      */
     private HillviewLogger(String role, @Nullable String filename) {
         // Disable all default logging
-        LogManager.getLogManager().reset();
+        // LogManager.getLogManager().reset();
         this.logger = Logger.getLogger("Hillview");
         this.machine = this.checkCommas(Utilities.getHostName());
         this.role = this.checkCommas(role);
