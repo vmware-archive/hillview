@@ -35,7 +35,7 @@ public class GenericLogsTest extends BaseTest {
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
-        Assert.assertEquals("Table[4x42]", table.toString());
+        Assert.assertEquals("Table[5x42]", table.toString());
     }
 
     @Test
@@ -46,7 +46,7 @@ public class GenericLogsTest extends BaseTest {
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
         // TODO: this test may need to be changed
-        Assert.assertEquals("Table[1x0]", table.toString());
+        Assert.assertEquals("Table[2x0]", table.toString());
     }
 
     @Test
@@ -56,7 +56,7 @@ public class GenericLogsTest extends BaseTest {
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
-        Assert.assertEquals("Table[5x113]", table.toString());
+        Assert.assertEquals("Table[6x113]", table.toString());
     }
 
     @Test
@@ -66,7 +66,7 @@ public class GenericLogsTest extends BaseTest {
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
-        Assert.assertEquals("Table[5x93]", table.toString());
+        Assert.assertEquals("Table[6x93]", table.toString());
     }
 
     @Test
@@ -76,6 +76,6 @@ public class GenericLogsTest extends BaseTest {
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
-        Assert.assertEquals("Table[5x138]", table.toString());
+        Assert.assertEquals("Table[6x138]", table.toString());
     }
 }
