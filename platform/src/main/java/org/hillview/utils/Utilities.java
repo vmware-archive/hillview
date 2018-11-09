@@ -54,6 +54,9 @@ public class Utilities {
                 case '*':
                     s.append(".*");
                     break;
+                case '?':
+                    s.append(".");	
+                    break;
                 case '\\':
                     s.append("\\");
                     s.append(c);
