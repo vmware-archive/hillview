@@ -93,7 +93,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
     // Support for column resizing
     protected resizer: ColumnResizer;
     // See the documentation for ColumnResizer: https://github.com/MonsantoCo/column-resizer
-    protected readonly draggingProperties = {
+    protected readonly resizerProperties = {
         disable: false,
         resizeMode: "overflow",
         liveDrag: true,
@@ -554,6 +554,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
             const span = makeSpan("", false);
             span.innerHTML = this.getSortIndex(cd.name) + this.getSortArrow(cd.name);
             span.onclick = () => this.swapOrder(cd.name);
+            span.style.cursor = "pointer";
             th.appendChild(span);
         }
         th.appendChild(makeSpan(displayName, false));
@@ -845,9 +846,9 @@ export class TableView extends TSViewBase implements IScrollTarget {
         this.highlightSelectedColumns();
         this.page.reportTime(elapsedMs);
         if (this.resizer == null) {
-            this.resizer = new ColumnResizer(this.htmlTable, this.draggingProperties);
+            this.resizer = new ColumnResizer(this.htmlTable, this.resizerProperties);
         } else {
-            this.resizer.reset(this.draggingProperties);
+            this.resizer.reset(this.resizerProperties);
         }
     }
 
@@ -1355,8 +1356,6 @@ export class SchemaReceiver extends OnCompleteReceiver<TableSummary> {
     }
 
     public run(summary: TableSummary): void {
-        let dataView: IDataView;
-
         if (summary.schema == null) {
             this.page.reportError("No schema received; empty dataset?");
             return;
@@ -1364,8 +1363,9 @@ export class SchemaReceiver extends OnCompleteReceiver<TableSummary> {
 
         const schemaClass = new SchemaClass(summary.schema);
         if (summary.schema.length > 20 && !this.forceTableView) {
-            dataView = new SchemaView(this.remoteObject.remoteObjectId, this.page,
+            const dataView = new SchemaView(this.remoteObject.remoteObjectId, this.page,
                 summary.rowCount, schemaClass, this.elapsedMilliseconds());
+            this.page.setDataView(dataView);
         } else {
             const nk: NextKList = {
                 rowsScanned: summary.rowCount,
@@ -1376,10 +1376,9 @@ export class SchemaReceiver extends OnCompleteReceiver<TableSummary> {
             const order = new RecordOrder([]);
             const table = new TableView(
                 this.remoteObject.remoteObjectId, summary.rowCount, schemaClass, this.page);
+            this.page.setDataView(table);
             table.updateView(nk, false, order, null, this.elapsedMilliseconds());
-            dataView = table;
         }
-        this.page.setDataView(dataView);
     }
 }
 

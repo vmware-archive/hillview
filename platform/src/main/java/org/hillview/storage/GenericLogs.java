@@ -25,6 +25,7 @@ import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.ConstantStringColumn;
 import org.hillview.utils.DateParsing;
+import org.hillview.utils.GrokExtra;
 import org.hillview.utils.Utilities;
 
 import java.time.Instant;
@@ -63,20 +64,30 @@ public class GenericLogs {
             super(path);
             this.start = start;
             this.end = end;
-            this.dateTime = GenericLogs.this.grokCompiler.compile("%{TSONLY}", true);
+            String originalPattern = GenericLogs.this.grok.getOriginalGrokPattern();
+            String subgroup = "Timestamp";
+            String timestampPattern = GrokExtra.extractGroupPattern(
+                    GenericLogs.this.grokCompiler.getPatternDefinitions(),
+                    originalPattern, subgroup);
+            if (timestampPattern != null)
+                this.dateTime = GenericLogs.this.grokCompiler.compile(
+                        "%{" + timestampPattern + ":Timestamp}", true);
+            else
+                throw new RuntimeException("Pattern does not contain a Timestamp group");
         }
 
-        void parse(String line, String[] output) {
-            // TODO: convert date column into a proper type
+        boolean parse(String line, String[] output) {
             Match gm = GenericLogs.this.grok.match(line);
             final Map<String, Object> capture = gm.capture();
             if (capture.size() > 0) {
                 int index = 0;
                 for (Map.Entry<String,Object> entry : capture.entrySet()) {
-                    output[index] = entry.getValue().toString().replace("\\n", "\n");
+                    output[index] = entry.getValue().toString().replace("\\n", "\n").trim();
                     index += 1;
                 }
+                return true;
             }
+            return false;
         }
 
         @Override
@@ -95,8 +106,10 @@ public class GenericLogs {
                     if (fileLine != null) {
                         if (fileLine.trim().isEmpty())
                             continue;
+                        boolean hasDate;
+                        // If there is no datetime pattern then we don't look for dates.
                         Match gm = this.dateTime.match(fileLine);
-                        boolean hasDate = !gm.isNull();
+                        hasDate = !gm.isNull();
 
                         // If there is no date in a fileLine we consider heuristically that it
                         // is a continuation of the previous logLine.
@@ -128,6 +141,8 @@ public class GenericLogs {
                             // This is the first logLine we are processing.
                             schema = new Schema();
                             Match gmatch = GenericLogs.this.grok.match(logString);
+                            if (gmatch.isNull())
+                                throw new RuntimeException("Error parsing first log line in " + this.filename);
                             final Map<String, Object> capture = gmatch.capture();
                             for (Map.Entry<String, Object> entry : capture.entrySet())
                                 schema.append(new ColumnDescription(entry.getKey(), ContentsKind.String));
@@ -135,8 +150,9 @@ public class GenericLogs {
                             fields = new String[this.columns.length];
                             first = false;
                         }
-                        this.parse(logString, fields);
-                        this.append(fields);
+                        if (this.parse(logString, fields))
+                            this.append(fields);
+                        // else we have a parsing error
                     }
                     if (fileLine == null)
                         break;

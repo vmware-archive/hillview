@@ -17,33 +17,41 @@
 
 package org.hillview.test.storage;
 
-import io.krakens.grok.api.Grok;
 import io.krakens.grok.api.GrokCompiler;
-import io.krakens.grok.api.Match;
 import org.hillview.storage.GenericLogs;
 import org.hillview.storage.TextFileLoader;
 import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;
-import org.hillview.utils.DateParsing;
+import org.hillview.utils.GrokExtra;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 /**
  * Various tests for reading Generic logs into ITable.
  */
 public class GenericLogsTest extends BaseTest {
-    //@Test
+    @Test
     public void findTimestamp() {
         GrokCompiler grokCompiler = GrokCompiler.newInstance();
         grokCompiler.registerDefaultPatterns();
         grokCompiler.registerPatternFromClasspath("/patterns/log-patterns");
-        Grok grok = grokCompiler.compile("%{TSONLY}", true);
-        Match gm = grok.match("Oct 7 05:24:10 Rest of lime");
-        Assert.assertFalse(gm.isNull());
-        Object ts = gm.capture().get("Timestamp");
-        Assert.assertEquals("Oct 7 05:24:10", ts);
+        String group = "Timestamp";
+
+        String pattern = "%{SYSLOG}";
+        String regex = GrokExtra.extractGroupPattern(
+                grokCompiler.getPatternDefinitions(),
+                pattern, group);
+        Assert.assertEquals("SYSLOGTIMESTAMP", regex);
+
+        pattern = "%{HADOOP}";
+        regex = GrokExtra.extractGroupPattern(
+                grokCompiler.getPatternDefinitions(),
+                pattern, group);
+        Assert.assertEquals("TIMESTAMP", regex);
     }
 
     @Test
@@ -53,7 +61,40 @@ public class GenericLogsTest extends BaseTest {
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
+        //System.out.println(table.toLongString(10));
         Assert.assertEquals("Table[5x42]", table.toString());
+    }
+
+    @Test
+    public void testSyslogTime() {
+        String path = "../data/sample_logs/syslog";
+        GenericLogs logs = new GenericLogs("%{SYSLOG}");
+        TextFileLoader fileLoader = logs.getFileLoader(path, null, Instant.now());
+        ITable table = fileLoader.load();
+        Assert.assertNotNull(table);
+        //System.out.println(table.toLongString(10));
+        Assert.assertEquals("Table[5x42]", table.toString());
+    }
+
+    @Test
+    public void testSyslogTime1() {
+        // This log has no years in the dates, so they will be parsed as the
+        // current year...
+        String path = "../data/sample_logs/syslog";
+        GenericLogs logs = new GenericLogs("%{SYSLOG}");
+        LocalDateTime now = LocalDateTime.now();
+        Instant start = LocalDateTime.of(now.getYear(), 10, 7, 6, 0, 0)
+                .atZone(ZoneOffset.systemDefault())
+                .toInstant();
+        Instant end = LocalDateTime.of(now.getYear(), 10, 7, 8, 0, 0)
+                .atZone(ZoneOffset.systemDefault())
+                .toInstant();
+
+        TextFileLoader fileLoader = logs.getFileLoader(path, start, end);
+        ITable table = fileLoader.load();
+        Assert.assertNotNull(table);
+        //System.out.println(table.toLongString(10));
+        Assert.assertEquals("Table[5x4]", table.toString());
     }
 
     @Test
@@ -74,6 +115,7 @@ public class GenericLogsTest extends BaseTest {
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
+        //System.out.println(table.toLongString(10));
         Assert.assertEquals("Table[6x113]", table.toString());
     }
 
@@ -84,6 +126,7 @@ public class GenericLogsTest extends BaseTest {
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
+        //System.out.println(table.toLongString(10));
         Assert.assertEquals("Table[6x93]", table.toString());
     }
 
@@ -94,6 +137,7 @@ public class GenericLogsTest extends BaseTest {
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
+        //System.out.println(table.toLongString(10));
         Assert.assertEquals("Table[6x138]", table.toString());
     }
 }

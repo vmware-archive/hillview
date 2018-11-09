@@ -90,7 +90,6 @@ export type DataKinds = "csv" | "orc" | "parquet" | "json" | "hillviewlog" | "db
 
 export interface FileSetDescription {
     fileKind: DataKinds;
-    folder: string;
     fileNamePattern: string;
     schemaFile: string;
     headerRow?: boolean;

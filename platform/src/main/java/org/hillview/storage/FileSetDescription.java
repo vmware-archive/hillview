@@ -39,16 +39,10 @@ public class FileSetDescription implements Serializable, IJson {
      */
     public String fileKind = "";
     /**
-     * Folder where files are looked up.
-     */
-    public String folder = "";
-    /**
      * A simple shell pattern matching file names.
-     * Note: this is not a regular expression, but it can be converted
-     * by the method getRegexPattern below to a regular expression.
+     * Note: this is not a regular expression.
      */
-    @Nullable
-    public String fileNamePattern;
+    public String fileNamePattern = "*";
     /**
      * Name of schema file in folder.  If null or empty no schema file is assumed.
      */
@@ -82,7 +76,15 @@ public class FileSetDescription implements Serializable, IJson {
     private String getSchemaPath() {
         if (Utilities.isNullOrEmpty(this.schemaFile))
             return null;
-        return Paths.get(this.folder, this.schemaFile).toString();
+        return Paths.get(this.getFolder(), this.schemaFile).toString();
+    }
+
+    public String getFolder() {
+        int last = this.fileNamePattern.lastIndexOf('/');
+        last = Math.max(last, this.fileNamePattern.lastIndexOf('\\'));
+        if (last == -1)
+            return "";
+        return this.fileNamePattern.substring(0, last);
     }
 
     @Nullable
@@ -91,10 +93,12 @@ public class FileSetDescription implements Serializable, IJson {
     }
 
     @Nullable
-    public String getRegexPattern() {
-        if (this.fileNamePattern == null)
-            return null;
-        return Utilities.wildcardToRegex(this.fileNamePattern);
+    public String getWildcard() {
+        int last = this.fileNamePattern.lastIndexOf('/');
+        last = Math.max(last, this.fileNamePattern.lastIndexOf('\\'));
+        if (last == -1)
+            return this.fileNamePattern;
+        return this.fileNamePattern.substring(last + 1);
     }
 
     public IFileReference createFileReference(String pathname) {

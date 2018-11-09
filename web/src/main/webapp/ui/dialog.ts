@@ -211,7 +211,7 @@ export class Dialog extends DialogBase {
 
         this.confirmButton = document.createElement("input");
         this.confirmButton.type = "submit";
-        this.confirmButton.textContent = "Confirm";
+        this.confirmButton.value = "Confirm";
         this.confirmButton.classList.add("confirm");
         d3select(this.confirmButton).call(nodrag);
         this.buttonsDiv.appendChild(this.confirmButton);
@@ -434,7 +434,7 @@ export class Dialog extends DialogBase {
         input.type = "datetime-local";
         this.fields.set(fieldName, { html: input, type: FieldKind.Datetime });
         if (value != null)
-            input.valueAsDate = value;
+            input.value = value.toISOString().slice(0, 16);
         return input;
     }
 
@@ -527,7 +527,7 @@ export class Dialog extends DialogBase {
      * @param {string} field  Field name whose value is sought.
      */
     public getDateTimeValue(field: string): Date | null {
-        return (this.fields.get(field).html as HTMLInputElement).valueAsDate;
+        return new Date((this.fields.get(field).html as HTMLInputElement).value);
     }
 
     /**
