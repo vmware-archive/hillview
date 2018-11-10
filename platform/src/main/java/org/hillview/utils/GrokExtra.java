@@ -17,11 +17,12 @@
 
 package org.hillview.utils;
 
+import io.krakens.grok.api.Grok;
+import io.krakens.grok.api.GrokUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nullable;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 
 import static java.lang.String.format;
@@ -53,14 +54,14 @@ public class GrokExtra {
         int index = 0;
         /** flag for infinite recursion. */
         int iterationLeft = 1000;
-        Boolean continueIteration = true;
+        boolean continueIteration = true;
 
         // Replace %{foo} with the regex (mostly group name regex)
         // and then compile the regex
         while (continueIteration) {
             continueIteration = false;
             if (iterationLeft <= 0) {
-                throw new IllegalArgumentException("Deep recursion pattern compilation of " + sourcePattern);
+                throw new IllegalArgumentException("Deep recursion during analysis of " + sourcePattern);
             }
             iterationLeft--;
 
@@ -98,5 +99,71 @@ public class GrokExtra {
             }
         }
         return null;
+    }
+
+    /**
+     * Returns the columns to extract in the order they appear in the grok pattern.
+     */
+    public static List<String> getColumnsFromPattern(Grok grok) {
+        Set<String> columnsFound = new HashSet<String>();
+
+        String currentPattern = grok.getOriginalGrokPattern();
+        int index = 0;
+        /** flag for infinite recursion. */
+        int iterationLeft = 1000;
+        boolean continueIteration = true;
+        Map<String, String> patternDefinitions = grok.getPatterns();
+
+        // Replace %{foo} with the regex (mostly group name regex)
+        // and then compile the regex
+        while (continueIteration) {
+            continueIteration = false;
+            if (iterationLeft <= 0) {
+                throw new IllegalArgumentException(
+                        "Deep recursion during analysis of " + grok.getOriginalGrokPattern());
+            }
+            iterationLeft--;
+
+            Set<String> namedGroups = io.krakens.grok.api.GrokUtils.getNameGroups(io.krakens.grok.api.GrokUtils.GROK_PATTERN.pattern());
+            Matcher matcher = io.krakens.grok.api.GrokUtils.GROK_PATTERN.matcher(currentPattern);
+            // Match %{Foo:bar} -> pattern name and subname
+            // Match %{Foo=regex} -> add new regex definition
+            if (matcher.find()) {
+                continueIteration = true;
+                Map<String, String> group = io.krakens.grok.api.GrokUtils.namedGroups(matcher, namedGroups);
+                if (group.get("definition") != null) {
+                    patternDefinitions.put(group.get("pattern"), group.get("definition"));
+                    group.put("name", group.get("name") + "=" + group.get("definition"));
+                }
+                int count = StringUtils.countMatches(currentPattern, "%{" + group.get("name") + "}");
+                for (int i = 0; i < count; i++) {
+                    String definitionOfPattern = patternDefinitions.get(group.get("pattern"));
+                    if (definitionOfPattern == null) {
+                        throw new IllegalArgumentException(format("No definition for key '%s' found, aborting",
+                                group.get("pattern")));
+                    }
+
+                    String replacement = "";
+                    String subname = group.get("subname");
+                    if (subname != null) {
+                        columnsFound.add(subname);
+                    } else {
+                        replacement = String.format("(?<name%d>%s)", index, definitionOfPattern);
+                    }
+                    currentPattern = StringUtils.replace(currentPattern, "%{" + group.get("name") + "}", replacement, 1);
+                    index++;
+                }
+            }
+        }
+
+        // Now scan all the groups in order and return them only if they are in the set of columns.
+        List<String> result = new ArrayList<String>();
+        Set<String> groups = GrokUtils.getNameGroups(grok.getNamedRegex());
+        for (String s : groups) {
+            String name = grok.getNamedRegexCollectionById(s);
+            if (columnsFound.contains(name))
+                result.add(name);
+        }
+        return result;
     }
 }

@@ -17,11 +17,14 @@
 
 package org.hillview.test.storage;
 
+import io.krakens.grok.api.Grok;
 import io.krakens.grok.api.GrokCompiler;
+import io.krakens.grok.api.Match;
 import org.hillview.storage.GenericLogs;
 import org.hillview.storage.TextFileLoader;
 import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;
+import org.hillview.utils.DateParsing;
 import org.hillview.utils.GrokExtra;
 import org.junit.Assert;
 import org.junit.Test;
@@ -29,6 +32,7 @@ import org.junit.Test;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 
 /**
  * Various tests for reading Generic logs into ITable.
@@ -51,7 +55,56 @@ public class GenericLogsTest extends BaseTest {
         regex = GrokExtra.extractGroupPattern(
                 grokCompiler.getPatternDefinitions(),
                 pattern, group);
-        Assert.assertEquals("TIMESTAMP", regex);
+        Assert.assertEquals("LONGTIMESTAMP", regex);
+    }
+
+    @Test
+    public void testColumns() {
+        GrokCompiler grokCompiler = GrokCompiler.newInstance();
+        grokCompiler.registerDefaultPatterns();
+        grokCompiler.registerPatternFromClasspath("/patterns/log-patterns");
+        String pattern = "%{SYSLOG}";
+        Grok grok = grokCompiler.compile(pattern);
+        List<String> cols = GrokExtra.getColumnsFromPattern(grok);
+        Assert.assertEquals(cols.size(), 3);
+        Assert.assertEquals("Timestamp", cols.get(0));
+        Assert.assertEquals("Logsource", cols.get(1));
+        Assert.assertEquals("Message", cols.get(2));
+
+        pattern = "%{HADOOP}";
+        grok = grokCompiler.compile(pattern);
+        cols = GrokExtra.getColumnsFromPattern(grok);
+        Assert.assertEquals(cols.size(), 4);
+        Assert.assertEquals("Timestamp", cols.get(0));
+        Assert.assertEquals("Level", cols.get(1));
+        Assert.assertEquals("Class", cols.get(2));
+        Assert.assertEquals("Message", cols.get(3));
+    }
+
+    @Test
+    public void longTimestamp() {
+        GrokCompiler grokCompiler = GrokCompiler.newInstance();
+        grokCompiler.registerDefaultPatterns();
+        grokCompiler.registerPatternFromClasspath("/patterns/log-patterns");
+        Grok grok = grokCompiler.compile("%{LONGTIMESTAMP:Timestamp}", true);
+
+        String ts = "2018-09-30 09:44:10,802";
+        String rest = "INFO  resourcemanager.ResourceManager (LogAdapter.java:info(45)) - registered UNIX signal handlers for [TERM, HUP, INT]";
+        Match m = grok.match(ts);
+        Assert.assertNotNull(m);
+        Assert.assertFalse(m.isNull());
+        Assert.assertEquals(ts, m.capture().get("Timestamp"));
+
+        m = grok.match(ts + " " + rest);
+        Assert.assertNotNull(m);
+        Assert.assertFalse(m.isNull());
+        Assert.assertEquals(ts, m.capture().get("Timestamp"));
+
+        DateParsing parsing = new DateParsing(ts);
+        Instant i = parsing.parse(ts);
+        LocalDateTime ldt = LocalDateTime.ofInstant(i, ZoneOffset.systemDefault());
+        Assert.assertEquals(2018, ldt.getYear());
+        Assert.assertEquals(9, ldt.getMonthValue());
     }
 
     @Test
@@ -62,7 +115,7 @@ public class GenericLogsTest extends BaseTest {
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
         //System.out.println(table.toLongString(10));
-        Assert.assertEquals("Table[5x42]", table.toString());
+        Assert.assertEquals("Table[6x42]", table.toString());
     }
 
     @Test
@@ -73,7 +126,7 @@ public class GenericLogsTest extends BaseTest {
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
         //System.out.println(table.toLongString(10));
-        Assert.assertEquals("Table[5x42]", table.toString());
+        Assert.assertEquals("Table[6x42]", table.toString());
     }
 
     @Test
@@ -86,7 +139,7 @@ public class GenericLogsTest extends BaseTest {
         Instant start = LocalDateTime.of(now.getYear(), 10, 7, 6, 0, 0)
                 .atZone(ZoneOffset.systemDefault())
                 .toInstant();
-        Instant end = LocalDateTime.of(now.getYear(), 10, 7, 8, 0, 0)
+        Instant end = LocalDateTime.of(now.getYear(), 10, 7, 9, 0, 0)
                 .atZone(ZoneOffset.systemDefault())
                 .toInstant();
 
@@ -94,7 +147,7 @@ public class GenericLogsTest extends BaseTest {
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
         //System.out.println(table.toLongString(10));
-        Assert.assertEquals("Table[5x4]", table.toString());
+        Assert.assertEquals("Table[6x5]", table.toString());
     }
 
     @Test
@@ -104,8 +157,7 @@ public class GenericLogsTest extends BaseTest {
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
-        // TODO: this test may need to be changed
-        Assert.assertEquals("Table[2x0]", table.toString());
+        Assert.assertEquals("Table[6x0]", table.toString());
     }
 
     @Test
@@ -116,7 +168,7 @@ public class GenericLogsTest extends BaseTest {
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
         //System.out.println(table.toLongString(10));
-        Assert.assertEquals("Table[6x113]", table.toString());
+        Assert.assertEquals("Table[7x113]", table.toString());
     }
 
     @Test
@@ -127,7 +179,7 @@ public class GenericLogsTest extends BaseTest {
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
         //System.out.println(table.toLongString(10));
-        Assert.assertEquals("Table[6x93]", table.toString());
+        Assert.assertEquals("Table[7x93]", table.toString());
     }
 
     @Test
@@ -138,6 +190,6 @@ public class GenericLogsTest extends BaseTest {
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
         //System.out.println(table.toLongString(10));
-        Assert.assertEquals("Table[6x138]", table.toString());
+        Assert.assertEquals("Table[7x138]", table.toString());
     }
 }

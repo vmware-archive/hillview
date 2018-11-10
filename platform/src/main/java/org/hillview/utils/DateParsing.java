@@ -42,26 +42,29 @@ public class DateParsing {
     private boolean parseAsDate;
 
     private static final LinkedHashMap<String, String> DATE_FORMAT_REGEXPS =
+            // Note that the regexp used as the key is used against the lowercased string
             new LinkedHashMap<String, String>() {{
                 put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}$", "yyyy-M-d H:mm:ss");
-                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}.\\d$",
-                        "yyyy-M-d H:mm:ss.S");
-                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}.\\d{2}$",
-                        "yyyy-M-d H:mm:ss.SS");
-                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}.\\d{3}$",
-                        "yyyy-M-d H:mm:ss.SSS");
-                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}.\\d{4}$",
-                        "yyyy-M-d H:mm:ss.SSSS");
-                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}.\\d{5}$",
-                        "yyyy-M-d H:mm:ss.SSSSS");
-                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}.\\d{6}$",
-                        "yyyy-M-d H:mm:ss.SSSSSS");
-                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}.\\d{7}$",
-                        "yyyy-M-dd H:m:ss.SSSSSSS");
-                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}.\\d{8}$",
-                        "yyyy-M-d H:m:ss.SSSSSSSS");
                 put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}.\\d{9}$",
                         "yyyy-M-d H:m:ss.SSSSSSSSS");
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}.\\d{8}$",
+                        "yyyy-M-d H:m:ss.SSSSSSSS");
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}.\\d{7}$",
+                        "yyyy-M-dd H:m:ss.SSSSSSS");
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}.\\d{6}$",
+                        "yyyy-M-d H:mm:ss.SSSSSS");
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}.\\d{5}$",
+                        "yyyy-M-d H:mm:ss.SSSSS");
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}.\\d{4}$",
+                        "yyyy-M-d H:mm:ss.SSSS");
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2},\\d{3}$",
+                        "yyyy-M-d H:mm:ss,SSS");
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}.\\d{3}$",
+                        "yyyy-M-d H:mm:ss.SSS");
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}.\\d{2}$",
+                        "yyyy-M-d H:mm:ss.SS");
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}.\\d$",
+                        "yyyy-M-d H:mm:ss.S");
                 put("^\\d{1,2}\\s[a-z]{4,}\\s\\d{4}\\s+\\d{1,2}:\\d{2}:\\d{2}$", "d M yyyy H:mm:ss");
                 put("^\\d{1,2}\\s[a-z]{3}\\s\\d{4}\\s+\\d{1,2}:\\d{2}:\\d{2}$", "d MMM yyyy H:mm:ss");
                 put("^\\d{4}/\\d{1,2}/\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}$", "yyyy/M/dd H:mm:ss");
@@ -72,10 +75,10 @@ public class DateParsing {
                 put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}$", "yyyy-M-d H:mm");
                 put("^\\d{1,2}/\\d{1,2}/\\d{4}\\s+\\d{1,2}:\\d{2}$", "M/d/yyyy H:mm");
                 put("^\\d{4}/\\d{1,2}/\\d{1,2}\\s+\\d{1,2}:\\d{2}$", "yyyy/M/d H:mm");
-                put("^\\d{1,2}\\s+[A-Za-z]{3}\\s+\\d{4}\\s\\d{1,2}:\\d{2}$", "d MMM yyyy H:mm");
-                put("^\\d{1,2}\\s+[A-Za-z]{4,}\\s+\\d{4}\\s\\d{1,2}:\\d{2}$", "d MMMM yyyy H:mm");
-                put("^[A-Za-z]{3}\\s+\\d{1,2}\\s+\\d{1,2}:\\d{2}$", "MMM d H:mm");
-                put("^[A-Za-z]{3}\\s+\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}$", "MMM d H:mm:ss");
+                put("^\\d{1,2}\\s+[a-z]{3}\\s+\\d{4}\\s\\d{1,2}:\\d{2}$", "d MMM yyyy H:mm");
+                put("^\\d{1,2}\\s+[a-z]{4,}\\s+\\d{4}\\s\\d{1,2}:\\d{2}$", "d MMMM yyyy H:mm");
+                put("^[a-z]{3}\\s+\\d{1,2}\\s+\\d{1,2}:\\d{2}$", "MMM d H:mm");
+                put("^[a-z]{3}\\s+\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}$", "MMM d H:mm:ss");
                 put("^\\d{1,2}-\\d{1,2}-\\d{4}$", "d-M-yyyy");
                 put("^\\d{4}-\\d{1,2}-\\d{1,2}$", "yyyy-M-d");
                 put("^\\d{1,2}/\\d{1,2}/\\d{4}$", "M/d/yyyy");
@@ -104,7 +107,7 @@ public class DateParsing {
 
     @SuppressWarnings("UnnecessaryContinue")
     public DateParsing(String s) {
-        s = s.trim();
+        s = Utilities.singleSpaced(s);
         boolean[] asDate = {false, true};
 
         for (boolean b : asDate) {
@@ -147,8 +150,7 @@ public class DateParsing {
 
 
     public Instant parse(String s) {
-        // discard multiple spaces, they trip up the formatter
-        s = s.replaceAll("^ +| +$|( )+", "$1");
+        s = Utilities.singleSpaced(s);
         Converters.checkNull(this.parserFormatter);
         if (this.parseAsDate) {
             return LocalDate.parse(s, this.parserFormatter)
