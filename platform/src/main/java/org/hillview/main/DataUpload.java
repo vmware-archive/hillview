@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2018 VMware Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.hillview.main;
 
 import javax.annotation.Nullable;
@@ -26,48 +43,45 @@ import com.univocity.parsers.csv.CsvFormat;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
 
+/**
+ * This entry point is only used for uploading data to a cluster. The user provides configuration details such as the
+ * path to the cluster config file, the location of the file to upload etc. If a schema is not provided the program
+ * scans the file to determine one. It then proceeds to read the file as a stream, and  chop it to smaller shards,
+ * placing one shard in each server in a round robin fashion. The user chooses whether to upload the file in csv
+ * format or in orc format. A schema file is also placed in each server.
+ *
+ */
 public class DataUpload  {
-    private static class params {
+    private static class Params {
         final int defaultChunkSize = 1000000;
         final String defaultSchemaName = "schema";
         @Nullable
         String schemaPath = null;
         @Nullable
-        String filename; //the file to be sent
+        String filename; // the file to be sent
         @Nullable
         String directory;
-        ArrayList<String> fileList = new ArrayList<>();
-        String remoteFolder; //the destination path where the files will be put
-        String cluster; //the path to the cluster config json file
-        boolean hasHeader; //true if file has a header row
-        boolean orc; //true if saving as orc, otherwise save as csv;
-        int chunkSize = defaultChunkSize; //the number of lines in each shard.
+        ArrayList<String> fileList = new ArrayList<String>();
+        String remoteFolder = ""; // the destination path where the files will be put
+        String cluster = ""; // the path to the cluster config json file
+        boolean hasHeader; // true if file has a header row
+        boolean orc; // true if saving as orc, otherwise save as csv;
+        int chunkSize = defaultChunkSize; // the number of lines in each shard.
         boolean allowFewerColumns;
     }
 
-    private static void usage(@Nullable Options options) {
-         final String usageString = "Usage: DataUpload " +
-                "-f <filename> " +
-                "-d <remoteFolder> " +
-                "-c <clusterConfig> " +
-                "-l <linenumber> " +
-                "-o (if save as orc) " +
-                "-s <schema> " +
-                "-h (if has header row)" +
-                "-w (if allow fewer columns)";
-        System.out.println(usageString);
-        if (options != null)
-            System.out.println(options.getOptions());
+    private static void usage(Options options) {
+        final String usageString = "Usage: DataUpload ";
+        System.out.print(usageString);
+        System.out.println(options.getOptions());
     }
 
     /**
      * Parses the command line and fills up the parameters data structure
      * todo: support the -D directory option for a list of files. Currently it is parsed but not used.
-     * @param args
-     * @return
      */
 
-    private static params parseCommand(String[] args) {
+    private static Params parseCommand(String[] args) {
         Options options = new Options();
         Option o_filename = new Option("f", "filename", true, "path to file to distribute");
         o_filename.setRequired(true);
@@ -81,7 +95,7 @@ public class DataUpload  {
         Option o_linenumber = new Option("l","lines",true, "number of lines in each chunk");
         o_linenumber.setRequired(false);
         options.addOption(o_linenumber);
-        Option o_format = new Option("o","orc",false, "when appears the file will be saved as orc");
+        Option o_format = new Option("o","orc",false, "indicates to save file as orc");
         o_format.setRequired(false);
         options.addOption(o_format);
         Option o_schema = new Option("s","schema",true, "path to the schema file");
@@ -109,7 +123,7 @@ public class DataUpload  {
             System.out.println("can't parse due to " + pe);
             usage(options);
         }
-        params parameters = new params();
+        Params parameters = new Params();
         try{
             if (cmd.hasOption('f') == cmd.hasOption('D'))
                 throw new RuntimeException("need either file or directory");
@@ -134,7 +148,7 @@ public class DataUpload  {
             try {
                 parameters.chunkSize = Integer.parseInt(cmd.getOptionValue('l'));
             } catch (NumberFormatException e) {
-                usage(null);
+                usage(options);
                 System.out.println("Can't parse number due to " + e.getMessage());
             }
         }
@@ -147,7 +161,7 @@ public class DataUpload  {
     }
 
     public static void main(String args[]) {
-        params parameters = parseCommand(args);
+        Params parameters = parseCommand(args);
         try {
             ClusterConfig config = ClusterConfig.parse(parameters.cluster);
             CsvFileLoader.Config parsConfig = new CsvFileLoader.Config();
@@ -157,11 +171,19 @@ public class DataUpload  {
             if (!Utilities.isNullOrEmpty(parameters.schemaPath))
                 mySchema = Schema.readFromJsonFile(Paths.get(parameters.schemaPath));
             else {
+                int i = 1;
+                String tmpSchemaName = parameters.defaultSchemaName;
+                while (!Utilities.isNullOrEmpty(tmpSchemaName)) {
+                    tmpSchemaName = parameters.defaultSchemaName + Integer.toString(i);
+                    i++;
+                }
+                parameters.schemaPath = tmpSchemaName;
+                if (i > 1)
+                    HillviewLogger.instance.warn("default Schema name was taken. used: " + parameters.schemaPath);
                 mySchema = guessSchema(parameters.filename, parsConfig);
-                parameters.schemaPath = parameters.defaultSchemaName;
                 mySchema.writeToJsonFile(Paths.get(parameters.schemaPath));
             }
-            chop_files(parsConfig, config, mySchema, parameters);
+            chopFiles(parsConfig, config, mySchema, parameters);
         } catch(IOException e) {
             error(e);
         }
@@ -171,7 +193,6 @@ public class DataUpload  {
      * Guesses the schema of a table written as a csv file by streaming through the file.
      * @param filename name of the file containing the table
      * @param config configuration file for the parser
-     * @return
      */
     private static Schema guessSchema(String filename, CsvFileLoader.Config config) {
         Reader file = null;
@@ -190,13 +211,9 @@ public class DataUpload  {
             settings.setMaxColumns(50000);
             CsvParser myParser = new CsvParser(settings);
             myParser.beginParsing(file);
-            @javax.annotation.Nullable
+            @Nullable
             String[] line = null;
-            try {
-                line = myParser.parseNext();
-            } catch (Exception ex) {
-                error(ex);
-            }
+            line = myParser.parseNext();
             if (line == null)
                 throw new RuntimeException("Missing header row " + filename);
             colnum = line.length;
@@ -216,14 +233,12 @@ public class DataUpload  {
                 }
                 index++;
             }
+            HillviewLogger.instance.info("Guessing the schema");
+            int progress = 1;
             while (true) {
                 @Nullable
                 String[] nextLine = null;
-                try {
-                    nextLine = myParser.parseNext();
-                } catch (RuntimeException ex) {
-                    error(ex);
-                }
+                nextLine = myParser.parseNext();
                 if (nextLine == null)
                     break;
                 index = 0;
@@ -231,6 +246,9 @@ public class DataUpload  {
                     schemaGuesses[index].updateGuess(col);
                     index++;
                 }
+                if ((progress % 100000) == 0 )
+                    System.out.print(".");
+                progress++;
             }
             myParser.stopParsing();
         }
@@ -247,12 +265,12 @@ public class DataUpload  {
     /**
      * creates a directory in each remote host and places the schema there. Then it chops the file into shards and
      * sends the shards to remote hosts in round robin fashion. This is done with one streaming pass of the file.
-     * @param config the configuration fo the parser to be used
+     * @param config the configuration of the parser to be used
      * @param schema the schema of the file.
      * @param parameters the parameters taken from the command line, include file path and destination
      */
-    private static void chop_files(CsvFileLoader.Config config, ClusterConfig clusterConfig,
-                                   Schema schema, params parameters) {
+    private static void chopFiles(CsvFileLoader.Config config, ClusterConfig clusterConfig,
+                                  Schema schema, Params parameters) {
         Reader file = null;
         IAppendableColumn[] columns = null;
         int progress = 0;
@@ -367,10 +385,7 @@ public class DataUpload  {
                 throw new RuntimeException("Scp stopped with error code " + Integer.toString(err));
     }
     
-    /** Writes the table in ORC or CSV formatt
-     *
-     * @param table
-     * @param filename
+    /** Writes the table in ORC or CSV format
      */
     private static void writeTable(Table table, String filename, boolean orc) {
         HillviewLogger.instance.info("Writing chunk in: " + filename);
