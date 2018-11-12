@@ -1,4 +1,4 @@
-"""Common functions user by the Hillview deployment scripts"""
+"""Common functions used by the Hillview deployment scripts"""
 
 # pylint: disable=invalid-name,too-few-public-methods, bare-except
 import os.path
