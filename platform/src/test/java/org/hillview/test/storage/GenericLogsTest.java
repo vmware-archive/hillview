@@ -22,6 +22,7 @@ import io.krakens.grok.api.GrokCompiler;
 import io.krakens.grok.api.Match;
 import org.hillview.storage.GenericLogs;
 import org.hillview.storage.TextFileLoader;
+import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;
 import org.hillview.utils.DateParsing;
@@ -38,6 +39,8 @@ import java.util.List;
  * Various tests for reading Generic logs into ITable.
  */
 public class GenericLogsTest extends BaseTest {
+    private static boolean print = false;
+
     @Test
     public void findTimestamp() {
         GrokCompiler grokCompiler = GrokCompiler.newInstance();
@@ -115,7 +118,54 @@ public class GenericLogsTest extends BaseTest {
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
         //System.out.println(table.toLongString(10));
-        Assert.assertEquals("Table[6x42]", table.toString());
+        Assert.assertEquals("Table[8x42]", table.toString());
+
+        IColumn col = table.getLoadedColumn(GenericLogs.directoryColumn);
+        String s = col.getString(0);
+        Assert.assertEquals("../data/sample_logs/", s);
+
+        col = table.getLoadedColumn(GenericLogs.filenameColumn);
+        s = col.getString(0);
+        Assert.assertEquals("syslog", s);
+
+        col = table.getLoadedColumn(GenericLogs.lineNumberColumn);
+        int i = col.getInt(0);
+        Assert.assertEquals(1, i);
+        i = col.getInt(1);
+        Assert.assertEquals(2, i);
+
+        col = table.getLoadedColumn(GenericLogs.hostColumn);
+        String host = col.getString(0);
+        Assert.assertNotNull(host);
+    }
+
+    @Test
+    public void testWrongpattern() {
+        String path = "../data/sample_logs/syslog";
+        GenericLogs logs = new GenericLogs("%{HADOOP}");  // correct one is SYSLOG
+        TextFileLoader fileLoader = logs.getFileLoader(path);
+        ITable table = fileLoader.load();
+        Assert.assertNotNull(table);
+        if (print)
+            System.out.println(table.toLongString(10));
+        Assert.assertEquals("Table[9x42]", table.toString());
+        IColumn col = table.getLoadedColumn(GenericLogs.parseErrorColumn);
+        for (int i = 0; i < col.sizeInRows(); i++) {
+            String s = col.getString(i);
+            Assert.assertNotNull(s);
+        }
+    }
+
+    @Test
+    public void testStartuplog() {
+        String path = "../data/sample_logs/startuplog";
+        GenericLogs logs = new GenericLogs("%{HADOOP}");
+        TextFileLoader fileLoader = logs.getFileLoader(path);
+        ITable table = fileLoader.load();
+        Assert.assertNotNull(table);
+        if (print)
+            System.out.println(table.toLongString(10));
+        Assert.assertEquals("Table[9x2]", table.toString());
     }
 
     @Test
@@ -125,8 +175,9 @@ public class GenericLogsTest extends BaseTest {
         TextFileLoader fileLoader = logs.getFileLoader(path, null, Instant.now());
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
-        //System.out.println(table.toLongString(10));
-        Assert.assertEquals("Table[6x42]", table.toString());
+        if (print)
+            System.out.println(table.toLongString(10));
+        Assert.assertEquals("Table[8x42]", table.toString());
     }
 
     @Test
@@ -146,8 +197,9 @@ public class GenericLogsTest extends BaseTest {
         TextFileLoader fileLoader = logs.getFileLoader(path, start, end);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
-        //System.out.println(table.toLongString(10));
-        Assert.assertEquals("Table[6x5]", table.toString());
+        if (print)
+            System.out.println(table.toLongString(10));
+        Assert.assertEquals("Table[8x5]", table.toString());
     }
 
     @Test
@@ -157,7 +209,7 @@ public class GenericLogsTest extends BaseTest {
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
-        Assert.assertEquals("Table[6x0]", table.toString());
+        Assert.assertEquals("Table[8x0]", table.toString());
     }
 
     @Test
@@ -167,8 +219,9 @@ public class GenericLogsTest extends BaseTest {
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
-        //System.out.println(table.toLongString(10));
-        Assert.assertEquals("Table[7x113]", table.toString());
+        if (print)
+            System.out.println(table.toLongString(10));
+        Assert.assertEquals("Table[9x113]", table.toString());
     }
 
     @Test
@@ -178,8 +231,9 @@ public class GenericLogsTest extends BaseTest {
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
-        //System.out.println(table.toLongString(10));
-        Assert.assertEquals("Table[7x93]", table.toString());
+        if (print)
+            System.out.println(table.toLongString(50));
+        Assert.assertEquals("Table[9x93]", table.toString());
     }
 
     @Test
@@ -189,7 +243,8 @@ public class GenericLogsTest extends BaseTest {
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
-        //System.out.println(table.toLongString(10));
-        Assert.assertEquals("Table[7x138]", table.toString());
+        if (print)
+            System.out.println(table.toLongString(10));
+        Assert.assertEquals("Table[9x138]", table.toString());
     }
 }

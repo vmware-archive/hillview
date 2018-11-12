@@ -85,7 +85,6 @@ public class FindFilesMapper implements IMap<Empty, List<IFileReference>> {
 
         List<IFileReference> result = new ArrayList<IFileReference>();
         for (String n: names)
-
             result.add(this.description.createFileReference(n));
         return result;
     }

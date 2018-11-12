@@ -17,6 +17,7 @@
 
 package org.hillview.storage;
 
+import org.apache.commons.io.FilenameUtils;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.Table;
@@ -25,9 +26,11 @@ import org.hillview.table.api.IAppendableColumn;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.ConstantStringColumn;
+import org.hillview.table.columns.IntListColumn;
 import org.hillview.table.columns.StringListColumn;
 import org.hillview.utils.DateParsing;
 import org.hillview.utils.GrokExtra;
+import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Utilities;
 
 import java.time.Instant;
@@ -49,6 +52,14 @@ public class GenericLogs {
      * This column name must appear in all log formats.
      */
     private static final String timestampColumnName = "Timestamp";
+    /**
+     * Column name where the lines that are not parsed correctly are stored.
+     */
+    public static final String parseErrorColumn = "ParsingErrors";
+    public static final String hostColumn = "Host";
+    public static final String directoryColumn = "Directory";
+    public static final String filenameColumn = "Filename";
+    public static final String lineNumberColumn = "Line";
 
     public GenericLogs(String logFormat) {
         this.logFormat = logFormat;
@@ -64,11 +75,15 @@ public class GenericLogs {
         private final Instant end;
         @Nullable
         DateParsing dateTimeParser = null;
+        /**
+         * Pattern used for parsing timestamps.  Obtained from a column named 'Timestamp'.
+         */
+        @Nullable
         private final Grok dateTime;
         @Nullable
         private List<String> columnNames = null;
-        // Store here the lines that did not match the log pattern
         private StringListColumn parsingErrors;
+        private IntListColumn lineNumber;
 
         LogFileLoader(final String path, @Nullable Instant start, @Nullable Instant end) {
             super(path);
@@ -79,16 +94,21 @@ public class GenericLogs {
             this.start = start;
             this.end = end;
             this.parsingErrors = new StringListColumn(
-                new ColumnDescription("ParsingErrors", ContentsKind.String));
-                    String originalPattern = this.grok.getOriginalGrokPattern();
+                new ColumnDescription(parseErrorColumn, ContentsKind.String));
+            this.lineNumber = new IntListColumn(
+                    new ColumnDescription(lineNumberColumn, ContentsKind.Integer));
+            String originalPattern = this.grok.getOriginalGrokPattern();
             String timestampPattern = GrokExtra.extractGroupPattern(
                     this.grokCompiler.getPatternDefinitions(),
                     originalPattern, GenericLogs.timestampColumnName);
-            if (timestampPattern == null)
-                this.error("Pattern " + logFormat + " does not contain column named 'Timestamp'");
-            this.dateTime = this.grokCompiler.compile(
-                        "%{" + timestampPattern + ":" + GenericLogs.timestampColumnName + "}" +
-                        "%{GREEDYDATA}", true);
+            if (timestampPattern == null) {
+                HillviewLogger.instance.warn("Pattern does not contain column named 'Timestamp'",
+                        "{0}", originalPattern);
+                this.dateTime = null;
+            } else {
+                this.dateTime = this.grokCompiler.compile(
+                        "%{" + timestampPattern + ":" + GenericLogs.timestampColumnName + "}", true);
+            }
         }
 
         boolean parse(String line, String[] output) {
@@ -121,6 +141,10 @@ public class GenericLogs {
             String[] fields = new String[this.columns.length];
 
             boolean first = true;
+            // True if the first non-empty line does not have a timestamp
+            boolean firstTimestampIsMissing = this.dateTime == null;
+            int currentLineNumber = 0;
+            int previousLineNumber = 0;
             try (BufferedReader reader = new BufferedReader(
                     this.getFileReader())) {
                 // Used to build up a log line that spans multiple file lines
@@ -128,31 +152,41 @@ public class GenericLogs {
                 String fileLine; // Current line in the file
 
                 while (true) {
+                    currentLineNumber++;
                     fileLine = reader.readLine();
                     if (fileLine != null) {
                         if (fileLine.trim().isEmpty())
                             continue;
-                        Match gm = this.dateTime.match(fileLine);
-                        boolean hasDate = !gm.isNull();
+                        @Nullable
+                        String currentTimestamp = null;
+                        if (this.dateTime != null) {
+                            Match gm = this.dateTime.match(fileLine);
+                            if (!gm.isNull())
+                                currentTimestamp = gm.capture()
+                                        .get(GenericLogs.timestampColumnName)
+                                        .toString();
+                            else if (first)
+                                // If the first line does not have a timestamp
+                                // it may be that the pattern supplied by the user
+                                // is actually wrong.   We do not want to end up
+                                // concatenating all log lines into one big line.
+                                firstTimestampIsMissing = true;
+                        }
 
-                        // If there is no date in a fileLine we consider heuristically that it
+                        first = false;
+                        // If there is no timestamp in a fileLine we consider heuristically that it
                         // is a continuation of the previous logLine.
-                        if (!hasDate) {
-                            if (first)
-                                // This suggests that the pattern is wrong.
-                                // This would cause all lines to be concatenated into
-                                // a single giant line, and we want to avoid that.
-                                this.error("No timestamp on the first line");
+                        if (currentTimestamp == null && !firstTimestampIsMissing) {
                             if (logLine.length() != 0)
                                 logLine.append("\\n");
                             logLine.append(fileLine);
                             continue;
                         } else {
-                            if (this.start != null || this.end != null) {
-                                String date = gm.capture().get(GenericLogs.timestampColumnName).toString();
+                            if (currentTimestamp != null &&
+                                    (this.start != null || this.end != null)) {
                                 if (this.dateTimeParser == null)
-                                    this.dateTimeParser = new DateParsing(date);
-                                Instant parsed = this.dateTimeParser.parse(date);
+                                    this.dateTimeParser = new DateParsing(currentTimestamp);
+                                Instant parsed = this.dateTimeParser.parse(currentTimestamp);
                                 if (this.start != null && this.start.isAfter(parsed))
                                     continue;
                                 if (this.end != null && this.end.isBefore(parsed))
@@ -164,13 +198,13 @@ public class GenericLogs {
                         }
                     }
 
-                    first = false;
                     // If we reach this point fileLine has a date or is null.
                     // We parse the logLine and save the fileLine for next time.
                     String logString = logLine.toString();
                     if (!logString.isEmpty()) {
                         logLine.setLength(0);
 
+                        this.lineNumber.append(previousLineNumber);
                         if (this.parse(logString, fields)) {
                             this.append(fields);
                             this.parsingErrors.appendMissing();
@@ -180,6 +214,7 @@ public class GenericLogs {
                             this.parsingErrors.append(logString);
                         }
                     }
+                    previousLineNumber = currentLineNumber;
                     if (fileLine == null)
                         break;
                     logLine.append(fileLine);
@@ -200,15 +235,20 @@ public class GenericLogs {
                 size = this.columns[0].sizeInRows();
             // Create a new column for the host
             IColumn host = new ConstantStringColumn(
-                    new ColumnDescription("Host", ContentsKind.String), size, Utilities.getHostName());
-            // Create a new column for the FileName
+                    new ColumnDescription(hostColumn, ContentsKind.String), size, Utilities.getHostName());
             IColumn fileName = new ConstantStringColumn(
-                    new ColumnDescription("FileName", ContentsKind.String), size, this.filename);
-            IColumn[] cols = new IColumn[columnCount + 3];
+                    new ColumnDescription(filenameColumn, ContentsKind.String),
+                    size, FilenameUtils.getName(this.filename));
+            IColumn directory = new ConstantStringColumn(
+                    new ColumnDescription(directoryColumn, ContentsKind.String),
+                    size, FilenameUtils.getPath(this.filename));
+            IColumn[] cols = new IColumn[columnCount + 5];
             cols[0] = host;
-            cols[1] = fileName;
+            cols[1] = directory;
+            cols[2] = fileName;
+            cols[3] = this.lineNumber;
             if (columnCount > 0)
-                System.arraycopy(this.columns, 0, cols, 2, columnCount);
+                System.arraycopy(this.columns, 0, cols, 4, columnCount);
             cols[cols.length - 1] = this.parsingErrors;
             return new Table(cols, this.filename, null);
         }

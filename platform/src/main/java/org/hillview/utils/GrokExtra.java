@@ -52,18 +52,12 @@ public class GrokExtra {
 
         String currentPattern = sourcePattern;
         int index = 0;
-        /** flag for infinite recursion. */
-        int iterationLeft = 1000;
         boolean continueIteration = true;
 
         // Replace %{foo} with the regex (mostly group name regex)
         // and then compile the regex
         while (continueIteration) {
             continueIteration = false;
-            if (iterationLeft <= 0) {
-                throw new IllegalArgumentException("Deep recursion during analysis of " + sourcePattern);
-            }
-            iterationLeft--;
 
             Set<String> namedGroups = io.krakens.grok.api.GrokUtils.getNameGroups(io.krakens.grok.api.GrokUtils.GROK_PATTERN.pattern());
             Matcher matcher = io.krakens.grok.api.GrokUtils.GROK_PATTERN.matcher(currentPattern);
@@ -109,8 +103,6 @@ public class GrokExtra {
 
         String currentPattern = grok.getOriginalGrokPattern();
         int index = 0;
-        /** flag for infinite recursion. */
-        int iterationLeft = 1000;
         boolean continueIteration = true;
         Map<String, String> patternDefinitions = grok.getPatterns();
 
@@ -118,12 +110,6 @@ public class GrokExtra {
         // and then compile the regex
         while (continueIteration) {
             continueIteration = false;
-            if (iterationLeft <= 0) {
-                throw new IllegalArgumentException(
-                        "Deep recursion during analysis of " + grok.getOriginalGrokPattern());
-            }
-            iterationLeft--;
-
             Set<String> namedGroups = io.krakens.grok.api.GrokUtils.getNameGroups(io.krakens.grok.api.GrokUtils.GROK_PATTERN.pattern());
             Matcher matcher = io.krakens.grok.api.GrokUtils.GROK_PATTERN.matcher(currentPattern);
             // Match %{Foo:bar} -> pattern name and subname
