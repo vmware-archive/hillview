@@ -23,3 +23,4 @@
 * start.py: start the Hillview service on a remote cluster
 * stop.py: stop the Hillview service on a remote cluster
 * status.py: check the Hillview service on a remote cluster
+* hillviewConsoleLog.py: logging library used by other python programs
