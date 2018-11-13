@@ -8,5 +8,10 @@ source $mydir/lib.sh
 # If you add this line the java process enables a remote debugger to be connected to it
 # on port 5005
 export JAVA_OPTS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
+
+# If you want GRPC logging uncomment the following line
+#LOGGING=" -Djava.util.logging.config.file=logging.properties"
+#export JAVA_OPTS="$JAVA_OPTS$LOGGING"
+
 cd $mydir/../web  # logs will always be in this folder
 ../apache-tomcat-${TOMCATVERSION}/bin/catalina.sh run
