@@ -182,4 +182,8 @@ public class Utilities {
             basename = FilenameUtils.removeExtension(basename);
         return FilenameUtils.removeExtension(basename);
     }
+
+    public static String singleSpaced(String s) {
+        return s.replaceAll("^ +| +$|( )+", "$1");
+    }
 }

@@ -81,5 +81,21 @@ public class DateParsingTest extends BaseTest {
                 .atZone(ZoneOffset.systemDefault())
                 .toInstant();
         Assert.assertEquals(instant, expected);
+
+        // This test has a little race which may fail around the new year.
+        // I have no idea how to make it better.
+        parsing = new DateParsing("Oct  7 06:47:01");
+        instant = parsing.parse("Oct  7 06:47:01");
+        LocalDateTime now = LocalDateTime.now();
+        expected = LocalDateTime.of(now.getYear(), 10, 7, 6, 47, 1)
+                .atZone(ZoneOffset.systemDefault())
+                .toInstant();
+        Assert.assertEquals(instant, expected);
+
+        instant = parsing.parse("Oct 10 06:47:01");
+        expected = LocalDateTime.of(now.getYear(), 10, 10, 6, 47, 1)
+                .atZone(ZoneOffset.systemDefault())
+                .toInstant();
+        Assert.assertEquals(instant, expected);
     }
 }

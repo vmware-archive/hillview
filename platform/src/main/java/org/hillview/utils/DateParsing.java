@@ -20,7 +20,9 @@ package org.hillview.utils;
 import javax.annotation.Nullable;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoField;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -40,44 +42,49 @@ public class DateParsing {
     private boolean parseAsDate;
 
     private static final LinkedHashMap<String, String> DATE_FORMAT_REGEXPS =
+            // Note that the regexp used as the key is used against the lowercased string
             new LinkedHashMap<String, String>() {{
-                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}$", "yyyy-M-d H:mm:ss");
-                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}.\\d$",
-                        "yyyy-M-d H:mm:ss.S");
-                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}.\\d{2}$",
-                        "yyyy-M-d H:mm:ss.SS");
-                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}.\\d{3}$",
-                        "yyyy-M-d H:mm:ss.SSS");
-                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}.\\d{4}$",
-                        "yyyy-M-d H:mm:ss.SSSS");
-                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}.\\d{5}$",
-                        "yyyy-M-d H:mm:ss.SSSSS");
-                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}.\\d{6}$",
-                        "yyyy-M-d H:mm:ss.SSSSSS");
-                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}.\\d{7}$",
-                        "yyyy-M-dd H:m:ss.SSSSSSS");
-                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}.\\d{8}$",
-                        "yyyy-M-d H:m:ss.SSSSSSSS");
-                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}.\\d{9}$",
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}$", "yyyy-M-d H:mm:ss");
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}.\\d{9}$",
                         "yyyy-M-d H:m:ss.SSSSSSSSS");
-                put("^\\d{1,2}\\s[a-z]{4,}\\s\\d{4}\\s\\d{1,2}:\\d{2}:\\d{2}$", "d M yyyy H:mm:ss");
-                put("^\\d{1,2}\\s[a-z]{3}\\s\\d{4}\\s\\d{1,2}:\\d{2}:\\d{2}$", "d MMM yyyy H:mm:ss");
-                put("^\\d{4}/\\d{1,2}/\\d{1,2}\\s\\d{1,2}:\\d{2}:\\d{2}$", "yyyy/M/dd H:mm:ss");
-                put("^\\d{1,2}/\\d{1,2}/\\d{4}\\s\\d{1,2}:\\d{2}:\\d{2}$", "M/d/yyyy H:mm:ss");
-                put("^\\d{1,2}/\\d{1,2}/\\d{4}\\s\\d{1,2}:\\d{2}:\\d{2}.\\d{3}$", "M/d/yyyy H:mm:ss.SSS");
-                put("^\\d{1,2}-\\d{1,2}-\\d{4}\\s\\d{1,2}:\\d{2}:\\d{2}$", "d-M-yyyy H:mm:ss");
-                put("^\\d{1,2}-\\d{1,2}-\\d{4}\\s\\d{1,2}:\\d{2}$", "d-M-yyyy H:mm");
-                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s\\d{1,2}:\\d{2}$", "yyyy-M-d H:mm");
-                put("^\\d{1,2}/\\d{1,2}/\\d{4}\\s\\d{1,2}:\\d{2}$", "M/d/yyyy H:mm");
-                put("^\\d{4}/\\d{1,2}/\\d{1,2}\\s\\d{1,2}:\\d{2}$", "yyyy/M/d H:mm");
-                put("^\\d{1,2}\\s[a-z]{3}\\s\\d{4}\\s\\d{1,2}:\\d{2}$", "d MMM yyyy H:mm");
-                put("^\\d{1,2}\\s[a-z]{4,}\\s\\d{4}\\s\\d{1,2}:\\d{2}$", "d MMMM yyyy H:mm");
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}.\\d{8}$",
+                        "yyyy-M-d H:m:ss.SSSSSSSS");
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}.\\d{7}$",
+                        "yyyy-M-dd H:m:ss.SSSSSSS");
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}.\\d{6}$",
+                        "yyyy-M-d H:mm:ss.SSSSSS");
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}.\\d{5}$",
+                        "yyyy-M-d H:mm:ss.SSSSS");
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}.\\d{4}$",
+                        "yyyy-M-d H:mm:ss.SSSS");
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2},\\d{3}$",
+                        "yyyy-M-d H:mm:ss,SSS");
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}.\\d{3}$",
+                        "yyyy-M-d H:mm:ss.SSS");
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}.\\d{2}$",
+                        "yyyy-M-d H:mm:ss.SS");
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}.\\d$",
+                        "yyyy-M-d H:mm:ss.S");
+                put("^\\d{1,2}\\s[a-z]{4,}\\s\\d{4}\\s+\\d{1,2}:\\d{2}:\\d{2}$", "d M yyyy H:mm:ss");
+                put("^\\d{1,2}\\s[a-z]{3}\\s\\d{4}\\s+\\d{1,2}:\\d{2}:\\d{2}$", "d MMM yyyy H:mm:ss");
+                put("^\\d{4}/\\d{1,2}/\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}$", "yyyy/M/dd H:mm:ss");
+                put("^\\d{1,2}/\\d{1,2}/\\d{4}\\s+\\d{1,2}:\\d{2}:\\d{2}$", "M/d/yyyy H:mm:ss");
+                put("^\\d{1,2}/\\d{1,2}/\\d{4}\\s+\\d{1,2}:\\d{2}:\\d{2}.\\d{3}$", "M/d/yyyy H:mm:ss.SSS");
+                put("^\\d{1,2}-\\d{1,2}-\\d{4}\\s+\\d{1,2}:\\d{2}:\\d{2}$", "d-M-yyyy H:mm:ss");
+                put("^\\d{1,2}-\\d{1,2}-\\d{4}\\s+\\d{1,2}:\\d{2}$", "d-M-yyyy H:mm");
+                put("^\\d{4}-\\d{1,2}-\\d{1,2}\\s+\\d{1,2}:\\d{2}$", "yyyy-M-d H:mm");
+                put("^\\d{1,2}/\\d{1,2}/\\d{4}\\s+\\d{1,2}:\\d{2}$", "M/d/yyyy H:mm");
+                put("^\\d{4}/\\d{1,2}/\\d{1,2}\\s+\\d{1,2}:\\d{2}$", "yyyy/M/d H:mm");
+                put("^\\d{1,2}\\s+[a-z]{3}\\s+\\d{4}\\s\\d{1,2}:\\d{2}$", "d MMM yyyy H:mm");
+                put("^\\d{1,2}\\s+[a-z]{4,}\\s+\\d{4}\\s\\d{1,2}:\\d{2}$", "d MMMM yyyy H:mm");
+                put("^[a-z]{3}\\s+\\d{1,2}\\s+\\d{1,2}:\\d{2}$", "MMM d H:mm");
+                put("^[a-z]{3}\\s+\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}$", "MMM d H:mm:ss");
                 put("^\\d{1,2}-\\d{1,2}-\\d{4}$", "d-M-yyyy");
                 put("^\\d{4}-\\d{1,2}-\\d{1,2}$", "yyyy-M-d");
                 put("^\\d{1,2}/\\d{1,2}/\\d{4}$", "M/d/yyyy");
                 put("^\\d{4}/\\d{1,2}/\\d{1,2}$", "yyyy/M/d");
-                put("^\\d{1,2}\\s[a-z]{3}\\s\\d{4}$", "d MMM yyyy");
-                put("^\\d{1,2}\\s[a-z]{4,}\\s\\d{4}$", "d MMMM yyyy");
+                put("^\\d{1,2}\\s+[a-z]{3}\\s+\\d{4}$", "d MMM yyyy");
+                put("^\\d{1,2}\\s+[a-z]{4,}\\s+\\d{4}$", "d MMMM yyyy");
                 put("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{6}", "yyyy-mm-ddTHH:mm:ss.SSSSSS");
             }};
 
@@ -100,7 +107,7 @@ public class DateParsing {
 
     @SuppressWarnings("UnnecessaryContinue")
     public DateParsing(String s) {
-        s = s.trim();
+        s = Utilities.singleSpaced(s);
         boolean[] asDate = {false, true};
 
         for (boolean b : asDate) {
@@ -127,7 +134,13 @@ public class DateParsing {
         for (Map.Entry<String, String> regexpEntry : DATE_FORMAT_REGEXPS.entrySet()) {
             if (s.toLowerCase().matches(regexpEntry.getKey())) {
                 String format = regexpEntry.getValue();
-                this.parserFormatter = DateTimeFormatter.ofPattern(format);
+                this.parserFormatter = //DateTimeFormatter.ofPattern(format);
+                        new DateTimeFormatterBuilder()
+                        .appendPattern(format)
+                                // We need this because some patterns have no year.
+                        .parseDefaulting(ChronoField.YEAR_OF_ERA, ZonedDateTime.now().getYear())
+                        .toFormatter()
+                        .withZone(ZoneId.systemDefault());
                 HillviewLogger.instance.info("Guessed date format", "{0}", regexpEntry.getKey());
                 return;
             }
@@ -137,13 +150,14 @@ public class DateParsing {
 
 
     public Instant parse(String s) {
+        s = Utilities.singleSpaced(s);
         Converters.checkNull(this.parserFormatter);
         if (this.parseAsDate) {
-            return LocalDate.parse(s.trim(), this.parserFormatter)
+            return LocalDate.parse(s, this.parserFormatter)
                     .atStartOfDay(ZoneId.systemDefault())
                     .toInstant();
         } else {
-            return LocalDateTime.parse(s.trim(), this.parserFormatter)
+            return LocalDateTime.parse(s, this.parserFormatter)
                     .atZone(ZoneId.systemDefault())
                     .toInstant();
         }

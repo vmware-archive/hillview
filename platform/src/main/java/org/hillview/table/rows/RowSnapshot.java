@@ -49,6 +49,10 @@ public class RowSnapshot extends BaseRowSnapshot
         List<IColumn> columns = data.getColumns(schema);
         this.schema = schema;
         for (IColumn c: columns) {
+            if (c.isMissing(rowIndex)) {
+                this.fields.put(c.getName(), null);
+                continue;
+            }
             ContentsKind kind = c.getKind();
             if (kind == ContentsKind.Date || kind == ContentsKind.Duration)
                 this.fields.put(c.getName(), c.getDouble(rowIndex));
@@ -101,12 +105,15 @@ public class RowSnapshot extends BaseRowSnapshot
 
     @Override
     public Object getObject(String colName) {
+        Object o = this.fields.get(colName);
+        if (o == null)
+            return null;
         ContentsKind kind = this.schema.getKind(colName);
         if (kind == ContentsKind.Date)
             return Converters.toDate(this.getDouble(colName));
         else if (kind == ContentsKind.Duration)
             return Converters.toDuration(this.getDouble(colName));
-        return this.fields.get(colName);
+        return o;
     }
 
     public String getString(String colName) {
@@ -128,10 +135,14 @@ public class RowSnapshot extends BaseRowSnapshot
     }
 
     public Instant getDate(String colName) {
+        if (this.isMissing(colName))
+            return null;
         return Converters.toDate(this.getDouble(colName));
     }
 
     public Duration getDuration(String colName) {
+        if (this.isMissing(colName))
+            return null;
         return Converters.toDuration(this.getDouble(colName));
     }
 

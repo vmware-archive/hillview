@@ -2,7 +2,7 @@
  * This is a modified clone of https://github.com/MonsantoCo/column-resizer
  * Created by jjglyn on 12/19/16.
  */
-import stringHash from 'string-hash';
+//import stringHash from 'string-hash';
 
 const counter = (() => {
     let count = 0;
@@ -77,7 +77,7 @@ export default class ColumnResizer {
     /**
      * Event handler fired when the grip's dragging is about to start. Its main goal is to set up events
      * and store some values used while dragging.
-     * @param {UIEvent} e - grip's mousedown/touchstart event
+     * @param {MouseEvent} e - grip's mousedown/touchstart event
      */
     onGripMouseDown = (e) => {
         const o = e.target.parentNode.data;
@@ -88,7 +88,7 @@ export default class ColumnResizer {
         g.l = g.offsetLeft;
         g.x = g.l;
 
-        this.createStyle(document.querySelector('head'), '*{cursor:' + t.opt.dragCursor + '!important}');
+        //this.createStyle(document.querySelector('head'), '*{cursor:' + t.opt.dragCursor + '!important}');
         document.addEventListener('touchmove', this.onGripDrag);
         document.addEventListener('mousemove', this.onGripDrag);
         document.addEventListener('touchend', this.onGripDragOver);
@@ -107,7 +107,7 @@ export default class ColumnResizer {
 
     /**
      * Event handler used while dragging a grip. It checks if the next grip's position is valid and updates it.
-     * @param {UIEvent} e - mousemove/touchmove event bound to the window object
+     * @param {MouseEvent} e - mousemove/touchmove event bound to the window object
      */
     onGripDrag = (e) => {
         const grip = this.grip;
@@ -132,7 +132,8 @@ export default class ColumnResizer {
         }
         if (t.opt.liveDrag) {
             if (last) {
-                t.columns[i].style.width = grip.w + this.PX;
+                const ww = grip.w + this.PX;
+                t.columns[i].style.width = ww;
                 if (!t.opt.fixed && t.opt.overflow) {
                     t.style.minWidth = (t.tableWidth + x - grip.l) + this.PX;
                 } else {
@@ -204,32 +205,19 @@ export default class ColumnResizer {
         if (!tb.matches('table') || tb.extended && !options.partialRefresh) {
             return null;
         }
+        /*
         //append required CSS rules
         const head = document.querySelector('head');
-        const css = ' .grip-resizable{table-layout:fixed;} .grip-resizable > tbody > tr > td, .grip-resizable > tbody > tr > th{overflow:hidden}'
-            + ' .grip-padding > tbody > tr > td, .grip-padding > tbody > tr > th{padding-left:0!important; padding-right:0!important;}'
-            + ' .grip-container{ height:0px; position:relative;} .grip-handle{margin-left:-5px; position:absolute; z-index:5; }'
-            + ' .grip-handle .grip-resizable{position:absolute;background-color:red;filter:alpha(opacity=1);opacity:0;width:10px;height:100%;cursor: col-resize;top:0px}'
-            + ' .grip-lastgrip{position:absolute; width:1px; } .grip-drag{ border-left:1px dotted black;	}'
-            + ' .grip-flex{} .grip-handle.grip-disabledgrip .grip-resizable{cursor:default; display:none;}';
-        this.createStyle(head, css);
         if (options.hoverCursor && options.hoverCursor !== 'col-resize') {
             const css = '.grip-handle .grip-resizable:hover{cursor:' + options.hoverCursor + '!important}';
             this.createStyle(head, css);
         }
+        */
         tb.setAttribute(this.ID, id);
         const oldOptions = tb.opt;
         tb.opt = this.extendOptions(options);
         const headers = this.getTableHeaders(tb);
         this.extendTable(headers);
-        if (options.remoteTable && options.remoteTable.matches('table')) {
-            const remoteHeaders = this.getTableHeaders(tb.opt.remoteTable);
-            if (headers.length === remoteHeaders.length) {
-                this.extendRemoteTable(tb.opt.remoteTable, remoteHeaders, tb);
-            } else {
-                console.warn('column count for remote table did not match');
-            }
-        }
         return oldOptions;
     };
 
@@ -304,10 +292,6 @@ export default class ColumnResizer {
         this.store[id] = '';
         tt.classList.remove(this.RESIZABLE);
         tt.classList.remove(this.FLEX);
-        if (tt.remote) {
-            tt.remote.classList.remove(this.RESIZABLE);
-            tt.remote.classList.remove(this.FLEX);
-        }
         if (tt.gripContainer && tt.gripContainer.parentNode) {
             tt.gripContainer.parentNode.removeChild(tt.gripContainer);
         }
@@ -319,7 +303,7 @@ export default class ColumnResizer {
      * Utility method to add a <style> to an element
      * @param {HTMLElement} element
      * @param {string} css
-     */
+
     createStyle = (element, css) => {
         const hash = stringHash(css).toString();
         const oldStyle = element.querySelectorAll('style');
@@ -339,6 +323,7 @@ export default class ColumnResizer {
         }
         element.appendChild(style);
     };
+     */
 
     /**
      * Populates unset options with defaults and sets resizeMode properties.
@@ -397,7 +382,7 @@ export default class ColumnResizer {
 
     /**
      * Add properties to the table for resizing
-     * @param {HTMLTableElement} th
+     * @param {HTMLElement[]} th
      */
     extendTable = (th) => {
         const tb = this.tb;
@@ -423,41 +408,6 @@ export default class ColumnResizer {
     };
 
     /**
-     * Add properties to the remote table for resizing
-     * @param {HTMLTableElement} tb - the remote table
-     * @param {HTMLElement[]} th - table header array
-     * @param {HTMLTableElement} controller - the controlling table
-     */
-    extendRemoteTable = (tb, th, controller) => {
-        const options = controller.opt;
-        if (options.removePadding) {
-            tb.classList.add('grip-padding');
-        }
-        tb.classList.add(this.RESIZABLE);
-        if (!tb.getAttribute(this.ID)) {
-            tb.setAttribute(this.ID, controller.getAttribute(this.ID) + 'remote');
-        }
-        tb.columns = []; // columns
-        th.forEach((header, index) => {
-            const column = th[index];
-            column.w = controller.columns[index].w;
-            column.style.width = column.w + this.PX;
-            column.removeAttribute('width');
-            tb.columns.push(column);
-        });
-        tb.tableWidth = controller.tableWidth;
-        tb.cellSpace = controller.cellSpace;
-        tb.borderSpace = controller.borderSpace;
-        const cg = Array.from(tb.querySelectorAll('col'));
-        tb.columnGrp = this.filterInvisible(cg, true);
-        tb.columnGrp.forEach( (col, index) => {
-            col.removeAttribute('width');
-            col.style.width = controller.columnGrp[index].style.width;
-        });
-        controller.remote = tb;
-    };
-
-    /**
      * Function to create all the grips associated with the table given by parameters
      * @param {HTMLElement[]} th - table header array
      */
@@ -477,12 +427,12 @@ export default class ColumnResizer {
         th.forEach((header, index) => {
             const column = th[index];
             const dc = t.opt.disabledColumns.indexOf(index) !== -1;
-            this.createDiv(t.gripContainer, 'grip-handle');
+            this.createDiv(t.gripContainer, 'grip-handle', null);
             const handle = t.gripContainer.lastChild;
             if (!dc && t.opt.gripInnerHtml) { //add the visual node to be used as grip
                 handle.innerHTML = t.opt.gripInnerHtml;
             }
-            this.createDiv(handle, this.RESIZABLE);
+            this.createDiv(handle, this.RESIZABLE, null);
             if (index === t.columnCnt - 1) {
                 handle.classList.add('grip-lastgrip');
                 if (t.opt.fixed) {
@@ -574,7 +524,7 @@ export default class ColumnResizer {
     };
 
     /**
-     * Utility method to wrap HTML text in a <div/> and appent to an element.
+     * Utility method to wrap HTML text in a <div/> and append to an element.
      * @param {HTMLElement} element - the HTML element to append the div to
      * @param {string} className - class name for the new div for styling
      * @param {string} text - inner HTML text
@@ -595,10 +545,9 @@ export default class ColumnResizer {
      * @param {HTMLTableElement} t - table object
      * @param {number} i - index of the grip being dragged
      * @param {boolean} isOver - to identify when the function is being called from the onGripDragOver event
-     * @param {Object} options - used for chaining options with remote tables
+     * @param {Object} options
      */
     syncCols = (t, i, isOver, options) => {
-        const remote = t.remote;
         const inc = this.grip.x - this.grip.l;
         const c0 = t.columns[i];
         const c1 = t.columns[i + 1];
@@ -612,35 +561,20 @@ export default class ColumnResizer {
         if (t.columnGrp[i] && t.columnGrp[i].style.width) {
             t.columnGrp[i].style.width = sw0;
         }
-        if (remote) {
-            remote.columns[i].style.width = sw0;
-            if (remote.columnGrp[i] && remote.columnGrp[i].style.width) {
-                remote.columnGrp[i].style.width = sw0;
-            }
-        }
         if (options.fixed) {
             const sw1 = w1 + this.PX;
             c1.style.width = sw1;
             if (t.columnGrp[i + 1] && t.columnGrp[i + 1].style.width) {
                 t.columnGrp[i + 1].style.width = sw1;
             }
-            if (remote) {
-                remote.columns[i + 1].style.width = sw1;
-                if (remote.columnGrp[i + 1] && remote.columnGrp[i + 1].style.width) {
-                    remote.columnGrp[i + 1].style.width = sw1;
-                }
-            }
-        } else if (options.overflow) {
+        }
+        /* else if (options.overflow) {
             //if overflow is set, increment min-width to force overflow
             t.style.minWidth = (t.tableWidth + inc) + this.PX;
-        }
+        } */
         if (isOver) {
             c0.w = w0;
             c1.w = options.fixed ? w1 : c1.w;
-            if (remote) {
-                remote.columns[i].w = w0;
-                remote.columns[i + 1].w = options.fixed ? w1 : c1.w;
-            }
         }
     };
 }
@@ -658,7 +592,6 @@ ColumnResizer.DEFAULTS = {
     flush: false, 					//when it is required to prevent layout restoration after postback, 'flush' will remove its associated layout data
     marginLeft: null,				//e.g. '10%', '15em', '5px' ...
     marginRight: null, 				//e.g. '10%', '15em', '5px' ...
-    remoteTable: null,              //other table element to resize using the main table as a controller
     disable: false,					//disables all the enhancements performed in a previously resized table
     partialRefresh: false,			//can be used when the table is inside of an updatePanel,
     disabledColumns: [],            //column indexes to be excluded

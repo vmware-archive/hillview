@@ -163,7 +163,7 @@ public class TestTables {
         }
         ColumnDescription c0 = new ColumnDescription("Name", ContentsKind.String);
         StringArrayColumn sac = new StringArrayColumn(c0, names.toArray(new String[0]));
-        return new Table(Arrays.asList(sac), null, null);
+        return new Table(Collections.singletonList(sac), null, null);
     }
 
     /**

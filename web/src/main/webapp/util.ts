@@ -38,12 +38,15 @@ export function assert(condition: boolean, message?: string): void {
  * Direct counterpart of corresponding Java class
  */
 export class Converters {
-    public static dateFromDouble(value: number): Date {
+    public static dateFromDouble(value: number): Date | null {
+        if (value == null)
+            return null;
         return new Date(value);
     }
 
-    public static doubleFromDate(value: Date): number {
-        assert(value != null);
+    public static doubleFromDate(value: Date | null): number | null {
+        if (value == null)
+            return null;
         return value.getTime();
     }
 }
