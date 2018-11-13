@@ -1177,6 +1177,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
                 let shownValue: string;
                 if (value == null) {
                     cell.appendChild(makeMissing());
+                    shownValue = "missing";
                 } else {
                     shownValue = convertToString(row.values[dataIndex], cd.kind);
                     const high = this.highlight(shownValue);

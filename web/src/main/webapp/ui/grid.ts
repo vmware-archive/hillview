@@ -102,7 +102,8 @@ export class Grid implements IHtmlElement {
 
     public updateCompleted(): void {
         if (this.resizer == null) {
-            this.resizer = new ColumnResizer(this.htmlTable, this.draggingProperties);
+            // This does not seem to work well.
+            // this.resizer = new ColumnResizer(this.htmlTable, this.draggingProperties);
         } else {
             this.resizer.reset(this.draggingProperties);
         }

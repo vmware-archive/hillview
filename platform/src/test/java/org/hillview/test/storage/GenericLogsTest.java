@@ -24,6 +24,7 @@ import org.hillview.storage.GenericLogs;
 import org.hillview.storage.TextFileLoader;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
+import org.hillview.table.rows.RowSnapshot;
 import org.hillview.test.BaseTest;
 import org.hillview.utils.DateParsing;
 import org.hillview.utils.GrokExtra;
@@ -222,6 +223,38 @@ public class GenericLogsTest extends BaseTest {
         if (print)
             System.out.println(table.toLongString(10));
         Assert.assertEquals("Table[9x113]", table.toString());
+    }
+
+    @Test
+    public void testRFC5424Log() {
+        String path = "../data/sample_logs/rfc5424log";
+        GenericLogs logs = new GenericLogs("%{RFC5424}");
+        TextFileLoader fileLoader = logs.getFileLoader(path);
+        ITable table = fileLoader.load();
+        Assert.assertNotNull(table);
+        if (print)
+            System.out.println(table.toLongString(10));
+        Assert.assertEquals("Table[14x7]", table.toString());
+        RowSnapshot row = new RowSnapshot(table, 0);
+        Instant i = row.getDate("Timestamp");
+        Assert.assertNotNull(i);
+        String prio = row.getString("SyslogPriority");
+        Assert.assertEquals("187", prio);
+        String ver = row.getString("SyslogVersion");
+        Assert.assertEquals("1", ver);
+        String hostname = row.getString("Hostname");
+        Assert.assertEquals("nsx-manager", hostname);
+        String structured = row.getString("StructuredData");
+        Assert.assertEquals("[nsx@6876 comp=\"nsx-manager\" errorCode=\"MP4039\" subcomp=\"manager\"]", structured);
+        String message = row.getString("Message");
+        Assert.assertEquals("Connection verification failed for broker '10.160.108.196'. Marking broker unhealthy.", message);
+        Assert.assertNull(row.getString(GenericLogs.parseErrorColumn));
+        String appname = row.getString("Appname");
+        Assert.assertEquals("NSX", appname);
+        String pid = row.getString("Pid");
+        Assert.assertEquals("-", pid);
+        String messageId = row.getString("MessageId");
+        Assert.assertEquals("SYSTEM", messageId);
     }
 
     @Test
