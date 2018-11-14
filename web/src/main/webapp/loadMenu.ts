@@ -26,7 +26,7 @@ import {ConsoleDisplay} from "./ui/errReporter";
 import {FullPage} from "./ui/fullPage";
 import {SubMenu, TopMenu, TopMenuItem} from "./ui/menu";
 import {ViewKind} from "./ui/ui";
-import {ICancellable, loadFile} from "./util";
+import {Converters, ICancellable, loadFile} from "./util";
 
 /**
  * The load menu is the first menu that is displayed on the screen.
@@ -52,14 +52,15 @@ export class LoadMenu extends RemoteObject implements IDataView {
             { text: "Flights (15 columns, CSV)",
                 action: () => {
                     const files: FileSetDescription = {
-                        folder: "../data/ontime",
-                        fileNamePattern: "????_*.csv*",
+                        fileNamePattern: "../data/ontime/????_*.csv*",
                         schemaFile: "short.schema",
                         headerRow: true,
                         repeat: 1,
                         name: "Flights (15 columns)",
                         fileKind: "csv",
                         logFormat: null,
+                        startTime: null,
+                        endTime: null
                     };
                     this.init.loadFiles(files, this.page);
                 },
@@ -68,14 +69,15 @@ export class LoadMenu extends RemoteObject implements IDataView {
             { text: "Flights (15 columns, ORC)",
                 action: () => {
                     const files: FileSetDescription = {
-                        folder: "../data/ontime_small_orc",
-                        fileNamePattern: "*.orc",
+                        fileNamePattern: "../data/ontime_small_orc/*.orc",
                         schemaFile: "schema",
                         headerRow: true,
                         repeat: 1,
                         name: "Flights (15 columns, ORC)",
                         fileKind: "orc",
                         logFormat: null,
+                        startTime: null,
+                        endTime: null
                     };
                     this.init.loadFiles(files, this.page);
                 },
@@ -84,14 +86,15 @@ export class LoadMenu extends RemoteObject implements IDataView {
             { text: "Flights (all columns, ORC)",
                 action: () => {
                     const files: FileSetDescription = {
-                        folder: "../data/ontime_big_orc",
-                        fileNamePattern: "*.orc",
+                        fileNamePattern: "../data/ontime_big_orc/*.orc",
                         schemaFile: "schema",
                         headerRow: true,
                         repeat: 1,
                         name: "Flights (ORC)",
                         fileKind: "orc",
                         logFormat: null,
+                        startTime: null,
+                        endTime: null
                     };
                     this.init.loadFiles(files, this.page);
                 },
@@ -317,9 +320,6 @@ class CSVFileDialog extends Dialog {
     constructor() {
         super("Load CSV files",
             "Loads comma-separated value (CSV) files from all machines that are part of the service.");
-        const folder = this.addTextField("folder", "Folder", FieldKind.String, "/",
-            "Folder on the remote machines where all the CSV files are found.");
-        folder.required = true;
         const pattern = this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "*.csv",
             "Shell pattern that describes the names of the files to load.");
         pattern.required = true;
@@ -334,11 +334,12 @@ class CSVFileDialog extends Dialog {
             schemaFile: this.getFieldValue("schemaFile"),
             fileNamePattern: this.getFieldValue("fileNamePattern"),
             headerRow: this.getBooleanValue("hasHeader"),
-            folder: this.getFieldValue("folder"),
             repeat: 1,
             name: null,
             fileKind: "csv",
             logFormat: null,
+            startTime: null,
+            endTime: null
         };
     }
 }
@@ -347,9 +348,6 @@ class GenericLogDialog extends Dialog {
     constructor() {
         super("Load Generic Logs",
             "Loads log files from all machines that are part of the service.");
-        const folder = this.addTextField("folder", "Folder", FieldKind.String, "/",
-            "Folder on the remote machines where all the log files are found.");
-        folder.required = true;
         const pattern = this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "*.log",
             "Shell pattern that describes the names of the files to load.");
         pattern.required = true;
@@ -357,6 +355,10 @@ class GenericLogDialog extends Dialog {
             "Log format : https://github.com/vmware/hillview/blob/master/docs/userManual.md" +
             "#232-specifying-rules-for-parsing-logs");
         format.required = true;
+        this.addDateTimeField("startTime", "Start time", new Date(),
+            "Log records prior to this date will be ignored");
+        this.addDateTimeField("endTime", "End time", new Date(Date.now() - 30 * 60 * 100),
+            "Log records after this date will be ignored");
         this.setCacheTitle("GenericLogDialog");
     }
 
@@ -366,10 +368,11 @@ class GenericLogDialog extends Dialog {
             logFormat: this.getFieldValue("logFormat"),
             fileNamePattern: this.getFieldValue("fileNamePattern"),
             headerRow: false,
-            folder: this.getFieldValue("folder"),
             repeat: 1,
             name: null,
             fileKind: "genericlog",
+            startTime: Converters.doubleFromDate(this.getDateTimeValue("startTime")),
+            endTime: Converters.doubleFromDate(this.getDateTimeValue("endTime"))
         };
     }
 }
@@ -382,9 +385,6 @@ class JsonFileDialog extends Dialog {
         super("Load JSON files", "Loads JSON files from all machines that are part of the service.  Each file should " +
             "contain a JSON array of JSON objects.  All JSON objects should have the same schema.  Each JSON object" +
             "field becomes a separate column.  The schema of all JSON files loaded should be the same.");
-        const folder = this.addTextField("folder", "Folder", FieldKind.String, "/",
-            "Folder on the remote machines where all the CSV files are found.");
-        folder.required = true;
         const pattern = this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "*.json",
             "Shell pattern that describes the names of the files to load.");
         pattern.required = true;
@@ -398,11 +398,12 @@ class JsonFileDialog extends Dialog {
             schemaFile: this.getFieldValue("schemaFile"),
             fileNamePattern: this.getFieldValue("fileNamePattern"),
             headerRow: false,
-            folder: this.getFieldValue("folder"),
             repeat: 1,
             name: null,
             fileKind: "json",
             logFormat: null,
+            startTime: null,
+            endTime: null
         };
     }
 }
@@ -414,9 +415,6 @@ class ParquetFileDialog extends Dialog {
     constructor() {
         super("Load Parquet files", "Loads Parquet files from all machines that are part of the service." +
             "The schema of all Parquet files loaded should be the same.");
-        const folder = this.addTextField("folder", "Folder", FieldKind.String, "/",
-            "Folder on the remote machines where all the CSV files are found.");
-        folder.required = true;
         const pattern = this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "*.parquet",
             "Shell pattern that describes the names of the files to load.");
         pattern.required = true;
@@ -428,11 +426,12 @@ class ParquetFileDialog extends Dialog {
             schemaFile: null,  // not used
             fileNamePattern: this.getFieldValue("fileNamePattern"),
             headerRow: false,  // not used
-            folder: this.getFieldValue("folder"),
             repeat: 1,
             name: null,
             fileKind: "parquet",
             logFormat: null,
+            startTime: null,
+            endTime: null
         };
     }
 }
@@ -444,9 +443,6 @@ class OrcFileDialog extends Dialog {
     constructor() {
         super("Load ORC files", "Loads ORC files from all machines that are part of the service." +
             "The schema of all ORC files loaded should be the same.");
-        const folder = this.addTextField("folder", "Folder", FieldKind.String, "/",
-            "Folder on the remote machines where all the CSV files are found.");
-        folder.required = true;
         const pattern = this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "*.orc",
             "Shell pattern that describes the names of the files to load.");
         pattern.required = true;
@@ -461,11 +457,12 @@ class OrcFileDialog extends Dialog {
             schemaFile: this.getFieldValue("schemaFile"),
             fileNamePattern: this.getFieldValue("fileNamePattern"),
             headerRow: false,  // not used
-            folder: this.getFieldValue("folder"),
             repeat: 1,
             name: null,
             fileKind: "orc",
             logFormat: null,
+            startTime: null,
+            endTime: null
         };
     }
 }

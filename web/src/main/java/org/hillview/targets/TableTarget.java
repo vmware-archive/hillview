@@ -149,9 +149,10 @@ public final class TableTarget extends RpcTarget {
         // in a type-safe manner.
         ISketch<ITable, BucketsInfo> getSketch() {
             if (this.cd.kind.isString()) {
+                int samples = Math.min(this.stringsToSample * this.stringsToSample, 100000);
                 ISketch<ITable, MinKSet<String>> s = new SampleDistinctElementsSketch(
                         // We sample stringsToSample squared
-                        this.cd.name, this.seed, this.stringsToSample * this.stringsToSample);
+                        this.cd.name, this.seed, samples);
                 //noinspection unchecked
                 return (ISketch<ITable, BucketsInfo>)(Object)s;
             } else {

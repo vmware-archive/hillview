@@ -52,7 +52,7 @@ export function getDescription(data: DataLoaded): string {
             if (data.description.name != null)
                 return data.description.name;
             else
-                return data.description.folder + "/" + data.description.fileNamePattern;
+                return data.description.fileNamePattern;
         case "DB":
             return data.description.database + "/" + data.description.table;
         case "Hillview logs":

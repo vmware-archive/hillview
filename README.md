@@ -15,6 +15,9 @@ a demo of the system running on 15 small Amazon machines.
 
 # Developing Hillview
 
+Here is a [set of slides](docs/hillview-apis.pdf) describing all important Hillview 
+internal APIs.
+
 ## Software Dependencies
 
 * Back-end: Ubuntu Linux > 16 or MacOS

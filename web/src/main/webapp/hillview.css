@@ -453,3 +453,54 @@ table.tab td:nth-child(1) {
 .dataset {
     border: 1px solid black;
 }
+
+/* These are inherited from the columnResizer library */
+
+.grip-resizable {
+    table-layout:fixed;
+}
+.grip-resizable > tbody > tr > td, .grip-resizable > tbody > tr > th {
+    overflow:hidden
+}
+.grip-padding > tbody > tr > td, .grip-padding > tbody > tr > th {
+    padding-left:0!important;
+    padding-right:0!important;
+}
+
+.grip-container{
+    height:0px;
+    position:relative;
+}
+
+.grip-handle{
+    margin-left:-5px;
+    position:absolute;
+    z-index:5;
+}
+
+.grip-handle .grip-resizable{
+    position:absolute;
+    background-color:red;
+    filter:alpha(opacity=1);
+    opacity:0;
+    width:10px;
+    height:100%;
+    cursor: col-resize;
+    top:0px
+}
+
+.grip-lastgrip{
+    position:absolute;
+    width:1px;
+}
+
+.grip-drag{
+    border-left:1px dotted black;
+}
+
+.grip-flex{}
+
+.grip-handle.grip-disabledgrip .grip-resizable{
+    cursor:default;
+    display:none;
+}
