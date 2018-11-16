@@ -17,6 +17,7 @@
 
 package org.hillview.maps;
 
+import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IMap;
 import org.hillview.storage.FileSetDescription;
@@ -24,17 +25,20 @@ import org.hillview.storage.IFileReference;
 import org.hillview.utils.HillviewLogger;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
-import java.nio.file.FileVisitOption;
+import java.io.File;
+import java.io.FilenameFilter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+<<<<<<< HEAD
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.regex.Pattern;
+=======
+>>>>>>> 87ea1556d66a3e03df8d8fa1d18e180aeb8b9c39
 
 /**
  * Scans a folder and finds files matching a pattern. Creates a list of file
@@ -56,6 +60,7 @@ public class FindFilesMapper implements IMap<Empty, List<IFileReference>> {
      */
     @Override
     public List<IFileReference> apply(Empty empty) {
+<<<<<<< HEAD
         String folders = this.description.folder;
         // Paths for multiple directories
         Path dirPath;
@@ -114,6 +119,43 @@ public class FindFilesMapper implements IMap<Empty, List<IFileReference>> {
         for (String n : list)
             finalResult.add(this.description.createFileReference(n));
         return finalResult;
+=======
+        Path dir = Paths.get(this.description.getFolder());
+        HillviewLogger.instance.info("Find files", "pattern: {0}",
+                this.description.fileNamePattern);
+
+        File[] files;
+        FilenameFilter filter;
+        if (this.description.getWildcard() == null)
+            filter = (d, name) -> true;
+        else
+            filter = new WildcardFileFilter(this.description.getWildcard());
+
+        if (Files.exists(dir) && Files.isDirectory(dir))
+            files = new File(this.description.getFolder()).listFiles(filter);
+        else
+            files = new File[0];
+
+        List<String> names = new ArrayList<String>();
+        if (files != null)
+            for (File f : files)
+                names.add(f.getPath());
+        Collections.sort(names);
+        String allNames = String.join(",", names);
+        HillviewLogger.instance.info("Files found", "{0}: {1}", names.size(), allNames);
+
+        if (this.description.repeat > 1) {
+            int size = names.size();
+            for (int i = 0; i < size; i++)
+                for (int j = 0; j < this.description.repeat - 1; j++)
+                    names.add(names.get(i));
+        }
+
+        List<IFileReference> result = new ArrayList<IFileReference>();
+        for (String n: names)
+            result.add(this.description.createFileReference(n));
+        return result;
+>>>>>>> 87ea1556d66a3e03df8d8fa1d18e180aeb8b9c39
     }
 }
 

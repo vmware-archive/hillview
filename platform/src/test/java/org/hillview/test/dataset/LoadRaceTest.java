@@ -42,8 +42,7 @@ public class LoadRaceTest extends BaseTest {
         LocalDataSet<Empty> local = new LocalDataSet<Empty>(e);
         FileSetDescription desc = new FileSetDescription();
         desc.fileKind = "csv";
-        desc.fileNamePattern = "*_*.csv";
-        desc.folder = "../data/ontime";
+        desc.fileNamePattern = "../data/ontime/*_*.csv";
         desc.headerRow = true;
         IMap<Empty, List<IFileReference>> finder = new FindFilesMapper(desc);
         IDataSet<IFileReference> found = local.blockingFlatMap(finder);

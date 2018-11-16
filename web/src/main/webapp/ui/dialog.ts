@@ -17,7 +17,7 @@
 
 import {drag as d3drag} from "d3-drag";
 import {event as d3event, select as d3select} from "d3-selection";
-import {cloneArray, makeId, makeSpan} from "../util";
+import {cloneArray, makeId, makeSpan, px} from "../util";
 import {EditBox} from "./editBox";
 import {IHtmlElement, Point} from "./ui";
 
@@ -28,6 +28,7 @@ export enum FieldKind {
     Boolean,
     Password,
     File,
+    Datetime
 }
 
 /**
@@ -129,8 +130,8 @@ class DialogBase implements IHtmlElement {
             return;
         const dx = this.dragMousePosition.x - d3event.x;
         const dy = this.dragMousePosition.y - d3event.y;
-        this.topLevel.style.left = (this.dialogPosition.left - dx).toString() + "px";
-        this.topLevel.style.top = (this.dialogPosition.top - dy).toString() + "px";
+        this.topLevel.style.left = px(this.dialogPosition.left - dx);
+        this.topLevel.style.top = px(this.dialogPosition.top - dy);
     }
 
     public dragEnd(): void {
@@ -210,7 +211,7 @@ export class Dialog extends DialogBase {
 
         this.confirmButton = document.createElement("input");
         this.confirmButton.type = "submit";
-        this.confirmButton.textContent = "Confirm";
+        this.confirmButton.value = "Confirm";
         this.confirmButton.classList.add("confirm");
         d3select(this.confirmButton).call(nodrag);
         this.buttonsDiv.appendChild(this.confirmButton);
@@ -414,6 +415,30 @@ export class Dialog extends DialogBase {
     }
 
     /**
+     * Add a datetime-local input field.
+     * @param fieldName: Internal name. Has to be used when parsing the input.
+     * @param labelText: Text in the dialog for this field.
+     * @param value: Initial default value.
+     * @param toolTip:  Help message to show as a tool-tip.
+     * @return       The input element created for the user to type the text.
+     */
+    public addDateTimeField(fieldName: string, labelText: string,
+                            value: Date | null,
+                            toolTip: string): HTMLInputElement {
+        const fieldDiv = this.createRowContainer(fieldName, labelText, toolTip);
+        const input: HTMLInputElement = document.createElement("input");
+        input.tabIndex = this.tabIndex++;
+        input.style.flexGrow = "100";
+        input.id = makeId(fieldName);
+        fieldDiv.appendChild(input);
+        input.type = "datetime-local";
+        this.fields.set(fieldName, { html: input, type: FieldKind.Datetime });
+        if (value != null)
+            input.value = value.toISOString().slice(0, 16);
+        return input;
+    }
+
+    /**
      * Add a drop-down selection field with the given options.
      * @param fieldName: Internal name. Has to be used when parsing the input.
      * @param labelText: Text in the dialog for this field.
@@ -495,6 +520,14 @@ export class Dialog extends DialogBase {
      */
     public getBooleanValue(field: string): boolean {
         return (this.fields.get(field).html as HTMLInputElement).checked;
+    }
+
+    /**
+     * The value associated with a datetime field.
+     * @param {string} field  Field name whose value is sought.
+     */
+    public getDateTimeValue(field: string): Date | null {
+        return new Date((this.fields.get(field).html as HTMLInputElement).value);
     }
 
     /**

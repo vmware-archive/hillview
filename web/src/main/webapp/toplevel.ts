@@ -190,7 +190,7 @@ export class HillviewToplevel implements IHtmlElement {
     }
 }
 
-export function createHillview(): void {
+export function createHillview(): void {    
     const top = document.getElementById("top");
     top.appendChild(HillviewToplevel.instance.getHTMLRepresentation());
     window.addEventListener("resize",  () => HillviewToplevel.instance.resize());

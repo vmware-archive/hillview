@@ -90,7 +90,6 @@ export type DataKinds = "csv" | "orc" | "parquet" | "json" | "hillviewlog" | "db
 
 export interface FileSetDescription {
     fileKind: DataKinds;
-    folder: string;
     fileNamePattern: string;
     schemaFile: string;
     headerRow?: boolean;
@@ -98,6 +97,8 @@ export interface FileSetDescription {
     repeat: number;
     name: string;  // not used on the Java side
     logFormat: string;
+    startTime: number | null;
+    endTime: number | null;
 }
 
 export interface HLogLog {

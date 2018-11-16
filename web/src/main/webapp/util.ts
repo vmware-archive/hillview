@@ -38,12 +38,15 @@ export function assert(condition: boolean, message?: string): void {
  * Direct counterpart of corresponding Java class
  */
 export class Converters {
-    public static dateFromDouble(value: number): Date {
+    public static dateFromDouble(value: number): Date | null {
+        if (value == null)
+            return null;
         return new Date(value);
     }
 
-    public static doubleFromDate(value: Date): number {
-        assert(value != null);
+    public static doubleFromDate(value: Date | null): number | null {
+        if (value == null)
+            return null;
         return value.getTime();
     }
 }
@@ -53,7 +56,7 @@ export class Converters {
  * @param cssselector  Node specification as a CSS selector.
  * @returns The unique selected node.
  */
-export function findElement(cssselector: string): HTMLElement {
+export function findElement(cssselector: string): HTMLElement | null {
     const val = document.querySelector(cssselector);
     return val as HTMLElement;
 }
@@ -558,4 +561,10 @@ export function convertToString(val: any, kind: ContentsKind): string {
         return val as string;
     else
         return val.toString();  // TODO
+}
+
+export function px(dim: number): string {
+    if (dim === 0)
+        return dim.toString();
+    return dim.toString() + "px";
 }
