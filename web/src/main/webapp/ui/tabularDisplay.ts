@@ -18,6 +18,7 @@
 import {PlottingSurface} from "./plottingSurface";
 import {SelectionStateMachine} from "./selectionStateMachine";
 import {IHtmlElement} from "./ui";
+import {px} from "../util";
 
 /**
  * A TabularDisplay is a visual representation that uses an HTML table to display
@@ -37,7 +38,7 @@ export class TabularDisplay implements IHtmlElement {
     constructor() {
         this.topLevel = document.createElement("div");
         this.topLevel.classList.add("tabularDisplay");
-        this.topLevel.style.maxHeight = PlottingSurface.canvasHeight.toString() + "px";
+        this.topLevel.style.maxHeight = px(PlottingSurface.canvasHeight);
         this.topLevel.style.overflowY = "scroll";  // This should be auto, but it looks bad on Mozilla
         this.topLevel.style.display =  "inline-block";
 
@@ -85,7 +86,7 @@ export class TabularDisplay implements IHtmlElement {
         return trow;
     }
 
-    public addRowCell(trow: HTMLTableRowElement): HTMLTableCellElement {
+    private static addRowCell(trow: HTMLTableRowElement): HTMLTableCellElement {
         const cell = trow.insertCell(trow.cells.length);
         cell.style.textAlign = "right";
         cell.classList.add("noselect");
@@ -102,7 +103,7 @@ export class TabularDisplay implements IHtmlElement {
     public addRow(data: string[], canClick: boolean = true): HTMLTableRowElement {
         const trow = this.insertRow(canClick);
         for (const d of data) {
-            const cell = this.addRowCell(trow);
+            const cell = TabularDisplay.addRowCell(trow);
             cell.textContent = d;
         }
         return trow;
@@ -121,7 +122,7 @@ export class TabularDisplay implements IHtmlElement {
     public addElementRow(data: Element[], canClick: boolean = true): HTMLTableRowElement  {
         const trow = this.insertRow(canClick);
         for (const d of data) {
-            const cell = this.addRowCell(trow);
+            const cell = TabularDisplay.addRowCell(trow);
             cell.appendChild(d);
             d.classList.add("noselect");
         }

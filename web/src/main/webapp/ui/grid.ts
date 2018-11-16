@@ -15,11 +15,14 @@
  * limitations under the License.
  */
 
-import {default as ColumnResizer} from "../ColumnResizer";
 import {IHtmlElement} from "./ui";
+import {px} from "../util";
+import {drag as d3drag} from "d3-drag";
+import {select as d3select} from "d3-selection";
+import {mouse as d3mouse} from "d3-selection";
 
 /**
- * A table-like view.
+ * A table-like view with resizable columns.
  */
 export class Grid implements IHtmlElement {
     protected htmlTable: HTMLTableElement;
@@ -30,29 +33,32 @@ export class Grid implements IHtmlElement {
     protected columnCount: number;
     protected thr: HTMLTableRowElement;
     protected lastRow: HTMLTableRowElement;
+    protected currentColumn: number;
+    protected readonly minColumnWidth: number = 20;
+    protected currentWidth: number;
+    protected resizable: boolean[];  // True if a column is resizable
+    private colWidths: Map<string, number>;  // Saved column widths
 
-    // Support for column resizing
-    protected resizer: ColumnResizer;
-    // See the documentation for ColumnResizer: https://github.com/MonsantoCo/column-resizer
-    protected readonly draggingProperties = {
-        disable: false,
-        resizeMode: "overflow",
-        liveDrag: true,
-        draggingClass: "dragging",
-        disabledColumns: [0, 1],
-        removePadding: false,
-        postbackSafe: true,
-        partialRefresh: true,
-        minWidth: 10
-    };
-
-    public constructor() {
+    /*
+        This builds a table with this structure:
+        <table style="width:253px" id="table">
+            <tr>
+                <td style="width:200px" id="col1">
+                    <div class="resizable">
+                        <div class="truncated">Text to display</div>
+                        <div class="handle" data-col="col1"></div>
+                    </div>
+                </td>
+            </tr>
+            ...
+        </table>
+     */
+    public constructor(public readonly defaultColumnWidth) {
         this.topLevel = document.createElement("div");
         this.topLevel.style.overflowX = "scroll";
         this.topLevel.style.width = "100%";
         this.topLevel.style.position = "relative";
 
-        this.resizer = null;
         this.htmlTable = document.createElement("table");
         this.htmlTable.className = "tableView";
         this.lastRow = null;
@@ -65,48 +71,140 @@ export class Grid implements IHtmlElement {
         this.columnCount = columns;
     }
 
-    public addHeader(title: string): HTMLElement {
-        const th = document.createElement("th");
-        th.classList.add("noselect");
-        th.style.overflow = "hidden";
-        th.title = title;
+    private createResizable(fixedWidth: boolean): HTMLElement {
+        const resizable = document.createElement("div");
+        resizable.className = "resizable";
+
+        const truncated = document.createElement("div");
+        resizable.appendChild(truncated);
+        truncated.className = "truncated";
+
+        if (!fixedWidth) {
+            const handle = document.createElement("div");
+            resizable.appendChild(handle);
+            handle.className = "handle";
+            handle.setAttribute("data-col", this.currentColumn.toString());
+            const drag = d3drag()
+                .on("drag", () => this.drag(handle))
+                .on("start", () => this.dragStarted(handle));
+            d3select(handle).call(drag);
+            handle.ondblclick = () => this.resize(handle);
+        }
+        return resizable;
+    }
+
+    private resize(handle: HTMLElement): void {
+        const cls = handle.getAttribute("data-col");
+        const header = this.getHeader(Number(cls));
+        const origColWidth = header.offsetWidth;
+        // Changing these widths sets all columns to their natural width.
+        header.style.width = "";
+        const origWidth = this.htmlTable.offsetWidth;
+        this.htmlTable.style.width = "";
+        // All columns have grown to their natural size.  Measure
+        // the new one and set the sizes back.
+        const currentColWidth = header.offsetWidth;
+        header.style.width = currentColWidth + "px";
+        this.htmlTable.style.width = origWidth + currentColWidth - origColWidth + "px";
+    }
+
+    private static getDataCell(resizable: HTMLElement): HTMLElement {
+        return resizable.getElementsByClassName("truncated")[0] as HTMLElement;
+    }
+
+    /**
+     * If width is not zero it will be considered fixed.
+     */
+    public addHeader(width: number, colName: string): HTMLElement {
+        const th = document.createElement("td");
+        th.className = "header";
         this.thr.appendChild(th);
-        return th;
+
+        th.classList.add("noselect");
+        th.setAttribute("data-colname", colName);
+        let useWidth = width;
+        if (this.colWidths != null &&
+            this.colWidths.has(colName)) {
+            useWidth = this.colWidths.get(colName);
+        }
+        const w = (useWidth !== 0) ? useWidth : this.defaultColumnWidth;
+        th.style.width = px(w);
+
+        const resizable = this.createResizable(width !== 0);
+        th.appendChild(resizable);
+        this.currentColumn++;
+        this.currentWidth += w + 1;  // 1 for the borders
+        return Grid.getDataCell(resizable);
+    }
+
+    // Used when dragging
+    protected startPosition: number;
+    protected originalWidth: number;
+    protected startTableWidth: number;
+
+    private drag(node: HTMLElement): void {
+        const x = d3mouse(this.topLevel)[0];
+        const delta = this.startPosition - x;
+
+        let width = this.originalWidth - delta;
+        width = Math.max(this.minColumnWidth, width);
+
+        const cls = node.getAttribute("data-col");
+        const header = this.getHeader(Number(cls));
+        header.style.width = px(width);
+        const tw = this.startTableWidth - delta;
+        this.htmlTable.style.width = px(tw);
+    }
+
+    private dragStarted(node: HTMLElement): void {
+        this.startPosition = d3mouse(this.topLevel)[0];
+        this.originalWidth = node.parentElement.offsetWidth;
+        this.startTableWidth = this.htmlTable.offsetWidth;
     }
 
     public newRow(): void {
         this.lastRow = this.tBody.insertRow();
+        this.currentColumn = 0;
     }
 
-    public newCell(): HTMLElement {
+    public newCell(cls: string): HTMLElement {
         const cell = this.lastRow.insertCell();
-        cell.style.overflow = "hidden";
-        return cell;
+        cell.classList.add(cls);
+        const resizable = this.createResizable(this.resizable[this.currentColumn]);
+        cell.appendChild(resizable);
+        this.currentColumn++;
+        return Grid.getDataCell(resizable);
     }
 
-    public getHeader(colIndex: number): HTMLTableHeaderCellElement {
+    public getHeader(colIndex: number): HTMLElement {
         return this.thr.cells[colIndex];
     }
 
     public prepareForUpdate(): void {
-        if (this.resizer != null)
-            this.resizer.reset({ disable: true });
-        if (this.tHead != null)
+        if (this.tHead != null) {
+            this.colWidths = new Map<string, number>();
+            for (let i = 0; i < this.thr.childElementCount; i++) {
+                const th = this.thr.childNodes[i] as HTMLElement;
+                const colName = th.getAttribute("data-colname");
+                if (colName != null) {
+                    // minus one for the borders
+                    this.colWidths.set(colName, th.offsetWidth - 1);
+                }
+            }
             this.tHead.remove();
+        }
         if (this.tBody != null)
             this.tBody.remove();
+        this.resizable = [];
         this.tBody = this.htmlTable.createTBody();
         this.tHead = this.htmlTable.createTHead();
         this.thr = this.tHead.appendChild(document.createElement("tr"));
+        this.currentColumn = 0;
+        this.currentWidth = 0;
     }
 
     public updateCompleted(): void {
-        if (this.resizer == null) {
-            // This does not seem to work well.
-            // this.resizer = new ColumnResizer(this.htmlTable, this.draggingProperties);
-        } else {
-            this.resizer.reset(this.draggingProperties);
-        }
+        this.htmlTable.style.width = px(this.currentWidth);
     }
 
     public getHTMLRepresentation(): HTMLElement {
