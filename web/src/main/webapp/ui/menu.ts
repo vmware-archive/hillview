@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {browserWindowSize, makeId} from "../util";
+import {browserWindowSize, makeId, px} from "../util";
 import {IHtmlElement} from "./ui";
 
 /**
@@ -242,8 +242,8 @@ export class ContextMenu extends BaseMenu<MenuItem> implements IHtmlElement {
      * @param {number} y  Absolute y coordinate within browser window.
      */
     public move(x: number, y: number): void {
-        this.outer.style.left = x + "px";
-        this.outer.style.top = y + "px";
+        this.outer.style.left = px(x);
+        this.outer.style.top = px(y);
     }
 
     public setAction(mi: MenuItem, enabled: boolean): void {

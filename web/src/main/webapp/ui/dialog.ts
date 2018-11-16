@@ -17,7 +17,7 @@
 
 import {drag as d3drag} from "d3-drag";
 import {event as d3event, select as d3select} from "d3-selection";
-import {cloneArray, makeId, makeSpan} from "../util";
+import {cloneArray, makeId, makeSpan, px} from "../util";
 import {EditBox} from "./editBox";
 import {IHtmlElement, Point} from "./ui";
 
@@ -130,8 +130,8 @@ class DialogBase implements IHtmlElement {
             return;
         const dx = this.dragMousePosition.x - d3event.x;
         const dy = this.dragMousePosition.y - d3event.y;
-        this.topLevel.style.left = (this.dialogPosition.left - dx).toString() + "px";
-        this.topLevel.style.top = (this.dialogPosition.top - dy).toString() + "px";
+        this.topLevel.style.left = px(this.dialogPosition.left - dx);
+        this.topLevel.style.top = px(this.dialogPosition.top - dy);
     }
 
     public dragEnd(): void {

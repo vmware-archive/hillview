@@ -82,25 +82,44 @@ table {
 
 th {
     border: 1px solid black;
-    padding: 1px;
+    padding: 0;
 }
 
-.tabularDisplay td {
+/* Note: this is not tableView */
+.tabularDisplay td.header {
     border: 1px solid black;
-    padding: 1px;
+    padding: 0;
+}
+
+.tableView {
+    border-collapse: collapse;
+    border-spacing: 0;
+    table-layout: fixed;
+}
+
+.tableView td {
+    padding: 0;
+}
+
+.tableView td.header {
+    background-image: linear-gradient(#f9f9f9,#e4e4e4);
+    border: 1px solid black;
+}
+
+.tableView td.header.selected {
+    background-image: linear-gradient(lightcyan,cyan);
+    border: 1px solid black;
 }
 
 .tableView td.middle {
     border-left: 1px solid black;
     border-right: 1px solid black;
-    padding: 1px;
 }
 
 .tableView td.bottom {
     border-left: 1px solid black;
     border-right: 1px solid black;
     border-bottom: 1px solid black;
-    padding: 1px;
 }
 
 .tableView td.empty {
@@ -113,10 +132,9 @@ th {
 
 td.all {
     border: 1px solid black;
-    padding: 1px;
 }
 
-.tableView td.meta {
+.tableView div.meta {
     background-color: #fafafa;
 }
 
@@ -124,7 +142,26 @@ td.all {
     border-left: 1px solid black;
     border-right: 1px solid black;
     border-top: 1px solid black;
-    padding: 1px;
+}
+
+/* Used to display divs inside table cells that are truncated when the cells are too narrow */
+.resizable {
+    position: relative;
+}
+
+div.truncated {
+    overflow-x: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.handle {
+    position: absolute;
+    width: 5px;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    cursor: col-resize;
 }
 
 .missingData {
@@ -173,7 +210,8 @@ td.all {
 }
 
 .tableView {
-    /* display: block; */
+    border-collapse: collapse;
+    border-spacing: 0;
     table-layout: fixed;
     overflow-x: auto;
 }

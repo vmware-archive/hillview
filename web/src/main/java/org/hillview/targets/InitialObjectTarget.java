@@ -93,7 +93,7 @@ public class InitialObjectTarget extends RpcTarget {
         FileSetDescription desc = new FileSetDescription();
         desc.cookie = cookie;
         desc.fileKind = "hillviewlog";
-        desc.fileNamePattern = "hillview*.log";
+        desc.fileNamePattern = "./hillview*.log";
         desc.repeat = 1;
         IMap<Empty, List<IFileReference>> finder = new FindFilesMapper(desc);
         HillviewLogger.instance.info("Finding log files");

@@ -36,8 +36,8 @@ module.exports = {
             {
                 test: /\.tsx?$/,
                 loader: "ts-loader"
-            },
-            {   test: /ColumnResizer\.js/, use: [{loader: "babel-loader"}]  }
+            }
+            /* {   test: /ColumnResizer\.js/, use: [{loader: "babel-loader"}]  } */
         ]
     },
     devtool: "source-map"

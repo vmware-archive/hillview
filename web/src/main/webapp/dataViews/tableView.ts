@@ -77,7 +77,6 @@ export class TableView extends TSViewBase implements IScrollTarget {
     protected cellsPerColumn: Map<string, HTMLElement[]>;
     protected selectedColumns = new SelectionStateMachine();
     protected message: HTMLElement;
-    protected static readonly defaultColumnWidth = 60;  // pixels
 
     // The following elements are used for Find
     protected strFilter: StringFilterDescription;
@@ -182,7 +181,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
         tblAndScrollBar.style.justifyContent = "flex-start";
         tblAndScrollBar.style.alignItems = "stretch";
         this.topLevel.appendChild(tblAndScrollBar);
-        this.grid = new Grid();
+        this.grid = new Grid(80);
         tblAndScrollBar.appendChild(this.scrollBar.getHTMLRepresentation());
         tblAndScrollBar.appendChild(this.grid.getHTMLRepresentation());
         this.initFindBar();
@@ -519,9 +518,12 @@ export class TableView extends TSViewBase implements IScrollTarget {
     }
 
     private addHeaderCell(cd: IColumnDescription,
-                          displayName: string, help: string): HTMLElement {
-        const th = this.grid.addHeader(help);
+                          displayName: string,
+                          help: string,
+                          width: number): HTMLElement {
+        const th = this.grid.addHeader(width, cd.name);
         th.classList.add("noselect");
+        th.title = help;
         if (!this.isVisible(cd.name)) {
             th.style.fontWeight = "normal";
         } else {
@@ -613,12 +615,10 @@ export class TableView extends TSViewBase implements IScrollTarget {
 
         {
             // Create column headers
-            let thd = this.addHeaderCell(posCd, posCd.name, "Position within sorted order.");
+            let thd = this.addHeaderCell(posCd, posCd.name, "Position within sorted order.", DataRangeUI.width);
             thd.oncontextmenu = () => {};
-            thd.style.width = DataRangeUI.width + "px";
-            thd = this.addHeaderCell(ctCd, ctCd.name, "Number of occurrences.");
+            thd = this.addHeaderCell(ctCd, ctCd.name, "Number of occurrences.", 75);
             thd.oncontextmenu = () => {};
-            thd.style.width = "75px";
             if (this.schema == null)
                 return;
         }
@@ -631,9 +631,8 @@ export class TableView extends TSViewBase implements IScrollTarget {
             const title = cd.name + ".\nType is " + kindString +
                 ".\nRight mouse click opens a menu.";
             const name = this.schema.displayName(cd.name);
-            const thd = this.addHeaderCell(cd, name, title);
+            const thd = this.addHeaderCell(cd, name, title, 0);
             thd.classList.add("col" + i.toString());
-            thd.style.width = TableView.defaultColumnWidth + "px";
             thd.onclick = (e) => this.columnClick(i, e);
             thd.oncontextmenu = (e) => {
                 this.columnClick(i, e);
@@ -1044,7 +1043,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
      * Returns an HTML element that can be inserted in the table cell as a child.
      */
     private highlight(text: string): HTMLElement {
-        if (!this.findBarVisible)
+        if (!this.findBarVisible || this.strFilter == null)
             return makeSpan(text, false);
 
         const find = this.strFilter.compareValue;
@@ -1110,15 +1109,13 @@ export class TableView extends TSViewBase implements IScrollTarget {
             this.contextMenu.show(e);
         };
 
-        let cell = this.grid.newCell();
+        let cell = this.grid.newCell("all");
         const dataRange = new DataRangeUI(position, row.count, this.rowCount);
         cell.appendChild(dataRange.getDOMRepresentation());
-        cell.classList.add("all");
         cell.classList.add("meta");
         cell.oncontextmenu = moveToTop;
 
-        cell = this.grid.newCell();
-        cell.classList.add("all");
+        cell = this.grid.newCell("all");
         cell.classList.add("meta");
         cell.style.textAlign = "right";
         cell.oncontextmenu = moveToTop;
@@ -1147,7 +1144,43 @@ export class TableView extends TSViewBase implements IScrollTarget {
 
         for (let i = 0; i < cds.length; i++) {
             const cd = cds[i];
-            cell = this.grid.newCell();
+            const dataIndex = this.order.find(cd.name);
+            let value: any;
+            let borders: string;
+
+            if (this.isVisible(cd.name)) {
+                value = row.values[dataIndex];
+                if (previousRow == null) {
+                    if (last)
+                        borders = "all";
+                    else
+                        borders = "top";
+                } else if (last) {
+                    if (isSame.get(cd.name))
+                        borders = "bottom";
+                    else
+                        borders = "all";
+                } else {
+                    if (isSame.get(cd.name))
+                        borders = "middle";
+                    else
+                        borders = "top";
+                }
+            } else {
+                if (previousRow == null) {
+                    if (last)
+                        borders = "all";
+                    else
+                        borders = "top";
+                } else {
+                    if (last)
+                        borders = "bottom";
+                    else
+                        borders = "middle";
+                }
+            }
+
+            cell = this.grid.newCell(borders);
             let align = "right";
             if (kindIsString(cd.kind))
                 align = "left";
@@ -1155,25 +1188,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
 
             this.cellsPerColumn.get(cd.name).push(cell);
 
-            const dataIndex = this.order.find(cd.name);
             if (this.isVisible(cd.name)) {
-                const value = row.values[dataIndex];
-                if (previousRow == null) {
-                    if (last)
-                        cell.classList.add("all");
-                    else
-                        cell.classList.add("top");
-                } else if (last) {
-                    if (isSame.get(cd.name))
-                        cell.classList.add("bottom");
-                    else
-                        cell.classList.add("all");
-                } else {
-                    if (isSame.get(cd.name))
-                        cell.classList.add("middle");
-                    else
-                        cell.classList.add("top");
-                }
                 let shownValue: string;
                 if (value == null) {
                     cell.appendChild(makeMissing());
@@ -1221,17 +1236,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
                 };
             } else {
                 cell.classList.add("empty");
-                if (previousRow == null) {
-                    if (last)
-                        cell.classList.add("all");
-                    else
-                        cell.classList.add("top");
-                } else {
-                    if (last)
-                        cell.classList.add("bottom");
-                    else
-                        cell.classList.add("middle");
-                }
+                cell.innerHTML = "&nbsp;";
                 cell.oncontextmenu = moveToTop;
             }
         }

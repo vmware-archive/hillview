@@ -56,7 +56,7 @@ export class Converters {
  * @param cssselector  Node specification as a CSS selector.
  * @returns The unique selected node.
  */
-export function findElement(cssselector: string): HTMLElement {
+export function findElement(cssselector: string): HTMLElement | null {
     const val = document.querySelector(cssselector);
     return val as HTMLElement;
 }
@@ -561,4 +561,10 @@ export function convertToString(val: any, kind: ContentsKind): string {
         return val as string;
     else
         return val.toString();  // TODO
+}
+
+export function px(dim: number): string {
+    if (dim === 0)
+        return dim.toString();
+    return dim.toString() + "px";
 }
