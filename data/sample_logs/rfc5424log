@@ -1,0 +1,8 @@
+<187>1 2016-03-15T22:53:00.114Z nsx-manager NSX - SYSTEM [nsx@6876 comp="nsx-manager" errorCode="MP4039" subcomp="manager"] Connection verification failed for broker '10.160.108.196'. Marking broker unhealthy.
+<182>1 2018-03-27T14:28:38.723227Z nsxmgr01 NSX 2645 - [nsx@6876 comp="nsx-manager" subcomp="mpa" tid="7073" level="INFO"] Processing message for known client HostNodeStatusVertical.
+<182>1 2018-03-27T14:28:38.723532Z nsxmgr01 NSX 834 - [nsx@6876 comp="nsx-manager" subcomp="agg-service" tid="989" level="INFO"] [SendMsg] Sent message to MPA for app (HostNodeStatusVertical)
+<182>1 2018-03-27T14:28:38.725318Z nsxmgr01 NSX 2645 - [nsx@6876 comp="nsx-manager" subcomp="mpa" tid="7074" level="INFO"] [SendAppMessage] Finishing sending message id: d270a9d2-1f9a-4dfd-9218-c27d00f10c11:4600 for client HostNodeStatusVertical
+<182>1 2018-03-27T14:28:38.725384Z nsxmgr01 NSX 2645 - [nsx@6876 comp="nsx-manager" subcomp="mpa" tid="7074" level="INFO"] Successfully sent app data to broker
+<182>1 2018-03-27T14:28:39.550Z nsxmgr01 NSX - - [nsx@6876 comp="nsx-manager" subcomp="manager"] Current delta sync queue has #4 transaction(s)
+<180>1 2018-03-27T14:28:39.550Z nsxmgr01 NSX - - [nsx@6876 comp="nsx-manager" subcomp="manager"] Calculated delta batch is null
+
