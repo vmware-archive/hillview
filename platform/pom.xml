@@ -48,6 +48,24 @@
                                 </goals>
                             </execution>
                             <execution>
+                            <id>data-uploader</id>
+                            <configuration>
+                                <archive>
+                                    <manifest>
+                                        <mainClass>org.hillview.main.DataUpload</mainClass>
+                                    </manifest>
+                                </archive>
+                                <descriptorRefs>
+                                    <descriptorRef>jar-with-dependencies</descriptorRef>
+                                </descriptorRefs>
+                                <finalName>DataUpload</finalName>
+                            </configuration>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>single</goal>
+                            </goals>
+                            </execution>
+                            <execution>
                                 <id>build-histogram-benchmark</id>
                                 <configuration>
                                     <archive>
