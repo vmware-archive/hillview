@@ -1,0 +1,8 @@
+2018-11-07 06:29:26,656 INFO  applicationhistoryservice.ApplicationHistoryServer (LogAdapter.java:info(45)) - STARTUP_MSG:
+/************************************************************
+STARTUP_MSG: Starting ApplicationHistoryServer
+STARTUP_MSG:   user = yarn
+STARTUP_MSG:   host = manager-0/10.81.1.169
+STARTUP_MSG:   args = []
+STARTUP_MSG:   version = 2.7.3.2.6.5.0-292
+2018-11-08 09:24:23,600 WARN kkkkkkk
