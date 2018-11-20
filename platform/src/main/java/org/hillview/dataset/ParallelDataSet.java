@@ -340,6 +340,9 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
         HillviewLogger.instance.info("Invoked sketch", "target={0}", this);
         List<Observable<PartialResult<R>>> obs = new ArrayList<Observable<PartialResult<R>>>();
         final int mySize = this.size();
+        if (mySize == 0)
+            return Observable.just(new PartialResult<R>(sketch.getZero()));
+
         // Run sketch over each child separately
         for (int i = 0; i < mySize; i++) {
             IDataSet<T> child = this.children.get(i);

@@ -33,7 +33,7 @@ import {SchemaClassSerialization} from "./schemaClass";
 import {BigTableView, TableTargetAPI} from "./tableTarget";
 import {HillviewToplevel} from "./toplevel";
 import {IDataView} from "./ui/dataview";
-import {FullPage} from "./ui/fullPage";
+import {FullPage, PageTitle} from "./ui/fullPage";
 import {MenuItem, SubMenu, TopMenuItem} from "./ui/menu";
 import {IHtmlElement, ViewKind} from "./ui/ui";
 import {assert, EnumIterators, Pair, saveAs} from "./util";
@@ -229,7 +229,7 @@ export class DatasetView implements IHtmlElement {
         this.pageContainer.removeChild(this.pageContainer.children[index]);
     }
 
-    public newPage(title: string, sourcePage: FullPage | null): FullPage {
+    public newPage(title: PageTitle, sourcePage: FullPage | null): FullPage {
         const num = this.pageCounter++;
         const page = new FullPage(num, title, sourcePage != null ? sourcePage.pageId : null, this);
         this.insertAfter(page, sourcePage);
@@ -240,7 +240,7 @@ export class DatasetView implements IHtmlElement {
      * Creates a page when reconstructing a view that has been saved/bookmarked.
      * The newly created page is always inserted at the end.
      */
-    public reconstructPage(title: string, pageNo: number, sourcePageNo: number | null): FullPage {
+    public reconstructPage(title: PageTitle, pageNo: number, sourcePageNo: number | null): FullPage {
         const page = new FullPage(pageNo, title, sourcePageNo, this);
         if (pageNo >= this.pageCounter)
             this.pageCounter = pageNo + 1;
@@ -278,7 +278,8 @@ export class DatasetView implements IHtmlElement {
             vs.title == null ||
             vs.viewKind == null)  // sourcePageId can be null
             return false;
-        const page = this.reconstructPage(vs.title, vs.pageId, vs.sourcePageId);
+        const page = this.reconstructPage(new PageTitle(vs.title),
+            vs.pageId, vs.sourcePageId);
         let view: IDataView = null;
         switch (vs.viewKind) {
             case "Table":
@@ -361,7 +362,7 @@ export class DatasetView implements IHtmlElement {
     public redisplay(): void {
         const rr = this.remoteObject.createGetSchemaRequest();
         const title = getDescription(this.loaded);
-        const newPage = this.newPage(title, null);
+        const newPage = this.newPage(new PageTitle(title), null);
         rr.invoke(new SchemaReceiver(newPage, rr, this.remoteObject, this, false));
     }
 

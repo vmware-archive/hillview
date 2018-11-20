@@ -21,7 +21,7 @@ import {
     RecordOrder,
     RemoteObjectId
 } from "../javaBridge";
-import {FullPage} from "../ui/fullPage";
+import {FullPage, PageTitle} from "../ui/fullPage";
 import {BaseRenderer, TableTargetAPI} from "../tableTarget";
 import {SchemaClass} from "../schemaClass";
 import {ICancellable, PartialResult} from "../util";
@@ -122,7 +122,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
     }
 
     protected showTable(): void {
-        const newPage = this.dataset.newPage("Table", this.page);
+        const newPage = this.dataset.newPage(new PageTitle("Table"), this.page);
         const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newPage);
         newPage.setDataView(table);
         table.schema = this.schema;
@@ -262,7 +262,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
         this.page.reportTime(elapsedMs);
     }
 
-    protected getCombineRenderer(title: string):
+    protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
             return new FilterReceiver(
@@ -281,7 +281,8 @@ export class TrellisHistogram2DView extends TrellisChartView {
         if (filter == null)
             return;
         const rr = this.createFilterRequest(filter);
-        const title = "Filtered on " + this.schema.displayName(this.groupByAxisData.description.name);
+        const title =
+            new PageTitle("Filtered on " + this.schema.displayName(this.groupByAxisData.description.name));
         const renderer = new FilterReceiver(title,
             [this.xAxisData.description, this.legendAxisData.description,
                 this.groupByAxisData.description],
@@ -299,7 +300,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
 export class TrellisHistogram2DRenderer extends Receiver<Heatmap[]> {
     protected trellisView: TrellisHistogram2DView;
 
-    constructor(title: string,
+    constructor(title: PageTitle,
                 page: FullPage,
                 remoteTable: TableTargetAPI,
                 protected rowCount: number,

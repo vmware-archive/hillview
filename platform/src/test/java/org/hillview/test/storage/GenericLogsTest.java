@@ -234,7 +234,7 @@ public class GenericLogsTest extends BaseTest {
         Assert.assertNotNull(table);
         if (print)
             System.out.println(table.toLongString(10));
-        Assert.assertEquals("Table[14x7]", table.toString());
+        Assert.assertEquals("Table[14x8]", table.toString());
         RowSnapshot row = new RowSnapshot(table, 0);
         Instant i = row.getDate("Timestamp");
         Assert.assertNotNull(i);

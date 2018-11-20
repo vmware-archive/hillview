@@ -36,13 +36,13 @@ import {OnCompleteReceiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
 import {BaseRenderer, BigTableView} from "../tableTarget";
 import {Dialog, FieldKind} from "../ui/dialog";
-import {FullPage} from "../ui/fullPage";
+import {FullPage, PageTitle} from "../ui/fullPage";
 import {SubMenu, TopMenuItem} from "../ui/menu";
-import {SpecialChars, ViewKind} from "../ui/ui";
+import {HtmlString, SpecialChars, ViewKind} from "../ui/ui";
 import {
     cloneToSet,
     Converters,
-    convertToString,
+    convertToStringFormat,
     ICancellable,
     mapToArray,
     significantDigits,
@@ -169,7 +169,7 @@ export abstract class TSViewBase extends BigTableView {
             renameMap: mapToArray(subSchema.getRenameMap()),
         };
         const rr = this.createCreateColumnRequest(arg);
-        const newPage = this.dataset.newPage("New column " + col, this.page);
+        const newPage = this.dataset.newPage(new PageTitle("New column " + col), this.page);
         const cd: IColumnDescription = {
             kind: arg.outputKind,
             name: col,
@@ -442,8 +442,8 @@ export abstract class TSViewBase extends BigTableView {
                 title += " equals ";
             else if (!(strFilter.asSubString || strFilter.asRegEx) && strFilter.complement)
                 title += " does not equal ";
-            title += strFilter.compareValue;
-            const newPage = this.dataset.newPage(title, this.page);
+            title += convertToStringFormat(strFilter.compareValue, desc.kind);
+            const newPage = this.dataset.newPage(new PageTitle(title), this.page);
             rr.invoke(new TableOperationCompleted(newPage, rr, this.rowCount, this.schema, o, tableRowsDesired));
         });
         ef.show();
@@ -478,11 +478,9 @@ export abstract class TSViewBase extends BigTableView {
 
         const rr = this.createFilterComparisonRequest(filter);
         const value = kindIsString(kind) ? filter.stringValue : filter.doubleValue;
-        const title = "Filtered: " +
-            convertToString(value, kind) + " " + filter.comparison + " " +
-            this.schema.displayName(filter.column.name);
-
-        const newPage = this.dataset.newPage(title, this.page);
+        const title = "Filtered: " + convertToStringFormat(value, kind) +
+                    " " + filter.comparison + " " + this.schema.displayName(filter.column.name);
+        const newPage = this.dataset.newPage(new PageTitle(title), this.page);
         rr.invoke(new TableOperationCompleted(newPage, rr, this.rowCount, this.schema, o, tableRowsDesired));
     }
 
@@ -737,7 +735,6 @@ export class ColumnConverter  {
             newKind: this.newKind,
             columnIndex: this.columnIndex,
         };
-        const newPage = this.table.dataset.newPage("Converted " + this.newColumnName, this.page);
         const rr = this.table.createStreamingRpcRequest<string>("convertColumnMap", args);
         const cd: IColumnDescription = {
             kind: this.newKind,
@@ -746,7 +743,7 @@ export class ColumnConverter  {
         const schema = this.table.schema.append(cd);
         const o = this.order.clone();
         o.addColumn({columnDescription: cd, isAscending: true});
-        rr.invoke(new TableOperationCompleted(newPage, rr, this.table.rowCount, schema,
+        rr.invoke(new TableOperationCompleted(this.page, rr, this.table.rowCount, schema,
             o, this.table.tableRowsDesired));
     }
 }

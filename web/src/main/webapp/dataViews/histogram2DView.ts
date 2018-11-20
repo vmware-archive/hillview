@@ -32,7 +32,7 @@ import {SchemaClass} from "../schemaClass";
 import {BaseRenderer, TableTargetAPI} from "../tableTarget";
 import {CDFPlot} from "../ui/CDFPlot";
 import {IDataView} from "../ui/dataview";
-import {FullPage} from "../ui/fullPage";
+import {FullPage, PageTitle} from "../ui/fullPage";
 import {Histogram2DPlot} from "../ui/Histogram2DPlot";
 import {HistogramLegendPlot} from "../ui/legendPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
@@ -198,17 +198,17 @@ export class Histogram2DView extends HistogramViewBase {
         this.pointDescription.show(false);
         let summary = new HtmlString(formatNumber(this.plot.getDisplayedPoints()) + " data points");
         if (heatmap.missingData !== 0)
-            summary = summary.appendString(
+            summary = summary.appendSafeString(
                 ", " + formatNumber(heatmap.missingData) + " missing both coordinates");
         if (heatmap.histogramMissingX.missingData !== 0)
-            summary = summary.appendString(
+            summary = summary.appendSafeString(
                 ", " + formatNumber(heatmap.histogramMissingX.missingData) + " missing Y coordinate");
         if (heatmap.histogramMissingY.missingData !== 0)
-            summary = summary.appendString(
+            summary = summary.appendSafeString(
                 ", " + formatNumber(heatmap.histogramMissingY.missingData) + " missing X coordinate");
-        summary = summary.appendString(", " + String(bucketCount) + " buckets");
+        summary = summary.appendSafeString(", " + String(bucketCount) + " buckets");
         if (this.samplingRate < 1.0)
-            summary = summary.appendString(", sampling rate ")
+            summary = summary.appendSafeString(", sampling rate ")
                 .append(significantDigitsHtml(this.samplingRate));
         summary.setInnerHtml(this.summary);
     }
@@ -342,7 +342,7 @@ export class Histogram2DView extends HistogramViewBase {
         return lines;
     }
 
-    protected getCombineRenderer(title: string):
+    protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
             return new FilterReceiver(
@@ -606,7 +606,7 @@ export class Histogram2DView extends HistogramViewBase {
         };
         const rr = this.createFilterRequest(filter);
         const renderer = new FilterReceiver(
-            "Filtered on " + this.schema.displayName(selectedAxis.description.name),
+            new PageTitle("Filtered on " + this.schema.displayName(selectedAxis.description.name)),
             [this.xAxisData.description, this.yData.description],
             this.schema,
             [inLegend ? this.xPoints : 0, this.yPoints], this.page, rr,
@@ -629,7 +629,7 @@ export class Histogram2DView extends HistogramViewBase {
             isAscending: true,
         } ]);
 
-        const page = this.dataset.newPage("Table", this.page);
+        const page = this.dataset.newPage(new PageTitle("Table"), this.page);
         const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, page);
         const rr = table.createNextKRequest(order, null, Resolution.tableRowsOnScreen);
         page.setDataView(table);
@@ -644,7 +644,7 @@ export class Histogram2DView extends HistogramViewBase {
 export class Histogram2DRenderer extends Receiver<Pair<Heatmap, HistogramBase>> {
     protected view: Histogram2DView;
 
-    constructor(title: string,
+    constructor(title: PageTitle,
                 page: FullPage,
                 protected remoteObject: TableTargetAPI,
                 protected rowCount: number,

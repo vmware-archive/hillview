@@ -45,7 +45,7 @@ export class ConsoleErrorReporter implements ErrorReporter {
     public static instance: ConsoleErrorReporter = new ConsoleErrorReporter();
 
     public reportFormattedError(message: HtmlString): void {
-        console.log(message.getString());  // this may be a html string, but that's all we can do
+        console.log(message.getSafeEncoding());  // this may be a html string, but that's all we can do
     }
 
     public reportError(message: string): void {

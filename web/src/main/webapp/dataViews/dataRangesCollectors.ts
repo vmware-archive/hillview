@@ -24,7 +24,7 @@ import {
     RemoteObjectId
 } from "../javaBridge";
 import {BaseRenderer, TableTargetAPI} from "../tableTarget";
-import {FullPage} from "../ui/fullPage";
+import {FullPage, PageTitle} from "../ui/fullPage";
 import {ICancellable, periodicSamples, Seed} from "../util";
 import {SchemaClass} from "../schemaClass";
 import {ChartOptions, Resolution, Size} from "../ui/ui";
@@ -142,7 +142,7 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
         protected schema: SchemaClass,
         protected bucketCounts: number[],
         protected cds: IColumnDescription[],  // if 0 we get to choose
-        protected title: string | null,
+        protected title: PageTitle,
         protected options: ChartOptions) {
         super(page, operation, "histogram");
     }
@@ -274,7 +274,8 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                 rr.chain(this.operation);
                 const axisData = new AxisData(this.cds[0], ranges[0]);
                 if (this.title == null)
-                    this.title = "Histogram of " + this.schema.displayName(this.cds[0].name);
+                    this.title = new PageTitle(
+                        "Histogram of " + this.schema.displayName(this.cds[0].name));
                 const renderer = new HistogramRenderer(this.title, this.page,
                     this.originator.remoteObjectId, rowCount, this.schema, this.bucketCounts[0],
                     axisData, rr, args.samplingRate, this.options.reusePage);
@@ -297,8 +298,9 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                 const groupByAxis = new AxisData(this.cds[1], ranges[1]);
                 groupByAxis.setBucketCount(wArg.bucketCount);
                 if (this.title == null)
-                    this.title = "Histograms of " + this.schema.displayName(this.cds[0].name) +
-                        " grouped by " + this.schema.displayName(this.cds[1].name);
+                    this.title = new PageTitle(
+                        "Histograms of " + this.schema.displayName(this.cds[0].name) +
+                        " grouped by " + this.schema.displayName(this.cds[1].name));
                 const renderer = new TrellisHistogramRenderer(this.title, this.page,
                     this.originator, rowCount, this.schema,
                     [xAxisData, groupByAxis],
@@ -332,9 +334,10 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                 const groupByAxis = new AxisData(this.cds[2], ranges[2]);
                 groupByAxis.setBucketCount(wArg.bucketCount);
                 if (this.title == null)
-                    this.title = "Histograms (" + this.schema.displayName(this.cds[0].name) +
+                    this.title = new PageTitle(
+                                 "Histograms (" + this.schema.displayName(this.cds[0].name) +
                                  ", " + this.schema.displayName(this.cds[1].name) +
-                                 ") grouped by " + this.schema.displayName(this.cds[2].name);
+                                 ") grouped by " + this.schema.displayName(this.cds[2].name));
                 const renderer = new TrellisHistogram2DRenderer(this.title, this.page,
                     this.originator, rowCount, this.schema,
                     [xAxis, yAxis, groupByAxis], 1.0, trellisShape, rr, this.options.reusePage);
@@ -366,9 +369,10 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                 const groupByAxis = new AxisData(this.cds[2], ranges[2]);
                 groupByAxis.setBucketCount(wArg.bucketCount);
                 if (this.title == null)
-                    this.title = "Heatmaps (" + this.schema.displayName(this.cds[0].name) +
+                    this.title = new PageTitle(
+                        "Heatmaps (" + this.schema.displayName(this.cds[0].name) +
                         ", " + this.schema.displayName(this.cds[1].name) +
-                        ") grouped by " + this.schema.displayName(this.cds[2].name);
+                        ") grouped by " + this.schema.displayName(this.cds[2].name));
                 const renderer = new TrellisHeatmapRenderer(this.title, this.page,
                     this.originator, rowCount, this.schema,
                     [xAxis, yAxis, groupByAxis], 1.0, trellisShape, rr, this.options.reusePage);
@@ -393,8 +397,9 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                 const yAxis = new AxisData(this.cds[1], ranges[1]);
                 yAxis.setBucketCount(yArg.bucketCount);
                 if (this.title == null)
-                    this.title = "Heatmap (" + this.schema.displayName(this.cds[0].name) + ", " +
-                        this.schema.displayName(this.cds[1].name) + ")";
+                    this.title = new PageTitle(
+                        "Heatmap (" + this.schema.displayName(this.cds[0].name) + ", " +
+                        this.schema.displayName(this.cds[1].name) + ")");
                 const renderer = new HeatmapRenderer(this.title, this.page,
                     this.originator, rowCount, this.schema,
                     [xAxis, yAxis], 1.0, rr, this.options.reusePage);
@@ -432,8 +437,9 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                 const yData = new AxisData(this.cds[1], ranges[1]);
                 yData.setBucketCount(yarg.bucketCount);
                 if (this.title == null)
-                    this.title = "Histogram (" + this.schema.displayName(this.cds[0].name) + ", " +
-                    this.schema.displayName(this.cds[1].name) + ")";
+                    this.title = new PageTitle(
+                        "Histogram (" + this.schema.displayName(this.cds[0].name) + ", " +
+                    this.schema.displayName(this.cds[1].name) + ")");
                 const renderer = new Histogram2DRenderer(this.title, this.page,
                     this.originator, rowCount, this.schema,
                     [xAxis, yData], cdfArg.samplingRate, rr,
@@ -455,7 +461,7 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
  * rendering.
  */
 export class FilterReceiver extends BaseRenderer {
-    constructor(protected title: string,
+    constructor(protected title: PageTitle,
                 protected cds: IColumnDescription[],
                 protected schema: SchemaClass,
                 protected bucketCounts: number[],

@@ -33,26 +33,33 @@ import {ScaleLinear as D3ScaleLinear, ScaleTime as D3ScaleTime} from "d3-scale";
  * from external sources, because they can cause DOM injection attacks.
  */
 export class HtmlString {
-    constructor(private readonly value: string) {}
+    private readonly safeValue: string;
 
-    public appendString(str: string): HtmlString {
-        return new HtmlString(this.value + str);
+    constructor(private arg: string) {
+        // Escape the argument string.
+        const div = document.createElement("div");
+        div.innerText = arg;
+        this.safeValue = div.innerHTML;
+    }
+
+    public appendSafeString(str: string): HtmlString {
+        return new HtmlString(this.safeValue + str);
     }
 
     public append(message: HtmlString): HtmlString {
-        return new HtmlString(this.value + message.value);
+        return new HtmlString(this.safeValue + message.safeValue);
     }
 
-    public prependString(str: string): HtmlString {
-        return new HtmlString(str + this.value);
+    public prependSafeString(str: string): HtmlString {
+        return new HtmlString(str + this.safeValue);
     }
 
     public setInnerHtml(elem: HTMLElement): void {
-        elem.innerHTML = this.value;
+        elem.innerHTML = this.safeValue;
     }
 
-    public getString(): string {
-        return this.value;
+    public getSafeEncoding(): string {
+        return this.safeValue;
     }
 }
 
