@@ -78,11 +78,10 @@ public class GenericLogsTest extends BaseTest {
         pattern = "%{HADOOP}";
         grok = grokCompiler.compile(pattern);
         cols = GrokExtra.getColumnsFromPattern(grok);
-        Assert.assertEquals(cols.size(), 4);
+        Assert.assertEquals(cols.size(), 3);
         Assert.assertEquals("Timestamp", cols.get(0));
         Assert.assertEquals("Level", cols.get(1));
-        Assert.assertEquals("Class", cols.get(2));
-        Assert.assertEquals("Message", cols.get(3));
+        Assert.assertEquals("Message", cols.get(2));
     }
 
     @Test
@@ -149,14 +148,14 @@ public class GenericLogsTest extends BaseTest {
         Assert.assertNotNull(table);
         if (print)
             System.out.println(table.toLongString(10));
-        Assert.assertEquals("Table[9x42]", table.toString());
+        Assert.assertEquals("Table[8x42]", table.toString());
         IColumn col = table.getLoadedColumn(GenericLogs.parseErrorColumn);
         for (int i = 0; i < col.sizeInRows(); i++) {
             String s = col.getString(i);
             Assert.assertNotNull(s);
         }
     }
-
+    
     @Test
     public void testStartuplog() {
         String path = "../data/sample_logs/startuplog";
@@ -166,9 +165,9 @@ public class GenericLogsTest extends BaseTest {
         Assert.assertNotNull(table);
         if (print)
             System.out.println(table.toLongString(10));
-        Assert.assertEquals("Table[9x2]", table.toString());
+        Assert.assertEquals("Table[8x2]", table.toString());
     }
-
+ 
     @Test
     public void testSyslogTime() {
         String path = "../data/sample_logs/syslog";
@@ -222,7 +221,7 @@ public class GenericLogsTest extends BaseTest {
         Assert.assertNotNull(table);
         if (print)
             System.out.println(table.toLongString(10));
-        Assert.assertEquals("Table[9x113]", table.toString());
+        Assert.assertEquals("Table[8x113]", table.toString());
     }
 
     @Test
@@ -266,7 +265,7 @@ public class GenericLogsTest extends BaseTest {
         Assert.assertNotNull(table);
         if (print)
             System.out.println(table.toLongString(50));
-        Assert.assertEquals("Table[9x93]", table.toString());
+        Assert.assertEquals("Table[8x93]", table.toString());
     }
 
     @Test
@@ -278,6 +277,55 @@ public class GenericLogsTest extends BaseTest {
         Assert.assertNotNull(table);
         if (print)
             System.out.println(table.toLongString(10));
-        Assert.assertEquals("Table[9x138]", table.toString());
+        Assert.assertEquals("Table[8x138]", table.toString());
     }
+    
+    @Test
+    public void testOozieLog() {
+        String path = "../data/sample_logs/oozielog";
+        GenericLogs logs = new GenericLogs("%{OOZIELOG}");
+        TextFileLoader fileLoader = logs.getFileLoader(path);
+        ITable table = fileLoader.load();
+        Assert.assertNotNull(table);
+        if (print)
+            System.out.println(table.toLongString(10));
+        Assert.assertEquals("Table[8x5]", table.toString());
+    }
+    
+    @Test
+    public void testZookeeperLog() {
+        String path = "../data/sample_logs/zookeeperlog";
+        GenericLogs logs = new GenericLogs("%{ZOOKEEPERLOG}");
+        TextFileLoader fileLoader = logs.getFileLoader(path);
+        ITable table = fileLoader.load();
+        Assert.assertNotNull(table);
+        if (print)
+            System.out.println(table.toLongString(10));
+        Assert.assertEquals("Table[8x12]", table.toString());
+    }
+
+    @Test
+    public void testHDFSNameNodeLog() {
+        String path = "../data/sample_logs/hdfsnamenodelog";
+        GenericLogs logs = new GenericLogs("%{HDFSNAMENODELOG}");
+        TextFileLoader fileLoader = logs.getFileLoader(path);
+        ITable table = fileLoader.load();
+        Assert.assertNotNull(table);
+        if (print)
+            System.out.println(table.toLongString(10));
+        Assert.assertEquals("Table[8x9]", table.toString());
+    }
+
+    @Test
+    public void testHDFSDataNodeLog() {
+        String path = "../data/sample_logs/hdfsdatanodelog";
+        GenericLogs logs = new GenericLogs("%{HDFSDATANODELOG}");
+        TextFileLoader fileLoader = logs.getFileLoader(path);
+        ITable table = fileLoader.load();
+        Assert.assertNotNull(table);
+        if (print)
+            System.out.println(table.toLongString(10));
+        Assert.assertEquals("Table[8x5]", table.toString());
+    }
+
 }
