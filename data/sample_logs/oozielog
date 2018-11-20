@@ -1,0 +1,5 @@
+2018-11-20 03:00:02,129  INFO StatusTransitService$StatusTransitRunnable:520 - SERVER[manager-0] USER[-] GROUP[-] TOKEN[-] APP[-] JOB[-] ACTION[-] Acquired lock for [org.apache.oozie.service.StatusTransitService]
+2018-11-20 03:00:02,131  INFO StatusTransitService$StatusTransitRunnable:520 - SERVER[manager-0] USER[-] GROUP[-] TOKEN[-] APP[-] JOB[-] ACTION[-] Running coordinator status service from last instance time =  2018-11-20T07:59Z
+2018-11-20 03:00:02,133  INFO StatusTransitService$StatusTransitRunnable:520 - SERVER[manager-0] USER[-] GROUP[-] TOKEN[-] APP[-] JOB[-] ACTION[-] Running bundle status service from last instance time =  2018-11-20T07:59Z
+2018-11-20 03:00:02,134  INFO StatusTransitService$StatusTransitRunnable:520 - SERVER[manager-0] USER[-] GROUP[-] TOKEN[-] APP[-] JOB[-] ACTION[-] Released lock for [org.apache.oozie.service.StatusTransitService]
+2018-11-20 03:00:02,332  WARN ParameterVerifier:523 - SERVER[manager-0] USER[-] GROUP[-] TOKEN[-] APP[-] JOB[-] ACTION[-] The application does not define formal parameters in its XML definition

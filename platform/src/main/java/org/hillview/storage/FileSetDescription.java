@@ -71,34 +71,17 @@ public class FileSetDescription implements Serializable, IJson {
     public Double startTime;
     @Nullable
     public Double endTime;
-
+    
     @Nullable
     private String getSchemaPath() {
         if (Utilities.isNullOrEmpty(this.schemaFile))
             return null;
-        return Paths.get(this.getFolder(), this.schemaFile).toString();
-    }
-
-    public String getFolder() {
-        int last = this.fileNamePattern.lastIndexOf('/');
-        last = Math.max(last, this.fileNamePattern.lastIndexOf('\\'));
-        if (last == -1)
-            return "";
-        return this.fileNamePattern.substring(0, last);
+        return Paths.get(Utilities.getFolder(this.fileNamePattern), this.schemaFile).toString();
     }
 
     @Nullable
     public String getLogFormat() {
         return this.logFormat;
-    }
-
-    @Nullable
-    public String getWildcard() {
-        int last = this.fileNamePattern.lastIndexOf('/');
-        last = Math.max(last, this.fileNamePattern.lastIndexOf('\\'));
-        if (last == -1)
-            return this.fileNamePattern;
-        return this.fileNamePattern.substring(last + 1);
     }
 
     public IFileReference createFileReference(String pathname) {

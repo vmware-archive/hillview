@@ -1,0 +1,9 @@
+2018-11-04 14:26:53,311 INFO  BlockStateChange (UnderReplicatedBlocks.java:chooseUnderReplicatedBlocks(395)) - chooseUnderReplicatedBlocks selected 6 blocks at priority level 1;  Total=6 Reset bookmarks? false
+2018-11-04 14:26:53,312 INFO  BlockStateChange (BlockManager.java:computeReplicationWorkForBlocks(1653)) - BLOCK* neededReplications = 242, pendingReplications = 0.
+2018-11-04 14:26:53,312 INFO  blockmanagement.BlockManager (BlockManager.java:computeReplicationWorkForBlocks(1660)) - Blocks chosen but could not be replicated = 6; of which 6 have no target, 0 have no source, 0 are UC, 0 are abandoned, 0 already have enough replicas.
+2018-11-04 14:26:54,188 INFO  hdfs.StateChange (FSNamesystem.java:completeFile(3759)) - DIR* completeFile: /spark2-history/.857fcdff-37cb-4208-bdb7-d41ae54d26bc is closed by DFSClient_NONMAPREDUCE_1032837588_1
+2018-11-04 14:26:54,661 INFO  hdfs.StateChange (FSNamesystem.java:completeFile(3759)) - DIR* completeFile: /spark-history/.8f8cca1a-1317-4a37-9c8b-53829cbff835 is closed by DFSClient_NONMAPREDUCE_-1406743014_1
+2018-11-04 14:26:56,312 INFO  BlockStateChange (UnderReplicatedBlocks.java:chooseUnderReplicatedBlocks(395)) - chooseUnderReplicatedBlocks selected 6 blocks at priority level 1;  Total=6 Reset bookmarks? false
+2018-11-04 14:26:56,312 INFO  BlockStateChange (BlockManager.java:computeReplicationWorkForBlocks(1653)) - BLOCK* neededReplications = 242, pendingReplications = 0.
+2018-11-04 14:26:56,312 INFO  blockmanagement.BlockManager (BlockManager.java:computeReplicationWorkForBlocks(1660)) - Blocks chosen but could not be replicated = 6; of which 6 have no target, 0 have no source, 0 are UC, 0 are abandoned, 0 already have enough replicas.
+2018-11-04 14:26:59,312 INFO  BlockStateChange (UnderReplicatedBlocks.java:chooseUnderReplicatedBlocks(395)) - chooseUnderReplicatedBlocks selected 6 blocks at priority level 1;  Total=6 Reset bookmarks? false

@@ -183,6 +183,25 @@ public class Utilities {
         return FilenameUtils.removeExtension(basename);
     }
 
+    @Nullable
+    public static String getWildcard(String path) {
+        int last = path.lastIndexOf('/');
+        last = Math.max(last, path.lastIndexOf('\\'));
+        if (last == -1)
+            return path;
+        return path.substring(last + 1);
+    }
+    
+    @Nullable
+    public static String getFolder(String path) {
+        int last = path.lastIndexOf('/');
+        last = Math.max(last, path.lastIndexOf('\\'));
+        if (last == -1) {
+            return "";
+        }
+        return path.substring(0, last);
+    }
+
     public static String singleSpaced(String s) {
         return s.replaceAll("^ +| +$|( )+", "$1");
     }
