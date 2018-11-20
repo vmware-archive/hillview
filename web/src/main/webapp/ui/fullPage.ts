@@ -16,7 +16,7 @@
  */
 
 import {DatasetView} from "../datasetView";
-import {openInNewTab, significantDigitsHtml} from "../util";
+import {makeMissing, makeSpan, openInNewTab, significantDigitsHtml} from "../util";
 import {IDataView} from "./dataview";
 import {ConsoleDisplay, ErrorReporter} from "./errReporter";
 import {TopMenu} from "./menu";
@@ -26,6 +26,51 @@ import {helpUrl} from "./helpUrl";
 
 const minus = "&#8722;";
 const plus = "+";
+
+export class PageTitle {
+    public static readonly missingFormat = "%m";
+
+    /**
+     * A title is described by a format string.
+     * @param format  Format string, described below.
+     * %m represents a "missing" value.
+     * %p(n) represents a link to page numbered n.
+     */
+    constructor(public readonly format: string) {}
+
+    public getHTMLRepresentation(parentPage: FullPage): HTMLElement {
+        const result = document.createElement("span");
+        let remaining = this.format;
+        while (true) {
+            const next = remaining.indexOf("%");
+            if (next === -1 || next === remaining.length - 1) {
+                result.appendChild(makeSpan(remaining));
+                break;
+            }
+            if (remaining[next + 1] === "p") {
+                if (next > 0)
+                    result.appendChild(makeSpan(remaining.substr(0, next - 1)));
+                remaining = remaining.substr(next + 1);  // skip %p
+                const numre = /\((\d+)\)(.*)/;
+                const matches = numre.exec(remaining);
+                if (matches) {
+                    const num = parseInt(matches[1], 10);
+                    result.appendChild(parentPage.pageReference(num));
+                    remaining = matches[2];
+                }
+            } else if (remaining[next + 1] === "m") {
+                if (next > 0)
+                    result.appendChild(makeSpan(remaining.substr(0, next - 1)));
+                result.appendChild(makeMissing());
+                remaining = remaining.substr(next + 2);
+            } else {
+                result.appendChild(makeSpan(remaining));
+                break;
+            }
+        }
+        return result;
+    }
+}
 
 /**
  * A FullPage is the main unit of display in Hillview, storing on rendering.
@@ -63,7 +108,7 @@ export class FullPage implements IHtmlElement {
      * @param dataset     Parent dataset; only null for the toplevel menu.
      */
     public constructor(public readonly pageId: number,
-                       public readonly title: string,
+                       public readonly title: PageTitle,
                        public readonly sourcePageId: number | null,
                        public readonly dataset: DatasetView) {
         this.dataView = null;
@@ -87,8 +132,11 @@ export class FullPage implements IHtmlElement {
         this.addCell(this.menuSlot, true);
 
         const h2 = document.createElement("h2");
-        if (title != null)
-            h2.innerHTML = (this.pageId > 0 ? (this.pageId.toString() + ". ") : "") + title;
+        if (this.title != null) {
+            const titleStart = (this.pageId > 0 ? (this.pageId.toString() + ". ") : "");
+            h2.appendChild(makeSpan(titleStart));
+            h2.appendChild(this.title.getHTMLRepresentation(this));
+        }
         h2.style.textOverflow = "ellipsis";
         h2.style.textAlign = "center";
         h2.style.margin = "0";
@@ -96,7 +144,7 @@ export class FullPage implements IHtmlElement {
         this.addCell(h2, false);
 
         if (sourcePageId != null) {
-            h2.innerHTML += " from ";
+            h2.appendChild(makeSpan(" from "));
             const refLink = this.pageReference(sourcePageId);
             refLink.title = "View which produced this one.";
             h2.appendChild(refLink);
@@ -240,7 +288,7 @@ export class FullPage implements IHtmlElement {
         this.getErrorReporter().reportFormattedError(
             new HtmlString("Operation took ")
                 .append(significantDigitsHtml(timeInMs / 1000))
-                .appendString(" seconds"));
+                .appendSafeString(" seconds"));
     }
 
     public getWidthInPixels(): number {

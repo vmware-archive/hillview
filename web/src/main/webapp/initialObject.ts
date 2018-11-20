@@ -25,7 +25,7 @@ import {
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject} from "./rpc";
 import {BaseRenderer} from "./tableTarget";
-import {FullPage} from "./ui/fullPage";
+import {FullPage, PageTitle} from "./ui/fullPage";
 import {ICancellable, significantDigits, uuidv4} from "./util";
 
 export interface FilesLoaded {
@@ -127,7 +127,7 @@ export class RemoteTableReceiver extends BaseRenderer {
         rr.chain(this.operation);
         const title = getDescription(this.data);
         const dataset = new DatasetView(this.remoteObject.remoteObjectId, title, this.data);
-        const newPage = dataset.newPage(title, null);
+        const newPage = dataset.newPage(new PageTitle(title), null);
         rr.invoke(new SchemaReceiver(newPage, rr, this.remoteObject, dataset, this.forceTableView));
     }
 }

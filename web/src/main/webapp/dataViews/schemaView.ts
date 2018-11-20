@@ -23,7 +23,7 @@ import {
 import {SchemaClass} from "../schemaClass";
 import {IDataView} from "../ui/dataview";
 import {Dialog, FieldKind} from "../ui/dialog";
-import {FullPage} from "../ui/fullPage";
+import {FullPage, PageTitle} from "../ui/fullPage";
 import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
 import {TabularDisplay} from "../ui/tabularDisplay";
 import {Resolution} from "../ui/ui";
@@ -264,7 +264,7 @@ export class SchemaView extends TSViewBase {
         }
     }
 
-    protected getCombineRenderer(title: string):
+    protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer {
         return null;  // not used
     }

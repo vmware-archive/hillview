@@ -49,15 +49,8 @@ public class HillviewLogger {
     // Default logger if users forget to initialize
     public static HillviewLogger instance = new HillviewLogger("none", null);
 
-    private static final Logger GRPC_LOGGER;
-    private static final Logger NETTY_LOGGER;
-
     static {
         InternalLoggerFactory.setDefaultFactory(JdkLoggerFactory.INSTANCE);
-        GRPC_LOGGER = Logger.getLogger("io.grpc");
-        GRPC_LOGGER.setLevel(Level.WARNING);
-        NETTY_LOGGER = Logger.getLogger("io.grpc.netty.NettyServerHandler");
-        NETTY_LOGGER.setLevel(Level.WARNING);
     }
 
     /**

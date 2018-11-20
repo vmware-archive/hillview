@@ -39,19 +39,19 @@ import {BaseRenderer, TableTargetAPI} from "../tableTarget";
 import {DataRangeUI} from "../ui/dataRangeUI";
 import {IDataView} from "../ui/dataview";
 import {Dialog, FieldKind} from "../ui/dialog";
-import {FullPage} from "../ui/fullPage";
+import {FullPage, PageTitle} from "../ui/fullPage";
 import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
 import {IScrollTarget, ScrollBar} from "../ui/scroll";
 import {SelectionStateMachine} from "../ui/selectionStateMachine";
 import {HtmlString, Resolution, SpecialChars} from "../ui/ui";
 import {
-    cloneToSet, convertToString,
+    cloneToSet, convertToStringFormat,
     formatNumber,
     ICancellable, makeMissing, makeSpan,
     PartialResult,
     percent,
     saveAs,
-    significantDigitsHtml,
+    significantDigitsHtml, truncate,
 } from "../util";
 import {SchemaView} from "./schemaView";
 import {SpectrumReceiver} from "./spectrumView";
@@ -360,7 +360,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
         rr.invoke(new FindReceiver(this.getPage(), rr, this, o));
     }
 
-    protected getCombineRenderer(title: string):
+    protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
             return new TableOperationCompleted(page, operation, this.rowCount, this.schema,
@@ -1027,7 +1027,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
     }
 
     public viewSchema(): void {
-        const newPage = this.dataset.newPage("Schema", this.page);
+        const newPage = this.dataset.newPage(new PageTitle("Schema"), this.page);
         const sv = new SchemaView(this.remoteObjectId, newPage, this.rowCount, this.schema, 0);
         newPage.setDataView(sv);
         newPage.scrollIntoView();
@@ -1194,37 +1194,39 @@ export class TableView extends TSViewBase implements IScrollTarget {
                     cell.appendChild(makeMissing());
                     shownValue = "missing";
                 } else {
-                    shownValue = convertToString(row.values[dataIndex], cd.kind);
+                    shownValue = convertToStringFormat(row.values[dataIndex], cd.kind);
                     const high = this.highlight(shownValue);
                     cell.appendChild(high);
                 }
+
+                const shortValue = truncate(shownValue, 30);
                 cell.title = shownValue + "\nRight click will popup a menu.";
                 cell.oncontextmenu = (e) => {
                     this.contextMenu.clear();
                     // This menu shows the value to the right, but the filter
                     // takes the value to the left, so we have to flip all
                     // comparison signs.
-                    this.contextMenu.addItem({text: "Filter for " + shownValue,
+                    this.contextMenu.addItem({text: "Keep " + shortValue,
                         action: () => this.filterOnValue(cd, value, "=="),
                         help: "Keep only the rows that have this value in this column.",
                     }, true);
-                    this.contextMenu.addItem({text: "Filter for different from " + shownValue,
+                    this.contextMenu.addItem({text: "Keep different from " + shortValue,
                         action: () => this.filterOnValue(cd, value, "!="),
                         help: "Keep only the rows that have a different value in this column.",
                     }, true);
-                    this.contextMenu.addItem({text: "Filter for < " + shownValue,
+                    this.contextMenu.addItem({text: "Keep all < " + shortValue,
                         action: () => this.filterOnValue(cd, value, ">"),
                         help: "Keep only the rows that have a a smaller value in this column.",
                     }, true);
-                    this.contextMenu.addItem({text: "Filter for > " + shownValue,
+                    this.contextMenu.addItem({text: "Keep all > " + shortValue,
                         action: () => this.filterOnValue(cd, value, "<"),
                         help: "Keep only the rows that have a larger value in this column.",
                     }, true);
-                    this.contextMenu.addItem({text: "Filter for <= " + shownValue,
+                    this.contextMenu.addItem({text: "Keep all <= " + shortValue,
                         action: () => this.filterOnValue(cd, value, ">="),
                         help: "Keep only the rows that have a smaller or equal value in this column.",
                     }, true);
-                    this.contextMenu.addItem({text: "Filter for >= " + shownValue,
+                    this.contextMenu.addItem({text: "Keep all >= " + shortValue,
                         action: () => this.filterOnValue(cd, value, "<="),
                         help: "Keep only the rows that have a larger or equal in this column.",
                     }, true);

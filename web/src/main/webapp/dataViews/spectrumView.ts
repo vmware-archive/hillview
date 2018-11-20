@@ -29,7 +29,7 @@ import {SchemaClass} from "../schemaClass";
 import {BaseRenderer, TableTargetAPI} from "../tableTarget";
 import {IDataView} from "../ui/dataview";
 import {Dialog, FieldKind} from "../ui/dialog";
-import {FullPage} from "../ui/fullPage";
+import {FullPage, PageTitle} from "../ui/fullPage";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface} from "../ui/plottingSurface";
@@ -56,7 +56,8 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
         if (this.reusePage)
             this.newPage = this.page;
         else
-            this.newPage = this.page.dataset.newPage("Singular Value Spectrum", this.page);
+            this.newPage = this.page.dataset.newPage(
+                new PageTitle("Singular Value Spectrum"), this.page);
     }
 
     public run(eVals: EigenVal): void {
@@ -110,7 +111,7 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
                 return;
             }
             const rr = this.originator.createCorrelationMatrixRequest(this.colNames, this.rowCount, true);
-            const newestPage = this.newPage.dataset.newPage("Table", this.newPage);
+            const newestPage = this.newPage.dataset.newPage(new PageTitle("Table"), this.newPage);
             const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newestPage);
             newestPage.setDataView(table);
             const order  = new RecordOrder([]);
@@ -194,7 +195,7 @@ export class SpectrumView extends ChartView {
         return new SpectrumView(ser.remoteObjectId, ser.rowCount, colNames, schema, page);
     }
 
-    protected getCombineRenderer(title: string):
+    protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer {
         return null;  // not used
     }

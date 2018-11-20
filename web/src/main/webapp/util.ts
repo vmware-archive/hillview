@@ -24,6 +24,7 @@ import {ErrorReporter} from "./ui/errReporter";
 import {NotifyDialog} from "./ui/dialog";
 import {HtmlString, Size} from "./ui/ui";
 import {ContentsKind, kindIsNumeric, kindIsString} from "./javaBridge";
+import {PageTitle} from "./ui/fullPage";
 
 export interface Pair<T1, T2> {
     first: T1;
@@ -66,7 +67,7 @@ export function findElement(cssselector: string): HTMLElement | null {
  * @param text       Text to insert in span.
  * @param highlight  If true the span has class highlight.
  */
-export function makeSpan(text: string | null, highlight: boolean): HTMLElement {
+export function makeSpan(text: string | null, highlight: boolean = false): HTMLElement {
     const span = document.createElement("span");
     if (text != null)
         span.textContent = text;
@@ -262,7 +263,7 @@ export function significantDigitsHtml(n: number): HtmlString {
         n = Math.round(n * 100) / 100;
     else
         n = Math.round(n * 1000) / 1000;
-    return new HtmlString(String(n)).appendString(suffix);
+    return new HtmlString(String(n)).appendSafeString(suffix);
 }
 
 /**
@@ -550,9 +551,9 @@ export interface ICancellable<T> extends IRawCancellable {}
  * @param val                  Value to convert.
  * @param {ContentsKind} kind  Type of value.
  */
-export function convertToString(val: any, kind: ContentsKind): string {
+export function convertToStringFormat(val: any, kind: ContentsKind): string {
     if (val == null)
-        return "";
+        return PageTitle.missingFormat;
     if (kindIsNumeric(kind))
         return String(val);
     else if (kind === "Date")

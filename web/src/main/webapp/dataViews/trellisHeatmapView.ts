@@ -25,7 +25,7 @@ import {
 } from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
 import {BaseRenderer, TableTargetAPI} from "../tableTarget";
-import {FullPage} from "../ui/fullPage";
+import {FullPage, PageTitle} from "../ui/fullPage";
 import {HeatmapLegendPlot} from "../ui/legendPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
@@ -202,7 +202,7 @@ export class TrellisHeatmapView extends TrellisChartView {
     }
 
     public showTable(): void {
-        const newPage = this.dataset.newPage("Table", this.page);
+        const newPage = this.dataset.newPage(new PageTitle("Table"), this.page);
         const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newPage);
         newPage.setDataView(table);
         table.schema = this.schema;
@@ -300,7 +300,7 @@ export class TrellisHeatmapView extends TrellisChartView {
         this.pointDescription.update([xs, ys, group, value.toString()], position[0], position[1]);
     }
 
-    protected getCombineRenderer(title: string):
+    protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
             return new FilterReceiver(
@@ -317,7 +317,7 @@ export class TrellisHeatmapView extends TrellisChartView {
 
     protected selectionCompleted(): void {
         const local = this.selectionIsLocal();
-        let title: string;
+        let title: PageTitle;
         let rr: RpcRequest<PartialResult<RemoteObjectId>>;
         if (local != null) {
             const origin = this.canvasToChart(this.selectionOrigin);
@@ -345,15 +345,16 @@ export class TrellisHeatmapView extends TrellisChartView {
                 complement: d3event.sourceEvent.ctrlKey,
             };
             rr = this.createFilter2DRequest(xRange, yRange);
-            title = "Filtered on " +
+            title = new PageTitle("Filtered on " +
                 this.schema.displayName(this.xAxisData.description.name) +
-                " and " + this.schema.displayName(this.yAxisData.description.name);
+                " and " + this.schema.displayName(this.yAxisData.description.name));
         } else {
             const filter = this.getGroupBySelectionFilter();
             if (filter == null)
                 return;
             rr = this.createFilterRequest(filter);
-            title = "Filtered on " + this.schema.displayName(this.groupByAxisData.description.name);
+            title = new PageTitle(
+                "Filtered on " + this.schema.displayName(this.groupByAxisData.description.name));
         }
         const renderer = new FilterReceiver(title,
             [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description],
@@ -370,7 +371,7 @@ export class TrellisHeatmapView extends TrellisChartView {
 export class TrellisHeatmapRenderer extends Receiver<Heatmap3D> {
     protected trellisView: TrellisHeatmapView;
 
-    constructor(title: string,
+    constructor(title: PageTitle,
                 page: FullPage,
                 remoteTable: TableTargetAPI,
                 protected rowCount: number,

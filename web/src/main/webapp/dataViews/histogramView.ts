@@ -31,7 +31,7 @@ import {BaseRenderer} from "../tableTarget";
 import {CDFPlot} from "../ui/CDFPlot";
 import {IDataView} from "../ui/dataview";
 import {Dialog} from "../ui/dialog";
-import {FullPage} from "../ui/fullPage";
+import {FullPage, PageTitle} from "../ui/fullPage";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
@@ -241,17 +241,17 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
 
         let summary = new HtmlString("");
         if (h.missingData !== 0)
-            summary = summary.appendString(formatNumber(h.missingData) + " missing, ");
-        summary = summary.appendString(formatNumber(this.rowCount) + " points");
+            summary = summary.appendSafeString(formatNumber(h.missingData) + " missing, ");
+        summary = summary.appendSafeString(formatNumber(this.rowCount) + " points");
         if (this.axisData != null &&
             this.axisData.range.leftBoundaries != null &&
             this.axisData.range.allStringsKnown)
-            summary = summary.appendString(
+            summary = summary.appendSafeString(
                 ", " + this.axisData.range.leftBoundaries.length + " distinct values");
-        summary = summary.appendString(
+        summary = summary.appendSafeString(
             ", " + String(bucketCount) + " buckets");
         if (this.samplingRate < 1.0)
-            summary = summary.appendString(", sampling rate ")
+            summary = summary.appendSafeString(", sampling rate ")
                 .append(significantDigitsHtml(this.samplingRate));
         summary.setInnerHtml(this.summary);
     }
@@ -286,7 +286,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
         }));
     }
 
-    protected getCombineRenderer(title: string):
+    protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
             return new FilterReceiver(
@@ -379,7 +379,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
             { exact: this.samplingRate >= 1, reusePage: true } );
     }
 
-    public histogram1D(title: string, cd: IColumnDescription,
+    public histogram1D(title: PageTitle, cd: IColumnDescription,
                        bucketCount: number, options: HistogramOptions): void {
         const rr = this.createDataRangesRequest([cd], this.page, "Histogram");
         rr.invoke(new DataRangesCollector(
@@ -430,7 +430,8 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
 
     // show the table corresponding to the data in the histogram
     protected showTable(): void {
-        const newPage = this.dataset.newPage("Table", this.page);
+        const newPage = this.dataset.newPage(
+            new PageTitle("Table"), this.page);
         const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newPage);
         newPage.setDataView(table);
         table.schema = this.schema;
@@ -467,7 +468,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
             complement: d3event.sourceEvent.ctrlKey,
         };
         const rr = this.createFilterRequest(filter);
-        const title = "Filtered " + this.schema.displayName(this.axisData.description.name);
+        const title = new PageTitle("Filtered " + this.schema.displayName(this.axisData.description.name));
         const renderer = new FilterReceiver(title, [this.axisData.description], this.schema,
             [0], this.page, rr, this.dataset, {
             exact: this.samplingRate >= 1, reusePage: false, relative: false, chartKind: "Histogram"
@@ -502,7 +503,7 @@ export class HistogramDialog extends Dialog {
 export class HistogramRenderer extends Receiver<HistogramBase>  {
     private readonly view: HistogramView;
 
-    constructor(protected title: string,
+    constructor(protected title: PageTitle,
                 sourcePage: FullPage,
                 remoteTableId: string,
                 protected rowCount: number,

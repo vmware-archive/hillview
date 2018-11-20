@@ -18,9 +18,9 @@
 import {DatasetView} from "./datasetView";
 import {InitialObject} from "./initialObject";
 import {LoadMenu} from "./loadMenu";
-import {FullPage} from "./ui/fullPage";
+import {FullPage, PageTitle} from "./ui/fullPage";
 import {ContextMenu} from "./ui/menu";
-import {IHtmlElement, removeAllChildren} from "./ui/ui";
+import {HtmlString, IHtmlElement, removeAllChildren} from "./ui/ui";
 import {assert} from "./util";
 
 /**
@@ -44,7 +44,7 @@ export class HillviewToplevel implements IHtmlElement {
         this.datasetCounter = 0;
         this.current = null;
         this.topLevel = document.createElement("div");
-        const page = new FullPage(0, "Load data", null, null);
+        const page = new FullPage(0, new PageTitle("Load data"), null, null);
 
         this.topLevel.appendChild(page.getHTMLRepresentation());
         const menu = new LoadMenu(InitialObject.instance, page);
@@ -190,7 +190,7 @@ export class HillviewToplevel implements IHtmlElement {
     }
 }
 
-export function createHillview(): void {    
+export function createHillview(): void {
     const top = document.getElementById("top");
     top.appendChild(HillviewToplevel.instance.getHTMLRepresentation());
     window.addEventListener("resize",  () => HillviewToplevel.instance.resize());

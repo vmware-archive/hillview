@@ -320,7 +320,7 @@ class CSVFileDialog extends Dialog {
     constructor() {
         super("Load CSV files",
             "Loads comma-separated value (CSV) files from all machines that are part of the service.");
-        const pattern = this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "*.csv",
+        const pattern = this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "/*.csv",
             "Shell pattern that describes the names of the files to load.");
         pattern.required = true;
         this.addTextField("schemaFile", "Schema file (optional)", FieldKind.String, "schema",
@@ -348,7 +348,7 @@ class GenericLogDialog extends Dialog {
     constructor() {
         super("Load Generic Logs",
             "Loads log files from all machines that are part of the service.");
-        const pattern = this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "*.log",
+        const pattern = this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "/*.log",
             "Shell pattern that describes the names of the files to load.");
         pattern.required = true;
         const format = this.addTextField("logFormat", "Log format", FieldKind.String, "%{SYSLOG}",
@@ -385,7 +385,7 @@ class JsonFileDialog extends Dialog {
         super("Load JSON files", "Loads JSON files from all machines that are part of the service.  Each file should " +
             "contain a JSON array of JSON objects.  All JSON objects should have the same schema.  Each JSON object" +
             "field becomes a separate column.  The schema of all JSON files loaded should be the same.");
-        const pattern = this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "*.json",
+        const pattern = this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "/*.json",
             "Shell pattern that describes the names of the files to load.");
         pattern.required = true;
         this.addTextField("schemaFile", "Schema file (optional)", FieldKind.String, "data.schema",
@@ -415,7 +415,7 @@ class ParquetFileDialog extends Dialog {
     constructor() {
         super("Load Parquet files", "Loads Parquet files from all machines that are part of the service." +
             "The schema of all Parquet files loaded should be the same.");
-        const pattern = this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "*.parquet",
+        const pattern = this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "/*.parquet",
             "Shell pattern that describes the names of the files to load.");
         pattern.required = true;
         this.setCacheTitle("ParquetFileDialog");
@@ -443,7 +443,7 @@ class OrcFileDialog extends Dialog {
     constructor() {
         super("Load ORC files", "Loads ORC files from all machines that are part of the service." +
             "The schema of all ORC files loaded should be the same.");
-        const pattern = this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "*.orc",
+        const pattern = this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "/*.orc",
             "Shell pattern that describes the names of the files to load.");
         pattern.required = true;
         this.addTextField("schemaFile", "Schema file (optional)", FieldKind.String, "schema",

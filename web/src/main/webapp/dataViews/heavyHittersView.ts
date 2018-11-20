@@ -23,13 +23,13 @@ import {BaseRenderer, BigTableView, TableTargetAPI} from "../tableTarget";
 import {DataRangeUI} from "../ui/dataRangeUI";
 import {IDataView} from "../ui/dataview";
 import {Dialog, FieldKind, NotifyDialog} from "../ui/dialog";
-import {FullPage} from "../ui/fullPage";
+import {FullPage, PageTitle} from "../ui/fullPage";
 import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
 import {TabularDisplay} from "../ui/tabularDisplay";
 import {Resolution, SpecialChars} from "../ui/ui";
 import {
     cloneSet,
-    convertToString,
+    convertToStringFormat,
     ICancellable,
     makeMissing,
     makeSpan,
@@ -60,7 +60,8 @@ export class HeavyHittersReceiver extends OnCompleteReceiver<TopList> {
             const names = this.columnsShown.map((c) => this.schema.displayName(c.name)).join(", ");
             let newPage = this.page;
             if (!this.reusePage)
-                newPage = this.page.dataset.newPage("Frequent Elements in " + names, this.page);
+                newPage = this.page.dataset.newPage(
+                    new PageTitle("Frequent Elements in " + names), this.page);
             const hhv = new HeavyHittersView(
                 data.heavyHittersId, newPage, this.remoteTableObject, this.rowCount, this.schema,
                 this.order, this.isApprox, this.percent, this.columnsShown);
@@ -219,7 +220,8 @@ export class HeavyHittersView extends BigTableView {
                 new RemoteObject(this.heavyHittersId), this.columnsShown);
             rr.invoke(new HeavyHittersReceiver3(this, rr, includeSet));
         } else {
-            const newPage = this.dataset.newPage("All frequent elements", this.page);
+            const newPage = this.dataset.newPage(
+                new PageTitle("All frequent elements"), this.page);
             const rr = this.remoteTableObject.createFilterHeavyRequest(
                 this.heavyHittersId, this.columnsShown, includeSet);
             rr.invoke(new TableOperationCompleted(
@@ -232,7 +234,7 @@ export class HeavyHittersView extends BigTableView {
         if (this.table.getSelectedRows().size === 0)
             return;
         const title: string = includeSet ? "Selected frequent elements" : "All other elements";
-        const newPage = this.dataset.newPage(title, this.page);
+        const newPage = this.dataset.newPage(new PageTitle(title), this.page);
         const rr = this.remoteTableObject.createFilterListHeavy(
             this.heavyHittersId, this.columnsShown, includeSet, this.getSelectedRows());
         rr.invoke(new TableOperationCompleted(
@@ -281,7 +283,7 @@ export class HeavyHittersView extends BigTableView {
                     if (value == null)
                         row.push(makeMissing());
                     else
-                        row.push(makeSpan(convertToString(value, this.columnsShown[j].kind), false));
+                        row.push(makeSpan(convertToStringFormat(value, this.columnsShown[j].kind), false));
                 }
                 row.push(this.valueToHtml(nextKList.rows[i].count));
                 row.push(this.valueToHtml((nextKList.rows[i].count / nextKList.rowsScanned) * 100));
@@ -372,7 +374,7 @@ export class HeavyHittersView extends BigTableView {
         const span = document.createElement("span");
         let str = significantDigitsHtml(n);
         if (this.isApprox)
-            str = str.prependString(SpecialChars.approx);
+            str = str.prependSafeString(SpecialChars.approx);
         str.setInnerHtml(span);
         return span;
     }
@@ -404,7 +406,7 @@ export class HeavyHittersView extends BigTableView {
         percentDialog.show();
     }
 
-    protected getCombineRenderer(title: string):
+    protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer {
         // Not used
         return null;
@@ -450,7 +452,7 @@ export class HeavyHittersReceiver3 extends OnCompleteReceiver<TopList> {
 
     public run(exactList: TopList): void {
         const title = (this.includeSet) ? "Frequent Elements" : "Infrequent Elements";
-        const newPage = this.hhv.dataset.newPage(title, this.hhv.page);
+        const newPage = this.hhv.dataset.newPage(new PageTitle(title), this.hhv.page);
         const rr = this.hhv.remoteTableObject.createFilterHeavyRequest(
             exactList.heavyHittersId, this.hhv.columnsShown, this.includeSet);
         rr.invoke(new TableOperationCompleted(

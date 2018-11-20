@@ -29,7 +29,7 @@ import {SchemaClass} from "../schemaClass";
 import {BaseRenderer, TableTargetAPI} from "../tableTarget";
 import {IDataView} from "../ui/dataview";
 import {Dialog} from "../ui/dialog";
-import {FullPage} from "../ui/fullPage";
+import {FullPage, PageTitle} from "../ui/fullPage";
 import {HeatmapPlot} from "../ui/heatmapPlot";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {HeatmapLegendPlot} from "../ui/legendPlot";
@@ -191,19 +191,19 @@ export class HeatmapView extends ChartView {
                 this.schema.displayName(this.yAxisData.description.name), "count"], 40);
         let summary = new HtmlString(formatNumber(this.plot.getVisiblePoints()) + " data points");
         if (heatmap.missingData !== 0) {
-            summary = summary.appendString(", " + formatNumber(heatmap.missingData) + " missing");
+            summary = summary.appendSafeString(", " + formatNumber(heatmap.missingData) + " missing");
         }
         if (heatmap.histogramMissingX.missingData !== 0) {
-            summary = summary.appendString(
+            summary = summary.appendSafeString(
                 ", " + formatNumber(heatmap.histogramMissingX.missingData) + " missing Y coordinate");
         }
         if (heatmap.histogramMissingY.missingData !== 0) {
-            summary = summary.appendString(
+            summary = summary.appendSafeString(
                 ", " + formatNumber(heatmap.histogramMissingY.missingData) + " missing X coordinate");
         }
-        summary = summary.appendString(", " + formatNumber(this.plot.getDistinct()) + " distinct dots");
+        summary = summary.appendSafeString(", " + formatNumber(this.plot.getDistinct()) + " distinct dots");
         if (this.samplingRate < 1.0) {
-            summary = summary.appendString(", sampling rate ").append(significantDigitsHtml(this.samplingRate));
+            summary = summary.appendSafeString(", sampling rate ").append(significantDigitsHtml(this.samplingRate));
         }
         summary.setInnerHtml(this.summary);
     }
@@ -312,7 +312,7 @@ export class HeatmapView extends ChartView {
         }));
     }
 
-    protected getCombineRenderer(title: string):
+    protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
             return new FilterReceiver(
@@ -333,7 +333,7 @@ export class HeatmapView extends ChartView {
             columnDescription: this.yAxisData.description,
             isAscending: true,
         }]);
-        const page = this.dataset.newPage("Table", this.page);
+        const page = this.dataset.newPage(new PageTitle("Table"), this.page);
         const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, page);
         page.setDataView(table);
         table.schema = this.schema;
@@ -358,7 +358,8 @@ export class HeatmapView extends ChartView {
         const cds = [this.xAxisData.description, this.yAxisData.description];
         const rr = this.createDataRangesRequest(cds, this.page, "Heatmap");
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
-            [this.xAxisData.bucketCount, this.yAxisData.bucketCount], cds, this.page.title, {
+            [this.xAxisData.bucketCount, this.yAxisData.bucketCount],
+            cds, this.page.title, {
             reusePage: true,
             relative: false,
             chartKind: "Heatmap",
@@ -440,8 +441,9 @@ export class HeatmapView extends ChartView {
         };
         const rr = this.createFilter2DRequest(xRange, yRange);
         const renderer = new FilterReceiver(
-            "Filtered on " + this.schema.displayName(this.xAxisData.description.name) + " and " +
-            this.schema.displayName(this.yAxisData.description.name),
+            new PageTitle(
+                "Filtered on " + this.schema.displayName(this.xAxisData.description.name) + " and " +
+                this.schema.displayName(this.yAxisData.description.name)),
             [this.xAxisData.description, this.yAxisData.description],
             this.schema, [0, 0], this.page, rr, this.dataset, {
             exact: this.samplingRate >= 1, chartKind: "Heatmap",
@@ -457,7 +459,7 @@ export class HeatmapView extends ChartView {
 export class HeatmapRenderer extends Receiver<Heatmap> {
     protected heatmap: HeatmapView;
 
-    constructor(title: string,
+    constructor(title: PageTitle,
                 page: FullPage,
                 remoteTable: TableTargetAPI,
                 protected rowCount: number,

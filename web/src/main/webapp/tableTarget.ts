@@ -29,7 +29,7 @@ import {
     EigenVal, StringRowFilterDescription, FindResult, Heatmap3D, StringFilterDescription,
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
-import {FullPage} from "./ui/fullPage";
+import {FullPage, PageTitle} from "./ui/fullPage";
 import {PointSet, Resolution, ViewKind} from "./ui/ui";
 import {assert, ICancellable, Pair, PartialResult, Seed} from "./util";
 import {IDataView} from "./ui/dataview";
@@ -40,8 +40,8 @@ import {PlottingSurface} from "./ui/plottingSurface";
  * This class has methods that correspond directly to TableTarget.java methods.
  */
 export class TableTargetAPI extends RemoteObject {
-    csBuckets: number = 1000;
-    csTrials: number = 50;
+    private csBuckets: number = 1000;
+    private csTrials: number = 50;
     /**
      * Create a reference to a remote table target.
      * @param remoteObjectId   Id of remote table on the web server.
@@ -151,7 +151,6 @@ export class TableTargetAPI extends RemoteObject {
             { columnName: colName, seed: Seed.instance.get() });
     }
 
-
     public createCountSketchRequest(columns: IColumnDescription[]):
     RpcRequest<PartialResult<RemoteObjectId>> {
             return this.createStreamingRpcRequest<RemoteObjectId>("runCountSketch",
@@ -201,7 +200,7 @@ export class TableTargetAPI extends RemoteObject {
             });
     }
 
-    public createExactCSRequest(r:RemoteObject): RpcRequest<PartialResult<NextKList>> {
+    public createExactCSRequest(r: RemoteObject): RpcRequest<PartialResult<NextKList>> {
         return this.createStreamingRpcRequest<NextKList>("exactCS", {
             countSketchTargetId: r.remoteObjectId
         });
@@ -353,7 +352,7 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView {
             viewKind: this.viewKind,
             pageId: this.page.pageId,
             sourcePageId: this.page.sourcePageId,
-            title: this.page.title,
+            title: this.page.title.format,
             remoteObjectId: this.remoteObjectId,
             rowCount: this.rowCount,
             schema: this.schema.serialize(),
@@ -395,7 +394,7 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView {
      * It should return a renderer which will handle the newly received object
      * after the zip has been performed.
      */
-    protected abstract getCombineRenderer(title: string):
+    protected abstract getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer;
 
     public combine(how: CombineOperators): void {
@@ -406,7 +405,8 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView {
         }
 
         const rr = this.createZipRequest(r.first);
-        const renderer = this.getCombineRenderer("[" + r.second + "] " + CombineOperators[how]);
+        const renderer = this.getCombineRenderer(
+            new PageTitle("%p(" + r.second + ")" + CombineOperators[how]));
         rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.dataset, renderer));
     }
 }
