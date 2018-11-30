@@ -62,7 +62,7 @@ public class DataUpload {
         String filename; // the file to be sent
         @Nullable
         String directory;
-        ArrayList<String> fileList = new ArrayList<String>();
+        final ArrayList<String> fileList = new ArrayList<String>();
         String remoteFolder = ""; // the destination path where the files will be put
         String cluster = ""; // the path to the cluster config json file
         boolean hasHeader; // true if file has a header row
@@ -400,7 +400,7 @@ public class DataUpload {
             if (err != 0)
                 throw new RuntimeException("Scp stopped with error code " + Integer.toString(err));
     }
-    
+
     /** Writes the table in ORC or CSV format
       */
     private static void writeTable(Table table, String filename, boolean orc) {

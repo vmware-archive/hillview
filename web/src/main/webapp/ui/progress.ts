@@ -164,14 +164,14 @@ export class ProgressManager implements IHtmlElement {
         return this.topLevel;
     }
 
-    public newProgressBar(operation: IRawCancellable, description: string) {
+    public newProgressBar(operation: IRawCancellable, description: string): ProgressBar {
         this.topLevel.classList.remove("idle");
         const p = new ProgressBar(this, description, operation);
         this.topLevel.appendChild(p.getHTMLRepresentation());
         return p;
     }
 
-    public removeProgressBar(p: ProgressBar) {
+    public removeProgressBar(p: ProgressBar): void {
         this.topLevel.removeChild(p.getHTMLRepresentation());
         if (this.topLevel.children.length === 0)
             this.topLevel.classList.add("idle");

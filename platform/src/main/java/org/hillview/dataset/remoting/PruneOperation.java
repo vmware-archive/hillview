@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2018 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,9 +17,18 @@
 
 package org.hillview.dataset.remoting;
 
+import org.hillview.dataset.api.IMap;
+
 import java.io.Serializable;
 
 /**
- * Base type for remote operations with a unique ID
+ * Wrap an IMap object to be sent to a remote node for a prune operation.
+ * @param <T> Input type of the map function
  */
-public class RemoteOperation implements Serializable {}
+public class PruneOperation<T> extends RemoteOperation implements Serializable {
+    public final IMap<T, Boolean> isEmpty;
+
+    public PruneOperation(final IMap<T, Boolean> isEmpty) {
+        this.isEmpty = isEmpty;
+    }
+}

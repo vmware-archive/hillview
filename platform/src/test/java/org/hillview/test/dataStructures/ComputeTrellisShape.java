@@ -27,8 +27,8 @@ class ComputeTrellisShape {
     private final int x_min;
     private final int y_max;
     private final int y_min;
-    private double max_ratio;
-    private int header_ht;
+    private final double max_ratio;
+    private final int header_ht;
     private final int max_width;
     private final int max_height;
 

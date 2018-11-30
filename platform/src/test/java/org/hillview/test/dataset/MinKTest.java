@@ -32,7 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MinKTest {
-    private Boolean printOn = false;
+    private final Boolean printOn = false;
 
     private double getMaxErr(int suppSize, List<Integer> ranks) {
         int numBuckets = ranks.size() - 1;

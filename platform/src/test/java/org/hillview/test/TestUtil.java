@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public class TestUtil {
-    private static boolean silent = true;
+    private static final boolean silent = true;
 
     /**
      * Provides access to private members in classes for testing.

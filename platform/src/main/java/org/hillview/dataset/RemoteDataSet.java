@@ -34,6 +34,7 @@ import rx.Observable;
 import rx.subjects.PublishSubject;
 import rx.subjects.SerializedSubject;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -109,47 +110,78 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
     }
 
     /**
+     * Convenience class that is used to create a Command and the observers
+     * waiting for its results.
+     * @param <S> Type of result produced by command.
+     */
+    class CommandWrapper<S> {
+        final Command command;
+        final UUID operationId;
+        final SerializedSubject<PartialResult<S>, PartialResult<S>> subject;
+        @Nullable
+        StreamObserver<PartialResponse> responseObserver;
+
+        CommandWrapper(RemoteOperation operation) {
+            byte[] serializedOp = SerializationUtils.serialize(operation);
+            this.operationId = UUID.randomUUID();
+            this.command = Command.newBuilder()
+                    .setIdsIndex(RemoteDataSet.this.remoteHandle)
+                    .setSerializedOp(ByteString.copyFrom(serializedOp))
+                    .setHighId(operationId.getMostSignificantBits())
+                    .setLowId(operationId.getLeastSignificantBits())
+                    .build();
+            this.subject = RemoteDataSet.createSerializedSubject();
+            this.responseObserver = null;
+        }
+    }
+
+    /**
+     * A CommandWrapper that returns an IDataSet[S].
+     * @param <S>  type of data in returned dataset.
+     */
+    class DatasetCommandWrapper<S> extends CommandWrapper<IDataSet<S>> {
+        DatasetCommandWrapper(RemoteOperation operation) {
+            super(operation);
+            this.responseObserver = new NewDataSetObserver<S>(this.subject);
+        }
+    }
+
+    /**
      * Map operations on a RemoteDataSet result in only one onNext
      * invocation that will return the final IDataSet.
      */
     @Override
     public <S> Observable<PartialResult<IDataSet<S>>> map(final IMap<T, S> mapper) {
         final MapOperation<T, S> mapOp = new MapOperation<T, S>(mapper);
-        final byte[] serializedOp = SerializationUtils.serialize(mapOp);
-        final UUID operationId = UUID.randomUUID();
-        final Command command = Command.newBuilder()
-                                       .setIdsIndex(this.remoteHandle)
-                                       .setSerializedOp(ByteString.copyFrom(serializedOp))
-                                       .setHighId(operationId.getMostSignificantBits())
-                                       .setLowId(operationId.getLeastSignificantBits())
-                                       .build();
-        final SerializedSubject<PartialResult<IDataSet<S>>, PartialResult<IDataSet<S>>> subj =
-                createSerializedSubject();
-        final StreamObserver<PartialResponse> responseObserver = new NewDataSetObserver<S>(subj);
-        return subj.unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
+        DatasetCommandWrapper<S> wrap = new DatasetCommandWrapper<S>(mapOp);
+        return wrap.subject.unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
                 .doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
-                        .map(command, responseObserver))
-                .doOnUnsubscribe(() -> this.unsubscribe(operationId));
+                        .map(wrap.command, wrap.responseObserver))
+                .doOnUnsubscribe(() -> this.unsubscribe(wrap.operationId));
+    }
+
+    /**
+     * Prune operations on a RemoteDataSet result in only one onNext
+     * invocation that will return the final IDataSet.
+     */
+    @Override
+    public Observable<PartialResult<IDataSet<T>>> prune(final IMap<T, Boolean> isEmpty) {
+        final PruneOperation<T> pruneOp = new PruneOperation<T>(isEmpty);
+        DatasetCommandWrapper<T> wrap = new DatasetCommandWrapper<T>(pruneOp);
+        return wrap.subject.unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
+                .doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
+                        .prune(wrap.command, wrap.responseObserver))
+                .doOnUnsubscribe(() -> this.unsubscribe(wrap.operationId));
     }
 
     @Override
     public <S> Observable<PartialResult<IDataSet<S>>> flatMap(IMap<T, List<S>> mapper) {
         final FlatMapOperation<T, S> mapOp = new FlatMapOperation<T, S>(mapper);
-        final byte[] serializedOp = SerializationUtils.serialize(mapOp);
-        final UUID operationId = UUID.randomUUID();
-        final Command command = Command.newBuilder()
-                .setIdsIndex(this.remoteHandle)
-                .setSerializedOp(ByteString.copyFrom(serializedOp))
-                .setHighId(operationId.getMostSignificantBits())
-                .setLowId(operationId.getLeastSignificantBits())
-                .build();
-        final SerializedSubject<PartialResult<IDataSet<S>>, PartialResult<IDataSet<S>>> subj =
-                createSerializedSubject();
-        final StreamObserver<PartialResponse> responseObserver = new NewDataSetObserver<S>(subj);
-        return subj.unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
+        DatasetCommandWrapper<S> wrap = new DatasetCommandWrapper<S>(mapOp);
+        return wrap.subject.unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
                 .doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
-                        .flatMap(command, responseObserver))
-                .doOnUnsubscribe(() -> this.unsubscribe(operationId));
+                        .flatMap(wrap.command, wrap.responseObserver))
+                .doOnUnsubscribe(() -> this.unsubscribe(wrap.operationId));
     }
 
     /**
@@ -158,21 +190,13 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
     @Override
     public <R> Observable<PartialResult<R>> sketch(final ISketch<T, R> sketch) {
         final SketchOperation<T, R> sketchOp = new SketchOperation<T, R>(sketch);
-        final byte[] serializedOp = SerializationUtils.serialize(sketchOp);
-        final UUID operationId = UUID.randomUUID();
-        final Command command = Command.newBuilder()
-                                       .setIdsIndex(this.remoteHandle)
-                                       .setSerializedOp(ByteString.copyFrom(serializedOp))
-                                       .setHighId(operationId.getMostSignificantBits())
-                                       .setLowId(operationId.getLeastSignificantBits())
-                                       .build();
-        final SerializedSubject<PartialResult<R>, PartialResult<R>> subj = createSerializedSubject();
-        final StreamObserver<PartialResponse> responseObserver = new SketchObserver<R>(subj);
-        return subj
+        CommandWrapper<R> wrap = new CommandWrapper<R>(sketchOp);
+        StreamObserver<PartialResponse> responseObserver = new SketchObserver<R>(wrap.subject);
+        return wrap.subject
                 .doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
-                        .sketch(command, responseObserver))
+                        .sketch(wrap.command, responseObserver))
                 .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
-                .doOnUnsubscribe(() -> this.unsubscribe(operationId));
+                .doOnUnsubscribe(() -> this.unsubscribe(wrap.operationId));
     }
 
     /**
@@ -195,44 +219,23 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
         }
 
         final ZipOperation zip = new ZipOperation(rds.remoteHandle);
-        final byte[] serializedOp = SerializationUtils.serialize(zip);
-        final UUID operationId = UUID.randomUUID();
-        final Command command = Command.newBuilder()
-                                         .setIdsIndex(this.remoteHandle)
-                                         .setSerializedOp(ByteString.copyFrom(serializedOp))
-                                         .setHighId(operationId.getMostSignificantBits())
-                                         .setLowId(operationId.getLeastSignificantBits())
-                                         .build();
-        final SerializedSubject<PartialResult<IDataSet<Pair<T, S>>>, PartialResult<IDataSet<Pair<T, S>>>> subj =
-                createSerializedSubject();
-        final StreamObserver<PartialResponse> responseObserver =
-                                                        new NewDataSetObserver<Pair<T, S>>(subj);
-        return subj.unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
+        DatasetCommandWrapper<Pair<T, S>> wrap = new DatasetCommandWrapper<Pair<T, S>>(zip);
+        return wrap.subject.unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
                 .doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
-                        .zip(command, responseObserver))
-                .doOnUnsubscribe(() -> this.unsubscribe(operationId));
+                        .zip(wrap.command, wrap.responseObserver))
+                .doOnUnsubscribe(() -> this.unsubscribe(wrap.operationId));
     }
 
     @Override
     public Observable<PartialResult<ControlMessage.StatusList>> manage(ControlMessage message) {
         final ManageOperation manageOp = new ManageOperation(message);
-        final byte[] serializedOp = SerializationUtils.serialize(manageOp);
-        final UUID operationId = UUID.randomUUID();
-        final Command command = Command.newBuilder()
-                .setIdsIndex(this.remoteHandle)
-                .setSerializedOp(ByteString.copyFrom(serializedOp))
-                .setHighId(operationId.getMostSignificantBits())
-                .setLowId(operationId.getLeastSignificantBits())
-                .build();
-        final SerializedSubject<PartialResult<ControlMessage.StatusList>,
-                PartialResult<ControlMessage.StatusList>> subj =
-                createSerializedSubject();
+        CommandWrapper<ControlMessage.StatusList> wrap = new CommandWrapper<ControlMessage.StatusList>(manageOp);
         final StreamObserver<PartialResponse> responseObserver =
-                new ManageObserver(subj, message, this);
-        return subj.unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
+                new ManageObserver(wrap.subject, message, this);
+        return wrap.subject.unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
                 .doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
-                        .manage(command, responseObserver))
-                .doOnUnsubscribe(() -> this.unsubscribe(operationId));
+                        .manage(wrap.command, responseObserver))
+                .doOnUnsubscribe(() -> this.unsubscribe(wrap.operationId));
     }
 
     /**

@@ -36,10 +36,13 @@ import rx.observers.TestSubscriber;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+@SuppressWarnings("UnstableApiUsage")
 public class DataSetTest extends BaseTest {
     private class Increment implements IMap<Integer, Integer> {
         @Override
@@ -69,19 +72,19 @@ public class DataSetTest extends BaseTest {
 
     @Test
     public void localDataSetTest() {
-        final LocalDataSet<Integer> ld = new LocalDataSet<Integer>(4);
-        final Increment increment = new Increment();
+        LocalDataSet<Integer> ld = new LocalDataSet<Integer>(4);
+        Increment increment = new Increment();
 
-        final IDataSet<Integer> r = ld.blockingMap(increment);
-        final Sketch sketch = new Sketch();
-        final int result = r.blockingSketch(sketch);
-        Assert.assertEquals(result, 5);
+        IDataSet<Integer> r = ld.blockingMap(increment);
+        Sketch sketch = new Sketch();
+        Integer result = r.blockingSketch(sketch);
+        Assert.assertNotNull(result);
+        Assert.assertEquals(result.intValue(), 5);
     }
 
     @Test
     public void idempotenceTest() {
-        int[] count = new int[1];
-        count[0] = 0;
+        int[] count = new int[1]; // zero-initialized
 
         LocalDataSet<Integer> local = new LocalDataSet<Integer>(10);
         List<IDataSet<Integer>> l = new ArrayList<IDataSet<Integer>>();
@@ -89,6 +92,7 @@ public class DataSetTest extends BaseTest {
         ParallelDataSet<Integer> pds = new ParallelDataSet<Integer>(l);
         IMap<Integer, Integer> map = (IMap<Integer, Integer>) data -> {
             count[0]++;
+            assert data != null;
             return data + 1;
         };
         IDataSet<Integer> r = local.blockingMap(map);
@@ -127,12 +131,14 @@ public class DataSetTest extends BaseTest {
 
         final IDataSet<Integer> r1 = par.blockingMap(increment);
         final Sketch sketch = new Sketch();
-        final int result = r1.blockingSketch(sketch);
-        Assert.assertEquals(result, 11);
+        final Integer result = r1.blockingSketch(sketch);
+        Assert.assertNotNull(result);
+        Assert.assertEquals(result.intValue(), 11);
 
         final IDataSet<Integer> r2 = r1.blockingMap(increment);
-        final int result1 = r2.blockingSketch(sketch);
-        Assert.assertEquals(result1, 13);
+        final Integer result1 = r2.blockingSketch(sketch);
+        Assert.assertNotNull(result1);
+        Assert.assertEquals(result1.intValue(), 13);
     }
 
     @Test
@@ -215,30 +221,34 @@ public class DataSetTest extends BaseTest {
     @Test
     public void largeDataSetTest() {
         ParallelDataSet<int[]> ld = this.createLargeDataset(false);
-        int result = ld.blockingSketch(new Sum());
+        Integer result = ld.blockingSketch(new Sum());
+        Assert.assertNotNull(result);
         int sum = 0;
         for (int i = 0; i < this.largeSize; i++)
             sum += ((i % 10) == 0) ? 0 : i;
-        Assert.assertEquals(result, sum);
+        Assert.assertEquals(result.intValue(), sum);
 
         ld.setBundleInterval(100);
         result = ld.blockingSketch(new Sum());
-        Assert.assertEquals(result, sum);
+        Assert.assertNotNull(result);
+        Assert.assertEquals(result.intValue(), sum);
 
         ld = this.createLargeDataset(true);
         ld.setBundleInterval(100);
         result = ld.blockingSketch(new Sum());
-        Assert.assertEquals(result, sum);
+        Assert.assertNotNull(result);
+        Assert.assertEquals(result.intValue(), sum);
     }
 
     @Test
     public void separateThreadDataSetTest() {
-        final IDataSet<int[]> ld = this.createLargeDataset(true);
-        final int result = ld.blockingSketch(new Sum());
+        IDataSet<int[]> ld = this.createLargeDataset(true);
+        Integer result = ld.blockingSketch(new Sum());
+        Assert.assertNotNull(result);
         int sum = 0;
         for (int i = 0; i < this.largeSize; i++)
             sum += ((i % 10) == 0) ? 0 : i;
-        Assert.assertEquals(result, sum);
+        Assert.assertEquals(result.intValue(), sum);
     }
 
     @Test
@@ -431,5 +441,55 @@ public class DataSetTest extends BaseTest {
                 Thread.sleep(50);
         }
         server.shutdown();
+    }
+
+    @Test
+    public void pruneTest0() {
+        LocalDataSet<Integer> lds = new LocalDataSet<Integer>(5);
+        IMap<Integer, Boolean> isZero = data -> {
+            assert data != null;
+            return data == 0;
+        };
+        IDataSet<Integer> result = lds.blockingPrune(isZero);
+        Assert.assertNotNull(result);
+    }
+
+    @Test
+    public void pruneTest1() {
+        LocalDataSet<Integer> lds = new LocalDataSet<Integer>(0);
+        IMap<Integer, Boolean> isZero = data -> {
+            assert data != null;
+            return data == 0;
+        };
+        IDataSet<Integer> result = lds.blockingPrune(isZero);
+        Assert.assertNull(result);
+    }
+
+    @Test
+    public void pruneTest2() {
+        LocalDataSet<Integer> lds0 = new LocalDataSet<Integer>(0);
+        LocalDataSet<Integer> lds1 = new LocalDataSet<Integer>(1);
+        List<IDataSet<Integer>> list = Arrays.asList(lds0, lds1);
+        ParallelDataSet<Integer> pds = new ParallelDataSet<Integer>(list);
+
+        IMap<Integer, Boolean> isZero = data -> {
+            assert data != null;
+            return data == 0;
+        };
+        IDataSet<Integer> result = pds.blockingPrune(isZero);
+        Assert.assertNotNull(result);
+    }
+
+    @Test
+    public void pruneTest3() {
+        List<IDataSet<Integer>> list = Collections.emptyList();
+        ParallelDataSet<Integer> pds = new ParallelDataSet<Integer>(list);
+
+        IMap<Integer, Boolean> isZero = data -> {
+            assert data != null;
+            return data == 0;
+        };
+        IDataSet<Integer> result = pds.blockingPrune(isZero);
+        Assert.assertNull(result);
     }
 }

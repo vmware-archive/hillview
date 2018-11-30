@@ -84,25 +84,6 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
         return data;
     }
 
-    /**
-     * Helper function to create the first result in a stream of results.
-     * This is used to immediately return a "zero" when processing start;
-     * the zero value is then updated with additional increments as processing
-     * proceeds.  The zero is useful because it percolates through the invocation
-     * chain all the way to the GUI, where it updates the progress bar.  This makes
-     * it clear that processing has started even if no other partial results appear for
-     * a long time.
-     * @param z   A callable which produces the zero value.
-     * @param <R> Type of result produced.
-     * @return    An observable stream which contains just the zero value, produced lazily.
-     */
-    private <R> Observable<PartialResult<R>> zero(Callable<R> z) {
-        // The callable is used to produce the zero value lazily only when someone subscribes
-        // to the observable.
-        Observable<R> zero = Observable.fromCallable(z);
-        return zero.map(e-> new PartialResult<R>(0.0, e));
-    }
-
     @Override
     public <S> Observable<PartialResult<IDataSet<S>>> map(final IMap<T, S> mapper) {
         // Actual map computation performed lazily when observable is subscribed to.
@@ -160,6 +141,24 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
         final LocalDataSet<Pair<T, S>> retval = new LocalDataSet<Pair<T, S>>(data);
         // This is very fast, so there is no need to use a callable or to return a zero.
         return Observable.just(new PartialResult<IDataSet<Pair<T, S>>>(retval));
+    }
+
+    @Override
+    public Observable<PartialResult<IDataSet<T>>> prune(IMap<T, Boolean> isEmpty) {
+        final Callable<IDataSet<T>> callable = () -> {
+            HillviewLogger.instance.info("Starting prune", "{0}:{1}",
+                    this, isEmpty.asString());
+            Boolean result = isEmpty.apply(LocalDataSet.this.data);
+            HillviewLogger.instance.info("Completed prune", "{0}:{1} result is {2}",
+                    this, isEmpty.asString(), result);
+            assert result != null;
+            return result ? null : this;
+        };
+        final Observable<IDataSet<T>> result = Observable.fromCallable(callable);
+        // Wrap the produced data in a PartialResult
+        Observable<PartialResult<IDataSet<T>>> data = result
+                .map(PartialResult::new);
+        return this.schedule(data);
     }
 
     @Override

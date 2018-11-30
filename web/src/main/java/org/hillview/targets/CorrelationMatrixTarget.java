@@ -70,8 +70,8 @@ final class CorrelationMatrixTarget extends RpcTarget {
         }
 
         public String toString() {
-            return Arrays.toString(this.eigenValues) + "\n Total Variance: "+ String.valueOf(totalVar) +
-                    "\n Explained Variance: "+ String.valueOf(explainedVar) ;
+            return Arrays.toString(this.eigenValues) + "\n Total Variance: "+ totalVar +
+                    "\n Explained Variance: "+ explainedVar;
         }
     }
 

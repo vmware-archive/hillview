@@ -66,8 +66,8 @@ public class GenericLogs {
     }
 
     public class LogFileLoader extends TextFileLoader {
-        private Grok grok;
-        private GrokCompiler grokCompiler;
+        private final Grok grok;
+        private final GrokCompiler grokCompiler;
 
         @Nullable
         private final Instant start;
@@ -82,8 +82,8 @@ public class GenericLogs {
         private final Grok dateTime;
         @Nullable
         private List<String> columnNames = null;
-        private StringListColumn parsingErrors;
-        private IntListColumn lineNumber;
+        private final StringListColumn parsingErrors;
+        private final IntListColumn lineNumber;
 
         LogFileLoader(final String path, @Nullable Instant start, @Nullable Instant end) {
             super(path);

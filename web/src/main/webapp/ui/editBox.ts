@@ -73,7 +73,7 @@ export class EditBox implements IHtmlElement {
         this.textArea.value = value;
     }
 
-    public setTabIndex(index: number) {
+    public setTabIndex(index: number): void {
         this.topLevel.tabIndex = index;
     }
 

@@ -17,6 +17,8 @@
 
 package org.hillview.dataset.api;
 
+import javax.annotation.Nullable;
+
 /**
  * A closure that runs a computation on an object of type T and returns an object of type S.
  * IMap objects have to be immutable once created.
@@ -29,5 +31,6 @@ public interface IMap<T, S> extends IDataSetComputation {
      * @param data Data to transform.
      * @return The result of the transformation.
      */
-    S apply(T data);
+    @Nullable
+    S apply(@Nullable T data);
 }

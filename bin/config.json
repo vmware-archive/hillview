@@ -1,5 +1,5 @@
-// This file is a Json file that defines the configuration for a
-// Hillview deployment.
+// This file is a sample Json file that defines the configuration for a
+// Hillview deployment.  Do not modify this file, make a copy instead.
 
 {
   // Name of machine hosting the web server

@@ -471,6 +471,31 @@ public abstract class RpcTarget implements IJson {
     }
 
     /**
+     * Helper function which runs a streaming computation that returns a dataset.
+     * @param stream       Result produced by computation.
+     * @param description  Description of the computation.
+     * @param request      Web request.
+     * @param context      Web request context.
+     * @param factory      Knows how to allocate a Target to hold the resulting dataset.
+     * @param <S>          Type of data in result stream.
+     */
+    private <S> void collectDataset(Observable<PartialResult<IDataSet<S>>> stream,
+                                    String description,
+                                    RpcRequest request, RpcRequestContext context,
+                                    BiFunction<IDataSet<S>, HillviewComputation, RpcTarget> factory) {
+        PRDataSetMonoid<S> monoid = new PRDataSetMonoid<S>();
+        // Prefix sum of the partial results
+        Observable<PartialResult<IDataSet<S>>> add = stream.scan(monoid::add);
+        // Send the partial results back
+        MapResultObserver<S> robs = new MapResultObserver<S>(
+                description, this, request, context, factory);
+        Subscription sub = add
+                .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
+                .subscribe(robs);
+        this.saveSubscription(context, sub);
+    }
+
+    /**
      * Runs a map and sends the result directly to the client.
      * @param data    Dataset to run the map on.
      * @param map     Map to execute.
@@ -484,19 +509,26 @@ public abstract class RpcTarget implements IJson {
     runMap(IDataSet<T> data, IMap<T, S> map,
            BiFunction<IDataSet<S>, HillviewComputation, RpcTarget> factory,
            RpcRequest request, RpcRequestContext context) {
-        // Run the map
         Observable<PartialResult<IDataSet<S>>> stream = data.map(map);
-        // Knows how to add partial results
-        PRDataSetMonoid<S> monoid = new PRDataSetMonoid<S>();
-        // Prefix sum of the partial results
-        Observable<PartialResult<IDataSet<S>>> add = stream.scan(monoid::add);
-        // Send the partial results back
-        MapResultObserver<S> robs = new MapResultObserver<S>(
-                map.asString(), this, request, context, factory);
-        Subscription sub = add
-                .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
-                .subscribe(robs);
-        this.saveSubscription(context, sub);
+        this.collectDataset(stream, map.asString(), request, context, factory);
+    }
+
+    /**
+     * Runs a prune and sends the result directly to the client.
+     * @param data    Dataset to run the map on.
+     * @param map     Map to execute.
+     * @param factory Function which knows how to create a new RpcTarget
+     *                out of the resulting IDataSet.  It is the reference
+     *                to this RpcTarget that is returned to the client.
+     * @param request Web socket request, used to send the reply.
+     * @param context Context for the computation.
+     */
+    protected <T> void
+    runPrune(IDataSet<T> data, IMap<T, Boolean> map,
+             BiFunction<IDataSet<T>, HillviewComputation, RpcTarget> factory,
+             RpcRequest request, RpcRequestContext context) {
+        Observable<PartialResult<IDataSet<T>>> stream = data.prune(map);
+        this.collectDataset(stream, map.asString(), request, context, factory);
     }
 
     /**
@@ -513,20 +545,8 @@ public abstract class RpcTarget implements IJson {
     runFlatMap(IDataSet<T> data, IMap<T, List<S>> map,
                BiFunction<IDataSet<S>, HillviewComputation, RpcTarget> factory,
                RpcRequest request, RpcRequestContext context) {
-        // Run the flatMap
         Observable<PartialResult<IDataSet<S>>> stream = data.flatMap(map);
-        // Knows how to add partial results
-        PRDataSetMonoid<S> monoid = new PRDataSetMonoid<S>();
-        // Prefix sum of the partial results
-        Observable<PartialResult<IDataSet<S>>> add = stream.scan(monoid::add);
-        // Send the partial results back
-        MapResultObserver<S> robs = new MapResultObserver<S>(
-                map.asString(), this, request, context, factory);
-        HillviewLogger.instance.info("Subscribing to flatMap");
-        Subscription sub = add
-                .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
-                .subscribe(robs);
-        this.saveSubscription(context, sub);
+        this.collectDataset(stream, map.asString(), request, context, factory);
     }
 
     /**
@@ -544,15 +564,7 @@ public abstract class RpcTarget implements IJson {
            BiFunction<IDataSet<Pair<T, S>>, HillviewComputation, RpcTarget> factory,
            RpcRequest request, RpcRequestContext context) {
         Observable<PartialResult<IDataSet<Pair<T, S>>>> stream = data.zip(other);
-        PRDataSetMonoid<Pair<T, S>> monoid = new PRDataSetMonoid<Pair<T, S>>();
-        Observable<PartialResult<IDataSet<Pair<T, S>>>> add = stream.scan(monoid::add);
-        // We can actually reuse the MapResultObserver
-        MapResultObserver<Pair<T, S>> robs = new MapResultObserver<Pair<T, S>>(
-                                "zip", this, request, context, factory);
-        Subscription sub = add
-                .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
-                .subscribe(robs);
-        this.saveSubscription(context, sub);
+        this.collectDataset(stream, "zip", request, context, factory);
     }
 
     /**

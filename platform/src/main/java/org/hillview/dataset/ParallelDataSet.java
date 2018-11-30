@@ -23,6 +23,7 @@ import org.hillview.utils.HillviewLogger;
 import rx.Observable;
 import rx.Subscription;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -51,10 +52,6 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
      * The bundleInterval specifies a time in milliseconds.
      */
     private static final TimeUnit bundleTimeUnit = TimeUnit.MILLISECONDS;
-    /**
-     * If this is set to true there is some additional logging inserted.
-     */
-    private static final boolean useLogging = false;
 
     /**
      * Children of the data set.
@@ -70,6 +67,13 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
         this.children = new ArrayList<IDataSet<T>>(elements.size());
         for (final Map.Entry<Integer, IDataSet<T>> e : elements.entrySet())
             this.children.add(e.getKey(), e.getValue());
+    }
+
+    @Nullable
+    private static <S> ParallelDataSet<S> createParallelDataset(final List<IDataSet<S>> elements) {
+        if (elements.size() == 0)
+            return null;
+        return new ParallelDataSet<S>(elements);
     }
 
     /**
@@ -107,8 +111,6 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
             // If a time interval has no data we don't want to produce a zero.
             Observable<List<R>> bundled = data.buffer(this.bundleInterval, bundleTimeUnit)
                        .filter(e -> !e.isEmpty());
-            if (ParallelDataSet.useLogging)
-                bundled = bundled.map(e -> this.logPipe(e, "bundling " + e.size() + " values"));
             return bundled.map(adder::reduce);
         } else {
             return data;
@@ -116,89 +118,20 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
     }
 
     /**
-     * Run a map computation over all children.
-     * @param mapper  Computation to run on the dataset.
-     * @param <S>     Type of result data.
-     * @return        A stream of partial results produced by running the mapper on all children.
+     * Helper that creates a parallel dataset from a list of streams of partial results.
+     * @param obs  List of streams of partial results, indexed with the child index.  Each
+     *             stream will produce one dataset in the end, and these datasets will be
+     *             the children of the final ParallelDataSet produced
+     * @param <S>  Type of data in each child.
+     * @return     A stream that contains a bunch of progress reports and eventually on
+     *             ParallelDataSet.
      */
-    @Override
-    public <S> Observable<PartialResult<IDataSet<S>>> map(
-             final IMap<T, S> mapper) {
+    private <S> Observable<PartialResult<IDataSet<S>>> mergeResults(
+            List<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>> obs) {
         // Autoconnect does not propagate unsubscriptions so we
         // have to do it manually.  We save the subscription
         // here so we can disconnect it when necessary.
-        Subscription savedSubscription[] = new Subscription[1];
-        HillviewLogger.instance.info("Invoked map", "target={0}", this);
-        final List<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>> obs =
-                new ArrayList<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>>(this.size());
-        // We run the mapper over each child, and then we tag the results produced by
-        // the child with the child index.
-        for (int i = 0; i < this.size(); i++) {
-            int finalI = i;
-            final Observable<Pair<Integer, PartialResult<IDataSet<S>>>> ci =
-                    this.children.get(i)
-                            .map(mapper)
-                            .map(e -> new Pair<Integer, PartialResult<IDataSet<S>>>(finalI, e));
-            obs.add(i, ci);
-        }
-        // Merge the streams from all children
-        final Observable<Pair<Integer, PartialResult<IDataSet<S>>>> merged =
-                // publish().autoConnect(2) ensures that the two consumers
-                // of this stream pull from the *same* stream, and not from
-                // two different copies.
-                Observable.merge(obs)
-                        .publish()
-                        .autoConnect(2, s -> savedSubscription[0] = s);
-        // We split the merged stream of PartialResults into two separate streams
-        // - mapResult for the actual PartialResult.deltaValue
-        // - dones for the PartialResult.doneValue
-        // The dones we "send" out immediately to indicate progress,
-        // whereas the mapResult part we process locally
-        final Observable<PartialResult<IDataSet<S>>> mapResult =
-                // drop partial results which have no value
-                merged.filter(p -> Converters.checkNull(p.second).deltaValue != null)
-                      // Create a java.Util.Map with all the non-null results;
-                      // there should be exactly one per child
-                      .toMap(p -> p.first, p -> Converters.checkNull(p.second).deltaValue)
-                      // We expect to produce a single map
-                      .single()
-                      // Finally, create a ParallelDataSet from the map; these have 0 'done' progress
-                      .map(m -> new PartialResult<IDataSet<S>>(0.0, new ParallelDataSet<S>(m)));
-        final Observable<PartialResult<IDataSet<S>>> dones =
-                // Each child produces a 1/this.size() fraction of the result.
-                merged.map(p -> Converters.checkNull(p.second).deltaDone / this.size())
-                        .map(e -> new PartialResult<IDataSet<S>>(e, null));
-        Observable<PartialResult<IDataSet<S>>> result = dones.mergeWith(mapResult);
-        result = bundle(result, new PRDataSetMonoid<S>())
-            .doOnUnsubscribe(() -> {
-                if (savedSubscription[0] != null)
-                    savedSubscription[0].unsubscribe();
-            });
-        return result;
-    }
-
-    @Override
-    public <S> Observable<PartialResult<IDataSet<S>>> flatMap(IMap<T, List<S>> mapper) {
-        // Autoconnect does not propagate unsubscriptions so we
-        // have to do it manually.  We save the subscription
-        // here so we can disconnect it when necessary.
-        Subscription savedSubscription[] = new Subscription[1];
-        HillviewLogger.instance.info("Invoked flatMap", "target={0}", this);
-        final List<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>> obs =
-                new ArrayList<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>>(this.size());
-        // We run the mapper over each child, and then we tag the results produced by
-        // the child with the child index.
-        for (int i = 0; i < this.size(); i++) {
-            int finalI = i;
-            final Observable<Pair<Integer, PartialResult<IDataSet<S>>>> ci =
-                    this.children.get(i)
-                            .flatMap(mapper)
-                            .map(e -> new Pair<Integer, PartialResult<IDataSet<S>>>(finalI, e));
-            obs.add(i, ci);
-        }
-
-        if (obs.isEmpty())
-            throw new RuntimeException("Empty children");
+        Subscription[] savedSubscription = new Subscription[1];
         // Merge the streams from all children
         final Observable<Pair<Integer, PartialResult<IDataSet<S>>>> merged =
                 // publish().autoConnect(2) ensures that the two consumers
@@ -235,14 +168,78 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
         return result;
     }
 
+    /**
+     * Run a map computation over all children.
+     * @param mapper  Computation to run on the dataset.
+     * @param <S>     Type of result data.
+     * @return        A stream of partial results produced by running the mapper on all children.
+     */
+    @Override
+    public <S> Observable<PartialResult<IDataSet<S>>> map(
+             final IMap<T, S> mapper) {
+        HillviewLogger.instance.info("Invoked map", "target={0}", this);
+        final List<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>> obs =
+                new ArrayList<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>>(this.size());
+        // We run the mapper over each child, and then we tag the results produced by
+        // the child with the child index.
+        for (int i = 0; i < this.size(); i++) {
+            int finalI = i;
+            final Observable<Pair<Integer, PartialResult<IDataSet<S>>>> ci =
+                    this.children.get(i)
+                            .map(mapper)
+                            .map(e -> new Pair<Integer, PartialResult<IDataSet<S>>>(finalI, e));
+            obs.add(i, ci);
+        }
+        return this.mergeResults(obs);
+    }
+
+    @Override
+    public Observable<PartialResult<IDataSet<T>>> prune(
+            final IMap<T, Boolean> mapper) {
+        HillviewLogger.instance.info("Invoked prune", "target={0}", this);
+        final List<Observable<PartialResult<IDataSet<T>>>> obs =
+                new ArrayList<Observable<PartialResult<IDataSet<T>>>>(this.size());
+        for (int i = 0; i < this.size(); i++) {
+            final Observable<PartialResult<IDataSet<T>>> ci =
+                    this.children.get(i).prune(mapper);
+            obs.add(i, ci);
+        }
+        final Observable<PartialResult<IDataSet<T>>> merged =
+                Observable.merge(obs);
+        final Observable<PartialResult<IDataSet<T>>> pruneResult =
+                merged.filter(p -> p.deltaValue != null)
+                        .map(p -> p.deltaValue)
+                        .toList()
+                        .single()
+                        .map(m -> new PartialResult<IDataSet<T>>(ParallelDataSet.createParallelDataset(m)));
+        return bundle(pruneResult, new PRDataSetMonoid<T>());
+    }
+
+    @Override
+    public <S> Observable<PartialResult<IDataSet<S>>> flatMap(IMap<T, List<S>> mapper) {
+        HillviewLogger.instance.info("Invoked flatMap", "target={0}", this);
+        final List<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>> obs =
+                new ArrayList<Observable<Pair<Integer, PartialResult<IDataSet<S>>>>>(this.size());
+        // We run the mapper over each child, and then we tag the results produced by
+        // the child with the child index.
+        for (int i = 0; i < this.size(); i++) {
+            int finalI = i;
+            final Observable<Pair<Integer, PartialResult<IDataSet<S>>>> ci =
+                    this.children.get(i)
+                            .flatMap(mapper)
+                            .map(e -> new Pair<Integer, PartialResult<IDataSet<S>>>(finalI, e));
+            obs.add(i, ci);
+        }
+
+        if (obs.isEmpty())
+            throw new RuntimeException("Empty children");
+
+        return this.mergeResults(obs);
+    }
+
     @Override
     public <S> Observable<PartialResult<IDataSet<Pair<T, S>>>> zip(
             final IDataSet<S> other) {
-        // Autoconnect does not propagate unsubscriptions so we
-        // have to do it manually.  We save the subscription
-        // here so we can disconnect it when necessary.
-        Subscription savedSubscription[] = new Subscription[1];
-
         HillviewLogger.instance.info("Invoked zip", "target={0}", this);
         if (!(other instanceof ParallelDataSet<?>))
             throw new RuntimeException("Expected a ParallelDataSet " + other);
@@ -262,37 +259,8 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
             obs.add(zip.map(
                     e -> new Pair<Integer, PartialResult<IDataSet<Pair<T, S>>>>(finalI, e)));
         }
-        final Observable<Pair<Integer, PartialResult<IDataSet<Pair<T, S>>>>> merged =
-                // publish().autoConnect(2) ensures that the two consumers
-                // of this stream pull from the *same* stream, and not from
-                // two different copies.
-                Observable.merge(obs)
-                        .publish()
-                        .autoConnect(2, s -> savedSubscription[0] = s);
-        // We split the merged stream of PartialResults into two separate streams
-        // - zipResult for the actual PartialResult.deltaValue
-        // - dones for the PartialResult.doneValue
-        // The dones we "send" out immediately to indicate progress,
-        // whereas the zipResult part we process locally.
-        final Observable<PartialResult<IDataSet<Pair<T, S>>>> zipResult =
-                merged.filter(p -> Converters.checkNull(p.second).deltaValue != null)
-                      // Convert to a java.utils.Map
-                      .toMap(p -> p.first, p -> Converters.checkNull(p.second).deltaValue)
-                      .single()
-                      .map(m -> new PartialResult<IDataSet<Pair<T, S>>>(
-                            0.0, new ParallelDataSet<Pair<T, S>>(m)));
-        final Observable<PartialResult<IDataSet<Pair<T, S>>>> dones =
-                // Each child produces a 1/this.size() fraction of the result.
-                merged.map(p -> Converters.checkNull(p.second).deltaDone / this.size())
-                      .map(e -> new PartialResult<IDataSet<Pair<T, S>>>(e, null));
-        Observable<PartialResult<IDataSet<Pair<T, S>>>> result = dones.mergeWith(zipResult);
-        PRDataSetMonoid<Pair<T, S>> prm = new PRDataSetMonoid<Pair<T, S>>();
-        result = bundle(result, prm)
-                .doOnUnsubscribe(() -> {
-                    if (savedSubscription[0] != null)
-                        savedSubscription[0].unsubscribe();
-                });
-        return result;
+
+        return this.mergeResults(obs);
     }
 
     @Override
@@ -346,24 +314,17 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
         // Run sketch over each child separately
         for (int i = 0; i < mySize; i++) {
             IDataSet<T> child = this.children.get(i);
-            final int finalI = i;
             Observable<PartialResult<R>> sk = child.sketch(sketch);
-            if (useLogging)
-                sk = sk.map(e -> this.logPipe(e, "child " + finalI + " sketch result " + sketch));
             sk = sk.map(e -> new PartialResult<R>(e.deltaDone / mySize, e.deltaValue));
             obs.add(sk);
         }
         // Just merge all sketch results
         Observable<PartialResult<R>> result = Observable.merge(obs);
-        if (useLogging)
-            result = result.map(e -> this.logPipe(e, "after merge " + sketch.toString()));
         PartialResultMonoid<R> prm = new PartialResultMonoid<R>(sketch);
         result = this.bundle(result, prm)
             .doOnUnsubscribe(
                     () -> HillviewLogger.instance.info("Sketch unsubscribe", "{0}:{1}",
                             this, sketch));
-        if (useLogging)
-            result = result.map(e -> this.logPipe(e, "after bundle " + sketch.toString()));
         return result;
     }
 

@@ -13,6 +13,7 @@ service HillviewServer {
   rpc manage (Command) returns (stream PartialResponse) {}
   rpc zip (Command) returns (stream PartialResponse) {}
   rpc unsubscribe (Command) returns (Ack) {}
+  rpc prune (Command) returns (stream PartialResponse) {}
 }
 
 message Command

@@ -40,7 +40,7 @@ import java.util.List;
  * Various tests for reading Generic logs into ITable.
  */
 public class GenericLogsTest extends BaseTest {
-    private static boolean print = false;
+    private static final boolean print = false;
 
     @Test
     public void findTimestamp() {
