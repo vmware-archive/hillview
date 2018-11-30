@@ -63,7 +63,7 @@ export class ScrollBar implements IHtmlElement {
     private height: number;
     private readonly target: IScrollTarget;
 
-    private heightAttr: string;
+    private readonly heightAttr: string;
     private widthAttr: string;
     private xAttr: string;
     private yAttr: string;

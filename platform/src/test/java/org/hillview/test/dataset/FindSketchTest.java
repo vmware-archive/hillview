@@ -29,7 +29,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class FindSketchTest extends BaseTest {
-    boolean toPrint = false;
+    final boolean toPrint = false;
 
     @Test
     public void testFind1() {

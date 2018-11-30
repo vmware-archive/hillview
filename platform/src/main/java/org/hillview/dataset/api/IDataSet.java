@@ -20,6 +20,7 @@ package org.hillview.dataset.api;
 import org.hillview.dataset.PRDataSetMonoid;
 import rx.Observable;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
 /**
@@ -66,6 +67,15 @@ public interface IDataSet<T> {
      *               stream will contain exactly one result.
      */
     <S> Observable<PartialResult<IDataSet<Pair<T, S>>>> zip(IDataSet<S> other);
+
+    /**
+     * Remove from a dataset all leaves that are empty according to the supplied function.
+     * (Also removes parallel datasets that have no children.)
+     * @param isEmpty  Function that indicates when a local datasets holds an empty value.
+     * @return         A stream of partial results which are IDataSet[T], which will contain
+     *                 exactly one result.  Returns null if there is no data below.
+     */
+    Observable<PartialResult<IDataSet<T>>> prune(IMap<T, Boolean> isEmpty);
 
     /**
      * Execute the indicated control message at all layers of the IDataSet object.
@@ -118,6 +128,16 @@ public interface IDataSet<T> {
     default <S> Observable<IDataSet<S>> singleMap(
             final IMap<T, S> mapper) {
         return reduce(this.map(mapper));
+    }
+
+    /**
+     * Applies a prune and then reduces the result immediately.
+     * @param mapper  Mapper to apply to data.
+     * @return        An observable with a single element.
+     */
+    default Observable<IDataSet<T>> singlePrune(
+            final IMap<T, Boolean> mapper) {
+        return reduce(this.prune(mapper));
     }
 
     /**
@@ -182,8 +202,19 @@ public interface IDataSet<T> {
      * @param <S>     Type of data produced.
      * @return        An IDataSet containing the final result of the zip.
      */
+    @SuppressWarnings("unused")
     default <S> IDataSet<Pair<T, S>> blockingZip(final IDataSet<S> other) {
         return this.singleZip(other).toBlocking().single();
+    }
+
+    /**
+     * Run a prune synchronously.
+     * @return        An IDataSet containing the final result of the prune.
+     */
+    @SuppressWarnings("unused")
+    @Nullable
+    default IDataSet<T> blockingPrune(IMap<T, Boolean> map) {
+        return this.singlePrune(map).toBlocking().single();
     }
 
     /**
@@ -192,10 +223,13 @@ public interface IDataSet<T> {
      * @param <R>     Type of data produced.
      * @return        An IDataSet containing the final result of the test.
      */
+    @Nullable
     default <R> R blockingSketch(final ISketch<T, R> sketch) {
         return this.singleSketch(sketch).toBlocking().single();
     }
 
+    @Nullable
+    @SuppressWarnings("UnusedReturnValue")
     default ControlMessage.StatusList blockingManage(final ControlMessage message) {
         return this.singleManage(message).toBlocking().single();
     }

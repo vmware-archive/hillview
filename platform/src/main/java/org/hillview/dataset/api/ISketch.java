@@ -18,6 +18,8 @@
 package org.hillview.dataset.api;
 import org.hillview.utils.Converters;
 
+import javax.annotation.Nullable;
+
 /**
  * Describes a sketch computation on a dataset of type T that produces a result of type R.
  * This class is also a monoid which knows how to combine two values of type R using the add
@@ -31,10 +33,12 @@ public interface ISketch<T, R> extends IDataSetComputation, IMonoid<R> {
      * @param data  Data to sketch.
      * @return  A sketch of the data.
      */
-    R create(T data);
+    @Nullable
+    R create(@Nullable T data);
 
     /**
      * Helper method to return non-null zeros.
      */
+    @Nullable
     default R getZero() { return Converters.checkNull(this.zero()); }
 }

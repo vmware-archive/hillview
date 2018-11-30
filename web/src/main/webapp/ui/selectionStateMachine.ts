@@ -40,7 +40,7 @@ export class SelectionStateMachine {
         this.excluded = new Set<number>();
     }
 
-    public exclude(val: number) {
+    public exclude(val: number): void {
         this.excluded.add(val);
         this.delete(val);
     }
@@ -57,24 +57,24 @@ export class SelectionStateMachine {
         return this.selected.has(val);
     }
 
-    public clear() {
+    public clear(): void {
         this.selected.clear();
         this.curState = null;
     }
 
-    private toggle(val: number) {
+    private toggle(val: number): void {
         if (this.has(val))
             this.delete(val);
         else
             this.add(val);
     }
 
-    public add(val: number) {
+    public add(val: number): void {
         if (!this.excluded.has(val))
             this.selected.add(val);
     }
 
-    public delete(val: number) {
+    public delete(val: number): void {
         this.selected.delete(val);
     }
 
@@ -82,7 +82,7 @@ export class SelectionStateMachine {
      * Changes the membership for all states in the interval [a,b] to the boolean value to.
      * Is used when the shift key is pressed.
      */
-    private rangeChange(a: number, b: number, to: boolean) {
+    private rangeChange(a: number, b: number, to: boolean): void {
         for (let i = a; i <= b; i++) {
             if (to)
                 this.add(i);
@@ -102,7 +102,7 @@ export class SelectionStateMachine {
      * - Type Shift: Toggle the state of val. Change the state of the open interval from the last clicked state to val,
      * so that its state matches that of val.
      */
-    public changeState(type: TransitionType, val: number) {
+    public changeState(type: TransitionType, val: number): void {
         if (type === "NoKey") { // No buttons pressed, forget everything else, toggle val
             const isPresent: boolean = this.has(val);
             this.selected.clear();

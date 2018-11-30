@@ -139,7 +139,8 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                 .build();
     }
 
-    int addInitialDataset(final IDataSet initial) {
+    @SuppressWarnings("UnusedReturnValue")
+    private int addInitialDataset(final IDataSet initial) {
         int index = -this.initialDatasets.size() - 1;
         this.initialDatasets.put(index, initial);
         return index;
@@ -292,6 +293,33 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
         };
     }
 
+    @Override
+    @SuppressWarnings("unchecked")
+    public void prune(final Command command, final StreamObserver<PartialResponse> responseObserver) {
+        try {
+            final IDataSet dataset = this.getIfValid(command.getIdsIndex(), responseObserver);
+            if (dataset == null)
+                return;
+            final byte[] bytes = command.getSerializedOp().toByteArray();
+            final PruneOperation mapOp = SerializationUtils.deserialize(bytes);
+            final Observable<PartialResult<IDataSet>> observable = dataset.prune(mapOp.isEmpty);
+
+            final UUID commandId = this.getId(command);
+            Subscriber subscriber = this.createSubscriber(
+                    command, commandId, "prune", responseObserver);
+            final Subscription sub = observable
+                    .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
+                    .subscribe(subscriber);
+            boolean unsub = this.saveSubscription(commandId, sub, "prune");
+            if (unsub)
+                sub.unsubscribe();
+        } catch (final Exception e) {
+            HillviewLogger.instance.error("Exception in prune", e);
+            e.printStackTrace();
+            responseObserver.onError(asStatusRuntimeException(e));
+        }
+    }
+
     /**
      * Implementation of map() service in hillview.proto.
      */
@@ -299,7 +327,6 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     @SuppressWarnings("unchecked")
     public void map(final Command command, final StreamObserver<PartialResponse> responseObserver) {
         try {
-            final UUID commandId = this.getId(command);
             final IDataSet dataset = this.getIfValid(command.getIdsIndex(), responseObserver);
             if (dataset == null)
                 return;
@@ -312,6 +339,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
 
             final MapOperation mapOp = SerializationUtils.deserialize(bytes);
             final Observable<PartialResult<IDataSet>> observable = dataset.map(mapOp.mapper);
+            final UUID commandId = this.getId(command);
             Subscriber subscriber = this.createSubscriber(
                     command, commandId, "map", responseObserver);
             final Subscription sub = observable
@@ -335,7 +363,6 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     public void flatMap(
             final Command command, final StreamObserver<PartialResponse> responseObserver) {
         try {
-            final UUID commandId = this.getId(command);
             final IDataSet dataset = this.getIfValid(command.getIdsIndex(), responseObserver);
             if (dataset == null)
                 return;
@@ -346,8 +373,10 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                         "Found memoized flatMap", "on IDataSet#{0}", command.getIdsIndex());
                 return;
             }
+
             final FlatMapOperation mapOp = SerializationUtils.deserialize(bytes);
             final Observable<PartialResult<IDataSet>> observable = dataset.flatMap(mapOp.mapper);
+            final UUID commandId = this.getId(command);
             Subscriber subscriber = this.createSubscriber(
                     command, commandId, "flatMap", responseObserver);
             final Subscription sub = observable
@@ -370,7 +399,6 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     @SuppressWarnings("unchecked")
     public void sketch(final Command command, final StreamObserver<PartialResponse> responseObserver) {
         try {
-            final UUID commandId = this.getId(command);
             boolean memoize = MEMOIZE;  // The value may change while we execute
             final IDataSet dataset = this.getIfValid(command.getIdsIndex(), responseObserver);
             if (dataset == null)
@@ -380,9 +408,11 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                         "Found memoized sketch", "on IDataSet#{0}", command.getIdsIndex());
                 return;
             }
+
             final byte[] bytes = command.getSerializedOp().toByteArray();
             final SketchOperation sketchOp = SerializationUtils.deserialize(bytes);
             final Observable<PartialResult> observable = dataset.sketch(sketchOp.sketch);
+            final UUID commandId = this.getId(command);
             Subscriber subscriber = new Subscriber<PartialResult>() {
                 @Nullable private Object sketchResultAccumulator =
                         memoize ? sketchOp.sketch.getZero(): null;

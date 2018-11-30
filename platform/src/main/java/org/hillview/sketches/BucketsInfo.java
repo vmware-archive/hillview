@@ -29,7 +29,7 @@ public abstract class BucketsInfo implements Serializable, IJson {
     public long presentCount;
     public long missingCount;
 
-    public BucketsInfo() {
+    protected BucketsInfo() {
         this.presentCount = 0;
         this.missingCount = 0;
     }

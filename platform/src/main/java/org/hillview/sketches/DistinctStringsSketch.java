@@ -44,7 +44,7 @@ public class DistinctStringsSketch implements ISketch<ITable, DistinctStringsSke
             this.uniqueStrings = hash;
         }
 
-        public void add(@Nullable String string) {
+        void add(@Nullable String string) {
             this.uniqueStrings.add(string);
         }
 
@@ -54,7 +54,7 @@ public class DistinctStringsSketch implements ISketch<ITable, DistinctStringsSke
          * @return the union of two sets. The maxSize is the larger of the two. If one
          * of them allow for unbounded size (maxSize = 0) then so does the union.
          */
-        public DistinctStrings union(final DistinctStrings otherSet) {
+        DistinctStrings union(final DistinctStrings otherSet) {
             ObjectOpenHashSet<String> hash = new ObjectOpenHashSet<String>(
                     Math.max(this.uniqueStrings.size(), otherSet.uniqueStrings.size()));
             hash.addAll(this.uniqueStrings);

@@ -64,7 +64,7 @@ export function getDescription(data: DataLoaded): string {
  * A renderer which receives a remote object id that denotes a set of files.
  * Initiates an RPC to get the file size.
  */
-class FileNamesReceiver extends OnCompleteReceiver<RemoteObjectId> {
+class FilesReceiver extends OnCompleteReceiver<RemoteObjectId> {
     constructor(loadMenuPage: FullPage, operation: ICancellable<RemoteObjectId>, protected data: DataLoaded) {
         super(loadMenuPage, operation, "Get file info");
     }
@@ -94,9 +94,25 @@ class FileSizeReceiver extends OnCompleteReceiver<FileSizeSketchInfo> {
             this.page.reportError("No files matching " + getDescription(this.data));
             return;
         }
-        const fileSize = "Loading " + size.fileCount + " file(s), total size " +
-            significantDigits(size.totalSize) + " bytes";
-        const rr = this.remoteObj.createStreamingRpcRequest<RemoteObjectId>("loadTable", null);
+        // Prune the dataset; may increase efficiency
+        const rr = this.remoteObj.createStreamingRpcRequest<RemoteObjectId>("prune", null);
+        rr.chain(this.operation);
+        const observer = new FilePruneReceiver(this.page, rr, this.data, size);
+        rr.invoke(observer);
+    }
+}
+
+class FilePruneReceiver extends OnCompleteReceiver<RemoteObjectId> {
+    constructor(loadMenuPage: FullPage, operation: ICancellable<RemoteObjectId>,
+                protected data: DataLoaded, protected readonly size: FileSizeSketchInfo) {
+        super(loadMenuPage, operation, "Load data");
+    }
+
+    public run(remoteObjId: RemoteObjectId): void {
+        const fileSize = "Loading " + this.size.fileCount + " file(s), total size " +
+            significantDigits(this.size.totalSize) + " bytes";
+        const fn = new RemoteObject(remoteObjId);
+        const rr = fn.createStreamingRpcRequest<RemoteObjectId>("loadTable", null);
         rr.chain(this.operation);
         const observer = new RemoteTableReceiver(this.page, rr, this.data, fileSize, false);
         rr.invoke(observer);
@@ -149,7 +165,7 @@ export class InitialObject extends RemoteObject {
 
     public loadFiles(files: FileSetDescription, loadMenuPage: FullPage): void {
         const rr = this.createStreamingRpcRequest<RemoteObjectId>("findFiles", files);
-        const observer = new FileNamesReceiver(loadMenuPage, rr,
+        const observer = new FilesReceiver(loadMenuPage, rr,
             { kind: "Files", description: files });
         rr.invoke(observer);
     }
@@ -157,7 +173,7 @@ export class InitialObject extends RemoteObject {
     public loadLogs(loadMenuPage: FullPage): void {
         // Use a guid to force the request to reload every time
         const rr = this.createStreamingRpcRequest<RemoteObjectId>("findLogs", uuidv4());
-        const observer = new FileNamesReceiver(loadMenuPage, rr, { kind: "Hillview logs"} );
+        const observer = new FilesReceiver(loadMenuPage, rr, { kind: "Hillview logs"} );
         rr.invoke(observer);
     }
 

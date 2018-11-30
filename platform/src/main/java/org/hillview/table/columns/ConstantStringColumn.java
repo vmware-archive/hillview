@@ -27,7 +27,7 @@ import javax.annotation.Nullable;
  * A ConstantStringColumn is a column where all values are identical.
  */
 public class ConstantStringColumn extends BaseColumn implements IStringColumn {
-    public final int size;
+    private final int size;
     @Nullable
     private final String value;
 

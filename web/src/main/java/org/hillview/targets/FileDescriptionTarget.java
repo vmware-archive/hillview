@@ -20,6 +20,7 @@ package org.hillview.targets;
 import org.hillview.*;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IMap;
+import org.hillview.maps.FalseMap;
 import org.hillview.maps.LoadFilesMapper;
 import org.hillview.sketches.FileSizeSketch;
 import org.hillview.storage.IFileReference;
@@ -49,6 +50,11 @@ public class FileDescriptionTarget extends RpcTarget {
     public void loadTable(RpcRequest request, RpcRequestContext context) {
         IMap<IFileReference, ITable> loader = new LoadFilesMapper();
         this.runMap(this.files, loader, TableTarget::new, request, context);
+    }
+
+    @HillviewRpc
+    public void prune(RpcRequest request, RpcRequestContext context) {
+        this.runPrune(this.files, new FalseMap<IFileReference>(), FileDescriptionTarget::new, request, context);
     }
 }
 
