@@ -135,6 +135,7 @@ export class Test {
             7: Table view, filtered flights
             8: Trellis 2D histograms (DepTime, DepDelay) grouped by ActualElapsedTime
             9: Trellis Histograms of UniqueCarrier grouped by ActualElapsedTime
+            10: Trellis heatmap plot
          */
         this.addProgram([{
             description: "Load all flights",
