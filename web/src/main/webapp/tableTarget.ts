@@ -270,6 +270,10 @@ RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<Heatmap>("heatmap", info);
     }
 
+    public createTrellis2DHistogramRequest(info: HistogramArgs[]): RpcRequest<PartialResult<Heatmap3D>> {
+        return this.createStreamingRpcRequest<Heatmap>("heatmap3D", info);
+    }
+
     public createHeatmap3DRequest(info: HistogramArgs[]): RpcRequest<PartialResult<Heatmap3D>> {
         return this.createStreamingRpcRequest<Heatmap3D>("heatmap3D", info);
     }

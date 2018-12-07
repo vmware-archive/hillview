@@ -301,6 +301,12 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             if (dataset == null)
                 return;
             final byte[] bytes = command.getSerializedOp().toByteArray();
+            if (this.respondIfReplyIsMemoized(command, responseObserver, true)) {
+                HillviewLogger.instance.info(
+                        "Found memoized prune", "on IDataSet#{0}", command.getIdsIndex());
+                return;
+            }
+
             final PruneOperation mapOp = SerializationUtils.deserialize(bytes);
             final Observable<PartialResult<IDataSet>> observable = dataset.prune(mapOp.isEmpty);
 

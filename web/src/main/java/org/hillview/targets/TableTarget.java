@@ -191,6 +191,7 @@ public final class TableTarget extends RpcTarget {
         this.runCompleteSketch(this.table, sk, post, request, context);
     }
 
+    @SuppressWarnings("Duplicates")
     @HillviewRpc
     public void getDataRanges2D(RpcRequest request, RpcRequestContext context) {
         RangeArgs[] args = request.parseArgs(RangeArgs[].class);
@@ -211,6 +212,7 @@ public final class TableTarget extends RpcTarget {
         this.runCompleteSketch(this.table, csk, post, request, context);
     }
 
+    @SuppressWarnings("Duplicates")
     @HillviewRpc
     public void getDataRanges3D(RpcRequest request, RpcRequestContext context) {
         RangeArgs[] args = request.parseArgs(RangeArgs[].class);

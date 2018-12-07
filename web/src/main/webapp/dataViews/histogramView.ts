@@ -333,7 +333,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
         let line = this.schema.displayName(this.axisData.description.name) + ",count";
         lines.push(line);
         for (let x = 0; x < this.histogram.buckets.length; x++) {
-            const bx = this.axisData.bucketDescription(x);
+            const bx = this.axisData.bucketDescription(x, 0);
             const l = "" + JSON.stringify(bx) + "," + this.histogram.buckets[x];
             lines.push(l);
         }

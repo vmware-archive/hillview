@@ -117,14 +117,13 @@ export class HeatmapView extends ChartView {
         this.page.setMenu(this.menu);
 
         const legendSurface = new HtmlPlottingSurface(this.topLevel, page);
-        // legendSurface.setMargins(0, 0, 0, 0);
         legendSurface.setHeight(Resolution.legendSpaceHeight * 2 / 3);
         this.colorLegend = new HeatmapLegendPlot(legendSurface);
         this.colorLegend.setColorMapChangeEventListener(
             () => this.updateView(this.heatmap, true, 0));
 
         this.surface = new HtmlPlottingSurface(this.topLevel, this.page);
-        this.surface.setMargins(20, this.surface.rightMargin, this.surface.bottomMargin, this.surface.leftMargin);
+        this.surface.setMargins(20, null, null, Resolution.heatmapLabelWidth);
         this.plot = new HeatmapPlot(this.surface, this.colorLegend, true);
 
         if (this.showMissingData) {
@@ -287,12 +286,12 @@ export class HeatmapView extends ChartView {
         ];
         for (let x = 0; x < this.heatmap.buckets.length; x++) {
             const data = this.heatmap.buckets[x];
-            const bdx = JSON.stringify(this.xAxisData.bucketDescription(x));
+            const bdx = JSON.stringify(this.xAxisData.bucketDescription(x, 0));
             for (let y = 0; y < data.length; y++) {
                 if (data[y] === 0) {
                     continue;
                 }
-                const bdy = JSON.stringify(this.yAxisData.bucketDescription(y));
+                const bdy = JSON.stringify(this.yAxisData.bucketDescription(y, 0));
                 const line = bdx + "," + bdy + "," + data[y];
                 lines.push(line);
             }

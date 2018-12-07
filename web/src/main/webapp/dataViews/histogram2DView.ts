@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-import {drag as d3drag} from "d3-drag";
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {Histogram2DSerialization, IViewSerialization} from "../datasetView";
 import {
@@ -38,7 +37,7 @@ import {HistogramLegendPlot} from "../ui/legendPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {ChartOptions, D3SvgElement, HtmlString, Rectangle, Resolution} from "../ui/ui";
+import {ChartOptions, HtmlString, Rectangle, Resolution} from "../ui/ui";
 import {
     formatNumber,
     ICancellable,
@@ -68,7 +67,6 @@ export class Histogram2DView extends HistogramViewBase {
     protected yPoints: number;
     protected relative: boolean;  // true when bars are normalized to 100%
     protected legendRect: Rectangle;  // legend position on the screen; relative to canvas
-    protected legendSelectionRectangle: D3SvgElement;
     protected plot: Histogram2DPlot;
     protected legendPlot: HistogramLegendPlot;
     protected legendSurface: PlottingSurface;
@@ -79,7 +77,8 @@ export class Histogram2DView extends HistogramViewBase {
 
         this.legendSurface = new HtmlPlottingSurface(this.chartDiv, page);
         this.legendSurface.setHeight(Resolution.legendSpaceHeight);
-        this.legendPlot = new HistogramLegendPlot(this.legendSurface);
+        this.legendPlot = new HistogramLegendPlot(this.legendSurface,
+            (xl, xr) => this.selectionCompleted(xl, xr, true));
         this.surface = new HtmlPlottingSurface(this.chartDiv, page);
         this.plot = new Histogram2DPlot(this.surface);
         this.cdfPlot = new CDFPlot(this.surface);
@@ -161,13 +160,6 @@ export class Histogram2DView extends HistogramViewBase {
         const bucketCount = this.xPoints;
         const canvas = this.surface.getCanvas();
 
-        const legendDrag = d3drag()
-            .on("start", () => this.dragLegendStart())
-            .on("drag", () => this.dragLegendMove())
-            .on("end", () => this.dragLegendEnd());
-        this.legendSurface.getCanvas()
-            .call(legendDrag);
-
         this.plot.setData(heatmap, this.xAxisData, this.samplingRate, this.relative, this.schema);
         this.plot.draw();
         const discrete = kindIsString(this.xAxisData.description.kind) ||
@@ -184,12 +176,6 @@ export class Histogram2DView extends HistogramViewBase {
             .attr("fill", "blue");
 
         this.legendRect = this.legendPlot.legendRectangle();
-        this.legendSelectionRectangle = this.legendSurface.getCanvas()
-            .append("rect")
-            .attr("class", "dashed")
-            .attr("width", 0)
-            .attr("height", 0);
-
         this.pointDescription = new TextOverlay(this.surface.getChart(),
             this.surface.getActualChartSize(),
             [   this.schema.displayName(this.xAxisData.description.name),
@@ -280,18 +266,18 @@ export class Histogram2DView extends HistogramViewBase {
         const rr = this.createDataRangesRequest(cds, this.page, "Trellis2DHistogram");
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
             [0, 0, 0], cds, null, {
-            reusePage: false, relative: false,
-            chartKind: "Trellis2DHistogram", exact: false
+            reusePage: false, relative: this.relative,
+            chartKind: "Trellis2DHistogram", exact: this.samplingRate >= 1.0
         }));
     }
 
-    public toggleNormalize(): void {
+    protected toggleNormalize(): void {
         this.relative = !this.relative;
         if (this.relative && this.samplingRate < 1) {
             // We cannot use sampling when we display relative views.
             this.exactHistogram();
         } else {
-            this.resize();
+            this.refresh();
         }
     }
 
@@ -321,14 +307,14 @@ export class Histogram2DView extends HistogramViewBase {
         const lines: string[] = [];
         let line = "";
         for (let y = 0; y < this.yData.bucketCount; y++) {
-            const by = this.yData.bucketDescription(y);
+            const by = this.yData.bucketDescription(y, 0);
             line += "," + JSON.stringify(this.schema.displayName(this.yData.description.name) + " " + by);
         }
         line += ",missing";
         lines.push(line);
         for (let x = 0; x < this.xAxisData.bucketCount; x++) {
             const data = this.heatMap.buckets[x];
-            const bx = this.xAxisData.bucketDescription(x);
+            const bx = this.xAxisData.bucketDescription(x, 0);
             let l = JSON.stringify(this.schema.displayName(this.xAxisData.description.name) + " " + bx);
             for (const y of data)
                 l += "," + y;
@@ -441,63 +427,22 @@ export class Histogram2DView extends HistogramViewBase {
         // one which is used to draw the axis.
         const y = Math.round(this.plot.getYScale().invert(mouseY));
         let ys = significantDigits(y);
-        let scale = 1.0;
         if (this.relative)
             ys += "%";
 
-        // Find out the rectangle where the mouse is
-        let value = "";
-        let size = "";
-        const xIndex = Math.floor(mouseX / this.plot.getBarWidth());
-        let perc: number = 0;
-        let colorIndex: number = null;
-        let found = false;
-        if (xIndex >= 0 && xIndex < this.heatMap.buckets.length &&
-            y >= 0 && mouseY < this.surface.getChartHeight()) {
-            const values: number[] = this.heatMap.buckets[xIndex];
-
-            let total = 0;
-            for (const v of values)
-                total += v;
-            total += this.heatMap.histogramMissingY.buckets[xIndex];
-            if (total > 0) {
-                // There could be no data for this specific x value
-                if (this.relative)
-                    scale = 100 / total;
-
-                let yTotalScaled = 0;
-                let yTotal = 0;
-                for (let i = 0; i < values.length; i++) {
-                    yTotalScaled += values[i] * scale;
-                    yTotal += values[i];
-                    if (yTotalScaled >= y && !found) {
-                        size = significantDigits(values[i]);
-                        perc = values[i];
-                        value = this.yData.bucketDescription(i);
-                        colorIndex = i;
-                        found = true;
-                    }
-                }
-                const missing = this.heatMap.histogramMissingY.buckets[xIndex];
-                yTotal += missing;
-                yTotalScaled += missing * scale;
-                if (!found && yTotalScaled >= y) {
-                    value = "missing";
-                    size = significantDigits(missing);
-                    perc = missing;
-                    colorIndex = -1;
-                }
-                if (yTotal > 0)
-                    perc = perc / yTotal;
-            }
-            // else value is ""
-        }
+        let box = null;
+        if (mouseY >= 0 && mouseY < this.surface.getChartHeight())
+            box = this.plot.getBoxInfo(mouseX, y);
+        const count = (box == null) ? "" : significantDigits(box.count);
+        const colorIndex = (box == null) ? null : box.yIndex;
+        const value = (box == null) ? "" : this.yData.bucketDescription(colorIndex, 0);
+        const perc = (box == null || box.count === 0) ? 0 : box.count / box.countBelow;
 
         const pos = this.cdfPlot.getY(mouseX);
         this.cdfDot.attr("cx", mouseX + this.surface.leftMargin);
         this.cdfDot.attr("cy", (1 - pos) * this.surface.getChartHeight() + this.surface.topMargin);
         const cdf = percent(pos);
-        this.pointDescription.update([xs, value, ys, size, percent(perc), cdf], mouseX, mouseY);
+        this.pointDescription.update([xs, value, ys, count, percent(perc), cdf], mouseX, mouseY);
         this.legendPlot.highlight(colorIndex);
     }
 
@@ -510,75 +455,15 @@ export class Histogram2DView extends HistogramViewBase {
         return true;
     }
 
-    // dragging in the legend
-   protected dragLegendStart(): void {
-       this.dragging = true;
-       this.moved = false;
-       const position = d3mouse(this.legendSurface.getCanvas().node());
-       this.selectionOrigin = {
-           x: position[0],
-           y: position[1] };
-    }
-
-    protected dragLegendMove(): void {
-        if (!this.dragging)
-            return;
-        this.moved = true;
-        let ox = this.selectionOrigin.x;
-        const position = d3mouse(this.legendSurface.getCanvas().node());
-        const x = position[0];
-        let width = x - ox;
-        const height = this.legendRect.height();
-
-        if (width < 0) {
-            ox = x;
-            width = -width;
-        }
-        this.legendSelectionRectangle
-            .attr("x", ox)
-            .attr("width", width)
-            .attr("y", this.legendRect.upperLeft().y)
-            .attr("height", height);
-
-        // Prevent the selection from spilling out of the legend itself
-        if (ox < this.legendRect.origin.x) {
-            const delta = this.legendRect.origin.x - ox;
-            this.legendSelectionRectangle
-                .attr("x", this.legendRect.origin.x)
-                .attr("width", width - delta);
-        } else if (ox + width > this.legendRect.lowerRight().x) {
-            const delta = ox + width - this.legendRect.lowerRight().x;
-            this.legendSelectionRectangle
-                .attr("width", width - delta);
-        }
-    }
-
-    protected dragLegendEnd(): void {
-        if (!this.dragging || !this.moved)
-            return;
-        this.dragging = false;
-        this.moved = false;
-        this.legendSelectionRectangle
-            .attr("width", 0)
-            .attr("height", 0);
-
-        const position = d3mouse(this.legendSurface.getCanvas().node());
-        const x = position[0];
-        this.selectionCompleted(this.selectionOrigin.x, x, true);
-    }
-
     /**
-     * * xl and xr are coordinates of the mouse position within the canvas or legendSvg respectively.
+     * * xl and xr are coordinates of the mouse position within the
+     * canvas or legend rectangle respectively.
      */
     protected selectionCompleted(xl: number, xr: number, inLegend: boolean): void {
-        let min: number;
-        let max: number;
         let selectedAxis: AxisData = null;
+        [xl, xr] = reorder(xl, xr);
 
         if (inLegend) {
-            const legendX = this.legendRect.lowerLeft().x;
-            xl -= legendX;
-            xr -= legendX;
             selectedAxis = this.yData;
         } else {
             xl -= this.surface.leftMargin;
@@ -588,17 +473,14 @@ export class Histogram2DView extends HistogramViewBase {
 
         const x0 = selectedAxis.invertToNumber(xl);
         const x1 = selectedAxis.invertToNumber(xr);
-
-        // selection could be done in reverse
-        [min, max] = reorder(x0, x1);
-        if (min > max) {
+        if (x0 > x1) {
             this.page.reportError("No data selected");
             return;
         }
 
         const filter: FilterDescription = {
-            min: min,
-            max: max,
+            min: x0,
+            max: x1,
             minString: selectedAxis.invert(xl),
             maxString: selectedAxis.invert(xr),
             cd: selectedAxis.description,

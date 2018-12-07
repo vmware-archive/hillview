@@ -22,6 +22,7 @@ import {HeatmapLegendPlot} from "./legendPlot";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {SchemaClass} from "../schemaClass";
+import {Resolution} from "./ui";
 
 interface Dot {
     x: number;
@@ -138,8 +139,8 @@ export class HeatmapPlot extends Plot {
         this.xAxisData = xData;
         this.yAxisData = yData;
         this.schema = schema;
-        this.xAxisData.setResolution(this.getChartWidth(), AxisKind.Bottom);
-        this.yAxisData.setResolution(this.getChartHeight(), AxisKind.Left);
+        this.xAxisData.setResolution(this.getChartWidth(), AxisKind.Bottom, PlottingSurface.bottomMargin);
+        this.yAxisData.setResolution(this.getChartHeight(), AxisKind.Left, Resolution.heatmapLabelWidth);
 
         const xPoints = this.heatmap.buckets.length;
         const yPoints = this.heatmap.buckets[0].length;

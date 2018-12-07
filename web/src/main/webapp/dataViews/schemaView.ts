@@ -303,7 +303,7 @@ export class SchemaView extends TSViewBase {
      * This method displays the table consisting of only the columns contained in the schema above.
      */
     private showTable(): void {
-        const newPage = this.dataset.newPage(this.page.title, this.page);
+        const newPage = this.dataset.newPage(new PageTitle("Selected columns"), this.page);
         const selected = this.display.getSelectedRows();
         const newSchema = this.schema.filter((c) => selected.has(this.schema.columnIndex(c.name)));
         const tv = new TableView(this.remoteObjectId, this.rowCount, newSchema, newPage);

@@ -84,7 +84,8 @@ export class TextOverlay {
 
         let index = 0;
         let crtY = y;
-        for (const v of values) {
+        for (let v of values) {
+            v = truncate(v, 100);
             this.lines[index]
                 .text(this.keys[index] + " = " + v)
                 .attr("x", x)

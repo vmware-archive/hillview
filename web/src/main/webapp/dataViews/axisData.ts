@@ -34,7 +34,7 @@ import {
     Converters,
     formatDate,
     formatNumber,
-    significantDigits,
+    significantDigits, truncate,
 } from "../util";
 import {AnyScale, D3Axis, D3SvgElement, SpecialChars} from "../ui/ui";
 import {PlottingSurface} from "../ui/plottingSurface";
@@ -101,7 +101,11 @@ class BucketBoundaries {
             assert(right == null);
     }
 
-    public toString(): string {
+    /**
+     * Convert to a string, but don't use more than this many characters.
+     * @param maxChars  If this is 0 there is no limit.
+     */
+    public toString(maxChars: number): string {
         let result: string;
 
         if (this.left == null) {
@@ -117,7 +121,9 @@ class BucketBoundaries {
         } else {
             result = "(";
         }
-        result += this.left.toString() + "," + this.right.toString();
+
+        result += truncate(this.left.toString(), maxChars / 2) +
+            "," + truncate(this.right.toString(), maxChars / 2);
         if (this.right.inclusive) {
             result += "]";
         } else {
@@ -229,8 +235,9 @@ export class AxisData {
      * Map the axis to the screen.
      * @param pixels       Number of pixels spanned by the axis.
      * @param axisKind     What kind of axis this is.
+     * @param labelRoom   Number of pixels available for labels (most useful for vertical axes)
      */
-    public setResolution(pixels: number, axisKind: AxisKind): void {
+    public setResolution(pixels: number, axisKind: AxisKind, labelRoom: number): void {
         const bottom = axisKind !== AxisKind.Left;
         const axisCreator = bottom ? d3axisBottom : d3axisLeft;
         let actualMin = this.range.min;
@@ -274,10 +281,8 @@ export class AxisData {
                 // have a default font size of 10.  Normally we should
                 // measure the size of a string, but this is much simpler.
                 const fontWidth = 8;
-                const maxLabelWidthInChars = Math.floor(bottom ?
-                    maxLabelWidthInPixels / fontWidth :
-                    // TODO: get rid of the hardwired leftMargin
-                    PlottingSurface.leftMargin / fontWidth);
+                const maxLabelWidthInChars = Math.floor(
+                    bottom ? maxLabelWidthInPixels / fontWidth : labelRoom / fontWidth);
                 console.assert(maxLabelWidthInChars > 2);
                 let rotate = false;
 
@@ -411,10 +416,11 @@ export class AxisData {
     }
 
     /**
-     * @param {number} bucket  Bucket number.
-     * @returns {string}  A description of the boundaries of the specified bucket.
+     * @param bucket   Bucket number.
+     * @param maxChars Maximum number of characters to use for description; if 0 it is unlimited.
+     * @returns  A description of the boundaries of the specified bucket.
      */
-    public bucketDescription(bucket: number): string {
-        return this.bucketBoundaries(bucket).toString();
+    public bucketDescription(bucket: number, maxChars: number): string {
+        return this.bucketBoundaries(bucket).toString(maxChars);
     }
 }

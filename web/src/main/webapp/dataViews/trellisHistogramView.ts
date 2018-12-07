@@ -49,6 +49,7 @@ import {TrellisChartView} from "./trellisChartView";
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {NextKReceiver, TableView} from "./tableView";
 import {Dialog} from "../ui/dialog";
+import {PlottingSurface} from "../ui/plottingSurface";
 
 export class TrellisHistogramView extends TrellisChartView {
     protected hps: HistogramPlot[];
@@ -296,7 +297,7 @@ export class TrellisHistogramView extends TrellisChartView {
         }
 
         // We draw the axes after drawing the data
-        this.xAxisData.setResolution(this.shape.size.width, AxisKind.Bottom);
+        this.xAxisData.setResolution(this.shape.size.width, AxisKind.Bottom, PlottingSurface.bottomMargin);
         // This axis is only created when the surface is drawn
         const yAxis = this.hps[0].getYAxis();
         this.drawAxes(this.xAxisData.axis, yAxis);
@@ -326,7 +327,7 @@ export class TrellisHistogramView extends TrellisChartView {
         const plot = this.hps[mousePosition.plotIndex];
         const xs = this.xAxisData.invert(mousePosition.x);
         const value = plot.get(mousePosition.x);
-        const group = this.groupByAxisData.bucketDescription(mousePosition.plotIndex);
+        const group = this.groupByAxisData.bucketDescription(mousePosition.plotIndex, 40);
 
         const cdfPlot = this.cdfs[mousePosition.plotIndex];
 
