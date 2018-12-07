@@ -108,7 +108,7 @@ export class HistogramPlot extends Plot {
         this.yAxis = d3axisLeft(this.yScale)
             .tickFormat(d3format(".2s"));
 
-        this.xAxisData.setResolution(chartWidth, AxisKind.Bottom);
+        this.xAxisData.setResolution(chartWidth, AxisKind.Bottom, PlottingSurface.bottomMargin);
         if (this.max == null)
             this.drawAxes();
     }

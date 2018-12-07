@@ -310,9 +310,8 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                 break;
             }
             case "Trellis2DHistogram": {
-                this.page.reportError("Not yet implemented");
                 const args: HistogramArgs[] = [];
-                const maxXBucketCount = Math.floor(trellisShape.size.width / Resolution.minDotSize);
+                const maxXBucketCount = Math.floor(trellisShape.size.width / Resolution.minBarWidth);
                 const maxYBucketCount = Resolution.maxBucketCount;
                 const xArg = DataRangesCollector.computeHistogramArgs(
                     this.cds[0], ranges[0], maxXBucketCount, this.options.exact, trellisShape.size);
@@ -324,8 +323,6 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                 args.push(wArg);
                 args.push(xArg);
                 args.push(yArg);
-                /*
-                TODO
                 const rr = this.originator.createTrellis2DHistogramRequest(args);
                 const xAxis = new AxisData(this.cds[0], ranges[0]);
                 xAxis.setBucketCount(xArg.bucketCount);
@@ -340,10 +337,9 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                                  ") grouped by " + this.schema.displayName(this.cds[2].name));
                 const renderer = new TrellisHistogram2DRenderer(this.title, this.page,
                     this.originator, rowCount, this.schema,
-                    [xAxis, yAxis, groupByAxis], 1.0, trellisShape, rr, this.options.reusePage);
+                    [xAxis, yAxis, groupByAxis], 1.0, trellisShape, rr, this.options);
                 rr.chain(this.operation);
                 rr.invoke(renderer);
-                 */
                 break;
             }
             case "TrellisHeatmap": {

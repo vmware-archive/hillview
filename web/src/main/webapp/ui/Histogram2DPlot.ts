@@ -28,7 +28,7 @@ import {SchemaClass} from "../schemaClass";
 /**
  * Represents an SVG rectangle drawn on the screen.
  */
-interface Rect {
+interface Box {
     /**
      * Bucket index on the X axis.
      */
@@ -43,6 +43,7 @@ interface Rect {
     count: number;
     /**
      * Count of items below this rectangle.
+     * Sometimes used to represent the total count for the whole bar.
      */
     countBelow: number;
 }
@@ -58,6 +59,7 @@ export class Histogram2DPlot extends Plot {
     protected yScale: D3Scale;
     protected yAxis: D3Axis;
     protected schema: SchemaClass;
+    protected max: number;
 
     public constructor(protected plottingSurface: PlottingSurface) {
         super(plottingSurface);
@@ -67,12 +69,14 @@ export class Histogram2DPlot extends Plot {
                    xAxisData: AxisData,
                    samplingRate: number,
                    normalized: boolean,
-                   schema: SchemaClass): void {
+                   schema: SchemaClass,
+                   max?: number): void {
         this.heatmap = heatmap;
         this.xAxisData = xAxisData;
         this.samplingRate = samplingRate;
         this.normalized = normalized;
         this.schema = schema;
+        this.max = max;
     }
 
     public draw(): void {
@@ -84,35 +88,39 @@ export class Histogram2DPlot extends Plot {
         this.visiblePoints = 0;
 
         let max = 0;
-        const rects: Rect[] = [];
+        const rects: Box[] = [];
         for (let x = 0; x < this.heatmap.buckets.length; x++) {
             let yTotal = 0;
             for (let y = 0; y < this.heatmap.buckets[x].length; y++) {
                 const vis = this.heatmap.buckets[x][y];
                 this.visiblePoints += vis;
                 if (vis !== 0) {
-                    const rect: Rect = {
+                    const rect: Box = {
                         xIndex: x,
                         countBelow: yTotal,
                         yIndex: y,
-                        count: vis,
+                        count: vis
                     };
                     rects.push(rect);
                 }
                 yTotal += vis;
             }
-            const v = this.heatmap.histogramMissingY.buckets[x];
-            const rec: Rect = {
-                xIndex: x,
-                countBelow: yTotal,
-                yIndex: this.heatmap.buckets[x].length,
-                count: v,
-            };
-            rects.push(rec);
-            yTotal += v;
-            this.missingDisplayed += v;
+            if (this.heatmap.histogramMissingY != null) {
+                const v = this.heatmap.histogramMissingY.buckets[x];
+                const rec: Box = {
+                    xIndex: x,
+                    countBelow: yTotal,
+                    yIndex: this.heatmap.buckets[x].length,
+                    count: v
+                };
+                rects.push(rec);
+                yTotal += v;
+                this.missingDisplayed += v;
+            }
             if (yTotal > max)
                 max = yTotal;
+            if (this.max != null)
+                max = this.max;
             counts.push(yTotal);
         }
 
@@ -126,7 +134,7 @@ export class Histogram2DPlot extends Plot {
             d3axisLeft(this.yScale).tickFormat(d3format(".2s")), 1, false, null);
 
         const bucketCount = xPoints;
-        this.xAxisData.setResolution(this.getChartWidth(), AxisKind.Bottom);
+        this.xAxisData.setResolution(this.getChartWidth(), AxisKind.Bottom, PlottingSurface.bottomMargin);
 
         this.plottingSurface.getCanvas().append("text")
             .text(this.schema.displayName(this.xAxisData.description.name))
@@ -143,13 +151,13 @@ export class Histogram2DPlot extends Plot {
             .data(rects)
             .enter().append("g")
             .append("svg:rect")
-            .attr("x", (d: Rect) => d.xIndex * this.barWidth)
-            .attr("y", (d: Rect) => this.rectPosition(d, counts, scale))
-            .attr("height", (d: Rect) => this.rectHeight(d, counts, scale))
+            .attr("x", (d: Box) => d.xIndex * this.barWidth)
+            .attr("y", (d: Box) => this.rectPosition(d, counts, scale))
+            .attr("height", (d: Box) => this.rectHeight(d, counts, scale))
             .attr("width", this.barWidth - 1)
-            .attr("fill", (d: Rect) => this.color(d.yIndex, yPoints - 1))
+            .attr("fill", (d: Box) => this.color(d.yIndex, yPoints - 1))
             .attr("stroke", "black")
-            .attr("stroke-width", (d: Rect) => d.yIndex > yPoints - 1 ? 1 : 0)
+            .attr("stroke-width", (d: Box) => d.yIndex > yPoints - 1 ? 1 : 0)
             .exit()
             // label bars
             .data(counts)
@@ -165,8 +173,10 @@ export class Histogram2DPlot extends Plot {
             .exit();
 
         let noX = 0;
-        for (const bucket of this.heatmap.histogramMissingX.buckets)
-            noX += bucket;
+        if (this.heatmap.histogramMissingX != null) {
+            for (const bucket of this.heatmap.histogramMissingX.buckets)
+                noX += bucket;
+        }
 
         if (max <= 0) {
             this.plottingSurface.reportError("All values are missing: " + noX + " have no X value, "
@@ -206,7 +216,7 @@ export class Histogram2DPlot extends Plot {
         return this.visiblePoints + this.missingDisplayed;
     }
 
-    protected rectHeight(d: Rect, counts: number[], scale: number): number {
+    protected rectHeight(d: Box, counts: number[], scale: number): number {
         if (this.normalized) {
             const c = counts[d.xIndex];
             if (c <= 0)
@@ -216,7 +226,7 @@ export class Histogram2DPlot extends Plot {
         return d.count * scale;
     }
 
-    protected rectPosition(d: Rect, counts: number[], scale: number): number {
+    protected rectPosition(d: Box, counts: number[], scale: number): number {
         const y = d.countBelow + d.count;
         if (this.normalized) {
             const c = counts[d.xIndex];
@@ -225,6 +235,64 @@ export class Histogram2DPlot extends Plot {
             return this.getChartHeight() * (1 - y / c);
         }
         return this.getChartHeight() - y * scale;
+    }
+
+    /**
+     * Get the information about the box at the specified coordinates.
+     * @param x  This is an X position as a pixel in the chart coordinates.
+     * @param yScaled  This is a scaled y value on the Y axis.
+     */
+    public getBoxInfo(x: number, yScaled: number): Box | null {
+        let scale = 1.0;
+        // Find out the rectangle where the mouse is
+        const xIndex = Math.floor(x / this.getBarWidth());
+        let perc: number = 0;
+        let colorIndex: number = null;
+        let found = false;
+        if (xIndex < 0 || xIndex >= this.heatmap.buckets.length)
+            return null;
+
+        const values: number[] = this.heatmap.buckets[xIndex];
+
+        let total = 0;
+        for (const v of values)
+            total += v;
+        if (this.heatmap.histogramMissingY != null)
+            total += this.heatmap.histogramMissingY.buckets[xIndex];
+        if (total <= 0)
+            // There could be no data for this specific x value
+            return null;
+
+        if (this.normalized)
+            scale = 100 / total;
+
+        let yTotalScaled = 0;
+        let yTotal = 0;
+        for (let i = 0; i < values.length; i++) {
+            yTotalScaled += values[i] * scale;
+            yTotal += values[i];
+            if (yTotalScaled >= yScaled && !found) {
+                perc = values[i];
+                colorIndex = i;
+                found = true;
+            }
+        }
+
+        if (this.heatmap.histogramMissingY != null) {
+            const missing = this.heatmap.histogramMissingY.buckets[xIndex];
+            yTotal += missing;
+            yTotalScaled += missing * scale;
+            if (!found && yTotalScaled >= yScaled) {
+                perc = missing;
+                colorIndex = -1;
+            }
+        }
+        return {
+            xIndex: xIndex,
+            yIndex: colorIndex,
+            count: perc,
+            countBelow: yTotal
+        };
     }
 
     // noinspection JSMethodCanBeStatic

@@ -155,6 +155,12 @@ export class Rectangle {
         y: this.origin.y + this.size.height }; }
     public width(): number { return this.size.width; }
     public height(): number { return this.size.height; }
+    public inside(point: Point): boolean {
+        if (point.x < this.origin.x || point.x > this.origin.x + this.size.width) return false;
+        // noinspection RedundantIfStatementJS
+        if (point.y < this.origin.y || point.y > this.origin.y + this.size.height) return false;
+        return true;
+    }
 }
 
 /**
@@ -171,6 +177,7 @@ export class Resolution {
     public static readonly legendBarWidth = 500;
     public static readonly legendSpaceHeight = 60;
     public static readonly minTrellisWindowSize = 200;
+    public static readonly heatmapLabelWidth = 80;  // pixels reserved for heatmap label
 }
 
 export type D3Axis = any;  // d3 axis; perhaps some day we will be aboe to use a better type

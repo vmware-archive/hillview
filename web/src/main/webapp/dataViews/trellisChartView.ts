@@ -95,10 +95,11 @@ export abstract class TrellisChartView extends ChartView {
         for (let y = 0; y < this.shape.yNum; y++) {
             for (let x = 0; x < this.shape.xNum; x++) {
                 const xCorner = this.surface.leftMargin + x * this.shape.size.width;
-                const title = this.groupByAxisData.bucketDescription(created);
+                const shortTitle = this.groupByAxisData.bucketDescription(created, this.shape.size.width / 10);
+                const title = this.groupByAxisData.bucketDescription(created, 0);
                 const canvas = this.surface.getCanvas();
                 canvas.append("text")
-                    .text(title)
+                    .text(shortTitle)
                     .attr("class", "trellisTitle")
                     .attr("x", xCorner + this.shape.size.width / 2)
                     .attr("y", y * (this.shape.size.height + this.shape.headerHeight)

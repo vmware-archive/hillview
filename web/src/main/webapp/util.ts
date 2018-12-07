@@ -445,9 +445,11 @@ export function openInNewTab(url: string): void {
 
 /**
  * Truncate a string to the specified length, adding ellipses if it was too long.
+ * @param str     String to truncate.
+ * @param length  Maximum length; if zero there is no truncation.
  */
 export function truncate(str: string, length: number): string {
-    if (str.length > length) {
+    if (length > 0 && str.length > length) {
         return str.slice(0, length) + "...";
     } else {
         return str;

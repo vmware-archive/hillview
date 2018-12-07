@@ -155,7 +155,7 @@ public class GenericLogsTest extends BaseTest {
             Assert.assertNotNull(s);
         }
     }
-    
+
     @Test
     public void testStartuplog() {
         String path = "../data/sample_logs/startuplog";
@@ -167,7 +167,7 @@ public class GenericLogsTest extends BaseTest {
             System.out.println(table.toLongString(10));
         Assert.assertEquals("Table[8x2]", table.toString());
     }
- 
+
     @Test
     public void testSyslogTime() {
         String path = "../data/sample_logs/syslog";
@@ -234,6 +234,7 @@ public class GenericLogsTest extends BaseTest {
         if (print)
             System.out.println(table.toLongString(10));
         Assert.assertEquals("Table[14x8]", table.toString());
+        @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
         RowSnapshot row = new RowSnapshot(table, 0);
         Instant i = row.getDate("Timestamp");
         Assert.assertNotNull(i);
@@ -279,7 +280,7 @@ public class GenericLogsTest extends BaseTest {
             System.out.println(table.toLongString(10));
         Assert.assertEquals("Table[8x138]", table.toString());
     }
-    
+
     @Test
     public void testOozieLog() {
         String path = "../data/sample_logs/oozielog";
@@ -291,7 +292,7 @@ public class GenericLogsTest extends BaseTest {
             System.out.println(table.toLongString(10));
         Assert.assertEquals("Table[8x5]", table.toString());
     }
-    
+
     @Test
     public void testZookeeperLog() {
         String path = "../data/sample_logs/zookeeperlog";

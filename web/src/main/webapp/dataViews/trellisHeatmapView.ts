@@ -180,11 +180,11 @@ export class TrellisHeatmapView extends TrellisChartView {
             this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description];
         const rr = this.createDataRangesRequest(cds, this.page, "Trellis2DHistogram");
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
-            [0, 0], cds, null, {
+            [0, 0, 0], cds, null, {
                 chartKind: "Trellis2DHistogram",
                 exact: true,
-                relative: true,
-                reusePage: true
+                relative: false,
+                reusePage: false
             }));
     }
 
@@ -253,9 +253,9 @@ export class TrellisHeatmapView extends TrellisChartView {
             plot.border(1);
         }
 
-        this.xAxisData.setResolution(this.shape.size.width, AxisKind.Bottom);
+        this.xAxisData.setResolution(this.shape.size.width, AxisKind.Bottom, PlottingSurface.bottomMargin);
         // This axis is only created when the surface is drawn
-        this.yAxisData.setResolution(this.shape.size.height, AxisKind.Left);
+        this.yAxisData.setResolution(this.shape.size.height, AxisKind.Left, Resolution.heatmapLabelWidth);
         this.drawAxes(this.xAxisData.axis, this.yAxisData.axis);
 
         this.setupMouse();
@@ -293,7 +293,7 @@ export class TrellisHeatmapView extends TrellisChartView {
         const xs = this.xAxisData.invert(mousePosition.x);
         const ys = this.yAxisData.invert(mousePosition.y);
         const value = plot.getCount(mousePosition.x, mousePosition.y);
-        const group = this.groupByAxisData.bucketDescription(mousePosition.plotIndex);
+        const group = this.groupByAxisData.bucketDescription(mousePosition.plotIndex, 40);
 
         // The point description is a child of the canvas, so we use canvas coordinates
         const position = d3mouse(this.surface.getCanvas().node());
