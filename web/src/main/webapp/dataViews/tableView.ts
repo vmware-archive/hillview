@@ -628,9 +628,9 @@ export class TableView extends TSViewBase implements IScrollTarget {
             cds.push(cd);
 
             const kindString = cd.kind;
-            const title = cd.name + ".\nType is " + kindString +
-                ".\nRight mouse click opens a menu.";
             const name = this.schema.displayName(cd.name);
+            const title = name + ".\nType is " + kindString +
+                ".\nRight mouse click opens a menu.";
             const thd = this.addHeaderCell(cd, name, title, 0);
             thd.classList.add("col" + i.toString());
             thd.onclick = (e) => this.columnClick(i, e);
@@ -828,8 +828,13 @@ export class TableView extends TSViewBase implements IScrollTarget {
             () => {
                 const kindStr = cd.getFieldValue("newKind");
                 const kind: ContentsKind = asContentsKind(kindStr);
+                const col = cd.getFieldValue("columnName");
+                const keep = cd.getBooleanValue("keep");
+                const newColName = keep ?
+                    cd.getFieldValue("newColumnName") :
+                    cd.generateFreshName(col, "");
                 const converter = new ColumnConverter(
-                    cd.getFieldValue("columnName"), kind, cd.getFieldValue("newColumnName"), this,
+                    col, kind, newColName, keep, this,
                     this.order, this.page);
                 converter.run();
             });
