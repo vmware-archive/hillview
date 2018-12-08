@@ -24,7 +24,6 @@ module.exports = {
     performance: {
         hints: false
     },
-    // This is needed to find ts-loader which is installed globally
     resolve: {
         // Add '.ts' and '.tsx' as a resolvable extension.
         extensions: [".ts", ".tsx", ".js"]
@@ -37,7 +36,6 @@ module.exports = {
                 test: /\.tsx?$/,
                 loader: "ts-loader"
             }
-            /* {   test: /ColumnResizer\.js/, use: [{loader: "babel-loader"}]  } */
         ]
     },
     devtool: "source-map"

@@ -38,7 +38,7 @@ import {BaseRenderer, BigTableView} from "../tableTarget";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {SubMenu, TopMenuItem} from "../ui/menu";
-import {HtmlString, SpecialChars, ViewKind} from "../ui/ui";
+import {SpecialChars, ViewKind} from "../ui/ui";
 import {
     cloneToSet,
     Converters,
@@ -679,31 +679,42 @@ export class ConverterDialog extends Dialog {
         const nk = this.addSelectField("newKind", "Convert to: ",
             allContentsKind, null,
             "Type of data for the converted column.");
-        const nn = this.addTextField("newColumnName", "New column name: ", FieldKind.String, null,
+        const check = this.addBooleanField("keep", "Keep original column", false,
+            "If true the original column will be kept");
+        const newNameField = this.addTextField("newColumnName", "New column name: ", FieldKind.String, null,
             "A name for the new column.  The name must be different from all other column names.");
-        nn.required = true;
+        this.showField("newColumnName", false);
+        check.onchange = () => this.generateColumnName();
         cn.onchange = () => this.generateColumnName();
         nk.onchange = () => this.generateColumnName();
         // If the user types a column name don't attempt to change it
-        nn.onchange = () => this.columnNameFixed = true;
+        newNameField.onchange = () => this.columnNameFixed = true;
         this.setCacheTitle("ConverterDialog");
         this.setFieldValue("columnName", columnName);
         this.generateColumnName();
     }
 
+    public generateFreshName(base: string, suffix: string): string {
+        let nn = base + suffix;
+        if (this.allColumns.indexOf(nn) >= 0) {
+            let counter = 0;
+            while (this.allColumns.indexOf(nn) >= 0) {
+                nn = base + counter.toString() + suffix;
+                counter++;
+            }
+        }
+        return nn;
+    }
+
     private generateColumnName(): void {
+        const keep = this.getBooleanValue("keep");
+        this.showField("newColumnName", keep);
+
         if (this.columnNameFixed)
             return;
         const cn = this.getFieldValue("columnName");
         const suffix = " (" + this.getFieldValue("newKind") + ")";
-        let nn = cn + suffix;
-        if (this.allColumns.indexOf(nn) >= 0) {
-            let counter = 0;
-            while (this.allColumns.indexOf(nn) >= 0) {
-                nn = cn + counter.toString() + suffix;
-                counter++;
-            }
-        }
+        const nn = this.generateFreshName(cn, suffix);
         this.setFieldValue("newColumnName", nn);
     }
 }
@@ -717,6 +728,7 @@ export class ColumnConverter  {
     constructor(private columnName: string,
                 private newKind: ContentsKind,
                 private newColumnName: string,
+                private keepOldColumn: boolean,
                 private table: TableView,
                 private order: RecordOrder,
                 private page: FullPage) {
@@ -740,8 +752,13 @@ export class ColumnConverter  {
             kind: this.newKind,
             name: this.newColumnName,
         };
-        const schema = this.table.schema.append(cd);
+        let schema = this.table.schema.append(cd);
         const o = this.order.clone();
+        if (!this.keepOldColumn) {
+            schema = schema.filter((c) => c.name !== this.columnName);
+            const ok = schema.changeDisplayName(this.newColumnName, this.columnName);
+            console.assert(ok);
+        }
         o.addColumn({columnDescription: cd, isAscending: true});
         rr.invoke(new TableOperationCompleted(this.page, rr, this.table.rowCount, schema,
             o, this.table.tableRowsDesired));
