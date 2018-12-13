@@ -15,6 +15,9 @@
  * limitations under the License.
  */
 
+// This plugin can speed-up webpack using caching
+var HardSourceWebpackPlugin = require('hard-source-webpack-plugin');
+
 module.exports = {
     cache: true,
     entry: "./hillview.ts",
@@ -34,9 +37,13 @@ module.exports = {
             // all files with a '.ts' or '.tsx' extension will be handled by 'ts-loader'
             {
                 test: /\.tsx?$/,
-                loader: "ts-loader"
+                loader: "ts-loader",
+                exclude: /node_modules/
             }
         ]
     },
-    devtool: "source-map"
+    devtool: "source-map",
+    plugins: [
+        new HardSourceWebpackPlugin()
+    ]
 };

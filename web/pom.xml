@@ -12,26 +12,6 @@
     <name>web</name>
     <url>http://maven.apache.org</url>
 
-    <!-- Generates findbugs report -->
-    <reporting>
-        <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>findbugs-maven-plugin</artifactId>
-                <version>3.0.4</version>
-                <configuration>
-                    <!--
-                        Enables analysis which takes more memory but finds more bugs.
-                        If you run out of memory, changes the value of the effort element
-                        to 'low'.
-                    -->
-                    <effort>Max</effort>
-                    <!-- Reports all bugs (other values are medium and max) -->
-                    <threshold>Low</threshold>
-                </configuration>
-            </plugin>
-        </plugins>
-    </reporting>
     <dependencies>
         <!-- Java reactive APIs: Observables -->
         <dependency>
@@ -64,17 +44,6 @@
             <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>com.google.code.findbugs</groupId>
-            <artifactId>jsr305</artifactId>
-            <version>2.0.1</version>
-        </dependency>
-        <!-- JBlas for linear algebra -->
-        <dependency>
-            <groupId>org.jblas</groupId>
-            <artifactId>jblas</artifactId>
-            <version>1.2.4</version>
-        </dependency>
-        <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-core</artifactId>
             <version>1.15.0</version>
@@ -82,6 +51,36 @@
     </dependencies>
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>3.2.2</version>
+                <configuration>
+                    <!-- We don't want to copy all these node_modules; most won't be used,
+                         so we list here the really big ones -->
+                    <warSourceExcludes>
+                        node_modules/typescript/**,
+                        node_modules/.cache/**,
+                        node_modules/lodash/**,
+                        node_modules/webpack/**,
+                        node_modules/terser/**,
+                        node_modules/@webassemblyjs/**
+                    </warSourceExcludes>
+                    <!-- Most node_modules are only dev dependences, so we include
+                         only the ones strictly needed. -->
+                    <packagingIncludes>
+                        node_modules/d3-*/**,
+                        node_modules/file-saver/**,
+                        node_modules/pako/**,
+                        node_modules/rx/**,
+                        dataViews/**,
+                        ui/**,
+                        WEB-INF/**,
+                        META-INF/**,
+                        *
+                    </packagingIncludes>
+                </configuration>
+            </plugin>
             <!-- ensure that maven dependencies are correct -->
             <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>

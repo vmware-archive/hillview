@@ -57,7 +57,6 @@ import {ErrorReporter} from "../ui/errReporter";
  * A base class for TableView and SchemaView.
  */
 export abstract class TSViewBase extends BigTableView {
-
     protected constructor(
         remoteObjectId: RemoteObjectId,
         rowCount: number,

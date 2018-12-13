@@ -2,9 +2,6 @@
 
 set -e
 
-mydir="$(dirname "$0")"
-if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
-
 # Helper script to run webpack from maven
 
 pushd src/main/webapp/
@@ -13,6 +10,6 @@ pushd src/main/webapp/
 rm -rf bundle*
 echo "Running webpack command in src/main/webapp"
 ./node_modules/.bin/webpack --display-modules
-ln -sf dist/bundle.js .
-ln -sf dist/bundle.js.map .
+mv dist/bundle.js .
+mv dist/bundle.js.map .
 popd

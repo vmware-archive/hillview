@@ -1213,32 +1213,40 @@ export class TableView extends TSViewBase implements IScrollTarget {
                     // comparison signs.
                     this.contextMenu.addItem({text: "Keep " + shortValue,
                         action: () => this.filterOnValue(cd, value, "=="),
-                        help: "Keep only the rows that have this value in this column.",
+                        help: "Keep only the rows that have this value in this column."
                     }, true);
                     this.contextMenu.addItem({text: "Keep different from " + shortValue,
                         action: () => this.filterOnValue(cd, value, "!="),
-                        help: "Keep only the rows that have a different value in this column.",
+                        help: "Keep only the rows that have a different value in this column."
                     }, true);
                     this.contextMenu.addItem({text: "Keep all < " + shortValue,
                         action: () => this.filterOnValue(cd, value, ">"),
-                        help: "Keep only the rows that have a a smaller value in this column.",
+                        help: "Keep only the rows that have a a smaller value in this column."
                     }, true);
                     this.contextMenu.addItem({text: "Keep all > " + shortValue,
                         action: () => this.filterOnValue(cd, value, "<"),
-                        help: "Keep only the rows that have a larger value in this column.",
+                        help: "Keep only the rows that have a larger value in this column."
                     }, true);
                     this.contextMenu.addItem({text: "Keep all <= " + shortValue,
                         action: () => this.filterOnValue(cd, value, ">="),
-                        help: "Keep only the rows that have a smaller or equal value in this column.",
+                        help: "Keep only the rows that have a smaller or equal value in this column."
                     }, true);
                     this.contextMenu.addItem({text: "Keep all >= " + shortValue,
                         action: () => this.filterOnValue(cd, value, "<="),
-                        help: "Keep only the rows that have a larger or equal in this column.",
+                        help: "Keep only the rows that have a larger or equal in this column."
                     }, true);
                     this.contextMenu.addItem({text: "Move to top",
                         action: () => this.moveRowToTop(row),
-                        help: "Move this row to the top of the view.",
+                        help: "Move this row to the top of the view."
                     }, true);
+                    if (this.dataset.isLog() &&
+                        cd.name === "File") {
+                        this.contextMenu.addItem({
+                            text: "Open file",
+                            action: () => this.openLogFile(value),
+                            help: "Open this file in a new tab"
+                        }, true);
+                    }
                     this.contextMenu.show(e);
                 };
             } else {
@@ -1248,6 +1256,10 @@ export class TableView extends TSViewBase implements IScrollTarget {
             }
         }
         this.dataRowsDisplayed += row.count;
+    }
+
+    public openLogFile(filename: string): void {
+        // TODO
     }
 
     public setScroll(top: number, bottom: number): void {

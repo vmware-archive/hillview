@@ -147,6 +147,14 @@ export class DatasetView implements IHtmlElement {
         HillviewToplevel.instance.addDataset(this);
     }
 
+    /**
+     * True if the data in this dataset is from a set of log files.
+     */
+    public isLog(): boolean {
+        return this.loaded.kind === "Hillview logs"
+            || (this.loaded.kind === "Files" && this.loaded.description.fileKind === "genericlog");
+    }
+
     public getHTMLRepresentation(): HTMLElement {
         return this.topLevel;
     }

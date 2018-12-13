@@ -19,9 +19,7 @@ package org.hillview.test.dataStructures;
 
 import org.hillview.dataset.api.IJson;
 import org.hillview.sketches.NextKList;
-import org.hillview.storage.JdbcConnectionInformation;
 import org.hillview.storage.JsonFileLoader;
-import org.hillview.storage.MongoDBLoader;
 import org.hillview.table.*;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
@@ -108,28 +106,5 @@ public class JsonTest extends BaseTest {
         JsonFileLoader reader = new JsonFileLoader(jsonFolder + "/" + jsonSample, null);
         ITable table = reader.load();
         Assert.assertEquals("Table[2x15]", table.toString());
-    }
-
-//    @Test
-    public void mongoDBTest() {
-        try {
-            JdbcConnectionInformation info = new JdbcConnectionInformation();
-            info.user = "";
-            info.password = "";
-            info.database = "test";
-            info.table = "collection";
-            info.host = "localhost";
-            info.port = 27017;
-            MongoDBLoader loader = new MongoDBLoader(info);
-            ITable table1 = loader.load(0, 1);
-            System.out.println(table1.toLongString(1));
-            ITable table2 = loader.load(1, 1);
-            System.out.println(table2.toLongString(1));
-
-            //ITable table = loader.load();
-            //Assert.assertEquals("Table[2x1]", table.toString());
-        } catch (Exception ex) {
-            ignoringException("Skipping mongodb test.", ex);
-        }
     }
 }
