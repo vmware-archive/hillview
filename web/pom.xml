@@ -56,19 +56,9 @@
                 <artifactId>maven-war-plugin</artifactId>
                 <version>3.2.2</version>
                 <configuration>
-                    <!-- We don't want to copy all these node_modules; most won't be used,
-                         so we list here the really big ones -->
-                    <warSourceExcludes>
-                        node_modules/typescript/**,
-                        node_modules/.cache/**,
-                        node_modules/lodash/**,
-                        node_modules/webpack/**,
-                        node_modules/terser/**,
-                        node_modules/@webassemblyjs/**
-                    </warSourceExcludes>
                     <!-- Most node_modules are only dev dependences, so we include
                          only the ones strictly needed. -->
-                    <packagingIncludes>
+                    <warSourceIncludes>
                         node_modules/d3-*/**,
                         node_modules/file-saver/**,
                         node_modules/pako/**,
@@ -78,7 +68,7 @@
                         WEB-INF/**,
                         META-INF/**,
                         *
-                    </packagingIncludes>
+                    </warSourceIncludes>
                 </configuration>
             </plugin>
             <!-- ensure that maven dependencies are correct -->
