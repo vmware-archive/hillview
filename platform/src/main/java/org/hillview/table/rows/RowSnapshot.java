@@ -35,6 +35,8 @@ import java.util.*;
 /**
  * The copy of the data in a row of the table.
  * This is quite inefficient, it should be used rarely.
+ * When the data is a date or duration it is represented instead by its
+ * double encoding.
  */
 public class RowSnapshot extends BaseRowSnapshot
         implements Serializable, IJson  {
@@ -169,10 +171,15 @@ public class RowSnapshot extends BaseRowSnapshot
             ColumnDescription cd = schema.getDescription(c);
             Object o = data[i];
             if (o == null) {
-                if (set != null && set.contains(c))
-                    converted[i] = cd.kind.minimumValue();
-                else
+                if (set != null && set.contains(c)) {
+                    ContentsKind kind = cd.kind;
+                    if (kind == ContentsKind.Date || kind == ContentsKind.Duration)
+                        // These types are represented as doubles in the row snapshot.
+                        kind = ContentsKind.Double;
+                    converted[i] = kind.minimumValue();
+                } else {
                     converted[i] = null;
+                }
             } else if (cd.kind == ContentsKind.Integer) {
                 // In JSON everything is a double
                 converted[i] = (int)(double)o;
