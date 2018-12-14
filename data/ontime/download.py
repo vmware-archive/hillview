@@ -24,12 +24,7 @@ def download(startyear, startmonth, endyear, endmonth):
         inMonths = startyear*12 + startmonth + i - 1
         year = inMonths / 12
         month = (inMonths % 12) + 1
-        if year >= 2018:
-            basename = "On_Time_Reporting_Carrier_On_Time_Performance_1987_present_" + str(year) + "_" + str(month)
-        else:
-            # Unfortunately currently the website no longer has these files and it is not
-            # clear what name they should have
-            basename = "On_Time_On_Time_Performance_" + str(year) + "_" + str(month)
+        basename = "On_Time_Reporting_Carrier_On_Time_Performance_1987_present_" + str(year) + "_" + str(month)
         canonical = canonical_name(year, month)
         if not os.path.exists(canonical + ".csv.gz"):
             filename = basename + ".zip"
