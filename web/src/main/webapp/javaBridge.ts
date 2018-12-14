@@ -239,6 +239,7 @@ export interface NextKArgs {
     order: RecordOrder;
     firstRow: any[] | null;
     rowsOnScreen: number;
+    columnsNoValue: string[] | null;
 }
 
 export interface EigenVal {

@@ -66,20 +66,24 @@ public final class TableTarget extends RpcTarget {
         RecordOrder order = new RecordOrder();
         @Nullable
         Object[] firstRow;
+        @Nullable
+        String[] columnsNoValue;
         int rowsOnScreen;
     }
 
     @Nullable
-    private static RowSnapshot asRowSnapshot(@Nullable Object[] data, RecordOrder order) {
+    private static RowSnapshot asRowSnapshot(
+            @Nullable Object[] data, RecordOrder order, @Nullable String[] columnsNoValue) {
         if (data == null) return null;
         Schema schema = order.toSchema();
-        return RowSnapshot.parse(schema, data);
+        return RowSnapshot.parse(schema, data, columnsNoValue);
     }
 
     @HillviewRpc
     public void getNextK(RpcRequest request, RpcRequestContext context) {
         NextKArgs nextKArgs = request.parseArgs(NextKArgs.class);
-        RowSnapshot rs = TableTarget.asRowSnapshot(nextKArgs.firstRow, nextKArgs.order);
+        RowSnapshot rs = TableTarget.asRowSnapshot(
+                nextKArgs.firstRow, nextKArgs.order, nextKArgs.columnsNoValue);
         NextKSketch nk = new NextKSketch(nextKArgs.order, rs, nextKArgs.rowsOnScreen);
         this.runSketch(this.table, nk, request, context);
     }
@@ -100,7 +104,7 @@ public final class TableTarget extends RpcTarget {
         FindArgs args = request.parseArgs(FindArgs.class);
         assert args.order != null;
         assert args.stringFilterDescription != null;
-        RowSnapshot rs = TableTarget.asRowSnapshot(args.topRow, args.order);
+        RowSnapshot rs = TableTarget.asRowSnapshot(args.topRow, args.order, null);
         FindSketch sk = new FindSketch(args.stringFilterDescription, rs, args.order,
                 args.excludeTopRow, args.next);
         this.runCompleteSketch(this.table, sk, (e, c) -> e, request, context);

@@ -26,6 +26,7 @@ import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
@@ -150,9 +151,16 @@ public class RowSnapshot extends BaseRowSnapshot
      * When row snapshots are serialized as JSON some data types have to be converted.
      * @param data    Data to fill the row
      * @param schema  Row schema
+     * @param columnsNoValue  List of columns that may not have a value specified.
+     *                        For these the minimum value will be used.
      * @return        A row parsed from an array of objects deserialized from JSON.
      */
-    public static RowSnapshot parse(Schema schema, Object[] data) {
+    public static RowSnapshot parse(Schema schema,
+                                    Object[] data,
+                                    @Nullable String[] columnsNoValue) {
+        HashSet<String> set = null;
+        if (columnsNoValue != null)
+            set = new HashSet<String>(Arrays.asList(columnsNoValue));
         Object[] converted = new Object[data.length];
         List<String> cols = new ArrayList<String>(data.length);
         cols.addAll(schema.getColumnNames());
@@ -161,7 +169,10 @@ public class RowSnapshot extends BaseRowSnapshot
             ColumnDescription cd = schema.getDescription(c);
             Object o = data[i];
             if (o == null) {
-                converted[i] = null;
+                if (set != null && set.contains(c))
+                    converted[i] = cd.kind.minimumValue();
+                else
+                    converted[i] = null;
             } else if (cd.kind == ContentsKind.Integer) {
                 // In JSON everything is a double
                 converted[i] = (int)(double)o;

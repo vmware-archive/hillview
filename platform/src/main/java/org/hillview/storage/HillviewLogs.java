@@ -17,12 +17,16 @@
 
 package org.hillview.storage;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.Table;
 import org.hillview.table.api.ContentsKind;
+import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
+import org.hillview.table.columns.ConstantStringColumn;
+import org.hillview.table.columns.CounterColumn;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -90,7 +94,22 @@ public class HillviewLogs {
                 throw new RuntimeException(e);
             }
             this.close(null);
-            return new Table(this.columns, this.filename, null);
+            int size = this.columns[0].sizeInRows();
+            IColumn directory = new ConstantStringColumn(
+                    new ColumnDescription("Directory", ContentsKind.String),
+                    size,
+                    FilenameUtils.getPath(this.filename));
+            IColumn file = new ConstantStringColumn(
+                    new ColumnDescription("Filename", ContentsKind.String),
+                    size,
+                    FilenameUtils.getName(this.filename));
+            IColumn line = new CounterColumn("Line", size, 1);
+            IColumn[] cols = new IColumn[this.columns.length + 3];
+            cols[0] = directory;
+            cols[1] = file;
+            cols[2] = line;
+            System.arraycopy(this.columns, 0, cols, 3, this.columns.length);
+            return new Table(cols, this.filename, null);
         }
     }
 

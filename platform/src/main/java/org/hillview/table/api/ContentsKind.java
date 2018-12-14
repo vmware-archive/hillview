@@ -17,6 +17,9 @@
 
 package org.hillview.table.api;
 
+import org.hillview.utils.Converters;
+
+import javax.annotation.Nullable;
 import java.io.Serializable;
 
 /**
@@ -32,9 +35,32 @@ public enum ContentsKind implements Serializable {
     Duration; /* java.time.Duration values */
 
     /**
+     * The minimum value representable by this kind.
+     */
+    @Nullable
+    public Object minimumValue() {
+        switch (this) {
+            case None:
+                return null;
+            case String:
+            case Json:
+                return "";
+            case Date:
+                return Converters.toDate(-java.lang.Double.MAX_VALUE);
+            case Integer:
+                return java.lang.Integer.MIN_VALUE;
+            case Double:
+                return -java.lang.Double.MAX_VALUE;
+            case Duration:
+                return Converters.toDuration(-java.lang.Double.MAX_VALUE);
+            default:
+                throw new RuntimeException("Unexpected kind " + this);
+        }
+    }
+
+    /**
      * True if this kind of information requires a Java Object for storage.
      */
-    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean isObject() {
         switch (this) {
             case String:

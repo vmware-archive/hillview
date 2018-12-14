@@ -463,7 +463,27 @@ export class TableView extends TSViewBase implements IScrollTarget {
     }
 
     protected setOrder(o: RecordOrder): void {
-        const rr = this.createNextKRequest(o, null, this.tableRowsDesired);
+        let firstRow = null;
+        let minValues = null;
+        if (this.nextKList != null &&
+            this.nextKList.rows != null &&
+            this.nextKList.rows.length > 0) {
+            firstRow = [];
+            minValues = [];
+        }
+
+        for (const cso of o.sortOrientationList) {
+            const index = this.order.find(cso.columnDescription.name);
+            if (firstRow != null) {
+                if (index >= 0) {
+                    firstRow.push(this.nextKList.rows[0].values[index]);
+                } else {
+                    firstRow.push(null);
+                    minValues.push(cso.columnDescription.name);
+                }
+            }
+        }
+        const rr = this.createNextKRequest(o, firstRow, this.tableRowsDesired, minValues);
         rr.invoke(new NextKReceiver(this.getPage(), this, rr, false, o, null));
     }
 
@@ -481,7 +501,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
         this.setOrder(o);
     }
 
-    public getSortOrder(column: string): [boolean, number] {
+    private getSortOrder(column: string): [boolean, number] {
         for (let i = 0; i < this.order.length(); i++) {
             const o = this.order.get(i);
             if (o.columnDescription.name === column)
@@ -490,18 +510,18 @@ export class TableView extends TSViewBase implements IScrollTarget {
         return null;
     }
 
-    public isVisible(column: string): boolean {
+    private isVisible(column: string): boolean {
         const so = this.getSortOrder(column);
         return so != null;
     }
 
-    public isAscending(column: string): boolean {
+    private isAscending(column: string): boolean {
         const so = this.getSortOrder(column);
         if (so == null) return null;
         return so[0];
     }
 
-    public getSortIndex(column: string): number {
+    private getSortIndex(column: string): number {
         const so = this.getSortOrder(column);
         if (so == null) return null;
         return so[1];
@@ -547,7 +567,6 @@ export class TableView extends TSViewBase implements IScrollTarget {
         //         -1 to sort descending
         //          1 to sort ascending
         const o = this.order.clone();
-        // The set iterator did not seem to work correctly...
         this.getSelectedColNames().forEach((colName) => {
             const col = this.schema.find(colName);
             if (order !== 0 && col != null) {
@@ -1240,7 +1259,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
                         help: "Move this row to the top of the view."
                     }, true);
                     if (this.dataset.isLog() &&
-                        cd.name === "File") {
+                        cd.name === "Filename" && row.count === 1) {
                         this.contextMenu.addItem({
                             text: "Open file",
                             action: () => this.openLogFile(value),

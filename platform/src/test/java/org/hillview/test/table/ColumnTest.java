@@ -26,9 +26,33 @@ import org.hillview.test.BaseTest;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.time.Duration;
+import java.time.Instant;
+
 import static org.junit.Assert.assertEquals;
 
 public class ColumnTest extends BaseTest {
+    @Test
+    public void testContentsKind() {
+        Object o = ContentsKind.Integer.minimumValue();
+        Assert.assertNotNull(o);
+        Assert.assertEquals(Integer.MIN_VALUE, o);
+        o = ContentsKind.Date.minimumValue();
+        Instant now = Instant.now();
+        Assert.assertNotNull(o);
+        Assert.assertTrue(now.isAfter((Instant)o));
+        o = ContentsKind.String.minimumValue();
+        Assert.assertEquals("", o);
+        o = ContentsKind.Duration.minimumValue();
+        Instant later = Instant.now();
+        Duration duration = Duration.between(now, later);
+        Assert.assertNotNull(o);
+        Assert.assertEquals(1, duration.compareTo((Duration)o));
+        o = ContentsKind.Double.minimumValue();
+        Assert.assertNotNull(o);
+        Assert.assertEquals(-Double.MAX_VALUE, o);
+    }
+
     @Test
     public void testIntColumn() {
         final IntArrayColumn col;

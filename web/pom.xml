@@ -30,7 +30,6 @@
             <artifactId>tomcat-servlet-api</artifactId>
             <version>9.0.4</version>
         </dependency>
-
         <!-- Json manipulation in Java -->
         <dependency>
             <groupId>com.google.code.gson</groupId>

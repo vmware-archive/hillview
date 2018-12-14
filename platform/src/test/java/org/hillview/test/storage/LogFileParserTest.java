@@ -60,7 +60,7 @@ public class LogFileParserTest extends BaseTest {
         Path path = Paths.get(".", f.getName());
         ITable table = HillviewLogs.parseLogFile(path.toString());
         Converters.checkNull(table);
-        Assert.assertEquals(table.toString(), "Table[9x4]");
+        Assert.assertEquals(table.toString(), "Table[12x4]");
         LocalDate date = LocalDate.of(2017, 10, 12);
         LocalTime time = LocalTime.of(2, 17, 42, 722000000);
         LocalDateTime dt = LocalDateTime.of(date, time);
@@ -75,5 +75,8 @@ public class LogFileParserTest extends BaseTest {
         Assert.assertEquals(getValue(table, "Method"), "<clinit>");
         Assert.assertEquals(getValue(table, "Message"), "Detect CPUs");
         Assert.assertEquals(getValue(table, "Arguments"), "Using 3 processors");
+        Assert.assertEquals(getValue(table, "Line"), 1);
+        Assert.assertEquals(getValue(table, "Directory"), "./");
+        Assert.assertEquals(getValue(table, "Filename"), f.getName());
     }
 }

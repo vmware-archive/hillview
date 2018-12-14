@@ -131,13 +131,15 @@ export class TableTargetAPI extends RemoteObject {
         return this.createStreamingRpcRequest<DataRange>(method, args);
     }
 
-    public createNextKRequest(order: RecordOrder, firstRow: any[] | null, rowCount: number):
+    public createNextKRequest(order: RecordOrder, firstRow: any[] | null, rowCount: number,
+                              columnsNoValue?: string[]):
         RpcRequest<PartialResult<NextKList>> {
         const nextKArgs: NextKArgs = {
             toFind: null,
             order: order,
             firstRow: firstRow,
             rowsOnScreen: rowCount,
+            columnsNoValue: columnsNoValue
         };
         return this.createStreamingRpcRequest<NextKList>("getNextK", nextKArgs);
     }

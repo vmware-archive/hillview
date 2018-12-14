@@ -29,6 +29,12 @@
         var hillview = this.hillview;
 
         function loaded() {
+            window.addEventListener("beforeunload", function (e) {
+                // Prevent the user from accidentally leaving the page (e.g. pressing back).
+                var confirm = "Do you want to leave this page?";
+                (e || window.event).returnValue = confirm;
+                return confirm;
+            });
             hillview.createHillview();
         }
     </script>
