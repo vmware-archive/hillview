@@ -763,24 +763,3 @@ export class ColumnConverter  {
             o, this.table.tableRowsDesired));
     }
 }
-
-export class CountSketchReceiver extends BaseRenderer {
-    private csThreshold: number = 0.01;
-    public constructor(page: FullPage,
-                       protected tv: TableView,
-                       operation: ICancellable<RemoteObjectId>,
-                       protected rowCount: number,
-                       protected schema: SchemaClass,
-                       protected columnsShown: IColumnDescription [],
-                       protected order: RecordOrder) {
-        super(page, operation, "Count Sketch Receiver", tv.dataset);
-    }
-
-    public run(): void {
-        super.run();
-        const rr = this.tv.createExactCSRequest(this.remoteObject);
-        rr.chain(this.operation);
-        rr.invoke(new HeavyHittersReceiver(this.page, this.tv, this.operation,
-            this.rowCount, this.schema, this.order, false, this.csThreshold, this.columnsShown, false));
-    }
-}

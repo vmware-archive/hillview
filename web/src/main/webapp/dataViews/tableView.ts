@@ -56,7 +56,6 @@ import {
 import {SchemaView} from "./schemaView";
 import {SpectrumReceiver} from "./spectrumView";
 import {ColumnConverter, ConverterDialog, TSViewBase} from "./tsViewBase";
-import {CountSketchReceiver} from "./tsViewBase";
 import {Grid} from "../ui/grid";
 
 /**
@@ -731,13 +730,6 @@ export class TableView extends TSViewBase implements IScrollTarget {
                     action: () => this.heavyHittersDialog(),
                     help: "Find the values that occur most frequently in the selected columns.",
                 }, true);
-                /*
-                this.contextMenu.addItem({
-                    text: "Count Sketch",
-                    action: () => this.runCountSketch(),
-                    help: "Find the values that occur most frequently in the selected columns.",
-                }, true);
-                */
                 this.contextMenu.addItem({
                     text: "PCA...",
                     action: () => this.pca(true),
@@ -971,20 +963,6 @@ export class TableView extends TSViewBase implements IScrollTarget {
         } else {
             this.page.reportError("Not valid for PCA:" + message);
         }
-    }
-
-    protected runCountSketch(): void {
-        const columnsShown: IColumnDescription[] = [];
-        const cso: ColumnSortOrientation[] = [];
-        this.getSelectedColNames().forEach((v) => {
-            const colDesc = this.schema.find(v);
-            columnsShown.push(colDesc);
-            cso.push({columnDescription: colDesc, isAscending: true});
-        });
-        const order = new RecordOrder(cso);
-        const rr = this.createCountSketchRequest(columnsShown);
-        rr.invoke(new CountSketchReceiver(this.getPage(), this, rr, this.rowCount,
-            this.schema, columnsShown, order));
     }
 
     private spectrum(toSample: boolean): void {

@@ -667,54 +667,6 @@ public final class TableTarget extends RpcTarget {
         RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(hhi.hittersId), true, observer);
     }
 
-    static class CountSketchInfo {
-        int buckets;
-        int trials;
-        long seed;
-        @Nullable
-        Schema columns;
-    }
-
-    /**
-     * Runs the CountSketch method, stores the result in a CountSketchTarget where it will be used
-     * by  exactCS() to invoke ExactCountSketch.
-     */
-    @HillviewRpc
-    public void runCountSketch(RpcRequest request, RpcRequestContext context) {
-        CountSketchInfo csInfo = request.parseArgs(CountSketchInfo.class);
-        assert csInfo.columns != null;
-        CountSketchDescription csDesc = new
-                CountSketchDescription(csInfo.buckets, csInfo.trials, csInfo.seed, csInfo.columns);
-        CountSketch csSketch = new CountSketch(csDesc);
-        this.runCompleteSketch(this.table, csSketch, CountSketchTarget::new, request, context);
-    }
-
-    static class ExactCountSketchInfo {
-        String countSketchTargetId = "";
-    }
-
-    /**
-     * Runs the ExactCountSketch method on a candidate list of heavy hitters.
-     */
-    @HillviewRpc
-    public void exactCS(RpcRequest request, RpcRequestContext context) {
-        double threshold = 0.1;
-        ExactCountSketchInfo countSketchInfo = request.parseArgs(ExactCountSketchInfo.class);
-        Observer<RpcTarget> observer = new SingleObserver<RpcTarget>() {
-            @Override
-            public void onSuccess(RpcTarget rpcTarget) {
-                CountSketchTarget cst = (CountSketchTarget) rpcTarget;
-                ExactCountSketch csSketch = new ExactCountSketch(cst.result, threshold);
-                TableTarget.this.runCompleteSketch(
-                        TableTarget.this.table, csSketch,
-                        (x, c) -> TableTarget.getSortedList(x, cst.result.csDesc.schema, c),
-                        request, context);
-            }
-        };
-        RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(countSketchInfo.countSketchTargetId),
-                true, observer);
-    }
-
     static class HLogLogInfo {
         String columnName = "";
         long seed;
