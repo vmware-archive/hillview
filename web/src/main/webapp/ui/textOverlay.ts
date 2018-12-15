@@ -44,7 +44,7 @@ export class TextOverlay {
         this.rect = this.parent.append("rect")
             .attr("class", "text-overlay")
             .attr("height", this.height)
-            .attr("width", 100)
+            .attr("width", 0)
             .attr("fill", "rgba(255, 255, 255, 0.9)");
         this.lines = [];
         for (let key of keys) {
@@ -58,9 +58,10 @@ export class TextOverlay {
     }
 
     public show(visible: boolean): void {
-        this.rect.attr("visibility", visible ? "visible" : "hidden");
+        const v = visible ? "visible" : "hidden";
+        this.rect.attr("visibility", v);
         for (const l of this.lines)
-            l.attr("visibility", visible ? "visible" : "hidden");
+            l.attr("visibility", v);
     }
 
     /**
