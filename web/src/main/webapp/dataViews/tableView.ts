@@ -580,7 +580,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
     }
 
     public resize(): void {
-        this.updateView(this.nextKList, false, this.order, null, 0);
+        this.updateView(this.nextKList, false, this.order, null);
     }
 
     public refresh(): void {
@@ -600,8 +600,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
     public updateView(nextKList: NextKList,
                       revert: boolean,
                       order: RecordOrder,
-                      result: FindResult,
-                      elapsedMs: number): void {
+                      result: FindResult): void {
         this.grid.prepareForUpdate();
         this.selectedColumns.clear();
         this.rowCount = nextKList.rowsScanned;
@@ -816,7 +815,6 @@ export class TableView extends TSViewBase implements IScrollTarget {
 
         this.updateScrollBar();
         this.highlightSelectedColumns();
-        this.page.reportTime(elapsedMs);
         this.grid.updateCompleted();
     }
 
@@ -1279,8 +1277,12 @@ export class NextKReceiver extends Receiver<NextKList> {
 
     public onNext(value: PartialResult<NextKList>): void {
         super.onNext(value);
-        this.table.updateView(value.data, this.reverse, this.order,
-            this.result, this.elapsedMilliseconds());
+        this.table.updateView(value.data, this.reverse, this.order, this.result);
+    }
+
+    public onCompleted(): void {
+        super.onCompleted();
+        this.table.updateCompleted(this.elapsedMilliseconds());
     }
 }
 
@@ -1325,7 +1327,8 @@ export class SchemaReceiver extends OnCompleteReceiver<TableSummary> {
             const table = new TableView(
                 this.remoteObject.remoteObjectId, summary.rowCount, schemaClass, this.page);
             this.page.setDataView(table);
-            table.updateView(nk, false, order, null, this.elapsedMilliseconds());
+            table.updateView(nk, false, order, null);
+            table.updateCompleted(this.elapsedMilliseconds());
         }
     }
 }

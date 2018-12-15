@@ -16,7 +16,7 @@
  */
 
 /*
- * This file contains lots of classes for accessing the remote TableTarget.java class.
+ * This file contains lots of methods for accessing the remote TableTarget.java class.
  */
 
 import {DatasetView, IViewSerialization} from "./datasetView";
@@ -40,8 +40,6 @@ import {PlottingSurface} from "./ui/plottingSurface";
  * This class has methods that correspond directly to TableTarget.java methods.
  */
 export class TableTargetAPI extends RemoteObject {
-    private csBuckets: number = 1000;
-    private csTrials: number = 50;
     /**
      * Create a reference to a remote table target.
      * @param remoteObjectId   Id of remote table on the web server.
@@ -401,6 +399,13 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView {
         const renderer = this.getCombineRenderer(
             new PageTitle("%p(" + r.second + ")" + CombineOperators[how]));
         rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.dataset, renderer));
+    }
+
+    /**
+     * This method is called when all the data has been received.
+     */
+    public updateCompleted(timeInMs: number): void {
+        this.page.reportTime(timeInMs);
     }
 }
 

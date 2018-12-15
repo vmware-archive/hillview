@@ -191,9 +191,11 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
         this.axisData = axisData;
     }
 
-    public updateView(cdf: HistogramBase, bucketCount: number, // If 0 the bucket count will be computed
-                      elapsedMs: number): void {
-        this.page.reportTime(elapsedMs);
+    /**
+     * @param cdf: Data for the cdf.
+     * @param bucketCount: Number of buckets to display.  If 0 the bucket count will be computed
+     */
+    public updateView(cdf: HistogramBase, bucketCount: number): void {
         this.plot.clear();
         if (cdf == null) {
             this.page.reportError("No data to display");
@@ -326,7 +328,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
 
     /**
      * Convert the data to text.
-     * @returns {string[]}  An array of lines describing the data.
+     * @returns An array of lines describing the data.
      */
     public asCSV(): string[] {
         const lines: string[] = [];
@@ -356,7 +358,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
     }
 
     public changeBuckets(bucketCount: number): void {
-        this.updateView(this.cdf, bucketCount, 0);
+        this.updateView(this.cdf, bucketCount);
     }
 
     public chooseBuckets(): void {
@@ -368,7 +370,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
     public resize(): void {
         if (this.cdf == null)
             return;
-        this.updateView(this.cdf, this.bucketCount, 0);
+        this.updateView(this.cdf, this.bucketCount);
     }
 
     public refresh(): void {
@@ -523,7 +525,11 @@ export class HistogramRenderer extends Receiver<HistogramBase>  {
 
     public onNext(value: PartialResult<HistogramBase>): void {
         super.onNext(value);
-        const timeInMs = this.elapsedMilliseconds();
-        this.view.updateView(value.data, this.bucketCount, timeInMs);
+        this.view.updateView(value.data, this.bucketCount);
+    }
+
+    public onCompleted(): void {
+        super.onCompleted();
+        this.view.updateCompleted(this.elapsedMilliseconds());
     }
 }

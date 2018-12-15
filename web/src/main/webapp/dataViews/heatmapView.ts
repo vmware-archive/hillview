@@ -120,7 +120,7 @@ export class HeatmapView extends ChartView {
         legendSurface.setHeight(Resolution.legendSpaceHeight * 2 / 3);
         this.colorLegend = new HeatmapLegendPlot(legendSurface);
         this.colorLegend.setColorMapChangeEventListener(
-            () => this.updateView(this.heatmap, true, 0));
+            () => this.updateView(this.heatmap, true));
 
         this.surface = new HtmlPlottingSurface(this.topLevel, this.page);
         this.surface.setMargins(20, null, null, Resolution.heatmapLabelWidth);
@@ -142,8 +142,7 @@ export class HeatmapView extends ChartView {
         this.yAxisData = yData;
     }
 
-    public updateView(heatmap: Heatmap, keepColorMap: boolean, elapsedMs: number): void {
-        this.page.reportTime(elapsedMs);
+    public updateView(heatmap: Heatmap, keepColorMap: boolean): void {
         if (!keepColorMap) {
             this.colorLegend.clear();
         }
@@ -369,7 +368,7 @@ export class HeatmapView extends ChartView {
     public resize(): void {
         if (this.heatmap == null)
             return;
-        this.updateView(this.heatmap, true, 0);
+        this.updateView(this.heatmap, true);
     }
 
     protected onMouseMove(): void {
@@ -481,6 +480,11 @@ export class HeatmapRenderer extends Receiver<Heatmap> {
             return;
         }
 
-        this.heatmap.updateView(value.data, false, this.elapsedMilliseconds());
+        this.heatmap.updateView(value.data, false);
+    }
+
+    public onCompleted(): void {
+        super.onCompleted();
+        this.heatmap.updateCompleted(this.elapsedMilliseconds());
     }
 }

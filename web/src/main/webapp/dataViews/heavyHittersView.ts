@@ -66,8 +66,9 @@ export class HeavyHittersReceiver extends OnCompleteReceiver<TopList> {
                 data.heavyHittersId, newPage, this.remoteTableObject, this.rowCount, this.schema,
                 this.order, this.isApprox, this.percent, this.columnsShown);
             newPage.setDataView(hhv);
-            hhv.updateView(data.top, this.elapsedMilliseconds());
+            hhv.updateView(data.top);
             hhv.page.scrollIntoView();
+            hhv.updateCompleted(this.elapsedMilliseconds());
         }
     }
 
@@ -264,7 +265,7 @@ export class HeavyHittersView extends BigTableView {
         rr.invoke(new HeavyHittersReceiver2(this, rr));
     }
 
-    public updateView(nextKList: NextKList, elapsedMs: number): void {
+    public updateView(nextKList: NextKList): void {
         this.setRest(nextKList);
         if (nextKList.rows != null) {
             let k = 0;
@@ -297,7 +298,6 @@ export class HeavyHittersView extends BigTableView {
                 this.showRest(nextKList.rows.length, position, this.restCount, nextKList.rowsScanned, this.table);
         }
         this.table.addFooter();
-        this.page.reportTime(elapsedMs);
         if (nextKList.rows.length >= HeavyHittersView.maxDisplay)
             HeavyHittersView.showLongDialog(nextKList.rows.length);
     }
@@ -432,7 +432,8 @@ export class HeavyHittersReceiver2 extends OnCompleteReceiver<TopList> {
             this.hhv.rowCount, this.hhv.schema, this.hhv.originalTableOrder, false,
             this.hhv.percent, this.hhv.columnsShown);
         this.page.setDataView(newHhv);
-        newHhv.updateView(newData.top, this.elapsedMilliseconds());
+        newHhv.updateView(newData.top);
+        newHhv.updateCompleted(this.elapsedMilliseconds());
     }
 }
 

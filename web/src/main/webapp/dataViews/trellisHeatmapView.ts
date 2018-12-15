@@ -144,11 +144,11 @@ export class TrellisHeatmapView extends TrellisChartView {
     }
 
     public refresh(): void {
-        this.updateView(this.heatmaps, 0);
+        this.updateView(this.heatmaps);
     }
 
     public resize(): void {
-        this.updateView(this.heatmaps, 0);
+        this.updateView(this.heatmaps);
     }
 
     protected doChangeGroups(groupCount: number): void {
@@ -221,9 +221,8 @@ export class TrellisHeatmapView extends TrellisChartView {
         rr.invoke(new NextKReceiver(newPage, table, rr, false, order, null));
     }
 
-    public updateView(heatmaps: Heatmap3D, timeInMs: number): void {
+    public updateView(heatmaps: Heatmap3D): void {
         this.heatmaps = heatmaps;
-        this.page.reportTime(timeInMs);
         this.colorLegend.clear();
         if (heatmaps == null || heatmaps.buckets.length === 0) {
             this.page.reportError("No data to display");
@@ -394,7 +393,11 @@ export class TrellisHeatmapRenderer extends Receiver<Heatmap3D> {
         if (value == null) {
             return;
         }
+        this.trellisView.updateView(value.data);
+    }
 
-        this.trellisView.updateView(value.data, this.elapsedMilliseconds());
+    public onCompleted(): void {
+        super.onCompleted();
+        this.trellisView.updateCompleted(this.elapsedMilliseconds());
     }
 }

@@ -175,7 +175,7 @@ export class TrellisHistogramView extends TrellisChartView {
 
     protected chooseBuckets(): void {
         const bucketDialog = new BucketDialog();
-        bucketDialog.setAction(() => this.updateView(this.data, bucketDialog.getBucketCount(), 0));
+        bucketDialog.setAction(() => this.updateView(this.data, bucketDialog.getBucketCount()));
         bucketDialog.show();
     }
 
@@ -218,7 +218,7 @@ export class TrellisHistogramView extends TrellisChartView {
     }
 
     public resize(): void {
-        this.updateView(this.data, this.bucketCount, 0);
+        this.updateView(this.data, this.bucketCount);
     }
 
     public refresh(): void {
@@ -259,9 +259,7 @@ export class TrellisHistogramView extends TrellisChartView {
         return view;
     }
 
-    public updateView(data: Heatmap,
-                      bucketCount: number,
-                      elapsedMs: number): void {
+    public updateView(data: Heatmap, bucketCount: number): void {
         if (bucketCount !== 0)
             this.bucketCount = bucketCount;
         else
@@ -308,7 +306,6 @@ export class TrellisHistogramView extends TrellisChartView {
             [this.schema.displayName(this.xAxisData.description.name),
                 this.schema.displayName(this.groupByAxisData.description.name),
                 "count", "cdf"], 40);
-        this.page.reportTime(elapsedMs);
         this.cdfDot = this.surface.getChart()
             .append("circle")
             .attr("r", Resolution.mouseDotRadius)
@@ -435,6 +432,11 @@ export class TrellisHistogramRenderer extends Receiver<Heatmap> {
             return;
         }
 
-        this.trellisView.updateView(value.data, this.axes[0].bucketCount, this.elapsedMilliseconds());
+        this.trellisView.updateView(value.data, this.axes[0].bucketCount);
+    }
+
+    public onCompleted(): void {
+        super.onCompleted();
+        this.trellisView.updateCompleted(this.elapsedMilliseconds());
     }
 }

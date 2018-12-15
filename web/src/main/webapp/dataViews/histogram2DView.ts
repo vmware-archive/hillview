@@ -140,8 +140,7 @@ export class Histogram2DView extends HistogramViewBase {
         }
     }
 
-    public updateView(heatmap: Heatmap, cdf: HistogramBase, elapsedMs: number): void {
-        this.page.reportTime(elapsedMs);
+    public updateView(heatmap: Heatmap, cdf: HistogramBase): void {
         this.plot.clear();
         this.legendPlot.clear();
         if (heatmap == null || heatmap.buckets.length === 0) {
@@ -390,7 +389,7 @@ export class Histogram2DView extends HistogramViewBase {
     public resize(): void {
         if (this == null)
             return;
-        this.updateView(this.heatMap, this.cdf, 0);
+        this.updateView(this.heatMap, this.cdf);
     }
 
     public refresh(): void {
@@ -548,6 +547,11 @@ export class Histogram2DRenderer extends Receiver<Pair<Heatmap, HistogramBase>> 
             return;
         const heatmap = value.data.first;
         const cdf = value.data.second;
-        this.view.updateView(heatmap, cdf, this.elapsedMilliseconds());
+        this.view.updateView(heatmap, cdf);
+    }
+
+    public onCompleted(): void {
+        super.onCompleted();
+        this.view.updateCompleted(this.elapsedMilliseconds());
     }
 }

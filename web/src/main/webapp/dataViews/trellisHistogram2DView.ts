@@ -218,8 +218,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
 
     protected chooseBuckets(): void {
         const bucketDialog = new BucketDialog();
-        bucketDialog.setAction(() => this.updateView(this.data,
-            [bucketDialog.getBucketCount(), this.legendAxisData.bucketCount], 0));
+        bucketDialog.setAction(() => this.updateView(this.data, [bucketDialog.getBucketCount(), this.legendAxisData.bucketCount]));
         bucketDialog.show();
     }
 
@@ -268,8 +267,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
     }
 
     public resize(): void {
-        this.updateView(this.data,
-            [this.xAxisData.bucketCount, this.legendAxisData.bucketCount], 0);
+        this.updateView(this.data, [this.xAxisData.bucketCount, this.legendAxisData.bucketCount]);
     }
 
     public refresh(): void {
@@ -316,7 +314,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
         return view;
     }
 
-    public updateView(data: Heatmap3D, bucketCount: number[], elapsedMs: number): void {
+    public updateView(data: Heatmap3D, bucketCount: number[]): void {
         this.data = data;
         this.legendPlot.clear();
 
@@ -360,8 +358,6 @@ export class TrellisHistogram2DView extends TrellisChartView {
 
         this.legendPlot.setData(this.legendAxisData, false /* TODO */, this.schema);
         this.legendPlot.draw();
-
-        this.page.reportTime(elapsedMs);
     }
 
     protected dragMove(): boolean {
@@ -480,7 +476,11 @@ export class TrellisHistogram2DRenderer extends Receiver<Heatmap3D> {
             return;
         }
 
-        this.trellisView.updateView(value.data, [this.axes[0].bucketCount, this.axes[1].bucketCount],
-            this.elapsedMilliseconds());
+        this.trellisView.updateView(value.data, [this.axes[0].bucketCount, this.axes[1].bucketCount]);
+    }
+
+    public onCompleted(): void {
+        super.onCompleted();
+        this.trellisView.updateCompleted(this.elapsedMilliseconds());
     }
 }

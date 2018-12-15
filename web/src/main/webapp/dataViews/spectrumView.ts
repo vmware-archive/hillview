@@ -80,10 +80,11 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
         const range: DataRange = { min: -.5, max: ev.length - .5,
             presentCount: 0, missingCount: 0 };
         const axisData = new AxisData(icd, range);
-        this.specView.updateView("Spectrum", histogram, axisData, this.elapsedMilliseconds());
+        this.specView.updateView("Spectrum", histogram, axisData);
         this.newPage.reportError("Showing top " + eVals.eigenValues.length + "/" + this.colNames.length +
             " singular values, Total Variance: " + significantDigits(eVals.totalVar) +
             ", Explained Variance: " + significantDigits(eVals.explainedVar));
+        this.specView.updateCompleted(this.elapsedMilliseconds());
     }
 
     private computePCA(): void {
@@ -149,9 +150,7 @@ export class SpectrumView extends ChartView {
         this.topLevel.appendChild(this.summary);
     }
 
-    public updateView(title: string, h: HistogramBase,
-                      axisData: AxisData, elapsedMs: number): void {
-        this.page.reportTime(elapsedMs);
+    public updateView(title: string, h: HistogramBase, axisData: AxisData): void {
         this.plot.clear();
         if (h == null) {
             this.page.reportError("No data to display");
@@ -170,7 +169,7 @@ export class SpectrumView extends ChartView {
     protected onMouseMove(): void {}
 
     public resize(): void {
-        this.updateView(this.title, this.histogram, this.axisData, 0);
+        this.updateView(this.title, this.histogram, this.axisData);
     }
 
     public serialize(): IViewSerialization {

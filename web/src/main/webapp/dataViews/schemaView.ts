@@ -313,6 +313,7 @@ export class SchemaView extends TSViewBase {
             startPosition: 0,
             rows: [],
         };
-        tv.updateView(nkl, false, new RecordOrder([]), null, 0);
+        tv.updateView(nkl, false, new RecordOrder([]), null);
+        tv.updateCompleted(0);
     }
 }
