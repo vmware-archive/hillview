@@ -348,16 +348,16 @@ class GenericLogDialog extends Dialog {
     constructor() {
         super("Load Generic Logs",
             "Loads log files from all machines that are part of the service.");
-        const pattern = this.addTextField("fileNamePattern", "File name pattern", FieldKind.String, "/*.log",
-            "Shell pattern that describes the names of the files to load.");
+        const pattern = this.addTextField("fileNamePattern", "File name pattern(s)", FieldKind.String, "*.log",
+            "shell pattern with path that describes the names of the files to load (comma-separated patterns allowed)");
         pattern.required = true;
         const format = this.addTextField("logFormat", "Log format", FieldKind.String, "%{SYSLOG}",
             "Log format : https://github.com/vmware/hillview/blob/master/docs/userManual.md" +
             "#232-specifying-rules-for-parsing-logs");
         format.required = true;
-        this.addDateTimeField("startTime", "Start time", new Date(),
+        this.addDateTimeField("startTime", "Start time", new Date(Date.now() - 30 * 60 * 100),
             "Log records prior to this date will be ignored");
-        this.addDateTimeField("endTime", "End time", new Date(Date.now() - 30 * 60 * 100),
+        this.addDateTimeField("endTime", "End time", new Date(),
             "Log records after this date will be ignored");
         this.setCacheTitle("GenericLogDialog");
     }

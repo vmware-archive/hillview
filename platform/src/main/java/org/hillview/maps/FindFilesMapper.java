@@ -23,20 +23,23 @@ import org.hillview.dataset.api.IMap;
 import org.hillview.storage.FileSetDescription;
 import org.hillview.storage.IFileReference;
 import org.hillview.utils.HillviewLogger;
+import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
+
 import java.io.File;
 import java.io.FilenameFilter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 /**
- * Scans a folder and finds files matching a pattern.
- * Creates a list of file loaders that can be invoked to load the actual file data as tables.
+ * Scans a folder and finds files matching a pattern. Creates a list of file
+ * loaders that can be invoked to load the actual file data as tables.
  */
 public class FindFilesMapper implements IMap<Empty, List<IFileReference>> {
     private final FileSetDescription description;
@@ -46,28 +49,30 @@ public class FindFilesMapper implements IMap<Empty, List<IFileReference>> {
     }
 
     /**
-     * Returns a list of IFileReference objects, one for each of the files
-     * that match the specification.
-     * @param empty: unused.
+     * Returns a list of IFileReference objects, one for each of the files that
+     * match the specification.
+     * 
+     * @param empty:
+     *            unused.
      */
     @Override
     public List<IFileReference> apply(Empty empty) {
-        Path dir = Paths.get(this.description.getFolder());
-        HillviewLogger.instance.info("Find files", "pattern: {0}",
-                this.description.fileNamePattern);
-
-        File[] files;
+        String[] paths = this.description.fileNamePattern.trim().split("\\s*,\\s*");
+        HillviewLogger.instance.info("Find files", "pattern: {0}", this.description.fileNamePattern);
+        List<File> files = new ArrayList<File>();
         FilenameFilter filter;
-        if (this.description.getWildcard() == null)
-            filter = (d, name) -> true;
-        else
-            filter = new WildcardFileFilter(this.description.getWildcard());
+        for (int i = 0; i < paths.length; i++) {
+            Path dir_path = Paths.get(Utilities.getFolder(paths[i]));
+            if (Utilities.getWildcard(paths[i]) == null)
+                filter = (d, name) -> true;
+            else
+                filter = new WildcardFileFilter(Utilities.getWildcard(paths[i]));
 
-        if (Files.exists(dir) && Files.isDirectory(dir))
-            files = new File(this.description.getFolder()).listFiles(filter);
-        else
-            files = new File[0];
-
+            if (Files.exists(dir_path) && Files.isDirectory(dir_path))
+                files.addAll(Arrays.asList(new File(Utilities.getFolder(paths[i])).listFiles(filter)));
+            else
+                files.addAll(Arrays.asList(new File[0]));
+        }
         List<String> names = new ArrayList<String>();
         if (files != null)
             for (File f : files)
@@ -84,8 +89,9 @@ public class FindFilesMapper implements IMap<Empty, List<IFileReference>> {
         }
 
         List<IFileReference> result = new ArrayList<IFileReference>();
-        for (String n: names)
+        for (String n : names)
             result.add(this.description.createFileReference(n));
         return result;
     }
 }
+

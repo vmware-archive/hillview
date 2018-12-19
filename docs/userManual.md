@@ -295,12 +295,14 @@ is deployed*.
 
 ![Specifying log files](generic-log-menu.png)
 
-* Folder: Folder containing the files to load.
-
-* File name pattern: A shell expansion pattern that names the files to
-  load.  Multiple files may be loaded on each machine.
+* File name pattern(s): File pattern to load the Files from the specified path in the pattern. It can include comma seperated
+  file name patterns. Multiple files may be loaded on each machine.
 
 * Log format: The [log format](#232-specifying-rules-for-parsing-logs) of the logs.
+
+* Start time: Log records prior to this date will be ignored.
+
+* End time: Log records after this date will be ignored
 
 #### 2.3.4. Reading bookmarked data files
 
