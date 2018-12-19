@@ -26,6 +26,7 @@ import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 
 /*
  * Column of objects of any type; only for moving data around. Size of column expected to be small.
@@ -190,6 +191,39 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
                 i++;
             } else {
                 merged.set(k, right.getObject(j));
+                j++;
+            }
+            k++;
+        }
+        return merged;
+    }
+
+    /**
+     * Given two Columns left and right, merge them to a single Column, using an Integer
+     * array mergeOrder which represents the order in which elements merge as follows:
+     * -1: left; +1: right; 0: both are equal, so add either but advance in both lists.
+     * @param left       The left column
+     * @param right      The right column
+     * @param mergeOrder The order in which to merge the two columns.
+     * @param maxSize Bound on the size of the merged column
+     * @return The merged column.
+     */
+    public static ObjectArrayColumn mergeColumns(final IColumn left,
+                                           final IColumn right,
+                                           final List<Integer> mergeOrder, int maxSize) {
+        final int size = Math.min(maxSize, mergeOrder.size());
+        final ObjectArrayColumn merged = new ObjectArrayColumn(left.getDescription(), size);
+        int i = 0, j = 0, k = 0;
+        while (k < size) {
+            if (mergeOrder.get(k) < 0) {
+                merged.set(k, left.getObject(i));
+                i++;
+            } else if (mergeOrder.get(k) > 0) {
+                merged.set(k, right.getObject(j));
+                j++;
+            } else {
+                merged.set(k, right.getObject(j));
+                i++;
                 j++;
             }
             k++;

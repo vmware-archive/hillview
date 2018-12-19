@@ -82,37 +82,6 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
         return new NextKList(topKRows, count, position, data.getNumOfRows());
     }
 
-    /**
-     * Given two Columns left and right, merge them to a single Column, using an Integer
-     * array mergeOrder which represents the order in which elements merge as follows:
-     * -1: left; +1: right; 0: both are equal, so add either but advance in both lists.
-     * @param left       The left column
-     * @param right      The right column
-     * @param mergeOrder The order in which to merge the two columns.
-     * @return The merged column.
-     */
-    private ObjectArrayColumn mergeColumns(final IColumn left,
-                                           final IColumn right,
-                                           final List<Integer> mergeOrder) {
-        final int size = Math.min(this.maxSize, mergeOrder.size());
-        final ObjectArrayColumn merged = new ObjectArrayColumn(left.getDescription(), size);
-        int i = 0, j = 0, k = 0;
-        while (k < size) {
-            if (mergeOrder.get(k) < 0) {
-                merged.set(k, left.getObject(i));
-                i++;
-            } else if (mergeOrder.get(k) > 0) {
-                merged.set(k, right.getObject(j));
-                j++;
-            } else {
-                merged.set(k, right.getObject(j));
-                i++;
-                j++;
-            }
-            k++;
-        }
-        return merged;
-    }
 
     /**
      * Given two Columns containing counts left and right, merge them to a single Column, using an
@@ -161,8 +130,8 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
         List<IColumn> mergedCol = new ArrayList<IColumn>(width);
         List<Integer> mergeOrder = this.recordOrder.getIntMergeOrder(left.table, right.table);
         for (String colName : left.table.getSchema().getColumnNames()) {
-            IColumn newCol = this.mergeColumns(left.table.getColumn(colName),
-                    right.table.getColumn(colName), mergeOrder);
+            IColumn newCol = ObjectArrayColumn.mergeColumns(left.table.getColumn(colName),
+                    right.table.getColumn(colName), mergeOrder, this.maxSize);
             mergedCol.add(newCol);
         }
         List<Integer> mergedCounts = this.mergeCounts(left.count, right.count, mergeOrder);
