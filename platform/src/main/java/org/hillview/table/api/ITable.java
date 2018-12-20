@@ -17,6 +17,8 @@
 
 package org.hillview.table.api;
 
+import org.hillview.sketches.ColumnSortOrientation;
+import org.hillview.table.RecordOrder;
 import org.hillview.table.Schema;
 import org.hillview.table.SmallTable;
 
@@ -163,5 +165,13 @@ public interface ITable {
             cols.add(newCol);
         }
         return this.replace(cols);
+    }
+
+    default RecordOrder getRecordOrder(boolean isAscending) {
+        RecordOrder ro = new RecordOrder();
+        for (String colName : this.getSchema().getColumnNames())
+            ro.append(new ColumnSortOrientation(this.getSchema().getDescription(colName),
+                    isAscending));
+        return ro;
     }
 }

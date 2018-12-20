@@ -17,83 +17,102 @@
 
 package org.hillview.sketches;
 
-import it.unimi.dsi.fastutil.ints.Int2IntSortedMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectRBTreeMap;
 import net.openhft.hashing.LongHashFunction;
 import org.hillview.dataset.api.ISketch;
-import org.hillview.table.ArrayRowOrder;
 import org.hillview.table.RecordOrder;
 import org.hillview.table.Schema;
-import org.hillview.table.SmallTable;
-import org.hillview.table.api.*;
-import org.hillview.table.columns.ObjectArrayColumn;
+import org.hillview.table.api.IRowIterator;
+import org.hillview.table.api.ITable;
+import org.hillview.table.api.IndexComparator;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.VirtualRowSnapshot;
-
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Comparator;
 
-public class SampleDistinctRowsSketch implements ISketch<ITable, DistinctKList> {
+
+/**
+ * This sketch produces a uniformly random sample of (numSample many) distinct rows from a table
+ * (assuming truly random hashing). If there are fewer than numSample distinct rows, then all of
+ * them are returned. In addition, we also return the minimum and maximum values, according to a
+ * specified ordering of the rows.
+ */
+public class SampleDistinctRowsSketch implements ISketch<ITable, MinKSet<RowSnapshot>> {
 
     private final RecordOrder recordOrder;
-    @Nullable
-    private final RowSnapshot topRow;
-    private final int maxSize;
+    private final int numSamples;
     private final long seed;
 
-    public SampleDistinctRowsSketch(RecordOrder recordOrder, RowSnapshot topRow, int maxSize, long seed) {
+    public SampleDistinctRowsSketch(RecordOrder recordOrder, int numSamples, long seed) {
         this.recordOrder = recordOrder;
-        this.topRow = topRow;
-        this.maxSize = maxSize;
+        this.numSamples = numSamples;
         this.seed = seed;
     }
 
     @Override
-    public DistinctKList create(ITable data) {
-        IndexComparator comp = this.recordOrder.getComparator(data);
-        IntTreeTopK iTopK = new IntTreeTopK(this.maxSize, comp);
-        Schema toBring = this.recordOrder.toSchema();
-        IRowIterator rowIt = data.getRowIterator();
-        VirtualRowSnapshot vw = new VirtualRowSnapshot(data, toBring);
+    public MinKSet<RowSnapshot> create(ITable data) {
+        IndexComparator comp = this.recordOrder.getIndexComparator(data);
+        Schema schema = this.recordOrder.toSchema();
+        VirtualRowSnapshot vw = new VirtualRowSnapshot(data, schema);
+        MinKRows mkRows = new MinKRows(numSamples);
         LongHashFunction hash = LongHashFunction.xx(this.seed);
-        double threshold = Math.min(1, this.width/ ((double) this.universeSize));
-        for (int i = rowIt.getNextRow(); i >= 0; i = rowIt.getNextRow()) {
-            vw.setRow(i);
-            if (Math.abs(hash.hashLong(vw.hashCode())) < threshold * Long.MAX_VALUE) {
-                if (this.topRow == null)
-                    iTopK.push(i);
-                else if (this.topRow.compareTo(vw, this.recordOrder) <= 0)
-                    iTopK.push(i);
-            }
+        IRowIterator rowIt = data.getRowIterator();
+        int currRow = rowIt.getNextRow();
+        int maxRow, minRow;
+        if (currRow == -1)
+            return this.zero();
+        else {
+            minRow = currRow;
+            maxRow = currRow;
         }
-        Int2IntSortedMap topKList = iTopK.getTopK();
-        IRowOrder rowOrder = new ArrayRowOrder(topKList.keySet().toIntArray());
-        SmallTable topKRows = data.compress(this.recordOrder.toSchema(), rowOrder);
-        return new DistinctKList(topKRows, maxSize);
+        while (currRow != -1) {
+            vw.setRow(currRow);
+            mkRows.push(hash.hashLong(vw.hashCode()), currRow);
+            if (comp.compare(minRow, currRow) > 0)
+                minRow = currRow;
+            if (comp.compare(maxRow, currRow) < 0)
+                maxRow = currRow;
+            currRow = rowIt.getNextRow();
+        }
+        Long2ObjectRBTreeMap<RowSnapshot> hMap = new Long2ObjectRBTreeMap<RowSnapshot>();
+        for (long hashKey: mkRows.hashMap.keySet())
+            hMap.put(hashKey, new RowSnapshot(data, mkRows.hashMap.get(hashKey), schema));
+        RowSnapshot minRS = new RowSnapshot(data, minRow, schema);
+        RowSnapshot maxRS = new RowSnapshot(data, maxRow, schema);
+        return new MinKSet<RowSnapshot>(numSamples, hMap, this.recordOrder.getRowComparator(),
+                minRS, maxRS, data.getNumOfRows(), 0 );
     }
-
 
     @Override
-    public DistinctKList zero() {
-        return new DistinctKList(this.recordOrder.toSchema(), this.maxSize);
+    public MinKSet<RowSnapshot> zero() {
+        return new MinKSet<RowSnapshot>(this.numSamples, this.recordOrder.getRowComparator());
     }
 
-
     @Nullable
-    public DistinctKList add(@Nullable DistinctKList left, @Nullable DistinctKList right) {
+    public MinKSet<RowSnapshot> add(@Nullable MinKSet<RowSnapshot>left,
+                                    @Nullable MinKSet<RowSnapshot> right) {
         assert left != null;
         assert right != null;
-        if (!left.table.getSchema().equals(right.table.getSchema()))
-            throw new RuntimeException("The schemas do not match.");
-        int cols = left.table.getSchema().getColumnCount();
-        List<IColumn> mergedCol = new ArrayList<IColumn>(cols);
-        List<Integer> mergeOrder = this.recordOrder.getIntMergeOrder(left.table, right.table);
-        for (String colName : left.table.getSchema().getColumnNames()) {
-            IColumn newCol = ObjectArrayColumn.mergeColumns(left.table.getColumn(colName),
-                    right.table.getColumn(colName), mergeOrder, this.maxSize);
-            mergedCol.add(newCol);
+        Comparator<RowSnapshot> comp = left.comp;
+        RowSnapshot minRS, maxRS;
+        long present = left.presentCount + right.presentCount;
+        if (left.presentCount == 0) {
+            minRS = right.min;
+            maxRS = right.max;
+        } else if (right.presentCount == 0) {
+            minRS = right.min;
+            maxRS = right.max;
+        } else {
+            minRS = comp.compare(left.min, right.min) < 0 ? left.min : right.min;
+            maxRS = comp.compare(left.max, right.max) > 0 ? left.max : right.max;
         }
-        final SmallTable mergedTable = new SmallTable(mergedCol);
-        return new DistinctKList(mergedTable, this.maxSize);
+        Long2ObjectRBTreeMap<RowSnapshot> data = new Long2ObjectRBTreeMap<>();
+        data.putAll(left.data);
+        data.putAll(right.data);
+        while (data.size() > this.numSamples) {
+            long maxKey = data.lastLongKey();
+            data.remove(maxKey);
+        }
+        return new MinKSet<RowSnapshot>(this.numSamples, data, comp, minRS, maxRS, present, 0);
     }
 }

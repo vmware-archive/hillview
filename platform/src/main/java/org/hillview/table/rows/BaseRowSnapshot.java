@@ -133,8 +133,7 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
     @SuppressWarnings("ConstantConditions")
     public int compareTo(BaseRowSnapshot other, RecordOrder ro) {
         if (!this.exists() || !other.exists())
-            throw new RuntimeException("Comparing inexistent row.");
-
+            throw new RuntimeException("Comparing non-existing row.");
         for (int i = 0; i < ro.getSize(); i++) {
             ColumnSortOrientation cso = ro.getOrientation(i);
             String cn = cso.columnDescription.name;

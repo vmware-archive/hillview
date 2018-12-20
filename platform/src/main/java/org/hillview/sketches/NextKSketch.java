@@ -60,7 +60,7 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
      */
     @Override
     public NextKList create(ITable data) {
-        IndexComparator comp = this.recordOrder.getComparator(data);
+        IndexComparator comp = this.recordOrder.getIndexComparator(data);
         IntTreeTopK topK = new IntTreeTopK(this.maxSize, comp);
         IRowIterator rowIt = data.getRowIterator();
         int position = 0;
