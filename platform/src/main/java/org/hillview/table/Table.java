@@ -214,5 +214,4 @@ public class Table extends BaseTable {
     public SmallTable compress() {
         return this.compress(this.getSchema(), this.members);
     }
-
 }
