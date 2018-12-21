@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2018 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,29 +17,32 @@
 
 package org.hillview.sketches;
 
-import it.unimi.dsi.fastutil.ints.Int2IntRBTreeMap;
-import it.unimi.dsi.fastutil.ints.Int2IntSortedMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectRBTreeMap;
-import it.unimi.dsi.fastutil.ints.IntComparator;
+import it.unimi.dsi.fastutil.ints.*;
+import org.hillview.table.api.IndexComparator;
+import org.hillview.table.rows.VirtualRowHashStrategy;
 import org.hillview.utils.MutableInteger;
 
 /**
- * Implements the IntTopK interface using Red-Black trees. While membership should O(log k) as
- * opposed to using a hashMap, it seems to be faster, especially for small k.
+ * Implementation of IntTopK that uses
+ * 1) A hashMap for membership queries (should be O(1)).
+ * 2) A priority queue to maintain the current largest element in the top K.
+ * It does not seem to be much faster than IntTreeTopK, especially for small values of K.
  */
 
-public class IntTreeTopK implements IntTopK {
+public class IntHashTopK implements IntTopK {
     private final int maxSize;
     private int size;
-    private final Int2ObjectRBTreeMap<MutableInteger> data;
+    private final Int2ObjectOpenCustomHashMap<MutableInteger> data;
     private int cutoff; /* max value that currently belongs to Top K. */
     private final IntComparator greater;
+    private final IntHeapPriorityQueue queue;
 
-    public IntTreeTopK(final int maxSize, final IntComparator greater) {
+    public IntHashTopK(final int maxSize, VirtualRowHashStrategy strategy, final IndexComparator greater) {
         this.maxSize = maxSize;
         this.size = 0;
         this.greater = greater;
-        this.data = new Int2ObjectRBTreeMap<MutableInteger>(this.greater);
+        this.data = new Int2ObjectOpenCustomHashMap<MutableInteger>(strategy);
+        this.queue = new IntHeapPriorityQueue(greater.rev());
     }
 
     public Int2IntSortedMap getTopK() {
@@ -63,9 +66,10 @@ public class IntTreeTopK implements IntTopK {
                 counter.set(count);
             } else { // Add a new key to Top K
                 this.data.put(intVal, new MutableInteger(1));
+                this.queue.enqueue(intVal);
                 if (this.size >= this.maxSize) {        // Remove the largest key, compute the new largest key
                     this.data.remove(this.cutoff);
-                    this.cutoff = this.data.lastIntKey();
+                    this.cutoff = this.queue.dequeueInt();
                 } else {
                     this.size += 1;
                 }
@@ -74,8 +78,10 @@ public class IntTreeTopK implements IntTopK {
             if (this.size < this.maxSize) {   // Only case where newVal needs to be added
                 this.size += 1;
                 this.data.put(intVal, new MutableInteger(1));     // Add newVal to Top K
+                this.queue.enqueue(this.cutoff);
                 this.cutoff = intVal;    // It is now the largest value
             }
         }
     }
 }
+

@@ -19,7 +19,10 @@ package org.hillview.sketches;
 
 import it.unimi.dsi.fastutil.ints.Int2IntSortedMap;
 import org.hillview.dataset.api.ISketch;
-import org.hillview.table.*;
+import org.hillview.table.ArrayRowOrder;
+import org.hillview.table.RecordOrder;
+import org.hillview.table.Schema;
+import org.hillview.table.SmallTable;
 import org.hillview.table.api.*;
 import org.hillview.table.columns.ObjectArrayColumn;
 import org.hillview.table.rows.RowSnapshot;
@@ -46,10 +49,15 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
      * @param topRow The row to start from, set to null if we want to start from the top row.
      * @param maxSize The parameter K in NextK.
      */
-    public NextKSketch(RecordOrder recordOrder, @Nullable RowSnapshot topRow, int maxSize) {
+    public NextKSketch(RecordOrder recordOrder, @Nullable RowSnapshot topRow, int maxSize,
+                       boolean toHash) {
         this.recordOrder = recordOrder;
         this.topRow = topRow;
         this.maxSize = maxSize;
+    }
+
+    public NextKSketch(RecordOrder recordOrder, @Nullable RowSnapshot topRow, int maxSize) {
+        this(recordOrder, topRow, maxSize, true);
     }
 
     /**
@@ -61,7 +69,7 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
     @Override
     public NextKList create(ITable data) {
         IndexComparator comp = this.recordOrder.getIndexComparator(data);
-        IntTreeTopK topK = new IntTreeTopK(this.maxSize, comp);
+        IntTopK topK = new IntTreeTopK(this.maxSize, comp);
         IRowIterator rowIt = data.getRowIterator();
         int position = 0;
         Schema toBring = this.recordOrder.toSchema();

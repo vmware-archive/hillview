@@ -20,11 +20,12 @@ package org.hillview.main;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.RemoteDataSet;
-import org.hillview.dataset.api.*;
+import org.hillview.dataset.api.Empty;
+import org.hillview.dataset.api.IDataSet;
+import org.hillview.dataset.api.IMap;
+import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.remoting.HillviewServer;
 import org.hillview.management.ClusterConfig;
-import org.hillview.management.MemoryUse;
-import org.hillview.management.PurgeLeafDatasets;
 import org.hillview.management.SetMemoization;
 import org.hillview.sketches.*;
 import org.hillview.table.ColumnDescription;
@@ -49,7 +50,7 @@ import java.util.stream.IntStream;
  * These form a separate main entry point, and should be built into a separate binary.
  * They are meant only for measurements, and are not part of the actual Hillview service.
  */
-class Benchmarks {
+public class Benchmarks {
     private static final ColumnDescription desc = new
             ColumnDescription("SQRT", ContentsKind.Double);
 
@@ -104,7 +105,7 @@ class Benchmarks {
         return String.format("%.2f", d);
     }
 
-    private static void runNTimes(Runnable runnable, int count, String message, int elemCount) {
+    public static void runNTimes(Runnable runnable, int count, String message, int elemCount) {
         long[] times = new long[count];
         for (int i=0; i < count; i++) {
             long t = time(runnable);

@@ -193,7 +193,6 @@ export class TableTargetAPI extends RemoteObject {
             });
     }
 
-
     public createProjectToEigenVectorsRequest(r: RemoteObject, dimension: number, projectionName: string):
     RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<RemoteObjectId>("projectToEigenVectors", {

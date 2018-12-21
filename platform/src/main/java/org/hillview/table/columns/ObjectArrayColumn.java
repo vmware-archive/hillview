@@ -208,9 +208,8 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
      * @param maxSize Bound on the size of the merged column
      * @return The merged column.
      */
-    public static ObjectArrayColumn mergeColumns(final IColumn left,
-                                           final IColumn right,
-                                           final List<Integer> mergeOrder, int maxSize) {
+    public static ObjectArrayColumn mergeColumns(final IColumn left, final IColumn right,
+                                                 final List<Integer> mergeOrder, int maxSize) {
         final int size = Math.min(maxSize, mergeOrder.size());
         final ObjectArrayColumn merged = new ObjectArrayColumn(left.getDescription(), size);
         int i = 0, j = 0, k = 0;
