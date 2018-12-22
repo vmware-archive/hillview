@@ -157,9 +157,9 @@ public class RowSnapshot extends BaseRowSnapshot
      *                        For these the minimum value will be used.
      * @return        A row parsed from an array of objects deserialized from JSON.
      */
-    public static RowSnapshot parse(Schema schema,
-                                    Object[] data,
-                                    @Nullable String[] columnsNoValue) {
+    public static RowSnapshot parseJson(Schema schema,
+                                        Object[] data,
+                                        @Nullable String[] columnsNoValue) {
         HashSet<String> set = null;
         if (columnsNoValue != null)
             set = new HashSet<String>(Arrays.asList(columnsNoValue));

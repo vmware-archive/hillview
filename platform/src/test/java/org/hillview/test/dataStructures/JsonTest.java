@@ -17,6 +17,8 @@
 
 package org.hillview.test.dataStructures;
 
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
 import org.hillview.dataset.api.IJson;
 import org.hillview.sketches.NextKList;
 import org.hillview.storage.JsonFileLoader;
@@ -33,7 +35,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class JsonTest extends BaseTest {
@@ -87,7 +88,9 @@ public class JsonTest extends BaseTest {
         Schema back = IJson.gsonInstance.fromJson(schema.toJson(), Schema.class);
         Assert.assertEquals(schema, back);
 
-        List<Integer> li = Arrays.asList(2, 3);
+        IntList li = new IntArrayList();
+        li.add(2);
+        li.add(3);
         NextKList list = new NextKList(t, li, 0, 100);
         s = list.toJson();
         Assert.assertEquals(s, "{" +

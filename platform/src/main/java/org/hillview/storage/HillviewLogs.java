@@ -43,7 +43,7 @@ public class HillviewLogs {
             "([^,]*),([^,]*),([^,]*),?(.*)");
 
     static {
-        HillviewLogs.schema.append(new ColumnDescription("Time", ContentsKind.Date));
+        HillviewLogs.schema.append(new ColumnDescription(GenericLogs.timestampColumnName, ContentsKind.Date));
         HillviewLogs.schema.append(new ColumnDescription("Role", ContentsKind.String));
         HillviewLogs.schema.append(new ColumnDescription("Level", ContentsKind.String));
         HillviewLogs.schema.append(new ColumnDescription("Machine", ContentsKind.String));
@@ -96,14 +96,14 @@ public class HillviewLogs {
             this.close(null);
             int size = this.columns[0].sizeInRows();
             IColumn directory = new ConstantStringColumn(
-                    new ColumnDescription("Directory", ContentsKind.String),
+                    new ColumnDescription(GenericLogs.directoryColumn, ContentsKind.String),
                     size,
                     FilenameUtils.getPath(this.filename));
             IColumn file = new ConstantStringColumn(
-                    new ColumnDescription("Filename", ContentsKind.String),
+                    new ColumnDescription(GenericLogs.filenameColumn, ContentsKind.String),
                     size,
                     FilenameUtils.getName(this.filename));
-            IColumn line = new CounterColumn("Line", size, 1);
+            IColumn line = new CounterColumn(GenericLogs.lineNumberColumn, size, 1);
             IColumn[] cols = new IColumn[this.columns.length + 3];
             cols[0] = directory;
             cols[1] = file;

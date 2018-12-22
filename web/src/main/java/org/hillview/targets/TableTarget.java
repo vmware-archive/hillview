@@ -76,7 +76,7 @@ public final class TableTarget extends RpcTarget {
             @Nullable Object[] data, RecordOrder order, @Nullable String[] columnsNoValue) {
         if (data == null) return null;
         Schema schema = order.toSchema();
-        return RowSnapshot.parse(schema, data, columnsNoValue);
+        return RowSnapshot.parseJson(schema, data, columnsNoValue);
     }
 
     @HillviewRpc
@@ -86,6 +86,44 @@ public final class TableTarget extends RpcTarget {
                 nextKArgs.firstRow, nextKArgs.order, nextKArgs.columnsNoValue);
         NextKSketch nk = new NextKSketch(nextKArgs.order, rs, nextKArgs.rowsOnScreen);
         this.runSketch(this.table, nk, request, context);
+    }
+
+    static class LogFragmentArgs {
+        Schema schema = new Schema();
+        @Nullable
+        Object[] row;
+        Schema rowSchema = new Schema();
+        int count;
+    }
+
+    @HillviewRpc
+    public void getLogFragment(RpcRequest request, RpcRequestContext context) {
+        LogFragmentArgs args = request.parseArgs(LogFragmentArgs.class);
+        RowSnapshot row = null;
+        if (args.row != null)
+            row = RowSnapshot.parseJson(args.rowSchema, args.row, null);
+        LogFragmentSketch lfs = new LogFragmentSketch(
+                args.schema, row, args.rowSchema, args.count);
+        this.runCompleteSketch(this.table, lfs, (e, c) -> e, request, context);
+    }
+
+    @HillviewRpc
+    public void prune(RpcRequest request, RpcRequestContext context) {
+        this.runPrune(this.table, new EmptyTableMap(), TableTarget::new, request, context);
+    }
+
+    static class ContainsArgs {
+        RecordOrder order = new RecordOrder();
+        @Nullable
+        Object[] row;
+    }
+
+    @HillviewRpc
+    public void contains(RpcRequest request, RpcRequestContext context) {
+        ContainsArgs args = request.parseArgs(ContainsArgs.class);
+        RowSnapshot row = TableTarget.asRowSnapshot(args.row, args.order, null);
+        ContainsMap map = new ContainsMap(args.order.toSchema(), Converters.checkNull(row));
+        this.runMap(this.table, map, TableTarget::new, request, context);
     }
 
     static class FindArgs {

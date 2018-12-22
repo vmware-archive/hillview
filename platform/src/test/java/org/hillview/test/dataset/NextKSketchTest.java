@@ -38,7 +38,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class NextKSketchTest extends BaseTest {
-
     boolean printOn = false;
     @Test
     public void testTopK1() {
@@ -55,6 +54,7 @@ public class NextKSketchTest extends BaseTest {
 
         final NextKSketch nk = new NextKSketch(cso, topRow, maxSize);
         final NextKList leftK = nk.create(leftTable);
+        Assert.assertNotNull(leftK);
         IndexComparator leftComp = cso.getIndexComparator(leftK.table);
         for (int i = 0; i < (leftK.table.getNumOfRows() - 1); i++)
             Assert.assertTrue(leftComp.compare(i, i + 1) <= 0);
@@ -63,13 +63,14 @@ public class NextKSketchTest extends BaseTest {
                 "14,5: 5\n" +
                 "14,6: 4\n" +
                 "14,7: 3\n" +
-                "14,8: 5\n");
+                "14,8: 5\n...");
 
         final RowSnapshot topRow2 = new RowSnapshot(leftTable, 100);
         Assert.assertEquals(topRow2.toString(), "4,4");
 
         final NextKSketch nk2 = new NextKSketch(cso, topRow2, maxSize);
         final NextKList leftK2 = nk2.create(leftTable);
+        Assert.assertNotNull(leftK2);
         IndexComparator leftComp2 = cso.getIndexComparator(leftK2.table);
         for (int i = 0; i < (leftK2.table.getNumOfRows() - 1); i++)
             Assert.assertTrue(leftComp2.compare(i, i + 1) <= 0);
@@ -78,9 +79,10 @@ public class NextKSketchTest extends BaseTest {
                 "4,5: 2\n" +
                 "4,6: 5\n" +
                 "4,7: 4\n" +
-                "4,8: 5\n");
+                "4,8: 5\n...");
         final Table rightTable = TestTables.getRepIntTable(rightSize, numCols);
         final NextKList rightK = nk.create(rightTable);
+        Assert.assertNotNull(rightK);
         IndexComparator rightComp = cso.getIndexComparator(rightK.table);
         for (int i = 0; i < (rightK.table.getNumOfRows() - 1); i++)
             Assert.assertTrue(rightComp.compare(i, i + 1) <= 0);
@@ -90,10 +92,10 @@ public class NextKSketchTest extends BaseTest {
                 "14,5: 5\n" +
                 "14,6: 4\n" +
                 "14,7: 3\n" +
-                "14,8: 5\n");
+                "14,8: 5\n...");
 
         NextKList tK = nk.add(leftK, rightK);
-        tK = Converters.checkNull(tK);
+        Assert.assertNotNull(tK);
         IndexComparator tComp = cso.getIndexComparator(tK.table);
         for (int i = 0; i < (tK.table.getNumOfRows() - 1); i++)
             Assert.assertTrue(tComp.compare(i, i + 1) <= 0);
@@ -102,7 +104,7 @@ public class NextKSketchTest extends BaseTest {
                 "14,5: 10\n" +
                 "14,6: 8\n" +
                 "14,7: 6\n" +
-                "14,8: 10\n");
+                "14,8: 10\n...");
     }
 
     @Test
@@ -121,13 +123,14 @@ public class NextKSketchTest extends BaseTest {
         RecordOrder cso = new RecordOrder();
         final NextKSketch nk= new NextKSketch(cso, topRow, maxSize);
         final NextKList leftK = nk.create(leftTable);
+        Assert.assertNotNull(leftK);
         Assert.assertEquals(leftK.table.getNumOfRows(), 0);
     }
 
     @Test
     public void testTopK3() {
         final int numCols = 5;
-        final int maxSize = 500000;
+        final int maxSize = 5;
         final int bigSize = 1000000;
         final SmallTable bigTable = TestTables.getIntTable(bigSize, numCols);
         final RowSnapshot topRow = new RowSnapshot(bigTable, 1000);
@@ -137,39 +140,18 @@ public class NextKSketchTest extends BaseTest {
                     true));
         ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, 500000);
 
-        NextKList nk;
-        Long start, end;
-        long hashTime, treeTime;
-        // Runnable hash = () -> all.blockingSketch(new NextKSketch(cso, topRow, maxSize, false));
-        // runNTimes(hash, 10, "Hash based", bigSize);
-
-
-        for ( int i=0; i < 10; i++) {
-            start = System.currentTimeMillis();
-            nk = all.blockingSketch(new NextKSketch(cso, topRow, maxSize, false));
-            end = System.currentTimeMillis();
-            treeTime = end - start;
-
-            start = System.currentTimeMillis();
-            nk = all.blockingSketch(new NextKSketch(cso, topRow, maxSize, true));
-            end = System.currentTimeMillis();
-            hashTime = end - start;
-            if (printOn)
-                System.out.printf("%d: %d, %d, Advantage in ms: %d\n", i, hashTime, treeTime,
-                        (treeTime - hashTime));
-        }
-
-        /*
+        NextKList nk = all.blockingSketch(new NextKSketch(cso, topRow, maxSize, false));
+        assert nk != null;
         IndexComparator mComp = cso.getIndexComparator(nk.table);
         for (int i = 0; i < (nk.table.getNumOfRows() - 1); i++)
             Assert.assertTrue(mComp.compare(i, i + 1) <= 0);
-        Assert.assertEquals(nk.toLongString(maxSize), "Table[3x5]\n" +
-                "44,95,56: 1\n" +
-                "44,95,119: 1\n" +
-                "44,95,126: 1\n" +
-                "44,95,151: 1\n" +
-                "44,96,65: 1\n");
-   */
+        Assert.assertEquals(nk.toLongString(maxSize), "Table[5x5]\n" +
+                "39,32,67,53,10: 1\n" +
+                "39,32,68,4,65: 1\n" +
+                "39,32,68,14,50: 1\n" +
+                "39,32,68,28,29: 1\n" +
+                "39,32,69,9,47: 1\n" +
+                "...");
     }
 
     @Test
@@ -196,6 +178,7 @@ public class NextKSketchTest extends BaseTest {
         ro.append(new ColumnSortOrientation(t.getSchema().getDescription("Name"), true));
         NextKSketch nk = new NextKSketch(ro, null, 10);
         NextKList nkl = big.blockingSketch(nk);
+        Assert.assertNotNull(nkl);
         Assert.assertEquals(nkl.table.toString(), "Table[1x10]");
     }
 
@@ -206,9 +189,9 @@ public class NextKSketchTest extends BaseTest {
         ro.append(new ColumnSortOrientation(t.getSchema().getDescription("Age"), true));
         ro.append(new ColumnSortOrientation(t.getSchema().getDescription("Name"), true));
         String sb = "Table[2x13]\n1,Bill: 1\n2,Bill: 1\n" +
-                    "3,Smith: 1\n4,Donald: 1\n5,Bruce: 1\n";
+                    "3,Smith: 1\n4,Donald: 1\n5,Bruce: 1\n...";
         NextKSketch nks = new NextKSketch(ro, null, 20);
-        Assert.assertEquals(sb, nks.create(t).toLongString(5));
+        Assert.assertEquals(sb, Converters.checkNull(nks.create(t)).toLongString(5));
     }
 
     /**
@@ -237,6 +220,7 @@ public class NextKSketchTest extends BaseTest {
                 "87,87: 1\n" +
                 "88,88: 1\n" +
                 "89,89: 1\n";
+        Assert.assertNotNull(leftK);
         Assert.assertEquals(exp, leftK.toLongString(100));
     }
 }

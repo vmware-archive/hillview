@@ -1,4 +1,5 @@
 *.class
+.cache-loader
 __pycache__
 
 # Mobile Tools for Java (J2ME)

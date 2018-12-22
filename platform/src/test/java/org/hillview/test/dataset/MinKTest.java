@@ -85,6 +85,7 @@ public class MinKTest {
         int numSamples = 10000;
         SampleDistinctElementsSketch bks = new SampleDistinctElementsSketch("Name", 176864, numSamples);
         MinKSet<String> mks = bks.create(table);
+        Assert.assertNotNull(mks);
         if (printOn)
             System.out.printf("Table size: %d, non-null %d\n", table.getNumOfRows(), mks.presentCount);
         int maxBuckets = 100;
@@ -202,6 +203,7 @@ public class MinKTest {
         SampleDistinctElementsSketch bks = new SampleDistinctElementsSketch("Name", 1754, numSamples);
         MinKSet<String> mks = big.blockingSketch(bks);
         int maxBuckets = 100;
+        Assert.assertNotNull(mks);
         List<String> boundaries = mks.getLeftBoundaries(maxBuckets);
         List<Integer> ranks = TestTables.getRanks(boundaries, randomString);
         this.printBoundaries(boundaries, ranks);

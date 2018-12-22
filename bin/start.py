@@ -29,7 +29,7 @@ def start_worker(config, rh):
     gclog = config.service_folder + "/hillview/gc.log"
     rh.run_remote_shell_command(
         "cd " + config.service_folder + "/hillview; " + \
-        "nohup java -Dlog4j.configurationFile=./log4j.properties -server " + \
+        "nohup java -ea -Dlog4j.configurationFile=./log4j.properties -server " + \
         " -Xmx" + rh.heapsize + " -Xloggc:" + gclog + \
         " -jar " + config.service_folder + \
         "/hillview/hillview-server-jar-with-dependencies.jar " + "0.0.0.0:" + \
@@ -43,7 +43,7 @@ def start_aggregator(config, agg):
     logger.info(message)
     agg.run_remote_shell_command(
         "cd " + config.service_folder + "/hillview; " + \
-        "nohup java -Dlog4j.configurationFile=./log4j.properties -server " + \
+        "nohup java -ea -Dlog4j.configurationFile=./log4j.properties -server " + \
         " -jar " + config.service_folder + \
         "/hillview/hillview-server-jar-with-dependencies.jar " + \
         config.service_folder + "/workers " + agg.host + ":" + \

@@ -462,17 +462,36 @@ table.tab td:nth-child(1) {
 
 /* Log file viewer */
 
-.logFileViewer {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
+table .logHeader td {
+    background: lightgrey;
+    border: 1px solid black;
+    padding: 2px;
 }
 
-.logFileMenu, .logFileFooter, .logFileHeader {
+.logFileViewer {
+    display: flex;
+    flex-flow: column;
+    height: 100%;
+}
+
+.logFileTitle {
+    display: flex;
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+}
+
+.logFileFooter {
     background: silver;
 }
 
 .logFileContents {
     flex: 1;
     overflow: auto;
+}
+
+.logCell {
+    margin-right: 4px;
+    font-family: monospace;
 }

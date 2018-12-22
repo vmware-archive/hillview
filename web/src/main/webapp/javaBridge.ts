@@ -55,6 +55,27 @@ export function asContentsKind(kind: string): ContentsKind {
     }
 }
 
+/**
+ * This must match the data in GenericLogs.java
+ */
+export class GenericLogs {
+    public static readonly timestampColumnName = "Timestamp";
+    public static readonly parseErrorColumn = "ParsingErrors";
+    public static readonly hostColumn = "Host";
+    public static readonly directoryColumn = "Directory";
+    public static readonly filenameColumn = "Filename";
+    public static readonly lineNumberColumn = "Line";
+
+    public static readonly logFileFixedSchema: Schema = [
+        { name: GenericLogs.directoryColumn, kind: "String" },
+        { name: GenericLogs.filenameColumn, kind: "String" },
+        { name: GenericLogs.lineNumberColumn, kind: "Integer" },
+        { name: GenericLogs.timestampColumnName, kind: "Date" },
+        { name: GenericLogs.hostColumn, kind: "String" },
+        { name: GenericLogs.parseErrorColumn, kind: "String" }
+    ];
+}
+
 export interface TableSummary {
     schema: Schema;
     rowCount: number;
@@ -155,7 +176,7 @@ export function kindIsString(kind: ContentsKind): boolean {
 
 export type Schema = IColumnDescription[];
 
-export interface RowSnapshot {
+export interface RowData {
     count: number;
     values: any[];
 }
@@ -234,6 +255,11 @@ export interface TopList {
     heavyHittersId: RemoteObjectId;
 }
 
+export interface ContainsArgs {
+    order: RecordOrder;
+    row: any[];
+}
+
 export interface NextKArgs {
     toFind: string | null;
     order: RecordOrder;
@@ -255,7 +281,7 @@ export interface EigenVal {
 export interface NextKList {
     rowsScanned: number;
     startPosition: number;
-    rows: RowSnapshot[];
+    rows: RowData[];
 }
 
 export class RecordOrder {
@@ -263,6 +289,10 @@ export class RecordOrder {
     constructor(public sortOrientationList: ColumnSortOrientation[]) {}
     public length(): number { return this.sortOrientationList.length; }
     public get(i: number): ColumnSortOrientation { return this.sortOrientationList[i]; }
+
+    public getSchema(): Schema {
+        return this.sortOrientationList.map((c) => c.columnDescription);
+    }
 
     // Find the index of a specific column; return -1 if columns is not in the sort order
     public find(col: string): number {

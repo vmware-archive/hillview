@@ -5,7 +5,6 @@ package org.hillview.table.api;
  */
 
 public interface ISampledRowIterator extends IRowIterator {
-
     /**
      * @return the sample rate with which the iterator passes through the membershipSet
      */
