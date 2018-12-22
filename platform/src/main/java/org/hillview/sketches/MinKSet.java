@@ -13,7 +13,7 @@ import java.util.List;
  *  that hash to the minimum value.
  */
 public class MinKSet<T> extends BucketsInfo {
-    private final Comparator<T> comp;
+    public final Comparator<T> comp;
     final int maxSize;
     final Long2ObjectRBTreeMap<T> data;
     @Nullable public T min;
@@ -98,7 +98,7 @@ public class MinKSet<T> extends BucketsInfo {
             boundaries.addAll(samples);
         } else {
             for (int i = 1; i < maxBuckets; i++) {
-                int j = getIntegerRank(i, maxBuckets, numSamples);
+                int j = this.getIntegerRank(i, maxBuckets, numSamples);
                 // The samples list does not contain the minimum anymore.
                 boundaries.add(samples.get(j - 1));
             }

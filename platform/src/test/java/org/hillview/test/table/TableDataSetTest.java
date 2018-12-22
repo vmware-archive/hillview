@@ -52,7 +52,7 @@ public class TableDataSetTest extends BaseTest {
         final SampleQuantileSketch sqSketch = new SampleQuantileSketch(cso, resolution, size, 0);
         final LocalDataSet<ITable> ld = new LocalDataSet<ITable>(randTable);
         final SampleList sl = ld.blockingSketch(sqSketch);
-        IndexComparator comp = cso.getComparator(sl.table);
+        IndexComparator comp = cso.getIndexComparator(sl.table);
         for (int i = 0; i < (sl.table.getNumOfRows() - 1); i++)
             assertTrue(comp.compare(i, i + 1) <= 0);
         //System.out.println(ql);
@@ -76,7 +76,7 @@ public class TableDataSetTest extends BaseTest {
         final ParallelDataSet<ITable> par = new ParallelDataSet<ITable>(elements);
         final SampleQuantileSketch sqSketch = new SampleQuantileSketch(cso, resolution, size, 0);
         final SampleList sl = par.blockingSketch(sqSketch);
-        IndexComparator comp = cso.getComparator(sl.table);
+        IndexComparator comp = cso.getIndexComparator(sl.table);
         for (int i = 0; i < (sl.table.getNumOfRows() - 1); i++)
             assertTrue(comp.compare(i, i + 1) <= 0);
     }
@@ -96,7 +96,7 @@ public class TableDataSetTest extends BaseTest {
         try {
             final RemoteDataSet<ITable> rds1 = new RemoteDataSet<ITable>(h1);
             final SampleList sl = rds1.blockingSketch(sqSketch);
-            IndexComparator comp = cso.getComparator(sl.table);
+            IndexComparator comp = cso.getIndexComparator(sl.table);
             for (int i = 0; i < (sl.table.getNumOfRows() - 1); i++)
                 assertTrue(comp.compare(i, i + 1) <= 0);
         } finally {

@@ -20,10 +20,13 @@ package org.hillview.test.dataset;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.api.IDataSet;
+import org.hillview.dataset.api.Pair;
 import org.hillview.sketches.MinKSet;
 import org.hillview.sketches.SampleDistinctElementsSketch;
+import org.hillview.sketches.SampleDistinctRowsSketch;
 import org.hillview.table.Table;
 import org.hillview.table.api.ITable;
+import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.TestTables;
 import org.junit.Assert;
 import org.junit.Test;
@@ -35,17 +38,17 @@ public class MinKTest {
     private final Boolean printOn = false;
 
     private double getMaxErr(int suppSize, List<Integer> ranks) {
-        int numBuckets = ranks.size() - 1;
+        int numBuckets = ranks.size();
         double maxErr = 0;
         Assert.assertEquals((int) ranks.get(0), 0);
         if (printOn) {
             System.out.printf("Min rank: %d\n", ranks.get(0));
         }
         for (int i = 1; i < numBuckets; i++) {
-            double err = Math.abs((ranks.get(i)/(suppSize - 1.0)) - i/((double) numBuckets));
+            double err = Math.abs((ranks.get(i)/((double) suppSize) - i/((double) numBuckets)));
             if (printOn)
                 System.out.printf("%d has Rank %f, Error %f\n", i,
-                        (ranks.get(i)/((double) suppSize - 1.0)), err);
+                        ranks.get(i)/((double) suppSize), err);
             if (err > maxErr)
                 maxErr = err;
         }
@@ -69,16 +72,21 @@ public class MinKTest {
         return bound;
     }
 
-    private void testStringTable(int suppSize) {
-        int length = 6;
-        List<String> randomString = TestTables.randStringList(suppSize, length);
+    private Pair<Table, List<String>> getStringTable(int suppSize) {
+        List<String> randomString = TestTables.randStringList(suppSize, 6);
         int num = Math.max(10*suppSize, suppSize*((int) Math.ceil(Math.log(suppSize))));
         Table table = TestTables.randStringTable(num, randomString);
+        return new Pair<>(table, randomString);
+    }
+
+    private void TestStringSamplingSketch(int suppSize) {
+        Table table = this.getStringTable(suppSize).first;
+        List<String> randomString = this.getStringTable(suppSize).second;
         int numSamples = 10000;
         SampleDistinctElementsSketch bks = new SampleDistinctElementsSketch("Name", 176864, numSamples);
         MinKSet<String> mks = bks.create(table);
         if (printOn)
-            System.out.printf("Table size: %d, non-null %d\n", num, mks.presentCount);
+            System.out.printf("Table size: %d, non-null %d\n", table.getNumOfRows(), mks.presentCount);
         int maxBuckets = 100;
         List<String> boundaries = mks.getLeftBoundaries(maxBuckets);
         List<Integer> ranks = TestTables.getRanks(boundaries, randomString);
@@ -88,13 +96,61 @@ public class MinKTest {
         Assert.assertTrue(maxErr < bound);
     }
 
+    private void StringTableRowSampling(int suppSize) {
+        Table table = this.getStringTable(suppSize).first;
+        List<String> randomString = this.getStringTable(suppSize).second;
+        int numSamples = 1000;
+        long seed = 57609102;
+        SampleDistinctRowsSketch sdrs = new SampleDistinctRowsSketch(
+                table.getRecordOrder(true), numSamples, seed);
+        MinKSet<RowSnapshot> mks = sdrs.create(table);
+        int maxBuckets = 10;
+        List<RowSnapshot> rsBoundaries = mks.getLeftBoundaries(maxBuckets);
+        List<String>  boundaries = new ArrayList<>();
+        for (RowSnapshot rss: rsBoundaries)
+            boundaries.add(rss.getString("Name"));
+        List<Integer> ranks = TestTables.getRanks(boundaries, randomString);
+        this.printBoundaries(boundaries, ranks);
+        double maxErr = this.getMaxErr(suppSize, ranks);
+        double bound = this.getErrBound(numSamples);
+        Assert.assertTrue(maxErr < bound);
+    }
+
     @Test
     public void testSupportValues() {
-        testStringTable(1);
-        testStringTable(2);
-        testStringTable(10);
-        testStringTable(100);
-        testStringTable(10000);
+        TestStringSamplingSketch(1);
+        TestStringSamplingSketch(2);
+        TestStringSamplingSketch(10);
+        TestStringSamplingSketch(100);
+        TestStringSamplingSketch(10000);
+    }
+
+    @Test
+    public void testRowSampling() {
+        StringTableRowSampling(10000);
+        StringTableRowSampling(100000);
+    }
+
+    private void IntTableRowSampling(ITable table, boolean isAscending, int numSamples, int maxBuckets) {
+        long seed = 57609102;
+        SampleDistinctRowsSketch sdrs = new SampleDistinctRowsSketch(
+                table.getRecordOrder(isAscending), numSamples, seed);
+        MinKSet<RowSnapshot> mks = sdrs.create(table);
+        List<RowSnapshot> rsBoundaries = mks.getLeftBoundaries(maxBuckets);
+        if (printOn) {
+            System.out.printf("\n Boundaries for %d buckets: \n", maxBuckets);
+            for (RowSnapshot rss : rsBoundaries)
+                System.out.println(rss.toString());
+        }
+    }
+
+    @Test
+    public void testIntRowSampling() {
+        ITable table = TestTables.getIntTable(10000, 3);
+        IntTableRowSampling(table, true,1000, 10);
+        IntTableRowSampling(table, true,10000, 10);
+        IntTableRowSampling(table, false,1000, 10);
+        IntTableRowSampling(table, false,10000, 10);
     }
 
     @Test

@@ -38,6 +38,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class NextKSketchTest extends BaseTest {
+
+    boolean printOn = false;
     @Test
     public void testTopK1() {
         final int numCols = 2;
@@ -53,7 +55,7 @@ public class NextKSketchTest extends BaseTest {
 
         final NextKSketch nk = new NextKSketch(cso, topRow, maxSize);
         final NextKList leftK = nk.create(leftTable);
-        IndexComparator leftComp = cso.getComparator(leftK.table);
+        IndexComparator leftComp = cso.getIndexComparator(leftK.table);
         for (int i = 0; i < (leftK.table.getNumOfRows() - 1); i++)
             Assert.assertTrue(leftComp.compare(i, i + 1) <= 0);
         Assert.assertEquals(leftK.toLongString(maxSize), "Table[2x5]\n" +
@@ -68,7 +70,7 @@ public class NextKSketchTest extends BaseTest {
 
         final NextKSketch nk2 = new NextKSketch(cso, topRow2, maxSize);
         final NextKList leftK2 = nk2.create(leftTable);
-        IndexComparator leftComp2 = cso.getComparator(leftK2.table);
+        IndexComparator leftComp2 = cso.getIndexComparator(leftK2.table);
         for (int i = 0; i < (leftK2.table.getNumOfRows() - 1); i++)
             Assert.assertTrue(leftComp2.compare(i, i + 1) <= 0);
         Assert.assertEquals(leftK2.toLongString(maxSize), "Table[2x5]\n" +
@@ -79,7 +81,7 @@ public class NextKSketchTest extends BaseTest {
                 "4,8: 5\n");
         final Table rightTable = TestTables.getRepIntTable(rightSize, numCols);
         final NextKList rightK = nk.create(rightTable);
-        IndexComparator rightComp = cso.getComparator(rightK.table);
+        IndexComparator rightComp = cso.getIndexComparator(rightK.table);
         for (int i = 0; i < (rightK.table.getNumOfRows() - 1); i++)
             Assert.assertTrue(rightComp.compare(i, i + 1) <= 0);
 
@@ -92,7 +94,7 @@ public class NextKSketchTest extends BaseTest {
 
         NextKList tK = nk.add(leftK, rightK);
         tK = Converters.checkNull(tK);
-        IndexComparator tComp = cso.getComparator(tK.table);
+        IndexComparator tComp = cso.getIndexComparator(tK.table);
         for (int i = 0; i < (tK.table.getNumOfRows() - 1); i++)
             Assert.assertTrue(tComp.compare(i, i + 1) <= 0);
         Assert.assertEquals(tK.toLongString(maxSize), "Table[2x5]\n" +
@@ -124,18 +126,41 @@ public class NextKSketchTest extends BaseTest {
 
     @Test
     public void testTopK3() {
-        final int numCols = 3;
-        final int maxSize = 5;
-        final int bigSize = 100000;
+        final int numCols = 5;
+        final int maxSize = 500000;
+        final int bigSize = 1000000;
         final SmallTable bigTable = TestTables.getIntTable(bigSize, numCols);
         final RowSnapshot topRow = new RowSnapshot(bigTable, 1000);
         RecordOrder cso = new RecordOrder();
         for (String colName : bigTable.getSchema().getColumnNames())
             cso.append(new ColumnSortOrientation(bigTable.getSchema().getDescription(colName),
                     true));
-        ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, 10000);
-        NextKList nk = all.blockingSketch(new NextKSketch(cso, topRow, maxSize));
-        IndexComparator mComp = cso.getComparator(nk.table);
+        ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, 500000);
+
+        NextKList nk;
+        Long start, end;
+        long hashTime, treeTime;
+        // Runnable hash = () -> all.blockingSketch(new NextKSketch(cso, topRow, maxSize, false));
+        // runNTimes(hash, 10, "Hash based", bigSize);
+
+
+        for ( int i=0; i < 10; i++) {
+            start = System.currentTimeMillis();
+            nk = all.blockingSketch(new NextKSketch(cso, topRow, maxSize, false));
+            end = System.currentTimeMillis();
+            treeTime = end - start;
+
+            start = System.currentTimeMillis();
+            nk = all.blockingSketch(new NextKSketch(cso, topRow, maxSize, true));
+            end = System.currentTimeMillis();
+            hashTime = end - start;
+            if (printOn)
+                System.out.printf("%d: %d, %d, Advantage in ms: %d\n", i, hashTime, treeTime,
+                        (treeTime - hashTime));
+        }
+
+        /*
+        IndexComparator mComp = cso.getIndexComparator(nk.table);
         for (int i = 0; i < (nk.table.getNumOfRows() - 1); i++)
             Assert.assertTrue(mComp.compare(i, i + 1) <= 0);
         Assert.assertEquals(nk.toLongString(maxSize), "Table[3x5]\n" +
@@ -144,6 +169,7 @@ public class NextKSketchTest extends BaseTest {
                 "44,95,126: 1\n" +
                 "44,95,151: 1\n" +
                 "44,96,65: 1\n");
+   */
     }
 
     @Test

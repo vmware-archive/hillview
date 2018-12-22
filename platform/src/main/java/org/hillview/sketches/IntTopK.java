@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2018 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,9 +15,8 @@
  * limitations under the License.
  */
 
-package org.hillview.utils;
-
-import java.util.SortedMap;
+package org.hillview.sketches;
+import it.unimi.dsi.fastutil.ints.Int2IntSortedMap;
 
 /**
  * Interface for computing the topK elements of a data set of type T, ordered by a comparator, with
@@ -26,9 +25,10 @@ import java.util.SortedMap;
  * push tries to add a new value newVal to the data structure. This requires
  * - Membership: is it already present?
  * - Maximum: If not present, compare to the Maximum value currently in the Top K
- * - Insert: If we need to Insert newVal
+ * - Insertion: for adding a new element.
  */
-interface ITopK<T> {
-    SortedMap<T, Integer> getTopK();
-    void push(T newVal);
+
+public interface IntTopK {
+    Int2IntSortedMap getTopK();
+    void push(int newVal);
 }

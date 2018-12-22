@@ -19,12 +19,17 @@ package org.hillview.table;
 
 import it.unimi.dsi.fastutil.ints.IntArrays;
 import org.hillview.sketches.ColumnSortOrientation;
-import org.hillview.table.api.*;
+import org.hillview.table.api.IColumn;
+import org.hillview.table.api.IMembershipSet;
+import org.hillview.table.api.ITable;
+import org.hillview.table.api.IndexComparator;
+import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.VirtualRowSnapshot;
 import org.hillview.utils.Linq;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -84,7 +89,7 @@ public class RecordOrder implements Serializable {
      * @param table The Table we wish to sort.
      * @return A Comparator that compares two records based on the RecordOrder specified.
      */
-    public IndexComparator getComparator(final ITable table) {
+    public IndexComparator getIndexComparator(final ITable table) {
         final ArrayList<IndexComparator> comparatorList = new ArrayList<IndexComparator>();
         List<IColumn> cols = table.getLoadedColumns(Linq.map(this.sortOrientationList,
                 ordCol -> ordCol.columnDescription.name));
@@ -101,17 +106,21 @@ public class RecordOrder implements Serializable {
         return new ListComparator(comparatorList);
     }
 
+    public Comparator<RowSnapshot> getRowComparator() {
+        return (o1, o2) -> o1.compareTo(o2, RecordOrder.this);
+    }
+
     /**
      * Considers only the rows in the table given by the membership set.
      * Returns an array containing rows indices of a Table in sorted order,
-     * using the getComparator method above. The table and the RecordOrder need to be compatible.
+     * using the getIndexComparator method above. The table and the RecordOrder need to be compatible.
      * Should only be applied to very small membership sets.
      * @param table The Table we wish to sort.
      * @param set   Membership set of the table containing the rows to consider.
      */
     public int[] getSortedRowOrder(final ITable table, IMembershipSet set) {
         int[] order = set.getRows();
-        IntArrays.quickSort(order, this.getComparator(table));
+        IntArrays.quickSort(order, this.getIndexComparator(table));
         return order;
     }
 
