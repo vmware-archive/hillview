@@ -28,14 +28,14 @@ import {
     NextKList,
     RecordOrder,
     RemoteObjectId,
-    RowSnapshot,
+    RowData,
     Schema,
     StringFilterDescription,
     TableSummary
 } from "../javaBridge";
 import {OnCompleteReceiver, Receiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
-import {BaseRenderer, TableTargetAPI} from "../tableTarget";
+import {BaseRenderer, OnNextK, TableTargetAPI} from "../tableTarget";
 import {DataRangeUI} from "../ui/dataRangeUI";
 import {IDataView} from "../ui/dataview";
 import {Dialog, FieldKind} from "../ui/dialog";
@@ -45,23 +45,29 @@ import {IScrollTarget, ScrollBar} from "../ui/scroll";
 import {SelectionStateMachine} from "../ui/selectionStateMachine";
 import {HtmlString, Resolution, SpecialChars} from "../ui/ui";
 import {
-    cloneToSet, convertToStringFormat,
+    cloneToSet,
+    convertToStringFormat,
     formatNumber,
-    ICancellable, makeMissing, makeSpan,
+    ICancellable,
+    makeMissing,
+    makeSpan,
     PartialResult,
     percent,
     saveAs,
-    significantDigitsHtml, truncate,
+    significantDigitsHtml,
+    truncate,
 } from "../util";
 import {SchemaView} from "./schemaView";
 import {SpectrumReceiver} from "./spectrumView";
 import {ColumnConverter, ConverterDialog, TSViewBase} from "./tsViewBase";
 import {Grid} from "../ui/grid";
+import {LogFileReceiver} from "./logFileView";
+import {FindBar} from "../ui/findBar";
 
 /**
  * Displays a table in the browser.
  */
-export class TableView extends TSViewBase implements IScrollTarget {
+export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
     // Data view part: received from remote site
     // Logical position of first row displayed
     protected startPosition?: number;
@@ -76,16 +82,10 @@ export class TableView extends TSViewBase implements IScrollTarget {
     protected cellsPerColumn: Map<string, HTMLElement[]>;
     protected selectedColumns = new SelectionStateMachine();
     protected message: HTMLElement;
+    protected strFilter: StringFilterDescription;
 
     // The following elements are used for Find
-    protected strFilter: StringFilterDescription;
-    protected findInputBox: HTMLInputElement;
-    protected substringsFindCheckbox: HTMLInputElement;
-    protected regexFindCheckbox: HTMLInputElement;
-    protected caseFindCheckbox: HTMLInputElement;
-    protected findBar: HTMLElement;
-    protected findBarVisible: boolean;
-    protected foundCount: HTMLElement;
+    protected findBar: FindBar;
 
     public constructor(
         remoteObjectId: RemoteObjectId, rowCount: number, schema: SchemaClass, page: FullPage) {
@@ -151,7 +151,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
                                     "but no column is currently visible.");
                                 return;
                             }
-                            this.showFindBar(true);
+                            this.findBar.show(true);
                         }
                     },
                     {
@@ -183,7 +183,8 @@ export class TableView extends TSViewBase implements IScrollTarget {
         this.grid = new Grid(80);
         tblAndScrollBar.appendChild(this.scrollBar.getHTMLRepresentation());
         tblAndScrollBar.appendChild(this.grid.getHTMLRepresentation());
-        this.initFindBar();
+        this.findBar = new FindBar((n, f) => this.find(n, f));
+        this.topLevel.appendChild(this.findBar.getHTMLRepresentation());
 
         this.message = document.createElement("div");
         this.topLevel.appendChild(this.message);
@@ -191,95 +192,6 @@ export class TableView extends TSViewBase implements IScrollTarget {
 
     private exportSchema(): void {
         saveAs("schema.json", JSON.stringify(this.schema.schema));
-    }
-
-    private showFindBar(show: boolean): void {
-        if (show) {
-            this.findBar.style.display = "flex";
-            this.findInputBox.focus();
-            this.findBarVisible = true;
-        } else {
-            this.findBar.style.display = "none";
-            this.findBarVisible = false;
-        }
-    }
-
-    private addSpace(num: number): void {
-        const span = makeSpan("", false);
-        let str: string = "";
-        for (let i = 0; i < num; i++)
-            str += "&nbsp;";
-        span.innerHTML = str;
-        this.findBar.appendChild(span);
-    }
-
-    private addCheckbox(stringDesc: string ): HTMLInputElement {
-        this.addSpace(2);
-        const label = document.createElement("label");
-        label.textContent = stringDesc;
-        this.findBar.appendChild(label);
-        const checkBox: HTMLInputElement = document.createElement("input");
-        checkBox.type = "checkbox";
-        this.findBar.appendChild(checkBox);
-        const divEnd: HTMLElement = document.createElement("div");
-        divEnd.innerHTML = "&nbsp;&nbsp;";
-        this.findBar.appendChild(divEnd);
-        return checkBox;
-    }
-
-    private initFindBar(): void {
-        this.findBarVisible = false;
-        this.findBar = document.createElement("div");
-        this.findBar.style.margin = "2px";
-        this.findBar.className = "highlight";
-        this.findBar.style.flexDirection = "row";
-        this.findBar.style.display = "none";
-        this.findBar.style.flexWrap = "nowrap";
-        this.findBar.style.justifyContent = "flex-start";
-        this.findBar.style.alignItems = "center";
-
-        const label = document.createElement("label");
-        label.innerText = "Find: ";
-        this.findBar.appendChild(label);
-
-        this.findInputBox = document.createElement("input");
-        this.findBar.appendChild(this.findInputBox);
-        this.addSpace(1);
-
-        const nextButton = this.findBar.appendChild(document.createElement("button"));
-        nextButton.innerHTML = SpecialChars.downArrowHtml;
-        nextButton.onclick = () => this.find(true, false);
-        this.addSpace(1);
-
-        const prevButton = this.findBar.appendChild(document.createElement("button"));
-        prevButton.innerHTML = SpecialChars.upArrowHtml;
-        prevButton.onclick = () => this.find(false, false);
-        this.addSpace(1);
-
-        const topButton = this.findBar.appendChild(document.createElement("button"));
-        topButton.innerText = "Search from top";
-        topButton.onclick = () => this.find(true, true);
-        this.addSpace(1);
-
-        this.substringsFindCheckbox = this.addCheckbox("Substrings:");
-        this.regexFindCheckbox = this.addCheckbox("Regex:");
-        this.caseFindCheckbox = this.addCheckbox("Match case:");
-
-        this.foundCount = document.createElement("div");
-        this.findBar.appendChild(this.foundCount);
-
-        const filler = document.createElement("div");
-        filler.style.flexGrow = "100";
-        this.findBar.appendChild(filler);
-
-        const close = document.createElement("span");
-        close.className = "close";
-        close.innerHTML = "&times;";
-        close.onclick = () => this.showFindBar(false);
-        close.title = "Cancel the find.";
-        this.findBar.appendChild(close);
-
-        this.topLevel.appendChild(this.findBar);
     }
 
     public serialize(): IViewSerialization {
@@ -334,13 +246,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
         }
         let excludeTopRow: boolean;
 
-        const newFilter: StringFilterDescription = {
-            compareValue: this.findInputBox.value,
-            asRegEx: this.regexFindCheckbox.checked,
-            asSubString: this.substringsFindCheckbox.checked,
-            caseSensitive: this.caseFindCheckbox.checked,
-            complement: false
-        };
+        const newFilter = this.findBar.getFilter();
         if (TableView.compareFilters(this.strFilter, newFilter)) {
             excludeTopRow = true; // next search
         } else {
@@ -484,20 +390,6 @@ export class TableView extends TSViewBase implements IScrollTarget {
         }
         const rr = this.createNextKRequest(o, firstRow, this.tableRowsDesired, minValues);
         rr.invoke(new NextKReceiver(this.getPage(), this, rr, false, o, null));
-    }
-
-    protected showAllColumns(): void {
-        if (this.schema == null) {
-            this.page.reportError("No data loaded");
-            return;
-        }
-
-        const o = this.order.clone();
-        for (let i = 0; i < this.schema.length; i++) {
-            const c = this.schema.get(i);
-            o.addColumnIfNotVisible({ columnDescription: c, isAscending: true });
-        }
-        this.setOrder(o);
     }
 
     private getSortOrder(column: string): [boolean, number] {
@@ -778,7 +670,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
         cds.forEach((cd) => this.cellsPerColumn.set(cd.name, []));
         let tableRowCount = 0;
         // Add row data
-        let previousRow: RowSnapshot = null;
+        let previousRow: RowData = null;
         if (nextKList.rows != null) {
             tableRowCount = nextKList.rows.length;
             let index = 0;
@@ -806,11 +698,10 @@ export class TableView extends TSViewBase implements IScrollTarget {
         message.setInnerHtml(this.message);
 
         if (result != null) {
-            this.foundCount.textContent = formatNumber(result.before) + " matching before, " +
-                formatNumber(result.after) + " after";
+            this.findBar.setCounts(result.before, result.after);
         } else {
             this.strFilter = null;
-            this.showFindBar(false);
+            this.findBar.show(false);
         }
 
         this.updateScrollBar();
@@ -1033,69 +924,12 @@ export class TableView extends TSViewBase implements IScrollTarget {
         newPage.scrollIntoView();
     }
 
-    public moveRowToTop(row: RowSnapshot): void {
+    public moveRowToTop(row: RowData): void {
         const rr = this.createNextKRequest(this.order, row.values, this.tableRowsDesired);
         rr.invoke(new NextKReceiver(this.page, this, rr, false, this.order, null));
     }
 
-    /**
-     * Hilight a table's cell text according to the current find.
-     * Returns an HTML element that can be inserted in the table cell as a child.
-     */
-    private highlight(text: string): HTMLElement {
-        if (!this.findBarVisible || this.strFilter == null)
-            return makeSpan(text, false);
-
-        const find = this.strFilter.compareValue;
-        if (find == null || find === "")
-            return makeSpan(text, false);
-
-        const result = makeSpan(null, false);
-        if (this.strFilter.asRegEx) {
-            const modifier = this.strFilter.caseSensitive ? "g" : "ig";
-            let regex = new RegExp(find, modifier);
-            if (!this.strFilter.asSubString)
-                regex = new RegExp("^" + find + "$", modifier);
-            while (true) {
-                const match = regex.exec(text);
-                if (match == null) {
-                    result.appendChild(makeSpan(text, false));
-                    return result;
-                }
-                result.appendChild(makeSpan(text.substr(0, match.index), false));
-                result.appendChild(makeSpan(text.substr(match.index, regex.lastIndex - match.index), true));
-                text = text.substr(regex.lastIndex);
-            }
-        } else {
-            if (this.strFilter.asSubString) {
-                let index: number;
-                while (true) {
-                    if (this.strFilter.caseSensitive)
-                        index = text.indexOf(find);
-                    else
-                        index = text.toLowerCase().indexOf(find.toLowerCase());
-                    if (index < 0) {
-                        result.appendChild(makeSpan(text, false));
-                        return result;
-                    }
-                    result.appendChild(makeSpan(text.substr(0, index), false));
-                    result.appendChild(makeSpan(text.substr(index, find.length), true));
-                    text = text.substr(index + find.length);
-                }
-            } else {
-                if (this.strFilter.caseSensitive) {
-                    if (text === find)
-                        return makeSpan(text, true);
-                } else {
-                    if (text.toLowerCase() === find.toLowerCase())
-                        return makeSpan(text, true);
-                }
-            }
-        }
-        return makeSpan(text, false);
-    }
-
-    public addRow(row: RowSnapshot, previousRow: RowSnapshot | null,
+    public addRow(row: RowData, previousRow: RowData | null,
                   cds: IColumnDescription[], last: boolean): void {
         this.grid.newRow();
         const position = this.startPosition + this.dataRowsDisplayed;
@@ -1195,7 +1029,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
                     shownValue = "missing";
                 } else {
                     shownValue = convertToStringFormat(row.values[dataIndex], cd.kind);
-                    const high = this.highlight(shownValue);
+                    const high = this.findBar.highlight(shownValue, this.strFilter);
                     cell.appendChild(high);
                 }
 
@@ -1238,7 +1072,7 @@ export class TableView extends TSViewBase implements IScrollTarget {
                         cd.name === "Filename" && row.count === 1) {
                         this.contextMenu.addItem({
                             text: "Open file",
-                            action: () => this.openLogFile(value),
+                            action: () => this.openLogFile(row, value),
                             help: "Open this file in a new tab"
                         }, true);
                     }
@@ -1253,8 +1087,10 @@ export class TableView extends TSViewBase implements IScrollTarget {
         this.dataRowsDisplayed += row.count;
     }
 
-    public openLogFile(filename: string): void {
-        // TODO
+    public openLogFile(row: RowData, filename: string): void {
+        const rr = this.createContainsRequest(this.order, row.values);
+        rr.invoke(new LogFileReceiver(this.page, rr, filename, this.schema,
+            this.order.getSchema(), row.values));
     }
 
     public setScroll(top: number, bottom: number): void {
@@ -1267,22 +1103,22 @@ export class TableView extends TSViewBase implements IScrollTarget {
  */
 export class NextKReceiver extends Receiver<NextKList> {
     constructor(page: FullPage,
-                protected table: TableView,
+                protected view: OnNextK,
                 operation: ICancellable<NextKList>,
                 protected reverse: boolean,
                 protected order: RecordOrder,
                 protected result: FindResult) {
-        super(page, operation, "Getting table info");
+        super(page, operation, "Getting table rows");
     }
 
     public onNext(value: PartialResult<NextKList>): void {
         super.onNext(value);
-        this.table.updateView(value.data, this.reverse, this.order, this.result);
+        this.view.updateView(value.data, this.reverse, this.order, this.result);
     }
 
     public onCompleted(): void {
         super.onCompleted();
-        this.table.updateCompleted(this.elapsedMilliseconds());
+        this.view.updateCompleted(this.elapsedMilliseconds());
     }
 }
 

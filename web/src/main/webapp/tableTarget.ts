@@ -21,12 +21,31 @@
 
 import {DatasetView, IViewSerialization} from "./datasetView";
 import {
-    CombineOperators, CreateColumnInfo, DataRange, FilterDescription,
-    Heatmap, HistogramArgs,
-    HistogramBase, HLogLog, IColumnDescription, kindIsString,
-    NextKList, RangeArgs, RecordOrder, RemoteObjectId, Schema,
-    TableSummary, TopList, NextKArgs, ComparisonFilterDescription,
-    EigenVal, StringRowFilterDescription, FindResult, Heatmap3D, StringFilterDescription,
+    CombineOperators,
+    CreateColumnInfo,
+    DataRange,
+    FilterDescription,
+    Heatmap,
+    HistogramArgs,
+    HistogramBase,
+    HLogLog,
+    IColumnDescription,
+    kindIsString,
+    NextKList,
+    RangeArgs,
+    RecordOrder,
+    RemoteObjectId,
+    Schema,
+    TableSummary,
+    TopList,
+    NextKArgs,
+    ComparisonFilterDescription,
+    EigenVal,
+    StringRowFilterDescription,
+    FindResult,
+    Heatmap3D,
+    StringFilterDescription,
+    ContainsArgs,
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
 import {FullPage, PageTitle} from "./ui/fullPage";
@@ -35,6 +54,20 @@ import {assert, ICancellable, Pair, PartialResult, Seed} from "./util";
 import {IDataView} from "./ui/dataview";
 import {SchemaClass} from "./schemaClass";
 import {PlottingSurface} from "./ui/plottingSurface";
+
+/**
+ * An interface which has a function that is called when all updates are completed.
+ */
+export interface CompletedWithTime {
+    updateCompleted(timeInMs: number): void;
+}
+
+export interface OnNextK extends CompletedWithTime {
+    updateView(nextKList: NextKList,
+               revert: boolean,
+               order: RecordOrder,
+               result: FindResult): void;
+}
 
 /**
  * This class has methods that correspond directly to TableTarget.java methods.
@@ -127,6 +160,24 @@ export class TableTargetAPI extends RemoteObject {
         }
         const method = "getDataRanges" + cds.length + "D";
         return this.createStreamingRpcRequest<DataRange>(method, args);
+    }
+
+    public createContainsRequest(order: RecordOrder, row: any[]): RpcRequest<RemoteObjectId> {
+        const args: ContainsArgs = {
+            order: order,
+            row: row
+        };
+        return this.createStreamingRpcRequest<RemoteObjectId>("contains", args);
+    }
+
+    public createGetLogFragmentRequest(schema: Schema, row: any[], rowSchema: Schema, rowCount: number):
+        RpcRequest<PartialResult<NextKList>> {
+        return this.createStreamingRpcRequest<NextKList>("getLogFragment", {
+            schema: schema,
+            row: row,
+            rowSchema: rowSchema,
+            count: rowCount
+        });
     }
 
     public createNextKRequest(order: RecordOrder, firstRow: any[] | null, rowCount: number,
@@ -311,7 +362,7 @@ RpcRequest<PartialResult<RemoteObjectId>> {
  * information from a big table.
  * A BigTableView view is always part of a DatasetView.
  */
-export abstract class BigTableView extends TableTargetAPI implements IDataView {
+export abstract class BigTableView extends TableTargetAPI implements IDataView, CompletedWithTime {
     protected topLevel: HTMLElement;
     public readonly dataset: DatasetView;
 

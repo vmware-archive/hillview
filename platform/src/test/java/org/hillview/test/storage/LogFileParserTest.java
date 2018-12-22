@@ -17,6 +17,7 @@
 
 package org.hillview.test.storage;
 
+import org.hillview.storage.GenericLogs;
 import org.hillview.storage.HillviewLogs;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
@@ -66,7 +67,7 @@ public class LogFileParserTest extends BaseTest {
         LocalDateTime dt = LocalDateTime.of(date, time);
         ZonedDateTime zdt = dt.atZone(ZoneId.systemDefault());
         Instant instant = zdt.toInstant();
-        Assert.assertEquals(getValue(table, "Time"), instant);
+        Assert.assertEquals(getValue(table, GenericLogs.timestampColumnName), instant);
         Assert.assertEquals(getValue(table, "Role"), "worker");
         Assert.assertEquals(getValue(table, "Level"), "INFO");
         Assert.assertEquals(getValue(table, "Machine"), "ubuntu");
@@ -75,8 +76,8 @@ public class LogFileParserTest extends BaseTest {
         Assert.assertEquals(getValue(table, "Method"), "<clinit>");
         Assert.assertEquals(getValue(table, "Message"), "Detect CPUs");
         Assert.assertEquals(getValue(table, "Arguments"), "Using 3 processors");
-        Assert.assertEquals(getValue(table, "Line"), 1);
-        Assert.assertEquals(getValue(table, "Directory"), "./");
-        Assert.assertEquals(getValue(table, "Filename"), f.getName());
+        Assert.assertEquals(getValue(table, GenericLogs.lineNumberColumn), 1);
+        Assert.assertEquals(getValue(table, GenericLogs.directoryColumn), "./");
+        Assert.assertEquals(getValue(table, GenericLogs.filenameColumn), f.getName());
     }
 }

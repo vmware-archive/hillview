@@ -17,6 +17,8 @@
 
 package org.hillview.sketches;
 
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.objects.*;
 import org.hillview.dataset.api.Pair;
 import org.hillview.table.Schema;
@@ -49,7 +51,7 @@ public class FreqKList implements Serializable {
     /**
      * Stores a filtered and sorted version of the hashmap. Created during post-processing.
      */
-    protected final List<Pair<RowSnapshot, Integer>> pList;
+    final List<Pair<RowSnapshot, Integer>> pList;
 
     public final double epsilon;
 
@@ -93,7 +95,6 @@ public class FreqKList implements Serializable {
         return this.pList;
     }
 
-
     /**
      * Helper method that takes a List of <RowSnapShot, Integer> pairs, sorts them and puts them
      * into a NextKList. This is used by all Heavy Hitters sketches.
@@ -104,10 +105,10 @@ public class FreqKList implements Serializable {
                 Converters.checkNull(p1.second)));
         int maxSize = Math.min(pList.size(), FreqKList.maxDisplay);
         List<RowSnapshot> listRows = new ArrayList<RowSnapshot>(maxSize);
-        List<Integer> listCounts = new ArrayList<Integer>(maxSize);
+        IntList listCounts = new IntArrayList(maxSize);
         for (int i = 0; i < maxSize; i++) {
             listRows.add(pList.get(i).first);
-            listCounts.add(pList.get(i).second);
+            listCounts.add((int)Converters.checkNull(pList.get(i).second));
         }
         return new NextKList(listRows, listCounts, schema, this.totalRows);
     }
@@ -156,8 +157,6 @@ public class FreqKList implements Serializable {
      */
     static List<Object2ObjectMap.Entry<RowSnapshot, MutableInteger>>
     addLists(FreqKList left, FreqKList right) {
-        assert left != null;
-        assert right != null;
         Object2ObjectOpenHashMap<RowSnapshot, MutableInteger> resultMap =
                 new Object2ObjectOpenHashMap<RowSnapshot, MutableInteger>(left.hMap.size() + right.hMap.size());
         for (ObjectIterator<Object2IntMap.Entry<RowSnapshot>> it1 = left.hMap.object2IntEntrySet().
@@ -185,7 +184,7 @@ public class FreqKList implements Serializable {
 
     static Object2IntOpenHashMap<RowSnapshot> getUnion(@Nullable FreqKList left, @Nullable FreqKList right) {
         List<Object2ObjectMap.Entry<RowSnapshot, MutableInteger>> pList =
-                FreqKList.addLists(left, right);
+                FreqKList.addLists(Converters.checkNull(left), Converters.checkNull(right));
         Object2IntOpenHashMap<RowSnapshot> hm = new Object2IntOpenHashMap<RowSnapshot>(pList.size());
         for (Object2ObjectMap.Entry<RowSnapshot, MutableInteger> aPList : pList)
             hm.put(aPList.getKey(), aPList.getValue().get());

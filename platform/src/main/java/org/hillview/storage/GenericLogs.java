@@ -51,7 +51,7 @@ public class GenericLogs {
     /**
      * This column name must appear in all log formats.
      */
-    private static final String timestampColumnName = "Timestamp";
+    public static final String timestampColumnName = "Timestamp";
     /**
      * Column name where the lines that are not parsed correctly are stored.
      */

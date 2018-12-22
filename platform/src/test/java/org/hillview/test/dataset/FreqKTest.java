@@ -27,6 +27,7 @@ import org.hillview.table.SmallTable;
 import org.hillview.table.Table;
 import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;
+import org.hillview.utils.Converters;
 import org.hillview.utils.TestTables;
 import org.junit.Assert;
 import org.junit.Test;
@@ -41,10 +42,10 @@ public class FreqKTest extends BaseTest {
     private void checkList(FreqKList fkList, Schema schema) {
         NextKList nkList = fkList.sortTopK(schema);
         for (int i = 1; i < nkList.count.size(); i++) {
-            TestCase.assertTrue(nkList.count.get(i - 1) >= nkList.count.get(i));
+            TestCase.assertTrue(nkList.count.getInt(i - 1) >= nkList.count.getInt(i));
         }
         for (int i = 0; i < nkList.count.size(); i++) {
-            TestCase.assertTrue(nkList.count.get(i) >= 0);
+            TestCase.assertTrue(nkList.count.getInt(i) >= 0);
         }
     }
 
@@ -79,17 +80,19 @@ public class FreqKTest extends BaseTest {
         SampleHeavyHittersSketch shh = new SampleHeavyHittersSketch(table.getSchema(), epsilon,
                 table.getNumOfRows(), 135078971);
         FreqKListSample shhList  = shh.create(table);
+        Assert.assertNotNull(shhList);
         shhList.rescale();
-        //System.out.println(shhList.toString());
-        //return shhList;
+        if (toPrint)
+            System.out.println(shhList.toString());
     }
 
     private void fkCreate(ITable table, double epsilon) {
         FreqKSketchMG fk = new FreqKSketchMG(table.getSchema(), epsilon);
         FreqKListMG fkList= fk.create(table);
+        Assert.assertNotNull(fkList);
         fkList.filter();
-        //System.out.println(fkList.toString());
-        //return fkList;
+        if (toPrint)
+            System.out.println(fkList.toString());
     }
 
     @Test
@@ -164,13 +167,17 @@ public class FreqKTest extends BaseTest {
         FreqKSketchMG fk = new FreqKSketchMG(bigTable.getSchema(), epsilon);
         //Assert.assertNotNull(all.blockingSketch(fk).toString());
         FreqKListMG fkList = all.blockingSketch(fk);
+        Assert.assertNotNull(fkList);
         fkList.filter();
-        //System.out.println(fkList.toString());
+        if (toPrint)
+            System.out.println(fkList.toString());
         SampleHeavyHittersSketch shh = new SampleHeavyHittersSketch(bigTable.getSchema(), epsilon,
                 bigTable.getNumOfRows(), 184764);
         FreqKListSample shhList = all.blockingSketch(shh);
+        Assert.assertNotNull(shhList);
         shhList.rescale();
-        //System.out.println(shhList.toString());
+        if (toPrint)
+            System.out.println(shhList.toString());
     }
 
     @Test
@@ -178,6 +185,6 @@ public class FreqKTest extends BaseTest {
         Table t = TestTables.testRepTable();
         FreqKSketchMG fk = new FreqKSketchMG(t.getSchema().project(s -> s.equals("Age")), 5);
         String s = "10: 4\n20: 4\n30: 3\n40: 2\n60: 1\n50: 1\n";
-        Assert.assertEquals(fk.create(t).toString(), s);
+        Assert.assertEquals(Converters.checkNull(fk.create(t)).toString(), s);
     }
 }

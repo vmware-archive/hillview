@@ -23,6 +23,7 @@ import org.hillview.table.Table;
 import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;
 import org.hillview.utils.TestTables;
+import org.junit.Assert;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertTrue;
@@ -34,12 +35,14 @@ public class ExactFreqSketchTest extends BaseTest {
     private void getFrequencies(ITable table, int maxSize) {
         FreqKSketchMG fk = new FreqKSketchMG(table.getSchema(), maxSize);
         FreqKListMG fkList = fk.create(table);
+        Assert.assertNotNull(fkList);
         ExactFreqSketch ef = new ExactFreqSketch(table.getSchema(), fkList);
         FreqKListExact exactList = ef.create(table);
+        Assert.assertNotNull(exactList);
         int size = 10;
         NextKList nkList = exactList.getTop(table.getSchema());
         for (int i = 1; i < nkList.count.size(); i++) {
-            assertTrue(nkList.count.get(i - 1) >= nkList.count.get(i));
+            assertTrue(nkList.count.getInt(i - 1) >= nkList.count.getInt(i));
         }
         exactList.filter();
         exactList.getList().forEach(rss ->

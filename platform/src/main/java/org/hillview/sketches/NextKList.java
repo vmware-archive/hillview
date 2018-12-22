@@ -20,14 +20,16 @@ package org.hillview.sketches;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.ints.IntLists;
 import org.hillview.dataset.api.IJson;
 import org.hillview.table.Schema;
 import org.hillview.table.SmallTable;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.rows.RowSnapshot;
+import org.hillview.table.rows.VirtualRowSnapshot;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -39,7 +41,7 @@ public class NextKList implements Serializable, IJson {
     /**
      * The number of times each row in the above table occurs in the original DataSet.
      */
-    public final List<Integer> count;
+    public final IntList count;
     /**
      * The row number of the starting point (topRow)
      */
@@ -51,7 +53,7 @@ public class NextKList implements Serializable, IJson {
      */
     final long rowsScanned;
 
-    public NextKList(SmallTable table, List<Integer> count, long position, long rowsScanned) {
+    public NextKList(SmallTable table, IntList count, long position, long rowsScanned) {
         this.table = table;
         this.count = count;
         this.startPosition = position;
@@ -69,11 +71,15 @@ public class NextKList implements Serializable, IJson {
      * @param schema The schema of the RowSnapshots
      * @param rowsScanned The number of rows the statistics are computed over.
      */
-    public NextKList(List<RowSnapshot> listRows, List<Integer> listCounts, Schema schema, long rowsScanned) {
+    public NextKList(List<RowSnapshot> listRows, IntList listCounts, Schema schema, long rowsScanned) {
         this.table = new SmallTable(schema, listRows);
         this.count = listCounts;
         this.startPosition = 0;
         this.rowsScanned = rowsScanned;
+    }
+
+    public boolean isEmpty() {
+        return this.table.getNumOfRows() == 0;
     }
 
     /**
@@ -81,7 +87,7 @@ public class NextKList implements Serializable, IJson {
      */
     public NextKList(Schema schema) {
         this.table = new SmallTable(schema);
-        this.count = new ArrayList<Integer>(0);
+        this.count = IntLists.EMPTY_LIST;
         this.startPosition = 0;
         this.rowsScanned = 0;
     }
@@ -93,20 +99,22 @@ public class NextKList implements Serializable, IJson {
         final IRowIterator rowIt = this.table.getRowIterator();
         int nextRow = rowIt.getNextRow();
         int i = 0;
+        VirtualRowSnapshot vrs = new VirtualRowSnapshot(this.table);
         while ((nextRow >= 0) && (i < rowsToDisplay)) {
-            //noinspection MismatchedQueryAndUpdateOfCollection
-            RowSnapshot rs = new RowSnapshot(this.table, nextRow);
-            builder.append(rs.toString()).append(": ").append(this.count.get(i));
+            vrs.setRow(nextRow);
+            builder.append(vrs.toString()).append(": ").append(this.count.getInt(i));
             builder.append(System.getProperty("line.separator"));
             nextRow = rowIt.getNextRow();
             i++;
         }
+        if (i == rowsToDisplay)
+            builder.append("...");
         return builder.toString();
     }
 
     @Override
     public String toString() {
-        return this.toLongString(Integer.MAX_VALUE);
+        return this.toLongString(20);
     }
 
     @Override
@@ -119,7 +127,7 @@ public class NextKList implements Serializable, IJson {
         result.add("rows", rows);
         for (int i = 0; i < this.count.size(); i++) {
             JsonObject row = new JsonObject();
-            row.addProperty("count", this.count.get(i));
+            row.addProperty("count", this.count.getInt(i));
             row.add("values", new RowSnapshot(this.table, i).toJsonTree());
             rows.add(row);
         }

@@ -80,6 +80,10 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
         this(table, schema, null);
     }
 
+    public VirtualRowSnapshot(final ITable table) {
+        this(table, table.getSchema(), null);
+    }
+
     public boolean exists() { return this.rowIndex >= 0; }
 
     public void setRow(final int rowIndex) {

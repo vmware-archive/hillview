@@ -34,7 +34,7 @@ import {
 } from "../javaBridge";
 import {OnCompleteReceiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
-import {BaseRenderer, BigTableView} from "../tableTarget";
+import {BigTableView} from "../tableTarget";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {SubMenu, TopMenuItem} from "../ui/menu";

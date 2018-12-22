@@ -17,7 +17,9 @@
 
 package org.hillview.table;
 
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntArrays;
+import it.unimi.dsi.fastutil.ints.IntList;
 import org.hillview.sketches.ColumnSortOrientation;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
@@ -52,7 +54,6 @@ public class RecordOrder implements Serializable {
 
     /**
      * Reverse the given RecordOrder.
-     * @return
      */
     public RecordOrder reverse() {
         RecordOrder rev = new RecordOrder();
@@ -190,13 +191,12 @@ public class RecordOrder implements Serializable {
      * from. Its i^th element is -1 if the i^th element in merged table
      * comes form the Left, 1 if it comes from the Right, 0 if the two are equal.
      */
-    public List<Integer> getIntMergeOrder(SmallTable left, SmallTable right) {
+    public IntList getIntMergeOrder(SmallTable left, SmallTable right) {
         if (!left.schema.equals(right.schema))
             throw new RuntimeException("Tables do not have matching schemas");
-
         final int leftLength = left.getNumOfRows();
         final int rightLength = right.getNumOfRows();
-        final List<Integer> merge = new ArrayList<>();
+        final IntList merge = new IntArrayList();
         int i = 0, j = 0;
         VirtualRowSnapshot vrsLeft = new VirtualRowSnapshot(left, left.schema);
         VirtualRowSnapshot vrsRight = new VirtualRowSnapshot(right, right.schema);
