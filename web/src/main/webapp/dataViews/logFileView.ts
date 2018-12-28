@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {IHtmlElement, removeAllChildren} from "../ui/ui";
+import {IHtmlElement} from "../ui/ui";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {FindBar} from "../ui/findBar";
 import {BaseRenderer, OnNextK, TableTargetAPI} from "../tableTarget";
@@ -29,16 +29,17 @@ import {
 } from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
 import {NextKReceiver} from "./tableView";
+import {IScrollTarget} from "../ui/scroll";
+import {RangeView} from "../ui/rangeView";
 
-export class LogFileView extends TableTargetAPI implements IHtmlElement, OnNextK {
+export class LogFileView extends TableTargetAPI implements IHtmlElement, OnNextK, IScrollTarget {
     protected readonly topLevel: HTMLElement;
     protected readonly findBar: FindBar;
     protected readonly footer: HTMLElement;
-    protected readonly contents: HTMLElement;
     protected nextKList: NextKList;
     protected visibleColumns: Set<string>;
+    protected rangeView: RangeView;
     protected color: Map<string, string>;  // one per column
-    protected wrap = true;
 
     constructor(remoteObjectId: RemoteObjectId,
                 protected schema: SchemaClass,
@@ -67,9 +68,8 @@ export class LogFileView extends TableTargetAPI implements IHtmlElement, OnNextK
         header.appendChild(schemaDisplay);
         this.displaySchema(schemaDisplay);
 
-        this.contents = document.createElement("div");
-        this.contents.className = "logFileContents";
-        this.topLevel.appendChild(this.contents);
+        this.rangeView = new RangeView(this);
+        this.topLevel.appendChild(this.rangeView.getHTMLRepresentation());
 
         this.footer = document.createElement("footer");
         this.footer.className = "logFileFooter";
@@ -81,7 +81,7 @@ export class LogFileView extends TableTargetAPI implements IHtmlElement, OnNextK
             subMenu: new SubMenu([{
                 text: "Wrap",
                 help: "Change text wrapping",
-                action: () => this.toggleWrap()
+                action: () => this.rangeView.toggleWrap()
             }])
         } /* TODO, {
             text: "Find",
@@ -100,15 +100,6 @@ export class LogFileView extends TableTargetAPI implements IHtmlElement, OnNextK
         h2.style.textAlign = "center";
         h2.style.flexGrow = "100";
         titleBar.appendChild(h2);
-    }
-
-    protected toggleWrap(): void {
-        this.wrap = !this.wrap;
-        if (!this.wrap) {
-            this.contents.style.whiteSpace = "nowrap";
-        } else {
-            this.contents.style.whiteSpace = "normal";
-        }
     }
 
     private displaySchema(header: HTMLElement): void {
@@ -190,10 +181,13 @@ export class LogFileView extends TableTargetAPI implements IHtmlElement, OnNextK
 
     public display(nextKList: NextKList): void {
         this.nextKList = nextKList;
-        removeAllChildren(this.contents);
-        if (nextKList == null)
+        if (nextKList == null) {
+            this.rangeView.setMax(0);
+            this.rangeView.display(null, 0, 0);
             return;
+        }
 
+        this.rangeView.setMax(nextKList.rowsScanned);
         const parent = document.createElement("div");
         const cols = this.schema.schema;
         for (const row of nextKList.rows) {
@@ -220,7 +214,7 @@ export class LogFileView extends TableTargetAPI implements IHtmlElement, OnNextK
             rowSpan.appendChild(document.createElement("br"));
             parent.appendChild(rowSpan);
         }
-        this.contents.appendChild(parent);
+        this.rangeView.display(parent, nextKList.startPosition, nextKList.rows.length);
     }
 
     public updateView(nextKList: NextKList,
@@ -228,6 +222,18 @@ export class LogFileView extends TableTargetAPI implements IHtmlElement, OnNextK
                       ignored1: RecordOrder,
                       result: FindResult): void {
         this.display(nextKList);
+    }
+
+    public pageDown(): void {
+        // TODO
+    }
+
+    public pageUp(): void {
+        // TODO
+    }
+
+    public scrolledTo(position: number): void {
+        // TODO
     }
 }
 

@@ -16,6 +16,7 @@
  */
 
 import {drag as d3drag} from "d3-drag";
+// import "d3-transition";
 import {mouse as d3mouse, select as d3select} from "d3-selection";
 import {percent} from "../util";
 import {D3SvgElement, IHtmlElement} from "./ui";
@@ -189,7 +190,7 @@ export class ScrollBar implements IHtmlElement {
         return this.topLevel;
     }
 
-    public computePosition(): void {
+    public computePosition(timeInMs: number): void {
         if (this.start <= 0.0 && this.end >= 1.0) {
             this.topLevel.classList.add("hidden");
             return;
@@ -208,26 +209,34 @@ export class ScrollBar implements IHtmlElement {
                 barY = this.height - barHeight;
         }
         this.before
+            // .transition()
+            // .duration(timeInMs)
             .attr(this.heightAttr, this.start * this.height);
         this.barG
             .select("title")
             .text(percent(this.start) + " - " + percent(this.end));
         this.bar
+            // .transition()
+            // .duration(timeInMs)
             .attr(this.heightAttr, barHeight)
             .attr(this.yAttr, barY);
         this.after
+            // .transition()
+            // .duration(timeInMs)
             .attr(this.heightAttr, (1 - this.end) * this.height)
             .attr(this.yAttr, this.end * this.height);
         // handle in the middle of the bar
         this.handle
+            // .transition()
+            // .duration(timeInMs)
             .attr(this.yAttr, barY + ((barHeight - ScrollBar.handleHeight) / 2));
     }
 
-    public setPosition(start: number, end: number): void {
+    public setPosition(start: number, end: number, timeInMs: number): void {
         if (start > end)
             throw new Error("Start after end: " + start + "/" + end);
         this.start = start;
         this.end = end;
-        this.computePosition();
+        this.computePosition(timeInMs);
     }
 }

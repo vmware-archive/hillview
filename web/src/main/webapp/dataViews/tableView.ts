@@ -174,11 +174,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
 
         // to force the scroll bar next to the table we put them in yet another div
         const tblAndScrollBar = document.createElement("div");
-        tblAndScrollBar.style.flexDirection = "row";
-        tblAndScrollBar.style.display = "flex";
-        tblAndScrollBar.style.flexWrap = "nowrap";
-        tblAndScrollBar.style.justifyContent = "flex-start";
-        tblAndScrollBar.style.alignItems = "stretch";
+        tblAndScrollBar.className = "containerWithScrollbar";
         this.topLevel.appendChild(tblAndScrollBar);
         this.grid = new Grid(80);
         tblAndScrollBar.appendChild(this.scrollBar.getHTMLRepresentation());
@@ -1094,7 +1090,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
     }
 
     public setScroll(top: number, bottom: number): void {
-        this.scrollBar.setPosition(top, bottom);
+        this.scrollBar.setPosition(top, bottom, 0);
     }
 }
 

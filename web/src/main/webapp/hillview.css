@@ -39,6 +39,14 @@ body {
     overflow: hidden;
 }
 
+.containerWithScrollbar {
+    flex-direction: row;
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+}
+
 .chart:focus, #tableContainer:focus, div.dialog:focus {
     outline: none;
 }
@@ -487,11 +495,16 @@ table .logHeader td {
 }
 
 .logFileContents {
-    flex: 1;
+    flex: 1 1 auto;
     overflow: auto;
 }
 
 .logCell {
     margin-right: 4px;
     font-family: monospace;
+}
+
+.filler {
+    background: darksalmon;
+    width: 100%;
 }
