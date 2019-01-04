@@ -10,6 +10,10 @@ if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
 source $mydir/lib.sh
 
 echo "Installing programs needed to build"
+
+echo "Installing curl"
+${SUDO} ${INSTALL} install curl -y
+
 case "$OSTYPE" in
     linux*)
     # Location where node.js version 11 resides.
