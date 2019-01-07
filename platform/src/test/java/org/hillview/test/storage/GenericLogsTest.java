@@ -40,8 +40,6 @@ import java.util.List;
  * Various tests for reading Generic logs into ITable.
  */
 public class GenericLogsTest extends BaseTest {
-    private static final boolean print = false;
-
     @Test
     public void findTimestamp() {
         GrokCompiler grokCompiler = GrokCompiler.newInstance();
@@ -146,7 +144,7 @@ public class GenericLogsTest extends BaseTest {
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
-        if (print)
+        if (BaseTest.toPrint)
             System.out.println(table.toLongString(10));
         Assert.assertEquals("Table[8x42]", table.toString());
         IColumn col = table.getLoadedColumn(GenericLogs.parseErrorColumn);
@@ -163,7 +161,7 @@ public class GenericLogsTest extends BaseTest {
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
-        if (print)
+        if (BaseTest.toPrint)
             System.out.println(table.toLongString(10));
         Assert.assertEquals("Table[8x2]", table.toString());
     }
@@ -172,10 +170,10 @@ public class GenericLogsTest extends BaseTest {
     public void testSyslogTime() {
         String path = "../data/sample_logs/syslog";
         GenericLogs logs = new GenericLogs("%{SYSLOG}");
-        TextFileLoader fileLoader = logs.getFileLoader(path, null, Instant.now());
+        TextFileLoader fileLoader = logs.getFileLoader(path, null, null);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
-        if (print)
+        if (BaseTest.toPrint)
             System.out.println(table.toLongString(10));
         Assert.assertEquals("Table[8x42]", table.toString());
     }
@@ -197,7 +195,7 @@ public class GenericLogsTest extends BaseTest {
         TextFileLoader fileLoader = logs.getFileLoader(path, start, end);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
-        if (print)
+        if (BaseTest.toPrint)
             System.out.println(table.toLongString(10));
         Assert.assertEquals("Table[8x5]", table.toString());
     }
@@ -219,7 +217,7 @@ public class GenericLogsTest extends BaseTest {
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
-        if (print)
+        if (BaseTest.toPrint)
             System.out.println(table.toLongString(10));
         Assert.assertEquals("Table[8x113]", table.toString());
     }
@@ -231,7 +229,7 @@ public class GenericLogsTest extends BaseTest {
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
-        if (print)
+        if (BaseTest.toPrint)
             System.out.println(table.toLongString(10));
         Assert.assertEquals("Table[14x8]", table.toString());
         @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
@@ -264,7 +262,7 @@ public class GenericLogsTest extends BaseTest {
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
-        if (print)
+        if (BaseTest.toPrint)
             System.out.println(table.toLongString(50));
         Assert.assertEquals("Table[8x93]", table.toString());
     }
@@ -276,7 +274,7 @@ public class GenericLogsTest extends BaseTest {
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
-        if (print)
+        if (BaseTest.toPrint)
             System.out.println(table.toLongString(10));
         Assert.assertEquals("Table[8x138]", table.toString());
     }
@@ -288,7 +286,7 @@ public class GenericLogsTest extends BaseTest {
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
-        if (print)
+        if (BaseTest.toPrint)
             System.out.println(table.toLongString(10));
         Assert.assertEquals("Table[8x5]", table.toString());
     }
@@ -300,7 +298,7 @@ public class GenericLogsTest extends BaseTest {
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
-        if (print)
+        if (BaseTest.toPrint)
             System.out.println(table.toLongString(10));
         Assert.assertEquals("Table[8x12]", table.toString());
     }
@@ -312,7 +310,7 @@ public class GenericLogsTest extends BaseTest {
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
-        if (print)
+        if (BaseTest.toPrint)
             System.out.println(table.toLongString(10));
         Assert.assertEquals("Table[8x9]", table.toString());
     }
@@ -324,7 +322,7 @@ public class GenericLogsTest extends BaseTest {
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
-        if (print)
+        if (BaseTest.toPrint)
             System.out.println(table.toLongString(10));
         Assert.assertEquals("Table[8x5]", table.toString());
     }
