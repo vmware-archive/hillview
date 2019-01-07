@@ -190,6 +190,14 @@ export class FullPage implements IHtmlElement {
         this.bottomContainer.appendChild(this.console.getHTMLRepresentation());
     }
 
+    /**
+     * Makes the page fill the whole browser page.
+     */
+    public setSinglePage(view: IDataView): void {
+        this.setDataView(view);
+
+    }
+
     public setViewKind(viewKind: ViewKind): void {
         this.help.onclick = () => openInNewTab(FullPage.helpUrl(viewKind));
     }

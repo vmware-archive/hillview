@@ -170,13 +170,15 @@ export class TableTargetAPI extends RemoteObject {
         return this.createStreamingRpcRequest<RemoteObjectId>("contains", args);
     }
 
-    public createGetLogFragmentRequest(schema: Schema, row: any[], rowSchema: Schema, rowCount: number):
+    public createGetLogFragmentRequest(schema: Schema, start: number,
+                                       row: any[] | null, rowSchema: Schema, rowCount: number):
         RpcRequest<PartialResult<NextKList>> {
         return this.createStreamingRpcRequest<NextKList>("getLogFragment", {
             schema: schema,
             row: row,
             rowSchema: rowSchema,
-            count: rowCount
+            count: rowCount,
+            start: start
         });
     }
 

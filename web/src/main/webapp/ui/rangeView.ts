@@ -16,8 +16,14 @@
  */
 
 import {IHtmlElement, removeAllChildren} from "./ui";
-import {IScrollTarget} from "./scroll";
 import {px} from "../util";
+
+/**
+ * An interface which allows a view of a big file to move to a specific area.
+ */
+export interface IUpdate {
+    download(start: number): void;
+}
 
 export class RangeView implements IHtmlElement {
     protected topLevel: HTMLElement;
@@ -32,7 +38,7 @@ export class RangeView implements IHtmlElement {
     protected after: HTMLElement;
 
     /*  Layout
-        --------------------- 0
+        |-------------------| 0
         |                   |
         |-------------------| cachedStart
         |                   |
@@ -46,7 +52,7 @@ export class RangeView implements IHtmlElement {
 
         0 <= cachedStart <= visibleStart <= visibleEnd <= cachedEnd <= max.
      */
-    constructor(protected target: IScrollTarget) {
+    constructor(protected target: IUpdate) {
         this.cachedStart = 0;
         this.visibleStart = 0;
         this.visibleEnd = 0;

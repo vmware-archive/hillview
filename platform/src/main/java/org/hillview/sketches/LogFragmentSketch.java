@@ -39,14 +39,22 @@ public class LogFragmentSketch implements ISketch<ITable, NextKList> {
     private final Schema schema;
     @Nullable
     private final RowSnapshot row;
+    @Nullable
     private final Schema rowSchema;
     private final int count;
+    /**
+     * If start is -1 then the row indicates the location of the data.
+     * Otherwise start is used as the row number.
+     */
+    private final int start;
 
-    public LogFragmentSketch(Schema schema, @Nullable RowSnapshot row, Schema rowSchema, int count) {
+    public LogFragmentSketch(Schema schema, @Nullable RowSnapshot row,
+                             @Nullable Schema rowSchema, int start, int count) {
         this.schema = schema;
         this.row = row;
         this.rowSchema = rowSchema;
         this.count = count;
+        this.start = start;
     }
 
     @Nullable
@@ -54,15 +62,20 @@ public class LogFragmentSketch implements ISketch<ITable, NextKList> {
     public NextKList create(@Nullable ITable data) {
         assert data != null;
         int index = 0;
-        if (this.row != null) {
-            IRowIterator it = data.getMembershipSet().getIterator();
-            index = it.getNextRow();
-            VirtualRowSnapshot vrs = new VirtualRowSnapshot(data, this.rowSchema);
-            while (index >= 0) {
-                vrs.setRow(index);
-                if (row.compareForEquality(vrs, this.rowSchema))
-                    break;
+        if (this.start >= 0) {
+            index = this.start;
+        } else {
+            if (this.row != null) {
+                IRowIterator it = data.getMembershipSet().getIterator();
                 index = it.getNextRow();
+                assert this.rowSchema != null;
+                VirtualRowSnapshot vrs = new VirtualRowSnapshot(data, this.rowSchema);
+                while (index >= 0) {
+                    vrs.setRow(index);
+                    if (row.compareForEquality(vrs, this.rowSchema))
+                        break;
+                    index = it.getNextRow();
+                }
             }
         }
         if (index < 0)

@@ -18,9 +18,9 @@
 import {IHtmlElement} from "../ui/ui";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {FindBar} from "../ui/findBar";
-import {BaseRenderer, OnNextK, TableTargetAPI} from "../tableTarget";
-import {FullPage} from "../ui/fullPage";
-import {convertToStringFormat, ICancellable, makeMissing, significantDigits, makeSpan} from "../util";
+import {BaseRenderer, BigTableView, OnNextK} from "../tableTarget";
+import {FullPage, PageTitle} from "../ui/fullPage";
+import {convertToStringFormat, ICancellable, makeMissing, makeSpan} from "../util";
 import {
     FindResult, GenericLogs,
     NextKList,
@@ -29,51 +29,28 @@ import {
 } from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
 import {NextKReceiver} from "./tableView";
-import {IScrollTarget} from "../ui/scroll";
-import {RangeView} from "../ui/rangeView";
+import {IUpdate, RangeView} from "../ui/rangeView";
 
-export class LogFileView extends TableTargetAPI implements IHtmlElement, OnNextK, IScrollTarget {
+export class LogFileView extends BigTableView implements IHtmlElement, OnNextK, IUpdate {
     protected readonly topLevel: HTMLElement;
     protected readonly findBar: FindBar;
-    protected readonly footer: HTMLElement;
     protected nextKList: NextKList;
     protected visibleColumns: Set<string>;
     protected rangeView: RangeView;
     protected color: Map<string, string>;  // one per column
+    public static readonly requestSize = 1000;  // number of lines brought in one request
 
     constructor(remoteObjectId: RemoteObjectId,
-                protected schema: SchemaClass,
+                rowCount: number,
+                schema: SchemaClass,
+                page: FullPage,
                 protected filename: string) {
-        super(remoteObjectId);
+        super(remoteObjectId, rowCount, schema, page, "LogFileView");
         this.visibleColumns = new Set<string>();
         this.color = new Map<string, string>();
 
         this.topLevel = document.createElement("div");
         this.topLevel.className = "logFileViewer";
-
-        const header = document.createElement("header");
-        this.topLevel.appendChild(header);
-
-        const titleBar = document.createElement("div");
-        titleBar.className = "logFileTitle";
-        const wrap = document.createElement("div");
-        header.appendChild(wrap);
-        wrap.appendChild(titleBar);
-
-        this.findBar = new FindBar((n, f) => this.onFind(n, f));
-        header.appendChild(this.findBar.getHTMLRepresentation());
-        this.findBar.show(false);
-
-        const schemaDisplay = document.createElement("div");
-        header.appendChild(schemaDisplay);
-        this.displaySchema(schemaDisplay);
-
-        this.rangeView = new RangeView(this);
-        this.topLevel.appendChild(this.rangeView.getHTMLRepresentation());
-
-        this.footer = document.createElement("footer");
-        this.footer.className = "logFileFooter";
-        this.topLevel.appendChild(this.footer);
 
         const menu = new TopMenu([{
             text: "View",
@@ -92,14 +69,20 @@ export class LogFileView extends TableTargetAPI implements IHtmlElement, OnNextK
                 action: () => this.showFindBar(true)
             }])
         } */]);
+        this.page.setMenu(menu);
 
-        // must be done after the menu has been created
-        titleBar.appendChild(menu.getHTMLRepresentation());
-        const h2 = document.createElement("h2");
-        h2.textContent = this.filename;
-        h2.style.textAlign = "center";
-        h2.style.flexGrow = "100";
-        titleBar.appendChild(h2);
+        this.findBar = new FindBar((n, f) => this.onFind(n, f));
+        this.topLevel.appendChild(this.findBar.getHTMLRepresentation());
+        this.findBar.show(false);
+
+        const schemaDisplay = document.createElement("div");
+        this.topLevel.appendChild(schemaDisplay);
+        this.displaySchema(schemaDisplay);
+
+        this.rangeView = new RangeView(this);
+        this.rangeView.setMax(0);
+        this.rangeView.display(null, 0, 0);
+        this.topLevel.appendChild(this.rangeView.getHTMLRepresentation());
     }
 
     private displaySchema(header: HTMLElement): void {
@@ -129,6 +112,12 @@ export class LogFileView extends TableTargetAPI implements IHtmlElement, OnNextK
         }
     }
 
+    public download(start: number): void {
+        const rr = this.createGetLogFragmentRequest(
+            this.schema.schema, start, null, null, LogFileView.requestSize);
+        rr.invoke(new NextKReceiver(this.page, this, rr, false, null, null));
+    }
+
     private static nextColor(current: string): string {
         switch (current) {
             case "black":
@@ -142,7 +131,7 @@ export class LogFileView extends TableTargetAPI implements IHtmlElement, OnNextK
         }
     }
 
-    private refresh(): void {
+    public refresh(): void {
         this.display(this.nextKList);
     }
 
@@ -174,18 +163,10 @@ export class LogFileView extends TableTargetAPI implements IHtmlElement, OnNextK
         return this.topLevel;
     }
 
-    public updateCompleted(timeInMs: number): void {
-        this.footer.textContent = "Operation took " +
-            significantDigits(timeInMs / 1000) + " seconds";
-    }
-
     public display(nextKList: NextKList): void {
         this.nextKList = nextKList;
-        if (nextKList == null) {
-            this.rangeView.setMax(0);
-            this.rangeView.display(null, 0, 0);
+        if (nextKList == null)
             return;
-        }
 
         this.rangeView.setMax(nextKList.rowsScanned);
         const parent = document.createElement("div");
@@ -224,16 +205,13 @@ export class LogFileView extends TableTargetAPI implements IHtmlElement, OnNextK
         this.display(nextKList);
     }
 
-    public pageDown(): void {
-        // TODO
+    protected getCombineRenderer(title: PageTitle):
+        (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer {
+        return null;
     }
 
-    public pageUp(): void {
-        // TODO
-    }
-
-    public scrolledTo(position: number): void {
-        // TODO
+    public resize(): void {
+        this.refresh();
     }
 }
 
@@ -271,12 +249,16 @@ class PrunedLogFileReceiver extends BaseRenderer {
     public run(): void {
         super.run();
         const logWindow = window.open("log.html", "_blank");
-        const viewer = new LogFileView(this.remoteObject.remoteObjectId, this.schema, this.filename);
+        const newPage = new FullPage(0, new PageTitle(this.filename), null, this.page.dataset);
+        const viewer = new LogFileView(
+            this.remoteObject.remoteObjectId, 0, this.schema, newPage, this.filename);
+        newPage.setSinglePage(viewer);
         logWindow.onload = () => {
             logWindow.document.title = this.filename;
-            logWindow.document.body.appendChild(viewer.getHTMLRepresentation());
+            logWindow.document.body.appendChild(newPage.getHTMLRepresentation());
         };
-        const rr = viewer.createGetLogFragmentRequest(this.schema.schema, this.row, this.rowSchema, 1000);
-        rr.invoke(new NextKReceiver(this.page, viewer, rr, false, null, null));
+        const rr = viewer.createGetLogFragmentRequest(
+            this.schema.schema, -1, this.row, this.rowSchema, LogFileView.requestSize);
+        rr.invoke(new NextKReceiver(newPage, viewer, rr, false, null, null));
     }
 }

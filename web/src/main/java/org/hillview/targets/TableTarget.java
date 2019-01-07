@@ -92,18 +92,22 @@ public final class TableTarget extends RpcTarget {
         Schema schema = new Schema();
         @Nullable
         Object[] row;
-        Schema rowSchema = new Schema();
+        @Nullable
+        Schema rowSchema;
         int count;
+        int start;
     }
 
     @HillviewRpc
     public void getLogFragment(RpcRequest request, RpcRequestContext context) {
         LogFragmentArgs args = request.parseArgs(LogFragmentArgs.class);
         RowSnapshot row = null;
-        if (args.row != null)
+        if (args.row != null) {
+            assert args.rowSchema != null;
             row = RowSnapshot.parseJson(args.rowSchema, args.row, null);
+        }
         LogFragmentSketch lfs = new LogFragmentSketch(
-                args.schema, row, args.rowSchema, args.count);
+                args.schema, row, args.rowSchema, args.start, args.count);
         this.runCompleteSketch(this.table, lfs, (e, c) -> e, request, context);
     }
 

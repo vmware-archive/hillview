@@ -287,7 +287,6 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         } else {
             const o = this.order.clone();
             const rr = this.createQuantileRequest(this.rowCount, o, position);
-            console.log("expecting quantile: " + String(position));
             rr.invoke(new QuantileReceiver(this.getPage(), this, rr, o));
         }
     }
