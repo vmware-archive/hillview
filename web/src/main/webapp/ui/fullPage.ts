@@ -183,9 +183,15 @@ export class FullPage implements IHtmlElement {
         }
 
         this.displayHolder = document.createElement("div");
+        this.displayHolder.style.height = "100%";
+        this.displayHolder.style.width = "100%";
+        this.displayHolder.style.overflow = "auto";
+        this.displayHolder.style.flexGrow = "2";
+
         this.pageTopLevel.appendChild(this.displayHolder);
         this.pageTopLevel.appendChild(this.bottomContainer);
 
+        this.bottomContainer.style.width = "100%";
         this.bottomContainer.appendChild(this.progressManager.getHTMLRepresentation());
         this.bottomContainer.appendChild(this.console.getHTMLRepresentation());
     }
@@ -195,7 +201,7 @@ export class FullPage implements IHtmlElement {
      */
     public setSinglePage(view: IDataView): void {
         this.setDataView(view);
-
+        this.pageTopLevel.style.height = "100%";
     }
 
     public setViewKind(viewKind: ViewKind): void {

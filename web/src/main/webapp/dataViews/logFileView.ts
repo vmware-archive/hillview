@@ -173,6 +173,7 @@ export class LogFileView extends BigTableView implements IHtmlElement, OnNextK, 
         const cols = this.schema.schema;
         for (const row of nextKList.rows) {
             const rowSpan = document.createElement("span");
+            rowSpan.className = "logRow";
             let index = 0;
             for (const value of row.values) {
                 const col = cols[index++];
@@ -250,15 +251,17 @@ class PrunedLogFileReceiver extends BaseRenderer {
         super.run();
         const logWindow = window.open("log.html", "_blank");
         const newPage = new FullPage(0, new PageTitle(this.filename), null, this.page.dataset);
+        const drop = this.schema.filter((c) => c.name !== GenericLogs.directoryColumn &&
+                                               c.name !== GenericLogs.filenameColumn);
         const viewer = new LogFileView(
-            this.remoteObject.remoteObjectId, 0, this.schema, newPage, this.filename);
+            this.remoteObject.remoteObjectId, 0, drop, newPage, this.filename);
         newPage.setSinglePage(viewer);
         logWindow.onload = () => {
             logWindow.document.title = this.filename;
             logWindow.document.body.appendChild(newPage.getHTMLRepresentation());
         };
         const rr = viewer.createGetLogFragmentRequest(
-            this.schema.schema, -1, this.row, this.rowSchema, LogFileView.requestSize);
+            drop.schema, -1, this.row, this.rowSchema, LogFileView.requestSize);
         rr.invoke(new NextKReceiver(newPage, viewer, rr, false, null, null));
     }
 }

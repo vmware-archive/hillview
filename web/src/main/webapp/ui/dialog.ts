@@ -445,13 +445,13 @@ export class Dialog extends DialogBase {
      * @param options: List of strings that are the options in the selection box.
      * @param value: Initial default value.
      * @param toolTip:  Help message to show as a tool-tip.
-     * @return       A reference to the select html select field.
+     * @return       A reference to the select html field.
      */
     public addSelectField(fieldName: string, labelText: string,
                           options: string[], value: string,
-                          toolTip: string): HTMLSelectElement {
-        const sortOptions = cloneArray(options);
-        sortOptions.sort();
+                          toolTip: string): HTMLElement {
+        const sortedOptions = cloneArray(options);
+        sortedOptions.sort();
 
         const fieldDiv = this.createRowContainer(fieldName, labelText, toolTip);
         const select = document.createElement("select");
@@ -459,7 +459,7 @@ export class Dialog extends DialogBase {
         select.style.flexGrow = "100";
         select.id = makeId(fieldName);
         fieldDiv.appendChild(select);
-        sortOptions.forEach((option) => {
+        sortedOptions.forEach((option) => {
             const optionElement = document.createElement("option");
             optionElement.value = option;
             optionElement.text = option;
@@ -468,13 +468,13 @@ export class Dialog extends DialogBase {
 
         if (value != null) {
             let i;
-            for (i = 0; i < sortOptions.length; i++) {
-                if (sortOptions[i] === value) {
+            for (i = 0; i < sortedOptions.length; i++) {
+                if (sortedOptions[i] === value) {
                     select.selectedIndex = i;
                     break;
                 }
             }
-            if (i === sortOptions.length)
+            if (i === sortedOptions.length)
                 throw new Error(`Given default value ${value} not found in options.`);
         }
         this.fields.set(fieldName, {html: select, type: FieldKind.String });

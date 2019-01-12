@@ -69,6 +69,7 @@ h2 {
 .console {
     font-family: monospace;
     white-space: pre-wrap;
+    width: 100%;
 }
 
 th {
@@ -94,10 +95,12 @@ th {
 }
 
 /* Note: this is not tableView */
-.tabularDisplay td.header {
+.tabularDisplay td {
     border: 1px solid black;
     padding: 0;
 }
+
+/******************************/
 
 .tableView {
     border-collapse: collapse;
@@ -157,6 +160,11 @@ td.all {
     position: relative;
 }
 
+.resizable:hover {
+    position: relative;
+    background: lightyellow;
+}
+
 div.truncated {
     overflow-x: hidden;
     text-overflow: ellipsis;
@@ -202,6 +210,9 @@ div.truncated {
     border: 2px solid grey;
     margin: 3px 1px;
     padding: 0;
+    display: flex;
+    flex-flow: column nowrap;
+    align-items: center;
 }
 
 .hillviewPage:hover {
@@ -497,6 +508,10 @@ table .logHeader td {
 .logFileContents {
     flex: 1 1 auto;
     overflow: auto;
+}
+
+.logRow:hover {
+    background: lightyellow;
 }
 
 .logCell {

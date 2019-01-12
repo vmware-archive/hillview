@@ -44,6 +44,7 @@ public class LogFragmentSketch implements ISketch<ITable, NextKList> {
     private final int count;
     /**
      * If start is -1 then the row indicates the location of the data.
+     * We will bring a few rows above this row (if they exist).
      * Otherwise start is used as the row number.
      */
     private final int start;
@@ -72,8 +73,11 @@ public class LogFragmentSketch implements ISketch<ITable, NextKList> {
                 VirtualRowSnapshot vrs = new VirtualRowSnapshot(data, this.rowSchema);
                 while (index >= 0) {
                     vrs.setRow(index);
-                    if (row.compareForEquality(vrs, this.rowSchema))
+                    if (row.compareForEquality(vrs, this.rowSchema)) {
+                        // Bring rows around this index.
+                        index = Math.max(0, index - 10);
                         break;
+                    }
                     index = it.getNextRow();
                 }
             }
