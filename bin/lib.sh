@@ -11,7 +11,7 @@ TOMCATVERSION="9.0.4"
 
 case "$OSTYPE" in
     linux*)
-        if [ "$(cat /etc/*-release | grep -c ubuntu)" -ne 0 ]; then
+        if [ "$(cat /etc/*-release | grep -Ec 'ubuntu|debian')" -ne 0 ]; then
 	        # Npm will be installed with node.js
 	    	INSTALL="apt-get"; SUDO="sudo"; NODEJS="nodejs"; NPM="";
 	    elif [ "$(cat /etc/*-release | grep -c -e centos -e rhel )" -ne 0 ]; then
