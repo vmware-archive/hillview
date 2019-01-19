@@ -112,9 +112,11 @@ export class LogFileView extends BigTableView implements IHtmlElement, OnNextK, 
         }
     }
 
-    public download(start: number): void {
+    public download(start: number, count: number): void {
+        console.log("Downloading " + start + " and " + count);
         const rr = this.createGetLogFragmentRequest(
-            this.schema.schema, start, null, null, LogFileView.requestSize);
+            this.schema.schema, start,
+            null, null, count);
         rr.invoke(new NextKReceiver(this.page, this, rr, false, null, null));
     }
 
@@ -169,7 +171,7 @@ export class LogFileView extends BigTableView implements IHtmlElement, OnNextK, 
             return;
 
         this.rangeView.setMax(nextKList.rowsScanned);
-        const parent = document.createElement("div");
+        const elements = [];
         const cols = this.schema.schema;
         for (const row of nextKList.rows) {
             const rowSpan = document.createElement("span");
@@ -194,9 +196,9 @@ export class LogFileView extends BigTableView implements IHtmlElement, OnNextK, 
                 }
             }
             rowSpan.appendChild(document.createElement("br"));
-            parent.appendChild(rowSpan);
+            elements.push(rowSpan);
         }
-        this.rangeView.display(parent, nextKList.startPosition, nextKList.rows.length);
+        this.rangeView.display(elements, nextKList.startPosition, nextKList.rows.length);
     }
 
     public updateView(nextKList: NextKList,

@@ -423,6 +423,16 @@ export function regression(data: number[][]): number[] {
 }
 
 /**
+ * True if the specified element is visible on the screen.
+ * @param e            A DOM element.
+ */
+export function visible(e: HTMLElement): boolean {
+    const screenHeight = Math.max(document.documentElement.clientHeight, window.innerHeight);
+    const rect = e.getBoundingClientRect();
+    return !(rect.bottom < 0 || rect.top >= screenHeight);
+}
+
+/**
  * This is actually just a guess on the width of the vertical scroll-bar,
  * which we would like to always be visible.
  */

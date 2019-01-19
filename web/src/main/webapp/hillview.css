@@ -160,7 +160,7 @@ td.all {
     position: relative;
 }
 
-.resizable:hover {
+td:not(.header) > .resizable:hover {
     position: relative;
     background: lightyellow;
 }
@@ -522,4 +522,15 @@ table .logHeader td {
 .filler {
     background: darksalmon;
     width: 100%;
+}
+
+.downloading {
+    width: 200px;
+    height: 100px;
+    background: orange;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    margin-left: -100px; /* half width */
+    margin-top: -50px; /* half height */
 }
