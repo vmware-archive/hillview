@@ -16,7 +16,7 @@
  */
 
 import {DatasetView} from "../datasetView";
-import {makeMissing, makeSpan, openInNewTab, significantDigitsHtml} from "../util";
+import {IRawCancellable, makeMissing, makeSpan, openInNewTab, significantDigitsHtml} from "../util";
 import {IDataView} from "./dataview";
 import {ConsoleDisplay, ErrorReporter} from "./errReporter";
 import {TopMenu} from "./menu";
@@ -311,5 +311,9 @@ export class FullPage implements IHtmlElement {
 
     public scrollIntoView(): void {
         this.getHTMLRepresentation().scrollIntoView( { block: "end", behavior: "smooth" } );
+    }
+
+    public cancel(operation: IRawCancellable): void {
+        this.progressManager.cancel(operation);
     }
 }

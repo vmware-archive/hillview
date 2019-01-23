@@ -25,15 +25,17 @@ import {LogFileView} from "../dataViews/logFileView";
 export interface IUpdate {
     /**
      * Download the specified rows.
-     * @param start  First row to download.
-     * @param count  Number of rows to download.
+     * @param start    First row to download.
+     * @param count    Number of rows to download.
+     * @param firstRow First row to display on screen after download.
      */
-    download(start: number, count: number): void;
+    download(start: number, count: number, firstRow: number): void;
 }
 
 export class RangeView implements IHtmlElement {
     protected topLevel: HTMLElement;
     protected cachedStart: number;
+    public firstRow: number;
     protected cachedEnd: number;
     protected max: number;
     protected wrap = true;
@@ -48,6 +50,7 @@ export class RangeView implements IHtmlElement {
         |                   |
         |-------------------| cachedStart
         |                   |
+        |//// visible //////|
         |                   |
         |-------------------| cachedEnd
         |                   |
@@ -57,6 +60,7 @@ export class RangeView implements IHtmlElement {
      */
     constructor(protected target: IUpdate) {
         this.cachedStart = 0;
+        this.firstRow = 0;
         this.cachedEnd = 0;
 
         this.topLevel = document.createElement("div");
@@ -71,6 +75,7 @@ export class RangeView implements IHtmlElement {
         this.topLevel.appendChild(this.before);
         this.topLevel.appendChild(this.contents);
         this.topLevel.appendChild(this.after);
+        this.topLevel.onscroll = () => this.scrolled();
     }
 
     public setMax(max: number): void {
@@ -84,14 +89,11 @@ export class RangeView implements IHtmlElement {
         this.scrollTimer = setTimeout(() => this.scrollStopped(), 100);
     }
 
-    /**
-     * Called when we haven't scrolled for a while.
-     */
-    private scrollStopped(): void {
-        // We want to find the first and last rows that are visible.
+    public rowsVisible(): [number, number, number] {
         let firstVisible = null;
         let lastVisible = null;
-        const close = 100;
+        const interpolated = Math.round(
+            this.topLevel.scrollTop * this.max / this.topLevel.scrollHeight);
 
         let index = this.cachedStart;
         this.contents.childNodes.forEach((c) => {
@@ -101,14 +103,21 @@ export class RangeView implements IHtmlElement {
                 lastVisible = index;
             } else if (firstVisible != null) {
                 // we found them all
-                return;
+                return [firstVisible, lastVisible, interpolated];
             }
             index++;
         });
 
-        const interpolated = Math.round(
-            this.topLevel.scrollTop * this.max / this.topLevel.scrollHeight);
-        console.log();
+        return [firstVisible, lastVisible, interpolated];
+    }
+
+    /**
+     * Called when we haven't scrolled for a while.
+     */
+    private scrollStopped(): void {
+        // We want to find the first and last rows that are visible.
+        const close = 200;
+        const [firstVisible, lastVisible, interpolated] = this.rowsVisible();
         console.log("firstVisible " + firstVisible +
             ", lastVisible " + lastVisible +
             ", interpolated " + interpolated);
@@ -120,7 +129,7 @@ export class RangeView implements IHtmlElement {
                  firstVisible < this.cachedStart + close)) {
                 // Close to beginning: bring more rows to prepend
                 const start = Math.max(firstVisible - LogFileView.requestSize, 0);
-                this.target.download(start, this.cachedStart - start);
+                this.target.download(start, this.cachedStart - start, -1);
                 return;
             } else if (this.cachedEnd < this.max &&
                 (lastVisible === this.cachedEnd ||
@@ -128,30 +137,37 @@ export class RangeView implements IHtmlElement {
                 // Close to end: bring more rows to append
                 const start = this.cachedEnd + 1;
                 const count = Math.min(this.max - start, LogFileView.requestSize);
-                this.target.download(start, count);
+                this.target.download(start, count, -1);
                 return;
             }
             return;
         }
-
-        console.assert(interpolated != null);
-        this.topLevel.onscroll = null;  // disable scrolling until we bring the data
-        this.downloading = document.createElement("div");
-        this.downloading.className = "downloading";
-        this.downloading.textContent = "Downloading...";
-        this.topLevel.appendChild(this.downloading);
-
-        this.target.download(interpolated,
-            Math.min(LogFileView.requestSize, this.max - interpolated));
+        {
+            // we are not seeing anything, bring data around the
+            console.assert(interpolated != null);
+            const start = Math.max(interpolated - (LogFileView.requestSize / 2), 0);
+            this.downloading = document.createElement("div");
+            this.downloading.className = "downloading";
+            this.downloading.textContent = "Downloading...";
+            this.topLevel.appendChild(this.downloading);
+            this.target.download(start,
+                Math.min(LogFileView.requestSize, this.max - start),
+                interpolated);
+        }
     }
 
-    public display(rows: HTMLElement[] | null, start: number, count: number): void {
-        this.topLevel.onscroll = () => this.scrolled();
+    /**
+     * We have received some more data.  Display it.
+     * @param rows      Data that we have received.
+     * @param start     Row number of first data element.
+     * @param firstRow  First row to display on screen.  If -1 nothing is changed.
+     */
+    public downloaded(rows: HTMLElement[] | null, start: number, firstRow: number): void {
+        const count = rows == null ? 0 : rows.length;
         if (this.downloading != null) {
             this.topLevel.removeChild(this.downloading);
             this.downloading = null;
         }
-        console.assert(count >= 0);
         console.assert(start + count <= this.max);
         if (rows == null) {
             this.before.style.height = "0";
@@ -180,26 +196,37 @@ export class RangeView implements IHtmlElement {
         }
 
         this.resize(freshView);
+        if (firstRow >= 0) {
+            const childIndex = firstRow - this.cachedStart;
+            if (this.contents.childNodes.length >= childIndex)
+                (this.contents.childNodes[childIndex] as HTMLElement).scrollIntoView(false);
+        }
     }
 
-    public resize(freshView: boolean): void {
+    protected resize(freshView: boolean): void {
         const count = this.cachedEnd - this.cachedStart;
-        // We compute some sizes for before and after that place the scrollbar in
-        // the approximate correct size.
+        let beforeSize = 10000;
+        let afterSize = 10000;
         const displayedPixels = this.contents.offsetHeight;
-        const rowSize = displayedPixels / count;
-        let beforeSize = this.cachedStart * rowSize;
-        let afterSize = (this.max - this.cachedEnd) * rowSize;
-        const largest = Math.max(beforeSize, afterSize);
-        const scaling = largest > 100000 ? largest / 100000 : 1.0;
-        beforeSize *= scaling;
-        afterSize *= scaling;
+        if (count !== 0) {
+            // We compute some sizes for before and after that place the scrollbar in
+            // the approximate correct size.
+            const rowSize = displayedPixels / count;
+            beforeSize = this.cachedStart * rowSize;
+            afterSize = (this.max - this.cachedEnd) * rowSize;
+            const largest = Math.max(beforeSize, afterSize);
+            const scaling = largest > 100000 ? largest / 100000 : 1.0;
+            beforeSize /= scaling;
+            afterSize /= scaling;
+        }
         this.before.style.height = px(beforeSize);
         this.after.style.height = px(afterSize);
         if (freshView)
             this.topLevel.scrollTop = beforeSize;
         console.log("cached " + this.cachedStart + " " + this.cachedEnd +
-            " before " + beforeSize + " after " + afterSize);
+            " displayed " + displayedPixels +
+            " before " + beforeSize +
+            " after " + afterSize);
     }
 
     public toggleWrap(): void {

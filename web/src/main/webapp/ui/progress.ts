@@ -43,7 +43,7 @@ export class ProgressBar implements IHtmlElement {
      */
     constructor(private manager: ProgressManager,
                 public readonly description: string,
-                private readonly operation: IRawCancellable) {
+                public readonly operation: IRawCancellable) {
         if (description == null)
             throw new Error("Null label");
         if (manager == null)
@@ -153,9 +153,11 @@ export class ProgressBar implements IHtmlElement {
  */
 export class ProgressManager implements IHtmlElement {
     public topLevel: HTMLElement;
+    protected running: ProgressBar[];
 
     constructor() {
         this.topLevel = document.createElement("div");
+        this.running = [];
         this.topLevel.className = "progressManager";
         this.topLevel.classList.add("idle");
     }
@@ -164,14 +166,35 @@ export class ProgressManager implements IHtmlElement {
         return this.topLevel;
     }
 
+    /**
+     * Find the suitable progress bar and ask it to cancel the operation.
+     * @param operation  Operation to cancel.
+     */
+    public cancel(operation: IRawCancellable): void {
+        let index = -1;
+        for (let i = 0; i < this.running.length; i++) {
+            if (this.running[i].operation == operation) {
+                index = i;
+                break;
+            }
+        }
+        if (index >= 0)
+            this.running[index].cancel();
+        // may not be found if it has finished in the meantime
+    }
+
     public newProgressBar(operation: IRawCancellable, description: string): ProgressBar {
         this.topLevel.classList.remove("idle");
         const p = new ProgressBar(this, description, operation);
+        this.running.push(p);
         this.topLevel.appendChild(p.getHTMLRepresentation());
         return p;
     }
 
     public removeProgressBar(p: ProgressBar): void {
+        const index = this.running.indexOf(p);
+        if (index >= 0)
+            this.running.splice(index, 1);
         this.topLevel.removeChild(p.getHTMLRepresentation());
         if (this.topLevel.children.length === 0)
             this.topLevel.classList.add("idle");

@@ -1064,7 +1064,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                         help: "Move this row to the top of the view."
                     }, true);
                     if (this.dataset.isLog() &&
-                        cd.name === "Filename" && row.count === 1) {
+                        cd.name === "Filename") {
                         this.contextMenu.addItem({
                             text: "Open file",
                             action: () => this.openLogFile(row, value),

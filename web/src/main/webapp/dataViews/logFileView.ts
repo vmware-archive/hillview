@@ -18,20 +18,19 @@
 import {IHtmlElement} from "../ui/ui";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {FindBar} from "../ui/findBar";
-import {BaseRenderer, BigTableView, OnNextK} from "../tableTarget";
+import {BaseRenderer, BigTableView} from "../tableTarget";
 import {FullPage, PageTitle} from "../ui/fullPage";
-import {convertToStringFormat, ICancellable, makeMissing, makeSpan} from "../util";
+import {convertToStringFormat, ICancellable, makeMissing, makeSpan, PartialResult} from "../util";
 import {
     FindResult, GenericLogs,
     NextKList,
-    RecordOrder,
     RemoteObjectId, Schema
 } from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
-import {NextKReceiver} from "./tableView";
 import {IUpdate, RangeView} from "../ui/rangeView";
+import {Receiver, RpcRequest} from "../rpc";
 
-export class LogFileView extends BigTableView implements IHtmlElement, OnNextK, IUpdate {
+export class LogFileView extends BigTableView implements IHtmlElement, IUpdate {
     protected readonly topLevel: HTMLElement;
     protected readonly findBar: FindBar;
     protected nextKList: NextKList;
@@ -39,13 +38,13 @@ export class LogFileView extends BigTableView implements IHtmlElement, OnNextK, 
     protected rangeView: RangeView;
     protected color: Map<string, string>;  // one per column
     public static readonly requestSize = 1000;  // number of lines brought in one request
+    private activeRequest: RpcRequest<PartialResult<NextKList>>;
 
     constructor(remoteObjectId: RemoteObjectId,
-                rowCount: number,
                 schema: SchemaClass,
                 page: FullPage,
                 protected filename: string) {
-        super(remoteObjectId, rowCount, schema, page, "LogFileView");
+        super(remoteObjectId, 0 /* we don't know the row count yet */, schema, page, "LogFileView");
         this.visibleColumns = new Set<string>();
         this.color = new Map<string, string>();
 
@@ -59,8 +58,20 @@ export class LogFileView extends BigTableView implements IHtmlElement, OnNextK, 
                 text: "Wrap",
                 help: "Change text wrapping",
                 action: () => this.rangeView.toggleWrap()
+            }, {
+                text: "Refresh",
+                help: "Refresh current view",
+                action: () => {
+                    if (this.rowCount === 0)
+                        return;
+                    const [f, _, i] = this.rangeView.rowsVisible();
+                    let start = f == null ? i : f;
+                    start = Math.max(start - 100, 0);
+                    const count = Math.min(LogFileView.requestSize, this.rowCount - start);
+                    this.download(start, count, f);
+                }
             }])
-        } /* TODO, {
+        }, {
             text: "Find",
             help: "Search specific values",
             subMenu: new SubMenu([{
@@ -68,7 +79,7 @@ export class LogFileView extends BigTableView implements IHtmlElement, OnNextK, 
                 help: "Search for a string",
                 action: () => this.showFindBar(true)
             }])
-        } */]);
+        }]);
         this.page.setMenu(menu);
 
         this.findBar = new FindBar((n, f) => this.onFind(n, f));
@@ -81,7 +92,6 @@ export class LogFileView extends BigTableView implements IHtmlElement, OnNextK, 
 
         this.rangeView = new RangeView(this);
         this.rangeView.setMax(0);
-        this.rangeView.display(null, 0, 0);
         this.topLevel.appendChild(this.rangeView.getHTMLRepresentation());
     }
 
@@ -112,12 +122,17 @@ export class LogFileView extends BigTableView implements IHtmlElement, OnNextK, 
         }
     }
 
-    public download(start: number, count: number): void {
+    public download(start: number, count: number, firstRow: number): void {
+        if (this.activeRequest != null) {
+            this.page.cancel(this.activeRequest);
+            this.activeRequest = null;
+        }
         console.log("Downloading " + start + " and " + count);
         const rr = this.createGetLogFragmentRequest(
             this.schema.schema, start,
             null, null, count);
-        rr.invoke(new NextKReceiver(this.page, this, rr, false, null, null));
+        this.activeRequest = rr;
+        rr.invoke(new LogFragmentReceiver(this.page, this, rr, firstRow, null));
     }
 
     private static nextColor(current: string): string {
@@ -134,7 +149,7 @@ export class LogFileView extends BigTableView implements IHtmlElement, OnNextK, 
     }
 
     public refresh(): void {
-        this.display(this.nextKList);
+        this.display(this.nextKList, this.rangeView.firstRow);
     }
 
     private rotateColor(col: string, cell: HTMLElement): void {
@@ -165,11 +180,12 @@ export class LogFileView extends BigTableView implements IHtmlElement, OnNextK, 
         return this.topLevel;
     }
 
-    public display(nextKList: NextKList): void {
+    public display(nextKList: NextKList, firstRow: number): void {
         this.nextKList = nextKList;
         if (nextKList == null)
             return;
 
+        this.rowCount = nextKList.rowsScanned;
         this.rangeView.setMax(nextKList.rowsScanned);
         const elements = [];
         const cols = this.schema.schema;
@@ -198,14 +214,15 @@ export class LogFileView extends BigTableView implements IHtmlElement, OnNextK, 
             rowSpan.appendChild(document.createElement("br"));
             elements.push(rowSpan);
         }
-        this.rangeView.display(elements, nextKList.startPosition, nextKList.rows.length);
+        if (elements.length !== 0)
+            this.rangeView.downloaded(elements, nextKList.startPosition, firstRow);
     }
 
     public updateView(nextKList: NextKList,
-                      ignored0: boolean,
-                      ignored1: RecordOrder,
+                      firstRow: number,
                       result: FindResult): void {
-        this.display(nextKList);
+        this.activeRequest = null;
+        this.display(nextKList, firstRow);
     }
 
     protected getCombineRenderer(title: PageTitle):
@@ -256,14 +273,34 @@ class PrunedLogFileReceiver extends BaseRenderer {
         const drop = this.schema.filter((c) => c.name !== GenericLogs.directoryColumn &&
                                                c.name !== GenericLogs.filenameColumn);
         const viewer = new LogFileView(
-            this.remoteObject.remoteObjectId, 0, drop, newPage, this.filename);
+            this.remoteObject.remoteObjectId, drop, newPage, this.filename);
         newPage.setSinglePage(viewer);
         logWindow.onload = () => {
             logWindow.document.title = this.filename;
             logWindow.document.body.appendChild(newPage.getHTMLRepresentation());
         };
         const rr = viewer.createGetLogFragmentRequest(
-            drop.schema, -1, this.row, this.rowSchema, LogFileView.requestSize);
-        rr.invoke(new NextKReceiver(newPage, viewer, rr, false, null, null));
+            drop.schema, this.row == null ? 0 : -1, this.row, this.rowSchema, LogFileView.requestSize);
+        rr.invoke(new LogFragmentReceiver(newPage, viewer, rr, -1, null));
+    }
+}
+
+class LogFragmentReceiver extends Receiver<NextKList> {
+    constructor(page: FullPage,
+                protected view: LogFileView,
+                operation: ICancellable<NextKList>,
+                protected firstRow: number,
+                protected result: FindResult) {
+        super(page, operation, "Getting log fragment");
+    }
+
+    public onNext(value: PartialResult<NextKList>): void {
+        super.onNext(value);
+        this.view.updateView(value.data, this.firstRow, this.result);
+    }
+
+    public onCompleted(): void {
+        super.onCompleted();
+        this.view.updateCompleted(this.elapsedMilliseconds());
     }
 }
