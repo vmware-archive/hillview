@@ -15,7 +15,7 @@ a demo of the system running on 15 small Amazon machines.
 
 # Developing Hillview
 
-Here is a [set of slides](docs/hillview-apis.pdf) describing all important Hillview 
+Here is a [set of slides](docs/hillview-apis.pdf) describing all important Hillview
 internal APIs.
 
 ## Software Dependencies
@@ -28,28 +28,17 @@ internal APIs.
 * Cloud service management: Python3
 * IDEA Intellij for development (optional)
 
-## Project structure
+## Pre-built binaries
 
-Hillview is currently split into two separate Maven projects.
+The release contains a [tar
+file](https://github.com/vmware/hillview/releases/download/v0.5-alpha/hillview-bin.taz)
+with pre-built binaries.  You should untar this file in the toplevel
+directory of hillview.
 
-* platform: pure Java, includes the entire back-end.  `platform` can be
-developed using the free (community edition) of Intellij IDEA.
-
-* web: the web server, web client and web services; this project links
-to the result produced by the `platform` project.  To develop and
-debug this we have used capabilities available only in the paid
-version of Intellij, Ultimate, but only Maven is needed to build.
-
-## Single-machine development and testing
-
-These instructions describe how to run hillview on a single machine
-using a sample dataset.
+## Building the binaries from source
 
 * First install all software required as described
   [below](#software-needed-for-deployment).
-
-* Check/edit the file `./bin/lib.sh` and select the appropriate
-  versions for the software dependencies.
 
 * Build the software:
 
@@ -57,6 +46,37 @@ using a sample dataset.
 $ cd bin
 $ ./rebuild.sh -a
 ```
+
+### Build details
+
+Hillview is currently split into two separate Maven projects.
+
+* platform: pure Java, includes the entire back-end.  `platform` can
+be developed using the free (community edition) of Intellij IDEA.
+This produces a JAR file `platform/target/hillview-jar-with-dependencies.jar`.
+This part can be built with:
+
+```
+$ cd platform
+$ mvn clean install
+$ cd ..
+```
+
+* web: the web server, web client and web services; this project links
+to the result produced by the `platform` project.  This produces a WAR
+(web archive) file `web/target/web-1.0-SNAPSHOT.war`.  This part can
+be built with:
+
+```
+$ cd web
+$ mvn package
+$ cd ..
+```
+
+## Single-machine development and testing
+
+These instructions describe how to run hillview on a single machine
+using a sample dataset.
 
 * Download and prepare the sample data.  The download script will
   download and decompress some CSV files with flights data from FAA.
@@ -255,11 +275,6 @@ In more detail, here is a step-by-step guide to committing your changes:
   @Nullable annotation (from javax.annotation) for all pointers which
   can be null.  Use `Converters.checkNull` to cast a @Nullable to a
   @NonNull pointer.
-
-* (optional) Use "mvn site" to generate the FindBugs report in
-  target/site/findbugs.html.  Make sure any new code checked in does
-  not introduce any violations.  A subset of these checks is also
-  done by the IDEA code inspection tool.
 
 # Software needed for deployment
 
