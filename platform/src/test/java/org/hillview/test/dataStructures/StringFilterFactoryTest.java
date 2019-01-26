@@ -27,37 +27,37 @@ import org.junit.Test;
 public class StringFilterFactoryTest extends BaseTest {
     @Test
     public void testStringFilter() {
-        StringFilterDescription desc = new StringFilterDescription("bob", true, false, false);
+        StringFilterDescription desc = new StringFilterDescription("bob", true, false, false, false, false, false);
         IStringFilter filter = StringFilterFactory.getFilter(desc);
         Assert.assertTrue(filter.test("bob"));
         Assert.assertTrue(filter.test("Bob"));
         Assert.assertFalse(filter.test("mike"));
 
-        desc = new StringFilterDescription("bob", false, false, true);
+        desc = new StringFilterDescription("bob", false, false, true, false, false, false);
         filter = StringFilterFactory.getFilter(desc);
         Assert.assertTrue(filter.test("bob"));
         Assert.assertFalse(filter.test("Bob"));
         Assert.assertFalse(filter.test("mike"));
 
-        desc = new StringFilterDescription("^bo.*", false, true, false);
+        desc = new StringFilterDescription("^bo.*", false, true, false, false, false, false);
         filter = StringFilterFactory.getFilter(desc);
         Assert.assertTrue(filter.test("bob"));
         Assert.assertTrue(filter.test("Bob"));
         Assert.assertFalse(filter.test("mike"));
 
-        desc = new StringFilterDescription("bo.*", false, true, true);
+        desc = new StringFilterDescription("bo.*", false, true, true, false, false, false);
         filter = StringFilterFactory.getFilter(desc);
         Assert.assertTrue(filter.test("bob"));
         Assert.assertFalse(filter.test("Bob"));
         Assert.assertFalse(filter.test("mike"));
 
-        desc = new StringFilterDescription("bo", true, false, true);
+        desc = new StringFilterDescription("bo", true, false, true, false, false, false);
         filter = StringFilterFactory.getFilter(desc);
         Assert.assertTrue(filter.test("bob"));
         Assert.assertFalse(filter.test("Bob"));
         Assert.assertFalse(filter.test("mike"));
 
-        desc = new StringFilterDescription("bo", true, false, false);
+        desc = new StringFilterDescription("bo", true, false, false, false, false, false);
         filter = StringFilterFactory.getFilter(desc);
         Assert.assertTrue(filter.test("bob"));
         Assert.assertTrue(filter.test("Bob"));

@@ -29,41 +29,45 @@ public class StringFilterDescription implements Serializable {
      * Search pattern to look for.
      */
     @Nullable
-    public final String compareValue;
+    public String compareValue;
     /**
      * If true the search pattern will be matched against substrings.
      */
-    public final boolean asSubString;
+    public boolean asSubString;
     /**
      * If true the search pattern will be interpreted as a regular expression.
      */
-    public final boolean asRegEx;
+    public boolean asRegEx;
     /**
      * If true the comparison will be made case-sensitive.
      */
-    public final boolean caseSensitive;
+    public boolean caseSensitive;
     /**
      * If true all matches will be omitted.
      */
-    public final boolean complement;
+    public boolean complement;
+    /**
+     * If true skip the first row.
+     */
+    public boolean excludeTopRow;
+    /**
+     * If true then search forward, else search backwards.
+     */
+    public boolean next;
 
     public StringFilterDescription(
             @Nullable String compareValue,  boolean asSubString, boolean asRegEx,
-            boolean caseSensitive, boolean complement) {
+            boolean caseSensitive, boolean complement, boolean excludeTopRow, boolean next) {
         this.compareValue = compareValue;
         this.asSubString = asSubString;
         this.asRegEx = asRegEx;
         this.caseSensitive = caseSensitive;
         this.complement = complement;
-    }
-
-    public StringFilterDescription(@Nullable String compareValue,  boolean asSubString, boolean asRegEx,
-            boolean caseSensitive) {
-        this(compareValue, asSubString, asRegEx, caseSensitive, false);
+        this.excludeTopRow = excludeTopRow;
+        this.next = next;
     }
 
     public StringFilterDescription(@Nullable String compareValue) {
-        this(compareValue, false, false, false, false);
+        this(compareValue, false, false, false, false, false, false);
     }
 }
-

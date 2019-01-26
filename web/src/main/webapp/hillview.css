@@ -206,13 +206,17 @@ div.truncated {
     background: yellow;
 }
 
-.hillviewPage {
-    border: 2px solid grey;
-    margin: 3px 1px;
+/* code common to all pages */
+.hillviewSinglePage .hillviewPage {
     padding: 0;
     display: flex;
     flex-flow: column nowrap;
     align-items: center;
+}
+
+.hillviewPage {
+    border: 2px solid grey;
+    margin: 3px 1px;
 }
 
 .hillviewPage:hover {

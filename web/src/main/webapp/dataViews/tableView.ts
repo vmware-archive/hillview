@@ -82,7 +82,6 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
     protected cellsPerColumn: Map<string, HTMLElement[]>;
     protected selectedColumns = new SelectionStateMachine();
     protected message: HTMLElement;
-    protected strFilter: StringFilterDescription;
 
     // The following elements are used for Find
     protected findBar: FindBar;
@@ -97,7 +96,6 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         this.topLevel.id = "tableContainer";
         this.topLevel.tabIndex = 1;  // necessary for keyboard events?
         this.topLevel.onkeydown = (e) => this.keyDown(e);
-        this.strFilter = null;
 
         const menu = new TopMenu([
             {
@@ -220,18 +218,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         return tableView;
     }
 
-    private static compareFilters(a: StringFilterDescription, b: StringFilterDescription): boolean {
-        if ((a == null) || (b == null))
-            return ((a == null) && (b == null));
-        else
-            return ((a.compareValue === b.compareValue) &&
-                (a.asRegEx === b.asRegEx) &&
-                (a.asSubString === b.asSubString) &&
-                (a.caseSensitive === b.caseSensitive) &&
-                (a.complement === b.complement));
-    }
-
-    private find(next: boolean, fromTop: boolean): void {
+    private find(filter: StringFilterDescription, fromTop: boolean): void {
         if (this.order.length() === 0) {
             this.page.reportError("Find operates in the displayed column, but no column is currently visible.");
             return;
@@ -240,24 +227,13 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             this.page.reportError("No data to search in");
             return;
         }
-        let excludeTopRow: boolean;
-
-        const newFilter = this.findBar.getFilter();
-        if (TableView.compareFilters(this.strFilter, newFilter)) {
-            excludeTopRow = true; // next search
-        } else {
-            this.strFilter = newFilter;
-            excludeTopRow = false; // new search
-        }
-        if (!next)
-            excludeTopRow = true;
-        if (this.strFilter.compareValue === "") {
+        if (filter == null) {
             this.page.reportError("No current search string.");
             return;
         }
         const o = this.order.clone();
         const topRow: any[] = (fromTop ? null : this.nextKList.rows[0].values);
-        const rr = this.createFindRequest(o, topRow, this.strFilter, excludeTopRow, next);
+        const rr = this.createFindRequest(o, topRow, filter);
         rr.invoke(new FindReceiver(this.getPage(), rr, this, o));
     }
 
@@ -695,7 +671,6 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         if (result != null) {
             this.findBar.setCounts(result.before, result.after);
         } else {
-            this.strFilter = null;
             this.findBar.show(false);
         }
 
@@ -1024,7 +999,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                     shownValue = "missing";
                 } else {
                     shownValue = convertToStringFormat(row.values[dataIndex], cd.kind);
-                    const high = this.findBar.highlight(shownValue, this.strFilter);
+                    const high = this.findBar.highlight(shownValue);
                     cell.appendChild(high);
                 }
 

@@ -202,6 +202,7 @@ export class FullPage implements IHtmlElement {
     public setSinglePage(view: IDataView): void {
         this.setDataView(view);
         this.pageTopLevel.style.height = "100%";
+        this.pageTopLevel.className = "hillviewSinglePage";
     }
 
     public setViewKind(viewKind: ViewKind): void {

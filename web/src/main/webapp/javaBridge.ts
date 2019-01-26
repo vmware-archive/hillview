@@ -392,6 +392,15 @@ export interface StringFilterDescription {
      * True if we are looking for anything that is not equal.
      */
     complement: boolean;
+    /*
+     * True if we need to exclude the top row.  This is done
+     * when we are running search again with the same parameters.
+     */
+    excludeTopRow: boolean;
+    /**
+     * True if we search forward, else we search backwards.
+     */
+    next: boolean;
 }
 
 export interface StringRowFilterDescription {

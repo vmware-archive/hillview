@@ -87,14 +87,12 @@ export class TableTargetAPI extends RemoteObject {
 
     public createFindRequest(
         order: RecordOrder, topRow: any[],
-        strFilter: StringFilterDescription, excludeTopRow: boolean, next: boolean):
+        strFilter: StringFilterDescription):
         RpcRequest<PartialResult<FindResult>> {
         return this.createStreamingRpcRequest<FindResult>("find", {
             order: order,
             topRow: topRow,
-            stringFilterDescription: strFilter,
-            excludeTopRow: excludeTopRow,
-            next: next,
+            stringFilterDescription: strFilter
         });
     }
 

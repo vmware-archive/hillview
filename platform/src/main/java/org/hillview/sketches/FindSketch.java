@@ -129,47 +129,24 @@ public class FindSketch implements ISketch<ITable, FindSketch.Result> {
      * Order used for sorting data.
      */
     private final RecordOrder recordOrder;
-    /**
-     * If true, only return results strictly greater than the top row. Is used in implementing the
-     * findNext functionality.
-     */
     private final boolean excludeTopRow;
-    /**
-     * If true, we are finding the next string in sorted order (as specified by recordOrder). If
-     * false, we are looking for the previous string (or equivalently the next string in reverse
-     * sorted order.
-     */
-    private final boolean next;
 
     public FindSketch(final StringFilterDescription stringFilterDescription,
-                      final @Nullable RowSnapshot topRow, final RecordOrder recordOrder,
-                      final boolean excludeTopRow, final boolean next) {
+                      final @Nullable RowSnapshot topRow, final RecordOrder recordOrder) {
         this.stringFilterDescription = stringFilterDescription;
-        if ((!next) && (topRow == null))
+        if ((!this.stringFilterDescription.next) && (topRow == null))
                 throw new RuntimeException("Top Row cannot be null");
         this.topRow = topRow;
-        this.recordOrder = next ? recordOrder: recordOrder.reverse();
-        this.excludeTopRow = !next || excludeTopRow;
-        this.next = next;
-    }
-
-    public FindSketch(final StringFilterDescription stringFilterDescription,
-                      final @Nullable RowSnapshot topRow,
-                      final RecordOrder recordOrder, final boolean excludeTopRow) {
-        this(stringFilterDescription, topRow, recordOrder, excludeTopRow, true);
-    }
-
-    public FindSketch(final StringFilterDescription stringFilterDescription,
-                      final @Nullable RowSnapshot topRow,
-                      final RecordOrder recordOrder) {
-        this(stringFilterDescription, topRow, recordOrder, false, true);
+        this.recordOrder = this.stringFilterDescription.next ? recordOrder: recordOrder.reverse();
+        this.excludeTopRow = !this.stringFilterDescription.next || stringFilterDescription.excludeTopRow;
     }
 
     @Override
-    public Result create(ITable data) {
+    public Result create(@Nullable ITable data) {
         long before = 0;
         long at = 0;
         long after = 0;
+        assert(data != null);
         IRowIterator rowIt = data.getRowIterator();
         Schema toCheck = this.recordOrder.toSchema();
         IStringFilter stringFilter = StringFilterFactory.getFilter(this.stringFilterDescription);
@@ -212,7 +189,7 @@ public class FindSketch implements ISketch<ITable, FindSketch.Result> {
         } else {
             firstRow = smallestMatch.materialize();
         }
-        if (!next) {
+        if (!this.stringFilterDescription.next) {
             long tmp = before;
             before = after;
             after = tmp;

@@ -24,7 +24,7 @@ import {convertToStringFormat, ICancellable, makeMissing, makeSpan, PartialResul
 import {
     FindResult, GenericLogs,
     NextKList,
-    RemoteObjectId, Schema
+    RemoteObjectId, Schema, StringFilterDescription
 } from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
 import {IUpdate, RangeView} from "../ui/rangeView";
@@ -168,7 +168,7 @@ export class LogFileView extends BigTableView implements IHtmlElement, IUpdate {
         this.refresh();
     }
 
-    private onFind(next: boolean, fromTop: boolean): void {
+    private onFind(filter: StringFilterDescription, fromTop: boolean): void {
         // TODO
     }
 
@@ -200,11 +200,14 @@ export class LogFileView extends BigTableView implements IHtmlElement, IUpdate {
                         rowSpan.appendChild(makeMissing());
                     } else {
                         let shownValue = convertToStringFormat(value, col.kind);
+                        let high;
                         if (col.name === GenericLogs.lineNumberColumn) {
                             // left pad the line number
                             shownValue = ("00000" + shownValue).slice(-5);
+                            high = makeSpan(shownValue, false);
+                        } else {
+                            high = this.findBar.highlight(shownValue);
                         }
-                        const high = makeSpan(shownValue, false);
                         high.classList.add("logCell");
                         high.style.color = this.color.get(col.name);
                         rowSpan.appendChild(high);

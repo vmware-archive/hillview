@@ -25,44 +25,54 @@ import {StringFilterDescription} from "../javaBridge";
 export class FindBar implements IHtmlElement {
     public visible: boolean;
     protected topLevel: HTMLDivElement;
+    protected contents: HTMLDivElement;
     protected findInputBox: HTMLInputElement;
     protected substringsFindCheckbox: HTMLInputElement;
     protected regexFindCheckbox: HTMLInputElement;
     protected caseFindCheckbox: HTMLInputElement;
     protected foundCount: HTMLElement;
+    protected strFilter: StringFilterDescription;  // last search we have performed
 
-    constructor(onClick: (next: boolean, fromTop: boolean) => void) {
+    constructor(onClick: (filter: StringFilterDescription, fromTop: boolean) => void) {
         this.visible = false;
+        this.strFilter = null;
+
         this.topLevel = document.createElement("div");
-        this.topLevel.style.margin = "2px";
-        this.topLevel.className = "highlight";
-        this.topLevel.style.flexDirection = "row";
         this.topLevel.style.display = "none";
-        this.topLevel.style.flexWrap = "nowrap";
-        this.topLevel.style.justifyContent = "flex-start";
-        this.topLevel.style.alignItems = "center";
+        this.contents = document.createElement("div");
+        this.topLevel.appendChild(this.contents);
+        this.contents.className = "highlight";
+        this.contents.style.display = "flex";
+        this.contents.style.margin = "2px";
+        this.contents.style.flexDirection = "row";
+        this.contents.style.flexWrap = "nowrap";
+        this.contents.style.justifyContent = "flex-start";
+        this.contents.style.alignItems = "center";
 
         const label = document.createElement("label");
         label.innerText = "Find: ";
-        this.topLevel.appendChild(label);
+        this.contents.appendChild(label);
 
         this.findInputBox = document.createElement("input");
-        this.topLevel.appendChild(this.findInputBox);
+        this.contents.appendChild(this.findInputBox);
         this.addSpace(1);
 
-        const nextButton = this.topLevel.appendChild(document.createElement("button"));
+        const nextButton = this.contents.appendChild(document.createElement("button"));
         nextButton.innerHTML = SpecialChars.downArrowHtml;
-        nextButton.onclick = () => onClick(true, false);
+        nextButton.onclick = () => onClick(this.getFilter(true), false);
+        nextButton.title = "Next match";
         this.addSpace(1);
 
-        const prevButton = this.topLevel.appendChild(document.createElement("button"));
+        const prevButton = this.contents.appendChild(document.createElement("button"));
         prevButton.innerHTML = SpecialChars.upArrowHtml;
-        prevButton.onclick = () => onClick(false, false);
+        prevButton.onclick = () => onClick(this.getFilter(false), false);
+        prevButton.title = "Previous match";
         this.addSpace(1);
 
-        const topButton = this.topLevel.appendChild(document.createElement("button"));
+        const topButton = this.contents.appendChild(document.createElement("button"));
         topButton.innerText = "Search from top";
-        topButton.onclick = () => onClick(true, true);
+        topButton.title = "Search from the beginning of the file";
+        topButton.onclick = () => onClick(this.getFilter(true), true);
         this.addSpace(1);
 
         this.substringsFindCheckbox = this.addCheckbox("Substrings:");
@@ -70,18 +80,18 @@ export class FindBar implements IHtmlElement {
         this.caseFindCheckbox = this.addCheckbox("Match case:");
 
         this.foundCount = document.createElement("div");
-        this.topLevel.appendChild(this.foundCount);
+        this.contents.appendChild(this.foundCount);
 
         const filler = document.createElement("div");
         filler.style.flexGrow = "100";
-        this.topLevel.appendChild(filler);
+        this.contents.appendChild(filler);
 
         const close = document.createElement("span");
         close.className = "close";
         close.innerHTML = "&times;";
         close.onclick = () => this.show(false);
         close.title = "Cancel the find.";
-        this.topLevel.appendChild(close);
+        this.contents.appendChild(close);
     }
 
     public setCounts(before: number, after: number): void {
@@ -89,13 +99,34 @@ export class FindBar implements IHtmlElement {
             formatNumber(after) + " after";
     }
 
-    public getFilter(): StringFilterDescription {
-        return {
-            compareValue: this.compareValue(),
+    protected getFilter(next: boolean): StringFilterDescription {
+        const compareValue = this.compareValue();
+        if (compareValue === "") {
+            return null;
+        }
+
+        let excludeTopRow: boolean;
+        // If this filter is unchanged from the previous search we exclude the top row
+        if (this.strFilter != null &&
+            this.strFilter.compareValue === compareValue &&
+            this.strFilter.asRegEx === this.isRegEx() &&
+            this.strFilter.asSubString === this.substrings() &&
+            this.strFilter.caseSensitive === this.caseSensitive()) {
+            excludeTopRow = true; // next search
+        } else {
+            excludeTopRow = false; // new search
+        }
+        if (!next)
+            excludeTopRow = true;
+
+        return this.strFilter = {
+            compareValue: compareValue,
             asRegEx: this.isRegEx(),
             asSubString: this.substrings(),
             caseSensitive: this.caseSensitive(),
-            complement: false
+            complement: false,
+            excludeTopRow: excludeTopRow,
+            next: next
         };
     }
 
@@ -118,19 +149,19 @@ export class FindBar implements IHtmlElement {
     /**
      * Highlight a text according to the current find options.
      */
-    public highlight(text: string, filter: StringFilterDescription): HTMLElement {
-        if (!this.visible || filter == null)
+    public highlight(text: string): HTMLElement {
+        if (!this.visible || this.strFilter == null)
             return makeSpan(text, false);
 
-        const find = filter.compareValue;
+        const find = this.strFilter.compareValue;
         if (find == null || find === "")
             return makeSpan(text, false);
 
         const result = makeSpan(null, false);
-        if (filter.asRegEx) {
+        if (this.strFilter.asRegEx) {
             const modifier = this.caseSensitive() ? "g" : "ig";
             let regex = new RegExp(find, modifier);
-            if (!filter.asSubString)
+            if (!this.strFilter.asSubString)
                 regex = new RegExp("^" + find + "$", modifier);
             while (true) {
                 const match = regex.exec(text);
@@ -143,10 +174,10 @@ export class FindBar implements IHtmlElement {
                 text = text.substr(regex.lastIndex);
             }
         } else {
-            if (filter.asSubString) {
+            if (this.strFilter.asSubString) {
                 let index: number;
                 while (true) {
-                    if (filter.caseSensitive)
+                    if (this.strFilter.caseSensitive)
                         index = text.indexOf(find);
                     else
                         index = text.toLowerCase().indexOf(find.toLowerCase());
@@ -159,7 +190,7 @@ export class FindBar implements IHtmlElement {
                     text = text.substr(index + find.length);
                 }
             } else {
-                if (filter.caseSensitive) {
+                if (this.strFilter.caseSensitive) {
                     if (text === find)
                         return makeSpan(text, true);
                 } else {
@@ -173,12 +204,13 @@ export class FindBar implements IHtmlElement {
 
     public show(show: boolean): void {
         if (show) {
-            this.topLevel.style.display = "flex";
+            this.topLevel.style.display = "block";
             this.findInputBox.focus();
             this.visible = true;
         } else {
             this.topLevel.style.display = "none";
             this.visible = false;
+            this.strFilter = null;
         }
     }
 
@@ -188,20 +220,20 @@ export class FindBar implements IHtmlElement {
         for (let i = 0; i < num; i++)
             str += "&nbsp;";
         span.innerHTML = str;
-        this.topLevel.appendChild(span);
+        this.contents.appendChild(span);
     }
 
     private addCheckbox(stringDesc: string ): HTMLInputElement {
         this.addSpace(2);
         const label = document.createElement("label");
         label.textContent = stringDesc;
-        this.topLevel.appendChild(label);
+        this.contents.appendChild(label);
         const checkBox: HTMLInputElement = document.createElement("input");
         checkBox.type = "checkbox";
-        this.topLevel.appendChild(checkBox);
+        this.contents.appendChild(checkBox);
         const divEnd: HTMLElement = document.createElement("div");
         divEnd.innerHTML = "&nbsp;&nbsp;";
-        this.topLevel.appendChild(divEnd);
+        this.contents.appendChild(divEnd);
         return checkBox;
     }
 

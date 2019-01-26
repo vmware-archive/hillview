@@ -571,6 +571,8 @@ class EqualityFilterDialog extends Dialog {
             asRegEx: asRegEx,
             caseSensitive: caseSensitive,
             complement: complement,
+            next: false,
+            excludeTopRow: false
         };
         return {
             colName: this.columnDescription.name,
