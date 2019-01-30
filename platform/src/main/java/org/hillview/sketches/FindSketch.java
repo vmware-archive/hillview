@@ -166,7 +166,8 @@ public class FindSketch implements ISketch<ITable, FindSketch.Result> {
     }
 
     @Override
-    public Result create(ITable data) {
+    public Result create(@Nullable ITable data) {
+        assert(data != null);
         long before = 0;
         long at = 0;
         long after = 0;

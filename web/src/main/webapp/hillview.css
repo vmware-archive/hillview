@@ -86,7 +86,7 @@ th {
 }
 
 /* Note: this is not tableView */
-.tabularDisplay td.header {
+.tabularDisplay td {
     border: 1px solid black;
     padding: 0;
 }

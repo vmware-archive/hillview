@@ -88,15 +88,15 @@ export class HillviewToplevel implements IHtmlElement {
         this.tabs.push(tab);
         let cell = row.insertCell();
         cell.textContent = dataset.name;
-        cell.title = dataset.name;
+        cell.title = dataset.name + "\nRight-click opens a menu";
         cell.onclick = () => { if (this.select(tabName)) { this.rename(tabName); } };
         cell.className = "dataset-name";
 
         const menu = new ContextMenu(this.topLevel, [{
-            text: "Save to file",
+            text: "Save this tab to file",
             action: () => dataset.saveToFile(),
-            help: "Save data describing this view to a local file;\n" +
-            "this file can be shared with other people.",
+            help: "Save the views in this tab to a local file;\n" +
+            "this file can be loaded later using \"Load saved view\".",
         }, {
             text: "Redisplay",
             action: () => dataset.redisplay(),

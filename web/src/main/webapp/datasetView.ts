@@ -185,7 +185,7 @@ export class DatasetView implements IHtmlElement {
         combineMenu.push({
             text: "Select current",
             action: () => { this.select(ro, pageId); },
-            help: "Save the current view; later it can be combined with another view, " +
+            help: "Select the current view; later it can be combined with another view, " +
                   "using one of the operations below.",
         });
         combineMenu.push({text: "---", action: null, help: null});

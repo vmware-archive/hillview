@@ -183,7 +183,7 @@ column description has two fields:
 
 We rely on the grok library for this purpose. For more info visit https://github.com/thekrakken/java-grok/blob/master/README.md
 
-Grok works by combining text patterns into something that matches your logs. 
+Grok works by combining text patterns into something that matches your logs.
 
 The syntax for a grok pattern is %{SYNTAX:NAME}
 
@@ -793,7 +793,7 @@ The table view has a menu that offers the following options:
 
 * Combine: allows the user to [combine the data in two views](#combining-two-views).
 
-##### The table view menu
+#### The table view menu
 
 The view menu offers the following options.
 
