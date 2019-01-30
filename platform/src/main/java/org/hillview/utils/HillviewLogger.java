@@ -159,8 +159,8 @@ public class HillviewLogger {
         message = this.checkCommas(message);
         String text = MessageFormat.format(format, arguments);
         int len = text.length();
-        if (len > 1000)
-            text = text.substring(0, 500) + "... (" + (len - 500) + " more)";
+        if (len > 20000)
+            text = text.substring(0, 19500) + "... (" + (len - 19500) + " more)";
         Thread current = Thread.currentThread();
         StackTraceElement[] stackTraceElements = current.getStackTrace();
         StackTraceElement caller = stackTraceElements[3];

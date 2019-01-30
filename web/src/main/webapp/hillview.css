@@ -149,6 +149,11 @@ td.all {
     position: relative;
 }
 
+td:not(.header) > .resizable:hover {
+    position: relative;
+    background: lightyellow;
+}
+
 div.truncated {
     overflow-x: hidden;
     text-overflow: ellipsis;

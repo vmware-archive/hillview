@@ -234,10 +234,16 @@ public class OrcFileLoader extends TextFileLoader {
                             to.append(str);
                             break;
                         case Integer:
-                            to.append(Integer.parseInt(str));
+                            if (str.trim().isEmpty())
+                                to.appendMissing();
+                            else
+                                to.append(Integer.parseInt(str));
                             break;
                         case Double:
-                            to.append(Double.parseDouble(str));
+                            if (str.trim().isEmpty())
+                                to.appendMissing();
+                            else
+                                to.append(Double.parseDouble(str));
                             break;
                     }
                     break;
