@@ -4,7 +4,8 @@
 usage() {
     echo "rebuild.sh [-s][-h][-a]"
     echo "Rebuild and the program"
-    echo "-s: skip tests"
+    echo "-s: skip tests (default)"
+    echo "-t: run tests"
     echo "-h: help"
     echo "-a: build all jars, including various tools"
     exit 1
@@ -17,13 +18,15 @@ source $mydir/lib.sh
 # Bail out on first error; verbose
 set -e
 
-SKIP="0"
+SKIP="1"
 TOOLS="0"
 while getopts sha FLAG; do
    case $FLAG in
       s) SKIP="1"
          ;;
       a) TOOLS="1"
+         ;;
+      t) SKIP="0"
          ;;
       *) usage
          ;;

@@ -146,7 +146,7 @@ export class RpcRequest<T> implements ICancellable<T> {
             protoVersion: this.protoVersion,
         };
         const str = JSON.stringify(result);
-        console.log(formatDate() + " Sending message " + str);
+        console.log(formatDate(new Date()) + " Sending message " + str);
         return pako.deflate(str);
     }
 
@@ -156,7 +156,7 @@ export class RpcRequest<T> implements ICancellable<T> {
      */
     public cancel(): boolean {
         if (!this.closed) {
-            console.log(formatDate() + " cancelling " + this.toString());
+            console.log(formatDate(new Date()) + " cancelling " + this.toString());
             this.closed = true;
             this.socket.close();
             return true;
@@ -202,7 +202,7 @@ export class RpcRequest<T> implements ICancellable<T> {
             };
             this.socket.onmessage = (r: MessageEvent) => {
                 // parse json and invoke onReply.onNext
-                console.log(formatDate() + " reply received: " + r.data);
+                console.log(formatDate(new Date()) + " reply received: " + r.data);
                 const reply = JSON.parse(r.data) as RpcReply;
                 if (this.completed) {
                     console.log("Message received after rpc completed: " + reply);

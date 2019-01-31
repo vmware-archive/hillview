@@ -123,7 +123,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                     },
                     */
                     { text: "No columns",
-                        action: () => this.setOrder(new RecordOrder([])),
+                        action: () => this.setOrder(new RecordOrder([]), false),
                         help: "Make all columns invisible",
                     },
                     { text: "Schema",
@@ -367,10 +367,11 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         rr.invoke(new NextKReceiver(this.getPage(), this, rr, false, o, null));
     }
 
-    protected setOrder(o: RecordOrder): void {
+    protected setOrder(o: RecordOrder, preserveFirstRow: boolean): void {
         let firstRow = null;
         let minValues = null;
-        if (this.nextKList != null &&
+        if (preserveFirstRow &&
+            this.nextKList != null &&
             this.nextKList.rows != null &&
             this.nextKList.rows.length > 0) {
             firstRow = [];
@@ -450,7 +451,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
 
     protected toggleOrder(colName: string): void {
         const o = this.order.toggle(colName);
-        this.setOrder(o);
+        this.setOrder(o, true);
     }
 
     public showColumns(order: number, first: boolean): void {
@@ -468,7 +469,8 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             } else
                 o.hide(colName);
         });
-        this.setOrder(o);
+        // If we are inserting the first column then we do not preserve the first row
+        this.setOrder(o, !first);
     }
 
     public resize(): void {
@@ -752,7 +754,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         }
         const order = new RecordOrder(so);
         this.schema = schema;
-        this.setOrder(order);
+        this.setOrder(order, true);
     }
 
     // mouse click on a column
@@ -1068,6 +1070,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                         action: () => this.moveRowToTop(row),
                         help: "Move this row to the top of the view."
                     }, true);
+                    /*
                     if (this.dataset.isLog() &&
                         cd.name === "Filename" && row.count === 1) {
                         this.contextMenu.addItem({
@@ -1076,6 +1079,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                             help: "Open this file in a new tab"
                         }, true);
                     }
+                    */
                     this.contextMenu.show(e);
                 };
             } else {
@@ -1306,7 +1310,7 @@ export class FindReceiver extends OnCompleteReceiver<FindResult> {
                        operation: ICancellable<FindResult>,
                        protected tv: TableView,
                        protected order: RecordOrder) {
-        super(page, operation, "Compute quantiles");
+        super(page, operation, "Searching for data");
     }
 
     public run(result: FindResult): void {
