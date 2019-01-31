@@ -32,13 +32,6 @@ public interface IDateColumn extends IColumn {
         return Converters.toDouble(tmp);
     }
 
-    @Nullable
-    @Override
-    default String asString(final int rowIndex) {
-        assert !this.isMissing(rowIndex);
-        return Converters.checkNull(this.getDate(rowIndex)).toString();
-    }
-
     @Override
     default IndexComparator getComparator() {
         return new IndexComparator() {

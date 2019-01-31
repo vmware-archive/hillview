@@ -87,9 +87,7 @@ public class DateListColumn
     @Override
     public String asString(int rowIndex) {
         Instant dt = this.getDate(rowIndex);
-        if (dt == null)
-            return null;
-        return dt.toString();
+        return Converters.toString(dt);
     }
 
     @Override

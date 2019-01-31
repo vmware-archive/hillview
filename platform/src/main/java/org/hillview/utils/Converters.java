@@ -19,6 +19,8 @@ package org.hillview.utils;
 
 import javax.annotation.Nullable;
 import java.time.*;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 /**
  * Conversion to and from doubles of various supported datatypes.
@@ -71,5 +73,26 @@ public class Converters {
         if (data == null)
             throw new NullPointerException("Converters.checkNull() failed");
         return data;
+    }
+
+    private static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss.SSS")
+            .withLocale(Locale.US)
+            .withZone(ZoneId.systemDefault());
+
+    /**
+     * Convert a date to a string.  Must be the same algorithm as the
+     * one used in JavaScript to convert dates.
+     */
+    public static String toString(@Nullable Instant d) {
+        if (d == null)
+            return "missing";
+        String s = formatter.format(d);
+        if (s.endsWith(".000"))
+            s = s.substring(0, s.length() - 4);
+        if (s.endsWith(" 00:00:00"))
+            return s.substring(0, s.length() - 9);
+        if (s.endsWith(":00"))
+            return s.substring(0, s.length() - 3);
+        return s;
     }
 }

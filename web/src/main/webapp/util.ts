@@ -190,11 +190,12 @@ function zeroPad(num: number, length: number): string {
 /**
  * Write a date into a format like
  * 2017/03/05 10:05:30.243
- * The suffix may be omitted if it is zero
+ * The suffix may be omitted if it is zero.
+ * This should match the algorithm in the Java Converters.toString(Instant) method.
  */
-export function formatDate(d?: Date): string {
+export function formatDate(d: Date): string {
     if (d == null)
-        d = new Date();
+        return "missing";
     const year = d.getFullYear();
     const month = d.getMonth() + 1;
     const day = d.getDate();
@@ -212,7 +213,7 @@ export function formatDate(d?: Date): string {
         suffix = ":" + zeroPad(minutes, 2) + suffix;
     if (hour !== 0 || suffix !== "") {
         if (suffix === "")
-            suffix = ":00:00";
+            suffix = ":00";
         suffix = " " + zeroPad(hour, 2) + suffix;
     }
     return df + suffix;

@@ -79,8 +79,7 @@ public interface IDurationColumn extends IColumn {
         switch(kind) {
             case Json:
             case String:
-                //noinspection ConstantConditions
-                this.convert(newColumn, set, row -> this.getDate(row).toString());
+                this.convert(newColumn, set, row -> Converters.toString(this.getDate(row)));
                 break;
             case Duration:
                 this.convert(newColumn, set, this::getDuration);

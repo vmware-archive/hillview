@@ -159,7 +159,6 @@ public class OrcFileLoader extends TextFileLoader {
      * @param simple  Description of the vec column type; should be a simple type.
      * @param count   Number of rows to append.
      */
-    @SuppressWarnings("ConstantConditions")
     private static void appendColumn(IAppendableColumn to, ColumnVector vec,
                                      TypeDescription.Category simple, int count) {
         // See for example
@@ -263,7 +262,7 @@ public class OrcFileLoader extends TextFileLoader {
                                     + to.getKind());
                         case Json:
                         case String:
-                            to.append(value.toString());
+                            to.append(Converters.toString(value));
                             break;
                         case Double:
                             to.append(Converters.toDouble(value));
@@ -288,7 +287,7 @@ public class OrcFileLoader extends TextFileLoader {
                                     + to.getKind());
                         case Json:
                         case String:
-                            to.append(instant.toString());
+                            to.append(Converters.toString(instant));
                             break;
                         case Double:
                             to.append(Converters.toDouble(instant));
