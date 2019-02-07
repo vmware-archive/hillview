@@ -354,7 +354,7 @@ export class Histogram2DView extends HistogramViewBase {
     public exactHistogram(): void {
         if (this == null)
             return;
-        const cds = [this.yData.description, this.xAxisData.description];
+        const cds = [this.xAxisData.description, this.yData.description];
         const rr = this.createDataRangesRequest(cds, this.page, "2DHistogram");
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
             [this.xPoints, this.yPoints], cds, this.page.title, {
@@ -397,7 +397,7 @@ export class Histogram2DView extends HistogramViewBase {
         const rr = this.createDataRangesRequest(cds, this.page, "2DHistogram");
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
             [this.xPoints, this.yPoints], cds, null, {
-            reusePage: true, relative: false,
+            reusePage: true, relative: this.relative,
             chartKind: "2DHistogram", exact: false
         }));
     }

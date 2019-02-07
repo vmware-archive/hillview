@@ -301,9 +301,9 @@ export abstract class TSViewBase extends BigTableView {
                     return;
                 }
                 if (heatmap)
-                    this.histogram([col0, col1]);
-                else
                     this.heatmap([col0, col1]);
+                else
+                    this.histogram([col0, col1]);
             },
         );
         dia.show();
