@@ -69,9 +69,6 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
         protected samplingRate: number,
         page: FullPage) {
         super(remoteObjectId, rowCount, schema, page, "Histogram");
-        this.surface = new HtmlPlottingSurface(this.chartDiv, page);
-        this.plot = new HistogramPlot(this.surface);
-        this.cdfPlot = new CDFPlot(this.surface);
 
         this.menu = new TopMenu( [{
             text: "Export",
@@ -117,6 +114,14 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
             const submenu = this.menu.getSubmenu("View");
             submenu.enable("exact", false);
         }
+    }
+
+    protected createNewSurfaces(): void {
+        if (this.surface != null)
+            this.surface.destroy();
+        this.surface = new HtmlPlottingSurface(this.chartDiv, this.page, {});
+        this.plot = new HistogramPlot(this.surface);
+        this.cdfPlot = new CDFPlot(this.surface);
     }
 
     public serialize(): IViewSerialization {
@@ -196,7 +201,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
      * @param bucketCount: Number of buckets to display.  If 0 the bucket count will be computed
      */
     public updateView(cdf: HistogramBase, bucketCount: number): void {
-        this.plot.clear();
+        this.createNewSurfaces();
         if (cdf == null) {
             this.page.reportError("No data to display");
             return;

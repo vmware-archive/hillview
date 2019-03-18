@@ -29,7 +29,6 @@ import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {D3Axis, D3Scale, D3SvgElement, Point, Rectangle, Resolution} from "./ui";
 import {SchemaClass} from "../schemaClass";
-import {drag as d3drag} from "d3-drag";
 
 /**
  * Displays a legend for a 2D histogram.
@@ -65,16 +64,6 @@ export class HistogramLegendPlot extends Plot {
         this.selectionCompleted = onCompleted;
         this.dragging = false;
         this.moved = false;
-    }
-
-    public clear(): void {
-        super.clear();
-        const legendDrag = d3drag()
-            .on("start", () => this.dragLegendStart())
-            .on("drag", () => this.dragLegendMove())
-            .on("end", () => this.dragLegendEnd());
-        const canvas = this.plottingSurface.getCanvas();
-        canvas.call(legendDrag);
     }
 
     // dragging in the legend
@@ -331,17 +320,12 @@ export class HeatmapLegendPlot extends Plot {
         this.onColorMapChange = listener;
     }
 
-    public clear(): void {
-        super.clear();
-        this.colorMap = null;
-    }
-
     /**
      * The context menu is added only when a colormap change event listener is set.
      */
     private enableContextMenu(): void {
         this.contextMenu = new ContextMenu(
-            this.plottingSurface.topLevelElement, [
+            this.plottingSurface.svgCanvas.node(), [
             {
                 text: "Cool",
                 help: "Use a color palette with cool colors.",

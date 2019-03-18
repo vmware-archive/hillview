@@ -55,9 +55,6 @@ export abstract class HistogramViewBase extends ChartView implements IScrollTarg
 
         this.summary = document.createElement("div");
         this.topLevel.appendChild(this.summary);
-
-        // TODO: this should not be here.
-        this.page.getTitleElement().ondblclick = () => this.scrollBar.setPosition(0.3, 0.6);
     }
 
     protected abstract showTable(): void;

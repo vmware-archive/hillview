@@ -84,10 +84,9 @@ export abstract class TrellisChartView extends ChartView {
      * Create the surfaces to display the data on.
      * @param onCreation  Method to invoke for each surface created.
      */
-    protected createSurfaces(
+    protected createAllSurfaces(
         onCreation: (surface: PlottingSurface) => void): void {
-        this.surface = new HtmlPlottingSurface(this.topLevel, this.page);
-        this.surface.create();
+        this.surface = new HtmlPlottingSurface(this.topLevel, this.page, {});
 
         let created = 0;
         this.surfaces = [];
@@ -110,9 +109,7 @@ export abstract class TrellisChartView extends ChartView {
                     .text(title);
                 const yCorner = y * (this.shape.size.height + this.shape.headerHeight)
                     + this.shape.headerHeight + this.surface.topMargin;
-                const surface = this.surface.createChildSurface(xCorner, yCorner);
-                surface.setSize(this.shape.size);
-                surface.setMargins(0, 0, 0, 0);
+                const surface = this.surface.createChildSurface(xCorner, yCorner, this.shape.size);
                 this.surfaces.push(surface);
                 this.coordinates.push( {
                     x: xCorner,

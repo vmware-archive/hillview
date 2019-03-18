@@ -24,10 +24,8 @@ import org.apache.commons.lang.StringEscapeUtils;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
-import java.text.DateFormat;
 import java.text.MessageFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.Enumeration;
 import java.util.logging.*;
 
 /**
@@ -43,9 +41,9 @@ public class HillviewLogger {
     // Actual logging channel.
     private final Logger logger;
     // Machine where the core is running.
-    private final String machine;
+    final String machine;
     // Role of machine (worker or web server).
-    private final String role;
+    final String role;
     // Default logger if users forget to initialize
     public static HillviewLogger instance = new HillviewLogger("none", null);
 
@@ -60,31 +58,15 @@ public class HillviewLogger {
      *                  console.
      */
     private HillviewLogger(String role, @Nullable String filename) {
+        LogManager manager = LogManager.getLogManager();
         // Disable all default logging
-        LogManager.getLogManager().reset();
+        manager.reset();
         this.logger = Logger.getLogger("Hillview");
         this.machine = this.checkCommas(Utilities.getHostName());
         this.role = this.checkCommas(role);
         this.logger.setLevel(Level.INFO);
 
-        Formatter form = new SimpleFormatter() {
-            final String[] components = new String[5];
-            final String newline = System.lineSeparator();
-            private final DateFormat df = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss.SSS");
-            @Override
-            public synchronized String format(LogRecord record) {
-                this.components[0] = HillviewLogger.this.checkCommas(
-                        df.format(new Date(record.getMillis())));
-                this.components[1] = HillviewLogger.this.role;
-                this.components[2] = HillviewLogger.this.checkCommas(
-                        record.getLevel().toString());
-                this.components[3] = HillviewLogger.this.machine;
-                this.components[4] = record.getMessage();
-                String result = String.join(",", components);
-                return result + this.newline;
-            }
-        };
-
+        Formatter form = new HillviewLogFormatter();
         Handler handler;
         if (filename != null) {
             try {
@@ -99,6 +81,16 @@ public class HillviewLogger {
         logger.addHandler(handler);
         File currentDirectory = new File(new File(".").getAbsolutePath());
         this.info("Starting logger", "Working directory: {0}", currentDirectory);
+
+        // Redirect existing loggers to the same file
+        Enumeration<String> e = manager.getLoggerNames();
+        while (e.hasMoreElements()) {
+            String ln = e.nextElement();
+            if (ln.equals("Hillview")) continue;
+            Logger logger = manager.getLogger(ln);
+            logger.addHandler(handler);
+            this.info("Intercepted logger", "{0}", ln);
+        }
     }
 
     public static void initialize(String role, @Nullable String filename) {
@@ -181,4 +173,5 @@ public class HillviewLogger {
     public void debug(String message) { this.debug(message, ""); }
 
     public void error(String message) { this.error(message, ""); }
+
 }

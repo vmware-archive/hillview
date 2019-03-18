@@ -53,10 +53,6 @@ export abstract class Plot {
         return this.plottingSurface.getChartHeight();
     }
 
-    public clear(): void {
-        this.plottingSurface.create();
-    }
-
     public getXAxis(): AxisDescription {
         // default implementation
         return this.xAxisData.axis;

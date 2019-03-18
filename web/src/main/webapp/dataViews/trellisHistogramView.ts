@@ -110,16 +110,20 @@ export class TrellisHistogramView extends TrellisChartView {
         this.page.setMenu(this.menu);
     }
 
-    public setAxes(xAxisData: AxisData, groupByAxisData: AxisData): void {
-        this.xAxisData = xAxisData;
-        this.groupByAxisData = groupByAxisData;
-
-        this.createSurfaces((surface) => {
+    protected createNewSurfaces(): void {
+        if (this.surface != null)
+            this.surface.destroy();
+        this.createAllSurfaces((surface) => {
             const hp = new HistogramPlot(surface);
             this.hps.push(hp);
             const cdfp = new CDFPlot(surface);
             this.cdfs.push(cdfp);
         });
+    }
+
+    public setAxes(xAxisData: AxisData, groupByAxisData: AxisData): void {
+        this.xAxisData = xAxisData;
+        this.groupByAxisData = groupByAxisData;
     }
 
     protected doChangeGroups(groupCount: number): void {
@@ -260,6 +264,7 @@ export class TrellisHistogramView extends TrellisChartView {
     }
 
     public updateView(data: Heatmap, bucketCount: number): void {
+        this.createNewSurfaces();
         if (bucketCount !== 0)
             this.bucketCount = bucketCount;
         else

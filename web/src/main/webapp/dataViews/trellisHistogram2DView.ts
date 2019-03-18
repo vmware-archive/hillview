@@ -49,7 +49,8 @@ export class TrellisHistogram2DView extends TrellisChartView {
     protected buckets: number;
     protected xAxisData: AxisData;
     protected legendAxisData: AxisData;
-    private readonly legendSurface: PlottingSurface;
+    private legendSurface: PlottingSurface;
+    private readonly legendDiv: HTMLDivElement;
     protected legendPlot: HistogramLegendPlot;
     protected relative: boolean;
     protected data: Heatmap3D;
@@ -110,10 +111,22 @@ export class TrellisHistogram2DView extends TrellisChartView {
 
         this.page.setMenu(this.menu);
         this.buckets = Math.round(shape.size.width / Resolution.minBarWidth);
-        this.legendSurface = new HtmlPlottingSurface(this.topLevel, page);
-        this.legendSurface.setHeight(Resolution.legendSpaceHeight);
+        this.legendDiv = this.makeToplevelDiv();
+    }
+
+    protected createNewSurfaces(): void {
+        if (this.surface != null)
+            this.surface.destroy();
+        if (this.legendSurface != null)
+            this.legendSurface.destroy();
+        this.legendSurface = new HtmlPlottingSurface(this.legendDiv, this.page, {
+            height: Resolution.legendSpaceHeight });
         this.legendPlot = new HistogramLegendPlot(this.legendSurface,
             (xl, xr) => { this.legendSelectionCompleted(xl, xr); });
+        this.createAllSurfaces( (surface) => {
+            const hp = new Histogram2DPlot(surface);
+            this.hps.push(hp);
+        });
     }
 
     public setAxes(xAxisData: AxisData,
@@ -125,11 +138,6 @@ export class TrellisHistogram2DView extends TrellisChartView {
         this.legendAxisData = legendAxisData;
         this.groupByAxisData = groupByAxisData;
 
-        this.createSurfaces( (surface) => {
-            const hp = new Histogram2DPlot(surface);
-            hp.clear();
-            this.hps.push(hp);
-        });
     }
 
     public swapAxes(): void {
@@ -218,7 +226,8 @@ export class TrellisHistogram2DView extends TrellisChartView {
 
     protected chooseBuckets(): void {
         const bucketDialog = new BucketDialog();
-        bucketDialog.setAction(() => this.updateView(this.data, [bucketDialog.getBucketCount(), this.legendAxisData.bucketCount]));
+        bucketDialog.setAction(() => this.updateView(this.data,
+            [bucketDialog.getBucketCount(), this.legendAxisData.bucketCount]));
         bucketDialog.show();
     }
 
@@ -315,9 +324,8 @@ export class TrellisHistogram2DView extends TrellisChartView {
     }
 
     public updateView(data: Heatmap3D, bucketCount: number[]): void {
+        this.createNewSurfaces();
         this.data = data;
-        this.legendPlot.clear();
-
         let max = 0;
         for (let i = 0; i < data.buckets.length; i++) {
             const buckets = data.buckets[i];

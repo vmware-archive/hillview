@@ -58,6 +58,7 @@ export class HeatmapView extends ChartView {
     protected summary: HTMLElement;
     protected plot: HeatmapPlot;
     protected showMissingData: boolean = false;  // TODO: enable this
+    protected legendSurface: PlottingSurface;
     protected xHistoSurface: PlottingSurface;
     protected xHistoPlot: HistogramPlot;
     protected heatmap: Heatmap;
@@ -66,6 +67,9 @@ export class HeatmapView extends ChartView {
     protected readonly viewMenu: SubMenu;
     protected xAxisData: AxisData;
     protected yAxisData: AxisData;
+    protected legendDiv: HTMLDivElement;
+    protected heatmapDiv: HTMLDivElement;
+    protected missingDiv: HTMLDivElement;
 
     constructor(remoteObjectId: RemoteObjectId,
                 rowCount: number,
@@ -115,26 +119,41 @@ export class HeatmapView extends ChartView {
         ]);
 
         this.page.setMenu(this.menu);
-
-        const legendSurface = new HtmlPlottingSurface(this.topLevel, page);
-        legendSurface.setHeight(Resolution.legendSpaceHeight * 2 / 3);
-        this.colorLegend = new HeatmapLegendPlot(legendSurface);
-        this.colorLegend.setColorMapChangeEventListener(
-            () => this.updateView(this.heatmap, true));
-
-        this.surface = new HtmlPlottingSurface(this.topLevel, this.page);
-        this.surface.setMargins(20, null, null, Resolution.heatmapLabelWidth);
-        this.plot = new HeatmapPlot(this.surface, this.colorLegend, true);
-
-        if (this.showMissingData) {
-            this.xHistoSurface = new HtmlPlottingSurface(this.topLevel, page);
-            this.xHistoSurface.setMargins(0, null, 16, null);
-            this.xHistoSurface.setHeight(100);
-            this.xHistoPlot = new HistogramPlot(this.xHistoSurface);
-        }
+        this.legendDiv = this.makeToplevelDiv();
+        this.heatmapDiv = this.makeToplevelDiv();
+        this.missingDiv = this.makeToplevelDiv();
 
         this.summary = document.createElement("div");
         this.topLevel.appendChild(this.summary);
+    }
+
+    protected createNewSurfaces(): void {
+        if (this.legendSurface != null)
+            this.legendSurface.destroy();
+        if (this.surface != null)
+            this.surface.destroy();
+        if (this.xHistoSurface != null)
+            this.xHistoSurface.destroy();
+
+        this.legendSurface = new HtmlPlottingSurface(this.legendDiv, this.page,
+            { height: Resolution.legendSpaceHeight * 2 / 3 });
+        this.colorLegend = new HeatmapLegendPlot(this.legendSurface);
+        this.colorLegend.setColorMapChangeEventListener(
+            () => this.updateView(this.heatmap, true));
+
+        this.surface = new HtmlPlottingSurface(this.heatmapDiv, this.page,
+            { topMargin: 20, leftMargin: Resolution.heatmapLabelWidth });
+        this.plot = new HeatmapPlot(this.surface, this.colorLegend, true);
+
+        if (this.showMissingData) {
+            this.xHistoSurface = new HtmlPlottingSurface(
+                this.missingDiv, this.page, {
+                    topMargin: 0,
+                    bottomMargin: 16,
+                    height: 100
+                });
+            this.xHistoPlot = new HistogramPlot(this.xHistoSurface);
+        }
     }
 
     public setAxes(xData: AxisData, yData: AxisData): void {
@@ -143,13 +162,7 @@ export class HeatmapView extends ChartView {
     }
 
     public updateView(heatmap: Heatmap, keepColorMap: boolean): void {
-        if (!keepColorMap) {
-            this.colorLegend.clear();
-        }
-        this.plot.clear();
-        if (this.showMissingData) {
-            this.xHistoPlot.clear();
-        }
+        this.createNewSurfaces();
         if (heatmap == null || heatmap.buckets.length === 0) {
             this.page.reportError("No data to display");
             return;

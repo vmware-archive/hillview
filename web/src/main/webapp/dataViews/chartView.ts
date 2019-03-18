@@ -52,7 +52,8 @@ export abstract class ChartView extends BigTableView {
      */
     protected pointDescription: TextOverlay;
     /**
-     * Surface on top of which everything is drawn.
+     * The main surface on top of which the image is drawn.
+     * There may exist other surfaces as well besides this one.
      */
     protected surface: PlottingSurface;
     /**
@@ -73,6 +74,12 @@ export abstract class ChartView extends BigTableView {
         this.pointDescription = null;
         this.surface = null;
     }
+
+    /**
+     * Creates all surfaces where plotting will be done.
+     * If surfaces were created already the old ones are first destroyed.
+     */
+    protected abstract createNewSurfaces(): void;
 
     protected setupMouse(): void {
         this.topLevel.onkeydown = (e) => this.keyDown(e);
@@ -141,6 +148,12 @@ export abstract class ChartView extends BigTableView {
         this.selectionOrigin = {
             x: position[0],
             y: position[1] };
+    }
+
+    protected makeToplevelDiv(): HTMLDivElement {
+        const div = document.createElement("div");
+        this.topLevel.appendChild(div);
+        return div;
     }
 
     /**
