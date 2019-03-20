@@ -152,7 +152,8 @@ export class DatasetView implements IHtmlElement {
      */
     public isLog(): boolean {
         return this.loaded.kind === "Hillview logs"
-            || (this.loaded.kind === "Files" && this.loaded.description.fileKind === "genericlog");
+            || (this.loaded.kind === "Files" &&
+                this.loaded.description.fileKind === "genericlog");
     }
 
     public getHTMLRepresentation(): HTMLElement {

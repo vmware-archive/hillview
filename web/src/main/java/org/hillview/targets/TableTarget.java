@@ -751,7 +751,7 @@ public final class TableTarget extends RpcTarget {
     }
 
     @SuppressWarnings("NullableProblems")
-    static class CreateColumnInfo {
+    static class JSCreateColumnInfo {
         String jsFunction = "";
         Schema schema;
         String outputColumn;
@@ -764,11 +764,28 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    public void createColumn(RpcRequest request, RpcRequestContext context) {
-        CreateColumnInfo info = request.parseArgs(CreateColumnInfo.class);
+    public void jsCreateColumn(RpcRequest request, RpcRequestContext context) {
+        JSCreateColumnInfo info = request.parseArgs(JSCreateColumnInfo.class);
         ColumnDescription desc = new ColumnDescription(info.outputColumn, info.outputKind);
         CreateColumnJSMap map = new CreateColumnJSMap(
                 info.jsFunction, info.schema, Utilities.arrayToMap(info.renameMap), desc);
+        this.runMap(this.table, map, TableTarget::new, request, context);
+    }
+
+    @SuppressWarnings("NullableProblems")
+    static class KVCreateColumnInfo {
+        String key = "";
+        String inputColumn;
+        String outputColumn;
+        int    outputIndex;
+    }
+
+    @HillviewRpc
+    public void kvCreateColumn(RpcRequest request, RpcRequestContext context) {
+        KVCreateColumnInfo info = request.parseArgs(KVCreateColumnInfo.class);
+        String key = info.key;
+        ExtractValueFromKeyMap map = new ExtractValueFromKeyMap(
+                info.key, info.inputColumn, info.outputColumn, info.outputIndex);
         this.runMap(this.table, map, TableTarget::new, request, context);
     }
 }
