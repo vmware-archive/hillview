@@ -23,7 +23,7 @@ import {
     ComparisonFilterDescription,
     ContentsKind,
     ConvertColumnInfo,
-    CreateColumnInfo,
+    JSCreateColumnInfo,
     HLogLog,
     IColumnDescription,
     kindIsString,
@@ -135,9 +135,9 @@ export abstract class TSViewBase extends BigTableView {
         dialog.show();
     }
 
-    public createColumnDialog(order: RecordOrder, tableRowsDesired: number): void {
+    public createJSColumnDialog(order: RecordOrder, tableRowsDesired: number): void {
         const dialog = new Dialog(
-            "Add column", "Specify a JavaScript function which computes the values in a new column.");
+            "Create new column", "Specify a JavaScript function which computes the values in a new column.");
         const name = dialog.addTextField(
             "outColName", "Column name", FieldKind.String, null, "Name to use for the generated column.");
         name.required = true;
@@ -149,26 +149,29 @@ export abstract class TSViewBase extends BigTableView {
             "A JavaScript function that computes the values for each row of the generated column." +
             "The function has a single argument 'row'.  The row is a JavaScript map that can be indexed with " +
             "a column name (a string) and which produces a value.");
-        dialog.setCacheTitle("CreateDialog");
-        dialog.setAction(() => this.createColumn(dialog, order, tableRowsDesired));
+        dialog.setCacheTitle("CreateJSDialog");
+        dialog.setAction(() => this.createJSColumn(dialog, order, tableRowsDesired));
         dialog.show();
     }
 
-    public createColumn(dialog: Dialog, order: RecordOrder, tableRowsDesired: number): void {
+    private createJSColumn(dialog: Dialog, order: RecordOrder, tableRowsDesired: number): void {
         const col = dialog.getFieldValue("outColName");
+        if (this.schema.find(col) != null) {
+            this.page.reportError("Column " + col + " already exists");
+            return;
+        }
         const kind = dialog.getFieldValue("outColKind");
         const fun = "function map(row) {" + dialog.getFieldValue("function") + "}";
         const selColumns = cloneToSet(this.getSelectedColNames());
         const subSchema = this.schema.filter((c) => selColumns.has(c.name));
-        const arg: CreateColumnInfo = {
+        const arg: JSCreateColumnInfo = {
             jsFunction: fun,
             outputColumn: col,
             outputKind: asContentsKind(kind),
             schema: subSchema.schema,
             renameMap: mapToArray(subSchema.getRenameMap()),
         };
-        const rr = this.createCreateColumnRequest(arg);
-        const newPage = this.dataset.newPage(new PageTitle("New column " + col), this.page);
+        const rr = this.createJSCreateColumnRequest(arg);
         const cd: IColumnDescription = {
             kind: arg.outputKind,
             name: col,
@@ -177,7 +180,8 @@ export abstract class TSViewBase extends BigTableView {
         const o = order.clone();
         o.addColumn({columnDescription: cd, isAscending: true});
 
-        const rec = new TableOperationCompleted(newPage, rr, this.rowCount, schema, o, tableRowsDesired);
+        const rec = new TableOperationCompleted(
+            this.page, rr, this.rowCount, schema, o, tableRowsDesired);
         rr.invoke(rec);
     }
 
@@ -671,9 +675,9 @@ export class ConverterDialog extends Dialog {
     private columnNameFixed: boolean = false;
 
     constructor(protected readonly columnName: string,
-                protected readonly allColumns: string[]) {
+                protected readonly schema: SchemaClass) {
         super("Convert column", "Creates a new column by converting the data in an existing column to a new type.");
-        const cn = this.addSelectField("columnName", "Column: ", allColumns, columnName,
+        const cn = this.addSelectField("columnName", "Column: ", schema.columnNames, columnName,
             "Column whose type is converted");
         const nk = this.addSelectField("newKind", "Convert to: ",
             allContentsKind, null,
@@ -693,18 +697,6 @@ export class ConverterDialog extends Dialog {
         this.generateColumnName();
     }
 
-    public generateFreshName(base: string, suffix: string): string {
-        let nn = base + suffix;
-        if (this.allColumns.indexOf(nn) >= 0) {
-            let counter = 0;
-            while (this.allColumns.indexOf(nn) >= 0) {
-                nn = base + counter.toString() + suffix;
-                counter++;
-            }
-        }
-        return nn;
-    }
-
     private generateColumnName(): void {
         const keep = this.getBooleanValue("keep");
         this.showField("newColumnName", keep);
@@ -713,7 +705,7 @@ export class ConverterDialog extends Dialog {
             return;
         const cn = this.getFieldValue("columnName");
         const suffix = " (" + this.getFieldValue("newKind") + ")";
-        const nn = this.generateFreshName(cn, suffix);
+        const nn = this.schema.uniqueColumnName(cn + suffix);
         this.setFieldValue("newColumnName", nn);
     }
 }

@@ -24,7 +24,7 @@ import {
     ContentsKind,
     FindResult,
     IColumnDescription,
-    kindIsString,
+    kindIsString, KVCreateColumnInfo,
     NextKList,
     RecordOrder,
     RemoteObjectId,
@@ -660,10 +660,19 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                     help: "Convert the data in the selected column to a different data type.",
                 }, selectedCount === 1);
                 this.contextMenu.addItem({
-                    text: "Create column...",
-                    action: () => this.createColumnDialog(this.order, this.tableRowsDesired),
-                    help: "Add a new column computed from the selected columns.",
+                    text: "Create column in JS...",
+                    action: () => this.createJSColumnDialog(this.order, this.tableRowsDesired),
+                    help: "Add a new column computed using Javascript from the selected columns.",
                 }, true);
+                this.contextMenu.addItem({
+                    text: "Extract value...",
+                    action: () => {
+                        const colName = this.getSelectedColNames()[0];
+                        this.createKVColumnDialog(colName, this.tableRowsDesired);
+                    },
+                    help: "Extract a value associated with a specific key.",
+                }, selectedCount === 1 &&
+                    this.isKVColumn(this.getSelectedColNames()[0]));
                 this.contextMenu.show(e);
             };
         }
@@ -711,6 +720,15 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         this.grid.updateCompleted();
     }
 
+    /**
+     * Return true if this column is a column in a log file that has a contents
+     * that is of the form of a key=value.
+     */
+    private isKVColumn(colName: string): boolean {
+        // This is a heuristic; this is tied to RFC5424 logs right now
+        return this.dataset.isLog() && colName === "StructuredData";
+    }
+
     public filterOnValue(cd: IColumnDescription, value: string | number, comparison: Comparison): void {
         const cfd: ComparisonFilterDescription = {
             column: cd,
@@ -725,7 +743,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
      * Convert the data in a column to a different column kind.
      */
     public convert(colName: string): void {
-        const cd = new ConverterDialog(colName, this.schema.columnNames);
+        const cd = new ConverterDialog(colName, this.schema);
         cd.setAction(
             () => {
                 const kindStr = cd.getFieldValue("newKind");
@@ -734,7 +752,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 const keep = cd.getBooleanValue("keep");
                 const newColName = keep ?
                     cd.getFieldValue("newColumnName") :
-                    cd.generateFreshName(col, "");
+                    this.schema.uniqueColumnName(col);
                 const converter = new ColumnConverter(
                     col, kind, newColName, keep, this,
                     this.order, this.page);
@@ -1099,6 +1117,53 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
 
     public setScroll(top: number, bottom: number): void {
         this.scrollBar.setPosition(top, bottom);
+    }
+
+    public createKVColumnDialog(inputColumn: string, tableRowsDesired: number): void {
+        const dialog = new Dialog(
+            "Extract value", "Extract values associated with a specific key.");
+        const kf = dialog.addTextField("key", "Key", FieldKind.String, null, "Key whose value is extracted.");
+        kf.onchange = () => {
+            dialog.setFieldValue("outColName",
+                this.schema.uniqueColumnName(dialog.getFieldValue("key")));
+        };
+        const name = dialog.addTextField(
+            "outColName", "Column name", FieldKind.String, null, "Name to use for the generated column.");
+        name.required = true;
+        dialog.setCacheTitle("CreateKVDialog");
+        dialog.setAction(() => this.createKVColumn(dialog, inputColumn, tableRowsDesired));
+        dialog.show();
+    }
+
+    private createKVColumn(dialog: Dialog, inputColumn: string, tableRowsDesired: number): void {
+        const col = dialog.getFieldValue("outColName");
+        if (this.schema.find(col) != null) {
+            this.page.reportError("Column " + col + " already exists");
+            return;
+        }
+        const key = dialog.getFieldValue("key");
+        if (key === "") {
+            this.page.reportError("Please specify a non-empty key");
+            return;
+        }
+        const arg: KVCreateColumnInfo = {
+            key: key,
+            inputColumn: inputColumn,
+            outputColumn: col,
+            outputIndex: this.schema.columnIndex(inputColumn)
+        };
+        const rr = this.createKVCreateColumnRequest(arg);
+        const cd: IColumnDescription = {
+            kind: "String",
+            name: col,
+        };
+        const schema = this.schema.append(cd);
+        const o = this.order.clone();
+        o.addColumn({columnDescription: cd, isAscending: true});
+
+        const rec = new TableOperationCompleted(
+            this.page, rr, this.rowCount, schema, o, tableRowsDesired);
+        rr.invoke(rec);
     }
 }
 

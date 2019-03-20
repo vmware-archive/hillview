@@ -51,32 +51,36 @@ public class FindFilesMapper implements IMap<Empty, List<IFileReference>> {
     /**
      * Returns a list of IFileReference objects, one for each of the files that
      * match the specification.
-     * 
+     *
      * @param empty:
      *            unused.
      */
     @Override
-    public List<IFileReference> apply(Empty empty) {
+    public List<IFileReference> apply(@Nullable Empty empty) {
         String[] paths = this.description.fileNamePattern.trim().split("\\s*,\\s*");
         HillviewLogger.instance.info("Find files", "pattern: {0}", this.description.fileNamePattern);
         List<File> files = new ArrayList<File>();
         FilenameFilter filter;
         for (int i = 0; i < paths.length; i++) {
-            Path dir_path = Paths.get(Utilities.getFolder(paths[i]));
-            if (Utilities.getWildcard(paths[i]) == null)
+            String folder = Utilities.getFolder(paths[i]);
+            if (folder == null) continue;
+
+            Path dir_path = Paths.get(folder);
+            String wildcard = Utilities.getWildcard(paths[i]);
+            if (wildcard == null)
                 filter = (d, name) -> true;
             else
-                filter = new WildcardFileFilter(Utilities.getWildcard(paths[i]));
+                filter = new WildcardFileFilter(wildcard);
 
-            if (Files.exists(dir_path) && Files.isDirectory(dir_path))
-                files.addAll(Arrays.asList(new File(Utilities.getFolder(paths[i])).listFiles(filter)));
-            else
-                files.addAll(Arrays.asList(new File[0]));
+            if (Files.exists(dir_path) && Files.isDirectory(dir_path)) {
+                File[] contained = new File(folder).listFiles(filter);
+                if (contained != null)
+                    files.addAll(Arrays.asList(contained));
+            }
         }
         List<String> names = new ArrayList<String>();
-        if (files != null)
-            for (File f : files)
-                names.add(f.getPath());
+        for (File f : files)
+            names.add(f.getPath());
         Collections.sort(names);
         String allNames = String.join(",", names);
         HillviewLogger.instance.info("Files found", "{0}: {1}", names.size(), allNames);

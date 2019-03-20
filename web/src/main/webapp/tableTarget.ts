@@ -22,7 +22,7 @@
 import {DatasetView, IViewSerialization} from "./datasetView";
 import {
     CombineOperators,
-    CreateColumnInfo,
+    JSCreateColumnInfo,
     DataRange,
     FilterDescription,
     Heatmap,
@@ -45,7 +45,7 @@ import {
     FindResult,
     Heatmap3D,
     StringFilterDescription,
-    ContainsArgs,
+    ContainsArgs, KVCreateColumnInfo,
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
 import {FullPage, PageTitle} from "./ui/fullPage";
@@ -283,9 +283,14 @@ RpcRequest<PartialResult<RemoteObjectId>> {
         });
     }
 
-    public createCreateColumnRequest(c: CreateColumnInfo):
+    public createJSCreateColumnRequest(c: JSCreateColumnInfo):
         RpcRequest<PartialResult<string>> {
-        return this.createStreamingRpcRequest<string>("createColumn", c);
+        return this.createStreamingRpcRequest<string>("jsCreateColumn", c);
+    }
+
+    public createKVCreateColumnRequest(c: KVCreateColumnInfo):
+        RpcRequest<PartialResult<string>> {
+        return this.createStreamingRpcRequest<string>("kvCreateColumn", c);
     }
 
     public createFilterRequest(f: FilterDescription):
