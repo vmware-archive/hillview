@@ -75,12 +75,6 @@ export abstract class ChartView extends BigTableView {
         this.surface = null;
     }
 
-    /**
-     * Creates all surfaces where plotting will be done.
-     * If surfaces were created already the old ones are first destroyed.
-     */
-    protected abstract createNewSurfaces(): void;
-
     protected setupMouse(): void {
         this.topLevel.onkeydown = (e) => this.keyDown(e);
         this.topLevel.tabIndex = 1;  // seems to be necessary to get keyboard events

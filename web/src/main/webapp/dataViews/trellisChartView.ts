@@ -109,7 +109,13 @@ export abstract class TrellisChartView extends ChartView {
                     .text(title);
                 const yCorner = y * (this.shape.size.height + this.shape.headerHeight)
                     + this.shape.headerHeight + this.surface.topMargin;
-                const surface = this.surface.createChildSurface(xCorner, yCorner, this.shape.size);
+                const surface = this.surface.createChildSurface(xCorner, yCorner, {
+                    width: this.shape.size.width,
+                    height: this.shape.size.height,
+                    topMargin: 0,
+                    leftMargin: 0,
+                    bottomMargin: 0,
+                    rightMargin: 0 });
                 this.surfaces.push(surface);
                 this.coordinates.push( {
                     x: xCorner,

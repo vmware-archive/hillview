@@ -359,6 +359,10 @@ export class HeatmapLegendPlot extends Plot {
         ]);
     }
 
+    public setSurface(surface: PlottingSurface): void {
+        this.plottingSurface = surface;
+    }
+
     private showContextMenu(event: MouseEvent): void {
         /* Only show context menu if it is enabled. */
         if (this.contextMenu != null) {

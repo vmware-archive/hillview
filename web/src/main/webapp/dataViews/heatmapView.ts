@@ -127,7 +127,7 @@ export class HeatmapView extends ChartView {
         this.topLevel.appendChild(this.summary);
     }
 
-    protected createNewSurfaces(): void {
+    protected createNewSurfaces(keepColorMap: boolean): void {
         if (this.legendSurface != null)
             this.legendSurface.destroy();
         if (this.surface != null)
@@ -137,9 +137,13 @@ export class HeatmapView extends ChartView {
 
         this.legendSurface = new HtmlPlottingSurface(this.legendDiv, this.page,
             { height: Resolution.legendSpaceHeight * 2 / 3 });
-        this.colorLegend = new HeatmapLegendPlot(this.legendSurface);
-        this.colorLegend.setColorMapChangeEventListener(
-            () => this.updateView(this.heatmap, true));
+        if (keepColorMap)
+            this.colorLegend.setSurface(this.legendSurface);
+        else {
+            this.colorLegend = new HeatmapLegendPlot(this.legendSurface);
+            this.colorLegend.setColorMapChangeEventListener(
+                () => this.updateView(this.heatmap, true));
+        }
 
         this.surface = new HtmlPlottingSurface(this.heatmapDiv, this.page,
             { topMargin: 20, leftMargin: Resolution.heatmapLabelWidth });
@@ -162,7 +166,7 @@ export class HeatmapView extends ChartView {
     }
 
     public updateView(heatmap: Heatmap, keepColorMap: boolean): void {
-        this.createNewSurfaces();
+        this.createNewSurfaces(keepColorMap);
         if (heatmap == null || heatmap.buckets.length === 0) {
             this.page.reportError("No data to display");
             return;
