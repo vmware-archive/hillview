@@ -126,12 +126,19 @@ export interface HLogLog {
     distinctItemCount: number;
 }
 
-export interface CreateColumnInfo {
+export interface JSCreateColumnInfo {
     jsFunction: string;
     schema: Schema;
     outputColumn: string;
     outputKind: ContentsKind;
     renameMap: string[];
+}
+
+export interface KVCreateColumnInfo {
+    key: string;
+    inputColumn: string;
+    outputColumn: string;
+    outputIndex: number;
 }
 
 export interface Heatmap {

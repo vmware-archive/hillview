@@ -183,7 +183,6 @@ public class Utilities {
         return FilenameUtils.removeExtension(basename);
     }
 
-    @Nullable
     public static String getWildcard(String path) {
         int last = path.lastIndexOf('/');
         last = Math.max(last, path.lastIndexOf('\\'));
@@ -191,8 +190,7 @@ public class Utilities {
             return path;
         return path.substring(last + 1);
     }
-    
-    @Nullable
+
     public static String getFolder(String path) {
         int last = path.lastIndexOf('/');
         last = Math.max(last, path.lastIndexOf('\\'));
@@ -202,7 +200,45 @@ public class Utilities {
         return path.substring(0, last);
     }
 
+    /**
+     * Trim character c from the beginning and end of string s.
+     */
+    public static String trim(String s, char c) {
+        int skip = 0;
+        int len = s.length();
+        while (skip < len && s.charAt(skip) == c)
+            skip++;
+        int end = len - 1;
+        while (end > skip && s.charAt(end) == c)
+            end--;
+        return s.substring(skip, end + 1);
+    }
+
+    /**
+     * Convert consecutive multiple spaces into singlel spaces.
+     */
     public static String singleSpaced(String s) {
         return s.replaceAll("^ +| +$|( )+", "$1");
+    }
+
+    /**
+     * Given a string of the form ((k="v")[ ])*, extract the value associated with a specific key.
+     * @param key Key to search.
+     * @return The associated value or null.
+     * TODO: this does not handle escaped quotes in the value.
+     */
+    @Nullable
+    public static String getKV(@Nullable String s, String key) {
+        if (s == null)
+            return null;
+        String[] parts = s.split(" ");
+        for (String p : parts) {
+            String[] kv = p.split("=");
+            if (kv.length != 2)
+                continue;
+            if (kv[0].equals(key))
+                return Utilities.trim(kv[1], '"');
+        }
+        return null;
     }
 }

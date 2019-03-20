@@ -22,7 +22,6 @@ import org.hillview.table.api.IColumn;
 import org.hillview.table.columns.StringArrayColumn;
 import org.hillview.table.columns.DateArrayColumn;
 import org.hillview.table.columns.DoubleArrayColumn;
-import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.utils.Randomness;
 import org.junit.Assert;
 
@@ -30,9 +29,7 @@ import java.lang.reflect.Field;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.function.Consumer;
 
 public class TestUtil {
@@ -42,7 +39,7 @@ public class TestUtil {
      * Provides access to private members in classes for testing.
      */
     public static Object getPrivateField (Object o, String fieldName) {
-        final Field fields[] = o.getClass().getDeclaredFields();
+        final Field[] fields = o.getClass().getDeclaredFields();
         for (Field field : fields) {
             if (fieldName.equals(field.getName())) {
                 try {

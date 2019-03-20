@@ -21,6 +21,8 @@ import org.hillview.dataset.api.IMap;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 
+import javax.annotation.Nullable;
+
 /**
  * This is a base class for map computations that need to add
  * a column to a table.
@@ -48,7 +50,8 @@ public abstract class AppendColumnMap implements IMap<ITable, ITable> {
     abstract IColumn createColumn(ITable table);
 
     @Override
-    public ITable apply(ITable table) {
+    public ITable apply(@Nullable ITable table) {
+        assert table != null;
         if (table.getSchema().containsColumnName(this.newColName))
             throw new IllegalArgumentException("Column " + this.newColName + " already exists in table.");
         IColumn column = this.createColumn(table);

@@ -478,7 +478,7 @@ export function cloneToSet<T>(arr: T[]): Set<T> {
     return result;
 }
 
-export function uuidv4(): string {
+export function getUUID(): string {
     // From https://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
     return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
         const r = Math.random() * 16 | 0;
