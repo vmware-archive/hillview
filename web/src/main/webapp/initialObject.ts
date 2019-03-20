@@ -26,7 +26,7 @@ import {
 import {OnCompleteReceiver, RemoteObject} from "./rpc";
 import {BaseRenderer} from "./tableTarget";
 import {FullPage, PageTitle} from "./ui/fullPage";
-import {ICancellable, significantDigits, uuidv4} from "./util";
+import {ICancellable, significantDigits, getUUID} from "./util";
 
 export interface FilesLoaded {
     kind: "Files";
@@ -172,7 +172,7 @@ export class InitialObject extends RemoteObject {
 
     public loadLogs(loadMenuPage: FullPage): void {
         // Use a guid to force the request to reload every time
-        const rr = this.createStreamingRpcRequest<RemoteObjectId>("findLogs", uuidv4());
+        const rr = this.createStreamingRpcRequest<RemoteObjectId>("findLogs", getUUID());
         const observer = new FilesReceiver(loadMenuPage, rr, { kind: "Hillview logs"} );
         rr.invoke(observer);
     }
