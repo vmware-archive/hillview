@@ -16,6 +16,7 @@
  */
 
 import {axisBottom as d3axisBottom} from "d3-axis";
+import {drag as d3drag} from "d3-drag";
 import {scaleLinear as d3scaleLinear, scaleLog as d3scaleLog} from "d3-scale";
 import {
     interpolateCool as d3interpolateCool,
@@ -29,7 +30,6 @@ import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {D3Axis, D3Scale, D3SvgElement, Point, Rectangle, Resolution} from "./ui";
 import {SchemaClass} from "../schemaClass";
-import {drag as d3drag} from "d3-drag";
 
 /**
  * Displays a legend for a 2D histogram.
@@ -65,16 +65,6 @@ export class HistogramLegendPlot extends Plot {
         this.selectionCompleted = onCompleted;
         this.dragging = false;
         this.moved = false;
-    }
-
-    public clear(): void {
-        super.clear();
-        const legendDrag = d3drag()
-            .on("start", () => this.dragLegendStart())
-            .on("drag", () => this.dragLegendMove())
-            .on("end", () => this.dragLegendEnd());
-        const canvas = this.plottingSurface.getCanvas();
-        canvas.call(legendDrag);
     }
 
     // dragging in the legend
@@ -143,6 +133,12 @@ export class HistogramLegendPlot extends Plot {
             .attr("transform", `translate(${this.getChartWidth() / 2}, 0)`)
             .attr("text-anchor", "middle")
             .attr("dominant-baseline", "text-before-edge");
+        const legendDrag = d3drag()
+            .on("start", () => this.dragLegendStart())
+            .on("drag", () => this.dragLegendMove())
+            .on("end", () => this.dragLegendEnd());
+        const canvas = this.plottingSurface.getCanvas();
+        canvas.call(legendDrag);
 
         this.width = Resolution.legendBarWidth;
         if (this.width > this.getChartWidth())
@@ -152,7 +148,6 @@ export class HistogramLegendPlot extends Plot {
         this.y = Resolution.legendSpaceHeight / 3;
         let x = this.x;
         this.legendRect = new Rectangle({ x: this.x, y: this.y }, { width: this.width, height: this.height });
-        const canvas = this.plottingSurface.getCanvas();
 
         this.colorWidth = this.width / this.axisData.bucketCount;
         for (let i = 0; i < this.axisData.bucketCount; i++) {
@@ -331,17 +326,12 @@ export class HeatmapLegendPlot extends Plot {
         this.onColorMapChange = listener;
     }
 
-    public clear(): void {
-        super.clear();
-        this.colorMap = null;
-    }
-
     /**
      * The context menu is added only when a colormap change event listener is set.
      */
     private enableContextMenu(): void {
         this.contextMenu = new ContextMenu(
-            this.plottingSurface.topLevelElement, [
+            this.plottingSurface.svgCanvas.node(), [
             {
                 text: "Cool",
                 help: "Use a color palette with cool colors.",
@@ -373,6 +363,10 @@ export class HeatmapLegendPlot extends Plot {
                 },
             },
         ]);
+    }
+
+    public setSurface(surface: PlottingSurface): void {
+        this.plottingSurface = surface;
     }
 
     private showContextMenu(event: MouseEvent): void {

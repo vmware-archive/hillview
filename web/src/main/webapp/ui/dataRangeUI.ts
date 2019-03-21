@@ -58,7 +58,7 @@ export class DataRangeUI implements IElement {
             .attr("height", 1);
         d3select(this.topLevel).select("g")
             .append("rect")
-            .attr("x", x)
+            .attr("x", x.toString() + "%")
             .attr("y", 0)
             .attr("fill", "black")
             .attr("width", label)

@@ -31,7 +31,12 @@ import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {Resolution} from "../ui/ui";
 import {AxisData, AxisKind} from "./axisData";
-import {FilterReceiver, DataRangesCollector, TrellisShape} from "./dataRangesCollectors";
+import {
+    FilterReceiver,
+    DataRangesCollector,
+    TrellisShape,
+    TrellisLayoutComputation
+} from "./dataRangesCollectors";
 import {Receiver, RpcRequest} from "../rpc";
 import {ICancellable, PartialResult, reorder} from "../util";
 import {HeatmapPlot} from "../ui/heatmapPlot";
@@ -46,8 +51,9 @@ import {NextKReceiver, TableView} from "./tableView";
  * A Trellis plot containing multiple heatmaps.
  */
 export class TrellisHeatmapView extends TrellisChartView {
-    private readonly colorLegend: HeatmapLegendPlot;
-    private readonly legendSurface: PlottingSurface;
+    private colorLegend: HeatmapLegendPlot;
+    private legendSurface: PlottingSurface;
+    private readonly legendDiv: HTMLDivElement;
     protected xAxisData: AxisData;
     protected yAxisData: AxisData;
     protected hps: HeatmapPlot[];
@@ -60,7 +66,6 @@ export class TrellisHeatmapView extends TrellisChartView {
                 protected samplingRate: number,
                 page: FullPage) {
         super(remoteObjectId, rowCount, schema, shape, page, "TrellisHeatmap");
-
         this.xAxisData = null;
         this.yAxisData = null;
         this.hps = [];
@@ -90,9 +95,7 @@ export class TrellisHeatmapView extends TrellisChartView {
             this.dataset.combineMenu(this, page.pageId),
         ]);
         this.page.setMenu(this.menu);
-        this.legendSurface = new HtmlPlottingSurface(this.topLevel, page);
-        this.legendSurface.setHeight(Resolution.legendSpaceHeight);
-        this.colorLegend = new HeatmapLegendPlot(this.legendSurface);
+        this.legendDiv = this.makeToplevelDiv();
     }
 
     public static reconstruct(ser: TrellisHeatmapSerialization, page: FullPage): IDataView {
@@ -129,25 +132,42 @@ export class TrellisHeatmapView extends TrellisChartView {
         return ser;
     }
 
+    protected createNewSurfaces(): void {
+        if (this.surface != null)
+            this.surface.destroy();
+        if (this.legendSurface != null)
+            this.legendSurface.destroy();
+        this.legendSurface = new HtmlPlottingSurface(this.legendDiv, this.page, {
+            height: Resolution.legendSpaceHeight });
+        this.colorLegend = new HeatmapLegendPlot(this.legendSurface);
+        this.hps = [];
+        this.createAllSurfaces((surface) => {
+            const hp = new HeatmapPlot(surface, this.colorLegend, false);
+            this.hps.push(hp);
+        });
+    }
+
     public setAxes(xAxisData: AxisData,
                    yAxisData: AxisData,
                    groupByAxisData: AxisData): void {
         this.xAxisData = xAxisData;
         this.yAxisData = yAxisData;
         this.groupByAxisData = groupByAxisData;
-
-        this.createSurfaces((surface) => {
-            const hp = new HeatmapPlot(surface, this.colorLegend, false);
-            hp.clear();
-            this.hps.push(hp);
-        });
     }
 
     public refresh(): void {
-        this.updateView(this.heatmaps);
+        const cds = [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description];
+        const rr = this.createDataRangesRequest(cds, this.page, "TrellisHeatmap");
+        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+            [this.xAxisData.bucketCount, this.yAxisData.bucketCount, this.shape.bucketCount], cds, null, {
+                reusePage: true, relative: false,
+                chartKind: "TrellisHeatmap", exact: true
+            }));
     }
 
     public resize(): void {
+        const chartSize = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
+        this.shape = TrellisLayoutComputation.resize(chartSize.width, chartSize.height, this.shape);
         this.updateView(this.heatmaps);
     }
 
@@ -222,8 +242,8 @@ export class TrellisHeatmapView extends TrellisChartView {
     }
 
     public updateView(heatmaps: Heatmap3D): void {
+        this.createNewSurfaces();
         this.heatmaps = heatmaps;
-        this.colorLegend.clear();
         if (heatmaps == null || heatmaps.buckets.length === 0) {
             this.page.reportError("No data to display");
             return;

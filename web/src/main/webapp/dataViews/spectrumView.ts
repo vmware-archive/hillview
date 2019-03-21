@@ -144,14 +144,19 @@ export class SpectrumView extends ChartView {
         this.topLevel.appendChild(this.chartDiv);
         this.chartDiv.style.display = "flex";
         this.chartDiv.style.flexDirection = "column";
-        this.surface = new HtmlPlottingSurface(this.chartDiv, page);
-        this.plot = new HistogramPlot(this.surface);
         this.summary = document.createElement("div");
         this.topLevel.appendChild(this.summary);
     }
 
+    protected createNewSurfaces(): void {
+        if (this.surface != null)
+            this.surface.destroy();
+        this.surface = new HtmlPlottingSurface(this.chartDiv, this.page, {});
+        this.plot = new HistogramPlot(this.surface);
+    }
+
     public updateView(title: string, h: HistogramBase, axisData: AxisData): void {
-        this.plot.clear();
+        this.createNewSurfaces();
         if (h == null) {
             this.page.reportError("No data to display");
             return;
