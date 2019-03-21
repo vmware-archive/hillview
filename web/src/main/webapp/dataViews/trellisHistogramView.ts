@@ -42,7 +42,12 @@ import {HistogramPlot} from "../ui/histogramPlot";
 import {HistogramView} from "./histogramView";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {CDFPlot} from "../ui/CDFPlot";
-import {FilterReceiver, DataRangesCollector, TrellisShape} from "./dataRangesCollectors";
+import {
+    FilterReceiver,
+    DataRangesCollector,
+    TrellisShape,
+    TrellisLayoutComputation
+} from "./dataRangesCollectors";
 import {BucketDialog} from "./histogramViewBase";
 import {TextOverlay} from "../ui/textOverlay";
 import {TrellisChartView} from "./trellisChartView";
@@ -113,6 +118,8 @@ export class TrellisHistogramView extends TrellisChartView {
     protected createNewSurfaces(): void {
         if (this.surface != null)
             this.surface.destroy();
+        this.hps = [];
+        this.cdfs = [];
         this.createAllSurfaces((surface) => {
             const hp = new HistogramPlot(surface);
             this.hps.push(hp);
@@ -222,6 +229,8 @@ export class TrellisHistogramView extends TrellisChartView {
     }
 
     public resize(): void {
+        const chartSize = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
+        this.shape = TrellisLayoutComputation.resize(chartSize.width, chartSize.height, this.shape);
         this.updateView(this.data, this.bucketCount);
     }
 

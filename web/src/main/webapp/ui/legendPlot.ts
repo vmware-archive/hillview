@@ -16,6 +16,7 @@
  */
 
 import {axisBottom as d3axisBottom} from "d3-axis";
+import {drag as d3drag} from "d3-drag";
 import {scaleLinear as d3scaleLinear, scaleLog as d3scaleLog} from "d3-scale";
 import {
     interpolateCool as d3interpolateCool,
@@ -132,6 +133,12 @@ export class HistogramLegendPlot extends Plot {
             .attr("transform", `translate(${this.getChartWidth() / 2}, 0)`)
             .attr("text-anchor", "middle")
             .attr("dominant-baseline", "text-before-edge");
+        const legendDrag = d3drag()
+            .on("start", () => this.dragLegendStart())
+            .on("drag", () => this.dragLegendMove())
+            .on("end", () => this.dragLegendEnd());
+        const canvas = this.plottingSurface.getCanvas();
+        canvas.call(legendDrag);
 
         this.width = Resolution.legendBarWidth;
         if (this.width > this.getChartWidth())
@@ -141,7 +148,6 @@ export class HistogramLegendPlot extends Plot {
         this.y = Resolution.legendSpaceHeight / 3;
         let x = this.x;
         this.legendRect = new Rectangle({ x: this.x, y: this.y }, { width: this.width, height: this.height });
-        const canvas = this.plottingSurface.getCanvas();
 
         this.colorWidth = this.width / this.axisData.bucketCount;
         for (let i = 0; i < this.axisData.bucketCount; i++) {

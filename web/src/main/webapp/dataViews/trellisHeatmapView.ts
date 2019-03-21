@@ -31,7 +31,12 @@ import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {Resolution} from "../ui/ui";
 import {AxisData, AxisKind} from "./axisData";
-import {FilterReceiver, DataRangesCollector, TrellisShape} from "./dataRangesCollectors";
+import {
+    FilterReceiver,
+    DataRangesCollector,
+    TrellisShape,
+    TrellisLayoutComputation
+} from "./dataRangesCollectors";
 import {Receiver, RpcRequest} from "../rpc";
 import {ICancellable, PartialResult, reorder} from "../util";
 import {HeatmapPlot} from "../ui/heatmapPlot";
@@ -135,6 +140,7 @@ export class TrellisHeatmapView extends TrellisChartView {
         this.legendSurface = new HtmlPlottingSurface(this.legendDiv, this.page, {
             height: Resolution.legendSpaceHeight });
         this.colorLegend = new HeatmapLegendPlot(this.legendSurface);
+        this.hps = [];
         this.createAllSurfaces((surface) => {
             const hp = new HeatmapPlot(surface, this.colorLegend, false);
             this.hps.push(hp);
@@ -150,10 +156,18 @@ export class TrellisHeatmapView extends TrellisChartView {
     }
 
     public refresh(): void {
-        this.updateView(this.heatmaps);
+        const cds = [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description];
+        const rr = this.createDataRangesRequest(cds, this.page, "TrellisHeatmap");
+        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+            [this.xAxisData.bucketCount, this.yAxisData.bucketCount, this.shape.bucketCount], cds, null, {
+                reusePage: true, relative: false,
+                chartKind: "TrellisHeatmap", exact: true
+            }));
     }
 
     public resize(): void {
+        const chartSize = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
+        this.shape = TrellisLayoutComputation.resize(chartSize.width, chartSize.height, this.shape);
         this.updateView(this.heatmaps);
     }
 

@@ -87,6 +87,13 @@ export class TrellisLayoutComputation {
             "The minimum sizes do not satisfy aspect ratio");
     }
 
+    public static resize(xMax: number, yMax: number, shape: TrellisShape): TrellisShape {
+        const result = { ... shape, size: {
+            width: Math.floor(xMax / shape.xNum),
+                height: Math.floor(yMax / shape.yNum) - shape.headerHeight  } };
+        return result;
+    }
+
     public getShape(nBuckets: number): TrellisShape {
         const total = this.xMax * this.yMax;
         let used = nBuckets * this.xMin * (this.yMin + this.headerHt);

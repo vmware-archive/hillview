@@ -35,7 +35,12 @@ import {IDataView} from "../ui/dataview";
 import {ChartOptions, Resolution} from "../ui/ui";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {Histogram2DPlot} from "../ui/Histogram2DPlot";
-import {FilterReceiver, DataRangesCollector, TrellisShape} from "./dataRangesCollectors";
+import {
+    FilterReceiver,
+    DataRangesCollector,
+    TrellisShape,
+    TrellisLayoutComputation
+} from "./dataRangesCollectors";
 import {TrellisChartView} from "./trellisChartView";
 import {NextKReceiver, TableView} from "./tableView";
 import {BucketDialog} from "./histogramViewBase";
@@ -119,6 +124,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
             this.surface.destroy();
         if (this.legendSurface != null)
             this.legendSurface.destroy();
+        this.hps = [];
         this.legendSurface = new HtmlPlottingSurface(this.legendDiv, this.page, {
             height: Resolution.legendSpaceHeight });
         this.legendPlot = new HistogramLegendPlot(this.legendSurface,
@@ -276,6 +282,8 @@ export class TrellisHistogram2DView extends TrellisChartView {
     }
 
     public resize(): void {
+        const chartSize = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
+        this.shape = TrellisLayoutComputation.resize(chartSize.width, chartSize.height, this.shape);
         this.updateView(this.data, [this.xAxisData.bucketCount, this.legendAxisData.bucketCount]);
     }
 
