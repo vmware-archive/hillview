@@ -788,4 +788,11 @@ public final class TableTarget extends RpcTarget {
                 info.key, info.inputColumn, info.outputColumn, info.outputIndex);
         this.runMap(this.table, map, TableTarget::new, request, context);
     }
+
+    @HillviewRpc
+    public void project(RpcRequest request, RpcRequestContext context) {
+        Schema proj = request.parseArgs(Schema.class);
+        ProjectMap map = new ProjectMap(proj);
+        this.runMap(this.table, map, TableTarget::new, request, context);
+    }
 }

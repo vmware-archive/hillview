@@ -180,14 +180,22 @@ export class TableTargetAPI extends RemoteObject {
         });
     }
 
-    public createNextKRequest(order: RecordOrder, firstRow: any[] | null, rowCount: number,
+    /**
+     * Create a request for a nextK sketch
+     * @param order            Sorting order.
+     * @param firstRow         Values in the smallest row (may be null).
+     * @param rowsOnScreen     How many rows to bring.
+     * @param columnsNoValue   List of columns in the firstRow for which we want to specify "minimum possible value"
+     * instead of "null".
+     */
+    public createNextKRequest(order: RecordOrder, firstRow: any[] | null, rowsOnScreen: number,
                               columnsNoValue?: string[]):
         RpcRequest<PartialResult<NextKList>> {
         const nextKArgs: NextKArgs = {
             toFind: null,
             order: order,
             firstRow: firstRow,
-            rowsOnScreen: rowCount,
+            rowsOnScreen: rowsOnScreen,
             columnsNoValue: columnsNoValue
         };
         return this.createStreamingRpcRequest<NextKList>("getNextK", nextKArgs);
@@ -271,6 +279,10 @@ RpcRequest<PartialResult<RemoteObjectId>> {
             seed: Seed.instance.get(),
             toSample: toSample
         });
+    }
+
+    public createProjectRequest(schema: Schema): RpcRequest<PartialResult<RemoteObjectId>> {
+        return this.createStreamingRpcRequest<RemoteObjectId>("project", schema);
     }
 
     public createSpectrumRequest(columnNames: string[], totalRows: number, toSample: boolean):
