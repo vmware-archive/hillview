@@ -68,7 +68,6 @@ export class HistogramPlot extends Plot {
     }
 
     public draw(): void {
-        this.plottingSurface.create();
         if (this.histogram == null)
             return;
 

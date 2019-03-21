@@ -17,15 +17,26 @@
 
 import {select as d3select} from "d3-selection";
 import {FullPage} from "./fullPage";
-import {D3SvgElement, HtmlString, IHtmlElement, Size} from "./ui";
-import {ErrorReporter} from "./errReporter";
+import {D3SvgElement, IHtmlElement, Size} from "./ui";
+
+/**
+ * An interface that can be used to specify various dimensions.
+ * All dimensions are in pixels.
+ */
+export interface SizeAndBorders {
+    width?: number;
+    height?: number;
+    topMargin?: number;
+    leftMargin?: number;
+    rightMargin?: number;
+    bottomMargin?: number;
+}
 
 /**
  * A plotting surface contains an SVG element on top of which various charts are drawn.
  * There is a margin around the chart.
  */
 export abstract class PlottingSurface {
-    public topLevelElement: Element;
     /**
      * Number of pixels on between the top of the SVG area and the top of the drawn chart.
      */
@@ -64,13 +75,27 @@ export abstract class PlottingSurface {
     public static readonly bottomMargin = 50;    // bottom margin in pixels in a plot
     public static readonly leftMargin = 40;      // left margin in pixels in a plot
 
-    protected constructor(public readonly page: FullPage) {
-        // Default margins.
-        this.setMargins(PlottingSurface.topMargin, PlottingSurface.rightMargin,
-            PlottingSurface.bottomMargin, PlottingSurface.leftMargin);
+    protected constructor(public readonly page: FullPage, sb: SizeAndBorders) {
+        // Default dimensions
+        this.topMargin = PlottingSurface.topMargin;
+        this.rightMargin = PlottingSurface.rightMargin;
+        this.bottomMargin = PlottingSurface.bottomMargin;
+        this.leftMargin = PlottingSurface.leftMargin;
         this.size = PlottingSurface.getDefaultCanvasSize(this.page.getWidthInPixels());
-        // The minimum width can be overridden by calling directly setSize.
         this.size.width = Math.max(PlottingSurface.minCanvasWidth, this.size.width);
+        // User-specified dimensions
+        if (sb.topMargin != null)
+            this.topMargin = sb.topMargin;
+        if (sb.rightMargin != null)
+            this.rightMargin = sb.rightMargin;
+        if (sb.leftMargin != null)
+            this.leftMargin = sb.leftMargin;
+        if (sb.bottomMargin != null)
+            this.bottomMargin = sb.bottomMargin;
+        if (sb.width != null)
+            this.size.width = sb.width;
+        if (sb.height != null)
+            this.size.height = sb.height;
     }
 
     public reportError(message: string): void {
@@ -92,9 +117,13 @@ export abstract class PlottingSurface {
     }
 
     /**
-     * Allocate the canvas.  Must be called after the size has been settled.
+     * De-allocates the canvas if it exists.
      */
-    public abstract create(): void;
+    public destroy(): void {
+        if (this.svgCanvas != null)
+            this.svgCanvas.remove();
+        this.svgCanvas = null;
+    }
 
     public getChart(): D3SvgElement {
         console.assert(this.chartArea != null);
@@ -127,40 +156,9 @@ export abstract class PlottingSurface {
         return { width: this.getChartWidth(), height: this.getChartHeight() };
     }
 
-    /**
-     * Set the canvas height.  The width is usually imposed by the browser window.
-     * This does not trigger a redraw.
-     */
-    public setHeight(height: number): void {
-        this.size.height = height;
-    }
-
-    /**
-     * Set the canvas size. This does not trigger a redraw.
-     */
-    public setSize(size: Size): void {
-        this.size = size;
-    }
-
-    public createChildSurface(xOffset: number, yOffset: number): PlottingSurface {
-        const result = new SvgPlottingSurface(this.getCanvas().node(), xOffset, yOffset, this.page);
+    public createChildSurface(xOffset: number, yOffset: number, sb: SizeAndBorders): PlottingSurface {
+        const result = new SvgPlottingSurface(this.getCanvas().node(), xOffset, yOffset, this.page, sb);
         return result;
-    }
-
-    /**
-     * Set the margins for the chart area inside the canvas.
-     * This does not trigger a redraw.
-     * If a value is null then it is not changed.
-     */
-    public setMargins(top: number, right: number, bottom: number, left: number): void {
-        if (top != null)
-            this.topMargin = top;
-        if (right != null)
-            this.rightMargin = right;
-        if (left != null)
-            this.leftMargin = left;
-        if (bottom != null)
-            this.bottomMargin = bottom;
     }
 
     protected createObjects(root: D3SvgElement): void {
@@ -197,44 +195,35 @@ export abstract class PlottingSurface {
 }
 
 export class HtmlPlottingSurface extends PlottingSurface implements IHtmlElement {
-    protected topLevel: HTMLDivElement;
+    protected readonly topLevel: HTMLDivElement;
 
-    constructor(parent: HTMLElement, public readonly page: FullPage) {
-        super(page);
+    constructor(parent: HTMLElement, public readonly page: FullPage, sb: SizeAndBorders) {
+        super(page, sb);
         this.topLevel = document.createElement("div");
-        this.topLevelElement = this.topLevel;
         parent.appendChild(this.topLevel);
+        this.createObjects(d3select(this.topLevel));
     }
 
     public getHTMLRepresentation(): HTMLElement {
         return this.topLevel;
     }
-
-    public create(): void {
-        if (this.svgCanvas != null)
-            this.svgCanvas.remove();
-
-        this.createObjects(d3select(this.topLevel));
-    }
 }
 
+/**
+ * A PlottingSurface that is hosted within another SVG element, shifted with
+ * some offset.
+ */
 export class SvgPlottingSurface extends PlottingSurface {
     protected topLevel: SVGSVGElement;
     protected shifted: D3SvgElement;
 
     constructor(parent: HTMLElement,
                 protected xOffset: number, protected yOffset: number,
-                public readonly page: FullPage) {
-        super(page);
+                public readonly page: FullPage,
+                sb: SizeAndBorders) {
+        super(page, sb);
         this.topLevel = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        this.topLevelElement = this.topLevel;
         parent.appendChild(this.topLevel);
-    }
-
-    public create(): void {
-        if (this.shifted != null)
-            this.shifted.remove();
-
         this.shifted = d3select(this.topLevel)
             .append("g")
             .attr("transform", `translate(${this.xOffset}, ${this.yOffset})`);

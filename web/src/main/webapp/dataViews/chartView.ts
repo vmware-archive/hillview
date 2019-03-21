@@ -52,7 +52,8 @@ export abstract class ChartView extends BigTableView {
      */
     protected pointDescription: TextOverlay;
     /**
-     * Surface on top of which everything is drawn.
+     * The main surface on top of which the image is drawn.
+     * There may exist other surfaces as well besides this one.
      */
     protected surface: PlottingSurface;
     /**
@@ -141,6 +142,12 @@ export abstract class ChartView extends BigTableView {
         this.selectionOrigin = {
             x: position[0],
             y: position[1] };
+    }
+
+    protected makeToplevelDiv(): HTMLDivElement {
+        const div = document.createElement("div");
+        this.topLevel.appendChild(div);
+        return div;
     }
 
     /**

@@ -75,14 +75,6 @@ export class Histogram2DView extends HistogramViewBase {
                 schema: SchemaClass, protected samplingRate: number, page: FullPage) {
         super(remoteObjectId, rowCount, schema, page, "2DHistogram");
 
-        this.legendSurface = new HtmlPlottingSurface(this.chartDiv, page);
-        this.legendSurface.setHeight(Resolution.legendSpaceHeight);
-        this.legendPlot = new HistogramLegendPlot(this.legendSurface,
-            (xl, xr) => this.selectionCompleted(xl, xr, true));
-        this.surface = new HtmlPlottingSurface(this.chartDiv, page);
-        this.plot = new Histogram2DPlot(this.surface);
-        this.cdfPlot = new CDFPlot(this.surface);
-
         this.menu = new TopMenu( [{
            text: "Export",
            help: "Save the information in this view in a local file.",
@@ -140,9 +132,22 @@ export class Histogram2DView extends HistogramViewBase {
         }
     }
 
+    protected createNewSurfaces(): void {
+        if (this.legendSurface != null)
+            this.legendSurface.destroy();
+        if (this.surface != null)
+            this.surface.destroy();
+        this.legendSurface = new HtmlPlottingSurface(this.chartDiv, this.page,
+            { height: Resolution.legendSpaceHeight });
+        this.legendPlot = new HistogramLegendPlot(this.legendSurface,
+            (xl, xr) => this.selectionCompleted(xl, xr, true));
+        this.surface = new HtmlPlottingSurface(this.chartDiv, this.page, {});
+        this.plot = new Histogram2DPlot(this.surface);
+        this.cdfPlot = new CDFPlot(this.surface);
+    }
+
     public updateView(heatmap: Heatmap, cdf: HistogramBase): void {
-        this.plot.clear();
-        this.legendPlot.clear();
+        this.createNewSurfaces();
         if (heatmap == null || heatmap.buckets.length === 0) {
             this.page.reportError("No data to display");
             return;
