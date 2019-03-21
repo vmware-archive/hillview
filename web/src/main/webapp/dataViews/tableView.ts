@@ -771,8 +771,10 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 so.push(cso);
         }
         const order = new RecordOrder(so);
-        this.schema = schema;
-        this.setOrder(order, true);
+        const rr = this.createProjectRequest(schema.schema);
+        const rec = new TableOperationCompleted(this.page, rr, this.rowCount,
+            schema, order, this.tableRowsDesired);
+        rr.invoke(rec);
     }
 
     // mouse click on a column
