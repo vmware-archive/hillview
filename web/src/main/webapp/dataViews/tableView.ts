@@ -433,10 +433,11 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                           displayName: string,
                           help: string,
                           width: number): HTMLElement {
-        const th = this.grid.addHeader(width, cd.name);
+        const isVisible = this.isVisible(cd.name);
+        const th = this.grid.addHeader(width, cd.name, !isVisible);
         th.classList.add("noselect");
         th.title = help;
-        if (!this.isVisible(cd.name)) {
+        if (!isVisible) {
             th.style.fontWeight = "normal";
         } else {
             const span = makeSpan("", false);
@@ -542,9 +543,19 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             const name = this.schema.displayName(cd.name);
             const title = name + ".\nType is " + kindString +
                 ".\nRight mouse click opens a menu.";
+            const visible = this.order.find(cd.name) >= 0;
             const thd = this.addHeaderCell(cd, name, title, 0);
             thd.classList.add("col" + i.toString());
             thd.onclick = (e) => this.columnClick(i, e);
+            thd.ondblclick = (e) => {
+                e.preventDefault();
+                const o = this.order.clone();
+                if (visible)
+                    o.hide(cd.name);
+                else
+                    o.addColumn({ columnDescription: cd, isAscending: true });
+                this.setOrder(o, true);
+            };
             thd.oncontextmenu = (e) => {
                 this.columnClick(i, e);
                 if (e.ctrlKey && (e.button === 1)) {
@@ -555,7 +566,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
 
                 const selectedCount = this.selectedColumns.size();
                 this.contextMenu.clear();
-                if (this.order.find(cd.name) >= 0) {
+                if (visible) {
                     this.contextMenu.addItem({
                         text: "Hide",
                         action: () => this.showColumns(0, true),

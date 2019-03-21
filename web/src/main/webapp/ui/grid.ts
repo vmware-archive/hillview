@@ -113,9 +113,11 @@ export class Grid implements IHtmlElement {
     }
 
     /**
-     * If width is not zero it will be considered fixed.
+     * @param width   in pixels. if not zero the column is considered fixed width.
+     * @param colName Column to add.
+     * @param forgetWidth   if true we do not reuse the old width.
      */
-    public addHeader(width: number, colName: string): HTMLElement {
+    public addHeader(width: number, colName: string, forgetWidth: boolean): HTMLElement {
         const th = document.createElement("td");
         th.className = "header";
         this.thr.appendChild(th);
@@ -123,7 +125,7 @@ export class Grid implements IHtmlElement {
         th.classList.add("noselect");
         th.setAttribute("data-colname", colName);
         let useWidth = width;
-        if (this.colWidths != null &&
+        if (this.colWidths != null && !forgetWidth &&
             this.colWidths.has(colName)) {
             useWidth = this.colWidths.get(colName);
         }
