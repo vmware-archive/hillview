@@ -545,6 +545,13 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             const thd = this.addHeaderCell(cd, name, title, 0);
             thd.classList.add("col" + i.toString());
             thd.onclick = (e) => this.columnClick(i, e);
+            thd.ondblclick = (e) => {
+                e.preventDefault();
+                if (this.order.find(cd.name) >= 0)
+                    this.showColumns(0, false);
+                else
+                    this.showColumns(1, false);
+            };
             thd.oncontextmenu = (e) => {
                 this.columnClick(i, e);
                 if (e.ctrlKey && (e.button === 1)) {
