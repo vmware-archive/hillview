@@ -238,6 +238,27 @@ export class DatasetView implements IHtmlElement {
         this.pageContainer.removeChild(this.pageContainer.children[index]);
     }
 
+    /**
+     * Move a page on the display.
+     * @param page  Page to move.
+     * @param up    If true move up on the screen.
+     */
+    public shift(page: FullPage, up: boolean): void {
+        const index = this.findIndex(page);
+        if (up && index === 0)
+            return;
+        if (!up && index === this.allPages.length - 1)
+            return;
+        // Smaller indices are up.
+        const newIndex = index + (up ? -1 : +1);
+        this.allPages.splice(index, 1);
+        this.allPages.splice(newIndex, 0, page);
+        this.pageContainer.removeChild(this.pageContainer.children[index]);
+        this.pageContainer.insertBefore(page.getHTMLRepresentation(),
+            this.pageContainer.children[newIndex]);
+        this.scrollIntoView(page.pageId);
+    }
+
     public newPage(title: PageTitle, sourcePage: FullPage | null): FullPage {
         const num = this.pageCounter++;
         const page = new FullPage(num, title, sourcePage != null ? sourcePage.pageId : null, this);

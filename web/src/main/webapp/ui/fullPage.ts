@@ -21,7 +21,7 @@ import {IDataView} from "./dataview";
 import {ConsoleDisplay, ErrorReporter} from "./errReporter";
 import {TopMenu} from "./menu";
 import {ProgressManager} from "./progress";
-import {HtmlString, IHtmlElement, removeAllChildren, ViewKind} from "./ui";
+import {HtmlString, IHtmlElement, removeAllChildren, SpecialChars, ViewKind} from "./ui";
 import {helpUrl} from "./helpUrl";
 
 const minus = "&#8722;";
@@ -76,7 +76,7 @@ export class PageTitle {
  * A FullPage is the main unit of display in Hillview, storing on rendering.
  * The page layout is as follows:
  * -------------------------------------------------
- * | menu            #. Title                 ? - x|  titleRow
+ * | menu            #. Title             ^ v ? - x|  titleRow
  * |-----------------------------------------------|
  * |                                               |
  * |                 data display                  |  displayHolder
@@ -148,6 +148,22 @@ export class FullPage implements IHtmlElement {
             const refLink = this.pageReference(sourcePageId);
             refLink.title = "View which produced this one.";
             h2.appendChild(refLink);
+        }
+
+        if (this.dataset != null) {
+            const moveUp = document.createElement("div");
+            moveUp.innerHTML = SpecialChars.upArrow;
+            moveUp.title = "Move window up.";
+            moveUp.onclick = () => this.dataset.shift(this, true);
+            moveUp.style.cursor = "pointer";
+            this.addCell(moveUp, true);
+
+            const moveDown = document.createElement("div");
+            moveDown.innerHTML = SpecialChars.downArrow;
+            moveDown.title = "Move window down.";
+            moveDown.onclick = () => this.dataset.shift(this, false);
+            moveDown.style.cursor = "pointer";
+            this.addCell(moveDown, true);
         }
 
         this.help = document.createElement("button");
