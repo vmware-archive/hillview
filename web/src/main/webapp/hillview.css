@@ -66,6 +66,7 @@ h2 {
 th {
     border: 1px solid black;
     margin: 0;
+    padding: 0;
     font-weight: bold;
     background: lightgray;
     -webkit-touch-callout: none;
@@ -78,11 +79,6 @@ th {
 table {
     border-collapse: collapse;
     font-family: sans-serif;
-}
-
-th {
-    border: 1px solid black;
-    padding: 0;
 }
 
 /* Note: this is not tableView */
@@ -104,11 +100,13 @@ th {
 .tableView td.header {
     background-image: linear-gradient(#f9f9f9,#e4e4e4);
     border: 1px solid black;
+    font-weight: bold;
 }
 
 .tableView td.header.selected {
     background-image: linear-gradient(lightcyan,cyan);
     border: 1px solid black;
+    font-weight: bold;
 }
 
 .tableView td.middle {
