@@ -11,12 +11,11 @@ source $mydir/lib.sh
 
 echo "Installing programs needed to build"
 
-echo "Installing curl"
-${SUDO} ${INSTALL} install curl -y
-
 case "$OSTYPE" in
     linux*)
     # Location where node.js version 11 resides.
+        echo "Installing curl"
+        ${SUDO} ${INSTALL} install curl -y
 	curl -sL https://deb.nodesource.com/setup_11.x | ${SUDO} -E bash -
 esac
 ${SUDO} ${INSTALL} install maven ${NODEJS} ${NPM} libgfortran3 unzip gzip
