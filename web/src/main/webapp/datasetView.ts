@@ -36,7 +36,7 @@ import {IDataView} from "./ui/dataview";
 import {FullPage, PageTitle} from "./ui/fullPage";
 import {MenuItem, SubMenu, TopMenuItem} from "./ui/menu";
 import {IHtmlElement, ViewKind} from "./ui/ui";
-import {assert, EnumIterators, saveAs} from "./util";
+import {assert, EnumIterators, Pair, saveAs} from "./util";
 import {TrellisHeatmapView} from "./dataViews/trellisHeatmapView";
 import {TrellisHistogram2DView} from "./dataViews/trellisHistogram2DView";
 import {TrellisHistogramView} from "./dataViews/trellisHistogramView";
@@ -119,6 +119,7 @@ export interface IDatasetSerialization {
  */
 export class DatasetView implements IHtmlElement {
     public readonly remoteObject: TableTargetAPI;
+    private selected: BigTableView; // participates in a combine operation
     private selectedPageId: number;  // id of page containing the selected object (if any)
     private readonly topLevel: HTMLElement;
     private readonly pageContainer: HTMLElement;
@@ -135,6 +136,7 @@ export class DatasetView implements IHtmlElement {
                 public name: string,
                 public readonly loaded: DataLoaded) {
         this.remoteObject = new TableTargetAPI(remoteObjectId);
+        this.selected = null;
         this.pageCounter = 1;
         this.allPages = [];
         this.topLevel = document.createElement("div");
@@ -162,7 +164,8 @@ export class DatasetView implements IHtmlElement {
         this.name = name;
     }
 
-    public select(pageId: number): void {
+    public select(object: BigTableView, pageId: number): void {
+        this.selected = object;
         this.selectedPageId = pageId;
     }
 
@@ -170,15 +173,19 @@ export class DatasetView implements IHtmlElement {
         return this.name;
     }
 
-    public getSelected(): number {
-        return this.selectedPageId;
+    /**
+     * Check if the selected object can be combined with the specified one,
+     * and if so return it.  Otherwise write an error message and return null.
+     */
+    public getSelected(): Pair<BigTableView, number> {
+        return { first: this.selected, second: this.selectedPageId };
     }
 
     public combineMenu(ro: BigTableView, pageId: number): TopMenuItem {
         const combineMenu: MenuItem[] = [];
         combineMenu.push({
             text: "Select current",
-            action: () => { this.select(pageId); },
+            action: () => { this.select(ro, pageId); },
             help: "Select the current view; later it can be combined with another view, " +
                   "using one of the operations below.",
         });
@@ -271,19 +278,12 @@ export class DatasetView implements IHtmlElement {
         return page;
     }
 
-    public findPage(pageId: number): FullPage | null {
-        for (const p of this.allPages) {
-            if (p.pageId === pageId)
-                return p;
-        }
-        return null;
-    }
-
     public scrollIntoView(pageId: number): boolean {
-        const p = this.findPage(pageId);
-        if (p != null) {
-            p.scrollIntoView();
-            return true;
+        for (const p of this.allPages) {
+            if (p.pageId === pageId) {
+                p.scrollIntoView();
+                return true;
+            }
         }
         return false;
     }
