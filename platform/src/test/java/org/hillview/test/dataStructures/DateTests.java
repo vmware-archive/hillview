@@ -114,7 +114,7 @@ public final class DateTests extends BaseTest {
 
         instant = parsing.parse("2017-10-05T14:05:00.000");
         repr = Converters.toString(instant);
-        Assert.assertEquals("2017/10/05 14:05:00", repr);
+        Assert.assertEquals("2017/10/05 14:05", repr);
     }
 
     @Test

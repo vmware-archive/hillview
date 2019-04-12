@@ -83,6 +83,7 @@ public class HillviewLogger {
         this.info("Starting logger", "Working directory: {0}", currentDirectory);
 
         // Redirect existing loggers to the same file
+        /*
         Enumeration<String> e = manager.getLoggerNames();
         while (e.hasMoreElements()) {
             String ln = e.nextElement();
@@ -91,6 +92,7 @@ public class HillviewLogger {
             logger.addHandler(handler);
             this.info("Intercepted logger", "{0}", ln);
         }
+        */
     }
 
     public static void initialize(String role, @Nullable String filename) {

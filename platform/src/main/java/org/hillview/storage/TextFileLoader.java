@@ -137,6 +137,7 @@ public abstract class TextFileLoader {
                 }
             }
             this.currentRow++;
+            this.currentToken = null;
         } catch (Exception ex) {
             this.error(ex);
         }
@@ -149,8 +150,9 @@ public abstract class TextFileLoader {
                     (" (" + this.columns[this.currentColumn].toString() + ")") : "";
         }
 
+        // rows are numbered from 0, lines from 1
         return "Error while parsing file " + this.filename + "@" + Utilities.getHostName() +
-                " line " + this.currentRow + (this.currentColumn >= 0 ?
+                " line " + (this.currentRow + 1) + (this.currentColumn >= 0 ?
                 " column " + this.currentColumn + columnName : "")
                 + (this.currentToken != null ? " token " + this.currentToken : "");
     }

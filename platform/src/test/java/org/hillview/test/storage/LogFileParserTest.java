@@ -17,8 +17,8 @@
 
 package org.hillview.test.storage;
 
-import org.hillview.storage.GenericLogs;
 import org.hillview.storage.HillviewLogs;
+import org.hillview.storage.LogFiles;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;
@@ -26,6 +26,7 @@ import org.hillview.utils.Converters;
 import org.junit.Assert;
 import org.junit.Test;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -34,9 +35,10 @@ import java.nio.file.Paths;
 import java.time.*;
 
 public class LogFileParserTest extends BaseTest {
-    private Object getValue(ITable table, String col) {
+    @Nullable
+    private Object getValue(ITable table, String col, int row) {
         IColumn cc = table.getLoadedColumn(col);
-        return Converters.checkNull(cc.getObject(0));
+        return cc.getObject(row);
     }
 
     @Test
@@ -61,23 +63,43 @@ public class LogFileParserTest extends BaseTest {
         Path path = Paths.get(".", f.getName());
         ITable table = HillviewLogs.parseLogFile(path.toString());
         Converters.checkNull(table);
-        Assert.assertEquals(table.toString(), "Table[12x4]");
+        Assert.assertEquals(table.toString(), "Table[14x4]");
         LocalDate date = LocalDate.of(2017, 10, 12);
         LocalTime time = LocalTime.of(2, 17, 42, 722000000);
         LocalDateTime dt = LocalDateTime.of(date, time);
         ZonedDateTime zdt = dt.atZone(ZoneId.systemDefault());
         Instant instant = zdt.toInstant();
-        Assert.assertEquals(getValue(table, GenericLogs.timestampColumnName), instant);
-        Assert.assertEquals(getValue(table, "Role"), "worker");
-        Assert.assertEquals(getValue(table, "Level"), "INFO");
-        Assert.assertEquals(getValue(table, "Machine"), "ubuntu");
-        Assert.assertEquals(getValue(table, "Thread"), "main");
-        Assert.assertEquals(getValue(table, "Class"), "org.hillview.dataset.LocalDataSet");
-        Assert.assertEquals(getValue(table, "Method"), "<clinit>");
-        Assert.assertEquals(getValue(table, "Message"), "Detect CPUs");
-        Assert.assertEquals(getValue(table, "Arguments"), "Using 3 processors");
-        Assert.assertEquals(getValue(table, GenericLogs.lineNumberColumn), 1);
-        Assert.assertEquals(getValue(table, GenericLogs.directoryColumn), "./");
-        Assert.assertEquals(getValue(table, GenericLogs.filenameColumn), f.getName());
+        Assert.assertEquals(getValue(table, LogFiles.timestampColumnName, 0), instant);
+        Assert.assertEquals(getValue(table, "Role", 0), "worker");
+        Assert.assertEquals(getValue(table, "Level", 0), "INFO");
+        Assert.assertEquals(getValue(table, "Machine", 0), "ubuntu");
+        Assert.assertEquals(getValue(table, "Thread", 0), "main");
+        Assert.assertEquals(getValue(table, "Class", 0), "org.hillview.dataset.LocalDataSet");
+        Assert.assertEquals(getValue(table, "Method", 0), "<clinit>");
+        Assert.assertEquals(getValue(table, "Message", 0), "Detect CPUs");
+        Assert.assertEquals(getValue(table, "Arguments", 0), "Using 3 processors");
+        Assert.assertEquals(getValue(table, LogFiles.lineNumberColumn, 0), 1);
+        Assert.assertEquals(getValue(table, LogFiles.directoryColumn, 0), "./");
+        Assert.assertEquals(getValue(table, LogFiles.filenameColumn, 0), f.getName());
+        Assert.assertNull(getValue(table, LogFiles.parseErrorColumn, 0));
+    }
+
+    @Test
+    public void parseMalformedLog() throws IOException {
+        String s = "2019-03-22 09:27:10.292,worker,INFO,ip-172-31-12-140,computation-0,org.hillview.dataset.LocalDataSet,lambda$map$0,Starting map,org.hillview.dataset.LocalDataSet(2)@ip-172-31-12-140:org.hillview.storage.FileSetDescription$FileReference@3cfb3d27:org.hillview.maps.LoadFilesMapper\n" +
+        "2019-03-22 09:27:10.505,worker,WARNING,ip-172-31-12-140,Unable to load native-hadoop library for your platform... using builtin-java classes where applicable\n";
+
+        File f = File.createTempFile("tmp", null, new File("."));
+        f.deleteOnExit();
+        PrintWriter out = new PrintWriter(f.getName());
+        out.println(s);
+        out.close();
+
+        Path path = Paths.get(".", f.getName());
+        ITable table = HillviewLogs.parseLogFile(path.toString());
+        Converters.checkNull(table);
+        Assert.assertEquals(table.toString(), "Table[14x2]");
+        Assert.assertNull(getValue(table, LogFiles.parseErrorColumn, 0));
+        Assert.assertNotNull(getValue(table, LogFiles.parseErrorColumn, 1));
     }
 }
