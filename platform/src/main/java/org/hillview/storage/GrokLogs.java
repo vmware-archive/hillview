@@ -17,21 +17,14 @@
 
 package org.hillview.storage;
 
-import org.apache.commons.io.FilenameUtils;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
-import org.hillview.table.Table;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IAppendableColumn;
-import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
-import org.hillview.table.columns.ConstantStringColumn;
-import org.hillview.table.columns.IntListColumn;
-import org.hillview.table.columns.StringListColumn;
 import org.hillview.utils.DateParsing;
 import org.hillview.utils.GrokExtra;
 import org.hillview.utils.HillviewLogger;
-import org.hillview.utils.Utilities;
 
 import java.time.Instant;
 import java.util.List;
@@ -44,28 +37,16 @@ import io.krakens.grok.api.*;
 import javax.annotation.Nullable;
 
 /**
- * Reads Generic logs into ITable objects.
+ * Reads logs using the Grok library and patterns into ITable objects.
  */
-public class GenericLogs {
+public class GrokLogs extends LogFiles {
     private final String logFormat;
-    /**
-     * This column name must appear in all log formats.
-     */
-    public static final String timestampColumnName = "Timestamp";
-    /**
-     * Column name where the lines that are not parsed correctly are stored.
-     */
-    public static final String parseErrorColumn = "ParsingErrors";
-    public static final String hostColumn = "Host";
-    public static final String directoryColumn = "Directory";
-    public static final String filenameColumn = "Filename";
-    public static final String lineNumberColumn = "Line";
 
-    public GenericLogs(String logFormat) {
+    public GrokLogs(String logFormat) {
         this.logFormat = logFormat;
     }
 
-    public class LogFileLoader extends TextFileLoader {
+    public class LogFileLoader extends BaseLogLoader {
         private final Grok grok;
         private final GrokCompiler grokCompiler;
 
@@ -82,8 +63,6 @@ public class GenericLogs {
         private final Grok dateTime;
         @Nullable
         private List<String> columnNames = null;
-        private final StringListColumn parsingErrors;
-        private final IntListColumn lineNumber;
 
         LogFileLoader(final String path, @Nullable Instant start, @Nullable Instant end) {
             super(path);
@@ -93,21 +72,17 @@ public class GenericLogs {
             this.grok = grokCompiler.compile(logFormat, true);
             this.start = start;
             this.end = end;
-            this.parsingErrors = new StringListColumn(
-                new ColumnDescription(parseErrorColumn, ContentsKind.String));
-            this.lineNumber = new IntListColumn(
-                    new ColumnDescription(lineNumberColumn, ContentsKind.Integer));
             String originalPattern = this.grok.getOriginalGrokPattern();
             String timestampPattern = GrokExtra.extractGroupPattern(
                     this.grokCompiler.getPatternDefinitions(),
-                    originalPattern, GenericLogs.timestampColumnName);
+                    originalPattern, LogFiles.timestampColumnName);
             if (timestampPattern == null) {
                 HillviewLogger.instance.warn("Pattern does not contain column named 'Timestamp'",
                         "{0}", originalPattern);
                 this.dateTime = null;
             } else {
                 this.dateTime = this.grokCompiler.compile(
-                        "%{" + timestampPattern + ":" + GenericLogs.timestampColumnName + "}", true);
+                        "%{" + timestampPattern + ":" + LogFiles.timestampColumnName + "}", true);
             }
         }
 
@@ -133,7 +108,7 @@ public class GenericLogs {
             this.columnNames = GrokExtra.getColumnsFromPattern(this.grok);
             for (String colName: this.columnNames) {
                 ContentsKind kind = ContentsKind.String;
-                if (colName.equals(GenericLogs.timestampColumnName))
+                if (colName.equals(LogFiles.timestampColumnName))
                     kind = ContentsKind.Date;
                 schema.append(new ColumnDescription(colName, kind));
             }
@@ -163,7 +138,7 @@ public class GenericLogs {
                             Match gm = this.dateTime.match(fileLine);
                             if (!gm.isNull())
                                 currentTimestamp = gm.capture()
-                                        .get(GenericLogs.timestampColumnName)
+                                        .get(LogFiles.timestampColumnName)
                                         .toString();
                             else if (first)
                                 // If the first line does not have a timestamp
@@ -223,34 +198,7 @@ public class GenericLogs {
                 this.error(e.getMessage());
             }
             this.close(null);
-            int size;
-            int columnCount;
-            if (this.columns == null)
-                columnCount = 0;
-            else
-                columnCount = this.columns.length;
-            if (columnCount == 0)
-                size = 0;
-            else
-                size = this.columns[0].sizeInRows();
-            // Create a new column for the host
-            IColumn host = new ConstantStringColumn(
-                    new ColumnDescription(hostColumn, ContentsKind.String), size, Utilities.getHostName());
-            IColumn fileName = new ConstantStringColumn(
-                    new ColumnDescription(filenameColumn, ContentsKind.String),
-                    size, FilenameUtils.getName(this.filename));
-            IColumn directory = new ConstantStringColumn(
-                    new ColumnDescription(directoryColumn, ContentsKind.String),
-                    size, FilenameUtils.getPath(this.filename));
-            IColumn[] cols = new IColumn[columnCount + 5];
-            cols[0] = host;
-            cols[1] = directory;
-            cols[2] = fileName;
-            cols[3] = this.lineNumber;
-            if (columnCount > 0)
-                System.arraycopy(this.columns, 0, cols, 4, columnCount);
-            cols[cols.length - 1] = this.parsingErrors;
-            return new Table(cols, this.filename, null);
+            return this.createTable();
         }
     }
 

@@ -71,7 +71,7 @@ public class FileSetDescription implements Serializable, IJson {
     public Double startTime;
     @Nullable
     public Double endTime;
-    
+
     @Nullable
     private String getSchemaPath() {
         if (Utilities.isNullOrEmpty(this.schemaFile))
@@ -124,7 +124,7 @@ public class FileSetDescription implements Serializable, IJson {
                 case "genericlog":
                     String format = FileSetDescription.this.getLogFormat();
                     assert format != null;
-                    GenericLogs genLog = new GenericLogs(format);
+                    GrokLogs genLog = new GrokLogs(format);
                     loader = genLog.getFileLoader(this.pathname,
                             Converters.toDate(FileSetDescription.this.startTime),
                             Converters.toDate(FileSetDescription.this.endTime));

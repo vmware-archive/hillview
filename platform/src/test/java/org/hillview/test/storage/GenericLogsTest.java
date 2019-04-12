@@ -20,7 +20,8 @@ package org.hillview.test.storage;
 import io.krakens.grok.api.Grok;
 import io.krakens.grok.api.GrokCompiler;
 import io.krakens.grok.api.Match;
-import org.hillview.storage.GenericLogs;
+import org.hillview.storage.GrokLogs;
+import org.hillview.storage.LogFiles;
 import org.hillview.storage.TextFileLoader;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
@@ -111,28 +112,28 @@ public class GenericLogsTest extends BaseTest {
     @Test
     public void testSyslog() {
         String path = "../data/sample_logs/syslog";
-        GenericLogs logs = new GenericLogs("%{SYSLOG}");
+        GrokLogs logs = new GrokLogs("%{SYSLOG}");
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
         //System.out.println(table.toLongString(10));
         Assert.assertEquals("Table[8x42]", table.toString());
 
-        IColumn col = table.getLoadedColumn(GenericLogs.directoryColumn);
+        IColumn col = table.getLoadedColumn(LogFiles.directoryColumn);
         String s = col.getString(0);
         Assert.assertEquals("../data/sample_logs/", s);
 
-        col = table.getLoadedColumn(GenericLogs.filenameColumn);
+        col = table.getLoadedColumn(LogFiles.filenameColumn);
         s = col.getString(0);
         Assert.assertEquals("syslog", s);
 
-        col = table.getLoadedColumn(GenericLogs.lineNumberColumn);
+        col = table.getLoadedColumn(LogFiles.lineNumberColumn);
         int i = col.getInt(0);
         Assert.assertEquals(1, i);
         i = col.getInt(1);
         Assert.assertEquals(2, i);
 
-        col = table.getLoadedColumn(GenericLogs.hostColumn);
+        col = table.getLoadedColumn(LogFiles.hostColumn);
         String host = col.getString(0);
         Assert.assertNotNull(host);
     }
@@ -140,14 +141,14 @@ public class GenericLogsTest extends BaseTest {
     @Test
     public void testWrongpattern() {
         String path = "../data/sample_logs/syslog";
-        GenericLogs logs = new GenericLogs("%{HADOOP}");  // correct one is SYSLOG
+        GrokLogs logs = new GrokLogs("%{HADOOP}");  // correct one is SYSLOG
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
         if (BaseTest.toPrint)
             System.out.println(table.toLongString(10));
         Assert.assertEquals("Table[8x42]", table.toString());
-        IColumn col = table.getLoadedColumn(GenericLogs.parseErrorColumn);
+        IColumn col = table.getLoadedColumn(LogFiles.parseErrorColumn);
         for (int i = 0; i < col.sizeInRows(); i++) {
             String s = col.getString(i);
             Assert.assertNotNull(s);
@@ -157,7 +158,7 @@ public class GenericLogsTest extends BaseTest {
     @Test
     public void testStartuplog() {
         String path = "../data/sample_logs/startuplog";
-        GenericLogs logs = new GenericLogs("%{HADOOP}");
+        GrokLogs logs = new GrokLogs("%{HADOOP}");
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
@@ -169,7 +170,7 @@ public class GenericLogsTest extends BaseTest {
     @Test
     public void testSyslogTime() {
         String path = "../data/sample_logs/syslog";
-        GenericLogs logs = new GenericLogs("%{SYSLOG}");
+        GrokLogs logs = new GrokLogs("%{SYSLOG}");
         TextFileLoader fileLoader = logs.getFileLoader(path, null, null);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
@@ -183,7 +184,7 @@ public class GenericLogsTest extends BaseTest {
         // This log has no years in the dates, so they will be parsed as the
         // current year...
         String path = "../data/sample_logs/syslog";
-        GenericLogs logs = new GenericLogs("%{SYSLOG}");
+        GrokLogs logs = new GrokLogs("%{SYSLOG}");
         LocalDateTime now = LocalDateTime.now();
         Instant start = LocalDateTime.of(now.getYear(), 10, 7, 6, 0, 0)
                 .atZone(ZoneOffset.systemDefault())
@@ -203,7 +204,7 @@ public class GenericLogsTest extends BaseTest {
     @Test
     public void testEmptyLog() {
         String path = "../data/sample_logs/emptylog";
-        GenericLogs logs = new GenericLogs("%{SYSLOG}");
+        GrokLogs logs = new GrokLogs("%{SYSLOG}");
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
@@ -213,7 +214,7 @@ public class GenericLogsTest extends BaseTest {
     @Test
     public void testYarnLog() {
         String path = "../data/sample_logs/yarnlog";
-        GenericLogs logs = new GenericLogs("%{YARNLOG}");
+        GrokLogs logs = new GrokLogs("%{YARNLOG}");
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
@@ -225,7 +226,7 @@ public class GenericLogsTest extends BaseTest {
     @Test
     public void testRFC5424Log() {
         String path = "../data/sample_logs/rfc5424log";
-        GenericLogs logs = new GenericLogs("%{RFC5424}");
+        GrokLogs logs = new GrokLogs("%{RFC5424}");
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
@@ -246,7 +247,7 @@ public class GenericLogsTest extends BaseTest {
         Assert.assertEquals("[nsx@6876 comp=\"nsx-manager\" errorCode=\"MP4039\" subcomp=\"manager\"]", structured);
         String message = row.getString("Message");
         Assert.assertEquals("Connection verification failed for broker '10.160.108.196'. Marking broker unhealthy.", message);
-        Assert.assertNull(row.getString(GenericLogs.parseErrorColumn));
+        Assert.assertNull(row.getString(LogFiles.parseErrorColumn));
         String appname = row.getString("Appname");
         Assert.assertEquals("NSX", appname);
         String pid = row.getString("Pid");
@@ -258,7 +259,7 @@ public class GenericLogsTest extends BaseTest {
     @Test
     public void testHBaseLog() {
         String path = "../data/sample_logs/hbaselog";
-        GenericLogs logs = new GenericLogs("%{HBASELOG}");
+        GrokLogs logs = new GrokLogs("%{HBASELOG}");
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
@@ -270,7 +271,7 @@ public class GenericLogsTest extends BaseTest {
     @Test
     public void testDataNodeLog() {
         String path = "../data/sample_logs/datanodelog";
-        GenericLogs logs = new GenericLogs("%{DATANODELOG}");
+        GrokLogs logs = new GrokLogs("%{DATANODELOG}");
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
@@ -282,7 +283,7 @@ public class GenericLogsTest extends BaseTest {
     @Test
     public void testOozieLog() {
         String path = "../data/sample_logs/oozielog";
-        GenericLogs logs = new GenericLogs("%{OOZIELOG}");
+        GrokLogs logs = new GrokLogs("%{OOZIELOG}");
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
@@ -294,7 +295,7 @@ public class GenericLogsTest extends BaseTest {
     @Test
     public void testZookeeperLog() {
         String path = "../data/sample_logs/zookeeperlog";
-        GenericLogs logs = new GenericLogs("%{ZOOKEEPERLOG}");
+        GrokLogs logs = new GrokLogs("%{ZOOKEEPERLOG}");
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
@@ -306,7 +307,7 @@ public class GenericLogsTest extends BaseTest {
     @Test
     public void testHDFSNameNodeLog() {
         String path = "../data/sample_logs/hdfsnamenodelog";
-        GenericLogs logs = new GenericLogs("%{HDFSNAMENODELOG}");
+        GrokLogs logs = new GrokLogs("%{HDFSNAMENODELOG}");
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
@@ -318,7 +319,7 @@ public class GenericLogsTest extends BaseTest {
     @Test
     public void testHDFSDataNodeLog() {
         String path = "../data/sample_logs/hdfsdatanodelog";
-        GenericLogs logs = new GenericLogs("%{HDFSDATANODELOG}");
+        GrokLogs logs = new GrokLogs("%{HDFSDATANODELOG}");
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);

@@ -17,16 +17,12 @@
 
 package org.hillview.storage;
 
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
-import org.hillview.table.Table;
 import org.hillview.table.api.ContentsKind;
-import org.hillview.table.api.IColumn;
+import org.hillview.table.api.IAppendableColumn;
 import org.hillview.table.api.ITable;
-import org.hillview.table.columns.ConstantStringColumn;
-import org.hillview.table.columns.CounterColumn;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -37,13 +33,13 @@ import java.util.regex.Matcher;
 /**
  * Reads Hillview logs into ITable objects.
  */
-public class HillviewLogs {
+public class HillviewLogs extends LogFiles {
     private static final Schema schema = new Schema();
     private static final Pattern pattern = Pattern.compile("([^,]*),([^,]*),([^,]*),([^,]*),([^,]*)," +
             "([^,]*),([^,]*),([^,]*),?(.*)");
 
     static {
-        HillviewLogs.schema.append(new ColumnDescription(GenericLogs.timestampColumnName, ContentsKind.Date));
+        HillviewLogs.schema.append(new ColumnDescription(LogFiles.timestampColumnName, ContentsKind.Date));
         HillviewLogs.schema.append(new ColumnDescription("Role", ContentsKind.String));
         HillviewLogs.schema.append(new ColumnDescription("Level", ContentsKind.String));
         HillviewLogs.schema.append(new ColumnDescription("Machine", ContentsKind.String));
@@ -54,15 +50,21 @@ public class HillviewLogs {
         HillviewLogs.schema.append(new ColumnDescription("Arguments", ContentsKind.String));
     }
 
-    public static class LogFileLoader extends TextFileLoader {
+    public static class LogFileLoader extends BaseLogLoader {
         LogFileLoader(final String path) {
             super(path);
         }
 
-        void parse(String line, String[] output) {
+        /**
+         * Return true on success.
+         */
+        boolean parse(String line, String[] output) {
             Matcher m = pattern.matcher(line);
-            if (!m.find())
-                this.error("Could not parse line");
+            if (!m.find()) {
+                for (int i = 0; i < output.length; i++)
+                    output[i] = null;
+                return false;
+            }
             output[0] = m.group(1); // Time
             output[1] = m.group(2); // Role
             output[2] = m.group(3); // Level
@@ -73,6 +75,7 @@ public class HillviewLogs {
             output[7] = m.group(8); // Message
             String arguments = StringEscapeUtils.unescapeCsv(m.group(9));
             output[8] = arguments.replace("\\n", "\n");  // Arguments
+            return true;
         }
 
         @Override
@@ -85,31 +88,34 @@ public class HillviewLogs {
                     String line = reader.readLine();
                     if (line == null)
                         break;
-                    if (line.trim().isEmpty())
+                    if (line.trim().isEmpty()) {
+                        this.currentRow++;
                         continue;
-                    this.parse(line, fields);
-                    this.append(fields);
+                    }
+                    // rows are numbered from 0, lines from 1
+                    this.lineNumber.append(this.currentRow + 1);
+                    boolean success = this.parse(line, fields);
+                    if (!success) {
+                        for (IAppendableColumn column : this.columns) column.appendMissing();
+                        this.parsingErrors.append(line);
+                        this.currentRow++;
+                        continue;
+                    }
+                    try {
+                        this.append(fields);
+                        // this increments currentRow on success
+                    } catch (Exception ex) {
+                        this.parsingErrors.append(line);
+                        this.currentRow++;
+                        continue;
+                    }
+                    this.parsingErrors.appendMissing();
                 }
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
             this.close(null);
-            int size = this.columns[0].sizeInRows();
-            IColumn directory = new ConstantStringColumn(
-                    new ColumnDescription(GenericLogs.directoryColumn, ContentsKind.String),
-                    size,
-                    FilenameUtils.getPath(this.filename));
-            IColumn file = new ConstantStringColumn(
-                    new ColumnDescription(GenericLogs.filenameColumn, ContentsKind.String),
-                    size,
-                    FilenameUtils.getName(this.filename));
-            IColumn line = new CounterColumn(GenericLogs.lineNumberColumn, size, 1);
-            IColumn[] cols = new IColumn[this.columns.length + 3];
-            cols[0] = directory;
-            cols[1] = file;
-            cols[2] = line;
-            System.arraycopy(this.columns, 0, cols, 3, this.columns.length);
-            return new Table(cols, this.filename, null);
+            return this.createTable();
         }
     }
 

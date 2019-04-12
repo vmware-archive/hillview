@@ -19,27 +19,22 @@ package org.hillview.test.table;
 
 import org.hillview.dataset.api.IMap;
 import org.hillview.maps.ConvertColumnMap;
-import org.hillview.table.*;
 import org.hillview.table.api.*;
-import org.hillview.table.columns.StringArrayColumn;
-import org.hillview.table.columns.IntArrayColumn;
 import org.hillview.test.BaseTest;
 import org.hillview.utils.TestTables;
-import org.hillview.utils.TestUtils;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.util.Arrays;
 
 public class ToCatMapTest extends BaseTest {
     @Test
     public void testToCatMap() {
         ITable table = TestTables.testRepTable();
-        TestUtils.printTable("Table before conversion:", table);
+        //TestUtils.printTable("Table before conversion:", table);
         IMap<ITable, ITable> map = new ConvertColumnMap(
                 "Name", "Name Categorical", ContentsKind.String, 1);
         ITable result = map.apply(table);
-        TestUtils.printTable("Table after conversion:", result);
+        Assert.assertNotNull(result);
+        //TestUtils.printTable("Table after conversion:", result);
         IColumn nameCC = result.getLoadedColumn("Name");
         IColumn nameCatCC = result.getLoadedColumn("Name Categorical");
 

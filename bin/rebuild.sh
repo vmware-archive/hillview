@@ -20,7 +20,7 @@ set -e
 
 SKIP="1"
 TOOLS="0"
-while getopts sha FLAG; do
+while getopts shta FLAG; do
    case $FLAG in
       s) SKIP="1"
          ;;
