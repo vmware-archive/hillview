@@ -23,6 +23,8 @@ import {TopMenu} from "./menu";
 import {ProgressManager} from "./progress";
 import {HtmlString, IHtmlElement, removeAllChildren, SpecialChars, ViewKind} from "./ui";
 import {helpUrl} from "./helpUrl";
+import {BigTableView} from "../tableTarget";
+import {CombineOperators} from "../javaBridge";
 
 const minus = "&#8722;";
 const plus = "+";
@@ -136,6 +138,9 @@ export class FullPage implements IHtmlElement {
             const titleStart = (this.pageId > 0 ? (this.pageId.toString() + ". ") : "");
             h2.appendChild(makeSpan(titleStart));
             h2.appendChild(this.title.getHTMLRepresentation(this));
+            h2.style.cursor = "grab";
+            h2.draggable = true;
+            h2.ondragstart = (e) => e.dataTransfer.setData("text", this.pageId.toString());
         }
         h2.style.textOverflow = "ellipsis";
         h2.style.textAlign = "center";
@@ -181,15 +186,6 @@ export class FullPage implements IHtmlElement {
             minimize.title = "Minimize this view.";
             this.addCell(minimize, true);
 
-            /*
-            let pageIdSpan = document.createElement("span");
-            pageIdSpan.textContent = "[" + this.pageId + "]";
-            pageIdSpan.title = "Unique number of this view.";
-            pageIdSpan.draggable = true;
-            pageIdSpan.ondragstart = (e) => e.dataTransfer.setData("text", this.pageId.toString());
-            this.addCell(pageIdSpan, true);
-            */
-
             const close = document.createElement("span");
             close.className = "close";
             close.innerHTML = "&times;";
@@ -199,11 +195,23 @@ export class FullPage implements IHtmlElement {
         }
 
         this.displayHolder = document.createElement("div");
+        this.displayHolder.ondragover = (event) => event.preventDefault();
+        this.displayHolder.ondrop = (event) => this.dropped(event);
         this.pageTopLevel.appendChild(this.displayHolder);
         this.pageTopLevel.appendChild(this.bottomContainer);
 
         this.bottomContainer.appendChild(this.progressManager.getHTMLRepresentation());
         this.bottomContainer.appendChild(this.console.getHTMLRepresentation());
+    }
+
+    protected dropped(e: DragEvent): void {
+        e.preventDefault();
+        const view = this.dataView as BigTableView;
+        if (view == null)
+            return;
+        const pageId = e.dataTransfer.getData("text");
+        this.dataset.select(Number(pageId));
+        view.combine(CombineOperators.Replace);
     }
 
     public setViewKind(viewKind: ViewKind): void {

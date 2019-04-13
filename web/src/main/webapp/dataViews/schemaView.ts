@@ -17,7 +17,7 @@
 
 import {IViewSerialization} from "../datasetView";
 import {
-    allContentsKind, ColumnSortOrientation, CombineOperators, NextKList, RecordOrder, RemoteObjectId,
+    allContentsKind, ColumnSortOrientation, NextKList, RecordOrder, RemoteObjectId,
     Schema,
 } from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
@@ -267,10 +267,6 @@ export class SchemaView extends TSViewBase {
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer {
         return null;  // not used
-    }
-
-    public combine(how: CombineOperators): void {
-        // not used
     }
 
     public getSelectedColCount(): number {

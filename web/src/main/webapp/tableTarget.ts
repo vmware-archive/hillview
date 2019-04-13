@@ -438,7 +438,7 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
     }
 
     public selectCurrent(): void {
-        this.dataset.select(this, this.page.pageId);
+        this.dataset.select(this.page.pageId);
     }
 
     public abstract resize(): void;
@@ -457,15 +457,16 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer;
 
     public combine(how: CombineOperators): void {
-        const r = this.dataset.getSelected();
-        if (r.first == null) {
+        const pageId = this.dataset.getSelected();
+        if (pageId == null) {
             this.page.reportError("No original dataset selected");
             return;
         }
 
-        const rr = this.createZipRequest(r.first);
+        const view = this.dataset.findPage(pageId).dataView;
+        const rr = this.createZipRequest(view as BigTableView);
         const renderer = this.getCombineRenderer(
-            new PageTitle("%p(" + r.second + ")" + CombineOperators[how]));
+            new PageTitle(" %p(" + pageId + ") " + CombineOperators[how]));
         rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.dataset, renderer));
     }
 
