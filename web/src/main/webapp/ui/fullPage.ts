@@ -139,8 +139,6 @@ export class FullPage implements IHtmlElement {
             h2.appendChild(makeSpan(titleStart));
             h2.appendChild(this.title.getHTMLRepresentation(this));
             h2.style.cursor = "grab";
-            h2.ondrop = (event) => this.dropped(event);
-            h2.ondragover = (event) => event.preventDefault();
             h2.draggable = true;
             h2.ondragstart = (e) => e.dataTransfer.setData("text", this.pageId.toString());
         }
@@ -197,6 +195,8 @@ export class FullPage implements IHtmlElement {
         }
 
         this.displayHolder = document.createElement("div");
+        this.displayHolder.ondragover = (event) => event.preventDefault();
+        this.displayHolder.ondrop = (event) => this.dropped(event);
         this.pageTopLevel.appendChild(this.displayHolder);
         this.pageTopLevel.appendChild(this.bottomContainer);
 

@@ -466,7 +466,7 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
         const view = this.dataset.findPage(pageId).dataView;
         const rr = this.createZipRequest(view as BigTableView);
         const renderer = this.getCombineRenderer(
-            new PageTitle("%p(" + pageId + ")" + CombineOperators[how]));
+            new PageTitle(" %p(" + pageId + ") " + CombineOperators[how]));
         rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.dataset, renderer));
     }
 

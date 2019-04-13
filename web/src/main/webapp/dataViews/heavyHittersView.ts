@@ -16,7 +16,7 @@
  */
 
 import {HeavyHittersSerialization, IViewSerialization} from "../datasetView";
-import {CombineOperators, IColumnDescription, NextKList, RecordOrder, RemoteObjectId, TopList} from "../javaBridge";
+import {IColumnDescription, NextKList, RecordOrder, RemoteObjectId, TopList} from "../javaBridge";
 import {OnCompleteReceiver, RemoteObject} from "../rpc";
 import {SchemaClass} from "../schemaClass";
 import {BaseRenderer, BigTableView, TableTargetAPI} from "../tableTarget";
@@ -410,10 +410,6 @@ export class HeavyHittersView extends BigTableView {
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer {
         // Not used
         return null;
-    }
-
-    public combine(how: CombineOperators): void {
-        // not used
     }
 }
 
