@@ -94,11 +94,23 @@ class FileSizeReceiver extends OnCompleteReceiver<FileSizeSketchInfo> {
             this.page.reportError("No files matching " + getDescription(this.data));
             return;
         }
-        // Prune the dataset; may increase efficiency
-        const rr = this.remoteObj.createStreamingRpcRequest<RemoteObjectId>("prune", null);
-        rr.chain(this.operation);
-        const observer = new FilePruneReceiver(this.page, rr, this.data, size);
-        rr.invoke(observer);
+
+        if (false) {
+            // Prune the dataset; may increase efficiency
+            // TODO: prune seems to be broken.
+            const rr = this.remoteObj.createStreamingRpcRequest<RemoteObjectId>("prune", null);
+            rr.chain(this.operation);
+            const observer = new FilePruneReceiver(this.page, rr, this.data, size);
+            rr.invoke(observer);
+        } else {
+            const fileSize = "Loading " + size.fileCount + " file(s), total size " +
+                significantDigits(size.totalSize) + " bytes";
+            const fn = new RemoteObject(this.remoteObj.remoteObjectId);
+            const rr = fn.createStreamingRpcRequest<RemoteObjectId>("loadTable", null);
+            rr.chain(this.operation);
+            const observer = new RemoteTableReceiver(this.page, rr, this.data, fileSize, false);
+            rr.invoke(observer);
+        }
     }
 }
 

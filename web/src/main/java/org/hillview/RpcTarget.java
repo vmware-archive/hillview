@@ -220,7 +220,7 @@ public abstract class RpcTarget implements IJson {
         @Override
         public void onError(Throwable throwable) {
             HillviewLogger.instance.error("onError", "{0}", this.name);
-            HillviewLogger.instance.error("onError", throwable.toString());
+            HillviewLogger.instance.error("onError", throwable);
             boolean reconstructing = this.checkMissingDataset(throwable);
             if (reconstructing ||
                     this.context.session == null ||

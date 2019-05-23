@@ -141,6 +141,7 @@ export class FullPage implements IHtmlElement {
             h2.style.cursor = "grab";
             h2.draggable = true;
             h2.ondragstart = (e) => e.dataTransfer.setData("text", this.pageId.toString());
+            h2.title = "View title.  Can be dragged to replace data in another view.";
         }
         h2.style.textOverflow = "ellipsis";
         h2.style.textAlign = "center";
