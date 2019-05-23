@@ -48,7 +48,8 @@ public class FilterMap implements IMap<ITable, ITable> {
     }
 
     @Override
-    public ITable apply(ITable data) {
+    public ITable apply(@Nullable ITable data) {
+        assert data != null;
         ITableFilter filter;
         if (this.rowFilterPredicate == null)
             filter = new FalseTableFilter();

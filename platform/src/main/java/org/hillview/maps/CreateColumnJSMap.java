@@ -21,7 +21,7 @@ import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.api.*;
-import org.hillview.table.columns.BaseArrayColumn;
+import org.hillview.table.columns.BaseColumn;
 import org.hillview.table.rows.JSVirtualRowSnapshot;
 import org.hillview.utils.Converters;
 
@@ -79,8 +79,9 @@ public class CreateColumnJSMap extends AppendColumnMap {
             engine.eval(this.jsFunction);
             Invocable invocable = (Invocable)engine;
 
-            IMutableColumn col = BaseArrayColumn.create(this.outputColumn,
-                    table.getMembershipSet().getMax());
+            IMutableColumn col = BaseColumn.create(this.outputColumn,
+                    table.getMembershipSet().getMax(),
+                    table.getMembershipSet().getSize());
             // TODO: ensure that the input columns are loaded.
             ContentsKind kind = this.outputColumn.kind;
 

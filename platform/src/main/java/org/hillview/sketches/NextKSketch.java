@@ -131,8 +131,8 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
      */
     @Override @Nullable
     public NextKList add(@Nullable NextKList left, @Nullable NextKList right) {
-        assert left != null;
-        assert right != null;
+        Converters.checkNull(left);
+        Converters.checkNull(right);
         if (!left.table.getSchema().equals(right.table.getSchema()))
             throw new RuntimeException("The schemas do not match.");
         int width = left.table.getSchema().getColumnCount();

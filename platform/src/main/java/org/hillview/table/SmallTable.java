@@ -35,7 +35,8 @@ import java.util.List;
 
 /**
  * A SmallTable is similar to a Table, but it is intended to be shipped over the network.
- * We expect all columns to be serializable.
+ * We expect all columns to be serializable.  This means that we should only use
+ * ObjectArrayColumns (except in tests); for example, the String*Columns are not serializable.
  */
 public class SmallTable extends BaseTable implements Serializable, IJson {
     final Schema schema;
@@ -101,10 +102,13 @@ public class SmallTable extends BaseTable implements Serializable, IJson {
     public void check() {
         if (this.columns.size() != this.schema.getColumnCount())
             throw new RuntimeException("Invalid table");
-    }
-
-    public IColumn getColumn(String column) {
-        return this.columns.get(column);
+        /*
+        TODO: some tests use non-serializable small tables.
+        for (IColumn c : this.getColumns())
+            if (! (c instanceof ObjectArrayColumn))
+                throw new RuntimeException("Non-serializable column in small table: " +
+                        c.getClass().toString());
+         */
     }
 
     private static List<IColumn> colsFromRows(Schema schema, List<RowSnapshot> rows) {
@@ -138,7 +142,7 @@ public class SmallTable extends BaseTable implements Serializable, IJson {
 
     @Override
     public List<IColumn> getLoadedColumns(List<String> columns) {
-        return Linq.map(columns, this.columns::get);
+        return Linq.map(columns, this::getColumn);
     }
 
     @Override

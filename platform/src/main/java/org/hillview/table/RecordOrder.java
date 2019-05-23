@@ -27,6 +27,7 @@ import org.hillview.table.api.ITable;
 import org.hillview.table.api.IndexComparator;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.VirtualRowSnapshot;
+import org.hillview.utils.Converters;
 import org.hillview.utils.Linq;
 
 import java.io.Serializable;
@@ -97,7 +98,7 @@ public class RecordOrder implements Serializable {
 
         for (int i=0; i < this.sortOrientationList.size(); i++) {
             ColumnSortOrientation ordCol = this.sortOrientationList.get(i);
-            IColumn col = cols.get(i);
+            IColumn col = Converters.checkNull(cols.get(i));
             if (ordCol.isAscending) {
                 comparatorList.add(col.getComparator());
             } else {

@@ -27,6 +27,7 @@ import org.hillview.table.*;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.ITable;
 import org.hillview.table.api.IndexComparator;
+import org.hillview.table.membership.EmptyMembershipSet;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.test.BaseTest;
 import org.hillview.utils.Converters;
@@ -167,7 +168,7 @@ public class NextKSketchTest extends BaseTest {
     @Test
     public void testTopK4() {
         Table t = TestTables.testTable();
-        final int parts = 1;
+        final int parts = 2;
         List<IDataSet<ITable>> fragments = new ArrayList<IDataSet<ITable>>();
         for (int i = 0; i < parts; i++) {
             LocalDataSet<ITable> data = new LocalDataSet<ITable>(t);
@@ -222,5 +223,39 @@ public class NextKSketchTest extends BaseTest {
                 "89,89: 1\n";
         Assert.assertNotNull(leftK);
         Assert.assertEquals(exp, leftK.toLongString(100));
+    }
+
+    @Test
+    public void testTopKEmptyPartition() {
+        Table t = TestTables.testTable();
+        final int parts = 1;
+        List<IDataSet<ITable>> fragments = new ArrayList<IDataSet<ITable>>();
+        LocalDataSet<ITable> data = new LocalDataSet<ITable>(t);
+        fragments.add(data);
+        Table norows = new Table(t.getColumns(),
+                new EmptyMembershipSet(t.getMembershipSet().getMax()), null, null);
+        LocalDataSet<ITable> data1 = new LocalDataSet<ITable>(norows);
+        fragments.add(data1);
+
+        IDataSet<ITable> big = new ParallelDataSet<ITable>(fragments);
+        RecordOrder ro = new RecordOrder();
+        ro.append(new ColumnSortOrientation(t.getSchema().getDescription("Name"), true));
+        NextKSketch nk = new NextKSketch(ro, null, 10);
+        NextKList nkl = big.blockingSketch(nk);
+        Assert.assertNotNull(nkl);
+        Assert.assertEquals(nkl.table.toString(), "Table[1x10]");
+    }
+
+    @Test
+    public void testTopKEmpty() {
+        Table t = TestTables.testTable();
+        List<IDataSet<ITable>> fragments = new ArrayList<IDataSet<ITable>>();
+        IDataSet<ITable> big = new ParallelDataSet<ITable>(fragments); // empty dataset
+        RecordOrder ro = new RecordOrder();
+        ro.append(new ColumnSortOrientation(t.getSchema().getDescription("Name"), true));
+        NextKSketch nk = new NextKSketch(ro, null, 10);
+        NextKList nkl = big.blockingSketch(nk);
+        Assert.assertNotNull(nkl);
+        Assert.assertEquals(nkl.table.toString(), "Table[1x0]");
     }
 }

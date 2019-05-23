@@ -73,7 +73,7 @@ public interface IDataSet<T> {
      * (Also removes parallel datasets that have no children.)
      * @param isEmpty  Function that indicates when a local datasets holds an empty value.
      * @return         A stream of partial results which are IDataSet[T], which will contain
-     *                 exactly one result.  Returns null if there is no data below.
+     *                 exactly one result.
      */
     Observable<PartialResult<IDataSet<T>>> prune(IMap<T, Boolean> isEmpty);
 

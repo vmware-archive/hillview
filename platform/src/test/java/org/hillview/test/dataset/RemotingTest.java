@@ -21,12 +21,9 @@ import com.google.common.collect.ImmutableList;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.RemoteDataSet;
-import org.hillview.dataset.api.IDataSet;
-import org.hillview.dataset.api.IMap;
-import org.hillview.dataset.api.ISketch;
-import org.hillview.dataset.api.Pair;
-import org.hillview.dataset.api.PartialResult;
+import org.hillview.dataset.api.*;
 import org.hillview.dataset.remoting.HillviewServer;
+import org.hillview.maps.FalseMap;
 import org.hillview.test.BaseTest;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HostAndPort;
@@ -146,7 +143,7 @@ public class RemotingTest extends BaseTest {
             final int[] data = new int[size];
             for (int j = 0; j < size; j++)
                 data[j] = (i * size) + j;
-            LocalDataSet<int[]> lds = new LocalDataSet<>(data);
+            LocalDataSet<int[]> lds = new LocalDataSet<int[]>(data);
             al.add(lds);
         }
         ParallelDataSet<int[]> pds = new ParallelDataSet<int[]>(al);
@@ -164,7 +161,7 @@ public class RemotingTest extends BaseTest {
         assertNotNull(remoteIdsNew);
         final int result = remoteIdsNew.sketch(new SumSketch())
                                        .map(e -> e.deltaValue)
-                                       .reduce((x, y) -> x + y)
+                                       .reduce(Integer::sum)
                                        .toBlocking()
                                        .last();
         assertEquals(50005000, result);
@@ -208,7 +205,6 @@ public class RemotingTest extends BaseTest {
         obs2.onCompleted();
     }
 
-
     @Test
     public void testMapSketchThroughClientUsingMemoization() {
         final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(serverAddress);
@@ -219,7 +215,7 @@ public class RemotingTest extends BaseTest {
         assertNotNull(remoteIdsNew);
         final int result = remoteIdsNew.sketch(new SumSketch())
                 .map(e -> e.deltaValue)
-                .reduce((x, y) -> x + y)
+                .reduce(Integer::sum)
                 .toBlocking()
                 .last();
         assertEquals(50005000, result);
@@ -231,10 +227,46 @@ public class RemotingTest extends BaseTest {
         assertNotNull(remoteIdsNewMem);
         final int memoizedResult = remoteIdsNew.sketch(new SumSketch())
                 .map(e -> e.deltaValue)
-                .reduce((x, y) -> x + y)
+                .reduce(Integer::sum)
                 .toBlocking()
                 .last();
         assertEquals(50005000, memoizedResult);
+    }
+
+    static class MakeEmpty implements IMap<int[], Empty> {
+        @Nullable
+        @Override
+        public Empty apply(@Nullable int[] data) {
+            return Empty.getInstance();
+        }
+    }
+
+    static class IsEmpty implements IMap<Empty, Boolean> {
+        @Nullable
+        @Override
+        public Boolean apply(@Nullable Empty data) {
+            return true;
+        }
+    }
+
+    //@Test
+    // TODO: currently prune does not seem to work as expected.
+    public void testPrune() {
+        final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(serverAddress);
+        Observable<PartialResult<IDataSet<int[]>>> pruned = remoteIds.prune(new FalseMap<int[]>());
+        TestSubscriber<PartialResult<IDataSet<int[]>>> ts = new TestSubscriber<PartialResult<IDataSet<int[]>>>();
+        pruned.toBlocking().subscribe(ts);
+        ts.assertValueCount(1);
+
+        final IDataSet<Empty> empty = remoteIds.map(new MakeEmpty())
+                .filter(p -> p.deltaValue != null)
+                .toBlocking()
+                .last().deltaValue;
+        assertNotNull(empty);
+        Observable<PartialResult<IDataSet<Empty>>> pruned2 = empty.prune(new IsEmpty());
+        TestSubscriber<PartialResult<IDataSet<Empty>>> ts2 = new TestSubscriber<PartialResult<IDataSet<Empty>>>();
+        pruned2.toBlocking().subscribe(ts2);
+        ts2.assertValueCount(1);
     }
 
     @Test
@@ -250,7 +282,6 @@ public class RemotingTest extends BaseTest {
         resultObs.toBlocking().subscribe(ts);
         ts.assertError(RuntimeException.class);
     }
-
 
     @Test
     public void testMapSketchThroughClientWithImmutableCollection() {

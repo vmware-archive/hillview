@@ -24,10 +24,8 @@ import org.hillview.utils.TestTables;
 import org.hillview.table.SmallTable;
 import org.hillview.table.Table;
 import org.hillview.table.api.ITable;
+import org.junit.Assert;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Test class for the sketches of all types of histograms.
@@ -44,6 +42,7 @@ public class HistSketchTest extends BaseTest {
                 1, 0);
         Histogram result = mySketch.create(myTable);
         int size = 0;
+        Assert.assertNotNull(result);
         int bucketNum = result.getNumOfBuckets();
         for (int i = 0; i < bucketNum; i++)
             size += result.getCount(i);
@@ -71,6 +70,7 @@ public class HistSketchTest extends BaseTest {
         final ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize / 10);
         final Histogram hdl = all.blockingSketch(
                 new HistogramSketch(buckets, colName, 0.5, 0));
+        Assert.assertNotNull(hdl);
         int size = 0;
         int bucketNum = hdl.getNumOfBuckets();
         for (int i = 0; i < bucketNum; i++)

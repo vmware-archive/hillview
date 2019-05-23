@@ -19,7 +19,7 @@ package org.hillview.maps;
 
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.*;
-import org.hillview.table.columns.BaseArrayColumn;
+import org.hillview.table.columns.BaseColumn;
 
 import javax.annotation.Nullable;
 
@@ -47,8 +47,9 @@ public abstract class CreateColumnMap extends AppendColumnMap {
     public IColumn createColumn(ITable table) {
         IColumn col = table.getLoadedColumn(this.inputColName);
         ColumnDescription outputColumn = new ColumnDescription(this.newColName, ContentsKind.String);
-        IMutableColumn outCol = BaseArrayColumn.create(outputColumn,
-                table.getMembershipSet().getMax());
+        IMutableColumn outCol = BaseColumn.create(outputColumn,
+                table.getMembershipSet().getMax(),
+                table.getMembershipSet().getSize());
         IRowIterator it = table.getMembershipSet().getIterator();
         int r = it.getNextRow();
         while (r >= 0) {

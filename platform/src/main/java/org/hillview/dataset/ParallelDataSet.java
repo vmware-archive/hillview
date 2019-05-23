@@ -23,7 +23,6 @@ import org.hillview.utils.HillviewLogger;
 import rx.Observable;
 import rx.Subscription;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -69,10 +68,11 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
             this.children.add(e.getKey(), e.getValue());
     }
 
-    @Nullable
     private static <S> ParallelDataSet<S> createParallelDataset(final List<IDataSet<S>> elements) {
+        /*
         if (elements.size() == 0)
             return null;
+        */
         return new ParallelDataSet<S>(elements);
     }
 
@@ -308,20 +308,23 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
         HillviewLogger.instance.info("Invoked sketch", "target={0}", this);
         List<Observable<PartialResult<R>>> obs = new ArrayList<Observable<PartialResult<R>>>();
         final int mySize = this.size();
-        if (mySize == 0)
-            return Observable.just(new PartialResult<R>(sketch.getZero()));
-
-        // Run sketch over each child separately
-        for (int i = 0; i < mySize; i++) {
-            IDataSet<T> child = this.children.get(i);
-            Observable<PartialResult<R>> sk = child.sketch(sketch);
-            sk = sk.map(e -> new PartialResult<R>(e.deltaDone / mySize, e.deltaValue));
-            obs.add(sk);
+        Observable<PartialResult<R>> result;
+        if (mySize == 0) {
+            result = Observable.just(new PartialResult<R>(sketch.getZero()));
+        } else {
+            // Run sketch over each child separately
+            for (int i = 0; i < mySize; i++) {
+                IDataSet<T> child = this.children.get(i);
+                Observable<PartialResult<R>> sk = child.sketch(sketch);
+                sk = sk.map(e -> new PartialResult<R>(e.deltaDone / mySize, e.deltaValue));
+                obs.add(sk);
+            }
+            // Just merge all sketch results
+            result = Observable.merge(obs);
+            PartialResultMonoid<R> prm = new PartialResultMonoid<R>(sketch);
+            result = this.bundle(result, prm);
         }
-        // Just merge all sketch results
-        Observable<PartialResult<R>> result = Observable.merge(obs);
-        PartialResultMonoid<R> prm = new PartialResultMonoid<R>(sketch);
-        result = this.bundle(result, prm)
+        result = result
             .doOnUnsubscribe(
                     () -> HillviewLogger.instance.info("Sketch unsubscribe", "{0}:{1}",
                             this, sketch));

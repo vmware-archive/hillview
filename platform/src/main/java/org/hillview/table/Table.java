@@ -85,9 +85,15 @@ public class Table extends BaseTable {
                                      @Nullable final String sourceFile,
                                      @Nullable final IColumnLoader loader) {
         super(columns);
+        int size = members.getMax();
         final Schema s = new Schema();
-        for (final IColumn c : columns)
+        for (final IColumn c : columns) {
+            if (c.sizeInRows() != size)
+                throw new IllegalArgumentException("Membership set " +
+                        "(" + size + ") and column " + c.getName() +
+                        "(" + c.sizeInRows() + ") do not have the same size");
             s.append(c.getDescription());
+        }
         this.schema = s;
         this.sourceFile = sourceFile;
         this.members = members;

@@ -426,28 +426,32 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
 
                 @Override
                 public void onCompleted() {
+                    HillviewServer.this.removeSubscription(commandId, "sketch completed");
                     queue = queue.thenRunAsync(() -> {
-                        responseObserver.onCompleted();
-                        HillviewServer.this.removeSubscription(commandId, "sketch completed");
-
-                        if (memoize && this.sketchResultAccumulator != null) {
-                            final OperationResponse<PartialResult> res =
-                                    new OperationResponse<PartialResult>(
-                                            new PartialResult(1.0, this.sketchResultAccumulator));
-                            final byte[] bytes = SerializationUtils.serialize(res);
-                            final PartialResponse memoizedResult = PartialResponse.newBuilder()
-                                    .setSerializedOp(ByteString.copyFrom(bytes))
-                                    .build();
-                            HillviewServer.this.memoizedCommands.insert(command, memoizedResult, 0);
+                        try {
+                            responseObserver.onCompleted();
+                            if (memoize && this.sketchResultAccumulator != null) {
+                                final OperationResponse<PartialResult> res =
+                                        new OperationResponse<PartialResult>(
+                                                new PartialResult(1.0, this.sketchResultAccumulator));
+                                final byte[] bytes = SerializationUtils.serialize(res);
+                                final PartialResponse memoizedResult = PartialResponse.newBuilder()
+                                        .setSerializedOp(ByteString.copyFrom(bytes))
+                                        .build();
+                                HillviewServer.this.memoizedCommands.insert(command, memoizedResult, 0);
+                            }
+                        } catch (Throwable ex) {
+                            HillviewLogger.instance.error("Async exception", ex);
+                            this.onError(ex);
                         }
                     }, executorService);
                 }
 
                 @Override
                 public void onError(final Throwable e) {
+                    HillviewLogger.instance.error("Exception in sketch", e);
+                    e.printStackTrace();
                     queue = queue.thenRunAsync(() -> {
-                        HillviewLogger.instance.error("Exception in sketch", e);
-                        e.printStackTrace();
                         responseObserver.onError(asStatusRuntimeException(e));
                         HillviewServer.this.removeSubscription(commandId, "sketch onError");
                     }, executorService);
@@ -455,16 +459,22 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
 
                 @Override
                 public void onNext(final PartialResult pr) {
+                    HillviewLogger.instance.info("Partial sketch result");
                     queue = queue.thenRunAsync(() -> {
-                        if (memoize && this.sketchResultAccumulator != null)
-                            this.sketchResultAccumulator = sketchOp.sketch.add(this
-                                    .sketchResultAccumulator, pr.deltaValue);
-                        final OperationResponse<PartialResult> res =
-                                new OperationResponse<PartialResult>(pr);
-                        final byte[] bytes = SerializationUtils.serialize(res);
-                        responseObserver.onNext(PartialResponse.newBuilder()
-                                .setSerializedOp(ByteString.copyFrom(bytes))
-                                .build());
+                        try {
+                            if (memoize && this.sketchResultAccumulator != null)
+                                this.sketchResultAccumulator = sketchOp.sketch.add(this
+                                        .sketchResultAccumulator, pr.deltaValue);
+                            final OperationResponse<PartialResult> res =
+                                    new OperationResponse<PartialResult>(pr);
+                            final byte[] bytes = SerializationUtils.serialize(res);
+                            responseObserver.onNext(PartialResponse.newBuilder()
+                                    .setSerializedOp(ByteString.copyFrom(bytes))
+                                    .build());
+                        } catch (Exception ex) {
+                            HillviewLogger.instance.error("Async exception", ex);
+                            this.onError(ex);
+                        }
                     }, executorService);
                 }
             };
@@ -509,8 +519,10 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                 HillviewLogger.instance.info("Completed manage", "{0}", manage.message.toString());
                 return result;
             };
-            Observable<JsonList<ControlMessage.Status>> executed = Observable.fromCallable(callable);
-            observable = observable.mergeWith(executed.map(l -> new PartialResult(0, l)));
+            Observable<ControlMessage.StatusList> executed = Observable.fromCallable(callable);
+            Observable<PartialResult<ControlMessage.StatusList>> pre =
+                    executed.map(l -> new PartialResult(0, l));
+            observable = observable.mergeWith(pre);
 
             Subscriber subscriber = new Subscriber<PartialResult<ControlMessage.StatusList>>() {
                 @Override

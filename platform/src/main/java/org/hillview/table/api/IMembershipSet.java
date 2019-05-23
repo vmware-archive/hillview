@@ -36,7 +36,6 @@ public interface IMembershipSet extends IRowOrder {
      * @param rowIndex A non-negative row index.
      * @return True if the given rowIndex is a member of the set.
      */
-    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     boolean isMember(int rowIndex);
 
     /**
@@ -46,7 +45,7 @@ public interface IMembershipSet extends IRowOrder {
      */
     default IMembershipSet filter(IntPredicate predicate) {
         int estimatedSize = MembershipSetFactory.estimateSize(this, predicate);
-        IMutableMembershipSet ms = MembershipSetFactory.create(this.getSize(), estimatedSize);
+        IMutableMembershipSet ms = MembershipSetFactory.create(this.getMax(), estimatedSize);
 
         IRowIterator baseIterator = this.getIterator();
         int tmp = baseIterator.getNextRow();

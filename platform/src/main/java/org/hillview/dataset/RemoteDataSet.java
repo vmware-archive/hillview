@@ -86,7 +86,7 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
     }
 
     public RemoteDataSet(final HostAndPort serverEndpoint) {
-        this(serverEndpoint, -1);
+        this(serverEndpoint, defaultDatasetIndex);
     }
 
     public RemoteDataSet(final HostAndPort serverEndpoint, final int remoteHandle) {

@@ -18,7 +18,7 @@
 package org.hillview.table;
 
 import org.hillview.table.api.*;
-import org.hillview.table.columns.BaseArrayColumn;
+import org.hillview.table.columns.ObjectArrayColumn;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.Linq;
 
@@ -60,15 +60,22 @@ public abstract class BaseTable implements ITable, Serializable {
         this.columns = new HashMap<String, IColumn>();
         for (final String c : schema.getColumnNames()) {
             ColumnDescription cd = schema.getDescription(c);
-            this.columns.put(c, BaseArrayColumn.create(cd, 0));
+            // We use ObjectArrayColumn because it is serializable
+            this.columns.put(c, new ObjectArrayColumn(cd, 0));
         }
+    }
+
+    public IColumn getColumn(String name) {
+        if (this.columns.containsKey(name))
+            return this.columns.get(name);
+        throw new RuntimeException("No colum named " + name);
     }
 
     /**
      * Returns columns in the order they appear in the schema.
      */
     public List<IColumn> getColumns(Schema schema) {
-        return Linq.map(schema.getColumnNames(), this.columns::get);
+        return Linq.map(schema.getColumnNames(), this::getColumn);
     }
 
     /**
@@ -108,7 +115,8 @@ public abstract class BaseTable implements ITable, Serializable {
                 firstColumn = c.getName();
             } else if (size != c.sizeInRows()) {
                 throw new IllegalArgumentException("Columns " +
-                        firstColumn + " and " + c.getName() + " do not have the same size");
+                        firstColumn + "(" + size + ") and " + c.getName() +
+                        "(" + c.sizeInRows() + ") do not have the same size");
             }
         }
         if (size < 0)

@@ -18,12 +18,14 @@
 package org.hillview.dataset;
 
 import org.hillview.dataset.api.*;
+import org.hillview.utils.Converters;
 import org.hillview.utils.ExecutorUtils;
 import org.hillview.utils.HillviewLogger;
 import rx.Observable;
 import rx.Scheduler;
 import rx.schedulers.Schedulers;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -39,6 +41,7 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
      * Actual data held by the LocalDataSet.
      * This should be private, but we make it public for ease of testing.
      */
+    @Nullable
     public final T data;
     /**
      * If this is set to 'true' then data processing (i.e., the map and test calls)
@@ -62,12 +65,12 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
      * Create a LocalDataSet, processing the data on a separate thread by default.
      * @param data: Data to store in the LocalDataSet.
      */
-    public LocalDataSet(final T data) {
+    public LocalDataSet(@Nullable final T data) {
         this.data = data;
         this.separateThread = true;
     }
 
-    public LocalDataSet(final T data, final boolean separateThread) {
+    public LocalDataSet(@Nullable final T data, final boolean separateThread) {
         this.data = data;
         this.separateThread = separateThread;
     }
@@ -113,7 +116,7 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
             try {
                 List<S> list = mapper.apply(LocalDataSet.this.data);
                 List<IDataSet<S>> locals = new ArrayList<IDataSet<S>>();
-                for (S s : list) {
+                for (S s : Converters.checkNull(list)) {
                     HillviewLogger.instance.info("Starting flatMap", "{0}:{1}",
                             this, mapper.asString());
                     IDataSet<S> ds = new LocalDataSet<S>(s);
@@ -208,6 +211,6 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
 
     @Override
     public String toString() {
-        return super.toString() + ":" + this.data.toString();
+        return super.toString() + ":" + this.data;
     }
 }

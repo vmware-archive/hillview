@@ -20,6 +20,7 @@ package org.hillview.table.columns;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
+import org.hillview.table.api.IMutableColumn;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -28,7 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Base class for all columns.
  */
-abstract class BaseColumn implements IColumn {
+public abstract class BaseColumn implements IColumn {
     final ColumnDescription description;
     int parsingExceptionCount;
     private static final AtomicInteger uniqueId = new AtomicInteger(0);
@@ -83,5 +84,21 @@ abstract class BaseColumn implements IColumn {
     @Override
     public String toString() {
         return this.description.toString() + "[id=" + id + "]";
+    }
+
+    /**
+     * Create an empty column with the specified description.
+     * @param maxSize     Column size.
+     * @param description Column description.
+     * @param usedSize    Number of rows used in column.
+     */
+    public static IMutableColumn create(
+            ColumnDescription description, int maxSize, int usedSize) {
+        if (usedSize > maxSize)
+            throw new IllegalArgumentException("maxSize " + maxSize + " < usedsize " + usedSize);
+        if (maxSize / usedSize > 4)
+            return new SparseColumn(description, maxSize);
+        else
+            return BaseArrayColumn.create(description, maxSize);
     }
 }
