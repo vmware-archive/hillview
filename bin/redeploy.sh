@@ -8,7 +8,7 @@
 
 mydir="$(dirname "$0")"
 if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
-source $mydir/lib.sh
+source ${mydir}/lib.sh
 
 # Bail out at first error
 set -e
@@ -25,7 +25,7 @@ usage() {
 SKIP=""
 NOREDEPLOY=""
 while getopts sdh FLAG; do
-   case $FLAG in
+   case ${FLAG} in
       s) SKIP="1"
          ;;
       d) NOREDEPLOY="1"
@@ -43,19 +43,19 @@ fi
 
 CONFIG=$1
 shift
-echo Using configuration $CONFIG
+echo Using configuration ${CONFIG}
 
-if [ -z $SKIP ]; then
-    $mydir/../bin/rebuild.sh
+if [ -z ${SKIP} ]; then
+    ${mydir}/../bin/rebuild.sh
 fi
 
 echo "Stopping services"
-$mydir/stop.py $CONFIG
-if [ -z $NOREDEPLOY ]; then
+${mydir}/stop.py ${CONFIG}
+if [ -z ${NOREDEPLOY} ]; then
     echo "Installing software"
-    $mydir/deploy.py $CONFIG
+    ${mydir}/deploy.py ${CONFIG}
 fi
 echo "Starting services"
-$mydir/start.py $CONFIG
+${mydir}/start.py ${CONFIG}
 echo "Checking services"
-$mydir/status.py $CONFIG
+${mydir}/status.py ${CONFIG}

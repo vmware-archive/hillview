@@ -9,5 +9,5 @@ if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
 
 set -e
 
-tar cvfz hillview-bin.taz $mydir/../platform/target/hillview-server-jar-with-dependencies.jar $mydir/../web/target/web-1.0-SNAPSHOT.war
+tar cvfz hillview-bin.taz ${mydir}/../platform/target/hillview-server-jar-with-dependencies.jar ${mydir}/../web/target/web-1.0-SNAPSHOT.war
 echo "Archive hillview-bin.taz should be unpacked in toplevel hillview directory."

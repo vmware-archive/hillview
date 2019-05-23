@@ -3,4 +3,4 @@
 
 set -ex
 PID=$(jcmd | grep hillview-server | awk '{print $1}')
-jcmd $PID GC.run
+jcmd ${PID} GC.run

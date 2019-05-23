@@ -11,6 +11,7 @@ TOMCATVERSION="9.0.4"
 
 case "$OSTYPE" in
     linux*)
+        LIBFORTRAN="ligbfortran3"
         if [ "$(cat /etc/*-release | grep -Ec 'ubuntu|debian')" -ne 0 ]; then
 	        # Npm will be installed with node.js
 	    	INSTALL="apt-get"; SUDO="sudo"; NODEJS="nodejs"; NPM="";
@@ -20,7 +21,6 @@ case "$OSTYPE" in
 		    echo "Unhandled operating system $OSTYPE"; exit 1;
 	    fi
 	    ;;
-    darwin*) INSTALL="brew"; SUDO=""; NODEJS="node"; NPM="" ;;
+    darwin*) INSTALL="brew"; SUDO=""; NODEJS="node"; NPM=""; LIBFORTRAN="" ;;
     *) echo "Unhandled operating system $OSTYPE"; exit 1;;
 esac
-

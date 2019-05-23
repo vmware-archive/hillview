@@ -7,7 +7,7 @@ set -x
 
 mydir="$(dirname "$0")"
 if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
-source $mydir/lib.sh
+source ${mydir}/lib.sh
 
 echo "Installing programs needed to build"
 
@@ -18,7 +18,7 @@ case "$OSTYPE" in
         ${SUDO} ${INSTALL} install curl -y
 	curl -sL https://deb.nodesource.com/setup_11.x | ${SUDO} -E bash -
 esac
-${SUDO} ${INSTALL} install maven ${NODEJS} ${NPM} libgfortran3 unzip gzip
+${SUDO} ${INSTALL} install maven ${NODEJS} ${NPM} ${LIBFORTRAN} unzip gzip
 echo "Installing typescript compiler"
 ${SUDO} npm install -g typescript@3.1.5
 

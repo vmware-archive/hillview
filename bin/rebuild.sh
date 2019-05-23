@@ -13,7 +13,7 @@ usage() {
 
 mydir="$(dirname "$0")"
 if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
-source $mydir/lib.sh
+source ${mydir}/lib.sh
 
 # Bail out on first error; verbose
 set -e
@@ -21,7 +21,7 @@ set -e
 SKIP="1"
 TOOLS="0"
 while getopts shta FLAG; do
-   case $FLAG in
+   case ${FLAG} in
       s) SKIP="1"
          ;;
       a) TOOLS="1"
@@ -36,15 +36,15 @@ done
 
 export MAVEN_OPTS="-Xmx2048M"
 EXTRAARGS=""
-if [ $SKIP -eq "1" ]; then
-    EXTRAARGS="-DskipTests "$EXTRAARGS
+if [ ${SKIP} -eq "1" ]; then
+    EXTRAARGS="-DskipTests "${EXTRAARGS}
 fi
-if [ $TOOLS -eq "1" ]; then
-    EXTRAARGS="-P tools "$EXTRAARGS
+if [ ${TOOLS} -eq "1" ]; then
+    EXTRAARGS="-P tools "${EXTRAARGS}
 fi
-pushd $mydir/../platform
-mvn $EXTRAARGS clean install
+pushd ${mydir}/../platform
+mvn ${EXTRAARGS} clean install
 popd
-pushd $mydir/../web
+pushd ${mydir}/../web
 mvn clean package
 popd
