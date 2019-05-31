@@ -7,16 +7,21 @@ application for browsing large datasets.  The hillview user interface
 executes in a browser.  Currently the software is alpha quality, under
 active development.
 
-There is a [Hillview user manual](docs/userManual.md).  A [short
-video](https://1drv.ms/v/s!AlywK8G1COQ_jeRQatBqla3tvgk4FQ) shows the
-system in action in real-time.  You can
-[test](http://ec2-18-217-136-170.us-east-2.compute.amazonaws.com:8080/)
+# Documentation
+
+There is a [Hillview user manual](docs/userManual.md).
+
+A [short video](https://1drv.ms/v/s!AlywK8G1COQ_jeRQatBqla3tvgk4FQ)
+shows the system in action in real-time.
+
+You can [test](http://ec2-18-217-136-170.us-east-2.compute.amazonaws.com:8080/)
 a demo of the system running on 15 small Amazon machines.
 
-# Developing Hillview
+A [paper](docs/paper.pdf) describing the system in some detail.
 
-Here is a [set of slides](docs/hillview-apis.pdf) describing all important Hillview
-internal APIs.
+Documentation for the [internal APIs](docs/hillview-apis.pdf).
+
+# Developing Hillview
 
 ## Software Dependencies
 
