@@ -96,7 +96,7 @@ public abstract class BaseColumn implements IColumn {
             ColumnDescription description, int maxSize, int usedSize) {
         if (usedSize > maxSize)
             throw new IllegalArgumentException("maxSize " + maxSize + " < usedsize " + usedSize);
-        if (maxSize / usedSize > 4)
+        if (usedSize == 0 || (maxSize / usedSize > 4))
             return new SparseColumn(description, maxSize);
         else
             return BaseArrayColumn.create(description, maxSize);
