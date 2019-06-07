@@ -38,7 +38,9 @@ Documentation for the [internal APIs](docs/hillview-apis.pdf).
 The release contains a [tar
 file](https://github.com/vmware/hillview/releases/download/v0.5-alpha/hillview-bin.taz)
 with pre-built binaries.  You should untar this file in the toplevel
-directory of hillview.
+directory of hillview.  This archive does not contain the Apache
+Tomcat web server; to get that one you need to [install the
+dependencies.](#software-needed-for-deployment)
 
 ## Building the binaries from source
 
@@ -285,15 +287,15 @@ In more detail, here is a step-by-step guide to committing your changes:
 
 ## Installing Java
 
-We use Java 8.
+We use Java 8; newer versions will *not* work.
 
-First, download a JDK for Linux x64 from here:
+First, download a JDK (for Linux x64 or MacOS) from here:
 http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html
 Note: it is not enough to have a Java VM installed, you need a JDK.
 
 Make sure to download the tarball version of the JDK.
 
-Unpack the JDK, and set your `JAVA_HOME` environment variable to point
+For Linux: Unpack the JDK, and set your `JAVA_HOME` environment variable to point
 to the unpacked folder (e.g, <fully qualified path
 to>/jdk/jdk1.8.0_101). To set your JAVA_HOME environment variable, add
 the following to your ~/.bashrc or ~/.zshrc.
@@ -302,12 +304,14 @@ the following to your ~/.bashrc or ~/.zshrc.
 $ export JAVA_HOME="<path-to-jdk-folder>"
 ```
 
+(For MacOS you do not need to set up JAVA_HOME.)
+
 ## Installing other software needed
 
 The following shell script will install the other required dependencies
 for building and testing.
 
-On MacOS you first need to install (https://brew.sh/)[Homebrew].  One way to do that is to run
+On MacOS you first need to install [Homebrew](https://brew.sh/).  One way to do that is to run
 ```
 /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 ```
