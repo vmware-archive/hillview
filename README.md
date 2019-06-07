@@ -307,6 +307,13 @@ $ export JAVA_HOME="<path-to-jdk-folder>"
 The following shell script will install the other required dependencies
 for building and testing.
 
+On MacOS you first need to install (https://brew.sh/)[Homebrew].  One way to do that is to run
+```
+/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+```
+
+To install all other dependencies you can run:
+
 ```
 $ cd bin
 $ ./install-dependencies.sh

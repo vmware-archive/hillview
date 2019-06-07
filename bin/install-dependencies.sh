@@ -18,7 +18,7 @@ case "$OSTYPE" in
         ${SUDO} ${INSTALL} install curl -y
 	curl -sL https://deb.nodesource.com/setup_11.x | ${SUDO} -E bash -
 esac
-${SUDO} ${INSTALL} install maven ${NODEJS} ${NPM} ${LIBFORTRAN} unzip gzip
+${SUDO} ${INSTALL} wget install maven ${NODEJS} ${NPM} ${LIBFORTRAN} unzip gzip
 echo "Installing typescript compiler"
 ${SUDO} npm install -g typescript@3.1.5
 
