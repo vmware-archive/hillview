@@ -11,7 +11,7 @@ TOMCATVERSION="9.0.4"
 
 case "$OSTYPE" in
     linux*)
-        LIBFORTRAN="ligbfortran3"
+        LIBFORTRAN="libgfortran3"
         if [ "$(cat /etc/*-release | grep -Ec 'ubuntu|debian')" -ne 0 ]; then
 	        # Npm will be installed with node.js
 	    	INSTALL="apt-get"; SUDO="sudo"; NODEJS="nodejs"; NPM="";
