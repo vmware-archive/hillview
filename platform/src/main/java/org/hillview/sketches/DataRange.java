@@ -20,8 +20,8 @@ package org.hillview.sketches;
 import org.hillview.dataset.api.IJson;
 
 public class DataRange extends BucketsInfo implements IJson {
-    double min;
-    double max;
+    public double min;
+    public double max;
 
     DataRange() {
         this.min = 0;
