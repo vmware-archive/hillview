@@ -52,7 +52,7 @@ public class TripleSketch<T, R1, R2, R3> implements ISketch<T, Triple<R1, R2, R3
     }
 
     @Override
-    public Triple<R1, R2, R3> create(T data) {
+    public Triple<R1, R2, R3> create(@Nullable T data) {
         R1 first = this.first.create(data);
         R2 second = this.second.create(data);
         R3 third = this.third.create(data);

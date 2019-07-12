@@ -17,7 +17,11 @@ shows the system in action in real-time.
 You can [test](http://ec2-18-217-136-170.us-east-2.compute.amazonaws.com:8080/)
 a demo of the system running on 15 small Amazon machines.
 
-A [paper](docs/paper.pdf) describing the system in some detail.
+A [paper](https://arxiv.org/abs/1907.04827) describing the system in
+some detail.  This is an extended version of the following publication
+Mihai Budiu, Parikshit Gopalan, Lalith Suresh, Udi Wieder, Han
+Kruiger, and Marcos K. Aguilera, Hillview: A trillion-cell spreadsheet
+for big data, in PVLDB 2019, 12(11).
 
 Documentation for the [internal APIs](docs/hillview-apis.pdf).
 

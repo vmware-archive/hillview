@@ -291,6 +291,7 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
             }
             case "TrellisHistogram": {
                 console.assert(ranges.length === 2);
+                console.assert(trellisShape != null);
                 const xArg = DataRangesCollector.computeHistogramArgs(
                     this.cds[0], ranges[0], this.bucketCounts[1], false, trellisShape.size);
                 const groups = this.bucketCounts[1] === 0 ? trellisShape.bucketCount : this.bucketCounts[1];
@@ -318,6 +319,7 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
             }
             case "Trellis2DHistogram": {
                 const args: HistogramArgs[] = [];
+                console.assert(trellisShape != null);
                 const maxXBucketCount = Math.floor(trellisShape.size.width / Resolution.minBarWidth);
                 const maxYBucketCount = Resolution.maxBucketCount;
                 const xArg = DataRangesCollector.computeHistogramArgs(
@@ -351,6 +353,7 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
             }
             case "TrellisHeatmap": {
                 const args: HistogramArgs[] = [];
+                console.assert(trellisShape != null);
                 const maxXBucketCount = Math.floor(trellisShape.size.width / Resolution.minDotSize);
                 const maxYBucketCount = Math.floor(trellisShape.size.height / Resolution.minDotSize);
                 const xArg = DataRangesCollector.computeHistogramArgs(
