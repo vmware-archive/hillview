@@ -2,6 +2,7 @@ package org.hillview.test.dataStructures;
 
 import org.hillview.sketches.DyadicHistogramBuckets;
 import org.hillview.sketches.Histogram;
+import org.hillview.sketches.PrivateHistogram;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.columns.DoubleArrayColumn;
@@ -17,8 +18,8 @@ public class PrivateHistogramTest extends BaseTest {
         final ColumnDescription desc = new
                   ColumnDescription("Linear", ContentsKind.Double);
         final DoubleArrayColumn col = new DoubleArrayColumn(desc, (maxVal - minVal) * nPerValue);
-        for ( int i = minVal; i < maxVal; i++ ) {
-            for ( int j = 0; j < nPerValue; j++ ) {
+        for (int i = minVal; i < maxVal; i++) {
+            for (int j = 0; j < nPerValue; j++) {
                 col.set(i*nPerValue + j, (double)i);
             }
         }
@@ -33,8 +34,8 @@ public class PrivateHistogramTest extends BaseTest {
 
         DoubleArrayColumn col = generateLinearColumn(0, numValues, nPerValue);
 
-        for ( int i = 0; i < numValues; i++ ) {
-            for ( int j = 0; j < nPerValue; j++ ) {
+        for (int i = 0; i < numValues; i++) {
+            for (int j = 0; j < nPerValue; j++) {
                 assertEquals(col.getDouble(i*nPerValue+j), (double)i, 1e-3);
             }
         }
@@ -66,26 +67,26 @@ public class PrivateHistogramTest extends BaseTest {
 
         // Check that values fall in correct buckets based on leaves
         int expectedBucket;
-        for ( int i = 0; i < max; i++ ) {
+        for (int i = 0; i < max; i++) {
             // Explicitly compute buckets for testing.
             // Bucket should cover all leaves whose left boundary falls in bucket.
-            if ( i < 30 ) {
+            if (i < 20) {
                 expectedBucket = 0;
-            } else if ( i < 50 ) {
+            } else if (i < 50) {
                 expectedBucket = 1;
-            } else if ( i < 80 ) {
+            } else if (i < 70) {
                 expectedBucket = 2;
             } else {
                 expectedBucket = 3;
             }
 
-            assertEquals(buckDes.indexOf((double)i), expectedBucket);
+            assertEquals(expectedBucket, buckDes.indexOf((double)i));
         }
 
         // Also check computation of bucket size, which is done independently
-        for ( int i = 0; i < buckDes.getNumOfBuckets(); i++ ) {
+        for (int i = 0; i < buckDes.getNumOfBuckets(); i++) {
             int nLeaves = buckDes.numLeavesInBucket(i);
-            if ( i % 2 == 0 ) {
+            if (i % 2 != 0) {
                 assertEquals(nLeaves, 3);
             } else {
                 assertEquals(nLeaves, 2);
@@ -93,18 +94,59 @@ public class PrivateHistogramTest extends BaseTest {
         }
     }
 
-    // Test requested min/max that do not align on leaf boundaries
+    // Test leaf assignment to buckets
     @Test
-    public void testRaggedMinMax() {
-        final int min = 1;
-        final int max = 99;
-        final int numBuckets = 10;
-        final int granularity = 20;
+    public void testLeafAssignment() {
+        final double min = 0;
+        final double max = 0.1;
+        final int numBuckets = 4; // creates buckets of size 0.025...
+        final double granularity = 0.01; // but leaves of size 0.01
+
         DyadicHistogramBuckets buckDes = new DyadicHistogramBuckets(min, max, numBuckets, granularity);
 
-        // min should round down to 0, max up to 100
-        assertEquals(buckDes.getMin(), 0, 1e-3);
-        assertEquals(buckDes.getMax(), 100, 1e-3);
+        for (int i = 0; i < buckDes.getNumOfBuckets(); i++) {
+            System.out.println("> " + i);
+            System.out.println(buckDes.bucketLeafIdx(i));
+        }
+    }
+
+    // Test granularity < 1
+    @Test
+    public void testSmallGranularity() {
+        final double min = 0;
+        final double max = 0.1;
+        final int numBuckets = 4; // creates buckets of size 0.025...
+        final double granularity = 0.01; // but leaves of size 0.01
+
+        DyadicHistogramBuckets buckDes = new DyadicHistogramBuckets(min, max, numBuckets, granularity);
+
+        // Check that values fall in correct buckets based on leaves
+        int expectedBucket;
+        for (double i = 0; i < max; i+= 0.01) {
+            // Explicitly compute buckets for testing.
+            // Boundaries are based on result of floating-point arithmetic.
+            if (i < 0.02) {
+                expectedBucket = 0;
+            } else if (i < 0.05) {
+                expectedBucket = 1;
+            } else if (i < 0.07) {
+                expectedBucket = 2;
+            } else {
+                expectedBucket = 3;
+            }
+
+            assertEquals(expectedBucket, buckDes.indexOf(i));
+        }
+
+        // Also check computation of bucket size, which is done independently
+        for (int i = 0; i < buckDes.getNumOfBuckets(); i++) {
+            int nLeaves = buckDes.numLeavesInBucket(i);
+            if (i % 2 != 0) {
+                assertEquals(nLeaves, 3);
+            } else {
+                assertEquals(nLeaves, 2);
+            }
+        }
     }
 
     // Test computation of noise scale when buckets do not align on leaf boundaries
@@ -115,15 +157,15 @@ public class PrivateHistogramTest extends BaseTest {
         final int numBuckets = 4; // creates buckets of size 25...
         final int granularity = 10; // but leaves of size 10
         DyadicHistogramBuckets buckDes = new DyadicHistogramBuckets(min, max, numBuckets, granularity);
-        Histogram hist = new Histogram(buckDes);
+        PrivateHistogram hist = new PrivateHistogram(buckDes);
 
         DoubleArrayColumn col = generateLinearColumn(min, max, 1);
         FullMembershipSet fMap = new FullMembershipSet(col.sizeInRows());
         hist.create(col, fMap, 1.0, 0, false);
 
         // manually compute expected multiplier
-        for ( int i = 0; i < hist.getNumOfBuckets(); i++ ) {
-            if ( i % 2 == 0 ) {
+        for (int i = 0; i < hist.getNumOfBuckets(); i++) {
+            if (i % 2 != 0) {
                 assertEquals(hist.noiseMultiplier(i), 2);
             } else {
                 assertEquals(hist.noiseMultiplier(i), 1);
