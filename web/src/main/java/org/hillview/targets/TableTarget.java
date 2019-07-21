@@ -313,6 +313,47 @@ public final class TableTarget extends RpcTarget {
         this.runSketch(this.table, sk, request, context);
     }
 
+    static class PrivateHistogramArgs {
+        ColumnDescription cd = new ColumnDescription();
+        double samplingRate = 1.0; // Fix to exact count
+        double epsilon;
+        int granularity;
+        long seed;
+
+        // Only used when doing double histograms.
+        double min;
+        double max;
+        int bucketCount;
+
+        DyadicHistogramBuckets getBuckets() {
+            assert (!cd.kind.isString());
+
+            // This bucket class ensures that computed buckets fall on leaf boundaries.
+            return new DyadicHistogramBuckets(this.min, this.max,
+                    this.bucketCount, this.granularity);
+        }
+
+        HistogramSketch getSketch() {
+            DyadicHistogramBuckets buckets = this.getBuckets();
+            return new HistogramSketch(buckets, this.cd.name, this.samplingRate, this.seed);
+        }
+
+        // add noise to result
+        BiFunction<Histogram, HillviewComputation, Histogram> getPostProcessing() {
+            return (e, c) -> {
+                ((PrivateHistogram)e).addDyadicLaplaceNoise(epsilon);
+                return e;
+            };
+        }
+    }
+
+    @HillviewRpc
+    public void privateHistogram(RpcRequest request, RpcRequestContext context) {
+        PrivateHistogramArgs info = request.parseArgs(PrivateHistogramArgs.class);
+        HistogramSketch sk = info.getSketch();
+        this.runCompleteSketch(this.table, sk, info.getPostProcessing(), request, context);
+    }
+
     @HillviewRpc
     public void heatmap(RpcRequest request, RpcRequestContext context) {
         HistogramArgs[] info = request.parseArgs(HistogramArgs[].class);
