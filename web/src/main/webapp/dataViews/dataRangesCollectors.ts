@@ -147,8 +147,8 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
         page: FullPage,
         operation: ICancellable<DataRange[]>,
         protected schema: SchemaClass,
-        protected bucketCounts: number[],
-        protected cds: IColumnDescription[],  // if 0 we get to choose
+        protected bucketCounts: number[], // if 0 we get to choose
+        protected cds: IColumnDescription[],
         protected title: PageTitle,
         protected options: ChartOptions) {
         super(page, operation, "histogram");

@@ -16,7 +16,7 @@
  */
 
 import {BigTableView} from "../tableTarget";
-import {RemoteObjectId} from "../javaBridge";
+import {DataRange, RemoteObjectId} from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
 import {FullPage} from "../ui/fullPage";
 import {D3SvgElement, Point, ViewKind} from "../ui/ui";
@@ -148,6 +148,26 @@ export abstract class ChartView extends BigTableView {
         const div = document.createElement("div");
         this.topLevel.appendChild(div);
         return div;
+    }
+
+    /**
+     * Get the data range for the X axis only if the x axis has the right name.
+     * Returns null if there is no X axis or "column"
+     * does not match the column plotted on the X axis.
+     * @param column  Column name expected.
+     */
+    public getXAxisRange(column: string): DataRange | null {
+        return null;
+    }
+
+    /**
+     * Get the data range for the Y axis only if the y axis has the right name.
+     * Returns null if there is no Y axis or "column"
+     * does not match the column plotted on the Y axis.
+     * @param column  Column name expected.
+     */
+    public getYAxisRange(column: string): DataRange | null {
+        return null;
     }
 
     /**

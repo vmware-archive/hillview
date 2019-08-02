@@ -18,6 +18,7 @@
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {HistogramSerialization, IViewSerialization} from "../datasetView";
 import {
+    DataRange,
     FilterDescription,
     HistogramBase,
     IColumnDescription,
@@ -27,7 +28,6 @@ import {
 } from "../javaBridge";
 import {Receiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
-import {BaseRenderer} from "../tableTarget";
 import {CDFPlot} from "../ui/CDFPlot";
 import {IDataView} from "../ui/dataview";
 import {Dialog} from "../ui/dialog";
@@ -39,7 +39,7 @@ import {TextOverlay} from "../ui/textOverlay";
 import {HistogramOptions, HtmlString, Resolution} from "../ui/ui";
 import {
     formatNumber,
-    ICancellable,
+    ICancellable, makeSpan,
     PartialResult,
     percent,
     reorder,
@@ -51,6 +51,8 @@ import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
 import {FilterReceiver, DataRangesCollector} from "./dataRangesCollectors";
 import {IScrollTarget} from "../ui/scroll";
+import {BaseRenderer} from "../tableTarget";
+import {ChartView} from "./chartView";
 
 /**
  * A HistogramView is responsible for showing a one-dimensional histogram on the screen.
@@ -58,7 +60,7 @@ import {IScrollTarget} from "../ui/scroll";
 export class HistogramView extends HistogramViewBase implements IScrollTarget {
     protected cdf: HistogramBase;
     protected histogram: HistogramBase;
-    protected axisData: AxisData;
+    public    axisData: AxisData;
     protected plot: HistogramPlot;
     protected bucketCount: number;
 
@@ -114,6 +116,44 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
             const submenu = this.menu.getSubmenu("View");
             submenu.enable("exact", false);
         }
+
+        const xDrag = makeSpan("x-axis");
+        xDrag.title = "Drag this to copy the X axis to another chart";
+        xDrag.className = "axisbox";
+        this.beforeSummary.appendChild(xDrag);
+        xDrag.draggable = true;
+        xDrag.ondragstart = (e) => this.page.setDragPayload(e, "XAxis");
+        this.page.registerDropHandler("XAxis", (p) => this.replaceXAxis(p));
+    }
+
+    public getXAxisRange(column: string): DataRange | null {
+        if (this.axisData.description.name !== column) {
+            this.page.reportError("Source histogram is on a different column");
+            return null;
+        }
+        return this.axisData.dataRange;
+    }
+
+    private replaceXAxis(pageId: string): void {
+        console.log("Received XAxis drop event from" + pageId);
+        const page = this.dataset.findPage(Number(pageId));
+        if (page == null)
+            return;
+        const source = page.getDataView() as ChartView;
+        if (source == null)
+            return;
+        const sourceRange = source.getXAxisRange(this.axisData.description.name);
+        if (sourceRange === null)
+            return;
+
+        const collector = new DataRangesCollector(this,
+            this.page, null, this.schema, [0],  // any number of buckets
+            [this.axisData.description], this.page.title, {
+                chartKind: "Histogram", exact: this.samplingRate >= 1,
+                relative: false, reusePage: true
+            });
+        collector.run([sourceRange]);
+        collector.finished();
     }
 
     protected createNewSurfaces(): void {

@@ -18,6 +18,7 @@
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {Histogram2DSerialization, IViewSerialization} from "../datasetView";
 import {
+    DataRange,
     FilterDescription,
     Heatmap,
     HistogramBase,
@@ -40,7 +41,7 @@ import {TextOverlay} from "../ui/textOverlay";
 import {ChartOptions, HtmlString, Rectangle, Resolution} from "../ui/ui";
 import {
     formatNumber,
-    ICancellable,
+    ICancellable, makeSpan,
     Pair,
     PartialResult,
     percent,
@@ -53,6 +54,7 @@ import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
 import {Dialog} from "../ui/dialog";
 import {FilterReceiver, DataRangesCollector} from "./dataRangesCollectors";
+import {ChartView} from "./chartView";
 
 /**
  * This class is responsible for rendering a 2D histogram.
@@ -130,6 +132,14 @@ export class Histogram2DView extends HistogramViewBase {
             const submenu = this.menu.getSubmenu("View");
             submenu.enable("exact", false);
         }
+
+        const xDrag = makeSpan("x-axis");
+        xDrag.title = "Drag this to copy the X axis to another chart";
+        xDrag.className = "axisbox";
+        this.beforeSummary.appendChild(xDrag);
+        xDrag.draggable = true;
+        xDrag.ondragstart = (e) => this.page.setDragPayload(e, "XAxis");
+        this.page.registerDropHandler("XAxis", (p) => this.replaceXAxis(p));
     }
 
     protected createNewSurfaces(): void {
@@ -380,6 +390,36 @@ export class Histogram2DView extends HistogramViewBase {
             chartKind: "2DHistogram",
             exact: true
         }));
+    }
+
+    public getXAxisRange(column: string): DataRange | null {
+        if (this.xAxisData.description.name !== column) {
+            this.page.reportError("Source histogram is on a different column");
+            return null;
+        }
+        return this.xAxisData.dataRange;
+    }
+
+    private replaceXAxis(pageId: string): void {
+        console.log("Received XAxis drop event from" + pageId);
+        const page = this.dataset.findPage(Number(pageId));
+        if (page == null)
+            return;
+        const source = page.getDataView() as ChartView;
+        if (source == null)
+            return;
+        const sourceRange = source.getXAxisRange(this.xAxisData.description.name);
+        if (sourceRange === null)
+            return;
+
+        const collector = new DataRangesCollector(this,
+            this.page, null, this.schema, [0, 0],  // any number of buckets
+            [this.xAxisData.description, this.yData.description], this.page.title, {
+                chartKind: "2DHistogram", exact: this.samplingRate >= 1,
+                relative: this.relative, reusePage: true
+            });
+        collector.run([sourceRange]);
+        collector.finished();
     }
 
     public chooseBuckets(): void {
