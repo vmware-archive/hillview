@@ -362,7 +362,10 @@ textarea:focus, input:focus {
 
 .axisbox {
     border: 1px solid;
-    font-size: 10px;
+    padding-left: 2px;
+    padding-right: 2px;
+    background: grey;
+    margin: 1px;
 }
 
 table.menu {

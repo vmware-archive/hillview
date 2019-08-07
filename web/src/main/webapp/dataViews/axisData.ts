@@ -108,7 +108,7 @@ class BucketBoundaries {
         let result: string;
 
         if (this.left == null) {
-            return "*empty*";
+            return "missing";
         }
 
         if (this.right == null) {
@@ -178,13 +178,14 @@ export class AxisData {
     public bucketCount: number;
     public range: DataRange; // the range used to draw the data; may be adjusted from dataRange
 
-    public constructor(public description: IColumnDescription,
+    public constructor(public description: IColumnDescription | null, // may be null for e.g., the Y col in a histogram
                        // dataRange is the original range of the data
                        public dataRange: DataRange | null) {
         this.bucketCount = 0;
         this.range = dataRange;
+        const kind = description == null ? null : description.kind;
         if (dataRange != null) {
-            if (kindIsString(description.kind)) {
+            if (kindIsString(kind)) {
                 this.range = {
                     min: -.5,
                     max: dataRange.leftBoundaries.length - .5,
@@ -194,7 +195,7 @@ export class AxisData {
                     leftBoundaries: dataRange.leftBoundaries,
                     maxBoundary: dataRange.maxBoundary
                 };
-            } else if (description.kind === "Integer") {
+            } else if (kind === "Integer") {
                 this.range = {
                     min: dataRange.min - .5,
                     max: dataRange.max + .5,

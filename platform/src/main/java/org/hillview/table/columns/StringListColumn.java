@@ -111,7 +111,6 @@ public class StringListColumn extends BaseListColumn implements IStringColumn {
                 return this.encoding.decode(Short.toUnsignedInt(index));
             }
         } else {
-            assert this.segments != null;
             final int segmentId = rowIndex >> LogSegmentSize;
             final int localIndex = rowIndex & SegmentMask;
             String[] segment = this.segments.get(segmentId);
@@ -130,7 +129,6 @@ public class StringListColumn extends BaseListColumn implements IStringColumn {
             else
                 this.shortSegments.add(new short[SegmentSize]);
         } else {
-            assert this.segments != null;
             this.segments.add(new String[SegmentSize]);
         }
     }
@@ -201,7 +199,6 @@ public class StringListColumn extends BaseListColumn implements IStringColumn {
                 }
             }
         } else {
-            assert this.segments != null;
             int segmentCount = this.segments.size();
             if (segmentCount == segmentId)
                 this.grow();

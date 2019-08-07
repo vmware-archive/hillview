@@ -248,7 +248,7 @@ export function significantDigitsHtml(n: number): HtmlString {
     } else if (absn > 1e6) {
         suffix = "M";
         n = n / 1e6;
-    } else if (absn > 10e4) {
+    } else if (absn > 1e4) {
         // Using 10^4 will prevent many year values from being converted
         suffix = "K";
         n = n / 1e3;
@@ -285,7 +285,7 @@ export function significantDigits(n: number): string {
     } else if (absn > 1e6) {
         suffix = "M";
         n = n / 1e6;
-    } else if (absn > 10e4) {
+    } else if (absn > 1e4) {
         // Using 10^4 will prevent many year values from being converted
         suffix = "K";
         n = n / 1e3;

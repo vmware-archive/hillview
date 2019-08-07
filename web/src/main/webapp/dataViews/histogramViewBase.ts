@@ -16,10 +16,7 @@
  */
 
 import {mouse as d3mouse} from "d3-selection";
-import {
-    DataRange,
-    RemoteObjectId
-} from "../javaBridge";
+import {RemoteObjectId} from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
 import {CDFPlot} from "../ui/CDFPlot";
 import {Dialog, FieldKind} from "../ui/dialog";
@@ -27,17 +24,18 @@ import {FullPage} from "../ui/fullPage";
 import {D3SvgElement, Resolution, ViewKind} from "../ui/ui";
 import {ChartView} from "./chartView";
 import {IScrollTarget, ScrollBar} from "../ui/scroll";
+import {AxisData} from "./axisData";
 
 /**
  * This is a base class that contains code common to various histogram renderings.
  */
 export abstract class HistogramViewBase extends ChartView implements IScrollTarget {
-    protected beforeSummary: HTMLElement;
     protected summary: HTMLElement;
     protected cdfDot: D3SvgElement;
     protected cdfPlot: CDFPlot;
     protected chartDiv: HTMLDivElement;
     protected scrollBar: ScrollBar;
+    public xAxisData: AxisData;
 
     protected constructor(
         remoteObjectId: RemoteObjectId,
@@ -57,8 +55,6 @@ export abstract class HistogramViewBase extends ChartView implements IScrollTarg
 
         const summaryContainer = document.createElement("div");
         this.topLevel.appendChild(summaryContainer);
-        this.beforeSummary = document.createElement("div");
-        summaryContainer.appendChild(this.beforeSummary);
         this.summary = document.createElement("div");
         summaryContainer.appendChild(this.summary);
     }
@@ -100,11 +96,6 @@ export abstract class HistogramViewBase extends ChartView implements IScrollTarg
             .attr("width", width)
             .attr("height", height);
         return true;
-    }
-
-    public getYAxisRange(column: string): DataRange | null {
-        // TODO
-        return null;
     }
 
     public pageDown(): void {

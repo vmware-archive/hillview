@@ -18,7 +18,6 @@
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {Histogram2DSerialization, IViewSerialization} from "../datasetView";
 import {
-    DataRange,
     FilterDescription,
     Heatmap,
     HistogramBase,
@@ -32,7 +31,7 @@ import {SchemaClass} from "../schemaClass";
 import {BaseRenderer, TableTargetAPI} from "../tableTarget";
 import {CDFPlot} from "../ui/CDFPlot";
 import {IDataView} from "../ui/dataview";
-import {FullPage, PageTitle} from "../ui/fullPage";
+import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
 import {Histogram2DPlot} from "../ui/Histogram2DPlot";
 import {HistogramLegendPlot} from "../ui/legendPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
@@ -41,7 +40,7 @@ import {TextOverlay} from "../ui/textOverlay";
 import {ChartOptions, HtmlString, Rectangle, Resolution} from "../ui/ui";
 import {
     formatNumber,
-    ICancellable, makeSpan,
+    ICancellable,
     Pair,
     PartialResult,
     percent,
@@ -54,14 +53,12 @@ import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
 import {Dialog} from "../ui/dialog";
 import {FilterReceiver, DataRangesCollector} from "./dataRangesCollectors";
-import {ChartView} from "./chartView";
 
 /**
  * This class is responsible for rendering a 2D histogram.
  * This is a histogram where each bar is divided further into sub-bars.
  */
 export class Histogram2DView extends HistogramViewBase {
-    protected xAxisData: AxisData;
     protected yData: AxisData;
     protected cdf: HistogramBase;
     protected heatMap: Heatmap;
@@ -132,14 +129,6 @@ export class Histogram2DView extends HistogramViewBase {
             const submenu = this.menu.getSubmenu("View");
             submenu.enable("exact", false);
         }
-
-        const xDrag = makeSpan("x-axis");
-        xDrag.title = "Drag this to copy the X axis to another chart";
-        xDrag.className = "axisbox";
-        this.beforeSummary.appendChild(xDrag);
-        xDrag.draggable = true;
-        xDrag.ondragstart = (e) => this.page.setDragPayload(e, "XAxis");
-        this.page.registerDropHandler("XAxis", (p) => this.replaceXAxis(p));
     }
 
     protected createNewSurfaces(): void {
@@ -156,7 +145,28 @@ export class Histogram2DView extends HistogramViewBase {
         this.cdfPlot = new CDFPlot(this.surface);
     }
 
-    public updateView(heatmap: Heatmap, cdf: HistogramBase): void {
+    public getAxisData(event: DragEventKind): AxisData | null {
+        switch (event) {
+            case "Title":
+            case "GAxis":
+                return null;
+            case "XAxis":
+                return this.xAxisData;
+            case "YAxis":
+                if (this.relative)
+                    return null;
+                const range = {
+                    min: 0,
+                    max: this.plot.maxYAxis != null ? this.plot.maxYAxis : this.plot.max,
+                    presentCount: this.rowCount - this.heatMap.missingData,
+                    missingCount: this.heatMap.missingData
+                };
+                return new AxisData(null, range);
+        }
+        return null;
+    }
+
+    public updateView(heatmap: Heatmap, cdf: HistogramBase, maxYAxis: number | null): void {
         this.createNewSurfaces();
         if (heatmap == null || heatmap.buckets.length === 0) {
             this.page.reportError("No data to display");
@@ -174,7 +184,7 @@ export class Histogram2DView extends HistogramViewBase {
         const bucketCount = this.xPoints;
         const canvas = this.surface.getCanvas();
 
-        this.plot.setData(heatmap, this.xAxisData, this.samplingRate, this.relative, this.schema);
+        this.plot.setData(heatmap, this.xAxisData, this.samplingRate, this.relative, this.schema, maxYAxis);
         this.plot.draw();
         const discrete = kindIsString(this.xAxisData.description.kind) ||
             this.xAxisData.description.kind === "Integer";
@@ -392,34 +402,27 @@ export class Histogram2DView extends HistogramViewBase {
         }));
     }
 
-    public getXAxisRange(column: string): DataRange | null {
-        if (this.xAxisData.description.name !== column) {
-            this.page.reportError("Source histogram is on a different column");
-            return null;
+    protected replaceAxis(pageId: string, eventKind: DragEventKind): void {
+        if (this.heatMap == null)
+            return;
+
+        const sourceRange = this.getSourceAxisRange(pageId, eventKind);
+        if (sourceRange == null)
+            return;
+
+        if (eventKind === "XAxis") {
+            const collector = new DataRangesCollector(this,
+                this.page, null, this.schema, [0, 0],  // any number of buckets
+                [this.xAxisData.description, this.yData.description], this.page.title, {
+                    chartKind: "2DHistogram", exact: this.samplingRate >= 1,
+                    relative: this.relative, reusePage: true
+                });
+            collector.run([sourceRange, this.yData.dataRange]);
+            collector.finished();
+        } else if (eventKind === "YAxis") {
+            this.relative = false; // We cannot drag a relative Y axis.
+            this.updateView(this.heatMap, this.cdf, sourceRange.max);
         }
-        return this.xAxisData.dataRange;
-    }
-
-    private replaceXAxis(pageId: string): void {
-        console.log("Received XAxis drop event from" + pageId);
-        const page = this.dataset.findPage(Number(pageId));
-        if (page == null)
-            return;
-        const source = page.getDataView() as ChartView;
-        if (source == null)
-            return;
-        const sourceRange = source.getXAxisRange(this.xAxisData.description.name);
-        if (sourceRange === null)
-            return;
-
-        const collector = new DataRangesCollector(this,
-            this.page, null, this.schema, [0, 0],  // any number of buckets
-            [this.xAxisData.description, this.yData.description], this.page.title, {
-                chartKind: "2DHistogram", exact: this.samplingRate >= 1,
-                relative: this.relative, reusePage: true
-            });
-        collector.run([sourceRange]);
-        collector.finished();
     }
 
     public chooseBuckets(): void {
@@ -434,7 +437,7 @@ export class Histogram2DView extends HistogramViewBase {
     public resize(): void {
         if (this == null)
             return;
-        this.updateView(this.heatMap, this.cdf);
+        this.updateView(this.heatMap, this.cdf, this.plot.maxYAxis);
     }
 
     public refresh(): void {
@@ -592,7 +595,7 @@ export class Histogram2DRenderer extends Receiver<Pair<Heatmap, HistogramBase>> 
             return;
         const heatmap = value.data.first;
         const cdf = value.data.second;
-        this.view.updateView(heatmap, cdf);
+        this.view.updateView(heatmap, cdf, null);
     }
 
     public onCompleted(): void {

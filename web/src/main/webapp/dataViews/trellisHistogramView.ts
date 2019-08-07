@@ -24,7 +24,7 @@ import {
     RecordOrder,
     RemoteObjectId
 } from "../javaBridge";
-import {FullPage, PageTitle} from "../ui/fullPage";
+import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
 import {BaseRenderer, TableTargetAPI} from "../tableTarget";
 import {SchemaClass} from "../schemaClass";
 import {
@@ -303,6 +303,7 @@ export class TrellisHistogramView extends TrellisChartView {
             const plot = this.hps[i];
             const coarse = coarsened[i];
             plot.setHistogram(coarse, this.samplingRate, this.xAxisData, max);
+            plot.displayAxes = false;
             plot.draw();
             plot.border(1);
             this.cdfs[i].draw();
@@ -350,6 +351,19 @@ export class TrellisHistogramView extends TrellisChartView {
             mousePosition.plotYIndex * (this.shape.size.height + this.shape.headerHeight));
         const perc = percent(cdfPos);
         this.pointDescription.update([xs, group, significantDigits(value), perc], position[0], position[1]);
+    }
+
+    public getAxisData(event: DragEventKind): AxisData | null {
+        switch (event) {
+            case "Title":
+            case "GAxis":
+                return this.groupByAxisData;
+            case "XAxis":
+                return this.xAxisData;
+            case "YAxis":
+                // TODO
+                return null;
+        }
     }
 
     protected dragMove(): boolean {
@@ -404,7 +418,6 @@ export class TrellisHistogramView extends TrellisChartView {
                 return;
             rr = this.createFilterRequest(filter);
             title = new PageTitle("Filtered on " + this.schema.displayName(this.groupByAxisData.description.name));
-
         }
         const renderer = new FilterReceiver(title,
             [this.xAxisData.description, this.groupByAxisData.description], this.schema,

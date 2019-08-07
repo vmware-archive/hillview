@@ -75,13 +75,13 @@ export class PageTitle {
 }
 
 // Kind of data that is being dragged
-export type DragEventKind = "Title" | "XAxis";
+export type DragEventKind = "Title" | "XAxis" | "YAxis" | "GAxis";
 
 /**
  * A FullPage is the main unit of display in Hillview, storing on rendering.
  * The page layout is as follows:
  * -------------------------------------------------
- * | menu            #. Title             ^ v ? - x|  titleRow
+ * | menu            #. Title       X Y G ^ v ? - x|  titleRow
  * |-----------------------------------------------|
  * |                                               |
  * |                 data display                  |  displayHolder
@@ -103,6 +103,9 @@ export class FullPage implements IHtmlElement {
     private readonly displayHolder: HTMLElement;
     protected titleRow: HTMLDivElement;
     protected help: HTMLElement;
+    protected xDrag: HTMLElement;
+    protected yDrag: HTMLElement;
+    protected gDrag: HTMLElement;
     // These functions are registered to handle drop events.
     // Each drop event has a text payload and starts with a prefix.
     // The functions are each registered for a prefix.
@@ -166,6 +169,30 @@ export class FullPage implements IHtmlElement {
         }
 
         if (this.dataset != null) {
+            this.xDrag = makeSpan("X");
+            this.xDrag.title = "Drag this to copy the X axis to another chart";
+            this.xDrag.className = "axisbox";
+            this.addCell(this.xDrag, true);
+            this.xDrag.draggable = true;
+            this.xDrag.style.visibility = "hidden";
+            this.xDrag.ondragstart = (e) => this.setDragPayload(e, "XAxis");
+
+            this.yDrag = makeSpan("Y");
+            this.yDrag.title = "Drag this to copy the Y axis to another chart";
+            this.yDrag.className = "axisbox";
+            this.addCell(this.yDrag, true);
+            this.yDrag.draggable = true;
+            this.yDrag.style.visibility = "hidden";
+            this.yDrag.ondragstart = (e) => this.setDragPayload(e, "YAxis");
+
+            this.gDrag = makeSpan("G");
+            this.gDrag.title = "Drag this to copy the group-by axis to another chart";
+            this.gDrag.className = "axisbox";
+            this.addCell(this.gDrag, true);
+            this.gDrag.draggable = true;
+            this.gDrag.style.visibility = "hidden";
+            this.gDrag.ondragstart = (e) => this.setDragPayload(e, "GAxis");
+
             const moveUp = document.createElement("div");
             moveUp.innerHTML = SpecialChars.upArrow;
             moveUp.title = "Move window up.";
@@ -335,6 +362,28 @@ export class FullPage implements IHtmlElement {
         if (hdv != null) {
             this.displayHolder.appendChild(hdv.getHTMLRepresentation());
             this.setViewKind(hdv.viewKind);
+            switch (this.dataView.viewKind) {
+                case "Histogram":
+                case "2DHistogram":
+                case "Heatmap":
+                    this.xDrag.style.visibility = "visible";
+                    this.yDrag.style.visibility = "visible";
+                    break;
+                case "TrellisHistogram":
+                case "Trellis2DHistogram":
+                case "TrellisHeatmap":
+                    this.xDrag.style.visibility = "visible";
+                    this.yDrag.style.visibility = "visible";
+                    this.gDrag.style.visibility = "visible";
+                    break;
+                case "Table":
+                case "HeavyHitters":
+                case "Schema":
+                case "Load":
+                case "SVD Spectrum":
+                case "LogFileView":
+                    break;
+            }
         }
     }
 

@@ -18,7 +18,6 @@
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {HistogramSerialization, IViewSerialization} from "../datasetView";
 import {
-    DataRange,
     FilterDescription,
     HistogramBase,
     IColumnDescription,
@@ -31,7 +30,7 @@ import {SchemaClass} from "../schemaClass";
 import {CDFPlot} from "../ui/CDFPlot";
 import {IDataView} from "../ui/dataview";
 import {Dialog} from "../ui/dialog";
-import {FullPage, PageTitle} from "../ui/fullPage";
+import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
@@ -39,7 +38,7 @@ import {TextOverlay} from "../ui/textOverlay";
 import {HistogramOptions, HtmlString, Resolution} from "../ui/ui";
 import {
     formatNumber,
-    ICancellable, makeSpan,
+    ICancellable,
     PartialResult,
     percent,
     reorder,
@@ -52,7 +51,6 @@ import {NextKReceiver, TableView} from "./tableView";
 import {FilterReceiver, DataRangesCollector} from "./dataRangesCollectors";
 import {IScrollTarget} from "../ui/scroll";
 import {BaseRenderer} from "../tableTarget";
-import {ChartView} from "./chartView";
 
 /**
  * A HistogramView is responsible for showing a one-dimensional histogram on the screen.
@@ -60,7 +58,6 @@ import {ChartView} from "./chartView";
 export class HistogramView extends HistogramViewBase implements IScrollTarget {
     protected cdf: HistogramBase;
     protected histogram: HistogramBase;
-    public    axisData: AxisData;
     protected plot: HistogramPlot;
     protected bucketCount: number;
 
@@ -116,44 +113,45 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
             const submenu = this.menu.getSubmenu("View");
             submenu.enable("exact", false);
         }
-
-        const xDrag = makeSpan("x-axis");
-        xDrag.title = "Drag this to copy the X axis to another chart";
-        xDrag.className = "axisbox";
-        this.beforeSummary.appendChild(xDrag);
-        xDrag.draggable = true;
-        xDrag.ondragstart = (e) => this.page.setDragPayload(e, "XAxis");
-        this.page.registerDropHandler("XAxis", (p) => this.replaceXAxis(p));
     }
 
-    public getXAxisRange(column: string): DataRange | null {
-        if (this.axisData.description.name !== column) {
-            this.page.reportError("Source histogram is on a different column");
-            return null;
+    public getAxisData(event: DragEventKind): AxisData | null {
+        switch (event) {
+            case "Title":
+            case "GAxis":
+                return null;
+            case "XAxis":
+                return this.xAxisData;
+            case "YAxis":
+                const range = {
+                    min: 0,
+                    max: this.plot.maxYAxis != null ? this.plot.maxYAxis : Math.max(...this.histogram.buckets),
+                    presentCount: this.rowCount - this.histogram.missingData,
+                    missingCount: this.histogram.missingData
+                };
+                return new AxisData(null, range);
         }
-        return this.axisData.dataRange;
     }
 
-    private replaceXAxis(pageId: string): void {
-        console.log("Received XAxis drop event from" + pageId);
-        const page = this.dataset.findPage(Number(pageId));
-        if (page == null)
+    protected replaceAxis(pageId: string, eventKind: DragEventKind): void {
+        if (this.histogram == null)
             return;
-        const source = page.getDataView() as ChartView;
-        if (source == null)
-            return;
-        const sourceRange = source.getXAxisRange(this.axisData.description.name);
+        const sourceRange = this.getSourceAxisRange(pageId, eventKind);
         if (sourceRange === null)
             return;
 
-        const collector = new DataRangesCollector(this,
-            this.page, null, this.schema, [0],  // any number of buckets
-            [this.axisData.description], this.page.title, {
-                chartKind: "Histogram", exact: this.samplingRate >= 1,
-                relative: false, reusePage: true
-            });
-        collector.run([sourceRange]);
-        collector.finished();
+        if (eventKind === "XAxis") {
+            const collector = new DataRangesCollector(this,
+                this.page, null, this.schema, [0],  // any number of buckets
+                [this.xAxisData.description], this.page.title, {
+                    chartKind: "Histogram", exact: this.samplingRate >= 1,
+                    relative: false, reusePage: true
+                });
+            collector.run([sourceRange]);
+            collector.finished();
+        } else if (eventKind === "YAxis") {
+            this.updateView(this.cdf, this.bucketCount, sourceRange.max);
+        }
     }
 
     protected createNewSurfaces(): void {
@@ -169,7 +167,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
             ...super.serialize(),
             samplingRate: this.samplingRate,
             bucketCount: this.bucketCount,
-            columnDescription: this.axisData.description,
+            columnDescription: this.xAxisData.description,
         };
         return result;
     }
@@ -232,15 +230,16 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
         };
     }
 
-    public setAxes(axisData: AxisData): void {
-        this.axisData = axisData;
+    public setAxes(xAxisData: AxisData): void {
+        this.xAxisData = xAxisData;
     }
 
     /**
      * @param cdf: Data for the cdf.
      * @param bucketCount: Number of buckets to display.  If 0 the bucket count will be computed
+     * @param maxYAxis: maximum value to use for Y axis if not null
      */
-    public updateView(cdf: HistogramBase, bucketCount: number): void {
+    public updateView(cdf: HistogramBase, bucketCount: number, maxYAxis: number | null): void {
         this.createNewSurfaces();
         if (cdf == null) {
             this.page.reportError("No data to display");
@@ -254,10 +253,10 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
                 Resolution.maxBucketCount,
                 Math.floor(width / Resolution.minBarWidth),
                 cdf.buckets.length);
-            if (this.axisData.description.kind === "Integer")
+            if (this.xAxisData.description.kind === "Integer")
                 bucketCount = Math.min(
                     bucketCount,
-                    this.axisData.range.max - this.axisData.range.min);
+                    this.xAxisData.range.max - this.xAxisData.range.min);
         }
         this.bucketCount = bucketCount;
         const h = HistogramView.coarsen(cdf, bucketCount);
@@ -266,11 +265,11 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
 
         const counts = h.buckets;
         bucketCount = counts.length;
-        this.plot.setHistogram(h, this.samplingRate, this.axisData);
+        this.plot.setHistogram(h, this.samplingRate, this.xAxisData, maxYAxis);
         this.plot.draw();
 
-        const discrete = kindIsString(this.axisData.description.kind) ||
-            this.axisData.description.kind === "Integer";
+        const discrete = kindIsString(this.xAxisData.description.kind) ||
+            this.xAxisData.description.kind === "Integer";
         this.cdfPlot.setData(cdf, discrete);
         this.cdfPlot.draw();
         this.setupMouse();
@@ -290,11 +289,11 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
         if (h.missingData !== 0)
             summary = summary.appendSafeString(formatNumber(h.missingData) + " missing, ");
         summary = summary.appendSafeString(formatNumber(this.rowCount) + " points");
-        if (this.axisData != null &&
-            this.axisData.range.leftBoundaries != null &&
-            this.axisData.range.allStringsKnown)
+        if (this.xAxisData != null &&
+            this.xAxisData.range.leftBoundaries != null &&
+            this.xAxisData.range.allStringsKnown)
             summary = summary.appendSafeString(
-                ", " + this.axisData.range.leftBoundaries.length + " distinct values");
+                ", " + this.xAxisData.range.leftBoundaries.length + " distinct values");
         summary = summary.appendSafeString(
             ", " + String(bucketCount) + " buckets");
         if (this.samplingRate < 1.0)
@@ -307,7 +306,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
         const columns: string[] = [];
         for (let i = 0; i < this.schema.length; i++) {
             const col = this.schema.get(i);
-            if (col.name !== this.axisData.description.name)
+            if (col.name !== this.xAxisData.description.name)
                 columns.push(this.schema.displayName(col.name));
         }
         if (columns.length === 0) {
@@ -324,7 +323,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
 
     private showTrellis(colName: string): void {
         const groupBy = this.schema.findByDisplayName(colName);
-        const cds: IColumnDescription[] = [this.axisData.description, groupBy];
+        const cds: IColumnDescription[] = [this.xAxisData.description, groupBy];
         const rr = this.createDataRangesRequest(cds, this.page, "TrellisHistogram");
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
@@ -337,7 +336,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
             return new FilterReceiver(
-                title, [this.axisData.description], this.schema, [0],
+                title, [this.xAxisData.description], this.schema, [0],
                 page, operation, this.dataset, {
                     exact: this.samplingRate >= 1, reusePage: false,
                     relative: false, chartKind: "Histogram" });
@@ -348,7 +347,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
         const columns: string[] = [];
         for (let i = 0; i < this.schema.length; i++) {
             const col = this.schema.get(i);
-            if (col.name === this.axisData.description.name)
+            if (col.name === this.xAxisData.description.name)
                 continue;
             columns.push(this.schema.displayName(col.name));
         }
@@ -377,10 +376,10 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
      */
     public asCSV(): string[] {
         const lines: string[] = [];
-        let line = this.schema.displayName(this.axisData.description.name) + ",count";
+        let line = this.schema.displayName(this.xAxisData.description.name) + ",count";
         lines.push(line);
         for (let x = 0; x < this.histogram.buckets.length; x++) {
-            const bx = this.axisData.bucketDescription(x, 0);
+            const bx = this.xAxisData.bucketDescription(x, 0);
             const l = "" + JSON.stringify(bx) + "," + this.histogram.buckets[x];
             lines.push(l);
         }
@@ -391,7 +390,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
 
     private showSecondColumn(colName: string): void {
         const oc = this.schema.findByDisplayName(colName);
-        const cds: IColumnDescription[] = [this.axisData.description, oc];
+        const cds: IColumnDescription[] = [this.xAxisData.description, oc];
         const rr = this.createDataRangesRequest(cds, this.page, "2DHistogram");
         rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
             [this.histogram.buckets.length, 0], cds, null, {
@@ -403,7 +402,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
     }
 
     public changeBuckets(bucketCount: number): void {
-        this.updateView(this.cdf, bucketCount);
+        this.updateView(this.cdf, bucketCount, this.plot.maxYAxis);
     }
 
     public chooseBuckets(): void {
@@ -415,13 +414,13 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
     public resize(): void {
         if (this.cdf == null)
             return;
-        this.updateView(this.cdf, this.bucketCount);
+        this.updateView(this.cdf, this.bucketCount, this.plot.maxYAxis);
     }
 
     public refresh(): void {
         this.histogram1D(
             this.page.title,
-            this.axisData.description,
+            this.xAxisData.description,
             this.bucketCount,
             { exact: this.samplingRate >= 1, reusePage: true } );
     }
@@ -439,7 +438,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
             return;
         this.histogram1D(
             this.page.title,
-            this.axisData.description,
+            this.xAxisData.description,
             this.bucketCount,
             { exact: true, reusePage: true } );
     }
@@ -450,8 +449,8 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
         const mouseY = position[1];
 
         let xs = "";
-        if (this.axisData.scale != null)
-            xs = this.axisData.invert(position[0]);
+        if (this.xAxisData.scale != null)
+            xs = this.xAxisData.invert(position[0]);
         const y = Math.round(this.plot.getYScale().invert(position[1]));
         const ys = significantDigits(y);
         const size = this.plot.get(mouseX);
@@ -484,7 +483,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
         table.schema = this.schema;
 
         const order =  new RecordOrder([ {
-            columnDescription: this.axisData.description,
+            columnDescription: this.xAxisData.description,
             isAscending: true,
         } ]);
         const rr = table.createNextKRequest(order, null, Resolution.tableRowsOnScreen);
@@ -497,7 +496,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
      * @param {number} xr: Y mouse coordinate within canvas.
      */
     protected selectionCompleted(xl: number, xr: number): void {
-        if (this.plot == null || this.axisData.scale == null)
+        if (this.plot == null || this.xAxisData.scale == null)
             return;
 
         // coordinates within chart
@@ -507,16 +506,16 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
         [xl, xr] = reorder(xl, xr);
 
         const filter: FilterDescription = {
-            min: this.axisData.invertToNumber(xl),
-            max: this.axisData.invertToNumber(xr),
-            minString: this.axisData.invert(xl),
-            maxString: this.axisData.invert(xr),
-            cd: this.axisData.description,
+            min: this.xAxisData.invertToNumber(xl),
+            max: this.xAxisData.invertToNumber(xr),
+            minString: this.xAxisData.invert(xl),
+            maxString: this.xAxisData.invert(xr),
+            cd: this.xAxisData.description,
             complement: d3event.sourceEvent.ctrlKey,
         };
         const rr = this.createFilterRequest(filter);
-        const title = new PageTitle("Filtered " + this.schema.displayName(this.axisData.description.name));
-        const renderer = new FilterReceiver(title, [this.axisData.description], this.schema,
+        const title = new PageTitle("Filtered " + this.schema.displayName(this.xAxisData.description.name));
+        const renderer = new FilterReceiver(title, [this.xAxisData.description], this.schema,
             [0], this.page, rr, this.dataset, {
             exact: this.samplingRate >= 1, reusePage: false, relative: false, chartKind: "Histogram"
             });
@@ -556,7 +555,7 @@ export class HistogramRenderer extends Receiver<HistogramBase>  {
                 protected rowCount: number,
                 protected schema: SchemaClass,
                 protected bucketCount: number,
-                protected axisData: AxisData,
+                protected xAxisData: AxisData,
                 operation: ICancellable<HistogramBase>,
                 protected samplingRate: number,
                 reusePage: boolean) {
@@ -564,13 +563,13 @@ export class HistogramRenderer extends Receiver<HistogramBase>  {
             operation, "histogram");
         this.view = new HistogramView(
             remoteTableId, rowCount, schema, this.samplingRate, this.page);
-        this.view.setAxes(axisData);
+        this.view.setAxes(xAxisData);
         this.page.setDataView(this.view);
     }
 
     public onNext(value: PartialResult<HistogramBase>): void {
         super.onNext(value);
-        this.view.updateView(value.data, this.bucketCount);
+        this.view.updateView(value.data, this.bucketCount, null);
     }
 
     public onCompleted(): void {

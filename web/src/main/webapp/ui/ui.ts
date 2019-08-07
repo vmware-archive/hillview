@@ -180,7 +180,7 @@ export class Resolution {
     public static readonly heatmapLabelWidth = 80;  // pixels reserved for heatmap label
 }
 
-export type D3Axis = any;  // d3 axis; perhaps some day we will be aboe to use a better type
+export type D3Axis = any;  // d3 axis; perhaps some day we will be able to use a better type
 export type D3Scale = any; // d3 scale.
-export type D3SvgElement = any;  // An SVG G elemenet created by d3
+export type D3SvgElement = any;  // An SVG G element created by d3
 export type AnyScale = D3ScaleLinear<number, number> | D3ScaleTime<number, number>;

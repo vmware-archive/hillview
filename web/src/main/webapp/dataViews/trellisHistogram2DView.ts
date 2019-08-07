@@ -22,7 +22,7 @@ import {
     RecordOrder,
     RemoteObjectId
 } from "../javaBridge";
-import {FullPage, PageTitle} from "../ui/fullPage";
+import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
 import {BaseRenderer, TableTargetAPI} from "../tableTarget";
 import {SchemaClass} from "../schemaClass";
 import {ICancellable, PartialResult, percent, reorder, significantDigits} from "../util";
@@ -59,6 +59,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
     protected legendPlot: HistogramLegendPlot;
     protected relative: boolean;
     protected data: Heatmap3D;
+    protected maxYAxis: number | null;  // maximum value to use for Y axis; if null - derive from data
 
     public constructor(
         remoteObjectId: RemoteObjectId,
@@ -72,6 +73,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
         this.topLevel.className = "chart";
         this.hps = [];
         this.data = null;
+        this.maxYAxis = null;
 
         this.menu = new TopMenu( [{
             text: "Export",
@@ -143,7 +145,57 @@ export class TrellisHistogram2DView extends TrellisChartView {
         this.xAxisData = xAxisData;
         this.legendAxisData = legendAxisData;
         this.groupByAxisData = groupByAxisData;
+    }
 
+    public getAxisData(event: DragEventKind): AxisData | null {
+        switch (event) {
+            case "Title":
+                return null;
+            case "GAxis":
+                return this.groupByAxisData;
+            case "XAxis":
+                return this.xAxisData;
+            case "YAxis":
+                if (this.relative)
+                    return null;
+                // TODO
+                return null;
+        }
+    }
+
+    protected replaceAxis(pageId: string, eventKind: DragEventKind): void {
+        if (this.data == null)
+            return;
+        const sourceRange = this.getSourceAxisRange(pageId, eventKind);
+        if (sourceRange === null)
+            return;
+
+        let ranges = [];
+        if (eventKind === "XAxis") {
+            ranges = [sourceRange, this.legendAxisData.dataRange, this.groupByAxisData.dataRange];
+        } else if (eventKind === "YAxis") {
+            // TODO
+            return;
+            /*
+            this.relative = false;
+            this.updateView(this.data, [0, 0, 0]);
+            return;
+             */
+        } else if (eventKind === "GAxis") {
+            ranges = [this.xAxisData.dataRange, this.legendAxisData.dataRange, sourceRange];
+        } else {
+            return;
+        }
+
+        const collector = new DataRangesCollector(this,
+            this.page, null, this.schema, [0, 0, 0],  // any number of buckets
+            [this.xAxisData.description, this.legendAxisData.description, this.groupByAxisData.description],
+            this.page.title, {
+                chartKind: "Trellis2DHistogram", exact: this.samplingRate >= 1,
+                relative: this.relative, reusePage: true
+            });
+        collector.run(ranges);
+        collector.finished();
     }
 
     public swapAxes(): void {
@@ -232,8 +284,9 @@ export class TrellisHistogram2DView extends TrellisChartView {
 
     protected chooseBuckets(): void {
         const bucketDialog = new BucketDialog();
-        bucketDialog.setAction(() => this.updateView(this.data,
-            [bucketDialog.getBucketCount(), this.legendAxisData.bucketCount]));
+        bucketDialog.setAction(() =>
+            this.updateView(this.data, [bucketDialog.getBucketCount(), this.legendAxisData.bucketCount],
+                this.maxYAxis));
         bucketDialog.show();
     }
 
@@ -284,7 +337,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
     public resize(): void {
         const chartSize = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
         this.shape = TrellisLayoutComputation.resize(chartSize.width, chartSize.height, this.shape);
-        this.updateView(this.data, [this.xAxisData.bucketCount, this.legendAxisData.bucketCount]);
+        this.updateView(this.data, [this.xAxisData.bucketCount, this.legendAxisData.bucketCount], this.maxYAxis);
     }
 
     public refresh(): void {
@@ -331,17 +384,20 @@ export class TrellisHistogram2DView extends TrellisChartView {
         return view;
     }
 
-    public updateView(data: Heatmap3D, bucketCount: number[]): void {
+    public updateView(data: Heatmap3D, bucketCount: number[], maxYAxis: number | null): void {
         this.createNewSurfaces();
         this.data = data;
-        let max = 0;
-        for (let i = 0; i < data.buckets.length; i++) {
-            const buckets = data.buckets[i];
-            for (let j = 0; j < buckets.length; j++) {
-                const total = buckets[j].reduce((a, b) => a + b, 0);
-                if (total > max)
-                    max = total;
+        let max = maxYAxis;
+        if (maxYAxis == null) {
+            for (let i = 0; i < data.buckets.length; i++) {
+                const buckets = data.buckets[i];
+                for (let j = 0; j < buckets.length; j++) {
+                    const total = buckets[j].reduce((a, b) => a + b, 0);
+                    if (total > max)
+                        max = total;
+                }
             }
+            this.maxYAxis = max;
         }
 
         for (let i = 0; i < data.buckets.length; i++) {
@@ -492,7 +548,7 @@ export class TrellisHistogram2DRenderer extends Receiver<Heatmap3D> {
             return;
         }
 
-        this.trellisView.updateView(value.data, [this.axes[0].bucketCount, this.axes[1].bucketCount]);
+        this.trellisView.updateView(value.data, [this.axes[0].bucketCount, this.axes[1].bucketCount], null);
     }
 
     public onCompleted(): void {

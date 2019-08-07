@@ -58,7 +58,7 @@ interface TrellisPosition {
  * A base class for all Trellis views
  */
 export abstract class TrellisChartView extends ChartView {
-    protected groupByAxisData: AxisData;
+    public groupByAxisData: AxisData;
     /**
      * Selection endpoint in canvas.
      */

@@ -24,6 +24,7 @@ import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {D3Axis, D3Scale} from "./ui";
 import {SchemaClass} from "../schemaClass";
+import {symbol, symbolTriangle} from "d3-shape";
 
 /**
  * Represents an SVG rectangle drawn on the screen.
@@ -59,7 +60,8 @@ export class Histogram2DPlot extends Plot {
     protected yScale: D3Scale;
     protected yAxis: D3Axis;
     protected schema: SchemaClass;
-    protected max: number;
+    public maxYAxis: number | null; // If not null the maximum value to display
+    public max: number; // the maximum value in a stacked bar
 
     public constructor(protected plottingSurface: PlottingSurface) {
         super(plottingSurface);
@@ -70,13 +72,13 @@ export class Histogram2DPlot extends Plot {
                    samplingRate: number,
                    normalized: boolean,
                    schema: SchemaClass,
-                   max?: number): void {
+                   max: number | null): void {
         this.heatmap = heatmap;
         this.xAxisData = xAxisData;
         this.samplingRate = samplingRate;
         this.normalized = normalized;
         this.schema = schema;
-        this.max = max;
+        this.maxYAxis = max;
     }
 
     public draw(): void {
@@ -87,7 +89,7 @@ export class Histogram2DPlot extends Plot {
         this.missingDisplayed = 0;
         this.visiblePoints = 0;
 
-        let max = 0;
+        this.max = 0;
         const rects: Box[] = [];
         for (let x = 0; x < this.heatmap.buckets.length; x++) {
             let yTotal = 0;
@@ -117,19 +119,18 @@ export class Histogram2DPlot extends Plot {
                 yTotal += v;
                 this.missingDisplayed += v;
             }
-            if (yTotal > max)
-                max = yTotal;
-            if (this.max != null)
-                max = this.max;
+            if (yTotal > this.max)
+                this.max = yTotal;
             counts.push(yTotal);
         }
 
+        const displayMax = this.maxYAxis != null ? this.maxYAxis : this.max;
         this.yScale = d3scaleLinear()
             .range([this.getChartHeight(), 0]);
         if (this.normalized)
             this.yScale.domain([0, 100]);
         else
-            this.yScale.domain([0, max]);
+            this.yScale.domain([0, displayMax]);
         this.yAxis = new AxisDescription(
             d3axisLeft(this.yScale).tickFormat(d3format(".2s")), 1, false, null);
 
@@ -144,7 +145,7 @@ export class Histogram2DPlot extends Plot {
             .attr("dominant-baseline", "text-before-edge");
 
         this.barWidth = this.getChartWidth() / bucketCount;
-        const scale = max <= 0 ? 1 : this.getChartHeight() / max;
+        const scale = displayMax <= 0 ? 1 : this.getChartHeight() / displayMax;
 
         this.plottingSurface.getChart()
             .selectAll("g")
@@ -159,6 +160,20 @@ export class Histogram2DPlot extends Plot {
             .attr("stroke", "black")
             .attr("stroke-width", (d: Box) => d.yIndex > yPoints - 1 ? 1 : 0)
             .exit()
+            // overflow signs if necessary
+            .data(counts)
+            .enter()
+            .append("g")
+            .append("svg:path")
+            // I am not sure how triangle size is measured; this 7 below seems to work find
+            .attr("d", symbol().type(symbolTriangle).size(
+                (d: number) => (!this.normalized && ((d * scale) > this.getChartHeight())) ?
+                    7 * this.barWidth : 0))
+            .attr("transform", (c, i: number) => `translate(${(i + .5) * this.barWidth}, 0)`)
+            .style("fill", "red")
+            .append("svg:title")
+            .text("Bar is truncated")
+            .exit()
             // label bars
             .data(counts)
             .enter()
@@ -166,9 +181,10 @@ export class Histogram2DPlot extends Plot {
             .append("text")
             .attr("class", "histogramBoxLabel")
             .attr("x", (c, i: number) => (i + .5) * this.barWidth)
-            .attr("y", (d: number) => this.normalized ? 0 : this.getChartHeight() - (d * scale))
+            .attr("y", (d: number) => (!this.normalized && ((d * scale) < this.getChartHeight())) ?
+                this.getChartHeight() - (d * scale) : 0)
             .attr("text-anchor", "middle")
-            .attr("dy", (d: number) => this.normalized ? 0 : d <= (9 * max / 10) ? "-.25em" : ".75em")
+            .attr("dy", (d: number) => this.normalized ? 0 : d <= (9 * displayMax / 10) ? "-.25em" : ".75em")
             .text((d: number) => Plot.boxHeight(d, this.samplingRate, this.getDisplayedPoints()))
             .exit();
 
@@ -178,7 +194,7 @@ export class Histogram2DPlot extends Plot {
                 noX += bucket;
         }
 
-        if (max <= 0) {
+        if (displayMax <= 0) {
             this.plottingSurface.reportError("All values are missing: " + noX + " have no X value, "
                 + this.heatmap.missingData + " have no X or Y value");
             return;
