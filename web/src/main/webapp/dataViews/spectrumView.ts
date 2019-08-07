@@ -165,7 +165,7 @@ export class SpectrumView extends ChartView {
         this.axisData = axisData;
         this.title = title;
         this.histogram = h;
-        this.plot.setHistogram(h, 1, axisData);
+        this.plot.setHistogram(h, 1, axisData, null);
         this.plot.draw();
 
         this.summary.textContent = "Columns: " + this.colNames.join(", ");

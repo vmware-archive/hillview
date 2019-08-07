@@ -25,7 +25,7 @@ import {
 } from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
 import {BaseRenderer, TableTargetAPI} from "../tableTarget";
-import {FullPage, PageTitle} from "../ui/fullPage";
+import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
 import {HeatmapLegendPlot} from "../ui/legendPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
@@ -147,12 +147,54 @@ export class TrellisHeatmapView extends TrellisChartView {
         });
     }
 
+    public getAxisData(event: DragEventKind): AxisData | null {
+        switch (event) {
+            case "Title":
+                return null;
+            case "GAxis":
+                return this.groupByAxisData;
+            case "XAxis":
+                return this.xAxisData;
+            case "YAxis":
+                return this.yAxisData;
+        }
+    }
+
     public setAxes(xAxisData: AxisData,
                    yAxisData: AxisData,
                    groupByAxisData: AxisData): void {
         this.xAxisData = xAxisData;
         this.yAxisData = yAxisData;
         this.groupByAxisData = groupByAxisData;
+    }
+
+    protected replaceAxis(pageId: string, eventKind: DragEventKind): void {
+        if (this.heatmaps == null)
+            return;
+        const sourceRange = this.getSourceAxisRange(pageId, eventKind);
+        if (sourceRange === null)
+            return;
+
+        let ranges = [];
+        if (eventKind === "XAxis") {
+            ranges = [sourceRange, this.yAxisData.dataRange, this.groupByAxisData.dataRange];
+        } else if (eventKind === "YAxis") {
+            ranges = [this.xAxisData.dataRange, sourceRange, this.groupByAxisData.dataRange];
+        } else if (eventKind === "GAxis") {
+            ranges = [this.xAxisData.dataRange, this.yAxisData.dataRange, sourceRange];
+        } else {
+            return;
+        }
+
+        const collector = new DataRangesCollector(this,
+            this.page, null, this.schema, [0, 0, 0],  // any number of buckets
+            [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description],
+            this.page.title, {
+                chartKind: "TrellisHeatmap", exact: this.samplingRate >= 1,
+                relative: false, reusePage: true
+            });
+        collector.run(ranges);
+        collector.finished();
     }
 
     public refresh(): void {

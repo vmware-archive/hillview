@@ -16,9 +16,7 @@
  */
 
 import {mouse as d3mouse} from "d3-selection";
-import {
-    RemoteObjectId
-} from "../javaBridge";
+import {RemoteObjectId} from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
 import {CDFPlot} from "../ui/CDFPlot";
 import {Dialog, FieldKind} from "../ui/dialog";
@@ -26,6 +24,7 @@ import {FullPage} from "../ui/fullPage";
 import {D3SvgElement, Resolution, ViewKind} from "../ui/ui";
 import {ChartView} from "./chartView";
 import {IScrollTarget, ScrollBar} from "../ui/scroll";
+import {AxisData} from "./axisData";
 
 /**
  * This is a base class that contains code common to various histogram renderings.
@@ -36,6 +35,7 @@ export abstract class HistogramViewBase extends ChartView implements IScrollTarg
     protected cdfPlot: CDFPlot;
     protected chartDiv: HTMLDivElement;
     protected scrollBar: ScrollBar;
+    public xAxisData: AxisData;
 
     protected constructor(
         remoteObjectId: RemoteObjectId,
@@ -53,8 +53,10 @@ export abstract class HistogramViewBase extends ChartView implements IScrollTarg
         this.scrollBar = new ScrollBar(this, true);
         this.topLevel.appendChild(this.scrollBar.getHTMLRepresentation());
 
+        const summaryContainer = document.createElement("div");
+        this.topLevel.appendChild(summaryContainer);
         this.summary = document.createElement("div");
-        this.topLevel.appendChild(this.summary);
+        summaryContainer.appendChild(this.summary);
     }
 
     protected abstract showTable(): void;

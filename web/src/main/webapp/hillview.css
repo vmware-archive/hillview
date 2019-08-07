@@ -360,6 +360,14 @@ textarea:focus, input:focus {
     outline: none;
 }
 
+.axisbox {
+    border: 1px solid;
+    padding-left: 2px;
+    padding-right: 2px;
+    background: grey;
+    margin: 1px;
+}
+
 table.menu {
     box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.5);
     border: 1px solid grey;

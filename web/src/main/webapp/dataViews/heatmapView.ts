@@ -29,7 +29,7 @@ import {SchemaClass} from "../schemaClass";
 import {BaseRenderer, TableTargetAPI} from "../tableTarget";
 import {IDataView} from "../ui/dataview";
 import {Dialog} from "../ui/dialog";
-import {FullPage, PageTitle} from "../ui/fullPage";
+import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
 import {HeatmapPlot} from "../ui/heatmapPlot";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {HeatmapLegendPlot} from "../ui/legendPlot";
@@ -165,6 +165,44 @@ export class HeatmapView extends ChartView {
         this.yAxisData = yData;
     }
 
+    public getAxisData(event: DragEventKind): AxisData | null {
+        switch (event) {
+            case "Title":
+            case "GAxis":
+                return null;
+            case "XAxis":
+                return this.xAxisData;
+            case "YAxis":
+                return this.yAxisData;
+        }
+    }
+
+    protected replaceAxis(pageId: string, eventKind: DragEventKind): void {
+        if (this.heatmap == null)
+            return;
+        const sourceRange = this.getSourceAxisRange(pageId, eventKind);
+        if (sourceRange === null)
+            return;
+
+        let ranges = [];
+        if (eventKind === "XAxis") {
+            ranges = [sourceRange, this.yAxisData.dataRange];
+        } else if (eventKind === "YAxis") {
+            ranges = [this.xAxisData.dataRange, sourceRange];
+        } else {
+            return;
+        }
+
+        const collector = new DataRangesCollector(this,
+            this.page, null, this.schema, [0, 0],  // any number of buckets
+            [this.xAxisData.description, this.yAxisData.description], this.page.title, {
+                chartKind: "Heatmap", exact: this.samplingRate >= 1,
+                relative: false, reusePage: true
+            });
+        collector.run(ranges);
+        collector.finished();
+    }
+
     public updateView(heatmap: Heatmap, keepColorMap: boolean): void {
         this.createNewSurfaces(keepColorMap);
         if (heatmap == null || heatmap.buckets.length === 0) {
@@ -195,7 +233,7 @@ export class HeatmapView extends ChartView {
         }
         */
         if (this.showMissingData) {
-            this.xHistoPlot.setHistogram(heatmap.histogramMissingX, this.samplingRate, this.xAxisData);
+            this.xHistoPlot.setHistogram(heatmap.histogramMissingX, this.samplingRate, this.xAxisData, null);
             this.xHistoPlot.draw();
         }
 

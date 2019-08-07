@@ -23,6 +23,7 @@ import {HistogramBase} from "../javaBridge";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {D3Axis, D3Scale} from "./ui";
+import {symbol, symbolTriangle} from "d3-shape";
 
 /**
  * A HistogramPlot draws a  bar chart on a PlottingSurface, including the axes.
@@ -42,10 +43,14 @@ export class HistogramPlot extends Plot {
     public barWidth: number;
     protected yScale: D3Scale;
     protected yAxis: D3Axis;
-    protected max: number | null;
+    // Maximum value to use for the Y axis.
+    public maxYAxis: number | null;
+    public max: number;  // maximum value in a bucket
+    public displayAxes: boolean;
 
     public constructor(protected plottingSurface: PlottingSurface) {
         super(plottingSurface);
+        this.displayAxes = true;
     }
 
     /**
@@ -53,18 +58,17 @@ export class HistogramPlot extends Plot {
      * @param bars          Description of the histogram bars.
      * @param samplingRate  Sampling rate used to compute this histogram.
      * @param axisData      Description of the X axis.
-     * @param max           If present it is used to scale the maximum value for the Y axis.
-     *                      Currently if present we do not draw the axes.
+     * @param maxYAxis      If present it is used to scale the maximum value for the Y axis.
      */
     public setHistogram(bars: HistogramBase, samplingRate: number,
-                        axisData: AxisData, max?: number): void {
+                        axisData: AxisData, maxYAxis: number | null): void {
         this.histogram = bars;
         this.samplingRate = samplingRate;
         this.xAxisData = axisData;
         const chartWidth = this.getChartWidth();
         const bucketCount = this.histogram.buckets.length;
         this.barWidth = chartWidth / bucketCount;
-        this.max = max;
+        this.maxYAxis = maxYAxis;
     }
 
     public draw(): void {
@@ -72,7 +76,8 @@ export class HistogramPlot extends Plot {
             return;
 
         const counts = this.histogram.buckets;
-        const max = this.max == null ? Math.max(...counts) : this.max;
+        this.max = Math.max(...counts);
+        const displayMax = this.maxYAxis == null ? this.max : this.maxYAxis;
 
         const chartWidth = this.getChartWidth();
         const chartHeight = this.getChartHeight();
@@ -85,21 +90,32 @@ export class HistogramPlot extends Plot {
             .attr("transform", (d, i) => `translate(${i * this.barWidth}, 0)`);
 
         this.yScale = d3scaleLinear()
-            .domain([0, max])
+            .domain([0, displayMax])
             .range([chartHeight, 0]);
 
+        // Boxes can be taller than the maxYAxis height.  In this cale yScale returns
+        // a negative value, and we have to truncate the rectangles.
         bars.append("rect")
-            .attr("y", (d) => this.yScale(d))
+            .attr("y", (d) => this.yScale(d) < 0 ? 0 : this.yScale(d))
             .attr("fill", "darkcyan")
-            .attr("height", (d) => chartHeight - this.yScale(d))
+            .attr("height", (d) => chartHeight - (this.yScale(d) < 0 ? 0 : this.yScale(d)))
             .attr("width", this.barWidth - 1);
+
+        // overflow signs if necessary
+        bars.append("svg:path")
+            // I am not sure how triangle size is measured; this 7 below seems to work find
+            .attr("d", symbol().type(symbolTriangle).size( (d) => this.yScale(d) < 0 ? 7 * this.barWidth : 0))
+            .attr("transform", () => `translate(${this.barWidth / 2}, 0)`)
+            .style("fill", "red")
+            .append("svg:title")
+            .text("Bar is truncated");
 
         bars.append("text")
             .attr("class", "histogramBoxLabel")
             .attr("x", this.barWidth / 2)
-            .attr("y", (d) => this.yScale(d))
+            .attr("y", (d) => this.yScale(d) < 0 ? 0 : this.yScale(d))
             .attr("text-anchor", "middle")
-            .attr("dy", (d) => d <= (9 * max / 10) ? "-.25em" : ".75em")
+            .attr("dy", (d) => d <= (9 * displayMax / 10) ? "-.25em" : ".75em")
             .text((d) => HistogramPlot.boxHeight(
                 d, this.samplingRate, this.xAxisData.range.presentCount))
             .exit();
@@ -108,7 +124,7 @@ export class HistogramPlot extends Plot {
             .tickFormat(d3format(".2s"));
 
         this.xAxisData.setResolution(chartWidth, AxisKind.Bottom, PlottingSurface.bottomMargin);
-        if (this.max == null)
+        if (this.displayAxes)
             this.drawAxes();
     }
 

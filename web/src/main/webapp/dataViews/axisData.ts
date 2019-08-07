@@ -37,7 +37,6 @@ import {
     significantDigits, truncate,
 } from "../util";
 import {AnyScale, D3Axis, D3SvgElement, SpecialChars} from "../ui/ui";
-import {PlottingSurface} from "../ui/plottingSurface";
 
 export enum AxisKind {
     Bottom,
@@ -109,7 +108,7 @@ class BucketBoundaries {
         let result: string;
 
         if (this.left == null) {
-            return "*empty*";
+            return "missing";
         }
 
         if (this.right == null) {
@@ -177,33 +176,35 @@ export class AxisData {
     public scale: AnyScale;
     public axis: AxisDescription;
     public bucketCount: number;
+    public range: DataRange; // the range used to draw the data; may be adjusted from dataRange
 
-    public constructor(public description: IColumnDescription,
-                       public range: DataRange | null) {
+    public constructor(public description: IColumnDescription | null, // may be null for e.g., the Y col in a histogram
+                       // dataRange is the original range of the data
+                       public dataRange: DataRange | null) {
         this.bucketCount = 0;
-        let useRange = range;
-        if (useRange != null) {
-            if (kindIsString(description.kind)) {
-                useRange = {
+        this.range = dataRange;
+        const kind = description == null ? null : description.kind;
+        if (dataRange != null) {
+            if (kindIsString(kind)) {
+                this.range = {
                     min: -.5,
-                    max: range.leftBoundaries.length - .5,
-                    presentCount: range.presentCount,
-                    missingCount: range.missingCount,
-                    allStringsKnown: range.allStringsKnown,
-                    leftBoundaries: range.leftBoundaries,
-                    maxBoundary: range.maxBoundary
+                    max: dataRange.leftBoundaries.length - .5,
+                    presentCount: dataRange.presentCount,
+                    missingCount: dataRange.missingCount,
+                    allStringsKnown: dataRange.allStringsKnown,
+                    leftBoundaries: dataRange.leftBoundaries,
+                    maxBoundary: dataRange.maxBoundary
                 };
-            } else if (description.kind === "Integer") {
-                useRange = {
-                    min: range.min - .5,
-                    max: range.max + .5,
-                    presentCount: range.presentCount,
-                    missingCount: range.missingCount
+            } else if (kind === "Integer") {
+                this.range = {
+                    min: dataRange.min - .5,
+                    max: dataRange.max + .5,
+                    presentCount: dataRange.presentCount,
+                    missingCount: dataRange.missingCount
                 };
             }
         }
-        this.range = useRange;
-        const strings = range !== null ? range.leftBoundaries : null;
+        const strings = this.range !== null ? this.range.leftBoundaries : null;
         this.distinctStrings = strings;
         // These are set when we know the screen size.
         this.scale = null;

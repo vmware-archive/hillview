@@ -16,15 +16,16 @@
  */
 
 import {BigTableView} from "../tableTarget";
-import {RemoteObjectId} from "../javaBridge";
+import {DataRange, RemoteObjectId} from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
-import {FullPage} from "../ui/fullPage";
+import {DragEventKind, FullPage} from "../ui/fullPage";
 import {D3SvgElement, Point, ViewKind} from "../ui/ui";
 import {TextOverlay} from "../ui/textOverlay";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {TopMenu} from "../ui/menu";
 import {drag as d3drag} from "d3-drag";
 import {mouse as d3mouse} from "d3-selection";
+import {AxisData} from "./axisData";
 
 /**
  * A ChartView is a common base class for many views that
@@ -73,6 +74,10 @@ export abstract class ChartView extends BigTableView {
         this.selectionRectangle = null;
         this.pointDescription = null;
         this.surface = null;
+
+        this.page.registerDropHandler("XAxis", (p) => this.replaceAxis(p, "XAxis"));
+        this.page.registerDropHandler("YAxis", (p) => this.replaceAxis(p, "YAxis"));
+        this.page.registerDropHandler("GAxis", (p) => this.replaceAxis(p, "GAxis"));
     }
 
     protected setupMouse(): void {
@@ -148,6 +153,63 @@ export abstract class ChartView extends BigTableView {
         const div = document.createElement("div");
         this.topLevel.appendChild(div);
         return div;
+    }
+
+    /**
+     * Get the range of the specified axis.
+     * @param dragEvent  A drag event kind; some of these correspond to dragging axes.
+     */
+    public getAxisData(dragEvent: DragEventKind): AxisData | null {
+        return null;
+    }
+
+    /**
+     * Called when an event caused by the dragging of an axis happens.
+     * @param pageId     Source page where the drag data comes from.
+     * @param eventKind  Drag event kind.
+     */
+    protected replaceAxis(pageId: string, eventKind: DragEventKind): void {}
+
+    public static canDragAxisFromTo(source: ViewKind, destination: ViewKind): boolean {
+        if (source.indexOf("Heatmap") >= 0)
+            return destination.indexOf("Heatmap") >= 0;
+        if (source.indexOf("Histogram") >= 0)
+            return destination.indexOf("Histogram") >= 0;
+        return false;
+    }
+
+    public getSourceAxisRange(sourcePageId: string, dragEvent: DragEventKind): DataRange | null {
+        const page = this.dataset.findPage(Number(sourcePageId));
+        if (page == null)
+            return;
+        const source = page.getDataView() as ChartView;
+        if (source == null)
+            return;
+
+        // Check compatibility
+        const thisView = this.page.getDataView();
+        if (thisView == null)
+            return null;
+        if (!ChartView.canDragAxisFromTo(source.viewKind, thisView.viewKind)) {
+            this.page.reportError("Cannot drag axis between these views");
+            return null;
+        }
+
+        const sourceAxis = source.getAxisData(dragEvent);
+        if (sourceAxis == null)
+            return null;
+
+        // check that the two axes are on the same column
+        const myAxis = this.getAxisData(dragEvent);
+        if (myAxis == null)
+            return null;
+
+        if (sourceAxis.description !== myAxis.description) {
+            this.page.reportError("Axis is on different columns");
+            return null;
+        }
+
+        return sourceAxis.dataRange;
     }
 
     /**

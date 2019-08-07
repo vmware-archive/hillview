@@ -74,11 +74,14 @@ export class PageTitle {
     }
 }
 
+// Kind of data that is being dragged
+export type DragEventKind = "Title" | "XAxis" | "YAxis" | "GAxis";
+
 /**
  * A FullPage is the main unit of display in Hillview, storing on rendering.
  * The page layout is as follows:
  * -------------------------------------------------
- * | menu            #. Title             ^ v ? - x|  titleRow
+ * | menu            #. Title       X Y G ^ v ? - x|  titleRow
  * |-----------------------------------------------|
  * |                                               |
  * |                 data display                  |  displayHolder
@@ -100,6 +103,13 @@ export class FullPage implements IHtmlElement {
     private readonly displayHolder: HTMLElement;
     protected titleRow: HTMLDivElement;
     protected help: HTMLElement;
+    protected xDrag: HTMLElement;
+    protected yDrag: HTMLElement;
+    protected gDrag: HTMLElement;
+    // These functions are registered to handle drop events.
+    // Each drop event has a text payload and starts with a prefix.
+    // The functions are each registered for a prefix.
+    protected dropHandler: Map<string, (s: string) => void>;
 
     /**
      * Creates a page which will be used to display some rendering.
@@ -117,6 +127,7 @@ export class FullPage implements IHtmlElement {
         this.console = new ConsoleDisplay();
         this.progressManager = new ProgressManager();
         this.minimized = false;
+        this.dropHandler = new Map<string, (s: string) => void>();
 
         this.pageTopLevel = document.createElement("div");
         this.pageTopLevel.className = "hillviewPage";
@@ -140,7 +151,7 @@ export class FullPage implements IHtmlElement {
             h2.appendChild(this.title.getHTMLRepresentation(this));
             h2.style.cursor = "grab";
             h2.draggable = true;
-            h2.ondragstart = (e) => e.dataTransfer.setData("text", this.pageId.toString());
+            h2.ondragstart = (e) => this.setDragPayload(e, "Title");
             h2.title = "View title.  Can be dragged to replace data in another view.";
         }
         h2.style.textOverflow = "ellipsis";
@@ -148,6 +159,7 @@ export class FullPage implements IHtmlElement {
         h2.style.margin = "0";
         this.h2 = h2;
         this.addCell(h2, false);
+        this.registerDropHandler("Title", (s) => this.dropCombine(s));
 
         if (sourcePageId != null) {
             h2.appendChild(makeSpan(" from "));
@@ -157,6 +169,30 @@ export class FullPage implements IHtmlElement {
         }
 
         if (this.dataset != null) {
+            this.xDrag = makeSpan("X");
+            this.xDrag.title = "Drag this to copy the X axis to another chart";
+            this.xDrag.className = "axisbox";
+            this.addCell(this.xDrag, true);
+            this.xDrag.draggable = true;
+            this.xDrag.style.visibility = "hidden";
+            this.xDrag.ondragstart = (e) => this.setDragPayload(e, "XAxis");
+
+            this.yDrag = makeSpan("Y");
+            this.yDrag.title = "Drag this to copy the Y axis to another chart";
+            this.yDrag.className = "axisbox";
+            this.addCell(this.yDrag, true);
+            this.yDrag.draggable = true;
+            this.yDrag.style.visibility = "hidden";
+            this.yDrag.ondragstart = (e) => this.setDragPayload(e, "YAxis");
+
+            this.gDrag = makeSpan("G");
+            this.gDrag.title = "Drag this to copy the group-by axis to another chart";
+            this.gDrag.className = "axisbox";
+            this.addCell(this.gDrag, true);
+            this.gDrag.draggable = true;
+            this.gDrag.style.visibility = "hidden";
+            this.gDrag.ondragstart = (e) => this.setDragPayload(e, "GAxis");
+
             const moveUp = document.createElement("div");
             moveUp.innerHTML = SpecialChars.upArrow;
             moveUp.title = "Move window up.";
@@ -205,12 +241,45 @@ export class FullPage implements IHtmlElement {
         this.bottomContainer.appendChild(this.console.getHTMLRepresentation());
     }
 
+    /**
+     * Register a function to be called when a drop event has happened.
+     * The drop event payload is a text.
+     * @param prefix   Prefix of the text, separated by colon from the rest.
+     * @param handler  A function that receives the rest of the text, after the colon.
+     */
+    public registerDropHandler(prefix: DragEventKind, handler: (data: string) => void): void {
+        this.dropHandler.set(prefix, handler);
+    }
+
     protected dropped(e: DragEvent): void {
         e.preventDefault();
+        const payload = e.dataTransfer.getData("text");
+        const parts = payload.split(":", 2);
+        console.assert(parts.length === 2);
+        const handler = this.dropHandler.get(parts[0]);
+        console.assert(handler != null);
+        handler(parts[1]);
+    }
+
+    /**
+     * Set the drag event payload to be the current page id.
+     * @param e    DragEvent that is being modified.
+     * @param type Type of payload carried in the drag event.
+     */
+    public setDragPayload(e: DragEvent, type: DragEventKind): void {
+        e.dataTransfer.setData("text", type + ":" + this.pageId.toString());
+    }
+
+    /**
+     * A a drop handler that will handle a "Title" drop event.  It performs
+     * a combine operation with replacement - replacing the current dataset
+     * with the one dropped.  The payload is the number of the page holding the
+     * source dataset.
+     */
+    protected dropCombine(pageId: string): void {
         const view = this.dataView as BigTableView;
         if (view == null)
             return;
-        const pageId = e.dataTransfer.getData("text");
         this.dataset.select(Number(pageId));
         view.combine(CombineOperators.Replace);
     }
@@ -293,6 +362,28 @@ export class FullPage implements IHtmlElement {
         if (hdv != null) {
             this.displayHolder.appendChild(hdv.getHTMLRepresentation());
             this.setViewKind(hdv.viewKind);
+            switch (this.dataView.viewKind) {
+                case "Histogram":
+                case "2DHistogram":
+                case "Heatmap":
+                    this.xDrag.style.visibility = "visible";
+                    this.yDrag.style.visibility = "visible";
+                    break;
+                case "TrellisHistogram":
+                case "Trellis2DHistogram":
+                case "TrellisHeatmap":
+                    this.xDrag.style.visibility = "visible";
+                    this.yDrag.style.visibility = "visible";
+                    this.gDrag.style.visibility = "visible";
+                    break;
+                case "Table":
+                case "HeavyHitters":
+                case "Schema":
+                case "Load":
+                case "SVD Spectrum":
+                case "LogFileView":
+                    break;
+            }
         }
     }
 
