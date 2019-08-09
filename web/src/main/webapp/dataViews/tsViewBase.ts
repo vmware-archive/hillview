@@ -23,15 +23,19 @@ import {
     ComparisonFilterDescription,
     ContentsKind,
     ConvertColumnInfo,
+    DataRange,
     JSCreateColumnInfo,
     HLogLog,
     IColumnDescription,
     kindIsString,
+    PrivateHistogramArgs,
+    PrivateHistogramData,
     RecordOrder,
     RemoteObjectId,
     StringFilterDescription,
     StringRowFilterDescription
 } from "../javaBridge";
+import {AxisData} from "./axisData";
 import {OnCompleteReceiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
 import {BigTableView} from "../tableTarget";
@@ -46,12 +50,14 @@ import {
     ICancellable,
     mapToArray,
     significantDigits,
+    Seed,
 } from "../util";
 import {HeavyHittersReceiver, HeavyHittersView} from "./heavyHittersView";
 import {DataRangesCollector} from "./dataRangesCollectors";
 import {TableOperationCompleted, TableView} from "./tableView";
 import {HistogramDialog} from "./histogramView";
 import {ErrorReporter} from "../ui/errReporter";
+import {PrivateHistRenderer} from "./privateHistView";
 
 /**
  * A base class for TableView and SchemaView.
@@ -185,6 +191,39 @@ export abstract class TSViewBase extends BigTableView {
         rr.invoke(rec);
     }
 
+    protected privateHist1D(cd: IColumnDescription,
+			    minValue: number, maxValue: number,
+			    epsilon: number, granularity: number,
+			    bucketCount: number): void {
+	const args: PrivateHistogramArgs = {
+	    cd: cd,
+	    min: minValue,
+	    max: maxValue,
+	    samplingRate: 1.0,
+	    seed: Seed.instance.get(), // TODO
+	    bucketCount: bucketCount,
+	    epsilon: epsilon,
+	    granularity: granularity
+	};
+
+	const range: DataRange = {
+	    presentCount: -1,
+	    missingCount: -1,
+	    min: minValue,
+	    max: maxValue,
+	};
+
+	const rowCount: number = 1;
+	const rr = this.createPrivateHistogramRequest(args);
+        const axisData = new AxisData(cd, range);
+        const renderer = new PrivateHistRenderer(new PageTitle("Private histogram"), this.page,
+						 this.remoteObjectId, rowCount, this.schema,
+						 bucketCount, axisData, rr, args.samplingRate,
+						 epsilon, granularity,
+						 false);
+	rr.invoke(renderer);
+    }
+
     protected histogram1D(cd: IColumnDescription): void {
         const rr = this.createDataRangesRequest([cd], this.page, "Histogram");
         rr.invoke(new DataRangesCollector(
@@ -234,6 +273,15 @@ export abstract class TSViewBase extends BigTableView {
         }
     }
 
+    protected privateHistogram(columns: string[],
+			       minValue: number, maxValue: number,
+			       epsilon: number, granularity: number,
+			       bucketCount: number): void {
+        const cds = this.schema.getDescriptions(columns);
+	console.assert(cds.length === 1);
+        this.privateHist1D(cds[0], minValue, maxValue, epsilon, granularity, bucketCount);
+    }
+
     protected trellis(columns: string[], heatmap: boolean): void {
         const cds = this.schema.getDescriptions(columns);
         if (cds.length === 2) {
@@ -270,6 +318,56 @@ export abstract class TSViewBase extends BigTableView {
             return;
         }
         this.histogram(this.getSelectedColNames());
+    }
+
+    protected privateHistSelected(): void {
+        if (this.getSelectedColCount() !== 1) {
+            this.page.reportError("Must select 1 column for private histogram");
+            return;
+        }
+
+        let title = "Private Histogram";
+	const d = new Dialog(title, "Plot a private histogram with the specified granularity and privacy budget.");
+        const epsilon = d.addTextField("epsilon", "Privacy budget, epsilon", FieldKind.Double, "0.25",
+				    "Privacy budget under which to build the histogram. " +
+				    "A small value, e.g. between 0 and 1, is recommended. " +
+				    "Value must be greater than 0.");
+        epsilon.min = "0";
+        epsilon.max = "10";
+        epsilon.required = true;
+
+        const granularity = d.addTextField("granularity", "Minimum interval size", FieldKind.Double, "10",
+					   "Minimum bucket length to snap to. Must be greater than 1. " +
+					   "A smaller granularity will allow finer-grained intervals but " +
+					   "will generally incur more error.");
+        granularity.min = "1";
+        granularity.max = "100000";
+        granularity.required = true;
+
+	const minValue = d.addTextField("minValue", "Histogram range start", FieldKind.Double, "0",
+					   "");
+        minValue.required = true;
+
+        const maxValue = d.addTextField("maxValue", "Histogram range end", FieldKind.Double, "1000",
+					   "");
+        maxValue.required = true;
+
+	const bucketCount = d.addTextField("bucketCount", "Number of buckets to use", FieldKind.Double, "10",
+					   "");
+	bucketCount.min = "1";
+        bucketCount.required = true;
+
+        d.setAction(() => {
+            const epsVal = d.getFieldValueAsNumber("epsilon");
+            const granVal = d.getFieldValueAsNumber("granularity");
+            const minVal = d.getFieldValueAsNumber("minValue");
+            const maxVal = d.getFieldValueAsNumber("maxValue");
+            const buckets = d.getFieldValueAsNumber("bucketCount");
+            if (epsVal != null && granVal != null && minVal != null && maxVal != null && buckets != null)
+                this.privateHistogram(this.getSelectedColNames(), minVal, maxVal, epsVal, granVal, buckets);
+        });
+        d.setCacheTitle("DPHistDialog");
+        d.show();
     }
 
     protected trellisSelected(heatmap: boolean): void {

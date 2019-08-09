@@ -27,6 +27,7 @@ import {
     FilterDescription,
     Heatmap,
     HistogramArgs,
+    PrivateHistogramArgs,
     HistogramBase,
     HLogLog,
     IColumnDescription,
@@ -216,12 +217,12 @@ export class TableTargetAPI extends RemoteObject {
                                      threshold: number): RpcRequest<PartialResult<TopList>> {
         if (percent < threshold) {
             return this.createStreamingRpcRequest<TopList>("heavyHittersMG",
-                {columns: columns, amount: percent,
-                    totalRows: totalRows, seed: Seed.instance.get() });
+							   {columns: columns, amount: percent,
+							    totalRows: totalRows, seed: Seed.instance.get() });
         } else {
             return this.createStreamingRpcRequest<TopList>("heavyHittersSampling",
-                {columns: columns, amount: percent,
-                    totalRows: totalRows, seed: Seed.instance.get() });
+							   {columns: columns, amount: percent,
+							    totalRows: totalRows, seed: Seed.instance.get() });
         }
     }
 
@@ -337,6 +338,12 @@ RpcRequest<PartialResult<RemoteObjectId>> {
         RpcRequest<PartialResult<HistogramBase>> {
         return this.createStreamingRpcRequest<HistogramBase>(
             "histogram", info);
+    }
+
+    public createPrivateHistogramRequest(info: PrivateHistogramArgs):
+        RpcRequest<PartialResult<HistogramBase>> {
+        return this.createStreamingRpcRequest<HistogramBase>(
+            "privateHistogram", info);
     }
 
     public createSetOperationRequest(setOp: CombineOperators): RpcRequest<PartialResult<RemoteObjectId>> {
