@@ -17,6 +17,7 @@
 
 package org.hillview.sketches;
 
+import org.apache.commons.math3.distribution.LaplaceDistribution;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ISampledRowIterator;
@@ -30,6 +31,38 @@ public class Histogram extends HistogramBase {
     public Histogram(final IHistogramBuckets bucketDescription) {
         this.bucketDescription = bucketDescription;
         this.buckets = new long[bucketDescription.getNumOfBuckets()];
+    }
+
+    // Note that we ceil in order to round up to the nearest leaf
+    public static int intLog2(int x) {
+        assert (x > 0);
+        return (int)(Math.ceil(Math.log(x) / Math.log(2)));
+    }
+
+    // The amount of noise depends on the number of "leaves" that are required to compute the interval.
+    public int noiseMultiplier(int bucketIdx) {
+        DyadicHistogramBuckets dyadicBuckets = (DyadicHistogramBuckets)bucketDescription;
+
+        int nLeaves = dyadicBuckets.numLeavesInBucket(bucketIdx);
+        if (nLeaves == 1) return 1;
+
+        return intLog2(nLeaves);
+    }
+
+    /* Add Laplace noise compatible with the binary mechanism to each bucket.
+     * This operation cannot be undone.
+     * Note that the noise scale provided should be log T / epsilon where T is
+     * the total number of leaves in the unfiltered histogram.
+     * This is not computed in the function, because the range of the buckets might be
+     * smaller than the full range T if the buckets are from a filtered histogram. */
+    public void addDyadicLaplaceNoise(double scale) {
+        LaplaceDistribution dist = new LaplaceDistribution(0, scale); // TODO: (more) secure PRG
+        System.out.println("Buckets: " + this.buckets.length);
+        for (int i = 0; i < this.buckets.length; i++) {
+            System.out.println(this.buckets[i]);
+             this.buckets[i] += Math.max(0, dist.sample() * this.noiseMultiplier(i));
+            System.out.println(this.buckets[i] + " " + this.noiseMultiplier(i));
+        }
     }
 
     public void rescale(double sampleRate) {

@@ -1,13 +1,30 @@
 package org.hillview.sketches;
 
 import org.apache.commons.math3.distribution.LaplaceDistribution;
+import org.hillview.dataset.api.IJson;
 
-public class PrivateHistogram extends Histogram {
+import java.io.Serializable;
+
+public class PrivateHistogram extends Histogram implements Serializable, IJson {
     private final DyadicHistogramBuckets dyadicBuckets;
+
+    private final double maxValue;
+    private final double minValue;
+
+    // Confidence intervals
+    private double[] confMins;
+    private double[] confMaxes;
 
     public PrivateHistogram(final IHistogramBuckets bucketDescription) {
         super(bucketDescription);
         dyadicBuckets = (DyadicHistogramBuckets)bucketDescription;
+
+        this.minValue = dyadicBuckets.getMin();
+        this.maxValue = dyadicBuckets.getMax();
+
+        // Not currently used
+        this.confMins = new double[dyadicBuckets.getNumOfBuckets()];
+        this.confMaxes = new double[dyadicBuckets.getNumOfBuckets()];
     }
 
     // Note that we ceil in order to round up to the nearest leaf
@@ -32,7 +49,9 @@ public class PrivateHistogram extends Histogram {
      * smaller than the full range T if the buckets are from a filtered histogram. */
     public void addDyadicLaplaceNoise(double scale) {
         LaplaceDistribution dist = new LaplaceDistribution(0, scale); // TODO: (more) secure PRG
+        System.out.println("Buckets: " + this.buckets.length);
         for (int i = 0; i < this.buckets.length; i++) {
+            System.out.println(this.buckets[i]);
             this.buckets[i] += dist.sample() * this.noiseMultiplier(i);
         }
     }

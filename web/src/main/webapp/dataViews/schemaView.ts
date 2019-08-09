@@ -252,6 +252,12 @@ export class SchemaView extends TSViewBase {
             "The data cannot be of type String.",
         }, selectedCount >= 1 && selectedCount <= 2);
         this.contextMenu.addItem({
+            text: "Private histogram",
+            action: () => this.histogramSelected(),
+            help: "Plot the data in the selected columns as a private histogram. " +
+                "Applies to one numeric column only.",
+        }, selectedCount === 1);
+        this.contextMenu.addItem({
             text: "Heatmap",
             action: () => this.heatmapSelected(),
             help: "Plot the data in the selected columns as a heatmap or as a Trellis plot of heatmaps. " +

@@ -328,8 +328,6 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     public void histogram(RpcRequest request, RpcRequestContext context) {
         HistogramArgs info = request.parseArgs(HistogramArgs.class);
-        HistogramSketch sk = info.getSketch();
-        this.runSketch(this.table, sk, request, context);
     }
 
     static class PrivateHistogramArgs {
@@ -339,7 +337,6 @@ public final class TableTarget extends RpcTarget {
         int granularity;
         long seed;
 
-        // Only used when doing double histograms.
         double min;
         double max;
         int bucketCount;
@@ -359,8 +356,11 @@ public final class TableTarget extends RpcTarget {
 
         // add noise to result
         BiFunction<Histogram, HillviewComputation, Histogram> getPostProcessing() {
+            double leaves = (max-min) / granularity;
+            double scale = (Math.log(leaves) / (epsilon * Math.log(2)));
+
             return (e, c) -> {
-                ((PrivateHistogram)e).addDyadicLaplaceNoise(epsilon);
+                e.addDyadicLaplaceNoise(scale);
                 return e;
             };
         }

@@ -51,7 +51,7 @@ public class DyadicHistogramBuckets implements IHistogramBuckets {
     // For testing
     public int bucketLeafIdx(final int bucketIdx) {
         if (bucketIdx < 0 || bucketIdx > this.numOfBuckets - 1) return -1;
-        return this.bucketLeftLeaves[bucketIdx];
+        return this.bucketLeftLeaves[bucketIdx] + this.minLeafIdx;
     }
 
     // Assign leaves appropriately to this.numOfBuckets buckets
@@ -72,14 +72,11 @@ public class DyadicHistogramBuckets implements IHistogramBuckets {
             }
 
             prevLeafIdx = this.bucketLeftLeaves[i];
-            System.out.println(this.bucketLeftLeaves[i] + " " + prevLeafIdx);
             total += this.bucketLeftLeaves[i];
         }
 
         for (int i = 0; i < this.bucketLeftBoundaries.length; i++) {
-            System.out.println(this.bucketLeftLeaves[i]);
             this.bucketLeftBoundaries[i] = leafLeftBoundary(this.minLeafIdx + this.bucketLeftLeaves[i]);
-            System.out.println(this.bucketLeftBoundaries[i]);
         }
     }
 
@@ -129,7 +126,6 @@ public class DyadicHistogramBuckets implements IHistogramBuckets {
             }
         }
 
-        System.out.println(this.minLeafIdx + " " + this.maxLeafIdx);
         this.numLeaves = this.maxLeafIdx - this.minLeafIdx;
 
         this.bucketLeftLeaves = new int[this.numOfBuckets];
@@ -141,7 +137,6 @@ public class DyadicHistogramBuckets implements IHistogramBuckets {
     }
 
     public int indexOf(double value) {
-        System.out.println(this.minValue + " " + this.maxValue);
         if ((value < this.minValue) || (value > this.maxValue))
             return -1;
 

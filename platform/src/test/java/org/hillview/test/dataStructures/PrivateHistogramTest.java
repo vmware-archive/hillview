@@ -95,12 +95,29 @@ public class PrivateHistogramTest extends BaseTest {
     }
 
     // Test leaf assignment to buckets
+    // TODO
     @Test
     public void testLeafAssignment() {
         final double min = 0;
         final double max = 0.1;
         final int numBuckets = 4; // creates buckets of size 0.025...
         final double granularity = 0.01; // but leaves of size 0.01
+
+        DyadicHistogramBuckets buckDes = new DyadicHistogramBuckets(min, max, numBuckets, granularity);
+
+        for (int i = 0; i < buckDes.getNumOfBuckets(); i++) {
+            System.out.println("> " + i);
+            System.out.println(buckDes.bucketLeafIdx(i));
+        }
+    }
+
+    // Test negative range
+    @Test
+    public void testNegativeRange() {
+        final double min = -100;
+        final double max = 100;
+        final int numBuckets = 10;
+        final double granularity = 25;
 
         DyadicHistogramBuckets buckDes = new DyadicHistogramBuckets(min, max, numBuckets, granularity);
 

@@ -254,6 +254,34 @@ export interface HistogramArgs {
     max?: number;
 }
 
+// Data returned by private histogram call
+export interface PrivateHistogramData {
+    buckets: number[];
+
+    // Backend may adjust min/max to render
+    minValue: number;
+    maxValue: number;
+    
+    // Confidence intervals
+    confMins: number[];
+    confMaxes: number[];
+    
+    missingData: number;
+}
+
+export interface PrivateHistogramArgs {
+    cd: IColumnDescription;
+    seed: number;
+    samplingRate: number;
+    bucketCount: number;
+    epsilon: number;
+    granularity: number;
+
+    // only used when doing double histograms
+    min?: number;
+    max?: number;
+}
+
 export interface HeavyHittersFilterInfo {
     hittersId: string;
     schema: Schema;
