@@ -72,6 +72,18 @@ public class FileSetDescription implements Serializable, IJson {
     @Nullable
     public Double endTime;
 
+    public static final String METADATA_NAME = "metadata.json";
+
+    public boolean metadataExists() {
+        String basename = Utilities.getFolder(this.fileNamePattern);
+        File metadataFile = new File(basename, METADATA_NAME);
+        return metadataFile.exists();
+    }
+
+    public String getBasename() {
+        return Utilities.getFolder(this.fileNamePattern);
+    }
+
     @Nullable
     private String getSchemaPath() {
         if (Utilities.isNullOrEmpty(this.schemaFile))

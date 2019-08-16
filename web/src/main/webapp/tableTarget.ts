@@ -483,6 +483,10 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
     public updateCompleted(timeInMs: number): void {
         this.page.reportTime(timeInMs);
     }
+
+    public isPrivate(): boolean {
+	return this.dataset.loaded.kind == 'Private files';
+    }
 }
 
 /**
