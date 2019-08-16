@@ -12,6 +12,25 @@ from hillviewConsoleLog import get_logger
 
 logger = get_logger("deploy")
 
+def generate_script(config, rh, template):
+    """Generates a shell script based on a template inserting configuration variables"""
+    logger.info("Generating script for host " + rh.host + " from " + template)
+    variables = ""
+    variables += "SERVICE_FOLDER=" + config.service_folder + "\n"
+    variables += "HEAPSIZE=" + rh.heapsize + "\n"
+    variables += "USER=" + rh.user + "\n"
+    variables += "WORKER_PORT=" + str(config.worker_port) + "\n"
+    variables += "AGGREGATOR_PORT=" + str(config.aggregator_port) + "\n"
+    variables += "PIDFILE=hillview-" + ("aggregator" if rh.isAggregator else "worker") + ".pid\n"
+    variables += "CLEANUP=" + str(config.cleanup_on_install()) + "\n"
+    lines = list(open(template))
+    filename = template.replace("-template", "")
+    lines = [variables if "REPLACE_WITH_VARIABLES" in x else x for x in lines]
+    with open(filename, "w") as f:
+        for l in lines:
+            f.write(l)
+    os.chmod(filename, 0o770)
+
 def prepare_webserver(config):
     """Deploys files needed by the Hillview web server"""
     logger.info("Creating web service folder")
@@ -64,6 +83,7 @@ def prepare_worker(config, rh):
     message = "Preparing worker " + str(rh)
     logger.info(message)
     # rh.run_remote_shell_command("sudo apt-get install libgfortran3")
+
     rh.create_remote_folder(config.service_folder)
     rh.run_remote_shell_command("chown " + config.get_user() + " " + config.service_folder)
     rh.create_remote_folder(config.service_folder + "/hillview")
@@ -71,10 +91,10 @@ def prepare_worker(config, rh):
         config.scriptFolder +
         "/../platform/target/hillview-server-jar-with-dependencies.jar",
         config.service_folder + "/hillview", "")
-    if config.cleanup_on_install():
-        rh.run_remote_shell_command(
-            "cd " + config.service_folder + "/hillview;"
-            "rm -f hillview.log hillview.log.* hillview.log*.lck")
+
+    generate_script(config, rh, "hillview-worker-manager-template.sh")
+    rh.copy_file_to_remote(
+        "hillview-worker-manager.sh", config.service_folder + "/hillview", "")
 
 def prepare_aggregator(config, rh):
     """Prepares files needed by a Hillview aggregator on a remote machine"""
@@ -88,18 +108,16 @@ def prepare_aggregator(config, rh):
         config.scriptFolder +
         "/../platform/target/hillview-server-jar-with-dependencies.jar",
         config.service_folder + "/hillview", "")
-    if config.cleanup_on_install():
-        rh.run_remote_shell_command(
-            "cd " + config.service_folder + "/hillview;"
-            "rm -f hillview-agg.log hillview-agg.log.* hillview-agg.log*.lck")
     tmp = tempfile.NamedTemporaryFile(mode="w", delete=False)
     for h in rh.children:
         tmp.write(h + ":" + str(config.worker_port) + "\n")
     tmp.close()
     rh.copy_file_to_remote(tmp.name, config.service_folder + "/workers", "")
     os.unlink(tmp.name)
-    rh.run_remote_shell_command("ln -sf " + config.service_folder + "/hillview-agg.log " + \
-                                config.service_folder + "/hillview/hillview-agg.log")
+
+    generate_script(config, rh, "hillview-aggregator-manager-template.sh")
+    rh.copy_file_to_remote(
+        "hillview-aggregator-manager.sh", config.service_folder + "/hillview", "")
 
 def prepare_workers(config):
     """Prepares all Hillview workers"""

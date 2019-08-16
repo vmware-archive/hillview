@@ -25,17 +25,18 @@ def stop_webserver(config):
         "pkill -f Bootstrap; true")
 
 def stop_worker(rh):
-    """Stops a Hillview service on a remote worker machine"""
-    message = "Stopping hillview on " + str(rh.host)
-    logger.info(message)
-    rh.run_remote_shell_command("if pgrep -f hillview-server; then pkill -f hillview-server; "+
-                                "true; echo Stopped ; else echo \"Hillview already stopped on " +
-                                str(rh.host) +"\"; true; fi")
+    """Stops a Hillview worker service on a remote machine"""
+    rh.run_remote_shell_command("hillview-worker-manager.sh stop || pkill -f hillview-server")
+
+def stop_aggregator(rh):
+    """Stops a Hillview aggregator service on a remote machine"""
+    rh.run_remote_shell_command("hillview-aggregator-manager.sh stop || pkill -f hillview-server")
+
 def stop_backends(config):
     """Stops all Hillview workers"""
     assert isinstance(config, ClusterConfiguration)
-    config.run_on_all_workers(stop_worker, True)
-    config.run_on_all_aggregators(stop_worker, True)
+    config.run_on_all_workers(stop_worker)
+    config.run_on_all_aggregators(stop_aggregator)
 
 def main():
     """Main function"""

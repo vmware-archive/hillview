@@ -10,13 +10,13 @@ from hillviewConsoleLog import get_logger
 
 logger = get_logger("run-on-all")
 
-def execute_command_on_all(config, command, parallel):
+def execute_command_on_all(config, command):
     """Executes command on all workers"""
     assert isinstance(config, ClusterConfiguration)
     message = "Executing `" + str(command) + "' on " + str(len(config.get_workers())) + " hosts"
     logger.info(message)
     lam = lambda rh: rh.run_remote_shell_command(command)
-    config.run_on_all_workers(lam, parallel)
+    config.run_on_all_workers(lam)
 
 def main():
     """Main function"""
@@ -26,7 +26,7 @@ def main():
     args = parser.parse_args()
     config = get_config(parser, args)
     command = " ".join(args.command)
-    execute_command_on_all(config, command, False)
+    execute_command_on_all(config, command)
 
 if __name__ == "__main__":
     main()

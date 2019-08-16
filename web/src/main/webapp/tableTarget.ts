@@ -312,8 +312,7 @@ RpcRequest<PartialResult<RemoteObjectId>> {
 
     public createFilter2DRequest(xRange: FilterDescription, yRange: FilterDescription):
             RpcRequest<PartialResult<RemoteObjectId>> {
-        return this.createStreamingRpcRequest<RemoteObjectId>("filter2DRange",
-            {first: xRange, second: yRange});
+        return this.createStreamingRpcRequest<RemoteObjectId>("filter2DRange", { first: xRange, second: yRange } );
     }
 
     public createHistogram2DRequest(info: HistogramArgs[]):
@@ -354,7 +353,7 @@ RpcRequest<PartialResult<RemoteObjectId>> {
             RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<RemoteObjectId>("categoricalCentroidsControlPoints", {
                 categoricalColumnName: categoricalColumnName,
-                numericalColumnNames: numericalColumnNames} );
+                numericalColumnNames: numericalColumnNames } );
     }
 
     public createMDSProjectionRequest(id: RemoteObjectId): RpcRequest<PartialResult<PointSet>> {
@@ -367,7 +366,7 @@ RpcRequest<PartialResult<RemoteObjectId>> {
             RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<RemoteObjectId>("lampMap",
             {controlPointsId: controlPointsId, colNames: colNames,
-                newLowDimControlPoints: controlPoints, newColNames: newColNames});
+                newLowDimControlPoints: controlPoints, newColNames: newColNames });
     }
 }
 
