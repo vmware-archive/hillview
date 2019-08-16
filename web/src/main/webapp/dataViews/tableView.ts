@@ -24,12 +24,13 @@ import {
     IColumnDescription,
     kindIsString, KVCreateColumnInfo,
     NextKList,
+    PrivacySummary,
     RecordOrder,
     RemoteObjectId,
     RowData,
     Schema,
     StringFilterDescription,
-    TableSummary
+    TableSummary,
 } from "../javaBridge";
 import {OnCompleteReceiver, Receiver} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
@@ -86,7 +87,10 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
     protected findBar: FindBar;
 
     public constructor(
-        remoteObjectId: RemoteObjectId, rowCount: number, schema: SchemaClass, page: FullPage) {
+        remoteObjectId: RemoteObjectId,
+        rowCount: number,
+        schema: SchemaClass,
+        page: FullPage) {
         super(remoteObjectId, rowCount, schema, page, "Table");
         this.selectedColumns = new SelectionStateMachine();
         this.tableRowsDesired = Resolution.tableRowsOnScreen;
@@ -111,8 +115,8 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             {
                 text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
                     { text: "Refresh",
-                        action: () => this.refresh(),
-                        help: "Redraw this view.",
+                      action: () => this.refresh(),
+                      help: "Redraw this view.",
                     },
                     /*
                     { text: "All columns",
@@ -491,7 +495,8 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         rr.invoke(new NextKReceiver(this.page, this, rr, false, this.order, null));
     }
 
-    private createContextMenu(thd: HTMLElement, colIndex: number, visible: boolean): void {
+    private createContextMenu(
+        thd: HTMLElement, colIndex: number, visible: boolean, isPrivate: boolean): void {
         const cd = this.schema.get(colIndex);
         thd.oncontextmenu = (e) => {
             this.columnClick(colIndex, e);
@@ -503,124 +508,132 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
 
             const selectedCount = this.selectedColumns.size();
             this.contextMenu.clear();
-            if (visible) {
+            if (!isPrivate) {
+                if (visible) {
+                    this.contextMenu.addItem({
+                        text: "Hide",
+                        action: () => this.showColumns(0, true),
+                        help: "Hide the data in the selected columns",
+                    }, true);
+                } else {
+                    this.contextMenu.addItem({
+                        text: "Show",
+                        action: () => this.showColumns(1, false),
+                        help: "Show the data in the selected columns.",
+                    }, true);
+                }
                 this.contextMenu.addItem({
-                    text: "Hide",
-                    action: () => this.showColumns(0, true),
-                    help: "Hide the data in the selected columns",
+                    text: "Drop",
+                    action: () => this.dropColumns(),
+                    help: "Eliminate the selected columns from the view.",
+                }, selectedCount !== 0);
+                this.contextMenu.addItem({
+                    text: "Estimate distinct elements",
+                    action: () => this.hLogLog(),
+                    help: "Compute an estimate of the number of different values that appear in the selected column.",
+                }, selectedCount === 1);
+                this.contextMenu.addItem({
+                    text: "Sort ascending",
+                    action: () => this.showColumns(1, true),
+                    help: "Sort the data first on this column, in increasing order.",
                 }, true);
+                this.contextMenu.addItem({
+                    text: "Sort descending",
+                    action: () => this.showColumns(-1, true),
+                    help: "Sort the data first on this column, in decreasing order",
+                }, true);
+                this.contextMenu.addItem({
+                    text: "Histogram",
+                    action: () => this.histogramSelected(),
+                    help: "Plot the data in the selected columns as a histogram. " +
+                        "Applies to one or two columns only.",
+                }, selectedCount >= 1 && selectedCount <= 2);
+                this.contextMenu.addItem({
+                    text: "Heatmap",
+                    action: () => this.heatmapSelected(),
+                    help: "Plot the data in the selected columns as a heatmap. " +
+                        "Applies to two columns only.",
+                }, selectedCount === 2);
+                this.contextMenu.addItem({
+                    text: "Trellis histograms",
+                    action: () => this.trellisSelected(false),
+                    help: "Plot the data in the selected columns as a Trellis plot of histograms. " +
+                        "Applies to two or three columns only.",
+                }, selectedCount >= 2 && selectedCount <= 3);
+                this.contextMenu.addItem({
+                    text: "Trellis heatmaps",
+                    action: () => this.trellisSelected(true),
+                    help: "Plot the data in the selected columns as a Trellis plot of heatmaps. " +
+                        "Applies to three columns only.",
+                }, selectedCount === 3);
+                this.contextMenu.addItem({
+                    text: "Rename...",
+                    action: () => this.renameColumn(),
+                    help: "Give a new name to this column.",
+                }, selectedCount === 1);
+                this.contextMenu.addItem({
+                    text: "Frequent Elements...",
+                    action: () => this.heavyHittersDialog(),
+                    help: "Find the values that occur most frequently in the selected columns.",
+                }, true);
+                this.contextMenu.addItem({
+                    text: "PCA...",
+                    action: () => this.pca(true),
+                    help: "Perform Principal Component Analysis on a set of numeric columns. " +
+                        "This produces a smaller set of columns that preserve interesting properties of the data.",
+                }, selectedCount > 1 &&
+                    this.getSelectedColNames().reduce((a, b) => a && this.isNumericColumn(b), true));
+                this.contextMenu.addItem({
+                    text: "Plot Singular Value Spectrum",
+                    action: () => this.spectrum(true),
+                    help: "Plot singular values for the selected columns. ",
+                }, selectedCount > 1 &&
+                    this.getSelectedColNames().reduce((a, b) => a && this.isNumericColumn(b), true));
+                this.contextMenu.addItem({
+                    text: "Filter...",
+                    action: () => {
+                        const colName = this.getSelectedColNames()[0];
+                        const colDesc = this.schema.displayName(colName);
+                        this.showFilterDialog(colDesc, this.order, this.tableRowsDesired);
+                    },
+                    help: "Eliminate data that matches/does not match a specific value.",
+                }, selectedCount === 1);
+                this.contextMenu.addItem({
+                    text: "Compare...",
+                    action: () => {
+                        const colName = this.getSelectedColNames()[0];
+                        this.showCompareDialog(this.schema.displayName(colName),
+                            this.order, this.tableRowsDesired);
+                    },
+                    help: "Eliminate data that matches/does not match a specific value.",
+                }, selectedCount === 1);
+                this.contextMenu.addItem({
+                    text: "Convert...",
+                    action: () => this.convert(this.schema.displayName(cd.name), this.order, this.tableRowsDesired),
+                    help: "Convert the data in the selected column to a different data type.",
+                }, selectedCount === 1);
+                this.contextMenu.addItem({
+                    text: "Create column in JS...",
+                    action: () => this.createJSColumnDialog(this.order, this.tableRowsDesired),
+                    help: "Add a new column computed using Javascript from the selected columns.",
+                }, true);
+                this.contextMenu.addItem({
+                    text: "Extract value...",
+                    action: () => {
+                        const colName = this.getSelectedColNames()[0];
+                        this.createKVColumnDialog(colName, this.tableRowsDesired);
+                    },
+                    help: "Extract a value associated with a specific key.",
+                }, selectedCount === 1 &&
+                    this.isKVColumn(this.getSelectedColNames()[0]));
             } else {
                 this.contextMenu.addItem({
-                    text: "Show",
-                    action: () => this.showColumns(1, false),
-                    help: "Show the data in the selected columns.",
-                }, true);
+                    text: "Private Histogram",
+                    action: () => this.privateHistSelected(),
+                    help: "Plot the data in the selected columns as a private histogram. " +
+                        "Applies to one numeric column only.",
+                }, selectedCount === 1);
             }
-
-            this.contextMenu.addItem({
-                text: "Drop",
-                action: () => this.dropColumns(),
-                help: "Eliminate the selected columns from the view.",
-            }, selectedCount !== 0);
-            this.contextMenu.addItem({
-                text: "Estimate distinct elements",
-                action: () => this.hLogLog(),
-                help: "Compute an estimate of the number of different values that appear in the selected column.",
-            }, selectedCount === 1);
-            this.contextMenu.addItem({
-                text: "Sort ascending",
-                action: () => this.showColumns(1, true),
-                help: "Sort the data first on this colum, in increasing order.",
-            }, true);
-            this.contextMenu.addItem({
-                text: "Sort descending",
-                action: () => this.showColumns(-1, true),
-                help: "Sort the data first on this column, in decreasing order",
-            }, true);
-            this.contextMenu.addItem({
-                text: "Histogram",
-                action: () => this.histogramSelected(),
-                help: "Plot the data in the selected columns as a histogram. " +
-                    "Applies to one or two columns only.",
-            }, selectedCount >= 1 && selectedCount <= 2);
-            this.contextMenu.addItem({
-                text: "Heatmap",
-                action: () => this.heatmapSelected(),
-                help: "Plot the data in the selected columns as a heatmap. " +
-                    "Applies to two columns only.",
-            }, selectedCount === 2);
-            this.contextMenu.addItem({
-                text: "Trellis histograms",
-                action: () => this.trellisSelected(false),
-                help: "Plot the data in the selected columns as a Trellis plot of histograms. " +
-                    "Applies to two or three columns only.",
-            }, selectedCount >= 2 && selectedCount <= 3);
-            this.contextMenu.addItem({
-                text: "Trellis heatmaps",
-                action: () => this.trellisSelected(true),
-                help: "Plot the data in the selected columns as a Trellis plot of heatmaps. " +
-                    "Applies to three columns only.",
-            }, selectedCount === 3);
-            this.contextMenu.addItem({
-                text: "Rename...",
-                action: () => this.renameColumn(),
-                help: "Give a new name to this column.",
-            }, selectedCount === 1);
-            this.contextMenu.addItem({
-                text: "Frequent Elements...",
-                action: () => this.heavyHittersDialog(),
-                help: "Find the values that occur most frequently in the selected columns.",
-            }, true);
-            this.contextMenu.addItem({
-                text: "PCA...",
-                action: () => this.pca(true),
-                help: "Perform Principal Component Analysis on a set of numeric columns. " +
-                    "This produces a smaller set of columns that preserve interesting properties of the data.",
-            }, selectedCount > 1 &&
-                this.getSelectedColNames().reduce((a, b) => a && this.isNumericColumn(b), true));
-            this.contextMenu.addItem({
-                text: "Plot Singular Value Spectrum",
-                action: () => this.spectrum(true),
-                help: "Plot singular values for the selected columns. ",
-            }, selectedCount > 1 &&
-                this.getSelectedColNames().reduce((a, b) => a && this.isNumericColumn(b), true));
-            this.contextMenu.addItem({
-                text: "Filter...",
-                action: () => {
-                    const colName = this.getSelectedColNames()[0];
-                    const colDesc = this.schema.displayName(colName);
-                    this.showFilterDialog(colDesc, this.order, this.tableRowsDesired);
-                },
-                help: "Eliminate data that matches/does not match a specific value.",
-            }, selectedCount === 1);
-            this.contextMenu.addItem({
-                text: "Compare...",
-                action: () => {
-                    const colName = this.getSelectedColNames()[0];
-                    this.showCompareDialog(this.schema.displayName(colName),
-                        this.order, this.tableRowsDesired);
-                },
-                help: "Eliminate data that matches/does not match a specific value.",
-            }, selectedCount === 1);
-            this.contextMenu.addItem({
-                text: "Convert...",
-                action: () => this.convert(this.schema.displayName(cd.name), this.order, this.tableRowsDesired),
-                help: "Convert the data in the selected column to a different data type.",
-            }, selectedCount === 1);
-            this.contextMenu.addItem({
-                text: "Create column in JS...",
-                action: () => this.createJSColumnDialog(this.order, this.tableRowsDesired),
-                help: "Add a new column computed using Javascript from the selected columns.",
-            }, true);
-            this.contextMenu.addItem({
-                text: "Extract value...",
-                action: () => {
-                    const colName = this.getSelectedColNames()[0];
-                    this.createKVColumnDialog(colName, this.tableRowsDesired);
-                },
-                help: "Extract a value associated with a specific key.",
-            }, selectedCount === 1 &&
-                this.isKVColumn(this.getSelectedColNames()[0]));
             this.contextMenu.show(e);
         };
     }
@@ -691,7 +704,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                     o.addColumn({ columnDescription: cd, isAscending: true });
                 this.setOrder(o, true);
             };
-            this.createContextMenu(thd, i, visible);
+            this.createContextMenu(thd, i, visible, this.isPrivate());
         }
 
         this.cellsPerColumn = new Map<string, HTMLElement[]>();
@@ -1239,6 +1252,42 @@ export class SchemaReceiver extends OnCompleteReceiver<TableSummary> {
             table.updateView(nk, false, order, null);
             table.updateCompleted(this.elapsedMilliseconds());
         }
+    }
+}
+
+/**
+ * Receives a PrivacySummary and displays the resulting table.
+ * Invoked in place of SchemaReceiver if the target table is a PrivateTableTarget.
+ * Displays the same information as SchemaReceiver,
+ * except that the row count is always 0 to maintain privacy,
+ * tableView is disabled, and additional privacy parameters are also displayed.
+ */
+export class PrivateSchemaReceiver extends OnCompleteReceiver<PrivacySummary> {
+    /**
+     * Create a schema receiver for a new table.
+     * @param page            Page where result should be displayed.
+     * @param operation       Operation that will bring the results.
+     * @param remoteObject    Table object.
+     * @param dataset         Dataset that this is a part of.
+     * @param forceTableView  If true the resulting view is always a table.
+     */
+    constructor(page: FullPage, operation: ICancellable<PrivacySummary>,
+                protected remoteObject: TableTargetAPI,
+                protected dataset: DatasetView,
+                protected forceTableView) {
+        super(page, operation, "Get schema");
+    }
+
+    public run(summary: PrivacySummary): void {
+        if (summary.schema == null) {
+            this.page.reportError("No schema received; empty dataset?");
+            return;
+        }
+
+        const schemaClass = new SchemaClass(summary.schema);
+        const dataView = new SchemaView(
+            this.remoteObject.remoteObjectId, this.page, summary.rowCount, schemaClass);
+        this.page.setDataView(dataView);
     }
 }
 

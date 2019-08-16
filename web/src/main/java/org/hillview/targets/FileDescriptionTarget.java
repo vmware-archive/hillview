@@ -19,6 +19,7 @@ package org.hillview.targets;
 
 import org.hillview.*;
 import org.hillview.dataset.api.IDataSet;
+import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.IMap;
 import org.hillview.maps.FalseMap;
 import org.hillview.maps.LoadFilesMapper;
@@ -32,7 +33,20 @@ import org.hillview.table.api.ITable;
 // All RpcTarget objects must be public
 @SuppressWarnings("WeakerAccess")
 public class FileDescriptionTarget extends RpcTarget {
-    private final IDataSet<IFileReference> files;
+    protected final IDataSet<IFileReference> files;
+
+    /* Augmented info contains an additional bit to specify whether the dataset is private. */
+    protected class AugmentedInfo implements IJson {
+        final int fileCount;
+        final long totalSize;
+        final boolean isPrivate;
+
+        AugmentedInfo(final int fileCount, final long totalSize, final boolean isPrivate) {
+            this.fileCount = fileCount;
+            this.totalSize = totalSize;
+            this.isPrivate = isPrivate;
+        }
+    }
 
     public FileDescriptionTarget(IDataSet<IFileReference> files, HillviewComputation computation) {
         super(computation);
@@ -40,10 +54,11 @@ public class FileDescriptionTarget extends RpcTarget {
         this.registerObject();
     }
 
-   @HillviewRpc
+    @HillviewRpc
     public void getFileSize(RpcRequest request, RpcRequestContext context) {
         FileSizeSketch sk = new FileSizeSketch();
-        this.runCompleteSketch(this.files, sk, (e, c) -> e, request, context);
+        this.runCompleteSketch(this.files, sk, (e, c) -> new AugmentedInfo(e.fileCount, e.totalSize, false),
+                request, context);
     }
 
     @HillviewRpc

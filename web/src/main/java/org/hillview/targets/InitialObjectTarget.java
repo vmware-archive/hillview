@@ -84,7 +84,14 @@ public class InitialObjectTarget extends RpcTarget {
         HillviewLogger.instance.info("Finding files", "{0}", desc);
         IMap<Empty, List<IFileReference>> finder = new FindFilesMapper(desc);
         assert this.emptyDataset != null;
-        this.runFlatMap(this.emptyDataset, finder, FileDescriptionTarget::new, request, context);
+
+        /* Create private target if privacy metadata file exists on root. */
+        if (desc.metadataExists()) {
+            this.runFlatMap(this.emptyDataset, finder,
+                    (d, c) -> new PrivateFileDescriptionTarget(d, c, desc.getBasename()), request, context);
+        } else {
+            this.runFlatMap(this.emptyDataset, finder, FileDescriptionTarget::new, request, context);
+        }
     }
 
     @HillviewRpc

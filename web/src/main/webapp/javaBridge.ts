@@ -81,6 +81,23 @@ export interface TableSummary {
     rowCount: number;
 }
 
+export interface PrivacyMetadata {
+    epsilon: number;
+    granularity: number;
+    globalMin: number;
+    globalMax: number;
+}
+
+export interface PrivacySchema {
+    metadata: { [colName: string]: PrivacyMetadata};
+}
+
+export interface PrivacySummary {
+    schema: Schema;
+    rowCount: number; // Note: will always be zero for private tables
+    metadata: PrivacySchema;
+}
+
 export interface ConvertColumnInfo {
     colName: string;
     newColName: string;
@@ -191,6 +208,7 @@ export interface RowData {
 export interface FileSizeSketchInfo {
     fileCount: number;
     totalSize: number;
+    isPrivate: boolean;
 }
 
 export interface ColumnSortOrientation {
@@ -261,11 +279,11 @@ export interface PrivateHistogramData {
     // Backend may adjust min/max to render
     minValue: number;
     maxValue: number;
-    
+
     // Confidence intervals
     confMins: number[];
     confMaxes: number[];
-    
+
     missingData: number;
 }
 
