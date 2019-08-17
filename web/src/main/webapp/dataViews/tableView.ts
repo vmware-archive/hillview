@@ -24,7 +24,7 @@ import {
     IColumnDescription,
     kindIsString, KVCreateColumnInfo,
     NextKList,
-    PrivacySummary,
+    PrivacySchema,
     RecordOrder,
     RemoteObjectId,
     RowData,
@@ -83,6 +83,8 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
     protected message: HTMLElement;
     protected strFilter: StringFilterDescription;
 
+    protected privacySchema: PrivacySchema;
+
     // The following elements are used for Find
     protected findBar: FindBar;
 
@@ -90,7 +92,8 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         remoteObjectId: RemoteObjectId,
         rowCount: number,
         schema: SchemaClass,
-        page: FullPage) {
+        page: FullPage,
+        privacySchema: PrivacySchema) {
         super(remoteObjectId, rowCount, schema, page, "Table");
         this.selectedColumns = new SelectionStateMachine();
         this.tableRowsDesired = Resolution.tableRowsOnScreen;
@@ -100,6 +103,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         this.topLevel.tabIndex = 1;  // necessary for keyboard events?
         this.topLevel.onkeydown = (e) => this.keyDown(e);
         this.strFilter = null;
+        this.privacySchema = privacySchema;
 
         const menu = new TopMenu([
             {
@@ -213,7 +217,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         const rowsDesired = ser.tableRowsDesired;
         if (order == null || schema == null || rowsDesired == null)
             return null;
-        const tableView = new TableView(ser.remoteObjectId, ser.rowCount, schema, page);
+        const tableView = new TableView(ser.remoteObjectId, ser.rowCount, schema, page, null);
         // We need to set the first row for the refresh.
         tableView.nextKList = {
             rowsScanned: 0,
@@ -689,8 +693,21 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
 
             const kindString = cd.kind;
             const name = this.schema.displayName(cd.name);
-            const title = name + ".\nType is " + kindString +
-                ".\nRight mouse click opens a menu.";
+            let title;
+            if (this.isPrivate()) {
+                const epsilonString = this.privacySchema.metadata[cd.name].epsilon;
+                const granString = this.privacySchema.metadata[cd.name].granularity;
+                const minString = this.privacySchema.metadata[cd.name].globalMin;
+                const maxString = this.privacySchema.metadata[cd.name].globalMax;
+                title = name + ".\nType is " + kindString +
+                    ".\nBudgeted epsilon value is " + epsilonString +
+                    ".\nLeaf granularity is " + granString +
+                    ".\nRange is [" + minString + ", " + maxString + "]" +
+                            ".\nRight mouse click opens a menu.";
+            } else {
+                title = name + ".\nType is " + kindString +
+                            ".\nRight mouse click opens a menu.";
+            }
             const visible = this.order.find(cd.name) >= 0;
             const thd = this.addHeaderCell(cd, name, title, 0);
             thd.classList.add("col" + i.toString());
@@ -1246,8 +1263,8 @@ export class SchemaReceiver extends OnCompleteReceiver<TableSummary> {
             };
 
             const order = new RecordOrder([]);
-            const table = new TableView(
-                this.remoteObject.remoteObjectId, summary.rowCount, schemaClass, this.page);
+            const table = new TableView(this.remoteObject.remoteObjectId, summary.rowCount,
+                schemaClass, this.page, summary.metadata);
             this.page.setDataView(table);
             table.updateView(nk, false, order, null);
             table.updateCompleted(this.elapsedMilliseconds());
@@ -1386,7 +1403,7 @@ class PCASchemaReceiver extends OnCompleteReceiver<TableSummary> {
 
         const schema = this.tv.schema.concat(newCols);
         const table = new TableView(
-            this.remoteObject.remoteObjectId, this.tv.rowCount, schema, this.page);
+            this.remoteObject.remoteObjectId, this.tv.rowCount, schema, this.page, null);
         this.page.setDataView(table);
         const rr = table.createNextKRequest(o, null, this.tableRowsDesired);
         rr.chain(this.operation);
@@ -1425,7 +1442,7 @@ export class TableOperationCompleted extends BaseReceiver {
                 this.page, rr, this.remoteObject, this.page.dataset, this.schema, "Schema"));
         } else {
             const table = new TableView(
-                this.remoteObject.remoteObjectId, this.rowCount, this.schema, this.page);
+                this.remoteObject.remoteObjectId, this.rowCount, this.schema, this.page, null);
             this.page.setDataView(table);
             const rr = table.createNextKRequest(this.order, null, this.tableRowsDesired);
             rr.chain(this.operation);

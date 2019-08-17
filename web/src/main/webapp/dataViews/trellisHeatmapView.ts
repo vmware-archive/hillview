@@ -265,7 +265,7 @@ export class TrellisHeatmapView extends TrellisChartView {
 
     public showTable(): void {
         const newPage = this.dataset.newPage(new PageTitle("Table"), this.page);
-        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newPage);
+        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newPage, null);
         newPage.setDataView(table);
         table.schema = this.schema;
 

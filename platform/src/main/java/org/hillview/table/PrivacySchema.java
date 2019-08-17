@@ -9,7 +9,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 
 /* PrivacySchema contains additional metadata for computing private histograms on numerical columns. */
-public class PrivacySchema extends Schema implements IJson {
+public class PrivacySchema implements IJson {
     HashMap<String, PrivacyMetadata> metadata;
 
     public PrivacySchema(HashMap<String, PrivacyMetadata> metadata) {
