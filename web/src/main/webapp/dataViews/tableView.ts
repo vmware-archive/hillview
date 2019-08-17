@@ -26,7 +26,7 @@ import {
     IColumnDescription,
     kindIsString, KVCreateColumnInfo,
     NextKList,
-    PrivacySummary,
+    PrivacySchema,
     RecordOrder,
     RemoteObjectId,
     RowData,
@@ -85,6 +85,8 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
     protected message: HTMLElement;
     protected strFilter: StringFilterDescription;
 
+    protected privacySchema: PrivacySchema;
+
     // The following elements are used for Find
     protected findBar: FindBar;
 
@@ -92,7 +94,8 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         remoteObjectId: RemoteObjectId,
 	rowCount: number,
 	schema: SchemaClass,
-	page: FullPage) {
+	page: FullPage,
+	privacySchema: PrivacySchema) {
         super(remoteObjectId, rowCount, schema, page, "Table");
         this.selectedColumns = new SelectionStateMachine();
         this.tableRowsDesired = Resolution.tableRowsOnScreen;
@@ -102,6 +105,8 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         this.topLevel.tabIndex = 1;  // necessary for keyboard events?
         this.topLevel.onkeydown = (e) => this.keyDown(e);
         this.strFilter = null;
+
+	this.privacySchema = privacySchema;
 
         const menu = new TopMenu([
             {
@@ -215,7 +220,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         const rowsDesired = ser.tableRowsDesired;
         if (order == null || schema == null || rowsDesired == null)
             return null;
-        const tableView = new TableView(ser.remoteObjectId, ser.rowCount, schema, page);
+        const tableView = new TableView(ser.remoteObjectId, ser.rowCount, schema, page, null);
         // We need to set the first row for the refresh.
         tableView.nextKList = {
             rowsScanned: 0,
@@ -679,8 +684,21 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
 
             const kindString = cd.kind;
             const name = this.schema.displayName(cd.name);
-            const title = name + ".\nType is " + kindString +
-                ".\nRight mouse click opens a menu.";
+	    var title;
+	    if (this.isPrivate()) {
+		const epsilonString = this.privacySchema.metadata[cd.name].epsilon;
+		const granString = this.privacySchema.metadata[cd.name].granularity;
+		const minString = this.privacySchema.metadata[cd.name].globalMin;
+		const maxString = this.privacySchema.metadata[cd.name].globalMax;
+		title = name + ".\nType is " + kindString +
+		    ".\nBudgeted epsilon value is " + epsilonString +
+		    ".\nLeaf granularity is " + granString +
+		    ".\nRange is [" + minString + ", " + maxString + "]" + 
+                    ".\nRight mouse click opens a menu."; 
+	    } else {
+		title = name + ".\nType is " + kindString +
+                    ".\nRight mouse click opens a menu.";
+	    }
             const visible = this.order.find(cd.name) >= 0;
             const thd = this.addHeaderCell(cd, name, title, 0);
             thd.classList.add("col" + i.toString());
@@ -1262,48 +1280,12 @@ export class SchemaReceiver extends OnCompleteReceiver<TableSummary> {
             };
 
             const order = new RecordOrder([]);
-            const table = new TableView(
-                this.remoteObject.remoteObjectId, summary.rowCount, schemaClass, this.page);
+	    const table = new TableView(this.remoteObject.remoteObjectId, summary.rowCount,
+					schemaClass, this.page, summary.metadata);
             this.page.setDataView(table);
             table.updateView(nk, false, order, null);
             table.updateCompleted(this.elapsedMilliseconds());
         }
-    }
-}
-
-/**
- * Receives a PrivacySummary and displays the resulting table.
- * Invoked in place of SchemaReceiver if the target table is a PrivateTableTarget.
- * Displays the same information as SchemaReceiver, 
- * except that the row count is always 0 to maintain privacy,
- * tableView is disabled, and additional privacy parameters are also displayed.
- */
-export class PrivateSchemaReceiver extends OnCompleteReceiver<PrivacySummary> {
-    /**
-     * Create a schema receiver for a new table.
-     * @param page            Page where result should be displayed.
-     * @param operation       Operation that will bring the results.
-     * @param remoteObject    Table object.
-     * @param dataset         Dataset that this is a part of.
-     * @param forceTableView  If true the resulting view is always a table.
-     */
-    constructor(page: FullPage, operation: ICancellable<PrivacySummary>,
-                protected remoteObject: TableTargetAPI,
-                protected dataset: DatasetView,
-                protected forceTableView) {
-        super(page, operation, "Get schema");
-    }
-
-    public run(summary: PrivacySummary): void {
-        if (summary.schema == null) {
-            this.page.reportError("No schema received; empty dataset?");
-            return;
-        }
-
-        const schemaClass = new SchemaClass(summary.schema);
-        const dataView = new SchemaView(this.remoteObject.remoteObjectId, this.page,
-					summary.rowCount, schemaClass, this.elapsedMilliseconds());
-        this.page.setDataView(dataView);
     }
 }
 
@@ -1402,7 +1384,7 @@ class PCASchemaReceiver extends OnCompleteReceiver<TableSummary> {
 
         const schema = this.tv.schema.concat(newCols);
         const table = new TableView(
-            this.remoteObject.remoteObjectId, this.tv.rowCount, schema, this.page);
+            this.remoteObject.remoteObjectId, this.tv.rowCount, schema, this.page, null);
         this.page.setDataView(table);
         const rr = table.createNextKRequest(o, null, this.tableRowsDesired);
         rr.chain(this.operation);
@@ -1427,7 +1409,7 @@ export class TableOperationCompleted extends BaseRenderer {
     public run(): void {
         super.run();
         const table = new TableView(
-            this.remoteObject.remoteObjectId, this.rowCount, this.schema, this.page);
+            this.remoteObject.remoteObjectId, this.rowCount, this.schema, this.page, null);
         this.page.setDataView(table);
         const rr = table.createNextKRequest(this.order, null, this.tableRowsDesired);
         rr.chain(this.operation);

@@ -76,11 +76,6 @@ export class GenericLogs {
     ];
 }
 
-export interface TableSummary {
-    schema: Schema;
-    rowCount: number;
-}
-
 export interface PrivacyMetadata {
     epsilon: number;
     granularity: number;
@@ -92,9 +87,9 @@ export interface PrivacySchema {
     metadata: {[colName: string] : PrivacyMetadata};
 }
 
-export interface PrivacySummary {
+export interface TableSummary {
     schema: Schema;
-    rowCount: number; // Note: will always be zero for private tables
+    rowCount: number;
     metadata: PrivacySchema;
 }
 

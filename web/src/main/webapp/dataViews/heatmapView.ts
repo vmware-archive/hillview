@@ -387,7 +387,7 @@ export class HeatmapView extends ChartView {
             isAscending: true,
         }]);
         const page = this.dataset.newPage(new PageTitle("Table"), this.page);
-        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, page);
+        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, page, null);
         page.setDataView(table);
         table.schema = this.schema;
         const rr = table.createNextKRequest(order, null, Resolution.tableRowsOnScreen);
