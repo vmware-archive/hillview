@@ -39,9 +39,15 @@ public final class DateTests extends BaseTest {
                 .atStartOfDay(ZoneOffset.systemDefault())
                 .toInstant();
         Assert.assertEquals(instant, expected);
-
         instant = parsing.parse("1999-12-10");
         expected = LocalDate.of(1999, 12, 10)
+                .atStartOfDay(ZoneOffset.systemDefault())
+                .toInstant();
+        Assert.assertEquals(instant, expected);
+
+        parsing = new DateParsing("2018/01/27");
+        instant = parsing.parse("2018/01/27");
+        expected = LocalDate.of(2018, 1, 27)
                 .atStartOfDay(ZoneOffset.systemDefault())
                 .toInstant();
         Assert.assertEquals(instant, expected);

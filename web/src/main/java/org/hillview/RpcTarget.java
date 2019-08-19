@@ -192,7 +192,7 @@ public abstract class RpcTarget implements IJson {
         return this.objectId.equals(rpcTarget.objectId);
     }
 
-    abstract class ResultObserver<T> implements Observer<PartialResult<T>> {
+    abstract static class ResultObserver<T> implements Observer<PartialResult<T>> {
         final RpcRequest request;
         final RpcRequestContext context;
         final String name;
@@ -279,7 +279,7 @@ public abstract class RpcTarget implements IJson {
         }
     }
 
-    class SketchResultObserver<R extends IJson> extends ResultObserver<R> {
+    static class SketchResultObserver<R extends IJson> extends ResultObserver<R> {
         SketchResultObserver(String name, RpcTarget target, RpcRequest request,
                              RpcRequestContext context) {
             super(name, request, target, context);
@@ -302,7 +302,7 @@ public abstract class RpcTarget implements IJson {
      * to the consumer.  It performs aggregation by itself.
      * @param <R> Type of data.
      */
-    class CompleteSketchResultObserver<R, S extends IJson> extends ResultObserver<R> {
+    static class CompleteSketchResultObserver<R, S extends IJson> extends ResultObserver<R> {
         /**
          * True when a result was received and send to client.
          */
@@ -368,7 +368,7 @@ public abstract class RpcTarget implements IJson {
         }
     }
 
-    class MapResultObserver<T> extends ResultObserver<IDataSet<T>> {
+    static class MapResultObserver<T> extends ResultObserver<IDataSet<T>> {
         @Nullable
         IDataSet<T> result;
         final BiFunction<IDataSet<T>, HillviewComputation, RpcTarget> factory;
