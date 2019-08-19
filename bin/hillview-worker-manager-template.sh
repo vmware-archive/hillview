@@ -1,27 +1,43 @@
 #!/bin/bash
-# This is teamplate for a script that manages a hillview worker as a Unix service.
+# This is teamplate for a script that manages a hillview worker as a service.
 
 #REPLACE_WITH_VARIABLES
 
-WORK_DIRECTORY=${SERVICE_FOLDER}/hillview
+# File storing PID of the hillview worker
+PIDFILE="hillview-worker.pid"
+# File storing PID of the forever process that runs the hillview worker
+FOREVERPID="forever-worker.pid"
+
+cd ${SERVICE_DIRECTORY}
 
 start() {
-    cd ${WORK_DIRECTORY}
+    echo "Starting worker"
     if [ "x${CLEANUP}" == "x1" ]; then
         rm -f hillview.log hillview.log.* hillview.log*.lck
     fi
-    nohup java -ea -Dlog4j.configurationFile=./log4j.properties -server -Xmx ${HEAPSIZE} -jar ${SERVICE_FOLDER}/hillview-server-jar-with-dependencies.jar 0.0.0.0:${WORKER_PORT} >nohup.out 2>&1 &
+    ./forever.sh ${FOREVERPID} nohup java -ea -Dlog4j.configurationFile=./log4j.properties -server -Xmx${HEAPSIZE} -jar ${SERVICE_DIRECTORY}/hillview-server-jar-with-dependencies.jar 0.0.0.0:${WORKER_PORT} >nohup.out 2>&1 &
+}
+
+killbypid() {
+    local PIDFILE=$1
+    if [ -f ${PIDFILE} ]; then
+        # First try to find the service pid
+         read LINE < ${SERVICE_DIRECTORY}/${PIDFILE}
+         if [ -d "/proc/${LINE}" ]; then
+             echo "Killing $2 process ${LINE}"
+  	     kill ${LINE}
+         fi
+         rm -f ${SERVICE_DIRECTORY}/${PIDFILE}
+         return 0
+    else
+        return 1
+    fi
 }
 
 stop() {
-    if [ -f ${PIDFILE} ]; then
-        # First try to find the service pid
-         read LINE < ${WORK_DIRECTORY}/${PIDFILE}
-         if [ -d "/proc/${LINE}" ]; then
-  	     kill -KILL -u ${USER} ${LINE}
-         fi
-         rm -f ${WORK_DIRECTORY}/${PIDFILE}
-    else
+    killbypid ${FOREVERPID} forever
+    killbypid ${PIDFILE} hillview-server
+    if [ $? -ne 0 ]; then
         # Kill it by name; may have collateral damage
         if pgrep -f hillview-server; then
             pkill -f hillview-server
@@ -30,9 +46,18 @@ stop() {
             echo "Already stopped"
         fi
     fi
+    true
 }
 
 status() {
+    if [ -f ${PIDFILE} ]; then
+         read LINE < ${PIDFILE}
+         if [ -d "/proc/${LINE}" ]; then
+             echo "Process seems to be running"
+             return 0
+         fi
+    fi
+    echo "Could not find running worker"
 }
 
 case ${1} in

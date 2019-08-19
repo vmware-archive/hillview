@@ -52,7 +52,7 @@ export class LoadMenu extends RemoteObject implements IDataView {
             { text: "Flights (15 columns, CSV)",
                 action: () => {
                     const files: FileSetDescription = {
-                        fileNamePattern: "../data/ontime/????_*.csv*",
+                        fileNamePattern: "data/ontime/????_*.csv*",
                         schemaFile: "short.schema",
                         headerRow: true,
                         repeat: 1,
@@ -69,7 +69,7 @@ export class LoadMenu extends RemoteObject implements IDataView {
             { text: "Flights (15 columns, ORC)",
                 action: () => {
                     const files: FileSetDescription = {
-                        fileNamePattern: "../data/ontime_small_orc/*.orc",
+                        fileNamePattern: "data/ontime_small_orc/*.orc",
                         schemaFile: "schema",
                         headerRow: true,
                         repeat: 1,
@@ -86,7 +86,7 @@ export class LoadMenu extends RemoteObject implements IDataView {
             { text: "Flights (all columns, ORC)",
                 action: () => {
                     const files: FileSetDescription = {
-                        fileNamePattern: "../data/ontime_big_orc/*.orc",
+                        fileNamePattern: "data/ontime_big_orc/*.orc",
                         schemaFile: "schema",
                         headerRow: true,
                         repeat: 1,
