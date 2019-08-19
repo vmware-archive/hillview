@@ -506,21 +506,21 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
 			      visible: boolean,
 			      isPrivate: boolean) {
         this.contextMenu.clear();
-        if (visible) {
-            this.contextMenu.addItem({
-                text: "Hide",
-                action: () => this.showColumns(0, true),
-                help: "Hide the data in the selected columns",
-            }, true);
-        } else {
-            this.contextMenu.addItem({
-                text: "Show",
-                action: () => this.showColumns(1, false),
-                help: "Show the data in the selected columns.",
-            }, true);
-        }
-
 	if (!isPrivate) {
+            if (visible) {
+		this.contextMenu.addItem({
+                    text: "Hide",
+                    action: () => this.showColumns(0, true),
+                    help: "Hide the data in the selected columns",
+		}, true);
+            } else {
+		this.contextMenu.addItem({
+                    text: "Show",
+                    action: () => this.showColumns(1, false),
+                    help: "Show the data in the selected columns.",
+		}, true);
+            }
+
             this.contextMenu.addItem({
                 text: "Drop",
                 action: () => this.dropColumns(),
