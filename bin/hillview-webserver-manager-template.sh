@@ -27,8 +27,11 @@ stop() {
 }
 
 status() {
+    # This assumes there's a single tomcat on the machine, which may not be true...
     if ! pgrep -f tomcat; then
         echo "Web server not running"
+    else
+        echo "Web server running"
     fi
     true
 }
