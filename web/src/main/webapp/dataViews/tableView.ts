@@ -105,7 +105,6 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         this.topLevel.tabIndex = 1;  // necessary for keyboard events?
         this.topLevel.onkeydown = (e) => this.keyDown(e);
         this.strFilter = null;
-
 	this.privacySchema = privacySchema;
 
         const menu = new TopMenu([
@@ -631,7 +630,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 action: () => this.privateHistSelected(),
                 help: "Plot the data in the selected columns as a private histogram. " +
                     "Applies to one numeric column only.",
-            }, selectedCount === 1);
+            }, selectedCount === 1 && this.getSelectedColNames().reduce((a, b) => a && this.isNumericColumn(b), true));
 	}
     }
 

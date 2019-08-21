@@ -63,7 +63,7 @@ export class HtmlString {
     }
 }
 
-export type ViewKind = "Table" | "Histogram" | "PrivateHistogram" | "2DHistogram" | "Heatmap" |
+export type ViewKind = "Table" | "Histogram" | "2DHistogram" | "Heatmap" |
     "TrellisHistogram" | "Trellis2DHistogram" | "TrellisHeatmap" |
     "HeavyHitters" | "Schema" | "Load" | "SVD Spectrum" | "LogFileView";
 

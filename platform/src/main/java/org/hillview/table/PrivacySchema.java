@@ -8,7 +8,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 
-/* PrivacySchema contains additional metadata for computing private histograms on numerical columns. */
+/**
+ * PrivacySchema contains additional metadata for columns that are visualized using the binary mechanism for
+ * differential privacy, as per Chan, Song, Shi, TISSEC '11 (https://eprint.iacr.org/2010/076.pdf).
+ * */
 public class PrivacySchema implements IJson {
     HashMap<String, PrivacyMetadata> metadata;
 

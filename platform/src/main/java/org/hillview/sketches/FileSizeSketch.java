@@ -20,49 +20,27 @@ package org.hillview.sketches;
 import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.storage.IFileReference;
+import org.hillview.table.FileSizeInfo;
 
 import javax.annotation.Nullable;
 
-public class FileSizeSketch implements ISketch<IFileReference, FileSizeSketch.Info> {
+public class FileSizeSketch implements ISketch<IFileReference, FileSizeInfo> {
     @Override
-    public Info create(IFileReference data) {
-        return new Info(1, data.getSizeInBytes());
+    public FileSizeInfo create(IFileReference data) {
+        return new FileSizeInfo(1, data.getSizeInBytes());
     }
 
     @Nullable
     @Override
-    public Info zero() {
-        return new Info();
+    public FileSizeInfo zero() {
+        return new FileSizeInfo();
     }
 
     @Nullable
     @Override
-    public Info add(@Nullable Info left, @Nullable Info right) {
+    public FileSizeInfo add(@Nullable FileSizeInfo left, @Nullable FileSizeInfo right) {
         assert left != null;
         assert right != null;
-        return new Info(left.fileCount + right.fileCount, left.totalSize + right.totalSize);
-    }
-
-    /**
-     * Result produced by the FileSizeSketch.
-     */
-    public static class Info implements IJson {
-        /**
-         * Total number of files.
-         */
-        public final int fileCount;
-        /**
-         * Total bytes in all the files.
-         */
-        public final long totalSize;
-
-        Info(int count, long size) {
-            this.fileCount = count;
-            this.totalSize = size;
-        }
-
-        Info() {
-            this(0, 0);
-        }
+        return new FileSizeInfo(left.fileCount + right.fileCount, left.totalSize + right.totalSize);
     }
 }

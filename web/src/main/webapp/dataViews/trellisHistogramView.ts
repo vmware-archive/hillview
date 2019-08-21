@@ -421,10 +421,10 @@ export class TrellisHistogramView extends TrellisChartView {
         }
         const renderer = new FilterReceiver(title,
             [this.xAxisData.description, this.groupByAxisData.description], this.schema,
-            [0, 0], this.page, rr, this.dataset, {
-                chartKind: "TrellisHistogram", relative: false,
-                reusePage: false, exact: this.samplingRate >= 1
-            });
+					    [0, 0], this.page, rr, this.dataset, filter, {
+						chartKind: "TrellisHistogram", relative: false,
+						reusePage: false, exact: this.samplingRate >= 1
+					    });
         rr.invoke(renderer);
     }
 }

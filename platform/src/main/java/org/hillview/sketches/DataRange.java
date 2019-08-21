@@ -23,9 +23,14 @@ public class DataRange extends BucketsInfo implements IJson {
     public double min;
     public double max;
 
-    DataRange() {
+    public DataRange() {
         this.min = 0;
         this.max = 0;
+    }
+
+    public DataRange(double min, double max) {
+        this.min = min;
+        this.max = max;
     }
 
     public void add(double val) {

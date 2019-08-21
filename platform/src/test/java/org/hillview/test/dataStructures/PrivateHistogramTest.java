@@ -174,7 +174,8 @@ public class PrivateHistogramTest extends BaseTest {
         final int numBuckets = 4; // creates buckets of size 25...
         final int granularity = 10; // but leaves of size 10
         DyadicHistogramBuckets buckDes = new DyadicHistogramBuckets(min, max, numBuckets, granularity);
-        PrivateHistogram hist = new PrivateHistogram(buckDes);
+        Histogram hist = new Histogram(buckDes);
+        PrivateHistogram pHist = new PrivateHistogram(hist);
 
         DoubleArrayColumn col = generateLinearColumn(min, max, 1);
         FullMembershipSet fMap = new FullMembershipSet(col.sizeInRows());
@@ -183,15 +184,15 @@ public class PrivateHistogramTest extends BaseTest {
         // manually compute expected multiplier
         for (int i = 0; i < hist.getNumOfBuckets(); i++) {
             if (i % 2 != 0) {
-                assertEquals(hist.noiseMultiplier(i), 2);
+                assertEquals(pHist.noiseMultiplier(i), 2);
             } else {
-                assertEquals(hist.noiseMultiplier(i), 1);
+                assertEquals(pHist.noiseMultiplier(i), 1);
             }
         }
 
         // make sure we can add noise
         double T = 10.0;
         double eps = 0.05;
-        hist.addDyadicLaplaceNoise(T / eps);
+        pHist.addDyadicLaplaceNoise(T / eps);
     }
 }

@@ -86,7 +86,7 @@ public class InitialObjectTarget extends RpcTarget {
         assert this.emptyDataset != null;
 
         /* Create private target if privacy metadata file exists on root. */
-        if (desc.metadataExists()) {
+        if (desc.privacyMetadataExists()) {
             this.runFlatMap(this.emptyDataset, finder,
                     (d, c) -> new PrivateFileDescriptionTarget(d, c, desc.getBasename()), request, context);
         } else {

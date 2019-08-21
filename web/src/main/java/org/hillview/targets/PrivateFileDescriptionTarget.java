@@ -8,6 +8,7 @@ import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IMap;
 import org.hillview.maps.LoadFilesMapper;
 import org.hillview.sketches.FileSizeSketch;
+import org.hillview.storage.FileSetDescription;
 import org.hillview.storage.IFileReference;
 import org.hillview.table.PrivacySchema;
 import org.hillview.table.api.ITable;
@@ -19,15 +20,13 @@ import java.util.HashMap;
 public class PrivateFileDescriptionTarget extends FileDescriptionTarget {
     private String basename;
 
-    public static final String METADATA_NAME = "metadata.json";
-
     private PrivacySchema metadata;
 
     public PrivateFileDescriptionTarget(IDataSet<IFileReference> files, HillviewComputation computation, String basename) {
         super(files, computation);
 
         this.basename = basename;
-        this.metadata = PrivacySchema.loadFromFile(Paths.get(basename, METADATA_NAME));
+        this.metadata = PrivacySchema.loadFromFile(Paths.get(basename, FileSetDescription.PRIVACY_METADATA_NAME));
     }
 
     @HillviewRpc
@@ -37,7 +36,6 @@ public class PrivateFileDescriptionTarget extends FileDescriptionTarget {
                 request, context);
     }
 
-    /* Same as in FileDescriptionTarget, but returns a PrivateTableTarget rather than a normal TableTarget. */
     @HillviewRpc
     public void loadTable(RpcRequest request, RpcRequestContext context) {
         IMap<IFileReference, ITable> loader = new LoadFilesMapper();
