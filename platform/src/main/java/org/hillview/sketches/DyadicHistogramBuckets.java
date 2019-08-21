@@ -22,19 +22,21 @@ import org.hillview.table.api.IColumn;
 import java.util.Arrays;
 
 /**
- * DyadicHistogramBuckets ensures that every bucket is a multiple of the leaf granularity.
- * It is built on data that can be converted to doubles.
- * The last bucket is right-inclusive.
+ * This bucket class is intended for use with the binary mechanism for differential privacy
+ * (Chan, Song, Shi TISSEC '11: https://eprint.iacr.org/2010/076.pdf) on numeric data.
+ * The values are quantized to multiples of the granularity specified by the data curator (to create "leaves"
+ * in the private range query tree). Since bucket boundaries may not fall on the quantized leaf boundaries,
+ * leaves are assigned to buckets based on their left boundary value.
  */
 public class DyadicHistogramBuckets implements IHistogramBuckets {
     private double minValue;
     private double maxValue;
     private int numOfBuckets;
 
-    private final double bucketSize;
+    private final double bucketSize; // The desired bucket size specified by the user or UI.
 
-    private final double granularity;
-    private int numLeaves;
+    private final double granularity; // The quantization interval (leaf size).
+    private int numLeaves; // Total number of leaves.
 
     // Covers leaves in [minLeafIdx, maxLeafIdx)
     private int maxLeafIdx;
@@ -101,7 +103,12 @@ public class DyadicHistogramBuckets implements IHistogramBuckets {
             this.numOfBuckets = this.numLeaves;
         }
 
-        // Initialize max/min leaves with a linear search so we can do binary search afterwards
+        // User-specified range may not fall on leaf boundaries.
+        // We choose max/min leaves such that the entire range is covered, i.e.
+        // the left boundary of the min leaf <= the range min, and the
+        // right boundary of the max leaf >= the range max.
+
+        // Initialize max/min leaves with a linear search so we can do binary search afterwards.
         this.minLeafIdx = 0;
         if (minValue < 0) {
             while (this.leafLeftBoundary(this.minLeafIdx) > minValue) {

@@ -92,4 +92,19 @@ public enum ContentsKind implements Serializable {
                 return false;
         }
     }
+
+    public boolean isNumeric() {
+        switch (this) {
+            case String:
+            case Json:
+            case None:
+            case Date:
+                return false;
+            case Duration:
+            case Integer:
+            case Double:
+            default:
+                return true;
+        }
+    }
 }

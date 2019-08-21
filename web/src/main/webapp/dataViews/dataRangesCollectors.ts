@@ -18,10 +18,11 @@
 import {OnCompleteReceiver} from "../rpc";
 import {
     DataRange,
+    FilterDescription,
     HistogramArgs,
     IColumnDescription,
     kindIsString,
-    RemoteObjectId
+    RemoteObjectId,
 } from "../javaBridge";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {FullPage, PageTitle} from "../ui/fullPage";
@@ -163,7 +164,7 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
     }
 
     /**
-     * Compute the parameters to use for a histogram
+     * Compute the parameters to use for ag histogram
      * @param cd           Column to compute histogram for.
      * @param range        Range of the data in the column.
      * @param bucketCount  Desired number of buckets; if 0 it will be computed.

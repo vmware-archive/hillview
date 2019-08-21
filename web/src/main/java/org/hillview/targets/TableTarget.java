@@ -328,6 +328,9 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     public void histogram(RpcRequest request, RpcRequestContext context) {
         HistogramArgs info = request.parseArgs(HistogramArgs.class);
+        HistogramSketch sk = info.getSketch();
+        this.runSketch(this.table, sk, request, context);
+
     }
 
     @HillviewRpc

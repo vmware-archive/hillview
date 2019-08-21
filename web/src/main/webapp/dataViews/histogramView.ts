@@ -336,8 +336,8 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
             return new FilterReceiver(
-                title, [this.xAxisData.description], this.schema, [0],
-                page, operation, this.dataset, {
+                title, [this.axisData.description], this.schema, [0],
+                page, operation, this.dataset, null, {
                     exact: this.samplingRate >= 1, reusePage: false,
                     relative: false, chartKind: "Histogram" });
         };

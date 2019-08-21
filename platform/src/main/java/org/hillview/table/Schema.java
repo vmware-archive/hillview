@@ -39,7 +39,7 @@ import java.util.function.Predicate;
  * A schema is an ordering of the columns, plus a map from a column name to a column description.
  * Column names are case-sensitive.
  */
-public class Schema implements Serializable, IJson {
+public final class Schema implements Serializable, IJson {
     private final LinkedHashMap<String, ColumnDescription> columns;
 
     /*

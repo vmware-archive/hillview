@@ -25,7 +25,7 @@ public class PrivateMetadataTest extends BaseTest {
                 "'globalMin':-0.5," +
                 "'globalMax':13.1}" +
                 "}}";
-        PrivacySchema mdSchema= PrivacySchema.loadFromString(metadata);
+        PrivacySchema mdSchema = PrivacySchema.loadFromString(metadata);
         assertEquals(mdSchema.get("col1").epsilon, 0.1, 0.001);
     }
 
@@ -38,6 +38,8 @@ public class PrivateMetadataTest extends BaseTest {
         mdMap.put("col2", md2);
         PrivacySchema mdSchema = new PrivacySchema(mdMap);
         String mdJson = mdSchema.toJson();
-        System.out.println(mdJson);
+        String expected = "{\"metadata\":{\"col2\":{\"epsilon\":0.5,\"granularity\":15.0,\"globalMin\":-0.5,\"globalMax\":13.1}" +
+                ",\"col1\":{\"epsilon\":0.1,\"granularity\":10.5,\"globalMin\":0.0,\"globalMax\":123.45}}}";
+        assertEquals(expected, mdJson);
     }
 }

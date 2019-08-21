@@ -290,7 +290,6 @@ export interface PrivateHistogramArgs {
     epsilon: number;
     granularity: number;
 
-    // only used when doing double histograms
     min?: number;
     max?: number;
 }
