@@ -16,9 +16,7 @@ def start_webserver(config):
     rh = config.get_webserver()
     message = "Starting web server " + str(rh)
     logger.info(message)
-    rh.run_remote_shell_command(
-        "export WEB_CLUSTER_DESCRIPTOR=serverlist; cd " + config.service_folder + "; nohup " + \
-        config.tomcat + "/bin/startup.sh &")
+    rh.run_remote_shell_command(config.service_folder + "/hillview-webserver-manager.sh start")
 
 def start_worker(config, rh):
     """Starts the Hillview worker on a remote machine"""
@@ -26,14 +24,7 @@ def start_worker(config, rh):
     assert isinstance(config, ClusterConfiguration)
     message = "Starting worker " + str(rh)
     logger.info(message)
-    gclog = config.service_folder + "/hillview/gc.log"
-    rh.run_remote_shell_command(
-        "cd " + config.service_folder + "/hillview; " + \
-        "nohup java -ea -Dlog4j.configurationFile=./log4j.properties -server " + \
-        " -Xmx" + rh.heapsize + " -Xloggc:" + gclog + \
-        " -jar " + config.service_folder + \
-        "/hillview/hillview-server-jar-with-dependencies.jar " + "0.0.0.0:" + \
-        str(config.worker_port) + " >nohup.out 2>&1 &")
+    rh.run_remote_shell_command(config.service_folder + "/hillview-worker-manager.sh start")
 
 def start_aggregator(config, agg):
     """Starts a Hillview aggregator"""
@@ -41,23 +32,7 @@ def start_aggregator(config, agg):
     assert isinstance(config, ClusterConfiguration)
     message = "Starting aggregator " + str(agg)
     logger.info(message)
-    agg.run_remote_shell_command(
-        "cd " + config.service_folder + "/hillview; " + \
-        "nohup java -ea -Dlog4j.configurationFile=./log4j.properties -server " + \
-        " -jar " + config.service_folder + \
-        "/hillview/hillview-server-jar-with-dependencies.jar " + \
-        config.service_folder + "/workers " + agg.host + ":" + \
-        str(config.aggregator_port) + " >nohup.agg 2>&1 &")
-
-def start_aggregators(config):
-    """Starts all Hillview aggregators"""
-    assert isinstance(config, ClusterConfiguration)
-    config.run_on_all_aggregators(lambda rh: start_aggregator(config, rh))
-
-def start_workers(config):
-    """Starts all Hillview workers"""
-    assert isinstance(config, ClusterConfiguration)
-    config.run_on_all_workers(lambda rh: start_worker(config, rh))
+    rh.run_remote_shell_command(config.service_folder + "/hillview-aggregator-manager.sh start")
 
 def main():
     """Main function"""
@@ -66,8 +41,8 @@ def main():
     args = parser.parse_args()
     config = get_config(parser, args)
     start_webserver(config)
-    start_workers(config)
-    start_aggregators(config)
+    config.run_on_all_aggregators(lambda rh: start_aggregator(config, rh))
+    config.run_on_all_workers(lambda rh: start_worker(config, rh))
 
 if __name__ == "__main__":
     main()

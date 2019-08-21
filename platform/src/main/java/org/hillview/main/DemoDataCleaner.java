@@ -28,31 +28,19 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.stream.Stream;
 
 /**
  * This entry point is only used for preparing some data files for a demo.
  * It takes files named like data/ontime/On_Time_On_Time_Performance_*_*.csv and
- * removes some columns from them.  Optionally, it can also split these into
- * smaller files each.
+ * removes some columns from them and converts them to the ORC format.
  */
 class DemoDataCleaner {
     private static final String dataFolder = "../data/ontime";
 
     public static void main(String[] args) throws IOException {
         HillviewLogger.initialize("data cleaner", "hillview.log");
-        Set<String> columns = new HashSet<String>();
-        Collections.addAll(columns,
-                "DayOfWeek", "FlightDate", "UniqueCarrier",
-                "Origin", "OriginCityName", "OriginState", "Dest", "DestState",
-                "DepTime", "DepDelay", "ArrTime", "ArrDelay", "Cancelled",
-                "ActualElapsedTime", "Distance");
-
-        System.out.println("Splitting files in folder " + dataFolder);
         String prefix = "On_Time_On_Time_Performance_";
         Path folder = Paths.get(dataFolder);
         Stream<Path> files = Files.walk(folder, 1);
@@ -79,11 +67,14 @@ class DemoDataCleaner {
                     String end = filename.replace(prefix, "");
                     if (end.endsWith(".gz"))
                         // the output is uncompressed
-                        end = end.replace(".gz", "");                   
-                    CsvFileWriter writer = new CsvFileWriter(end);
-                    System.out.println("Writing " + end);
-                    writer.writeTable(p);
-                    /*
+                        end = end.replace(".gz", "");
+                    if (!Files.exists(Paths.get(end))) {
+                        CsvFileWriter writer = new CsvFileWriter(end);
+                        System.out.println("Writing " + end);
+                        writer.writeTable(p);
+                    }
+
+                    end = end.replace(".csv", ".orc");
                     OrcFileWriter owriter = new OrcFileWriter(end);
                     System.out.println("Writing " + end);
                     owriter.writeTable(p);
@@ -92,7 +83,6 @@ class DemoDataCleaner {
                     owriter = new OrcFileWriter(big);
                     System.out.println("Writing " + big);
                     owriter.writeTable(tbl);
-	            */
                 });
     }
 }

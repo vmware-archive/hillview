@@ -517,7 +517,10 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
         const title = new PageTitle("Filtered " + this.schema.displayName(this.xAxisData.description.name));
         const renderer = new FilterReceiver(title, [this.xAxisData.description], this.schema,
             [0], this.page, rr, this.dataset, {
-            exact: this.samplingRate >= 1, reusePage: false, relative: false, chartKind: "Histogram"
+                exact: this.samplingRate >= 1,
+                reusePage: false,
+                relative: false,
+                chartKind: "Histogram"
             });
         rr.invoke(renderer);
     }

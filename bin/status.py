@@ -16,9 +16,7 @@ def check_webserver(config):
     rh = config.get_webserver()
     message = "Checking hillview status on " + str(rh)
     logger.info(message)
-    rh.run_remote_shell_command("if pgrep -f tomcat; then true; else " +
-                                " echo \"Web server not running on " + str(rh.host) +"\"; " +
-                                " false; fi")
+    rh.run_remote_shell_command(config.service_folder + "/hillview-webserver-manager.sh status")
 
 def check_worker(config, rh):
     """Checks if the Hillview service is running on a remote machine"""
@@ -26,15 +24,15 @@ def check_worker(config, rh):
     assert isinstance(rh, RemoteHost)
     message = "Checking hillview status on " + str(rh.host)
     logger.info(message)
-    rh.run_remote_shell_command("if pgrep -f hillview-server; then true; else " +
-                                " echo \"Hillview not running on " + str(rh.host) +"\"; " +
-                                " cat " + config.service_folder + "/hillview/nohup.out; false; fi")
+    rh.run_remote_shell_command(config.service_folder + "/hillview-worker-manager.sh status")
 
-def check_workers(config):
-    """Checks all Hillview workers and aggregators"""
+def check_aggregator(config, rh):
+    """Checks if the Hillview service is running on a remote machine"""
     assert isinstance(config, ClusterConfiguration)
-    config.run_on_all_aggregators(lambda rh: check_worker(config, rh))
-    config.run_on_all_workers(lambda rh: check_worker(config, rh))
+    assert isinstance(rh, RemoteHost)
+    message = "Checking hillview status on " + str(rh.host)
+    logger.info(message)
+    rh.run_remote_shell_command(config.service_folder + "/hillview-aggregator-manager.sh status")
 
 def main():
     """Main function"""
@@ -43,7 +41,8 @@ def main():
     args = parser.parse_args()
     config = get_config(parser, args)
     check_webserver(config)
-    check_workers(config)
+    config.run_on_all_aggregators(lambda rh: check_aggregator(config, rh))
+    config.run_on_all_workers(lambda rh: check_worker(config, rh))
 
 if __name__ == "__main__":
     main()

@@ -221,7 +221,7 @@ public final class Schema implements Serializable, IJson {
         while (true) {
             if (!this.columns.containsKey(name))
                 return name;
-            name = prefix + Integer.toString(i);
+            name = prefix + i;
             ++i;
         }
     }

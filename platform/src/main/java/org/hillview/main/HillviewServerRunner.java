@@ -26,6 +26,9 @@ import org.hillview.utils.HostList;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.HostAndPort;
 
+import java.io.FileWriter;
+import java.lang.management.ManagementFactory;
+
 /**
  * Starts a Hillview server.  Depending on the command-line arguments it
  * will start either a worker node, or an aggregator node that talks to many worker nodes.
@@ -37,7 +40,9 @@ class HillviewServerRunner {
                 "`host:port` is the address where the service receives requests.\n" +
                 "`children` is an optional file that contains a list of children nodes.\n" +
                 "           Each child is of the form host:port.\n" +
-                "           If present this server will work as an aggregator node.\n"
+                "           If present this server will work as an aggregator node.\n" +
+                "The process will writes its process id into a file named hillview-worker.pid\n" +
+                "or hillview-aggregator.pid\n"
         );
     }
 
@@ -45,18 +50,21 @@ class HillviewServerRunner {
         try {
             String hostAndPort;
             IDataSet<Empty> initial;
+            String pidfile;
 
             if (args.length == 1) {
                 // worker node
                 HillviewLogger.initialize("worker", "hillview.log");
                 initial = new LocalDataSet<Empty>(Empty.getInstance());
                 hostAndPort = args[0];
+                pidfile = "hillview-worker.pid";
             } else if (args.length == 2) {
                 // aggregator node
                 HillviewLogger.initialize("aggregator", "hillview-agg.log");
                 HostList cluster = HostList.fromFile(args[0]);
                 initial = RemoteDataSet.createCluster(cluster, RemoteDataSet.defaultDatasetIndex);
                 hostAndPort = args[1];
+                pidfile = "hillview-aggregator.pid";
             } else {
                 usage();
                 return;
@@ -64,6 +72,23 @@ class HillviewServerRunner {
 
             new HillviewServer(HostAndPort.fromString(hostAndPort), initial);
             HillviewLogger.instance.info("Created HillviewServer");
+
+            // Try to find out own PID
+            String jvmName = ManagementFactory.getRuntimeMXBean().getName();
+            int index = jvmName.indexOf('@');
+            if (index > 0) {
+                try {
+                    long pid = Long.parseLong(jvmName.substring(0, index));
+                    FileWriter writer = new FileWriter(pidfile, false);
+                    writer.write(Long.toString(pid));
+                    writer.close();
+                } catch (NumberFormatException e) {
+                    HillviewLogger.instance.warn("Cannot find out self pid");
+                }
+            } else {
+                HillviewLogger.instance.warn("Cannot find out self pid");
+            }
+
             Thread.currentThread().join();
         } catch (Exception ex) {
             HillviewLogger.instance.error("Caught exception; exiting", ex);

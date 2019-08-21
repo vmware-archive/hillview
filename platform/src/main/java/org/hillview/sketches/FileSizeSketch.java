@@ -20,12 +20,14 @@ package org.hillview.sketches;
 import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.storage.IFileReference;
+import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 
 public class FileSizeSketch implements ISketch<IFileReference, FileSizeSketch.Info> {
     @Override
-    public Info create(IFileReference data) {
+    public Info create(@Nullable IFileReference data) {
+        Converters.checkNull(data);
         return new Info(1, data.getSizeInBytes());
     }
 

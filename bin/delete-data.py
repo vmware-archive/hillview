@@ -22,7 +22,7 @@ def delete_folder(config, folder):
     assert isinstance(config, ClusterConfiguration)
     message = "Deleting " + folder + " from all hosts"
     logger.info(message)
-    config.run_on_all_workers(lambda rh: delete_remote_folder(rh, folder), True)
+    config.run_on_all_workers(lambda rh: delete_remote_folder(rh, folder))
 
 def main():
     """Main function"""

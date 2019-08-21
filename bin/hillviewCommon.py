@@ -30,6 +30,7 @@ class RemoteHost:
         self.user = user
         self.parent = parent
         self.heapsize = heapsize
+        self.isAggregator = False
 
     def uh(self):
         """user@host"""
@@ -83,6 +84,7 @@ class RemoteAggregator(RemoteHost):
         "Create a remote aggregator"""
         super().__init__(user, host, parent)
         self.children = children
+        self.isAggregator = True
 
 class JsonConfig:
     """ Configuration read from a JSON file."""
@@ -113,6 +115,12 @@ class ClusterConfiguration:
     def __init__(self, file):
         """Load the configuration file describing the Hillview deployment."""
         message = "Reading cluster configuration from " + file
+        # Some default values, in case they are missing
+        self.worker_port = 3569
+        self.user = "hillview"
+        self.cleanup = False
+        self.service_folder = "/home/hillview"
+        self.default_heap_size = "5G"
         logger.info(message)
         if not os.path.exists(file):
             error = "Configuration file '" + file + "' does not exist"
@@ -139,6 +147,8 @@ class ClusterConfiguration:
         self.tomcat_version = self.jsonConfig.tomcat_version
         if hasattr(self.jsonConfig, "aggregator_port"):
             self.aggregator_port = self.jsonConfig.aggregator_port
+        else:
+            self.aggregator_port = 0
 
     def get_user(self):
         """Returns the user used by the hillview service"""
@@ -146,7 +156,7 @@ class ClusterConfiguration:
 
     def _get_heap_size(self, hostname):
         """The heap size used for the specified host"""
-        if hostname in self.jsonConfig.workers_heapsize:
+        if hasattr(self.jsonConfig, "workers_heapsize") and hostname in self.jsonConfig.workers_heapsize:
             return self.jsonConfig.workers_heapsize[hostname]
         return self.jsonConfig.default_heap_size
 
@@ -178,21 +188,17 @@ class ClusterConfiguration:
         """Returns true if we need to cleaup when installing"""
         return self.jsonConfig.cleanup
 
-    def run_on_all_aggregators(self, function, parallel=True):
+    def run_on_all_aggregators(self, function):
         # pylint: disable=unused-argument
         """Run a lambda on all aggregators.  function is a lambda that takes a
-        RemoteHost object as an argument.  If parallel is True the function is
-        run concurrently."""
+        RemoteHost object as an argument."""
         for rh in self.get_aggregators():
             function(rh)
 
-    def run_on_all_workers(self, function, parallel=True):
+    def run_on_all_workers(self, function):
         # pylint: disable=unused-argument
         """Run a lambda on all workers.  function is a lambda that takes a
-        RemoteHost object as an argument.  If parallel is True the function is
-        run concurrently."""
-        # Unfortunately there seems to be no way to reliably
-        # run something in parallel in Python, so this is not working yet.
+        RemoteHost object as an argument."""
         for rh in self.get_workers():
             function(rh)
 
