@@ -384,7 +384,7 @@ export class TrellisHistogramView extends TrellisChartView {
             return new FilterReceiver(
                 title,
                 [this.xAxisData.description, this.groupByAxisData.description], this.schema,
-                [0, 0], page, operation, this.dataset, {
+                [0, 0], page, operation, this.dataset, null, {
                     chartKind: "TrellisHistogram", relative: false,
                     reusePage: false, exact: this.samplingRate >= 1
                 });
@@ -395,6 +395,7 @@ export class TrellisHistogramView extends TrellisChartView {
         const local = this.selectionIsLocal();
         let title: PageTitle;
         let rr: RpcRequest<PartialResult<RemoteObjectId>>;
+	var filter: FilterDescription;
         if (local != null) {
             const origin = this.canvasToChart(this.selectionOrigin);
             const left = this.position(origin.x, origin.y);
@@ -402,7 +403,7 @@ export class TrellisHistogramView extends TrellisChartView {
             const right = this.position(end.x, end.y);
             const [xl, xr] = reorder(left.x, right.x);
 
-            const filter: FilterDescription = {
+            filter = {
                 min: this.xAxisData.invertToNumber(xl),
                 max: this.xAxisData.invertToNumber(xr),
                 minString: this.xAxisData.invert(xl),
@@ -413,7 +414,7 @@ export class TrellisHistogramView extends TrellisChartView {
             rr = this.createFilterRequest(filter);
             title = new PageTitle("Filtered on " + this.schema.displayName(this.xAxisData.description.name));
         } else {
-            const filter = this.getGroupBySelectionFilter();
+            filter = this.getGroupBySelectionFilter();
             if (filter == null)
                 return;
             rr = this.createFilterRequest(filter);
@@ -421,7 +422,7 @@ export class TrellisHistogramView extends TrellisChartView {
         }
         const renderer = new FilterReceiver(title,
             [this.xAxisData.description, this.groupByAxisData.description], this.schema,
-					    [0, 0], this.page, rr, this.dataset, filter, {
+					    [0, 0], this.page, rr, this.dataset, [filter], {
 						chartKind: "TrellisHistogram", relative: false,
 						reusePage: false, exact: this.samplingRate >= 1
 					    });

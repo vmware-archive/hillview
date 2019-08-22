@@ -32,7 +32,7 @@ public class PrivateFileDescriptionTarget extends FileDescriptionTarget {
     @HillviewRpc
     public void getFileSize(RpcRequest request, RpcRequestContext context) {
         FileSizeSketch sk = new FileSizeSketch();
-        this.runCompleteSketch(this.files, sk, (e, c) -> new AugmentedInfo(e.fileCount, e.totalSize, true),
+        this.runCompleteSketch(this.files, sk, (e, c) -> new PrivateFileSizeInfo(e.fileCount, e.totalSize, true),
                 request, context);
     }
 

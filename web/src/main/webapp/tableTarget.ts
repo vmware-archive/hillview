@@ -485,7 +485,7 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
     }
 
     public isPrivate(): boolean {
-	return this.dataset.loaded.kind == 'Private files';
+	return this.dataset.isPrivate();
     }
 }
 

@@ -6,11 +6,11 @@ public class FileSizeInfo implements IJson {
     /**
      * Total number of files.
      */
-    public final int fileCount;
+    public int fileCount;
     /**
      * Total bytes in all the files.
      */
-    public final long totalSize;
+    public long totalSize;
 
     public FileSizeInfo(int count, long size) {
         this.fileCount = count;

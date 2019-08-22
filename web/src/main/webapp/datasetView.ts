@@ -154,6 +154,10 @@ export class DatasetView implements IHtmlElement {
                 this.loaded.description.fileKind === "genericlog");
     }
 
+    public isPrivate(): boolean {
+	return this.loaded.kind == 'Private files';
+    }
+
     public getHTMLRepresentation(): HTMLElement {
         return this.topLevel;
     }

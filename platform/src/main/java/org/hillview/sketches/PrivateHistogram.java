@@ -9,18 +9,12 @@ import org.hillview.table.api.ISampledRowIterator;
 import java.io.Serializable;
 
 public class PrivateHistogram implements Serializable, IJson {
-    private final double maxValue;
-    private final double minValue;
-
-    private Histogram histogram; // Note that this histogram should have DyadicHistogramBuckets as its bucket description.
-    private DyadicHistogramBuckets bucketDescription;
+    public Histogram histogram; // Note that this histogram should have DyadicHistogramBuckets as its bucket description.
+    private DyadicHistogramBuckets bucketDescription; // Just an alias for the buckets in the histogram.
 
     public PrivateHistogram(final Histogram histogram) {
         this.histogram = histogram;
         this.bucketDescription = (DyadicHistogramBuckets)histogram.getBucketDescription();
-
-        this.minValue = this.bucketDescription.getMin();
-        this.maxValue = this.bucketDescription.getMax();
     }
 
     public static int intLog2(int x) {
@@ -44,8 +38,8 @@ public class PrivateHistogram implements Serializable, IJson {
     public void addDyadicLaplaceNoise(double scale) {
         LaplaceDistribution dist = new LaplaceDistribution(0, scale); // TODO: (more) secure PRG
         for (int i = 0; i < this.histogram.buckets.length; i++) {
-            System.out.println(this.histogram.buckets[i]);
             this.histogram.buckets[i] += dist.sample() * this.noiseMultiplier(i);
+            this.histogram.buckets[i] = Math.max(0, this.histogram.buckets[i]);
         }
     }
 }

@@ -57,7 +57,6 @@ import {DataRangesCollector} from "./dataRangesCollectors";
 import {TableOperationCompleted, TableView} from "./tableView";
 import {HistogramDialog} from "./histogramView";
 import {ErrorReporter} from "../ui/errReporter";
-import {PrivateHistRenderer} from "./privateHistView";
 
 /**
  * A base class for TableView and SchemaView.
