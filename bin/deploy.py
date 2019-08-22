@@ -82,7 +82,6 @@ def prepare_worker(config, rh):
 
     rh.create_remote_folder(config.service_folder)
     rh.run_remote_shell_command("chown " + config.get_user() + " " + config.service_folder)
-    rh.create_remote_folder(config.service_folder)
     rh.copy_file_to_remote(
         config.scriptFolder +
         "/../platform/target/hillview-server-jar-with-dependencies.jar",
@@ -98,13 +97,22 @@ def prepare_aggregator(config, rh):
     assert isinstance(config, ClusterConfiguration)
     message = "Preparing aggregator " + str(rh)
     logger.info(message)
-    rh.create_remote_folder(config.service_folder)
-    rh.run_remote_shell_command("chown " + config.get_user() + " " + config.service_folder)
-    rh.create_remote_folder(config.service_folder)
-    rh.copy_file_to_remote(
-        config.scriptFolder + "/../platform/target/hillview-server-jar-with-dependencies.jar",
-        config.service_folder, "")
-    rh.copy_file_to_remote("forever.sh", config.service_folder, "")
+    # Check if the aggregator machine is also a worker machine; if so, skip
+    # some deployment
+    isWorker = False
+    for a in config.get_workers():
+        if rh.host == a.host:
+            isWorker = True
+            break
+
+    if not isWorker:
+        rh.create_remote_folder(config.service_folder)
+        rh.run_remote_shell_command("chown " + config.get_user() + " " + config.service_folder)
+        rh.copy_file_to_remote(
+            config.scriptFolder + "/../platform/target/hillview-server-jar-with-dependencies.jar",
+            config.service_folder, "")
+        rh.copy_file_to_remote("forever.sh", config.service_folder, "")
+
     tmp = tempfile.NamedTemporaryFile(mode="w", delete=False)
     for h in rh.children:
         tmp.write(h + ":" + str(config.worker_port) + "\n")

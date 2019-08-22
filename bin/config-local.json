@@ -1,0 +1,12 @@
+{
+    "webserver": "localhost",
+    "workers": [
+        "localhost"
+    ],
+    "worker_port": 3569,
+    "default_heap_size": "5G",
+    "service_folder": "/tmp/hillview",
+    "tomcat_version": "9.0.4",
+    "tomcat": "apache-tomcat-9.0.4",
+    "cleanup": false
+}

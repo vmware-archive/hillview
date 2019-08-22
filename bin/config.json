@@ -29,15 +29,15 @@
   "aggregator_port": 3570,
   // Java heap size for Hillview workers
   "default_heap_size": "25G",
-  // User account for running the Hillview service
+  // User account for running the Hillview service; default value: user running script
   "user": "hillview",
-  // Folder where the hillview service is installed on remote machines
+  // Folder where the hillview service is installed on workers and aggregators
   "service_folder": "/home/hillview",
   // Version of Apache Tomcat to deploy
   "tomcat_version": "9.0.4",
   // Tomcat installation folder name
   "tomcat": "apache-tomcat-9.0.4",
-  // If true delete old log files
+  // If true delete old log files; default value: false
   "cleanup": false,
   // This can be used to override the default_heap_size for specific machines.
   "workers_heapsize": {

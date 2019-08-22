@@ -25,128 +25,73 @@ for big data, in PVLDB 2019, 12(11).
 
 Documentation for the [internal APIs](docs/hillview-apis.pdf).
 
-# Developing Hillview
+# Installing Hillview on a local machine
 
-## Software Dependencies
+These instructions are for Ubuntu or MacOS machines.
 
-* Back-end: Ubuntu Linux > 16 or MacOS
-* Java 8, Maven build system, various Java libraries
-  (Maven will manage the libraries)
-* Front-end: Typescript, webpack, Tomcat app server, node.js;
-  some JavaScript libraries: d3, pako, and rx-js
-* Cloud service management: Python3
-* IDEA Intellij for development (optional)
+* Install Java 8.  At this point newer versions of Java will *not* work.
+* clone this github repository
+* run the script `bin/install-dependencies.sh`
+* Download the Hillview release [tar
+file](https://github.com/vmware/hillview/releases/download/v0.6-alpha/hillview-bin.tar.gz).
+  Save it in the top directory of Hillview.
+* Untar the release `tax xfvz hillview-bin.tar.gz`
 
-## Pre-built binaries
+# Running Hillview locally
 
-The release contains a [tar
-file](https://github.com/vmware/hillview/releases/download/v0.6-alpha/hillview-bin.tar.gz)
-with pre-built binaries.  You should untar this file in the toplevel
-directory of hillview.  This archive does not contain the Apache
-Tomcat web server; to get that one you need to [install the
-dependencies.](#software-needed-for-deployment)
-
-## Building the binaries from source
-
-* First install all software required as described
-  [below](#software-needed-for-deployment).
-
-* Build the software:
+All the following scripts are in the `bin` folder.
 
 ```
 $ cd bin
-$ ./rebuild.sh -a
 ```
 
-### Build details
-
-Hillview is currently split into two separate Maven projects.
-
-* platform: pure Java, includes the entire back-end.  `platform` can
-be developed using the free (community edition) of Intellij IDEA.
-This produces a JAR file `platform/target/hillview-jar-with-dependencies.jar`.
-This part can be built with:
-
-```
-$ cd platform
-$ mvn clean install
-$ cd ..
-```
-
-* web: the web server, web client and web services; this project links
-to the result produced by the `platform` project.  This produces a WAR
-(web archive) file `web/target/web-1.0-SNAPSHOT.war`.  This part can
-be built with:
-
-```
-$ cd web
-$ mvn package
-$ cd ..
-```
-
-## Single-machine development and testing
-
-These instructions describe how to run hillview on a single machine
-using a sample dataset.
-
-* Download and prepare the sample data.  The download script will
-  download and decompress some CSV files with flights data from FAA.
-  You can edit the program `data/ontime/download.py` to change the
-  range of data that will be downloaded; the default is to download 2
-  months of data.  The dataset has 110 columns; we can use them all,
-  but for the demo we have stripped the dataset to 15 columns to
-  better fit on the screen.  The following command creates the smaller
-  files from the downloaded data; this has to be done only once, after
-  downloading the data.
+* (Optional) download and prepare the sample data:
 
 ```
 $ ./demo-data-cleaner.sh
 ```
 
-* Next start the back-end service which performs all the data
-  processing:
+* Start the back-end service which performs all the data processing:
 
 ```
 $ ./backend-start.sh &
 ```
 
-* Start the web server which receives requests from clients and
-dispatches them to the back-end servers; note that the folder where
-this command is run is important, since the path to the data files is
-relative to this folder.
+* Start the web server
+  (the default port of the web server is 8080; if you want to change it, change the setting
+   in `apache-tomcat-9.0.4/conf/server.xml`).
 
 ```
 $ ./frontend-start.sh
 ```
 
-* start a web browser at http://localhost:8080
+* start a web browser and open http://localhost:8080
 
 * when you are done stop the two services by killing the
-  frontend-start.sh and backend-start.sh jobs.
+  `frontend-start.sh` and `backend-start.sh` jobs.
+
+As an alternative, you can use the configuration service file
+`bin/config-local.json` and use the instructions for [deploying
+Hillview on a cluster](#deploying-the-hillview-service-on-a-cluster)
+using this configuration file; this will run Hillview on the local
+machine.
 
 # Deploying the Hillview service on a cluster
 
 Hillview uses `ssh` to deploy code on the cluster.  Prior to
 deployment you must setup `ssh` on the cluster to use password-less
 access to the cluster machines, as described here:
-https://www.ssh.com/ssh/copy-id
+https://www.ssh.com/ssh/copy-id.  You must also install Java on all
+machines in the cluster.
 
-*Please note that Hillview allows arbitrary access to files on the
-worker nodes from the client application.  The worker nodes should be
-deployed within a restricted secure environment (e.g. containers).*
-
-Before you run these commands, make sure you've built both `platform`
-and `web` projects.  The deployment scripts are in the `bin`
-folder.
-
-```
-$: cd bin
-```
+* Please note that Hillview allows arbitrary access to files on the
+worker nodes from the client application running with the privileges
+of the user specified in the configuration file. *
 
 ## Service configuration
 
-The fixed configuration of the Hillview service is obtained from a
-configuration file; there is a sample file `bin/config.json`.
+The configuration of the Hillview service is described in a Json file;
+two sample files are `bin/config.json`and `bin/config-local.json`.
 
 ```JSON
 // This file is a Json file that defines the configuration for a
@@ -180,7 +125,7 @@ configuration file; there is a sample file `bin/config.json`.
   "aggregator_port": 3570,
   // Java heap size for Hillview workers
   "default_heap_size": "25G",
-  // User account for running the Hillview service
+  // User account for running the Hillview service, default is current user
   "user": "hillview",
   // Folder where the hillview service is installed on remote machines
   "service_folder": "/home/hillview",
@@ -188,106 +133,61 @@ configuration file; there is a sample file `bin/config.json`.
   "tomcat_version": "9.0.4",
   // Tomcat installation folder name
   "tomcat": "apache-tomcat-9.0.4",
-  // If true delete old log files
+  // If true delete old log files, default is false
   "cleanup": false,
   // This can be used to override the default_heap_size for specific machines.
   "workers_heapsize": {
-    "worker1.name": "25G"
+    "worker1.name": "20G"
   }
 }
 ```
 
 ## Deployment scripts
 
-The following command installs the software on the machines:
+All deployment scripts are writte in Python, and are in the `bin` folder.
 
 ```
-$: deploy.py config.json
+$: cd bin
 ```
 
-The service is started by running the following command:
+Install the software on the machines:
 
 ```
-$: start.py config.json
+$: ./deploy.py config.json
+```
+
+Start the Hillview services:
+
+```
+$: ./start.py config.json
 ```
 
 To connect to the service open `http://<webserver>:8080` in your web
 browser.
 
-To stop the services you can run:
+Stop the services:
 
 ```
-$: stop.py config.json
+$: ./stop.py config.json
 ```
 
-# Contributing code
+Query the status of the services:
 
-You will need to sign a CLA (Contributor License Agreement) to
-contribute code to Hillview under an Apache-2 license.  This is very
-standard.
+```
+$: ./status config.json
+```
 
-## Setup IntelliJ IDEA
+# Developing Hillview
 
-Download and install Intellij IDEA: https://www.jetbrains.com/idea/.
-You can just untar the linux binary in a place of your choice and run
-the shell script `ideaXXX/bin/idea.sh`.  The web projects uses
-capabilities only available in the paid version of Intellij IDEA.
+## Software Dependencies
 
-## Loading into IntelliJ IDEA
-
-One solution is to load only the module that you want to contribute to: move to the
-corresponding folder: `cd platform` or `cd web` and start
-intellij there.
-
-Alternatively, if you have IntelliJ Ultimate you can create an empty project
-in the hillview folder, and then import three modules (from File/Project structure/Modules,
-add three modules: web/pom.xml, platform/pom.xml, and the root folder hillview itself).
-
-## Using git to contribute
-
-* Fork the repository using the "fork" button on github, by following these instructions:
-https://help.github.com/articles/fork-a-repo/
-* Run IntelliJ code inspection (Analyze/Inspect code) before commit and solve all open issues.
-* Submit them into your own forked repository and send us a pull request.
-
-In more detail, here is a step-by-step guide to committing your changes:
-
-1. Create a new branch for each fix; give it a nice suggestive name:
-   - `git branch yourBranchName`
-   - `git checkout yourBranchName`
-   - The main benefit of using branches is that you can have multiple
-     branches active at the same time, one for each independent fix.
-2. `git add <files that changed>`
-3. `git commit -m "Description of commit"`
-4. `git fetch upstream`
-5. `git rebase upstream/master`
-6. Resolve conflicts, if any
-   (rebase won't work if you don't; as you find conflicts you will need
-    to `git add` the files you have merged, and then you may need to use
-    `git rebase --continue` or `git rebase --skip`)
-7. Test, analyze merged version.
-8. `git push -f origin yourBranchName`.  You won't need the `-f` if you are
-   not updating a previous push to this branch.
-9. Create a pull request to merge your new branch into master (using the web ui).
-10. Delete your branch after the merging has been done `git branch -D yourBranchName`
-11. To run the program you should try the master branch:
-  - `git checkout master`
-  - `git fetch upstream`
-  - `git rebase upstream/master`
-  - `git push origin master`
-
-## Guidance in writing code
-
-* The pseudorandom generator is implemented in the class
-  Randomness.java and uses Mersenne Twister.  Do not use the
-  Java `Random` class, but this one.
-
-* By default all pointers are assumed to be non-null; use the
-  @Nullable annotation (from javax.annotation) for all pointers which
-  can be null.  Use `Converters.checkNull` to cast a @Nullable to a
-  @NonNull pointer.
-
-# Software needed for deployment
+* Back-end: Ubuntu Linux > 16 or MacOS
+* Java 8, Maven build system, various Java libraries
+  (Maven will manage the libraries)
+* Front-end: Typescript, webpack, Tomcat app server, node.js;
+  some JavaScript libraries: d3, pako, and rx-js
+* Cloud service management: Python3
+* IDEA Intellij for development (optional)
 
 ## Installing Java
 
@@ -341,3 +241,102 @@ repositories.)  You should install these in your local Maven
 repository, e.g. in the ~/.m2/com/cloudera/impala folder.  You may
 also need to adjust the version of the libraries in the file
 platform/pom.xml.
+
+## Building Hillview
+
+* Build the software:
+
+```
+$ cd bin
+$ ./rebuild.sh -a
+```
+
+### Build details
+
+Hillview is currently split into two separate Maven projects.
+
+* platform: pure Java, includes the entire back-end.  This produces a
+JAR file `platform/target/hillview-jar-with-dependencies.jar`.  This
+part can be built with:
+
+```
+$ cd platform
+$ mvn clean install
+$ cd ..
+```
+
+* web: the web server, web client and web services; this project links
+to the result produced by the `platform` project.  This produces a WAR
+(web archive) file `web/target/web-1.0-SNAPSHOT.war`.  This part can
+be built with:
+
+```
+$ cd web
+$ mvn package
+$ cd ..
+```
+
+## Contributing code
+
+You will need to sign a CLA (Contributor License Agreement) to
+contribute code to Hillview under an Apache-2 license.  This is very
+standard.
+
+## Setup IntelliJ IDEA
+
+Download and install Intellij IDEA: https://www.jetbrains.com/idea/.
+You can just untar the linux binary in a place of your choice and run
+the shell script `ideaXXX/bin/idea.sh`.  The web projects uses
+capabilities only available in the paid version of Intellij IDEA.
+
+One solution is to load only the module that you want to contribute to: move to the
+corresponding folder: `cd platform` or `cd web` and start
+intellij there.
+
+Alternatively, if you have IntelliJ Ultimate you can create an empty project
+in the hillview folder, and then import three modules (from File/Project structure/Modules,
+add three modules: web/pom.xml, platform/pom.xml, and the root folder hillview itself).
+
+## Using git to contribute
+
+* Fork the repository using the "fork" button on github, by following these instructions:
+https://help.github.com/articles/fork-a-repo/
+* Run IntelliJ code inspection (Analyze/Inspect code) before commit and solve all open issues.
+* Submit them into your own forked repository and send us a pull request.
+
+In more detail, here is a step-by-step guide to committing your changes:
+
+1. Create a new branch for each fix; give it a nice suggestive name:
+   - `git branch yourBranchName`
+   - `git checkout yourBranchName`
+   - The main benefit of using branches is that you can have multiple
+     branches active at the same time, one for each independent fix.
+2. `git add <files that changed>`
+3. `git commit -m "Description of commit"`
+4. `git fetch upstream`
+5. `git rebase upstream/master`
+6. Resolve conflicts, if any
+   (rebase won't work if you don't; as you find conflicts you will need
+    to `git add` the files you have merged, and then you may need to use
+    `git rebase --continue` or `git rebase --skip`)
+7. Test, analyze merged version.
+8. `git push -f origin yourBranchName`.  You won't need the `-f` if you are
+   not updating a previous push to this branch.
+9. Create a pull request to merge your new branch into master (using the web ui).
+10. Delete your branch after the merging has been done `git branch -D yourBranchName`
+11. To run the program you should try the master branch:
+  - `git checkout master`
+  - `git fetch upstream`
+  - `git rebase upstream/master`
+  - `git push origin master`
+
+## Guidance in writing code
+
+* The pseudorandom generator is implemented in the class
+  Randomness.java and uses Mersenne Twister.  Do not use the
+  Java `Random` class, but this one.
+
+* By default all pointers are assumed to be non-null; use the
+  @Nullable annotation (from javax.annotation) for all pointers which
+  can be null.  Use `Converters.checkNull` to cast a @Nullable to a
+  @NonNull pointer.

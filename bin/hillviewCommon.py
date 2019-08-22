@@ -2,9 +2,11 @@
 
 # pylint: disable=invalid-name,too-few-public-methods, bare-except
 import os.path
+import os
 import subprocess
 import tempfile
 import json
+import getpass
 from argparse import ArgumentParser
 from hillviewConsoleLog import get_logger
 
@@ -117,10 +119,10 @@ class ClusterConfiguration:
         message = "Reading cluster configuration from " + file
         # Some default values, in case they are missing
         self.worker_port = 3569
-        self.user = "hillview"
         self.cleanup = False
         self.service_folder = "/home/hillview"
         self.default_heap_size = "5G"
+        self.user = getpass.getuser()
         logger.info(message)
         if not os.path.exists(file):
             error = "Configuration file '" + file + "' does not exist"
@@ -129,64 +131,68 @@ class ClusterConfiguration:
         try:
             with open(file) as contents:
                 stripped = "".join(line.partition("//")[0] for line in contents)
-            self.jsonConfig = json.loads(stripped, object_hook=JsonConfig)
+            self._jsonConfig = json.loads(stripped, object_hook=JsonConfig)
         except:
             error = "Error parsing configuration file " + file
             logger.error(error)
             exit(1)
-        if not os.path.isabs(self.jsonConfig.service_folder):
+        if not os.path.isabs(self._jsonConfig.service_folder):
             error = "service_folder must be an absolute path in configuration file " + \
-                    self.jsonConfig.service_folder
+                    self._jsonConfig.service_folder
             logger.error(error)
             exit(1)
         # The path where the current script is installed
         self.scriptFolder = os.path.dirname(os.path.abspath(__file__))
-        self.service_folder = self.jsonConfig.service_folder
-        self.worker_port = self.jsonConfig.worker_port
-        self.tomcat = self.jsonConfig.tomcat
-        self.tomcat_version = self.jsonConfig.tomcat_version
-        if hasattr(self.jsonConfig, "aggregator_port"):
-            self.aggregator_port = self.jsonConfig.aggregator_port
+        self.service_folder = self._jsonConfig.service_folder
+        self.worker_port = self._jsonConfig.worker_port
+        self.tomcat = self._jsonConfig.tomcat
+        self.tomcat_version = self._jsonConfig.tomcat_version
+        if hasattr(self._jsonConfig, "username"):
+            self.user = self._jsonConfig.user
+        if hasattr(self._jsonConfig, "aggregator_port"):
+            self.aggregator_port = self._jsonConfig.aggregator_port
         else:
             self.aggregator_port = 0
 
     def get_user(self):
         """Returns the user used by the hillview service"""
-        return self.jsonConfig.user
+        return self.user
 
     def _get_heap_size(self, hostname):
         """The heap size used for the specified host"""
-        if hasattr(self.jsonConfig, "workers_heapsize") and hostname in self.jsonConfig.workers_heapsize:
-            return self.jsonConfig.workers_heapsize[hostname]
-        return self.jsonConfig.default_heap_size
+        if hasattr(self._jsonConfig, "workers_heapsize") and hostname in self._jsonConfig.workers_heapsize:
+            return self._jsonConfig.workers_heapsize[hostname]
+        return self._jsonConfig.default_heap_size
 
     def get_workers(self):
         """Returns an array of RemoteHost objects containing all workers"""
         webserver = self.get_webserver()
-        if hasattr(self.jsonConfig, "aggregators"):
-            return [RemoteHost(self.jsonConfig.user, h,
-                               RemoteHost(self.jsonConfig.user, a.name, webserver),
+        if hasattr(self._jsonConfig, "aggregators"):
+            return [RemoteHost(self.get_user(), h,
+                               RemoteHost(self.get_user(), a.name, webserver),
                                self._get_heap_size(h))
-                    for a in self.jsonConfig.aggregators
+                    for a in self._jsonConfig.aggregators
                     for h in a.workers]
-        return [RemoteHost(self.jsonConfig.user, h, webserver, self._get_heap_size(h))
-                for h in self.jsonConfig.workers]
+        return [RemoteHost(self.get_user(), h, webserver, self._get_heap_size(h))
+                for h in self._jsonConfig.workers]
 
     def get_webserver(self):
         """Returns a remote host representing the web server"""
-        return RemoteHost(self.jsonConfig.user, self.jsonConfig.webserver, None)
+        return RemoteHost(self.get_user(), self._jsonConfig.webserver, None)
 
     def get_aggregators(self):
         """Returns an array of RemoteAggregator objects"""
-        if not hasattr(self.jsonConfig, "aggregators"):
+        if not hasattr(self._jsonConfig, "aggregators"):
             return []
         webserver = self.get_webserver()
-        return [RemoteAggregator(self.jsonConfig.user, h.name, webserver, h.workers)
-                for h in self.jsonConfig.aggregators]
+        return [RemoteAggregator(self.get_user(), h.name, webserver, h.workers)
+                for h in self._jsonConfig.aggregators]
 
     def cleanup_on_install(self):
         """Returns true if we need to cleaup when installing"""
-        return self.jsonConfig.cleanup
+        if hasattr(self._jsonConfig, "cleanup"):
+            return self._jsonConfig.cleanup
+        return False
 
     def run_on_all_aggregators(self, function):
         # pylint: disable=unused-argument
@@ -210,6 +216,7 @@ def get_config(parser, args):
     try:
         config = ClusterConfiguration(args.config)
         return config
-    except:
+    except Exception as e:
+        print(str(e))
         parser.print_help()
         exit(1)
