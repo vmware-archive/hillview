@@ -40,7 +40,7 @@ Documentation for the [internal APIs](docs/hillview-apis.pdf).
 ## Pre-built binaries
 
 The release contains a [tar
-file](https://github.com/vmware/hillview/releases/download/v0.5-alpha/hillview-bin.taz)
+file](https://github.com/vmware/hillview/releases/download/v0.6-alpha/hillview-bin.tar.gz)
 with pre-built binaries.  You should untar this file in the toplevel
 directory of hillview.  This archive does not contain the Apache
 Tomcat web server; to get that one you need to [install the
