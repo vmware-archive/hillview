@@ -55,7 +55,6 @@ import {HeavyHittersReceiver, HeavyHittersView} from "./heavyHittersView";
 import {DataRangesCollector} from "./dataRangesCollectors";
 import {TableOperationCompleted} from "./tableView";
 import {ErrorReporter} from "../ui/errReporter";
-import {PrivateHistRenderer} from "./privateHistView";
 
 /**
  * A base class for TableView and SchemaView.

@@ -336,7 +336,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
             return new FilterReceiver(
-                title, [this.axisData.description], this.schema, [0],
+                title, [this.xAxisData.description], this.schema, [0],
                 page, operation, this.dataset, null, {
                     exact: this.samplingRate >= 1, reusePage: false,
                     relative: false, chartKind: "Histogram" });
@@ -516,7 +516,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
         const rr = this.createFilterRequest(filter);
         const title = new PageTitle("Filtered " + this.schema.displayName(this.xAxisData.description.name));
         const renderer = new FilterReceiver(title, [this.xAxisData.description], this.schema,
-            [0], this.page, rr, this.dataset, {
+            [0], this.page, rr, this.dataset, [filter], {
                 exact: this.samplingRate >= 1,
                 reusePage: false,
                 relative: false,

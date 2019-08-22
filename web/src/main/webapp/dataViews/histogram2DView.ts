@@ -359,7 +359,7 @@ export class Histogram2DView extends HistogramViewBase {
             return new FilterReceiver(
                 title,
                 [this.xAxisData.description, this.yData.description],
-                this.schema, [0, 0], page, operation, this.dataset,
+                this.schema, [0, 0], page, operation, this.dataset, null,
                 { exact: this.samplingRate >= 1, chartKind: "Histogram",
                     relative: this.relative, reusePage: false });
         };
@@ -540,7 +540,7 @@ export class Histogram2DView extends HistogramViewBase {
             [this.xAxisData.description, this.yData.description],
             this.schema,
             [inLegend ? this.xPoints : 0, this.yPoints], this.page, rr,
-            this.dataset, {
+            this.dataset, [filter], {
             exact: this.samplingRate >= 1.0,
             chartKind: "2DHistogram",
             reusePage: false,

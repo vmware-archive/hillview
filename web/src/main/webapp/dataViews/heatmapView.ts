@@ -369,7 +369,7 @@ export class HeatmapView extends ChartView {
             return new FilterReceiver(
                 title,
                 [this.xAxisData.description, this.yAxisData.description],
-                this.schema, [0, 0], page, operation, this.dataset,
+                this.schema, [0, 0], page, operation, this.dataset, null, 
                 { exact: true, chartKind: "Heatmap",
                     reusePage: false, relative: false, });
         };
@@ -496,7 +496,7 @@ export class HeatmapView extends ChartView {
                 "Filtered on " + this.xAxisData.getDisplayNameString(this.schema) + " and " +
                 this.yAxisData.getDisplayNameString(this.schema)),
             [this.xAxisData.description, this.yAxisData.description],
-            this.schema, [0, 0], this.page, rr, this.dataset, {
+            this.schema, [0, 0], this.page, rr, this.dataset, [xRange, yRange], {
             exact: this.samplingRate >= 1, chartKind: "Heatmap",
             relative: false, reusePage: false
         });

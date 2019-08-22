@@ -38,9 +38,7 @@ public class FileDescriptionTarget extends RpcTarget {
 
     /* Augmented info contains an additional bit to specify whether the dataset is private. */
     protected static class PrivateFileSizeInfo extends FileSizeInfo implements IJson {
-        final int fileCount;
-        final long totalSize;
-        final boolean isPrivate;
+        boolean isPrivate;
 
         PrivateFileSizeInfo(final int fileCount, final long totalSize, final boolean isPrivate) {
             this.fileCount = fileCount;

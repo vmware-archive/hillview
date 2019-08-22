@@ -104,14 +104,14 @@ public class PrivateTableTarget extends RpcTarget {
         }
 
         // add noise to result
-        BiFunction<Histogram, HillviewComputation, PrivateHistogram> addLaplaceNoise(PrivacySchema metadata) {
+        BiFunction<Histogram, HillviewComputation, Histogram> addLaplaceNoise(PrivacySchema metadata) {
             double leaves = (max-min) / metadata.get(cd.name).granularity;
             double scale = (Math.log(leaves) / (metadata.get(cd.name).epsilon * Math.log(2)));
 
             return (e, c) -> {
                 PrivateHistogram privateHist = new PrivateHistogram(e);
                 privateHist.addDyadicLaplaceNoise(scale);
-                return privateHist;
+                return privateHist.histogram;
             };
         }
     }
