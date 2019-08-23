@@ -45,12 +45,6 @@ All the following scripts are in the `bin` folder.
 $ cd bin
 ```
 
-* (Optional) download and prepare the sample data:
-
-```
-$ ./demo-data-cleaner.sh
-```
-
 * Start the back-end service which performs all the data processing:
 
 ```
@@ -76,6 +70,14 @@ Hillview on a cluster](#deploying-the-hillview-service-on-a-cluster)
 using this configuration file; this will run Hillview on the local
 machine.
 
+* (Optional, only if you have an installation for development, using
+  the Java SDK) download and prepare the sample data:
+
+```
+$ ./rebuild.sh -a
+$ ./demo-data-cleaner.sh
+```
+
 # Deploying the Hillview service on a cluster
 
 Hillview uses `ssh` to deploy code on the cluster.  Prior to
@@ -84,16 +86,16 @@ access to the cluster machines, as described here:
 https://www.ssh.com/ssh/copy-id.  You must also install Java on all
 machines in the cluster.
 
-* Please note that Hillview allows arbitrary access to files on the
+*Please note that Hillview allows arbitrary access to files on the
 worker nodes from the client application running with the privileges
-of the user specified in the configuration file. *
+of the user specified in the configuration file.*
 
 ## Service configuration
 
 The configuration of the Hillview service is described in a Json file;
 two sample files are `bin/config.json`and `bin/config-local.json`.
 
-```JSON
+```
 // This file is a Json file that defines the configuration for a
 // Hillview deployment.
 
