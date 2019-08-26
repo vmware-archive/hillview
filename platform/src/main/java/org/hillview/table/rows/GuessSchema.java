@@ -20,7 +20,6 @@ package org.hillview.table.rows;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import org.hillview.table.ColumnDescription;
-import org.hillview.table.Schema;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IStringColumn;
 import org.hillview.utils.DateParsing;
@@ -35,7 +34,6 @@ import java.util.HashMap;
  * Helper class to guess the schema of data given a set of strings.
  */
 public class GuessSchema {
-
     public String name;
     private SchemaInfo myInfo;
 
@@ -43,7 +41,7 @@ public class GuessSchema {
             return new ColumnDescription(this.name, myInfo.kind);
     }
 
-    public void updateGuess(String value) {
+    public void updateGuess(@Nullable String value) {
         if (value != null)
             this.guess(value, this.myInfo);
     }
@@ -173,7 +171,6 @@ public class GuessSchema {
     private static boolean isJsonValid(final JsonReader jsonReader) throws IOException {
         JsonToken token;
         boolean isComplex = false;
-        loop:
         while ((token = jsonReader.peek()) != JsonToken.END_DOCUMENT && token != null) {
             switch (token) {
                 case BEGIN_ARRAY:
@@ -201,8 +198,6 @@ public class GuessSchema {
                 case NULL:
                     jsonReader.skipValue();
                     break;
-                case END_DOCUMENT:
-                    break loop;
                 default:
                     throw new AssertionError(token);
             }
@@ -215,6 +210,8 @@ public class GuessSchema {
             return CanParse.AsNull;
         switch (with) {
             case None:
+            case Duration:
+                // TODO: how do durations look as strings?
                 return CanParse.No;
             case String:
                 return CanParse.Yes;
@@ -258,9 +255,6 @@ public class GuessSchema {
                 } catch (Exception ex) {
                     return CanParse.No;
                 }
-            case Duration:
-                // TODO: how do durations look as strings?
-                return CanParse.No;
         }
         throw new RuntimeException("Unexpected kind " + with);
     }

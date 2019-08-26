@@ -147,7 +147,7 @@ class ClusterConfiguration:
         self.worker_port = self._jsonConfig.worker_port
         self.tomcat = self._jsonConfig.tomcat
         self.tomcat_version = self._jsonConfig.tomcat_version
-        if hasattr(self._jsonConfig, "username"):
+        if hasattr(self._jsonConfig, "user"):
             self.user = self._jsonConfig.user
         if hasattr(self._jsonConfig, "aggregator_port"):
             self.aggregator_port = self._jsonConfig.aggregator_port

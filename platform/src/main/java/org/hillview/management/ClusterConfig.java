@@ -63,7 +63,6 @@ public class ClusterConfig {
     /**
      * User account that runs the hillview workers and web server.
      */
-    @Nullable
     public String user;
     /**
      * Network port used by backend workers.
@@ -86,7 +85,9 @@ public class ClusterConfig {
         if (this.worker_port == -1)
             throw new RuntimeException("worker_port not defined");
         if (this.user == null)
-            throw new RuntimeException("user not defined");
+            this.user = System.getProperty("user.name");
+        if (this.user == null)
+            throw new RuntimeException("Cannot find current user name");
         // Other fields are not mandatory for now
     }
 

@@ -20,12 +20,11 @@ def stop_webserver(config):
 
 def stop_worker(config, rh):
     """Stops a Hillview worker service on a remote machine"""
-    # The pkill || true is there for older installations which may not have the worker-manager installed
-    rh.run_remote_shell_command(config.service_folder + "/hillview-worker-manager.sh stop || pkill -f hillview-server || true")
+    rh.run_remote_shell_command(config.service_folder + "/hillview-worker-manager.sh stop")
 
 def stop_aggregator(config, rh):
     """Stops a Hillview aggregator service on a remote machine"""
-    rh.run_remote_shell_command(config.service_folder + "/hillview-aggregator-manager.sh stop || pkill -f hillview-server || true")
+    rh.run_remote_shell_command(config.service_folder + "/hillview-aggregator-manager.sh stop")
 
 def main():
     """Main function"""
