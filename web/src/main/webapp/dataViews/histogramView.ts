@@ -236,10 +236,12 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
 
     /**
      * @param cdf: Data for the cdf.
+     * @param histogram: Data for the histogram buckets.
      * @param bucketCount: Number of buckets to display.  If 0 the bucket count will be computed
      * @param maxYAxis: maximum value to use for Y axis if not null
      */
-    public updateView(cdf: HistogramBase, bucketCount: number, maxYAxis: number | null): void {
+    public updateView(cdf: HistogramBase, 
+		      bucketCount: number, maxYAxis: number | null): void {
         this.createNewSurfaces();
         if (cdf == null) {
             this.page.reportError("No data to display");
@@ -270,7 +272,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
 
         const discrete = kindIsString(this.xAxisData.description.kind) ||
             this.xAxisData.description.kind === "Integer";
-        this.cdfPlot.setData(cdf, discrete);
+        this.cdfPlot.setData(cdf, discrete, false); // CDF is precomputed, so don't integrate the points
         this.cdfPlot.draw();
         this.setupMouse();
 

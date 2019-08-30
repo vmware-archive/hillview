@@ -211,6 +211,10 @@ export interface ColumnSortOrientation {
     isAscending: boolean;
 }
 
+export interface CDFBase {
+    
+}
+
 export interface HistogramBase {
     buckets: number[];
     missingData: number;

@@ -188,7 +188,7 @@ export class Histogram2DView extends HistogramViewBase {
         this.plot.draw();
         const discrete = kindIsString(this.xAxisData.description.kind) ||
             this.xAxisData.description.kind === "Integer";
-        this.cdfPlot.setData(cdf, discrete);
+        this.cdfPlot.setData(cdf, discrete, true);
         this.cdfPlot.draw();
         this.legendPlot.setData(this.yData, this.plot.getMissingDisplayed() > 0, this.schema);
         this.legendPlot.draw();

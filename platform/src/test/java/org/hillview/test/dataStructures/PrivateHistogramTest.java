@@ -7,6 +7,7 @@ import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.columns.DoubleArrayColumn;
 import org.hillview.table.membership.FullMembershipSet;
+import org.hillview.table.rows.PrivacyMetadata;
 import org.hillview.test.BaseTest;
 import org.junit.Test;
 
@@ -49,7 +50,9 @@ public class PrivateHistogramTest extends BaseTest {
         final int max = 100;
         final int numBuckets = 10;
         final int granularity = 20;
-        DyadicHistogramBuckets buckDes = new DyadicHistogramBuckets(min, max, numBuckets, granularity);
+        final double epsilon = 0.01;
+        DyadicHistogramBuckets buckDes = new DyadicHistogramBuckets(min, max, numBuckets,
+                new PrivacyMetadata(epsilon, granularity, min, max));
 
         // should create only 100/20 = 5 buckets
         assert(buckDes.getNumOfBuckets() == 5);
@@ -62,8 +65,9 @@ public class PrivateHistogramTest extends BaseTest {
         final int max = 100;
         final int numBuckets = 4; // creates buckets of size 25...
         final int granularity = 10; // but leaves of size 10
-
-        DyadicHistogramBuckets buckDes = new DyadicHistogramBuckets(min, max, numBuckets, granularity);
+        final double epsilon = 0.01;
+        DyadicHistogramBuckets buckDes = new DyadicHistogramBuckets(min, max, numBuckets,
+                new PrivacyMetadata(epsilon, granularity, min, max));
 
         // Check that values fall in correct buckets based on leaves
         int expectedBucket;
@@ -85,7 +89,7 @@ public class PrivateHistogramTest extends BaseTest {
 
         // Also check computation of bucket size, which is done independently
         for (int i = 0; i < buckDes.getNumOfBuckets(); i++) {
-            int nLeaves = buckDes.numLeavesInBucket(i);
+            long nLeaves = buckDes.numLeavesInBucket(i);
             if (i % 2 != 0) {
                 assertEquals(nLeaves, 3);
             } else {
@@ -102,8 +106,9 @@ public class PrivateHistogramTest extends BaseTest {
         final double max = 0.1;
         final int numBuckets = 4; // creates buckets of size 0.025...
         final double granularity = 0.01; // but leaves of size 0.01
-
-        DyadicHistogramBuckets buckDes = new DyadicHistogramBuckets(min, max, numBuckets, granularity);
+        final double epsilon = 0.01;
+        DyadicHistogramBuckets buckDes = new DyadicHistogramBuckets(min, max, numBuckets,
+                new PrivacyMetadata(epsilon, granularity, min, max));
 
         for (int i = 0; i < buckDes.getNumOfBuckets(); i++) {
             System.out.println("> " + i);
@@ -118,8 +123,9 @@ public class PrivateHistogramTest extends BaseTest {
         final double max = 100;
         final int numBuckets = 10;
         final double granularity = 25;
-
-        DyadicHistogramBuckets buckDes = new DyadicHistogramBuckets(min, max, numBuckets, granularity);
+        final double epsilon = 0.01;
+        DyadicHistogramBuckets buckDes = new DyadicHistogramBuckets(min, max, numBuckets,
+                new PrivacyMetadata(epsilon, granularity, min, max));
 
         for (int i = 0; i < buckDes.getNumOfBuckets(); i++) {
             System.out.println("> " + i);
@@ -134,8 +140,9 @@ public class PrivateHistogramTest extends BaseTest {
         final double max = 0.1;
         final int numBuckets = 4; // creates buckets of size 0.025...
         final double granularity = 0.01; // but leaves of size 0.01
-
-        DyadicHistogramBuckets buckDes = new DyadicHistogramBuckets(min, max, numBuckets, granularity);
+        final double epsilon = 0.01;
+        DyadicHistogramBuckets buckDes = new DyadicHistogramBuckets(min, max, numBuckets,
+                new PrivacyMetadata(epsilon, granularity, min, max));
 
         // Check that values fall in correct buckets based on leaves
         int expectedBucket;
@@ -157,42 +164,12 @@ public class PrivateHistogramTest extends BaseTest {
 
         // Also check computation of bucket size, which is done independently
         for (int i = 0; i < buckDes.getNumOfBuckets(); i++) {
-            int nLeaves = buckDes.numLeavesInBucket(i);
+            long nLeaves = buckDes.numLeavesInBucket(i);
             if (i % 2 != 0) {
                 assertEquals(nLeaves, 3);
             } else {
                 assertEquals(nLeaves, 2);
             }
         }
-    }
-
-    // Test computation of noise scale when buckets do not align on leaf boundaries
-    @Test
-    public void testRaggedNoiseMultiplier() {
-        final int min = 0;
-        final int max = 100;
-        final int numBuckets = 4; // creates buckets of size 25...
-        final int granularity = 10; // but leaves of size 10
-        DyadicHistogramBuckets buckDes = new DyadicHistogramBuckets(min, max, numBuckets, granularity);
-        Histogram hist = new Histogram(buckDes);
-        PrivateHistogram pHist = new PrivateHistogram(hist);
-
-        DoubleArrayColumn col = generateLinearColumn(min, max, 1);
-        FullMembershipSet fMap = new FullMembershipSet(col.sizeInRows());
-        hist.create(col, fMap, 1.0, 0, false);
-
-        // manually compute expected multiplier
-        for (int i = 0; i < hist.getNumOfBuckets(); i++) {
-            if (i % 2 != 0) {
-                assertEquals(pHist.noiseMultiplier(i), 2);
-            } else {
-                assertEquals(pHist.noiseMultiplier(i), 1);
-            }
-        }
-
-        // make sure we can add noise
-        double T = 10.0;
-        double eps = 0.05;
-        pHist.addDyadicLaplaceNoise(T / eps);
     }
 }

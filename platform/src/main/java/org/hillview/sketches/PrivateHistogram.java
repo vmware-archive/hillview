@@ -5,6 +5,7 @@ import org.hillview.dataset.api.IJson;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ISampledRowIterator;
+import org.hillview.table.rows.PrivacyMetadata;
 
 import java.io.Serializable;
 
@@ -12,33 +13,33 @@ public class PrivateHistogram implements Serializable, IJson {
     public Histogram histogram; // Note that this histogram should have DyadicHistogramBuckets as its bucket description.
     private DyadicHistogramBuckets bucketDescription; // Just an alias for the buckets in the histogram.
 
-    public PrivateHistogram(final Histogram histogram) {
+    // Used for computing the total noise.
+    private PrivacyMetadata metadata;
+
+    public PrivateHistogram(final Histogram histogram, PrivacyMetadata metadata) {
         this.histogram = histogram;
         this.bucketDescription = (DyadicHistogramBuckets)histogram.getBucketDescription();
+
+        this.metadata = metadata;
     }
 
-    public static int intLog2(int x) {
-        assert (x > 0);
-        return (int)(Math.ceil(Math.log(x) / Math.log(2))); // Note that we ceil in order to round up to the nearest leaf
-    }
+    /**
+     * Add Laplace noise compatible with the binary mechanism to each bucket.
+     * Noise is added as follows:
+     * Let T := (globalMax - globalMin) / granularity, the total number of leaves in the data overall.
+     * Each node in the dyadic interval tree is perturbed by an independent noise variable distributed as Laplace(log T / epsilon).
+     * The total noise is the sum of the noise variables in the intervals composing the desired interval or bucket.
+     */
+    public void addDyadicLaplaceNoise() {
+        double leaves = (metadata.globalMax - metadata.globalMin) / metadata.granularity;
+        double scale = (Math.log(leaves) / (metadata.epsilon * Math.log(2)));
 
-    public int noiseMultiplier(int bucketIdx) {
-        // The amount of noise depends on the number of "leaves" that are required to compute the interval.
-        int nLeaves = this.bucketDescription.numLeavesInBucket(bucketIdx);
-        if (nLeaves == 1) return 1;
-
-        return intLog2(nLeaves);
-    }
-
-    /* Add Laplace noise compatible with the binary mechanism to each bucket.
-     * Note that the noise scale provided should be log T / epsilon where T is
-     * the total number of leaves in the unfiltered histogram.
-     * This is not computed in the function, because the range of the buckets might be
-     * smaller than the full range T if the buckets are from a filtered histogram. */
-    public void addDyadicLaplaceNoise(double scale) {
         LaplaceDistribution dist = new LaplaceDistribution(0, scale); // TODO: (more) secure PRG
+        System.out.println("Adding noise with scale: " + scale);
+        System.out.println("Buckets: " + this.histogram.buckets.length);
         for (int i = 0; i < this.histogram.buckets.length; i++) {
-            this.histogram.buckets[i] += dist.sample() * this.noiseMultiplier(i);
+            this.histogram.buckets[i] += this.bucketDescription.noiseForBucket(i);
+            System.out.println("Bucket " + i + ": " + this.histogram.buckets[i]);
             this.histogram.buckets[i] = Math.max(0, this.histogram.buckets[i]);
         }
     }
