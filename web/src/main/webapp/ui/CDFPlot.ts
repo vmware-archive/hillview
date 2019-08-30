@@ -37,7 +37,7 @@ export class CDFPlot extends Plot {
         super(plottingSurface);
     }
 
-    public setData(cdf: HistogramBase, adjust: boolean): void {
+    public setData(cdf: HistogramBase, adjust: boolean, integrate: boolean): void {
         this.cdf = cdf;
         this.adjust = adjust;
         this.cdfData = [];
@@ -48,7 +48,10 @@ export class CDFPlot extends Plot {
         for (const bucket of cdf.buckets) {
             // each point is inserted twice.
             this.cdfData.push(point);
-            point += bucket;
+	    if (integrate) {
+		// Underlying data is the PDF, so integrate to compute the CDF
+		point += bucket;
+	    }
             this.cdfData.push(point);
         }
         this.max = point;

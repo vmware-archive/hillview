@@ -17,7 +17,6 @@
 
 package org.hillview.sketches;
 
-import org.apache.commons.math3.distribution.LaplaceDistribution;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ISampledRowIterator;

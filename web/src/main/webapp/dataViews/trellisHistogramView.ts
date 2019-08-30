@@ -292,7 +292,7 @@ export class TrellisHistogramView extends TrellisChartView {
             };
 
             const cdfp = this.cdfs[i];
-            cdfp.setData(histo, discrete);
+            cdfp.setData(histo, discrete, true);
 
             const coarse = HistogramView.coarsen(histo, this.bucketCount);
             max = Math.max(max, Math.max(...coarse.buckets));

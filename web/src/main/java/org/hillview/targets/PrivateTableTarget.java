@@ -20,6 +20,7 @@ import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
+import java.lang.reflect.ReflectPermission;
 import java.util.HashMap;
 import java.util.function.BiFunction;
 
@@ -95,7 +96,7 @@ public class PrivateTableTarget extends RpcTarget {
 
             // This bucket class ensures that computed buckets fall on leaf boundaries.
             return new DyadicHistogramBuckets(this.min, this.max,
-                    this.bucketCount, metadata.get(cd.name).granularity);
+                    this.bucketCount, metadata.get(cd.name));
         }
 
         HistogramSketch getSketch(PrivacySchema metadata) {
@@ -103,14 +104,13 @@ public class PrivateTableTarget extends RpcTarget {
             return new HistogramSketch(buckets, this.cd.name, this.samplingRate, this.seed);
         }
 
-        // add noise to result
+        // Adds noise to result, scaled appropriately based on the number of leaves that fall into each bucket
         BiFunction<Histogram, HillviewComputation, Histogram> addLaplaceNoise(PrivacySchema metadata) {
-            double leaves = (max-min) / metadata.get(cd.name).granularity;
-            double scale = (Math.log(leaves) / (metadata.get(cd.name).epsilon * Math.log(2)));
-
             return (e, c) -> {
-                PrivateHistogram privateHist = new PrivateHistogram(e);
-                privateHist.addDyadicLaplaceNoise(scale);
+                PrivateHistogram privateHist = new PrivateHistogram(e, metadata.get(cd.name));
+                System.out.println("Adding noise...");
+                privateHist.addDyadicLaplaceNoise();
+                System.out.println("done.");
                 return privateHist.histogram;
             };
         }
@@ -171,5 +171,14 @@ public class PrivateTableTarget extends RpcTarget {
     @HillviewRpc
     public void filterRange(RpcRequest request, RpcRequestContext context) {
         constructAndSendReply(this, request, context);
+    }
+
+    // Computes a private CDF of the data using the binary mechanism rather than naively computing the PDF and integrating,
+    // which would add more noise than necessary. Also performs necessary postprocessing to round non-monotonic values.
+    @HillviewRpc
+    public void cdf(RpcRequest request, RpcRequestContext context) {
+        PrivateHistogramArgs info = request.parseArgs(PrivateHistogramArgs.class);
+        HistogramSketch sk = info.getSketch(metadata);
+        this.runCompleteSketch(this.table, sk, info.addLaplaceNoise(metadata), request, context);
     }
 }

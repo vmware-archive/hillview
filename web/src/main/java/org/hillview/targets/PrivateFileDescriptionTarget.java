@@ -12,20 +12,15 @@ import org.hillview.storage.FileSetDescription;
 import org.hillview.storage.IFileReference;
 import org.hillview.table.PrivacySchema;
 import org.hillview.table.api.ITable;
-import org.hillview.table.rows.PrivacyMetadata;
 
 import java.nio.file.Paths;
-import java.util.HashMap;
 
 public class PrivateFileDescriptionTarget extends FileDescriptionTarget {
-    private String basename;
-
     private PrivacySchema metadata;
 
     public PrivateFileDescriptionTarget(IDataSet<IFileReference> files, HillviewComputation computation, String basename) {
         super(files, computation);
 
-        this.basename = basename;
         this.metadata = PrivacySchema.loadFromFile(Paths.get(basename, FileSetDescription.PRIVACY_METADATA_NAME));
     }
 
