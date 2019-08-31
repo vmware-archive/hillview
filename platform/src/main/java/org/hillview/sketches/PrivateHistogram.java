@@ -39,6 +39,10 @@ public class PrivateHistogram implements Serializable, IJson {
             System.out.println("Bucket " + i + ": " + this.histogram.buckets[i]);
             // Postprocess so that no buckets are negative
             this.histogram.buckets[i] = Math.max(0, this.histogram.buckets[i]);
+
+            // also set confidence intervals for this noise level
+            this.histogram.confMins[i] = 20;
+            this.histogram.confMaxes[i] = 20;
         }
 
         for (int i = 0; i < this.histogram.cdfBuckets.length; i++) {

@@ -27,6 +27,6 @@ public abstract class HistogramBase implements Serializable, IJson {
     protected long missingData;
 
     // Confidence interval bounds for buckets
-    protected double[] confMins;
-    protected double[] confMaxes;
+    protected double[] confMins = new double[0];
+    protected double[] confMaxes = new double[0];
 }

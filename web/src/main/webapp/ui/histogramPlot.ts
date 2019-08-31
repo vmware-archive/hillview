@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import {zip as d3zip} from "d3-array";
 import {axisLeft as d3axisLeft} from "d3-axis";
 import {format as d3format} from "d3-format";
 import {scaleLinear as d3scaleLinear} from "d3-scale";
@@ -76,6 +77,7 @@ export class HistogramPlot extends Plot {
             return;
 
         const counts = this.histogram.buckets;
+	var zippedData = d3zip(this.histogram.buckets, this.histogram.confMins, this.histogram.confMaxes);
         this.max = Math.max(...counts);
         const displayMax = this.maxYAxis == null ? this.max : this.maxYAxis;
 
@@ -85,7 +87,7 @@ export class HistogramPlot extends Plot {
         const bars = this.plottingSurface
             .getChart()
             .selectAll("g")
-            .data(counts)
+            .data(zippedData)
             .enter().append("g")
             .attr("transform", (d, i) => `translate(${i * this.barWidth}, 0)`);
 
@@ -93,31 +95,41 @@ export class HistogramPlot extends Plot {
             .domain([0, displayMax])
             .range([chartHeight, 0]);
 
-        // Boxes can be taller than the maxYAxis height.  In this cale yScale returns
+        // Boxes can be taller than the maxYAxis height.  In this case yScale returns
         // a negative value, and we have to truncate the rectangles.
         bars.append("rect")
-            .attr("y", (d) => this.yScale(d) < 0 ? 0 : this.yScale(d))
+            .attr("y", (d) => this.yScale(d[0]) < 0 ? 0 : this.yScale(d[0]))
             .attr("fill", "darkcyan")
-            .attr("height", (d) => chartHeight - (this.yScale(d) < 0 ? 0 : this.yScale(d)))
+            .attr("height", (d) => chartHeight - (this.yScale(d[0]) < 0 ? 0 : this.yScale(d[0])))
             .attr("width", this.barWidth - 1);
 
         // overflow signs if necessary
         bars.append("svg:path")
             // I am not sure how triangle size is measured; this 7 below seems to work find
-            .attr("d", symbol().type(symbolTriangle).size( (d) => this.yScale(d) < 0 ? 7 * this.barWidth : 0))
+            .attr("d", symbol().type(symbolTriangle).size( (d) => this.yScale(d[0]) < 0 ? 7 * this.barWidth : 0))
             .attr("transform", () => `translate(${this.barWidth / 2}, 0)`)
             .style("fill", "red")
             .append("svg:title")
             .text("Bar is truncated");
+	
+        // confidence intervals
+        bars.append("line")
+            .attr("x1", 0)
+            .attr("y1", (d) => this.yScale(d[0] - d[1]))
+            .attr("x2", 0)
+            .attr("y2", (d) => this.yScale(d[0] + d[2]))
+            .attr("stroke-width", 2)
+	    .attr("stroke", "black")
+            .attr("transform", () => `translate(${this.barWidth / 2}, 0)`);
 
         bars.append("text")
             .attr("class", "histogramBoxLabel")
             .attr("x", this.barWidth / 2)
-            .attr("y", (d) => this.yScale(d) < 0 ? 0 : this.yScale(d))
+            .attr("y", (d) => this.yScale(d[0]) < 0 ? 0 : this.yScale(d[0]))
             .attr("text-anchor", "middle")
             .attr("dy", (d) => d <= (9 * displayMax / 10) ? "-.25em" : ".75em")
             .text((d) => HistogramPlot.boxHeight(
-                d, this.samplingRate, this.xAxisData.range.presentCount))
+                d[0], this.samplingRate, this.xAxisData.range.presentCount))
             .exit();
 
         this.yAxis = d3axisLeft(this.yScale)
