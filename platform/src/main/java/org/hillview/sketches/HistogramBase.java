@@ -23,5 +23,10 @@ import java.io.Serializable;
 
 public abstract class HistogramBase implements Serializable, IJson {
     protected long[] buckets = new long[0];
+    protected long[] cdfBuckets = new long[0];
     protected long missingData;
+
+    // Confidence interval bounds for buckets
+    protected double[] confMins;
+    protected double[] confMaxes;
 }

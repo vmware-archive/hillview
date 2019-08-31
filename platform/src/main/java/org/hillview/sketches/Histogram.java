@@ -30,18 +30,29 @@ public class Histogram extends HistogramBase {
     public Histogram(final IHistogramBuckets bucketDescription) {
         this.bucketDescription = bucketDescription;
         this.buckets = new long[bucketDescription.getNumOfBuckets()];
+        this.cdfBuckets = new long[bucketDescription.getNumOfBuckets()];
     }
 
     public IHistogramBuckets getBucketDescription() {
         return this.bucketDescription;
     }
 
+    private void recomputeCDF() {
+        this.cdfBuckets[0] = this.buckets[0];
+        for (int i = 1; i < this.buckets.length; i++) {
+            this.cdfBuckets[i] = this.cdfBuckets[i-1] + this.buckets[i];
+        }
+    }
+
     public void rescale(double sampleRate) {
         if (sampleRate >= 1)
             return;
         this.missingData = (long) ((double) this.missingData / sampleRate);
-        for (int i = 0; i < this.buckets.length; i++)
+        for (int i = 0; i < this.buckets.length; i++) {
             this.buckets[i] = (long) ((double) this.buckets[i] / sampleRate);
+        }
+
+        this.recomputeCDF();
     }
 
     public void add(IColumn column, int currRow) {
@@ -51,6 +62,10 @@ public class Histogram extends HistogramBase {
             int index = this.bucketDescription.indexOf(column, currRow);
             if (index >= 0)
                 this.buckets[index]++;
+
+            for (int i = 0; i < index+1; i++) {
+                this.cdfBuckets[i]++;
+            }
         }
     }
 
@@ -81,9 +96,11 @@ public class Histogram extends HistogramBase {
      */
     public Histogram union(Histogram otherHistogram) {
         Histogram unionH = new Histogram(this.bucketDescription);
-        for (int i = 0; i < unionH.bucketDescription.getNumOfBuckets(); i++)
+        for (int i = 0; i < unionH.bucketDescription.getNumOfBuckets(); i++) {
             unionH.buckets[i] = this.buckets[i] + otherHistogram.buckets[i];
+        }
         unionH.missingData = this.missingData + otherHistogram.missingData;
+        unionH.recomputeCDF();
         return unionH;
     }
 

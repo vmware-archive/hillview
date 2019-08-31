@@ -211,13 +211,13 @@ export interface ColumnSortOrientation {
     isAscending: boolean;
 }
 
-export interface CDFBase {
-    
-}
-
 export interface HistogramBase {
     buckets: number[];
+    cdfBuckets: number[];
     missingData: number;
+
+    confMins: number[];
+    confMaxes: number[];
 }
 
 // This is actually a union of several java classes:

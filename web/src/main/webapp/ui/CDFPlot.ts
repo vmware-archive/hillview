@@ -45,12 +45,14 @@ export class CDFPlot extends Plot {
         if (adjust) {
             this.cdfData.push(point);
         }
-        for (const bucket of cdf.buckets) {
+        for (const bucket of cdf.cdfBuckets) {
             // each point is inserted twice.
             this.cdfData.push(point);
 	    if (integrate) {
-		// Underlying data is the PDF, so integrate to compute the CDF
+	 	// Underlying data is the PDF, so integrate to compute the CDF
 		point += bucket;
+	    } else {
+		point = bucket;
 	    }
             this.cdfData.push(point);
         }
@@ -112,7 +114,7 @@ export class CDFPlot extends Plot {
         const cdfX = x / this.bucketWidth;
         if (cdfX < 0) {
             return 0;
-        } else if (cdfX >= this.cdf.buckets.length) {
+        } else if (cdfX >= this.cdf.cdfBuckets.length) {
             return 1;
         } else {
             // 2 values for each pixel

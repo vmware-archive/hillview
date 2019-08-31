@@ -288,7 +288,10 @@ export class TrellisHistogramView extends TrellisChartView {
             const bucketData = data.buckets[i];
             const histo: HistogramBase = {
                 buckets: bucketData,
-                missingData: data.missingData
+		cdfBuckets: null,
+                missingData: data.missingData,
+		confMins: null,
+		confMaxes: null
             };
 
             const cdfp = this.cdfs[i];
