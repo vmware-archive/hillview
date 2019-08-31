@@ -31,6 +31,8 @@ public class Histogram extends HistogramBase {
         this.bucketDescription = bucketDescription;
         this.buckets = new long[bucketDescription.getNumOfBuckets()];
         this.cdfBuckets = new long[bucketDescription.getNumOfBuckets()];
+        this.confMins  = new double[bucketDescription.getNumOfBuckets()];
+        this.confMaxes  = new double[bucketDescription.getNumOfBuckets()];
     }
 
     public IHistogramBuckets getBucketDescription() {
