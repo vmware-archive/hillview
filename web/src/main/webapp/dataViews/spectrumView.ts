@@ -75,7 +75,8 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
         this.newPage.setDataView(this.specView);
 
         const ev: number [] = eVals.eigenValues;
-        const histogram: HistogramBase = { buckets: ev, missingData: 0 };
+        const histogram: HistogramBase = { buckets: ev, cdfBuckets: null, missingData: 0,
+					   confMins: null, confMaxes: null };
         const icd: IColumnDescription = { kind: "Integer", name: "Singular Values" };
         const range: DataRange = { min: -.5, max: ev.length - .5,
             presentCount: 0, missingCount: 0 };

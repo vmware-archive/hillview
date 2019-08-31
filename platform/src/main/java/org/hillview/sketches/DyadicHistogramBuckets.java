@@ -244,11 +244,16 @@ public class DyadicHistogramBuckets implements IHistogramBuckets {
     }
 
     // Compute the intervals in the dyadic tree that correspond to this bucket.
-    public ArrayList<Pair<Long, Long>> bucketDecomposition(int bucketIdx) {
+    public ArrayList<Pair<Long, Long>> bucketDecomposition(int bucketIdx, boolean cdf) {
         if (bucketIdx >= this.numOfBuckets || bucketIdx < 0) throw new IllegalArgumentException("Invalid bucket index");
         System.out.println("Getting bucket decomposition for bucket: " + bucketIdx);
 
-        Long leftLeaf = this.bucketLeftLeaves[bucketIdx];
+        Long leftLeaf;
+        if (cdf) {
+            leftLeaf = 0L;
+        } else {
+            leftLeaf = this.bucketLeftLeaves[bucketIdx];
+        }
 
         Long rightLeaf;
         if (bucketIdx == this.numOfBuckets - 1) {
@@ -260,11 +265,14 @@ public class DyadicHistogramBuckets implements IHistogramBuckets {
         return dyadicDecomposition(leftLeaf, rightLeaf);
     }
 
-    public double noiseForBucket(int bucketIdx) {
-        ArrayList<Pair<Long, Long>> intervals = bucketDecomposition(bucketIdx);
+    // Compute noise to add to this bucket using the dyadic decomposition as the PRG seed.
+    // If cdfBuckets is true, computes the noise based on the dyadic decomposition of the interval [0, bucket right leaf]
+    // rather than [bucket left leaf, bucket right leaf].
+    public double noiseForBucket(int bucketIdx, boolean cdf) {
+        ArrayList<Pair<Long, Long>> intervals = bucketDecomposition(bucketIdx, cdf);
 
         double noise = 0;
-        double scale = (this.globalMax - this.globalMin) / this.epsilon;
+        double scale = (this.globalMax - this.globalMin) / (this.epsilon * this.granularity);
         for (Pair<Long, Long> x : intervals) {
             LaplaceDistribution dist = new LaplaceDistribution(0, scale); // TODO: (more) secure PRG
             dist.reseedRandomGenerator(x.hashCode()); // Each node's noise should be deterministic, based on node's ID

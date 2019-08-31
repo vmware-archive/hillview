@@ -337,9 +337,9 @@ RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<Heatmap3D>("heatmap3D", info);
     }
 
-    public createHistogramRequest(info: HistogramArgs):
-        RpcRequest<PartialResult<HistogramBase>> {
-        return this.createStreamingRpcRequest<HistogramBase>(
+    public createHistogramRequest(info: HistogramArgs[]):
+    RpcRequest<PartialResult<Pair<HistogramBase, HistogramBase>>> {
+        return this.createStreamingRpcRequest<Pair<HistogramBase, HistogramBase>>(
             "histogram", info);
     }
 

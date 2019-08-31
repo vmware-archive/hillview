@@ -271,13 +271,32 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
 
         switch (this.options.chartKind) {
             case "Histogram": {
+                const args: HistogramArgs[] = [];
+
                 if (ranges[0].presentCount === 0) {
                     this.page.reportError("All values are missing");
                     return;
                 }
-                const args = DataRangesCollector.computeHistogramArgs(
-                    this.cds[0], ranges[0], 0, // ignore the bucket count; we'll integrate the CDF
-                    this.options.exact, chartSize);
+
+                let maxXBucketCount = this.bucketCounts[0];
+                if (maxXBucketCount === 0) {
+                    maxXBucketCount = Math.min(
+                        Math.floor(chartSize.width / Resolution.minBarWidth),
+                        Resolution.maxBucketCount);
+                }
+
+                // The first two represent the resolution for the 2D histogram
+                const xarg = DataRangesCollector.computeHistogramArgs(
+                    this.cds[0], ranges[0], maxXBucketCount,
+                    // Relative views cannot sample
+                    this.options.exact || this.options.relative, chartSize);
+		args.push(xarg);
+		
+                const cdfArg = DataRangesCollector.computeHistogramArgs(
+                    this.cds[0], ranges[0], 0,
+                    this.options.exact || this.options.relative, chartSize);
+                args.push(cdfArg);
+
                 const rr = this.originator.createHistogramRequest(args);
                 rr.chain(this.operation);
                 const axisData = new AxisData(this.cds[0], ranges[0]);
@@ -286,7 +305,7 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                         "Histogram of " + this.schema.displayName(this.cds[0].name).toString());
                 const renderer = new HistogramReceiver(this.title, this.page,
                     this.originator.remoteObjectId, rowCount, this.schema, this.bucketCounts[0],
-                    axisData, rr, args.samplingRate, this.options.reusePage);
+                    axisData, rr, cdfArg.samplingRate, this.options.reusePage); // TODO sampling rate?
                 rr.invoke(renderer);
                 break;
             }

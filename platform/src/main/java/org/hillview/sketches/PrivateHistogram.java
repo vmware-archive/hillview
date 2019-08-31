@@ -2,9 +2,6 @@ package org.hillview.sketches;
 
 import org.apache.commons.math3.distribution.LaplaceDistribution;
 import org.hillview.dataset.api.IJson;
-import org.hillview.table.api.IColumn;
-import org.hillview.table.api.IMembershipSet;
-import org.hillview.table.api.ISampledRowIterator;
 import org.hillview.table.rows.PrivacyMetadata;
 
 import java.io.Serializable;
@@ -38,9 +35,19 @@ public class PrivateHistogram implements Serializable, IJson {
         System.out.println("Adding noise with scale: " + scale);
         System.out.println("Buckets: " + this.histogram.buckets.length);
         for (int i = 0; i < this.histogram.buckets.length; i++) {
-            this.histogram.buckets[i] += this.bucketDescription.noiseForBucket(i);
+            this.histogram.buckets[i] += this.bucketDescription.noiseForBucket(i, false);
             System.out.println("Bucket " + i + ": " + this.histogram.buckets[i]);
+            // Postprocess so that no buckets are negative
             this.histogram.buckets[i] = Math.max(0, this.histogram.buckets[i]);
+        }
+
+        for (int i = 0; i < this.histogram.cdfBuckets.length; i++) {
+            this.histogram.cdfBuckets[i] += this.bucketDescription.noiseForBucket(i, true);
+            System.out.println("Bucket " + i + ": " + this.histogram.cdfBuckets[i]);
+            if (i > 0) {
+                // Postprocess CDF to be monotonically increasing
+                this.histogram.cdfBuckets[i] = Math.max(this.histogram.cdfBuckets[i-1], this.histogram.cdfBuckets[i]);
+            }
         }
     }
 }

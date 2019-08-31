@@ -33,12 +33,13 @@ import {Dialog} from "../ui/dialog";
 import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
-import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
+import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
 import {HistogramOptions, HtmlString, Resolution} from "../ui/ui";
 import {
     formatNumber,
     ICancellable,
+    Pair,
     PartialResult,
     percent,
     reorder,
@@ -150,7 +151,8 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
             collector.run([sourceRange]);
             collector.finished();
         } else if (eventKind === "YAxis") {
-            this.updateView(this.cdf, this.bucketCount, sourceRange.max);
+            // TODO
+            this.updateView(this.cdf, this.histogram, this.bucketCount, sourceRange.max);
         }
     }
 
@@ -226,7 +228,10 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
 
         return {
             buckets: buckets,
+            cdfBuckets: null,
             missingData: cdf.missingData,
+            confMins: null,
+            confMaxes: null,
         };
     }
 
@@ -240,14 +245,14 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
      * @param bucketCount: Number of buckets to display.  If 0 the bucket count will be computed
      * @param maxYAxis: maximum value to use for Y axis if not null
      */
-    public updateView(cdf: HistogramBase, 
-		      bucketCount: number, maxYAxis: number | null): void {
+    public updateView(cdf: HistogramBase, histogram: HistogramBase,
+                      bucketCount: number, maxYAxis: number | null): void {
         this.createNewSurfaces();
         if (cdf == null) {
             this.page.reportError("No data to display");
             return;
         }
-        if (bucketCount === 0) {
+        /*if (bucketCount === 0) {
             // Compute the number of buckets to display
             const size = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
             const width = Math.floor(size.width);
@@ -259,20 +264,20 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
                 bucketCount = Math.min(
                     bucketCount,
                     this.xAxisData.range.max - this.xAxisData.range.min);
-        }
-        this.bucketCount = bucketCount;
-        const h = HistogramView.coarsen(cdf, bucketCount);
+        }*/
+	const h = histogram;
+	this.histogram = h;
         this.cdf = cdf;
-        this.histogram = h;
 
         const counts = h.buckets;
-        bucketCount = counts.length;
+        this.bucketCount = counts.length;
         this.plot.setHistogram(h, this.samplingRate, this.xAxisData, maxYAxis);
         this.plot.draw();
 
         const discrete = kindIsString(this.xAxisData.description.kind) ||
             this.xAxisData.description.kind === "Integer";
-        this.cdfPlot.setData(cdf, discrete, false); // CDF is precomputed, so don't integrate the points
+	// CDF is precomputed separately, so don't integrate the points
+        this.cdfPlot.setData(cdf, discrete, false);
         this.cdfPlot.draw();
         this.setupMouse();
 
@@ -404,7 +409,8 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
     }
 
     public changeBuckets(bucketCount: number): void {
-        this.updateView(this.cdf, bucketCount, this.plot.maxYAxis);
+	    // TODO
+        this.updateView(this.cdf, this.histogram, bucketCount, this.plot.maxYAxis);
     }
 
     public chooseBuckets(): void {
@@ -416,7 +422,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
     public resize(): void {
         if (this.cdf == null)
             return;
-        this.updateView(this.cdf, this.bucketCount, this.plot.maxYAxis);
+        this.updateView(this.cdf, this.histogram, this.bucketCount, this.plot.maxYAxis);
     }
 
     public refresh(): void {
@@ -540,7 +546,18 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
     }
 }
 
-export class HistogramReceiver extends Receiver<HistogramBase>  {
+export class HistogramDialog extends Dialog {
+    constructor(allColumns: string[]) {
+        super("1D histogram", "Display a 1D histogram of the data in a column");
+        this.addSelectField("columnName", "Column", allColumns, allColumns[0], "Column to histogram");
+    }
+
+    public getColumn(): string {
+        return this.getFieldValue("columnName");
+    }
+}
+
+export class HistogramReceiver extends Receiver<Pair<HistogramBase, HistogramBase>>  {
     private readonly view: HistogramView;
 
     constructor(protected title: PageTitle,
@@ -561,9 +578,14 @@ export class HistogramReceiver extends Receiver<HistogramBase>  {
         this.page.setDataView(this.view);
     }
 
-    public onNext(value: PartialResult<HistogramBase>): void {
+    public onNext(value: PartialResult<Pair<HistogramBase, HistogramBase>>): void {
         super.onNext(value);
-        this.view.updateView(value.data, this.bucketCount, null);
+	    // TODO
+        if (value == null)
+            return;
+        const histogram = value.data.first;
+        const cdf = value.data.second;
+        this.view.updateView(cdf, histogram, this.bucketCount, null);
     }
 
     public onCompleted(): void {
