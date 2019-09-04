@@ -59,7 +59,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     public static final int DEFAULT_PORT = 3569;
     private static final int NUM_THREADS = 5;
-    public static final int MAX_MESSAGE_SIZE = 50 * 1024 * 1024;
+    public static final int MAX_MESSAGE_SIZE = 200 * 1024 * 1024;
     // We run the executor service with high priority mainly so that
     // it can propagate unsubscriptions quickly.
     private final ExecutorService executorService =

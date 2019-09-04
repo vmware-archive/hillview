@@ -116,7 +116,11 @@ public final class TableTarget extends RpcTarget {
     public void basicColStats(RpcRequest request, RpcRequestContext context) {
         String[] args = request.parseArgs(String[].class);
         BasicColStatSketch sk = new BasicColStatSketch(args, 1);
-        this.runSketch(this.table, sk, request, context);
+        if (args.length < 100)
+            this.runSketch(this.table, sk, request, context);
+        else
+            // The result may be big, so we don't send it too often to the UI
+            this.runCompleteSketch(this.table, sk, (e, c) -> e, request, context);
     }
 
     static class ContainsArgs {

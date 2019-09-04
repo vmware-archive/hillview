@@ -291,11 +291,11 @@ export function significantDigits(n: number): string {
         n = n / 1e3;
     } else if (absn < .001) {
         let expo = 0;
-        while (n < .1) {
+        while (n < 1) {
             n = n * 10;
             expo++;
         }
-        suffix = "* 10e" + expo;
+        suffix = " * 10e-" + expo;
     }
     if (absn > 1)
         n = Math.round(n * 100) / 100;

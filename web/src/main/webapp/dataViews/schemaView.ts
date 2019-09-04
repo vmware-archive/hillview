@@ -35,7 +35,7 @@ import {TabularDisplay} from "../ui/tabularDisplay";
 import {Resolution} from "../ui/ui";
 import {
     cloneToSet,
-    convertToStringFormat,
+    convertToStringFormat, formatNumber,
     ICancellable,
     PartialResult,
     significantDigits
@@ -184,7 +184,7 @@ export class SchemaView extends TSViewBase {
                                 avg);
                         }
                     }
-                    data.push(cs.missingCount.toString());
+                    data.push(formatNumber(cs.missingCount));
                 } else {
                     data.push("", "", "", "");
                 }
@@ -197,7 +197,7 @@ export class SchemaView extends TSViewBase {
         this.summary = document.createElement("div");
         this.topLevel.appendChild(this.summary);
         if (this.rowCount != null)
-            this.summary.textContent = significantDigits(this.rowCount) + " rows";
+            this.summary.textContent = formatNumber(this.rowCount) + " rows";
         this.page.setDataView(this);
     }
 
