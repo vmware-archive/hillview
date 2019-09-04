@@ -425,6 +425,12 @@ with x.
 
 ![View heading](view-heading.png)
 
+The two black triangles in the view heading allow the view to be moved
+up and down on the web page.  The axis markers X, Y, and G can be
+dragged between some views; dropping them will "move" the
+corresponding axis from the source view to the target view.  (G stands
+for the "group-by" axis in a Trellis plot view.)
+
 ### Schema views
 
 The data schema views allow users to browse the schema of the current
@@ -484,6 +490,46 @@ removed from the current selection.
 
 Once the user selects a set of column descriptions, they can display a view of the
 data table restricted to the selected columns using the View/Selected columns menu.
+Right-clicking on a selected set of descriptions opens up a context menu
+
+![Context menu for selected rows in a schema view](schema-view-context-menu.png)
+
+The following operations can be invoked through the context menu:
+* Show as table: this displays a [table view](#table-views) of the
+  data restricted to the selected columns.
+
+* Histogram: draws a [1D](#uni-dimensional-histogram-views) or
+  [2D](#two-dimensional-histogram-views) histogram of the selected
+  columns
+
+* Heatmap: draws a [heatmap](#heatmap-views) view of the selected columns.
+
+* Trellis histogram: draw the selected columns using a Trellis view of
+  [1D](#trellis-plots-of-1d-histograms) or
+  [2D](#trellis-plots-of-2d-histograms) histograms
+
+* Trellis heatmaps: draw the selected columns using a [Trellis
+  view](#trellis-plots-of-heatmaps) of heatmaps
+
+* Estimate distinct elements: estimate the number of distinct values in this column
+
+* Filter...: opens up a filter menu that allows the user to filter data based on values in the selected column.
+  See the description of the filter operation [below](#operations-on-selected-columns).
+
+* Compare...: compares the data in the column with a specified constant.
+  See the description of the compare operation [below](#operations-on-selected-columns).
+
+* Create column in JS...:
+  See the description of the create column operation [below](#operations-on-selected-columns).
+
+* Rename...: shows up a menu that allows the user to rename this column
+
+* Frequent elements...: shows up a menu that allows the user to find frequent elements
+  See the description of the frequent elements operation [below](#operations-on-selected-columns).
+
+* Basic statistics: shows for each selected column some basic statistics, as in the following figure:
+
+  ![Basic statistics](basic-statistics.png)
 
 #### The schema view menu
 
@@ -499,22 +545,31 @@ of columns using the chart menu:
 
 ![Chart menu](chart-menu.png)
 
-* 1D Histogram. Selecting this menu presents a dialog allowing the user to
+* 1D Histogram...: presents a dialog allowing the user to
   select a column whose data will be drawn as a
   [uni-dimensional histogram view](#uni-dimensional-histogram-views).
 
 ![1D histogram dialog](1d-histogram-dialog.png)
 
-* 2D Histogram.  Selecting this menu presents a dialog allowing the
+* 2D Histogram...: presents a dialog allowing the
   user to select two columns whose data will be drawn as a
   [two-dimensional histogram view](#two-dimensional-histogram-views).
 
 ![2D histogram dialog](2d-histogram-dialog.png)
 
-* Heatmap.  Selecting this menu presents a dialog allowing the user to
+* Heatmap...:  presents a dialog allowing the user to
   select two columns whose data will be drawn as a [heatmap](#heatmap-views).
 
 ![Heatmap dialog](heatmap-dialog.png)
+
+* Trellis histograms...: presents a dialog allowing the user to
+  select two columns to use to display a [Trellis histogram view](#trellis-plots-of-1d-histograms).
+
+* Trellis 2D histograms...: presents a dialog allowing the user to select three columns
+  to use to display a [Trellis 2D histogram view](#trellis-plots-of-2d-histograms).
+
+* Trellis heatmaps...: presents a dialog allowing the user to select three columns to use
+  to display a [Trellish plot of heatmaps](#trellis-plots-of-heatmaps).
 
 #### Saving data
 
@@ -683,7 +738,7 @@ the current state of the display.
   columns to be selected.  If two columns are selected, this operation
   will draw a trellis plot of 1-dimensional histogram of the data in
   the first selected column grouped by the second column.  See
-  [Trellis plots-of-1D-histograms](#trellis-plots-of-1D-histograms).
+  [Trellis plots of 1D histograms](#trellis-plots-of-1d-histograms).
   If two columns are selected this menu will draw a two-dimensional
   histogram of the data in the selected columns.  For two-dimensional
   histograms see [Two-dimensional

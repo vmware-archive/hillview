@@ -20,6 +20,7 @@ package org.hillview.test.dataset;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.sketches.*;
 import org.hillview.test.BaseTest;
+import org.hillview.utils.JsonList;
 import org.hillview.utils.TestTables;
 import org.hillview.table.SmallTable;
 import org.hillview.table.Table;
@@ -36,9 +37,10 @@ public class BasicStatSketchTest extends BaseTest {
         final BasicColStatSketch mySketch = new BasicColStatSketch(
                 myTable.getSchema().getColumnNames().get(0),
                 0);
-        BasicColStats result = mySketch.create(myTable);
+        JsonList<BasicColStats> result = mySketch.create(myTable);
         Assert.assertNotNull(result);
-        Assert.assertEquals(result.getPresentCount(), 1000);
+        Assert.assertEquals(1, result.size());
+        Assert.assertEquals(result.get(0).getPresentCount(), 1000);
     }
 
     @Test
@@ -49,13 +51,29 @@ public class BasicStatSketchTest extends BaseTest {
         final String colName = bigTable.getSchema().getColumnNames().get(0);
 
         IDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize / 10);
-        final BasicColStats result = all.blockingSketch(
+        JsonList<BasicColStats> result = all.blockingSketch(
                 new BasicColStatSketch(colName, 1));
-        final BasicColStatSketch mySketch = new BasicColStatSketch(
+        BasicColStatSketch mySketch = new BasicColStatSketch(
                 bigTable.getSchema().getColumnNames().get(0), 1);
-        BasicColStats result1 = mySketch.create(bigTable);
+        JsonList<BasicColStats> result1 = mySketch.create(bigTable);
         Assert.assertNotNull(result);
         Assert.assertNotNull(result1);
-        Assert.assertEquals(result.getMoment(1), result1.getMoment(1), 0.001);
+        Assert.assertEquals(1, result.size());
+        Assert.assertEquals(1, result1.size());
+        Assert.assertEquals(result.get(0).getMoment(1), result1.get(0).getMoment(1), 0.001);
+    }
+
+    @Test
+    public void StatSketchTest3() {
+        ITable bigTable = TestTables.testTable();
+        String colName = bigTable.getSchema().getColumnNames().get(0);
+
+        IDataSet<ITable> all = TestTables.makeParallel(bigTable, 5);
+        JsonList<BasicColStats> result = all.blockingSketch(
+                new BasicColStatSketch(colName, 1));
+        Assert.assertNotNull(result);
+        Assert.assertEquals(1, result.size());
+        Assert.assertEquals("Tom", result.get(0).maxString);
+        Assert.assertEquals("Bill", result.get(0).minString);
     }
 }

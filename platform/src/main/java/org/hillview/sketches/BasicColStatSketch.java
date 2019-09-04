@@ -19,32 +19,51 @@ package org.hillview.sketches;
 
 import org.hillview.dataset.api.ISketch;
 import org.hillview.table.api.ITable;
+import org.hillview.utils.Converters;
+import org.hillview.utils.JsonList;
 
 import javax.annotation.Nullable;
 
-public class BasicColStatSketch implements ISketch<ITable, BasicColStats> {
-    private final String col;
+/**
+ * A Sketch that computes basic column statistics for a set of columns.
+ */
+public class BasicColStatSketch implements ISketch<ITable, JsonList<BasicColStats>> {
+    private final String[] cols;
     private final int momentNum;
 
+    public BasicColStatSketch(String[] cols, int momentNum) {
+        this.cols = cols;
+        this.momentNum = momentNum;
+    }
+
     public BasicColStatSketch(String col, int momentNum) {
-        this.col = col;
+        this.cols = new String[] { col };
         this.momentNum = momentNum;
     }
 
     @Override
-    public BasicColStats create(final ITable data) {
-        BasicColStats result = this.getZero();
-        result.createStats(data.getLoadedColumn(this.col), data.getMembershipSet());
+    public JsonList<BasicColStats> create(@Nullable final ITable data) {
+        Converters.checkNull(data);
+        JsonList<BasicColStats> result = this.getZero();
+        Converters.checkNull(result);
+        for (int i = 0; i < this.cols.length; i++)
+            result.get(i).scan(data.getLoadedColumn(this.cols[i]), data.getMembershipSet());
         return result;
     }
 
     @Override
-    public BasicColStats zero() { return new BasicColStats(this.momentNum, false); }
+    public JsonList<BasicColStats> zero() {
+        JsonList<BasicColStats> result = new JsonList<BasicColStats>(this.cols.length);
+        for (int i=0; i < this.cols.length; i++)
+            result.add(new BasicColStats(this.momentNum, true));
+        return result;
+    }
 
     @Override
-    public BasicColStats add(@Nullable final BasicColStats left, @Nullable final BasicColStats right) {
+    public JsonList<BasicColStats> add(@Nullable final JsonList<BasicColStats> left,
+                                       @Nullable final JsonList<BasicColStats> right) {
         assert left != null;
         assert right != null;
-        return left.union(right);
+        return left.zip(right, BasicColStats::union);
     }
 }

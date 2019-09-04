@@ -112,6 +112,13 @@ public final class TableTarget extends RpcTarget {
         this.runPrune(this.table, new EmptyTableMap(), TableTarget::new, request, context);
     }
 
+    @HillviewRpc
+    public void basicColStats(RpcRequest request, RpcRequestContext context) {
+        String[] args = request.parseArgs(String[].class);
+        BasicColStatSketch sk = new BasicColStatSketch(args, 1);
+        this.runSketch(this.table, sk, request, context);
+    }
+
     static class ContainsArgs {
         RecordOrder order = new RecordOrder();
         @Nullable

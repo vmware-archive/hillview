@@ -144,7 +144,7 @@ public class SparseMembershipSet implements IMembershipSet, IMutableMembershipSe
             if (this.currentSize >= this.sampleSize)
                 return -1;
             if ((this.currentSize == this.sampleSize - 1) && mMap.contains(0))
-                if (this.psg.nextDouble() < 1 / this.sampleSize) {
+                if (this.psg.nextDouble() < (double)(1 / this.sampleSize)) {
                     this.currentSize++;
                     return 0;
                 }

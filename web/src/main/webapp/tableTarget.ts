@@ -45,7 +45,7 @@ import {
     FindResult,
     Heatmap3D,
     StringFilterDescription,
-    ContainsArgs, KVCreateColumnInfo,
+    ContainsArgs, KVCreateColumnInfo, BasicColStats,
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
 import {FullPage, PageTitle} from "./ui/fullPage";
@@ -208,6 +208,10 @@ export class TableTargetAPI extends RemoteObject {
     public createHLogLogRequest(colName: string): RpcRequest<PartialResult<HLogLog>> {
         return this.createStreamingRpcRequest<HLogLog>("hLogLog",
             { columnName: colName, seed: Seed.instance.get() });
+    }
+
+    public createBasicColStatsRequest(cols: string[]): RpcRequest<PartialResult<BasicColStats[]>> {
+        return this.createStreamingRpcRequest<BasicColStats[]>("basicColStats", cols);
     }
 
     public createHeavyHittersRequest(columns: IColumnDescription[],

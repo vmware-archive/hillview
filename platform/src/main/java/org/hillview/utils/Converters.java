@@ -95,4 +95,38 @@ public class Converters {
             return s.substring(0, s.length() - 3);
         return s;
     }
+
+    /**
+     * Compare two strings. In Hillview the null string is the greatest value.
+     * @param left   Left string to compare.
+     * @param right  Right string to compare.
+     * @return       A comparison value: -1, 0 or 1.
+     */
+    public static int compareStrings(@Nullable String left, @Nullable String right) {
+        if (left == null && right == null) {
+            return 0;
+        } else if (left == null) {
+            return 1;
+        } else if (right == null) {
+            return -1;
+        } else {
+            return left.compareTo(right);
+        }
+    }
+
+    @Nullable
+    public static String min(@Nullable String left, @Nullable String right) {
+        int x = compareStrings(left, right);
+        if (x <= 0)
+            return left;
+        return right;
+    }
+
+    @Nullable
+    public static String max(@Nullable String left, @Nullable String right) {
+        int x = compareStrings(left, right);
+        if (x >= 0)
+            return left;
+        return right;
+    }
 }

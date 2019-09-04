@@ -23,6 +23,8 @@ import org.hillview.table.SmallTable;
 import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;
 import org.hillview.test.TestUtil;
+import org.hillview.utils.JsonList;
+import org.junit.Assert;
 import org.junit.Test;
 import static org.hillview.utils.TestTables.getIntTable;
 
@@ -40,11 +42,13 @@ public class CDFTest extends BaseTest {
         final SmallTable bigTable = getIntTable(bigSize, numCols);
         this.colName = bigTable.getSchema().getColumnNames().get(0);
         this.dataSet = new LocalDataSet<ITable>(bigTable);
-        this.colStat = this.dataSet.blockingSketch(
-                       new BasicColStatSketch(this.colName, 0));
+        JsonList<BasicColStats> r = this.dataSet.blockingSketch(
+                new BasicColStatSketch(this.colName, 0));
+        Assert.assertNotNull(r);
+        this.colStat = r.get(0);
     }
 
-    private Histogram prepareCDF(int width, int height, boolean useSampling) {
+    private void prepareCDF(int width, int height, boolean useSampling) {
         IHistogramBuckets bDec  =
                 new DoubleHistogramBuckets(this.colStat.getMin(), this.colStat.getMax(), width);
         double sampleSize  =  2 * height * height * width;
@@ -53,10 +57,10 @@ public class CDFTest extends BaseTest {
             rate = 1.0; // no performance gains in sampling
         HistogramSketch sk = new HistogramSketch(
                 bDec, this.colName, rate, 0);
-        return this.dataSet.blockingSketch(sk);
+        this.dataSet.blockingSketch(sk);
     }
 
-    private Histogram prepareHist(int width, int height, int barWidth, boolean useSampling) {
+    private void prepareHist(int width, int height, int barWidth, boolean useSampling) {
         int bucketNum = width / barWidth;
         IHistogramBuckets bDec  =
                 new DoubleHistogramBuckets(this.colStat.getMin(), this.colStat.getMax(), bucketNum);
@@ -64,8 +68,8 @@ public class CDFTest extends BaseTest {
         double sampleSize  =  2 * height * height * bucketNum;
         double rate = sampleSize / this.colStat.getPresentCount();
         if ((rate > 0.1) || (!useSampling))
-            rate = 1.0; //no use in sampling
-        return this.dataSet.blockingSketch(
+            rate = 1.0; // no use in sampling
+        this.dataSet.blockingSketch(
                 new HistogramSketch(bDec, this.colName, rate, 0));
     }
 

@@ -326,11 +326,11 @@ export abstract class TSViewBase extends BigTableView {
             "Display a Trellis plot of " + label + "s");
         dia.addSelectField("columnName0", "First column", allColumns, allColumns[0],
             "First column (X axis)");
-        dia.addSelectField("columnName1", "Second column", allColumns, allColumns[1],
-            count === 2 ? "Column to group by" :
-                "Second column " + (heatmap ? "(Y axis)" : "(color)"));
+        const secCol = count === 2 ? "Column to group by" :
+            "Second column " + (heatmap ? "(Y axis)" : "(color)");
+        dia.addSelectField("columnName1", secCol, allColumns, allColumns[1], secCol);
         if (count === 3)
-            dia.addSelectField("columnName2", "Third column", allColumns, allColumns[2],
+            dia.addSelectField("columnName2", "Column to group by", allColumns, allColumns[2],
                 "Column to group by");
 
         dia.setAction(

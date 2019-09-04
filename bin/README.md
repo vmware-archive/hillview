@@ -90,7 +90,7 @@ directory "data/x" on each machine (below the hillview working
 directory).  This is done with:
 
 ```
-$: ./upload-file.sh -c myconfig.json -d data/x -h -f x.csv -o
+$ ./upload-file.sh -c myconfig.json -d data/x -h -f x.csv -o
 ```
 
 The various flags have the following significance:
@@ -111,27 +111,27 @@ directory and then uploads these pieces to the cluster using the
 `upload-data.py` program:
 
 ```
-$: ./upload-file.sh -d tmp -h -f x.csv -o
-$: ./upload-data.py -d data/x -s schema mycluster.json tmp/*.orc
+$ ./upload-file.sh -d tmp -h -f x.csv -o
+$ ./upload-data.py -d data/x -s schema mycluster.json tmp/*.orc
 ```
 
 To list the files on the cluster you can use the `run-on-all.py` script, e.g.:
 
 ```
-$: ./run-on-all.py mycluster.json "ls -l data/x"
+$ ./run-on-all.py mycluster.json "ls -l data/x"
 ```
 
 You can delete a directory from all machines of a cluster:
 
 ```
-$: ./delete-data.py mycluster.json data/x
+$ ./delete-data.py mycluster.json data/x
 ```
 
 Finally, you can download back data you have uploaded to the cluster:
 
 ```
-$: ./download-data.py mycluster.json data/x
+$ ./download-data.py mycluster.json data/x
 ```
 
-When downloading this utility will create a folder for each machine in
-the cluster.
+When downloading the files this utility will create locally a folder
+for each machine in the cluster.

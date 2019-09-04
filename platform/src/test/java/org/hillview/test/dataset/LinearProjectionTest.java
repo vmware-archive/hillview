@@ -24,6 +24,7 @@ import org.hillview.sketches.BasicColStats;
 import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;
 import org.hillview.utils.BlasConversions;
+import org.hillview.utils.JsonList;
 import org.hillview.utils.TestTables;
 import org.hillview.utils.Utilities;
 import org.jblas.DoubleMatrix;
@@ -92,19 +93,21 @@ public class LinearProjectionTest extends BaseTest {
         for (int i = 0; i < numProjections; i++) {
             BasicColStatSketch b = new BasicColStatSketch(
                     String.format("LP%d", i), 1);
-            BasicColStats bcs = result.blockingSketch(b);
+            JsonList<BasicColStats> bcss = result.blockingSketch(b);
+            Assert.assertNotNull(bcss);
+            Assert.assertEquals(1, bcss.size());
             double expectedMean = projectionCheck.get(new AllRange(), i).mean();
-            double actualMean = bcs.getMoment(1);
+            double actualMean = bcss.get(0).getMoment(1);
             double eps = actualMean * 1e-6;
             Assert.assertTrue("Mean is too far from actual mean", Math.abs(actualMean - expectedMean) < eps);
 
             double expectedMin = projectionCheck.get(new AllRange(), i).min();
-            double actualMin = bcs.getMin();
+            double actualMin = bcss.get(0).getMin();
             eps = actualMin * 1e-6;
             Assert.assertTrue("Min is too far from actual min", Math.abs(actualMin - expectedMin) < eps);
 
             double expectedMax = projectionCheck.get(new AllRange(), i).max();
-            double actualMax = bcs.getMax();
+            double actualMax = bcss.get(0).getMax();
             eps = actualMax* 1e-6;
             Assert.assertTrue("Max is too far from actual min", Math.abs(actualMax - expectedMax) < eps);
         }

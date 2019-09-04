@@ -385,6 +385,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                     firstRow.push(this.nextKList.rows[0].values[index]);
                 } else {
                     firstRow.push(null);
+                    // noinspection JSObjectNullOrUndefined
                     minValues.push(cso.columnDescription.name);
                 }
             }
