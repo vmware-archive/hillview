@@ -120,11 +120,13 @@ public abstract class BaseListColumn extends BaseColumn implements IAppendableCo
             this.missing.add(new BitSet(SegmentSize));
     }
 
-    public static BaseListColumn create(ColumnDescription desc) {
+    public static IAppendableColumn create(ColumnDescription desc) {
         switch (desc.kind) {
             case String:
             case Json:
                 return new StringListColumn(desc);
+            case None:
+                return new EmptyColumn(desc);
             case Date:
                 return new DateListColumn(desc);
             case Integer:

@@ -292,7 +292,7 @@ public final class Schema implements Serializable, IJson {
         IAppendableColumn[] cols = new IAppendableColumn[this.getColumnCount()];
         int index = 0;
         for (ColumnDescription cd: this.columns.values()) {
-            BaseListColumn col = BaseListColumn.create(cd);
+            IAppendableColumn col = BaseListColumn.create(cd);
             cols[index++] = col;
         }
         return cols;

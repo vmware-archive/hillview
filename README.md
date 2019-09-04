@@ -27,28 +27,60 @@ Documentation for the [internal APIs](docs/hillview-apis.pdf).
 
 # Installing Hillview on a local machine
 
-These instructions are for Ubuntu or MacOS machines.
+## Ubuntu or MacOS machines.
 
 * Install Java 8.  At this point newer versions of Java will *not* work.
 * clone this github repository
 * run the script `bin/install-dependencies.sh`
-* Download the Hillview release [tar
-file](https://github.com/vmware/hillview/releases/download/v0.6-alpha/hillview-bin.tar.gz).
+* Download the Hillview release [zip
+file](https://github.com/vmware/hillview/releases/download/v0.7-alpha/hillview-bin.zip).
   Save it in the top directory of Hillview.
-* Untar the release `tax xfvz hillview-bin.tar.gz`
+* Unzip the release `unzip hillview-bin.zip`
+
+## Windows machines
+
+* Download and install Java 8.
+* Choose a directory for installing Hillview
+* Enable execution of powershell scripts; this can be done, for example, by
+  running the following command in powershell as an administrator: `Set-ExecutionPolicy unrestricted`
+* Download and install the following script in the chosen directory `bin/install-hillview.ps1`
+* Run the installation script using Windows powershell
 
 # Running Hillview locally
+
+## Windows machines
+
+All Windows scripts are in the `bin` folder:
+
+```
+$: cd bin
+```
+
+* Start Hillview processes:
+
+```
+$: hillview-start.bat
+```
+
+* If needed give permissions to the application to communicate through the Windows firewall
+* To stop hillview:
+
+```
+$: hillview-stop.bat
+```
+
+## Ubuntu or MacOS machines
 
 All the following scripts are in the `bin` folder.
 
 ```
-$ cd bin
+$: cd bin
 ```
 
 * Start the back-end service which performs all the data processing:
 
 ```
-$ ./backend-start.sh &
+./backend-start.sh &
 ```
 
 * Start the web server
@@ -56,7 +88,7 @@ $ ./backend-start.sh &
    in `apache-tomcat-9.0.4/conf/server.xml`).
 
 ```
-$ ./frontend-start.sh
+$: ./frontend-start.sh
 ```
 
 * start a web browser and open http://localhost:8080
@@ -74,8 +106,8 @@ machine.
   the Java SDK) download and prepare the sample data:
 
 ```
-$ ./rebuild.sh -a
-$ ./demo-data-cleaner.sh
+$: ./rebuild.sh -a
+$: ./demo-data-cleaner.sh
 ```
 
 # Deploying the Hillview service on a cluster
@@ -146,7 +178,7 @@ two sample files are `bin/config.json`and `bin/config-local.json`.
 
 ## Deployment scripts
 
-All deployment scripts are writte in Python, and are in the `bin` folder.
+All deployment scripts are written in Python, and are in the `bin` folder.
 
 ```
 $: cd bin
@@ -179,6 +211,11 @@ Query the status of the services:
 $: ./status config.json
 ```
 
+## Data management
+
+We provide some crude data management scripts and tools for clusters.
+They are described [here](bin/README.md).
+
 # Developing Hillview
 
 ## Software Dependencies
@@ -207,7 +244,7 @@ to>/jdk/jdk1.8.0_101). To set your JAVA_HOME environment variable, add
 the following to your ~/.bashrc or ~/.zshrc.
 
 ```
-$ export JAVA_HOME="<path-to-jdk-folder>"
+$: export JAVA_HOME="<path-to-jdk-folder>"
 ```
 
 (For MacOS you do not need to set up JAVA_HOME.)
@@ -219,14 +256,14 @@ for building and testing.
 
 On MacOS you first need to install [Homebrew](https://brew.sh/).  One way to do that is to run
 ```
-/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+$: /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 ```
 
 To install all other dependencies you can run:
 
 ```
-$ cd bin
-$ ./install-dependencies.sh
+$: cd bin
+$: ./install-dependencies.sh
 ```
 
 For old versions of Ubuntu this may fail, so you may have to install the required
@@ -249,8 +286,8 @@ platform/pom.xml.
 * Build the software:
 
 ```
-$ cd bin
-$ ./rebuild.sh -a
+$: cd bin
+$: ./rebuild.sh -a
 ```
 
 ### Build details
@@ -262,9 +299,9 @@ JAR file `platform/target/hillview-jar-with-dependencies.jar`.  This
 part can be built with:
 
 ```
-$ cd platform
-$ mvn clean install
-$ cd ..
+$: cd platform
+$: mvn clean install
+$: cd ..
 ```
 
 * web: the web server, web client and web services; this project links
@@ -273,9 +310,9 @@ to the result produced by the `platform` project.  This produces a WAR
 be built with:
 
 ```
-$ cd web
-$ mvn package
-$ cd ..
+$: cd web
+$: mvn package
+$: cd ..
 ```
 
 ## Contributing code
@@ -287,13 +324,13 @@ standard.
 ## Setup IntelliJ IDEA
 
 Download and install Intellij IDEA: https://www.jetbrains.com/idea/.
-You can just untar the linux binary in a place of your choice and run
+You can just untar the Linux binary in a place of your choice and run
 the shell script `ideaXXX/bin/idea.sh`.  The web projects uses
 capabilities only available in the paid version of Intellij IDEA.
 
 One solution is to load only the module that you want to contribute to: move to the
 corresponding folder: `cd platform` or `cd web` and start
-intellij there.
+IntelliJ there.
 
 Alternatively, if you have IntelliJ Ultimate you can create an empty project
 in the hillview folder, and then import three modules (from File/Project structure/Modules,

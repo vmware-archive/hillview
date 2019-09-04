@@ -17,6 +17,11 @@
 
 package org.hillview.storage;
 
+import org.apache.commons.compress.archivers.ArchiveEntry;
+import org.apache.commons.compress.archivers.ArchiveException;
+import org.apache.commons.compress.archivers.ArchiveInputStream;
+import org.apache.commons.compress.archivers.ArchiveStreamFactory;
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.io.ByteOrderMark;
@@ -73,10 +78,24 @@ public abstract class TextFileLoader {
             // to detect the compression method at runtime.
             InputStream fis = this.bufferedInputStream;
 
-            if (Utilities.isCompressed(this.filename)) {
-                this.compressedStream = new CompressorStreamFactory()
-                        .createCompressorInputStream(fis);
-                fis = this.compressedStream;
+            String suffix = Utilities.isCompressed(this.filename);
+            if (suffix != null) {
+                if (suffix.equals("zip")) {
+                    // TODO: For zip files we expect a single file in archive
+                    ArchiveInputStream is = new ArchiveStreamFactory().
+                            createArchiveInputStream(ArchiveStreamFactory.ZIP, fis);
+                    ArchiveEntry entry = is.getNextEntry();
+                    if (entry == null)
+                        throw new RuntimeException("No files in zip archive");
+                    ZipArchiveEntry ze = (ZipArchiveEntry)entry;
+                    if (ze.isDirectory())
+                        throw new RuntimeException("zip archive contains a directory");
+                    fis = is;
+                } else {
+                    this.compressedStream = new CompressorStreamFactory()
+                            .createCompressorInputStream(fis);
+                    fis = this.compressedStream;
+                }
             }
             this.bomStream = new BOMInputStream(fis,
                     ByteOrderMark.UTF_8,
@@ -85,7 +104,7 @@ public abstract class TextFileLoader {
             ByteOrderMark bom = this.bomStream.getBOM();
             String charsetName = bom == null ? "UTF-8" : bom.getCharsetName();
             return new InputStreamReader(this.bomStream, charsetName);
-        } catch (IOException|CompressorException e) {
+        } catch (IOException | CompressorException | ArchiveException e) {
             throw new RuntimeException(e);
         }
     }

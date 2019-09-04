@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
 
-"""This script takes a file pattern.
-It downloads the files that match from all machines in the cluster.
-The list of machines is provided in a Hillview configuration file."""
+"""This script takes a cluster configuration and a file pattern.
+It downloads the files that match from all machines in the cluster."""
 # pylint: disable=invalid-name
 
 from argparse import ArgumentParser
 import os.path
 import os
 import errno
-from hillviewCommon import execute_command, ClusterConfiguration, get_config
-from hillviewConsoleLog import get_logger
+from hillviewCommon import execute_command, ClusterConfiguration, get_config, get_logger
 
 logger = get_logger("download-data")
 

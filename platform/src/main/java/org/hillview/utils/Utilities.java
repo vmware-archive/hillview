@@ -162,14 +162,18 @@ public class Utilities {
     }
 
     private static final List<String> compressionSuffixes = Arrays.asList(
-            "gz", "bz", "bzip2", "xz", "Z", "arj");
+            "gz", "bz", "bzip2", "xz", "Z", "arj", "zip");
 
     /**
      * Detect whether a file is compressed based on the file name.
+     * Returns the file extension if the file is compressed, null otherwise.
      */
-    public static boolean isCompressed(String filename) {
+    @Nullable
+    public static String isCompressed(String filename) {
         String suffix = FilenameUtils.getExtension(filename).toLowerCase();
-        return compressionSuffixes.contains(suffix);
+        if (compressionSuffixes.contains(suffix))
+            return suffix;
+        return null;
     }
 
     /**
@@ -178,7 +182,7 @@ public class Utilities {
      */
     public static String getBasename(String filename) {
         String basename = FilenameUtils.getBaseName(filename);
-        if (isCompressed(basename))
+        if (isCompressed(basename) != null)
             basename = FilenameUtils.removeExtension(basename);
         return FilenameUtils.removeExtension(basename);
     }

@@ -18,9 +18,16 @@
 package org.hillview.main;
 
 import javax.annotation.Nullable;
+
+import org.apache.commons.compress.archivers.ArchiveEntry;
+import org.apache.commons.compress.archivers.ArchiveException;
+import org.apache.commons.compress.archivers.ArchiveInputStream;
+import org.apache.commons.compress.archivers.ArchiveStreamFactory;
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.io.ByteOrderMark;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.input.BOMInputStream;
 import org.hillview.management.ClusterConfig;
 import org.hillview.storage.CsvFileLoader;
@@ -56,15 +63,16 @@ public class DataUpload {
         final int defaultChunkSize = 100000; // number of lines in default file chunk
         final String defaultSchemaName = "schema";
         @Nullable
-        String schemaPath = null;
+        String inputSchemaName = null;
         String filename = ""; // the file to be sent
         @Nullable
         String directory;
         /*
         final ArrayList<String> fileList = new ArrayList<String>();
          */
-        String remoteFolder = ""; // the destination path where the files will be put
-        String cluster = ""; // the path to the cluster config json file
+        String destinationFolder = ""; // the destination path where the files will be put
+        @Nullable
+        String cluster = null; // the path to the cluster config json file
         boolean hasHeader; // true if file has a header row
         boolean orc; // true if saving as orc, otherwise save as csv;
         int chunkSize = defaultChunkSize; // the number of lines in each shard.
@@ -74,8 +82,8 @@ public class DataUpload {
 
     private static void usage(Options options) {
         final String usageString = "Usage: DataUpload ";
-        System.out.print(usageString);
-        System.out.println(options.getOptions());
+        HelpFormatter formatter = new HelpFormatter();
+        formatter.printHelp(usageString, options);
     }
 
     /**
@@ -83,28 +91,28 @@ public class DataUpload {
      */
     private static Params parseCommand(String[] args) {
         Options options = new Options();
-        Option o_filename = new Option("f", "filename", true, "path to file to distribute");
+        Option o_filename = new Option("f", "filename",  true, "file to distribute");
         o_filename.setRequired(true);
         options.addOption(o_filename);
-        Option o_destination = new Option("d","destination",true, "relative path to remote folder");
+        Option o_destination = new Option("d", "destination", true, "destination folder");
         o_destination.setRequired(true);
         options.addOption(o_destination);
-        Option o_cluster = new Option("c","cluster",true, "path to cluster config json file");
-        o_cluster.setRequired(true);
+        Option o_cluster = new Option("c", "cluster", true, "path to cluster config json file");
+        o_cluster.setRequired(false);
         options.addOption(o_cluster);
-        Option o_linenumber = new Option("l","lines",true, "number of lines in each chunk");
+        Option o_linenumber = new Option("l", "lines", true, "number of rows in each chunk");
         o_linenumber.setRequired(false);
         options.addOption(o_linenumber);
-        Option o_format = new Option("o","orc",false, "indicates to save file as orc");
+        Option o_format = new Option("o", "orc", false, "save file as orc");
         o_format.setRequired(false);
         options.addOption(o_format);
-        Option o_schema = new Option("s","schema",true, "path to the schema file");
+        Option o_schema = new Option("s", "schema", true, "input schema file");
         o_schema.setRequired(false);
         options.addOption(o_schema);
-        Option o_header = new Option("h","header",false, "indicates file has header row");
+        Option o_header = new Option("h", "header", false, "set if file has header row");
         o_header.setRequired(false);
         options.addOption(o_header);
-        Option o_fewercolumns = new Option("w","fewer",false, "indicates if fewer columns are allowed");
+        Option o_fewercolumns = new Option("w", "fewer", false, "set if rows with fewer columns are allowed");
         o_fewercolumns.setRequired(false);
         options.addOption(o_fewercolumns);
         /*
@@ -129,8 +137,10 @@ public class DataUpload {
         }
         Params parameters = new Params();
         try{
+            /*
             if (cmd.hasOption('f') == cmd.hasOption('D'))
                 throw new RuntimeException("need either file or directory");
+             */
             if (cmd.hasOption('f')) {
                 parameters.filename = cmd.getOptionValue('f');
                 // parameters.fileList.add(cmd.getOptionValue('f'));
@@ -150,7 +160,7 @@ public class DataUpload {
         } catch (RuntimeException e) {
             error(e);
         }
-        parameters.remoteFolder = cmd.getOptionValue('d');
+        parameters.destinationFolder = cmd.getOptionValue('d');
         parameters.cluster = cmd.getOptionValue("cluster");
         if (cmd.hasOption('l')) {
             try {
@@ -162,7 +172,7 @@ public class DataUpload {
         }
         parameters.orc = cmd.hasOption('o');
         if (cmd.hasOption('s'))
-            parameters.schemaPath = cmd.getOptionValue('s');
+            parameters.inputSchemaName = cmd.getOptionValue('s');
         parameters.hasHeader = cmd.hasOption('h');
         parameters.allowFewerColumns = cmd.hasOption('w');
         return parameters;
@@ -171,16 +181,21 @@ public class DataUpload {
     public static void main(String[] args) {
         Params parameters = parseCommand(args);
         try {
-            ClusterConfig config = ClusterConfig.parse(parameters.cluster);
+            @Nullable
+            ClusterConfig config = null;
+            if (parameters.cluster != null)
+                config = ClusterConfig.parse(parameters.cluster);
             CsvFileLoader.Config parsConfig = new CsvFileLoader.Config();
             parsConfig.hasHeaderRow = parameters.hasHeader;
             parsConfig.allowFewerColumns = parameters.allowFewerColumns;
             Schema mySchema;
 
             String localSchemaFile;
-            if (!Utilities.isNullOrEmpty(parameters.schemaPath)) {
-                localSchemaFile = parameters.schemaPath;
-                mySchema = Schema.readFromJsonFile(Paths.get(parameters.schemaPath));
+            String outputSchemaFile;
+            if (!Utilities.isNullOrEmpty(parameters.inputSchemaName)) {
+                localSchemaFile = parameters.inputSchemaName;
+                outputSchemaFile = FilenameUtils.getBaseName(parameters.inputSchemaName);
+                mySchema = Schema.readFromJsonFile(Paths.get(parameters.inputSchemaName));
             } else {
                 int i = 1;
                 localSchemaFile = parameters.defaultSchemaName;
@@ -188,21 +203,26 @@ public class DataUpload {
                     localSchemaFile = parameters.defaultSchemaName + i;
                     i++;
                 }
+                outputSchemaFile = parameters.defaultSchemaName;
                 mySchema = guessSchema(parameters.filename, parsConfig);
+                HillviewLogger.instance.info("Writing schema", "{0}", localSchemaFile);
                 mySchema.writeToJsonFile(Paths.get(localSchemaFile));
             }
 
             // Create directories and place the schema
-            if (config.workers != null) {
+            if (config != null && config.workers != null) {
                 for (String host : config.workers) {
-                    createDir(config.user, host, parameters.remoteFolder);
-                    if (parameters.schemaPath != null)
-                        sendFile(localSchemaFile, config.user, host, parameters.remoteFolder, parameters.schemaPath);
+                    createDir(config.user, host, parameters.destinationFolder);
+                    sendFile(localSchemaFile, config.user, host, parameters.destinationFolder, outputSchemaFile);
                 }
+                if (Utilities.isNullOrEmpty(parameters.inputSchemaName))
+                    // We have created this schema file
+                    Files.delete(Paths.get(localSchemaFile));
+            } else {
+                if (parameters.inputSchemaName == null)
+                    Files.move(Paths.get(localSchemaFile),
+                            Paths.get(parameters.destinationFolder, outputSchemaFile));
             }
-            if (!localSchemaFile.equals(parameters.schemaPath))
-                Files.delete(Paths.get(localSchemaFile));
-
             int parts = chopFiles(parsConfig, config, mySchema, parameters);
             System.out.println("Done; created " + parts + " files");
         } catch (Exception e) {
@@ -300,7 +320,8 @@ public class DataUpload {
      * @param parameters the parameters taken from the command line, include file path and destination
      * @return the number of parts created
      */
-    private static int chopFiles(CsvFileLoader.Config config, ClusterConfig clusterConfig,
+    private static int chopFiles(CsvFileLoader.Config config,
+                                 @Nullable ClusterConfig clusterConfig,
                                  Schema schema, Params parameters) {
         Reader file;
         IAppendableColumn[] columns;
@@ -365,11 +386,15 @@ public class DataUpload {
                     break;
                 }
                 writeTable(table, chunkName, parameters.orc);
-                assert clusterConfig.workers != null;
-                String host = clusterConfig.workers[currentHost];
-                sendFile(chunkName, clusterConfig.user, host, parameters.remoteFolder, chunkName);
-                Files.deleteIfExists(Paths.get(chunkName));
-                currentHost = (currentHost + 1) % clusterConfig.workers.length;
+                if (clusterConfig != null) {
+                    assert clusterConfig.workers != null;
+                    String host = clusterConfig.workers[currentHost];
+                    sendFile(chunkName, clusterConfig.user, host, parameters.destinationFolder, chunkName);
+                    currentHost = (currentHost + 1) % clusterConfig.workers.length;
+                    Files.deleteIfExists(Paths.get(chunkName));
+                } else {
+                    Files.move(Paths.get(chunkName), Paths.get(parameters.destinationFolder, chunkName));
+                }
                 chunk++;
                 columns = schema.createAppendableColumns();
             }
@@ -420,7 +445,7 @@ public class DataUpload {
         Process process = pb.start();
         int err = process.waitFor();
         if (err != 0)
-            throw new RuntimeException("Scp stopped with error code " + err);
+            throw new RuntimeException("scp stopped with error code " + err);
     }
 
     /** Writes the table in ORC or CSV format
@@ -468,9 +493,23 @@ public class DataUpload {
             // The buffered input stream is needed by the CompressorStream
             // to detect the compression method at runtime.
             InputStream fis = new BufferedInputStream(inputStream);
-            if (Utilities.isCompressed(filename)) {
-                fis = new CompressorStreamFactory()
-                        .createCompressorInputStream(fis);
+            String suffix = Utilities.isCompressed(filename);
+            if (suffix != null) {
+                if (suffix.equals("zip")) {
+                    // TODO: For zip files we expect a single file in archive
+                    ArchiveInputStream is = new ArchiveStreamFactory().
+                            createArchiveInputStream(ArchiveStreamFactory.ZIP, fis);
+                    ArchiveEntry entry = is.getNextEntry();
+                    if (entry == null)
+                         throw new RuntimeException("No files in zip archive");
+                    ZipArchiveEntry ze = (ZipArchiveEntry)entry;
+                    if (ze.isDirectory())
+                        throw new RuntimeException("zip archive contains a directory");
+                    fis = is;
+                } else {
+                    fis = new CompressorStreamFactory()
+                            .createCompressorInputStream(fis);
+                }
             }
             BOMInputStream bomStream = new BOMInputStream(fis,
                     ByteOrderMark.UTF_8,
@@ -479,7 +518,7 @@ public class DataUpload {
             ByteOrderMark bom = bomStream.getBOM();
             String charsetName = bom == null ? "UTF-8" : bom.getCharsetName();
             return new InputStreamReader(bomStream, charsetName);
-        } catch (IOException|CompressorException e) {
+        } catch (IOException | CompressorException | ArchiveException e) {
             throw new RuntimeException(e);
         }
     }

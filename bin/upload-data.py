@@ -9,8 +9,7 @@
 
 from argparse import ArgumentParser, REMAINDER
 import os.path
-from hillviewCommon import ClusterConfiguration, get_config
-from hillviewConsoleLog import get_logger
+from hillviewCommon import ClusterConfiguration, get_config, get_logger
 
 logger = get_logger("upload-data")
 created_folders = set()
