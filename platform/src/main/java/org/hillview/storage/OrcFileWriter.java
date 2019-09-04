@@ -49,10 +49,10 @@ public class OrcFileWriter implements ITableWriter {
             ColumnDescription cd = schema.getDescription(col);
             TypeDescription current;
             switch (cd.kind) {
-                case None:
                 default:
                     throw new RuntimeException("Unexpected data type " + cd.kind);
                 case String:
+                case None:
                 case Json:
                     current = TypeDescription.createString();
                     break;

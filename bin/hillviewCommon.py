@@ -7,8 +7,20 @@ import subprocess
 import tempfile
 import json
 import getpass
+import logging
 from argparse import ArgumentParser
-from hillviewConsoleLog import get_logger
+
+def get_logger(module_name):
+    """ Returns the logger object """
+    logger = logging.getLogger(module_name)
+    logger.setLevel(logging.DEBUG)
+    con_log_handler = logging.StreamHandler()
+    con_log_handler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    con_log_handler.setFormatter(formatter)
+    logger.addHandler(con_log_handler)
+    return logger
 
 logger = get_logger("hillviewCommon")
 

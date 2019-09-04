@@ -5,8 +5,7 @@
 # pylint: disable=invalid-name
 
 from argparse import ArgumentParser
-from hillviewCommon import ClusterConfiguration, get_config
-from hillviewConsoleLog import get_logger
+from hillviewCommon import ClusterConfiguration, get_config, get_logger
 
 logger = get_logger("stop")
 

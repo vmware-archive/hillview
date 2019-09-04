@@ -1,13 +1,15 @@
-#!/bin/bash
+#!/bin/sh
 
-# Creates a tar archive with the Hillview binaries.
+# Creates a zip archive with the Hillview binaries.
 # Should be run after the binaries have been built.
-# This tar archive has to be unpacked in the toplevel Hillview folder.
-
-mydir="$(dirname "$0")"
-if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
+# This archive has to be unpacked in the toplevel Hillview folder.
 
 set -e
 
-tar cvfz hillview-bin.tar.gz ${mydir}/../platform/target/hillview-server-jar-with-dependencies.jar ${mydir}/../web/target/web-1.0-SNAPSHOT.war
-echo "Archive hillview-bin.taz should be unpacked in toplevel hillview directory."
+ARCHIVE=hillview-bin.zip
+
+echo "Creating ${ARCHIVE} in toplevel directory."
+cd ..
+rm -f ${ARCHIVE}
+zip ${ARCHIVE} platform/target/hillview-server-jar-with-dependencies.jar web/target/web-1.0-SNAPSHOT.war platform/target/DataUpload-jar-with-dependencies.jar bin/*.py bin/*.sh bin/*.bat bin/config.json bin/config-local.json
+cd bin

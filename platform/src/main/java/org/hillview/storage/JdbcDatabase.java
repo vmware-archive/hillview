@@ -304,7 +304,7 @@ public class JdbcDatabase {
         List<IAppendableColumn> cols = new ArrayList<IAppendableColumn>(meta.getColumnCount());
         for (int i = 0; i < meta.getColumnCount(); i++) {
             ColumnDescription cd = JdbcDatabase.getDescription(meta, i);
-            BaseListColumn col = BaseListColumn.create(cd);
+            IAppendableColumn col = BaseListColumn.create(cd);
             cols.add(col);
         }
         return cols;
