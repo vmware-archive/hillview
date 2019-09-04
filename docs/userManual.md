@@ -38,7 +38,7 @@ memory over distributed data.
 |2.3.2.2.|[Regular Expressions](#2322-regular-expressions)|
 |2.3.2.3.|[Custom Patterns](#2323-custom-patterns)|
 |2.3.3.|[Reading generic logs](#233-reading-generic-logs)|
-|2.3.4.|[Reading bookmarked data files](#234-reading-bookmarked-data-files)|
+|2.3.4.|[Reading saved data views](#234-reading-saved-data-views)|
 |2.3.5.|[Reading CSV files](#235-reading-csv-files)|
 |2.3.6.|[Reading JSON files](#236-reading-json-files)|
 |2.3.7.|[Reading ORC files](#237-reading-orc-files)|
@@ -57,8 +57,8 @@ memory over distributed data.
 |3.2.3.|[Operations on selected columns](#323-operations-on-selected-columns)|
 |3.2.4.|[Operations on a table cell](#324-operations-on-a-table-cell)|
 |3.2.5.|[Operations on tables](#325-operations-on-tables)|
-|3.2.5.1.|[The table view menu](#3251-the-table-view-menu)|
-|3.2.6.|[The table filter menu](#326-the-table-filter-menu)|
+|3.2.6.|[The table view menu](#326-the-table-view-menu)|
+|3.2.7.|[The table filter menu](#327-the-table-filter-menu)|
 |3.3.|[Frequent elements views](#33-frequent-elements-views)|
 |3.3.1.|[View as a Table](#331-view-as-a-table)|
 |3.3.2.|[Modify](#332-modify)|
@@ -88,7 +88,7 @@ Hillview's architecture is shown in the following figure:
 * The user-interface (UI) runs in a browser.
 
 * The service is exposed by a web server which runs in a datacenter on
-  a head node.
+  a root node.
 
 * The service runs on a collection of worker servers in the
   datacenter.  These servers must be able to read the browsed data in
@@ -99,7 +99,7 @@ The Hillview service is implemented in Java.  The UI is written in
 TypeScript.
 
 Hillview can run as a federated system of loosely interconnected
-components; the head node only sends small queries to the workers, and
+components; the root node only sends small queries to the workers, and
 it receives small results from these.  The data on the workers is
 never sent over the network; the worker locally compute all views that
 are needed to produce the final result.
@@ -178,15 +178,15 @@ When the program starts the user is presented with a Load menu.
 The load menu allows the user to specify a dataset to load from
 storage.
 
-* System logs: when this option is selected Hillview loads the logs
+* Hillview logs: when this option is selected Hillview loads the logs
   produced by the Hillview system itself as a table with 9 columns.
   This is used to debug the Hillview system itself.
 
 * Generic logs: allows the user to [read logs from a set of log
   files](#233-reading-generic-logs).
 
-* Bookmarked data: allows the user to [read data from a bookmarked
-  data file](#234-reading-bookmarked-data-files).
+* Saved view: allows the user to [read data from a saved
+  view](#234-reading-saved-data-views).
 
 * CSV files: allows the user to [read data from a set of CSV
   files](#235-reading-csv-files).
@@ -211,9 +211,11 @@ used to select a smaller set of columns to browse.
 
 #### 2.3.1. Specifying the data schema
 
-For many file formats Hillview uses a `schema` file to specify the
-format of the data.  The following is an example of a schema
-specification in JSON for a table with 2 columns.
+For some file formats that are not self-describing Hillview uses a
+`schema` file to specify the format of the data.  The following is an
+example of a schema specification in JSON for a table with 2 columns.
+The "schema" file is stored on the worker nodes, in the same place
+where the data resides.
 
 ```JSON
 [{
@@ -240,7 +242,7 @@ column description has two fields:
 
 We rely on the grok library for this purpose. For more info visit https://github.com/thekrakken/java-grok/blob/master/README.md
 
-Grok works by combining text patterns into something that matches your logs. 
+Grok works by combining text patterns into something that matches your logs.
 
 The syntax for a grok pattern is %{SYNTAX:NAME}
 
@@ -295,21 +297,19 @@ is deployed*.
 
 ![Specifying log files](generic-log-menu.png)
 
-* File name pattern(s): File pattern to load the Files from the specified path in the pattern. It can include comma seperated
-  file name patterns. Multiple files may be loaded on each machine.
+* Folder: Folder containing the files to load.
+
+* File name pattern: A shell expansion pattern that names the files to
+  load.  Multiple files may be loaded on each machine.
 
 * Log format: The [log format](#232-specifying-rules-for-parsing-logs) of the logs.
 
-* Start time: Log records prior to this date will be ignored.
+#### 2.3.4. Reading saved data views
 
-* End time: Log records after this date will be ignored
-
-#### 2.3.4. Reading bookmarked data files
-
-Hillview can read the bookmarked data. The
+Hillview can reload a view that was previously visualized. The
 following menu allows the users to specify the files to load.
 
-![Specifying bookmarked files](bookmarked-data-menu.png)
+![Specifying a view to load](bookmarked-data-menu.png)
 
 * File: A file containing the bookmarked data to load.
 
@@ -482,6 +482,12 @@ with x.
 
 ![View heading](view-heading.png)
 
+The two black triangles in the view heading allow the view to be moved
+up and down on the web page.  The axis markers X, Y, and G can be
+dragged between some views; dropping them will "move" the
+corresponding axis from the source view to the target view.  (G stands
+for the "group-by" axis in a Trellis plot view.)
+
 ### 3.1. Schema views
 
 The data schema views allow users to browse the schema of the current
@@ -541,6 +547,46 @@ removed from the current selection.
 
 Once the user selects a set of column descriptions, they can display a view of the
 data table restricted to the selected columns using the View/Selected columns menu.
+Right-clicking on a selected set of descriptions opens up a context menu
+
+![Context menu for selected rows in a schema view](schema-view-context-menu.png)
+
+The following operations can be invoked through the context menu:
+* Show as table: this displays a [table view](#32-table-views) of the
+  data restricted to the selected columns.
+
+* Histogram: draws a [1D](#34-uni-dimensional-histogram-views) or
+  [2D](#35-two-dimensional-histogram-views) histogram of the selected
+  columns
+
+* Heatmap: draws a [heatmap](#36-heatmap-views) view of the selected columns.
+
+* Trellis histogram: draw the selected columns using a Trellis view of
+  [1D](#41-trellis-plots-of-1d-histograms) or
+  [2D](#42-trellis-plots-of-2d-histograms) histograms
+
+* Trellis heatmaps: draw the selected columns using a [Trellis
+  view](#43-trellis-plots-of-heatmaps) of heatmaps
+
+* Estimate distinct elements: estimate the number of distinct values in this column
+
+* Filter...: opens up a filter menu that allows the user to filter data based on values in the selected column.
+  See the description of the filter operation [below](#323-operations-on-selected-columns).
+
+* Compare...: compares the data in the column with a specified constant.
+  See the description of the compare operation [below](#323-operations-on-selected-columns).
+
+* Create column in JS...:
+  See the description of the create column operation [below](#323-operations-on-selected-columns).
+
+* Rename...: shows up a menu that allows the user to rename this column
+
+* Frequent elements...: shows up a menu that allows the user to find frequent elements
+  See the description of the frequent elements operation [below](#323-operations-on-selected-columns).
+
+* Basic statistics: shows for each selected column some basic statistics, as in the following figure:
+
+  ![Basic statistics](basic-statistics.png)
 
 #### 3.1.2. The schema view menu
 
@@ -556,22 +602,31 @@ of columns using the chart menu:
 
 ![Chart menu](chart-menu.png)
 
-* 1D Histogram. Selecting this menu presents a dialog allowing the user to
+* 1D Histogram...: presents a dialog allowing the user to
   select a column whose data will be drawn as a
   [uni-dimensional histogram view](#34-uni-dimensional-histogram-views).
 
 ![1D histogram dialog](1d-histogram-dialog.png)
 
-* 2D Histogram.  Selecting this menu presents a dialog allowing the
+* 2D Histogram...: presents a dialog allowing the
   user to select two columns whose data will be drawn as a
   [two-dimensional histogram view](#35-two-dimensional-histogram-views).
 
 ![2D histogram dialog](2d-histogram-dialog.png)
 
-* Heatmap.  Selecting this menu presents a dialog allowing the user to
+* Heatmap...:  presents a dialog allowing the user to
   select two columns whose data will be drawn as a [heatmap](#36-heatmap-views).
 
 ![Heatmap dialog](heatmap-dialog.png)
+
+* Trellis histograms...: presents a dialog allowing the user to
+  select two columns to use to display a [Trellis histogram view](#41-trellis-plots-of-1d-histograms).
+
+* Trellis 2D histograms...: presents a dialog allowing the user to select three columns
+  to use to display a [Trellis 2D histogram view](#42-trellis-plots-of-2d-histograms).
+
+* Trellis heatmaps...: presents a dialog allowing the user to select three columns to use
+  to display a [Trellish plot of heatmaps](#43-trellis-plots-of-heatmaps).
 
 #### 3.1.4. Saving data
 
@@ -595,12 +650,8 @@ The next figure shows a typical table view.
 
 ![Table user-interface](table-ui.png)
 
-A table view displays only some of the columns of the data.  The
-header of the visible columns is written in bold letters.  The
-following image shows a table header with 15 columns out of which 3
-are visible:
-
-![Table header](table-header.png)
+Double-clicking on a column separator will enlarge the column to the
+left of the mouse to fit the displayed data.
 
 The data in the table is always sorted lexicographically on a
 combination of the visible columns.  In the figure above the data is
@@ -693,6 +744,9 @@ selected columns.
 
 #### 3.2.3. Operations on selected columns
 
+Double-clicking on a column header will show or hide the data in that
+column.
+
 Right-clicking on a column header pops up a menu that offers a set of
 operations on the currently selected columns, as shown in the
 following figure:
@@ -705,13 +759,13 @@ the current state of the display.
 * Show: the selected columns will be added to end of the current
   sorting order and the columns will become visible.
 
+* Hide: the selected columns will be removed from the sorting order.
+
 * Drop: the selected column will be removed from the set of displayed
   columns.  There is no operation to bring back the column once it has
   been dropped from a view.  Note that the column is only dropped from
   the *current* views; other views that are displaying the column will
   continue to display it.
-
-* Hide: the selected columns will be removed from the sorting order.
 
 * Estimate distinct elements: selecting this option will run a
   computation that estimates the number of distinct values that exist
@@ -724,30 +778,38 @@ the current state of the display.
 * Sort descending: The selected columns will be moved to the front of
   the sort order in descending order.
 
-* Heatmap: this option requires exactly two or three columns of
-  suitable types to be selected.  When two columns are selected this
-  will display the data in these columns as a [Heat-map
-  view](#36-heatmap-views).  When three columns are selected the
-  following menu allows the user to configure the data to display as a
-  [Trellis plot view](#43-trellis-plots-of-heatmaps).
-
-  ![Heatmap array menu](heatmap-array-menu.png)
-
-* Rename: this operation requires exactly one column to be selected.
-  The user can type a new name for this column.  The new name will be
-  used for this column.  Note that other views that are already
-  displaying the column will continue to use the old name for this
-  column.
-
-* Histogram: this option requires exactly one or two columns of
-  suitable types to be selected.  If one column is selected, this
-  operation will draw a histogram of the data in the selected column.
-  For one-dimensional histograms see
-  [Uni-dimensional-histogram-views](#34-uni-dimensional-histogram-views).
+* Histogram: this option requires exactly one or two columns to be
+  selected.  If one column is selected, this operation will draw a
+  histogram of the data in the selected column.  See
+  [Uni dimensional histogram views](#34-uni-dimensional-histogram-views).
   If two columns are selected this menu will draw a two-dimensional
   histogram of the data in the selected columns.  For two-dimensional
   histograms see [Two-dimensional
   histograms](#35-two-dimensional-histogram-views).
+
+* Heatmap: this option requires exactly two columns to be selected.
+  This displays the data in these columns as a [Heatmap
+  view](#36-heatmap-views).
+
+* Trellis histograms: this option requires exactly two or three
+  columns to be selected.  If two columns are selected, this operation
+  will draw a trellis plot of 1-dimensional histogram of the data in
+  the first selected column grouped by the second column.  See
+  [Trellis plots of 1D histograms](#41-trellis-plots-of-1d-histograms).
+  If two columns are selected this menu will draw a two-dimensional
+  histogram of the data in the selected columns.  For two-dimensional
+  histograms see [Two-dimensional
+  histograms](#35-two-dimensional-histogram-views).
+
+* Trellis heatmaps: this options requires exactly 3 columns to be
+  selected.  This displays the data as a [Trellis plot
+  view](#43-trellis-plots-of-heatmaps).
+
+* Rename...: this operation requires exactly one column to be selected.
+  The user can type a new name for this column.  The new name will be
+  used for this column.  Note that other views that are already
+  displaying the column will continue to use the old name for this
+  column.
 
 * Frequent elements...: finds the most frequent values that appear in
   the selected columns.  The user is presented with a dialog
@@ -757,24 +819,9 @@ the current state of the display.
   ![Frequent elements menu](heavy-hitters-menu.png)
 
   The user has to specify a percentage, between .01 (1/10,000 of the
-  data) and 100 (the whole data).  The result is all items whose frequency
-  in the selected columns is above the threshold. the result is shown in a [heavy
-  hitter view](#33-frequent-elements-views).
-
-* Filter...: this option will pop-up a dialog window that allows the user
-  to filter the data in the selected column (this option requires only
-  one column to be selected). The user enters a search pattern. There
-  is a checkbox which when selected, will interpret the pattern as a
-  [Java regular
-  expression](https://docs.oracle.com/javase/7/docs/api/java/util/regex/Pattern.html). There
-  is a second checkbox which allows the user to choose  whether the
-  matching values are to be kept or discarded.
-
-  ![Filter menu](filter-menu.png)
-
-* Plot singular value spectrum.  This operation requires a set of
-  numeric columns.  This will display the singular values of the matrix formed
-  from these columns as a [Singular value spectrum view](#37-singular-value-spectrum-views).
+  data) and 100 (the whole data).  The result is all items whose
+  frequency in the selected columns is above the threshold. the result
+  is shown in a [frequent elements view](#33-frequent-elements-views).
 
 * PCA...: principal component analysis.  [Principal Component
   Analysis](https://en.wikipedia.org/wiki/Principal_component_analysis)
@@ -792,6 +839,21 @@ the current state of the display.
   containing the result of the PCA analysis.  The name of each
   appended column will indicate the amount of variance in the original
   data that is captured by the column (0-100%).
+
+* Plot singular value spectrum.  This operation requires a set of
+  numeric columns.  This will display the singular values of the matrix formed
+  from these columns as a [Singular value spectrum view](#37-singular-value-spectrum-views).
+
+* Filter...: this option will pop-up a dialog window that allows the user
+  to filter the data in the selected column (this option requires only
+  one column to be selected). The user enters a search pattern. There
+  is a checkbox which when selected, will interpret the pattern as a
+  [Java regular
+  expression](https://docs.oracle.com/javase/7/docs/api/java/util/regex/Pattern.html). There
+  is a second checkbox which allows the user to choose  whether the
+  matching values are to be kept or discarded.
+
+  ![Filter menu](filter-menu.png)
 
 * Compare...: compares the data in a column with a specified constant.
   Only one column must be selected.
@@ -813,7 +875,7 @@ the current state of the display.
   column.  After conversion a new column is appended to the table, containing the
   converted data.
 
-* Create column...: allows the user to write a JavaScript program that
+* Create column in JS...: allows the user to write a JavaScript program that
   computes values for a new column.
 
   ![Add column dialog](add-column-dialog.png)
@@ -822,7 +884,24 @@ the current state of the display.
   JavaScript program is a function called 'map' that has a single
   argument called 'row'.  This function is invoked for every row of
   the dataset.  'row' is a JavaScript map that can be indexed with a
-  string column name.
+  string column name.  For example, the following program extracts the
+  first letter from the values in a column named 'OriginState':
+
+```
+function map(row) {
+   var v = row['OriginState'];
+   if (v == null) return null;
+   v = v.toString();
+   if (v.length == 0) return "";
+   return v[0];
+}
+```
+
+* Extract value...: this option is only available when browsing data
+  that originates from some log files, where the current column format
+  is of the form key=value pairs.  This option allows the user to
+  specify a key and a destination column; the associated value will be
+  extracted into the indicated column.
 
 #### 3.2.4. Operations on a table cell
 
@@ -843,16 +922,16 @@ The table view has a menu that offers the following options:
   service is running*
 
 * View: allows the user to [change the way the data is
-  displayed](#3251-the-table-view-menu).
+  displayed](#326-the-table-view-menu).
 
 * Chart: [allows the user to chart the data](#313-the-chart-menu).
 
-* Filter: allows the user [to filter data](#326-the-table-filter-menu) according
+* Filter: allows the user [to filter data](#327-the-table-filter-menu) according
   to various criteria.
 
 * Combine: allows the user to [combine the data in two views](#44-combining-two-views).
 
-##### 3.2.5.1. The table view menu
+#### 3.2.6. The table view menu
 
 The view menu offers the following options.
 
@@ -866,7 +945,7 @@ The view menu offers the following options.
 
 * Change table size: this changes the number of rows displayed.
 
-#### 3.2.6. The table filter menu
+#### 3.2.7. The table filter menu
 
 The table filter menu allows the user to find specific values or
 filter the data according to specific criteria.

@@ -19,6 +19,7 @@ package org.hillview.table.api;
 
 import net.openhft.hashing.LongHashFunction;
 import org.hillview.table.RadixConverter;
+import org.hillview.utils.Converters;
 import org.hillview.utils.DateParsing;
 
 import javax.annotation.Nullable;
@@ -49,17 +50,9 @@ public interface IStringColumn extends IColumn {
         return new IndexComparator() {
             @Override
             public int compare(final int i, final int j) {
-                final String str1 = IStringColumn.this.getString(i);
-                final String str2 = IStringColumn.this.getString(j);
-                if (str1 == null && str2 == null) {
-                    return 0;
-                } else if (str1 == null) {
-                    return 1;
-                } else if (str2 == null) {
-                    return -1;
-                } else {
-                    return str1.compareTo(str2);
-                }
+                String str1 = IStringColumn.this.getString(i);
+                String str2 = IStringColumn.this.getString(j);
+                return Converters.compareStrings(str1, str2);
             }
         };
     }

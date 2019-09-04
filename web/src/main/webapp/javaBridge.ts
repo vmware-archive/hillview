@@ -221,6 +221,8 @@ export interface DataRange {
 export interface BasicColStats extends DataRange {
     momentCount: number;
     moments: number[];
+    minString: string;
+    maxString: string;
 }
 
 export interface RangeArgs {

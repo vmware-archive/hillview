@@ -19,6 +19,7 @@ package org.hillview.sketches;
 
 import org.hillview.dataset.api.IJson;
 import org.hillview.table.api.*;
+import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 
@@ -30,10 +31,10 @@ public class BasicColStats extends DataRange implements IJson {
     private final int momentCount;
     private final boolean computeStringMax;
     @Nullable
-    private String minString;
+    public String minString;
     @Nullable
-    private String maxString;
-    private final double moments[];
+    public String maxString;
+    public final double[] moments;
 
     public BasicColStats(int momentCount, boolean computeStringMax) {
         if (momentCount < 0)
@@ -65,18 +66,20 @@ public class BasicColStats extends DataRange implements IJson {
     public long getPresentCount() { return this.presentCount; }
     public long getRowCount() { return this.presentCount + this.missingCount; }
 
-    void createStats(final IColumn column,
-                     final IMembershipSet membershipSet) {
+    void scan(final IColumn column,
+              final IMembershipSet membershipSet) {
         final IRowIterator myIter = membershipSet.getIterator();
         int currRow = myIter.getNextRow();
 
         boolean extractString = false;
+        boolean numeric = false;
         switch (column.getKind()) {
             case String:
             case Json:
                 extractString = this.computeStringMax;
                 break;
             default:
+                numeric = true;
                 break;
         }
         while (currRow >= 0) {
@@ -87,39 +90,49 @@ public class BasicColStats extends DataRange implements IJson {
             }
 
             String strVal = null;
-            double val = column.asDouble(currRow);
-            if (extractString)
+            double val = 0;
+            if (numeric)
+                val = column.asDouble(currRow);
+            else if (extractString)
                 strVal = column.getString(currRow);
             if (this.presentCount == 0) {
-                this.min = val;
-                this.max = val;
+                if (numeric) {
+                    this.min = val;
+                    this.max = val;
+                }
                 if (extractString) {
                     this.minString = strVal;
                     this.maxString = strVal;
                 }
-            } else if (val < this.min) {
-                this.min = val;
-            } else if (val > this.max) {
-                this.max = val;
-            }
-            if (extractString) {
-                assert this.minString != null;
-                assert strVal != null;
-                if (this.minString.compareTo(strVal) < 0)
-                    this.minString = strVal;
-                assert this.maxString != null;
-                if (this.maxString.compareTo(strVal) < 0)
-                    this.maxString = strVal;
+            } else {
+                if (numeric) {
+                    if (val < this.min) {
+                        this.min = val;
+                    } else if (val > this.max) {
+                        this.max = val;
+                    }
+                }
+                if (extractString) {
+                    assert this.minString != null;
+                    assert strVal != null;
+                    if (this.minString.compareTo(strVal) > 0)
+                        this.minString = strVal;
+                    assert this.maxString != null;
+                    if (this.maxString.compareTo(strVal) < 0)
+                        this.maxString = strVal;
+                }
             }
 
-            if (this.momentCount > 0) {
-                double tmpMoment = val;
-                double alpha = (double) this.presentCount / (double) (this.presentCount + 1);
-                double beta = 1.0 - alpha;
-                this.moments[0] = (alpha * this.moments[0]) + (beta * val);
-                for (int i = 1; i < this.momentCount; i++) {
-                    tmpMoment = tmpMoment * val;
-                    this.moments[i] = (alpha * this.moments[i]) + (beta * tmpMoment);
+            if (numeric) {
+                if (this.momentCount > 0) {
+                    double tmpMoment = val;
+                    double alpha = (double) this.presentCount / (double) (this.presentCount + 1);
+                    double beta = 1.0 - alpha;
+                    this.moments[0] = (alpha * this.moments[0]) + (beta * val);
+                    for (int i = 1; i < this.momentCount; i++) {
+                        tmpMoment = tmpMoment * val;
+                        this.moments[i] = (alpha * this.moments[i]) + (beta * tmpMoment);
+                    }
                 }
             }
             this.presentCount++;
@@ -147,17 +160,10 @@ public class BasicColStats extends DataRange implements IJson {
             result.minString = this.minString;
             result.maxString = this.maxString;
         } else {
-            if (this.min < otherStat.min) {
-                result.min = this.min;
-            } else {
-                result.min = otherStat.min;
-            }
-
-            if (this.max > otherStat.max) {
-                result.max = this.max;
-            } else {
-                result.max = otherStat.max;
-            }
+            result.min = Math.min(this.min, otherStat.min);
+            result.max = Math.max(this.max, otherStat.max);
+            result.minString = Converters.min(this.minString, otherStat.minString);
+            result.maxString = Converters.max(this.maxString, otherStat.maxString);
         }
         if (result.presentCount > 0) {
             double alpha = (double) this.presentCount / ((double) result.presentCount);
@@ -166,5 +172,21 @@ public class BasicColStats extends DataRange implements IJson {
                 result.moments[i] = (alpha * this.moments[i]) + (beta * otherStat.moments[i]);
         }
         return result;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder result = new StringBuilder();
+        result.append("present=").append(this.presentCount);
+        if (this.computeStringMax) {
+            result.append(",min=").append(this.minString);
+            result.append(",max=").append(this.maxString);
+        } else if (this.presentCount > 0) {
+            result.append(",min=").append(this.min);
+            result.append(",max=").append(this.max);
+            for (int i = 0; i < this.momentCount; i++)
+                result.append(",moment[").append(i).append("]=").append(this.moments[i]);
+        }
+        return result.toString();
     }
 }

@@ -17,7 +17,13 @@
 
 import {IViewSerialization} from "../datasetView";
 import {
-    allContentsKind, ColumnSortOrientation, NextKList, RecordOrder, RemoteObjectId,
+    allContentsKind,
+    BasicColStats,
+    ColumnSortOrientation,
+    kindIsString,
+    NextKList,
+    RecordOrder,
+    RemoteObjectId,
     Schema,
 } from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
@@ -27,10 +33,17 @@ import {FullPage, PageTitle} from "../ui/fullPage";
 import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
 import {TabularDisplay} from "../ui/tabularDisplay";
 import {Resolution} from "../ui/ui";
-import {cloneToSet, ICancellable, significantDigits} from "../util";
+import {
+    cloneToSet,
+    convertToStringFormat,
+    ICancellable,
+    PartialResult,
+    significantDigits
+} from "../util";
 import {TableView} from "./tableView";
 import {TSViewBase} from "./tsViewBase";
 import {BaseRenderer} from "../tableTarget";
+import {Receiver, RpcRequest} from "../rpc";
 
 /**
  * This class is used to browse through the columns of a table schema
@@ -40,6 +53,7 @@ export class SchemaView extends TSViewBase {
     protected display: TabularDisplay;
     protected contextMenu: ContextMenu;
     protected summary: HTMLElement;
+    protected stats: Map<string, BasicColStats>;
 
     constructor(remoteObjectId: RemoteObjectId,
                 page: FullPage,
@@ -48,6 +62,7 @@ export class SchemaView extends TSViewBase {
                 elapsedMs: number) {
         super(remoteObjectId, rowCount, schema, page, "Schema");
         this.show();
+        this.stats = null;
         this.page.reportTime(elapsedMs);
     }
 
@@ -96,8 +111,13 @@ export class SchemaView extends TSViewBase {
         this.topLevel.appendChild(para);
 
         this.display = new TabularDisplay();
-        this.display.setColumns(["#", "Name", "Type"],
-            ["Column number", "Column name", "Type of data stored within the column"]);
+        const names = ["#", "Name", "Type"];
+        const descriptions = ["Column number", "Column name", "Type of data stored within the column"];
+        if (this.stats != null) {
+            names.push("Min", "Max", "Average", "Missing");
+            descriptions.push("Minimum value", "Maximum value", "Average value", "Number of missing elements");
+        }
+        this.display.setColumns(names, descriptions);
 
         /* Dialog box for selecting columns based on name */
         const nameDialog = new Dialog("Select by name",
@@ -140,10 +160,36 @@ export class SchemaView extends TSViewBase {
 
         for (let i = 0; i < this.schema.length; i++) {
             const cd = this.schema.get(i);
-            const row = this.display.addRow([
+            const data = [
                 (i + 1).toString(),
                 this.schema.displayName(cd.name),
-                cd.kind.toString()]);
+                cd.kind.toString()];
+            if (this.stats != null) {
+                const cs = this.stats.get(cd.name);
+                if (cs != null) {
+                    if (cs.presentCount === 0) {
+                        data.push("", "", "");
+                    } else {
+                        if (kindIsString(cd.kind)) {
+                            data.push(cs.minString, cs.maxString, "");
+                        } else {
+                            let avg;
+                            if (cd.kind === "Date")
+                                avg = convertToStringFormat(cs.moments[0], "Date");
+                            else
+                                avg = significantDigits(cs.moments[0]);
+                            data.push(
+                                convertToStringFormat(cs.min, cd.kind),
+                                convertToStringFormat(cs.max, cd.kind),
+                                avg);
+                        }
+                    }
+                    data.push(cs.missingCount.toString());
+                } else {
+                    data.push("", "", "", "");
+                }
+            }
+            const row = this.display.addRow(data);
             row.oncontextmenu = (e) => this.createAndShowContextMenu(e);
         }
         this.topLevel.appendChild(this.display.getHTMLRepresentation());
@@ -226,7 +272,7 @@ export class SchemaView extends TSViewBase {
             help : "Eliminate data that matches/does not match a specific value.",
         }, selectedCount === 1);
         this.contextMenu.addItem({
-            text: "Create column...",
+            text: "Create column in JS...",
             action: () => this.createJSColumnDialog(new RecordOrder([]), Resolution.tableRowsOnScreen),
             help: "Add a new column computed from the selected columns.",
         }, true);
@@ -240,7 +286,29 @@ export class SchemaView extends TSViewBase {
             action: () => this.heavyHittersDialog(),
             help: "Find the values that occur most frequently in the selected columns.",
         }, true);
+        this.contextMenu.addItem({
+            text: "Basic statistics",
+            action: () => this.getBasicStats(this.getSelectedColNames()),
+            help: "Get basic statistics for the selected columns.",
+        }, true);
         this.contextMenu.show(e);
+    }
+
+    protected getBasicStats(cols: string[]): void {
+        if (cols.length === 0)
+            return;
+        const rr = this.createBasicColStatsRequest(cols);
+        rr.invoke(new BasicColStatsReceiver(this.getPage(), this, cols, rr));
+    }
+
+    public updateStats(cols: string[], stats: BasicColStats[]): void {
+        console.assert(cols.length === stats.length);
+        if (this.stats == null)
+            this.stats = new Map<string, BasicColStats>();
+        for (let i = 0; i < cols.length; i++) {
+            this.stats.set(cols[i], stats[i]);
+        }
+        this.show();
     }
 
     public resize(): void {
@@ -278,6 +346,7 @@ export class SchemaView extends TSViewBase {
         this.display.selectedRows.getStates().forEach((i) => colNames.push(this.schema.get(i).name));
         return colNames;
     }
+
     /**
      * @param {string} selectedType: A type of column, from ContentsKind.
      * @param {string} action: Either Add or Remove.
@@ -311,5 +380,23 @@ export class SchemaView extends TSViewBase {
         };
         tv.updateView(nkl, false, new RecordOrder([]), null);
         tv.updateCompleted(0);
+    }
+}
+
+/**
+ * Receives a set of basic column statistics and updates the SchemaView to display them.
+ */
+class BasicColStatsReceiver extends Receiver<BasicColStats[]> {
+    constructor(page: FullPage,
+                public sv: SchemaView,
+                public cols: string[],
+                rr: RpcRequest<BasicColStats[]>) {
+        super(page, rr, "Get basic statistics");
+    }
+
+    public onNext(value: PartialResult<BasicColStats[]>): void {
+        super.onNext(value);
+        if (value.data != null)
+            this.sv.updateStats(this.cols, value.data);
     }
 }

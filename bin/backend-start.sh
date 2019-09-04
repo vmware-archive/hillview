@@ -3,10 +3,9 @@
 
 mydir="$(dirname "$0")"
 if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
-source ${mydir}/lib.sh
 
 # If you want GRPC logging uncomment the following line
 # LOGGING="-Djava.util.logging.config.file=logging.properties"
 
-cd ${mydir}
-java ${LOGGING} -server -jar ../platform/target/hillview-server-jar-with-dependencies.jar 127.0.0.1:3569
+cd ${mydir}/..
+java ${LOGGING} -server -jar platform/target/hillview-server-jar-with-dependencies.jar 127.0.0.1:3569
