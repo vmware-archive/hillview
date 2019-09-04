@@ -43,8 +43,12 @@ file](https://github.com/vmware/hillview/releases/download/v0.7-alpha/hillview-b
 * Choose a directory for installing Hillview
 * Enable execution of powershell scripts; this can be done, for example, by
   running the following command in powershell as an administrator: `Set-ExecutionPolicy unrestricted`
-* Download and install the following script in the chosen directory `bin/install-hillview.ps1`
-* Run the installation script using Windows powershell
+* Download and install the [following script](bin/install-hillview.ps1) in the chosen directory
+* Run the installation script using Windows powershell:
+
+```
+> install-hillview.ps1
+```
 
 # Running Hillview locally
 
@@ -53,20 +57,20 @@ file](https://github.com/vmware/hillview/releases/download/v0.7-alpha/hillview-b
 All Windows scripts are in the `bin` folder:
 
 ```
-$: cd bin
+> cd bin
 ```
 
 * Start Hillview processes:
 
 ```
-$: hillview-start.bat
+> hillview-start.bat
 ```
 
 * If needed give permissions to the application to communicate through the Windows firewall
 * To stop hillview:
 
 ```
-$: hillview-stop.bat
+> hillview-stop.bat
 ```
 
 ## Ubuntu or MacOS machines
@@ -74,7 +78,7 @@ $: hillview-stop.bat
 All the following scripts are in the `bin` folder.
 
 ```
-$: cd bin
+$ cd bin
 ```
 
 * Start the back-end service which performs all the data processing:
@@ -88,7 +92,7 @@ $: cd bin
    in `apache-tomcat-9.0.4/conf/server.xml`).
 
 ```
-$: ./frontend-start.sh
+$ ./frontend-start.sh
 ```
 
 * start a web browser and open http://localhost:8080
@@ -106,8 +110,8 @@ machine.
   the Java SDK) download and prepare the sample data:
 
 ```
-$: ./rebuild.sh -a
-$: ./demo-data-cleaner.sh
+$ ./rebuild.sh -a
+$ ./demo-data-cleaner.sh
 ```
 
 # Deploying the Hillview service on a cluster
@@ -181,19 +185,19 @@ two sample files are `bin/config.json`and `bin/config-local.json`.
 All deployment scripts are written in Python, and are in the `bin` folder.
 
 ```
-$: cd bin
+$ cd bin
 ```
 
 Install the software on the machines:
 
 ```
-$: ./deploy.py config.json
+$ ./deploy.py config.json
 ```
 
 Start the Hillview services:
 
 ```
-$: ./start.py config.json
+$ ./start.py config.json
 ```
 
 To connect to the service open `http://<webserver>:8080` in your web
@@ -202,13 +206,13 @@ browser.
 Stop the services:
 
 ```
-$: ./stop.py config.json
+$ ./stop.py config.json
 ```
 
 Query the status of the services:
 
 ```
-$: ./status config.json
+$ ./status config.json
 ```
 
 ## Data management
@@ -244,7 +248,7 @@ to>/jdk/jdk1.8.0_101). To set your JAVA_HOME environment variable, add
 the following to your ~/.bashrc or ~/.zshrc.
 
 ```
-$: export JAVA_HOME="<path-to-jdk-folder>"
+$ export JAVA_HOME="<path-to-jdk-folder>"
 ```
 
 (For MacOS you do not need to set up JAVA_HOME.)
@@ -256,14 +260,14 @@ for building and testing.
 
 On MacOS you first need to install [Homebrew](https://brew.sh/).  One way to do that is to run
 ```
-$: /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+$ /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 ```
 
 To install all other dependencies you can run:
 
 ```
-$: cd bin
-$: ./install-dependencies.sh
+$ cd bin
+$ ./install-dependencies.sh
 ```
 
 For old versions of Ubuntu this may fail, so you may have to install the required
@@ -286,8 +290,8 @@ platform/pom.xml.
 * Build the software:
 
 ```
-$: cd bin
-$: ./rebuild.sh -a
+$ cd bin
+$ ./rebuild.sh -a
 ```
 
 ### Build details
@@ -299,9 +303,9 @@ JAR file `platform/target/hillview-jar-with-dependencies.jar`.  This
 part can be built with:
 
 ```
-$: cd platform
-$: mvn clean install
-$: cd ..
+$ cd platform
+$ mvn clean install
+$ cd ..
 ```
 
 * web: the web server, web client and web services; this project links
@@ -310,9 +314,9 @@ to the result produced by the `platform` project.  This produces a WAR
 be built with:
 
 ```
-$: cd web
-$: mvn package
-$: cd ..
+$ cd web
+$ mvn package
+$ cd ..
 ```
 
 ## Contributing code
