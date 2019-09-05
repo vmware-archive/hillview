@@ -42,7 +42,7 @@ import {
 } from "../util";
 import {TableView} from "./tableView";
 import {TSViewBase} from "./tsViewBase";
-import {BaseRenderer} from "../tableTarget";
+import {BaseReceiver} from "../tableTarget";
 import {Receiver, RpcRequest} from "../rpc";
 
 /**
@@ -333,7 +333,7 @@ export class SchemaView extends TSViewBase {
     }
 
     protected getCombineRenderer(title: PageTitle):
-        (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer {
+        (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return null;  // not used
     }
 

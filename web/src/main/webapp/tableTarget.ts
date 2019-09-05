@@ -457,7 +457,7 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
      * after the zip has been performed.
      */
     protected abstract getCombineRenderer(title: PageTitle):
-        (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer;
+        (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver;
 
     public combine(how: CombineOperators): void {
         const pageId = this.dataset.getSelected();
@@ -482,9 +482,9 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
 }
 
 /**
- * A renderer that receives a remoteObjectId for a big table.
+ * A receiver that receives a remoteObjectId for a big table.
  */
-export abstract class BaseRenderer extends OnCompleteReceiver<RemoteObjectId> {
+export abstract class BaseReceiver extends OnCompleteReceiver<RemoteObjectId> {
     protected remoteObject: TableTargetAPI;
 
     protected constructor(public page: FullPage,
@@ -506,7 +506,7 @@ export abstract class BaseRenderer extends OnCompleteReceiver<RemoteObjectId> {
  * two IDataSet<ITable> objects (an IDataSet<Pair<ITable, ITable>>,
  *  and applies to the pair the specified set operation setOp.
  */
-class ZipReceiver extends BaseRenderer {
+class ZipReceiver extends BaseReceiver {
     public constructor(page: FullPage,
                        operation: ICancellable<RemoteObjectId>,
                        protected setOp: CombineOperators,
@@ -514,7 +514,7 @@ class ZipReceiver extends BaseRenderer {
                        // receiver constructs the renderer that is used to display
                        // the result after combining
                        protected receiver:
-                           (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer) {
+                           (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver) {
         super(page, operation, "zip", dataset);
     }
 

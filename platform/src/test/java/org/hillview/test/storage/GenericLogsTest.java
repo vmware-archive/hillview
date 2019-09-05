@@ -328,4 +328,18 @@ public class GenericLogsTest extends BaseTest {
         Assert.assertEquals("Table[8x5]", table.toString());
     }
 
+    @Test
+    public void testVSANLog() {
+        String path = "../data/sample_logs/vsantracelog";
+        GrokLogs logs = new GrokLogs("%{VSANTRACE}");
+        TextFileLoader fileLoader = logs.getFileLoader(path);
+        ITable table = fileLoader.load();
+        Assert.assertNotNull(table);
+        if (BaseTest.toPrint)
+            System.out.println(table.toLongString(10));
+        Assert.assertEquals("Table[11x287]", table.toString());
+        RowSnapshot row = new RowSnapshot(table, 0);
+        String structured = row.getString(LogFiles.parseErrorColumn);
+        Assert.assertNull(structured);
+    }
 }

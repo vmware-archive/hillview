@@ -28,6 +28,8 @@ import javax.annotation.Nullable;
  */
 public abstract class CreateColumnMap extends AppendColumnMap {
     private final String inputColName;
+    // This is set before calling 'extract'
+    protected ContentsKind inputKind;
 
     /**
      * @param inputColName The name of the column where data is extracted from.
@@ -35,9 +37,10 @@ public abstract class CreateColumnMap extends AppendColumnMap {
      * @param insertionIndex  Index where column will be inserted.
      */
     CreateColumnMap(String inputColName, String newColName,
-                              int insertionIndex) {
+                    int insertionIndex) {
         super(newColName, insertionIndex);
         this.inputColName = inputColName;
+        this.inputKind = ContentsKind.None;
     }
 
     @Nullable
@@ -46,6 +49,7 @@ public abstract class CreateColumnMap extends AppendColumnMap {
     @Override
     public IColumn createColumn(ITable table) {
         IColumn col = table.getLoadedColumn(this.inputColName);
+        this.inputKind = col.getKind();
         ColumnDescription outputColumn = new ColumnDescription(this.newColName, ContentsKind.String);
         IMutableColumn outCol = BaseColumn.create(outputColumn,
                 table.getMembershipSet().getMax(),

@@ -26,7 +26,7 @@ import {
 } from "../javaBridge";
 import {Receiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
-import {BaseRenderer, TableTargetAPI} from "../tableTarget";
+import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {IDataView} from "../ui/dataview";
 import {Dialog} from "../ui/dialog";
 import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
@@ -366,7 +366,7 @@ export class HeatmapView extends ChartView {
     }
 
     protected getCombineRenderer(title: PageTitle):
-        (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer {
+        (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
             return new FilterReceiver(
                 title,
@@ -509,7 +509,7 @@ export class HeatmapView extends ChartView {
 /**
  * Renders a heatmap
  */
-export class HeatmapRenderer extends Receiver<Heatmap> {
+export class HeatmapReceiver extends Receiver<Heatmap> {
     protected heatmap: HeatmapView;
 
     constructor(title: PageTitle,

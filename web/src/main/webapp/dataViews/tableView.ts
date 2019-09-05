@@ -35,7 +35,7 @@ import {
 } from "../javaBridge";
 import {OnCompleteReceiver, Receiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
-import {BaseRenderer, OnNextK, TableTargetAPI} from "../tableTarget";
+import {BaseReceiver, OnNextK, TableTargetAPI} from "../tableTarget";
 import {DataRangeUI} from "../ui/dataRangeUI";
 import {IDataView} from "../ui/dataview";
 import {Dialog, FieldKind} from "../ui/dialog";
@@ -266,7 +266,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
     }
 
     protected getCombineRenderer(title: PageTitle):
-        (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer {
+        (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
             return new TableOperationCompleted(page, operation, this.rowCount, this.schema,
                 this.order.clone(), this.tableRowsDesired);
@@ -736,9 +736,11 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
      * Return true if this column is a column in a log file that has a contents
      * that is of the form of a key=value.
      */
-    private isKVColumn(colName: string): boolean {
-        // This is a heuristic; this is tied to RFC5424 logs right now
-        return this.dataset.isLog() && colName === "StructuredData";
+    private isKVColumn(col: string): boolean {
+        const cd = this.schema.find(col);
+        return (cd.kind === "Json" ||
+            // This is a heuristic; this is tied to RFC5424 logs right now
+            (this.dataset.isLog() && col === "StructuredData"));
     }
 
     public filterOnValue(cd: IColumnDescription, value: string | number, comparison: Comparison): void {
@@ -1275,7 +1277,7 @@ class QuantileReceiver extends OnCompleteReceiver<any[]> {
  * Receives the result of a PCA computation and initiates the request
  * to project the specified columns using the projection matrix.
  */
-export class CorrelationMatrixReceiver extends BaseRenderer {
+export class CorrelationMatrixReceiver extends BaseReceiver {
     public constructor(page: FullPage,
                        protected tv: TableView,
                        operation: ICancellable<RemoteObjectId>,
@@ -1298,7 +1300,7 @@ export class CorrelationMatrixReceiver extends BaseRenderer {
 
 // Receives the ID of a table that contains additional eigen vector projection columns.
 // Invokes a sketch to get the schema of this new table.
-class PCATableReceiver extends BaseRenderer {
+class PCATableReceiver extends BaseReceiver {
     constructor(page: FullPage, operation: ICancellable<RemoteObjectId>,
                 protected title: string, progressInfo: string,
                 protected tv: TSViewBase, protected order: RecordOrder,
@@ -1359,7 +1361,7 @@ class PCASchemaReceiver extends OnCompleteReceiver<TableSummary> {
  * Receives the id of a remote table and
  * initiates a request to display the nextK rows from this table.
  */
-export class TableOperationCompleted extends BaseRenderer {
+export class TableOperationCompleted extends BaseReceiver {
     public constructor(page: FullPage,
                        operation: ICancellable<RemoteObjectId>,
                        protected rowCount: number,

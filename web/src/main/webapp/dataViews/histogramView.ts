@@ -50,7 +50,7 @@ import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
 import {FilterReceiver, DataRangesCollector} from "./dataRangesCollectors";
 import {IScrollTarget} from "../ui/scroll";
-import {BaseRenderer} from "../tableTarget";
+import {BaseReceiver} from "../tableTarget";
 
 /**
  * A HistogramView is responsible for showing a one-dimensional histogram on the screen.
@@ -333,7 +333,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
     }
 
     protected getCombineRenderer(title: PageTitle):
-        (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer {
+        (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
             return new FilterReceiver(
                 title, [this.xAxisData.description], this.schema, [0],
@@ -549,7 +549,7 @@ export class HistogramDialog extends Dialog {
     }
 }
 
-export class HistogramRenderer extends Receiver<HistogramBase>  {
+export class HistogramReceiver extends Receiver<HistogramBase>  {
     private readonly view: HistogramView;
 
     constructor(protected title: PageTitle,
