@@ -24,7 +24,7 @@ import {
     RemoteObjectId,
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject} from "./rpc";
-import {BaseRenderer} from "./tableTarget";
+import {BaseReceiver} from "./tableTarget";
 import {FullPage, PageTitle} from "./ui/fullPage";
 import {ICancellable, significantDigits, getUUID} from "./util";
 
@@ -135,7 +135,7 @@ class FilePruneReceiver extends OnCompleteReceiver<RemoteObjectId> {
  * Receives the ID for a remote table and initiates a request to get the
  * table schema.
  */
-export class RemoteTableReceiver extends BaseRenderer {
+export class RemoteTableReceiver extends BaseReceiver {
     /**
      * Create a renderer for a new table.
      * @param page            Parent page initiating this request.

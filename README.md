@@ -84,7 +84,7 @@ $ cd bin
 * Start the back-end service which performs all the data processing:
 
 ```
-./backend-start.sh &
+$ ./backend-start.sh &
 ```
 
 * Start the web server
@@ -142,7 +142,7 @@ two sample files are `bin/config.json`and `bin/config-local.json`.
   // server machine can also act as a worker
   "aggregators": [
     // The "aggregators" level is optional; if it is
-    // missing the configuration should contain just an array of workers
+    // missing, the configuration should contain just an array of workers
     {
       "name": "aggregator1.name",
       "workers": [

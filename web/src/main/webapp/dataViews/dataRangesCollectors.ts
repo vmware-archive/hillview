@@ -23,19 +23,19 @@ import {
     kindIsString,
     RemoteObjectId
 } from "../javaBridge";
-import {BaseRenderer, TableTargetAPI} from "../tableTarget";
+import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {ICancellable, periodicSamples, Seed} from "../util";
 import {SchemaClass} from "../schemaClass";
 import {ChartOptions, Resolution, Size} from "../ui/ui";
 import {PlottingSurface} from "../ui/plottingSurface";
-import {TrellisHistogramRenderer} from "./trellisHistogramView";
-import {HeatmapRenderer} from "./heatmapView";
-import {Histogram2DRenderer} from "./histogram2DView";
-import {HistogramRenderer} from "./histogramView";
+import {TrellisHistogramReceiver} from "./trellisHistogramView";
+import {HeatmapReceiver} from "./heatmapView";
+import {Histogram2DReceiver} from "./histogram2DView";
+import {HistogramReceiver} from "./histogramView";
 import {AxisData} from "./axisData";
-import {TrellisHeatmapRenderer} from "./trellisHeatmapView";
-import {TrellisHistogram2DRenderer} from "./trellisHistogram2DView";
+import {TrellisHeatmapReceiver} from "./trellisHeatmapView";
+import {TrellisHistogram2DReceiver} from "./trellisHistogram2DView";
 import {DatasetView} from "../datasetView";
 
 /**
@@ -283,7 +283,7 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                 if (this.title == null)
                     this.title = new PageTitle(
                         "Histogram of " + this.schema.displayName(this.cds[0].name));
-                const renderer = new HistogramRenderer(this.title, this.page,
+                const renderer = new HistogramReceiver(this.title, this.page,
                     this.originator.remoteObjectId, rowCount, this.schema, this.bucketCounts[0],
                     axisData, rr, args.samplingRate, this.options.reusePage);
                 rr.invoke(renderer);
@@ -309,7 +309,7 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                     this.title = new PageTitle(
                         "Histograms of " + this.schema.displayName(this.cds[0].name) +
                         " grouped by " + this.schema.displayName(this.cds[1].name));
-                const renderer = new TrellisHistogramRenderer(this.title, this.page,
+                const renderer = new TrellisHistogramReceiver(this.title, this.page,
                     this.originator, rowCount, this.schema,
                     [xAxisData, groupByAxis],
                     xArg.samplingRate, trellisShape, rr, this.options.reusePage);
@@ -344,7 +344,7 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                                  "Histograms (" + this.schema.displayName(this.cds[0].name) +
                                  ", " + this.schema.displayName(this.cds[1].name) +
                                  ") grouped by " + this.schema.displayName(this.cds[2].name));
-                const renderer = new TrellisHistogram2DRenderer(this.title, this.page,
+                const renderer = new TrellisHistogram2DReceiver(this.title, this.page,
                     this.originator, rowCount, this.schema,
                     [xAxis, yAxis, groupByAxis], 1.0, trellisShape, rr, this.options);
                 rr.chain(this.operation);
@@ -379,7 +379,7 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                         "Heatmaps (" + this.schema.displayName(this.cds[0].name) +
                         ", " + this.schema.displayName(this.cds[1].name) +
                         ") grouped by " + this.schema.displayName(this.cds[2].name));
-                const renderer = new TrellisHeatmapRenderer(this.title, this.page,
+                const renderer = new TrellisHeatmapReceiver(this.title, this.page,
                     this.originator, rowCount, this.schema,
                     [xAxis, yAxis, groupByAxis], 1.0, trellisShape, rr, this.options.reusePage);
                 rr.chain(this.operation);
@@ -406,7 +406,7 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                     this.title = new PageTitle(
                         "Heatmap (" + this.schema.displayName(this.cds[0].name) + ", " +
                         this.schema.displayName(this.cds[1].name) + ")");
-                const renderer = new HeatmapRenderer(this.title, this.page,
+                const renderer = new HeatmapReceiver(this.title, this.page,
                     this.originator, rowCount, this.schema,
                     [xAxis, yAxis], 1.0, rr, this.options.reusePage);
                 rr.chain(this.operation);
@@ -446,7 +446,7 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                     this.title = new PageTitle(
                         "Histogram (" + this.schema.displayName(this.cds[0].name) + ", " +
                     this.schema.displayName(this.cds[1].name) + ")");
-                const renderer = new Histogram2DRenderer(this.title, this.page,
+                const renderer = new Histogram2DReceiver(this.title, this.page,
                     this.originator, rowCount, this.schema,
                     [xAxis, yData], cdfArg.samplingRate, rr,
                     this.options);
@@ -466,7 +466,7 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
  * a new range computation, which in turns initiates a chart
  * rendering.
  */
-export class FilterReceiver extends BaseRenderer {
+export class FilterReceiver extends BaseReceiver {
     constructor(protected title: PageTitle,
                 protected cds: IColumnDescription[],
                 protected schema: SchemaClass,

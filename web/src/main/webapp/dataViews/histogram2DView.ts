@@ -28,7 +28,7 @@ import {
 } from "../javaBridge";
 import {Receiver, RpcRequest} from "../rpc";
 import {SchemaClass} from "../schemaClass";
-import {BaseRenderer, TableTargetAPI} from "../tableTarget";
+import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {CDFPlot} from "../ui/CDFPlot";
 import {IDataView} from "../ui/dataview";
 import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
@@ -353,7 +353,7 @@ export class Histogram2DView extends HistogramViewBase {
     }
 
     protected getCombineRenderer(title: PageTitle):
-        (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer {
+        (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
             return new FilterReceiver(
                 title,
@@ -570,7 +570,7 @@ export class Histogram2DView extends HistogramViewBase {
  * Receives partial results and renders a 2D histogram.
  * The 2D histogram data and the Heatmap data use the same data structure.
  */
-export class Histogram2DRenderer extends Receiver<Pair<Heatmap, HistogramBase>> {
+export class Histogram2DReceiver extends Receiver<Pair<Heatmap, HistogramBase>> {
     protected view: Histogram2DView;
 
     constructor(title: PageTitle,

@@ -25,7 +25,7 @@ import {
     RemoteObjectId
 } from "../javaBridge";
 import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
-import {BaseRenderer, TableTargetAPI} from "../tableTarget";
+import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {SchemaClass} from "../schemaClass";
 import {
     ICancellable,
@@ -379,7 +379,7 @@ export class TrellisHistogramView extends TrellisChartView {
     }
 
     protected getCombineRenderer(title: PageTitle):
-        (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer {
+        (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
             return new FilterReceiver(
                 title,
@@ -432,7 +432,7 @@ export class TrellisHistogramView extends TrellisChartView {
 /**
  * Renders a Trellis plot of 1D histograms
  */
-export class TrellisHistogramRenderer extends Receiver<Heatmap> {
+export class TrellisHistogramReceiver extends Receiver<Heatmap> {
     protected trellisView: TrellisHistogramView;
 
     constructor(title: PageTitle,

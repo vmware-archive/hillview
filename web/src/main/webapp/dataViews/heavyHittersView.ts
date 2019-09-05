@@ -19,7 +19,7 @@ import {HeavyHittersSerialization, IViewSerialization} from "../datasetView";
 import {IColumnDescription, NextKList, RecordOrder, RemoteObjectId, TopList} from "../javaBridge";
 import {OnCompleteReceiver, RemoteObject} from "../rpc";
 import {SchemaClass} from "../schemaClass";
-import {BaseRenderer, BigTableView, TableTargetAPI} from "../tableTarget";
+import {BaseReceiver, BigTableView, TableTargetAPI} from "../tableTarget";
 import {DataRangeUI} from "../ui/dataRangeUI";
 import {IDataView} from "../ui/dataview";
 import {Dialog, FieldKind, NotifyDialog} from "../ui/dialog";
@@ -407,7 +407,7 @@ export class HeavyHittersView extends BigTableView {
     }
 
     protected getCombineRenderer(title: PageTitle):
-        (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer {
+        (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         // Not used
         return null;
     }

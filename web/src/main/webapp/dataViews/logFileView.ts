@@ -18,7 +18,7 @@
 import {IHtmlElement, removeAllChildren} from "../ui/ui";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {FindBar} from "../ui/findBar";
-import {BaseRenderer, OnNextK, TableTargetAPI} from "../tableTarget";
+import {BaseReceiver, OnNextK, TableTargetAPI} from "../tableTarget";
 import {FullPage} from "../ui/fullPage";
 import {convertToStringFormat, ICancellable, makeMissing, significantDigits, makeSpan} from "../util";
 import {
@@ -231,7 +231,7 @@ export class LogFileView extends TableTargetAPI implements IHtmlElement, OnNextK
     }
 }
 
-export class LogFileReceiver extends BaseRenderer {
+export class LogFileReceiver extends BaseReceiver {
     public constructor(page: FullPage,
                        operation: ICancellable<RemoteObjectId>,
                        protected filename: string,
@@ -252,7 +252,7 @@ export class LogFileReceiver extends BaseRenderer {
     }
 }
 
-class PrunedLogFileReceiver extends BaseRenderer {
+class PrunedLogFileReceiver extends BaseReceiver {
     public constructor(page: FullPage,
                        operation: ICancellable<RemoteObjectId>,
                        protected filename: string,

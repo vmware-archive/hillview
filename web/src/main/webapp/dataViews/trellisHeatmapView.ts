@@ -24,7 +24,7 @@ import {
     RemoteObjectId
 } from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
-import {BaseRenderer, TableTargetAPI} from "../tableTarget";
+import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
 import {HeatmapLegendPlot} from "../ui/legendPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
@@ -362,7 +362,7 @@ export class TrellisHeatmapView extends TrellisChartView {
     }
 
     protected getCombineRenderer(title: PageTitle):
-        (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseRenderer {
+        (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
             return new FilterReceiver(
                 title,
@@ -429,7 +429,7 @@ export class TrellisHeatmapView extends TrellisChartView {
 /**
  * Renders a Trellis plot of heatmaps
  */
-export class TrellisHeatmapRenderer extends Receiver<Heatmap3D> {
+export class TrellisHeatmapReceiver extends Receiver<Heatmap3D> {
     protected trellisView: TrellisHeatmapView;
 
     constructor(title: PageTitle,

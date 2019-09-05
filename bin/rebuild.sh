@@ -38,8 +38,12 @@ export MAVEN_OPTS="-Xmx2048M"
 EXTRAARGS=""
 if [ ${SKIP} -eq "1" ]; then
     EXTRAARGS="-DskipTests "${EXTRAARGS}
+    echo "Skipping tests"
+else
+    echo "Running tests"
 fi
 if [ ${TOOLS} -eq "1" ]; then
+    echo "Building extra tools"
     EXTRAARGS="-P tools "${EXTRAARGS}
 fi
 pushd ${mydir}/../platform

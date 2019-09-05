@@ -19,6 +19,7 @@ package org.hillview.utils;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hillview.dataset.api.IJson;
@@ -30,6 +31,7 @@ import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * This class has some useful static helper methods.
@@ -244,5 +246,26 @@ public class Utilities {
                 return Utilities.trim(kv[1], '"');
         }
         return null;
+    }
+
+    /**
+     * Given a JSON string that represents an object return the
+     * sub-object corresponding to the specified key.
+     * @param json  JSON string.
+     * @param key   Key name.
+     * @return      The corresponding field, or null.
+     */
+    @Nullable
+    public static String getJsonField(@Nullable String json, String key) {
+        if (json == null)
+            return null;
+        Map<String, Object> map = IJson.gsonInstance.fromJson(json,
+                new TypeToken<Map<String, String>>(){}.getType());
+        if (map == null)
+            return null;
+        Object o = map.get(key);
+        if (o == null)
+            return null;
+        return o.toString();
     }
 }
