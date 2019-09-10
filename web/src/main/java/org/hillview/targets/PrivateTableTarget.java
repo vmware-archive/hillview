@@ -117,10 +117,10 @@ public class PrivateTableTarget extends RpcTarget {
             HillviewComputation,
             Pair<Histogram, Histogram>> addLaplaceNoise(PrivacyMetadata metadata) {
         return (e, c) -> {
-            PrivateHistogram privateHist = new PrivateHistogram(e.first, metadata);
+            PrivateHistogram privateHist = new PrivateHistogram(e.first);
             privateHist.addDyadicLaplaceNoise();
 
-            PrivateHistogram privateCDF = new PrivateHistogram(e.second, metadata);
+            PrivateHistogram privateCDF = new PrivateHistogram(e.second);
             privateCDF.addDyadicLaplaceNoise();
 
             return new Pair(privateHist.histogram, privateCDF.histogram);

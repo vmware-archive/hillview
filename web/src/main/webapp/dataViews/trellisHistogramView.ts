@@ -305,7 +305,7 @@ export class TrellisHistogramView extends TrellisChartView {
         for (let i = 0; i < coarsened.length; i++) {
             const plot = this.hps[i];
             const coarse = coarsened[i];
-            plot.setHistogram(coarse, this.samplingRate, this.xAxisData, max);
+            plot.setHistogram(coarse, this.samplingRate, this.xAxisData, max, this.page.dataset.isPrivate());
             plot.displayAxes = false;
             plot.draw();
             plot.border(1);

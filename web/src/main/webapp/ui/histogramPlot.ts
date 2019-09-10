@@ -48,7 +48,8 @@ export class HistogramPlot extends Plot {
     public maxYAxis: number | null;
     public max: number;  // maximum value in a bucket
     public displayAxes: boolean;
-
+    public isPrivate: boolean;
+    
     public constructor(protected plottingSurface: PlottingSurface) {
         super(plottingSurface);
         this.displayAxes = true;
@@ -62,7 +63,7 @@ export class HistogramPlot extends Plot {
      * @param maxYAxis      If present it is used to scale the maximum value for the Y axis.
      */
     public setHistogram(bars: HistogramBase, samplingRate: number,
-                        axisData: AxisData, maxYAxis: number | null): void {
+                        axisData: AxisData, maxYAxis: number | null, isPrivate: boolean): void {
         this.histogram = bars;
         this.samplingRate = samplingRate;
         this.xAxisData = axisData;
@@ -70,6 +71,7 @@ export class HistogramPlot extends Plot {
         const bucketCount = this.histogram.buckets.length;
         this.barWidth = chartWidth / bucketCount;
         this.maxYAxis = maxYAxis;
+	this.isPrivate = isPrivate;
     }
 
     public draw(): void {
@@ -111,26 +113,31 @@ export class HistogramPlot extends Plot {
             .style("fill", "red")
             .append("svg:title")
             .text("Bar is truncated");
-	
-        // confidence intervals
-        bars.append("line")
-            .attr("x1", 0)
-            .attr("y1", (d) => this.yScale(d[0] - d[1]))
-            .attr("x2", 0)
-            .attr("y2", (d) => this.yScale(d[0] + d[2]))
-            .attr("stroke-width", 2)
-	    .attr("stroke", "black")
-            .attr("transform", () => `translate(${this.barWidth / 2}, 0)`);
 
-        bars.append("text")
-            .attr("class", "histogramBoxLabel")
-            .attr("x", this.barWidth / 2)
-            .attr("y", (d) => this.yScale(d[0]) < 0 ? 0 : this.yScale(d[0]))
-            .attr("text-anchor", "middle")
-            .attr("dy", (d) => d <= (9 * displayMax / 10) ? "-.25em" : ".75em")
-            .text((d) => HistogramPlot.boxHeight(
-                d[0], this.samplingRate, this.xAxisData.range.presentCount))
-            .exit();
+	if (this.isPrivate) {
+            // confidence intervals
+            bars.append("line")
+		.attr("x1", 0)
+		.attr("y1", (d) => this.yScale(d[0] - d[1]))
+		.attr("x2", 0)
+		.attr("y2", (d) => this.yScale(d[0] + d[2]))
+		.attr("stroke-width", 1)
+		.attr("stroke", "black")
+		.attr("stroke-linecap", "round")
+		.attr("transform", () => `translate(${this.barWidth / 2}, 0)`);
+	}
+
+	if (!this.isPrivate) {
+            bars.append("text")
+		.attr("class", "histogramBoxLabel")
+		.attr("x", this.barWidth / 2)
+		.attr("y", (d) => this.yScale(d[0]) < 0 ? 0 : this.yScale(d[0]))
+		.attr("text-anchor", "middle")
+		.attr("dy", (d) => d <= (9 * displayMax / 10) ? "-.25em" : ".75em")
+		.text((d) => HistogramPlot.boxHeight(
+                    d[0], this.samplingRate, this.xAxisData.range.presentCount))
+		.exit();
+	}
 
         this.yAxis = d3axisLeft(this.yScale)
             .tickFormat(d3format(".2s"));

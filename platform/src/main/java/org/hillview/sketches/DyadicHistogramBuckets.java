@@ -268,19 +268,22 @@ public class DyadicHistogramBuckets implements IHistogramBuckets {
     // Compute noise to add to this bucket using the dyadic decomposition as the PRG seed.
     // If cdfBuckets is true, computes the noise based on the dyadic decomposition of the interval [0, bucket right leaf]
     // rather than [bucket left leaf, bucket right leaf].
-    public double noiseForBucket(int bucketIdx, boolean cdf) {
+    // Returns the noise and the total variance of the variables used to compute the noise.
+    public Pair<Double, Double> noiseForBucket(int bucketIdx, boolean cdf) {
         ArrayList<Pair<Long, Long>> intervals = bucketDecomposition(bucketIdx, cdf);
 
         double noise = 0;
-        double scale = (this.globalMax - this.globalMin) / (this.epsilon * this.granularity);
+        double variance = 0;
+        double scale = Math.log((this.globalMax - this.globalMin) / (this.epsilon * this.granularity)) / Math.log(2);
         for (Pair<Long, Long> x : intervals) {
             LaplaceDistribution dist = new LaplaceDistribution(0, scale); // TODO: (more) secure PRG
             dist.reseedRandomGenerator(x.hashCode()); // Each node's noise should be deterministic, based on node's ID
             noise += dist.sample();
+            variance += 2*(Math.pow(scale, 2));
         }
 
-        System.out.println("Scale: " + scale + ", Noise: " + noise);
-        return noise;
+        System.out.println("Scale: " + scale + ", Noise: " + noise + ", Stdev: " + Math.sqrt(variance));
+        return new Pair(noise, variance);
     }
 
     public double getMin() { return this.minValue; }

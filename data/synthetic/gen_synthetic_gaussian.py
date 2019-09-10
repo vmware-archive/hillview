@@ -12,7 +12,7 @@ def get_metadata(e, g, gMin, gMax):
 def main():
     mean = 0.0
     stdev = 25.0
-    nsamples = 1000
+    nsamples = 100000
     values = np.random.normal(mean, stdev, nsamples)
 
     colname = "Values"
@@ -26,7 +26,7 @@ def main():
         f.write(json.dumps(schema))
 
     metadata = {'metadata': {colname:get_metadata(0.01, 1.0, -100.0, 100.0)}}
-    with open('metadata.json', 'w') as f:
+    with open('privacy_metadata.json', 'w') as f:
         f.write(json.dumps(metadata))
 
 if __name__=='__main__':
