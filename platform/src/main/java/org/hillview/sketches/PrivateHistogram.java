@@ -1,8 +1,7 @@
 package org.hillview.sketches;
 
-import org.apache.commons.math3.distribution.LaplaceDistribution;
 import org.hillview.dataset.api.IJson;
-import org.hillview.table.rows.PrivacyMetadata;
+import org.hillview.dataset.api.Pair;
 
 import java.io.Serializable;
 
@@ -10,14 +9,9 @@ public class PrivateHistogram implements Serializable, IJson {
     public Histogram histogram; // Note that this histogram should have DyadicHistogramBuckets as its bucket description.
     private DyadicHistogramBuckets bucketDescription; // Just an alias for the buckets in the histogram.
 
-    // Used for computing the total noise.
-    private PrivacyMetadata metadata;
-
-    public PrivateHistogram(final Histogram histogram, PrivacyMetadata metadata) {
+    public PrivateHistogram(final Histogram histogram) {
         this.histogram = histogram;
         this.bucketDescription = (DyadicHistogramBuckets)histogram.getBucketDescription();
-
-        this.metadata = metadata;
     }
 
     /**
@@ -28,25 +22,21 @@ public class PrivateHistogram implements Serializable, IJson {
      * The total noise is the sum of the noise variables in the intervals composing the desired interval or bucket.
      */
     public void addDyadicLaplaceNoise() {
-        double leaves = (metadata.globalMax - metadata.globalMin) / metadata.granularity;
-        double scale = (Math.log(leaves) / (metadata.epsilon * Math.log(2)));
-
-        LaplaceDistribution dist = new LaplaceDistribution(0, scale); // TODO: (more) secure PRG
-        System.out.println("Adding noise with scale: " + scale);
         System.out.println("Buckets: " + this.histogram.buckets.length);
         for (int i = 0; i < this.histogram.buckets.length; i++) {
-            this.histogram.buckets[i] += this.bucketDescription.noiseForBucket(i, false);
+            Pair<Double, Double> noise = this.bucketDescription.noiseForBucket(i, false);
+            this.histogram.buckets[i] += noise.first;
             System.out.println("Bucket " + i + ": " + this.histogram.buckets[i]);
             // Postprocess so that no buckets are negative
             this.histogram.buckets[i] = Math.max(0, this.histogram.buckets[i]);
 
             // also set confidence intervals for this noise level
-            this.histogram.confMins[i] = 20;
-            this.histogram.confMaxes[i] = 20;
+            this.histogram.confMins[i] = 2*Math.sqrt(noise.second);
+            this.histogram.confMaxes[i] = 2*Math.sqrt(noise.second);
         }
 
         for (int i = 0; i < this.histogram.cdfBuckets.length; i++) {
-            this.histogram.cdfBuckets[i] += this.bucketDescription.noiseForBucket(i, true);
+            this.histogram.cdfBuckets[i] += this.bucketDescription.noiseForBucket(i, true).first;
             System.out.println("Bucket " + i + ": " + this.histogram.cdfBuckets[i]);
             if (i > 0) {
                 // Postprocess CDF to be monotonically increasing

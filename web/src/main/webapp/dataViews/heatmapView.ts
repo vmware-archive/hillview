@@ -233,7 +233,8 @@ export class HeatmapView extends ChartView {
         }
         */
         if (this.showMissingData) {
-            this.xHistoPlot.setHistogram(heatmap.histogramMissingX, this.samplingRate, this.xAxisData, null);
+            this.xHistoPlot.setHistogram(heatmap.histogramMissingX, this.samplingRate, this.xAxisData, null,
+					 this.page.dataset.isPrivate());
             this.xHistoPlot.draw();
         }
 
