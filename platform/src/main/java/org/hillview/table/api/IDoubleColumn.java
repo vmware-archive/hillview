@@ -31,7 +31,8 @@ public interface IDoubleColumn extends IColumn {
     @Nullable
     @Override
     default String asString(final int rowIndex) {
-        assert !this.isMissing(rowIndex);
+        if (this.isMissing(rowIndex))
+            return null;
         return Double.toString(this.getDouble(rowIndex));
     }
 

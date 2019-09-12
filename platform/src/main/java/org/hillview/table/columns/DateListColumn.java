@@ -86,6 +86,8 @@ public class DateListColumn
     @Nullable
     @Override
     public String asString(int rowIndex) {
+        if (this.isMissing(rowIndex))
+            return null;
         Instant dt = this.getDate(rowIndex);
         return Converters.toString(dt);
     }

@@ -35,7 +35,8 @@ public interface IDurationColumn extends IColumn {
     @Nullable
     @Override
     default String asString(final int rowIndex) {
-        assert !this.isMissing(rowIndex);
+        if (this.isMissing(rowIndex))
+            return null;
         Duration iv = this.getDuration(rowIndex);
         assert iv != null;
         return iv.toString();

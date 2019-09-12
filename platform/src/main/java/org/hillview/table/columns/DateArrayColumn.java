@@ -67,8 +67,10 @@ public final class DateArrayColumn
     }
 
     @Override
+    @Nullable
     public String asString(int rowIndex) {
-        assert !this.isMissing(rowIndex);
+        if (this.isMissing(rowIndex))
+            return null;
         return Converters.toString(this.getDate(rowIndex));
     }
 

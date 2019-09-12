@@ -75,9 +75,10 @@ class DurationListColumn extends DoubleListColumn implements IDurationColumn {
     @Nullable
     @Override
     public String asString(int rowIndex) {
-        Duration dt = this.getDuration(rowIndex);
-        if (dt == null)
+        if (this.isMissing(rowIndex))
             return null;
+        Duration dt = this.getDuration(rowIndex);
+        assert (dt != null);
         return dt.toString();
     }
 
