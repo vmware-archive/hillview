@@ -38,7 +38,8 @@ import {
     convertToStringFormat, formatNumber,
     ICancellable,
     PartialResult,
-    significantDigits
+    significantDigits,
+    convertToInterval
 } from "../util";
 import {TableView} from "./tableView";
 import {TSViewBase} from "./tsViewBase";
@@ -54,48 +55,84 @@ export class SchemaView extends TSViewBase {
     protected contextMenu: ContextMenu;
     protected summary: HTMLElement;
     protected stats: Map<string, BasicColStats>;
+    protected nameDialog: Dialog;
+    protected typeDialog: Dialog;
 
     constructor(remoteObjectId: RemoteObjectId,
                 page: FullPage,
                 rowCount: number,
-                schema: SchemaClass,
-                elapsedMs: number) {
+                schema: SchemaClass) {
         super(remoteObjectId, rowCount, schema, page, "Schema");
-        this.show();
         this.stats = null;
-        this.page.reportTime(elapsedMs);
-    }
-
-    public static reconstruct(ser: IViewSerialization, page: FullPage): IDataView {
-        const schema = new SchemaClass([]).deserialize(ser.schema);
-        if (schema == null)
-            return null;
-        return new SchemaView(ser.remoteObjectId, page, ser.rowCount, schema, 0);
-    }
-
-    public refresh(): void {
-        this.show();
-    }
-
-    public show(): void {
         this.topLevel = document.createElement("div");
         this.contextMenu = new ContextMenu(this.topLevel);
-
         const viewMenu = new SubMenu([{
             text: "Selected columns",
             action: () => this.showTable(),
             help: "Show the data using a tabular view containing the selected columns.",
         }]);
+
+        /* Dialog box for selecting columns based on name */
+        this.nameDialog = new Dialog("Select by name",
+            "Allows selecting/deselecting columns by name using regular expressions");
+        const name = this.nameDialog.addTextField("selected", "Name (regex)", FieldKind.String, "",
+            "Names of columns to select (regular expressions allowed)");
+        name.required = true;
+        const actions: string[] = ["Add", "Remove"];
+        this.nameDialog.addSelectField("action", "Action", actions, "Add",
+            "Add to or Remove from current selection");
+        this.nameDialog.setAction(() => {
+            const regExp: RegExp = new RegExp(this.nameDialog.getFieldValue("selected"));
+            const action: string = this.nameDialog.getFieldValue("action");
+            this.nameAction(regExp, action);
+            this.display.highlightSelectedRows();
+            this.selectedSummary();
+        });
+
+        /* Dialog box for selecting columns based on type*/
+        this.typeDialog = new Dialog("Select by type", "Allows selecting/deselecting columns based on type");
+        this.typeDialog.addSelectField("selectedType", "Type",
+            allContentsKind, "String",
+            "Type of columns you wish to select");
+        this.typeDialog.addSelectField("action", "Action", actions, "Add",
+            "Add to or Remove from current selection");
+        this.typeDialog.setCacheTitle("SchemaTypeDialog");
+        this.typeDialog.setAction(() => {
+            const selectedType: string = this.typeDialog.getFieldValue("selectedType");
+            const action: string = this.typeDialog.getFieldValue("action");
+            this.typeAction(selectedType, action);
+            this.display.highlightSelectedRows();
+            this.selectedSummary();
+        });
+
+        const statDialog = new Dialog("Select by statistics",
+            "Allow selecting/deselecting columns based on statistics\n" +
+            "(only works on the columns whose statistics have been computed).");
+        statDialog.addBooleanField("selectEmpty", "All data missing", true,
+            "Select all columns that only have missing data.");
+        statDialog.addTextField("lowStder", "stddev/mean threshold", FieldKind.Double, ".1",
+            "Select all columns where stddev/mean < threshold.  If the mean is zero the columns is never selected.");
+        statDialog.setCacheTitle("SchemaStatDialog");
+        statDialog.setAction(() => {
+            const selE: boolean = statDialog.getBooleanValue("selectEmpty");
+            const stddev: number = statDialog.getFieldValueAsNumber("lowStder");
+            this.statAction(selE, stddev);
+            this.display.highlightSelectedRows();
+            this.selectedSummary();
+        });
+
         const selectMenu = new SubMenu([{
             text: "By Name",
-            action: () => nameDialog.show(),
+            action: () => this.nameDialog.show(),
             help: "Select Columns by name.",
         }, {
             text: "By Type",
-            action: () => {
-                typeDialog.show();
-            },
+            action: () => this.typeDialog.show(),
             help: "Select Columns by type.",
+        }, {
+            text: "By statistics",
+            action: () => statDialog.show(),
+            help: "Select columns by statistics."
         }]);
         const menu = new TopMenu([
             // this.saveAsMenu(),
@@ -105,59 +142,52 @@ export class SchemaView extends TSViewBase {
         ]);
         this.page.setMenu(menu);
         this.topLevel.appendChild(document.createElement("br"));
-
-        const para = document.createElement("div");
-        para.textContent = "Select the columns that you would like to browse";
-        this.topLevel.appendChild(para);
-
         this.display = new TabularDisplay();
+        this.topLevel.appendChild(this.display.getHTMLRepresentation());
+        this.summary = document.createElement("div");
+        this.topLevel.appendChild(this.summary);
+    }
+
+    public static reconstruct(ser: IViewSerialization, page: FullPage): IDataView {
+        const schema = new SchemaClass([]).deserialize(ser.schema);
+        if (schema == null)
+            return null;
+        return new SchemaView(ser.remoteObjectId, page, ser.rowCount, schema);
+    }
+
+    public refresh(): void {
+        this.show(0);
+    }
+
+    public show(elapsedMs: number): void {
+        this.display.clear();
         const names = ["#", "Name", "Type"];
         const descriptions = ["Column number", "Column name", "Type of data stored within the column"];
         if (this.stats != null) {
-            names.push("Min", "Max", "Average", "Missing");
-            descriptions.push("Minimum value", "Maximum value", "Average value", "Number of missing elements");
+            // This has to be kept in sync with basicColStats in TableTarget.java
+            // There we ask for two moments.
+            names.push("Min", "Max", "Average", "Stddev", "Missing");
+            descriptions.push("Minimum value", "Maximum value", "Average value",
+                "Standard deviation", "Number of missing elements");
         }
         this.display.setColumns(names, descriptions);
-
-        /* Dialog box for selecting columns based on name */
-        const nameDialog = new Dialog("Select by name",
-            "Allows selecting/deselecting columns by name using regular expressions");
-        const name = nameDialog.addTextField("selected", "Name (regex)", FieldKind.String, "",
-            "Names of columns to select (regular expressions allowed)");
-        name.required = true;
-        const actions: string[] = ["Add", "Remove"];
-        nameDialog.addSelectField("action", "Action", actions, "Add",
-            "Add to or Remove from current selection");
-        nameDialog.setAction(() => {
-            const regExp: RegExp = new RegExp(nameDialog.getFieldValue("selected"));
-            const action: string = nameDialog.getFieldValue("action");
-            this.nameAction(regExp, action);
-            this.display.highlightSelectedRows();
-        });
         this.display.addRightClickHandler("Name", (e: MouseEvent) => {
             e.preventDefault();
-            nameDialog.show();
-        });
-
-        /* Dialog box for selecting columns based on type*/
-        const typeDialog = new Dialog("Select by type", "Allows selecting/deselecting columns based on type");
-        typeDialog.addSelectField("selectedType", "Type",
-            allContentsKind, "String",
-            "Type of columns you wish to select");
-        typeDialog.addSelectField("action", "Action", actions, "Add",
-            "Add to or Remove from current selection");
-        typeDialog.setCacheTitle("SchemaTypeDialog");
-        typeDialog.setAction(() => {
-            const selectedType: string = typeDialog.getFieldValue("selectedType");
-            const action: string = typeDialog.getFieldValue("action");
-            this.typeAction(selectedType, action);
-            this.display.highlightSelectedRows();
+            this.nameDialog.show();
         });
         this.display.addRightClickHandler("Type", (e: MouseEvent) => {
             e.preventDefault();
-            typeDialog.show();
+            this.typeDialog.show();
         });
+        this.displayRows();
+        this.display.getHTMLRepresentation().setAttribute("overflow-x", "hidden");
+        if (this.rowCount != null)
+            this.summary.textContent = formatNumber(this.rowCount) + " rows";
+        this.page.setDataView(this);
+        this.page.reportTime(elapsedMs);
+    }
 
+    private displayRows(): void {
         for (let i = 0; i < this.schema.length; i++) {
             const cd = this.schema.get(i);
             const data = [
@@ -168,37 +198,34 @@ export class SchemaView extends TSViewBase {
                 const cs = this.stats.get(cd.name);
                 if (cs != null) {
                     if (cs.presentCount === 0) {
-                        data.push("", "", "");
+                        data.push("", "", "", "");
                     } else {
                         if (kindIsString(cd.kind)) {
-                            data.push(cs.minString, cs.maxString, "");
+                            data.push(cs.minString, cs.maxString, "", "");
                         } else {
                             let avg;
-                            if (cd.kind === "Date")
+                            let stddev;
+                            if (cd.kind === "Date") {
                                 avg = convertToStringFormat(cs.moments[0], "Date");
-                            else
+                                stddev = convertToInterval(cs.moments[1]);
+                            } else {
                                 avg = significantDigits(cs.moments[0]);
+                                stddev = significantDigits(cs.moments[1]);
+                            }
                             data.push(
                                 convertToStringFormat(cs.min, cd.kind),
                                 convertToStringFormat(cs.max, cd.kind),
-                                avg);
+                                avg, stddev);
                         }
                     }
                     data.push(formatNumber(cs.missingCount));
                 } else {
-                    data.push("", "", "", "");
+                    data.push("", "", "", "", "");
                 }
             }
             const row = this.display.addRow(data);
             row.oncontextmenu = (e) => this.createAndShowContextMenu(e);
         }
-        this.topLevel.appendChild(this.display.getHTMLRepresentation());
-        this.display.getHTMLRepresentation().setAttribute("overflow-x", "hidden");
-        this.summary = document.createElement("div");
-        this.topLevel.appendChild(this.summary);
-        if (this.rowCount != null)
-            this.summary.textContent = formatNumber(this.rowCount) + " rows";
-        this.page.setDataView(this);
     }
 
     public createAndShowContextMenu(e: MouseEvent): void {
@@ -308,17 +335,17 @@ export class SchemaView extends TSViewBase {
         for (let i = 0; i < cols.length; i++) {
             this.stats.set(cols[i], stats[i]);
         }
-        this.show();
+        this.show(0);
     }
 
     public resize(): void {
-        this.show();
+        this.show(0);
     }
 
     private dropColumns(): void {
         const selected = cloneToSet(this.getSelectedColNames());
         this.schema = this.schema.filter((c) => !selected.has(c.name));
-        this.show();
+        this.show(0);
     }
 
     private nameAction(regExp: RegExp, action: string): void {
@@ -329,6 +356,22 @@ export class SchemaView extends TSViewBase {
                 else if (action === "Remove")
                     this.display.selectedRows.delete(i);
             }
+        }
+    }
+
+    // Action triggered by the statistics selection menu.
+    private statAction(allE: boolean, thresh: number): void {
+        for (let i = 0; i < this.schema.length; i++) {
+            const name = this.schema.get(i).name;
+            const stat = this.stats.get(name);
+            if (stat == null)
+                continue;
+
+            if (allE && stat.presentCount === 0)
+                this.display.selectedRows.add(i);
+            if (stat.moments[0] > .001 &&
+                (stat.moments[1] / stat.moments[0]) < thresh)
+                this.display.selectedRows.add(i);
         }
     }
 
@@ -345,6 +388,10 @@ export class SchemaView extends TSViewBase {
         const colNames: string[] = [];
         this.display.selectedRows.getStates().forEach((i) => colNames.push(this.schema.get(i).name));
         return colNames;
+    }
+
+    private selectedSummary(): void {
+        this.page.reportError(this.display.selectedRows.size().toString() + " are selected");
     }
 
     /**

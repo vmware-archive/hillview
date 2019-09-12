@@ -112,15 +112,22 @@ public final class TableTarget extends RpcTarget {
         this.runPrune(this.table, new EmptyTableMap(), TableTarget::new, request, context);
     }
 
+    private static JsonList<BasicColStats> computeStdDev(JsonList<BasicColStats> stats) {
+        for (BasicColStats s : stats) {
+            // We mutate in place; this is safe in the root node.
+            if (s.moments.length > 1)
+                s.moments[1] = Math.sqrt(s.moments[1] - s.moments[0] * s.moments[0]);
+        }
+        return stats;
+    }
+
     @HillviewRpc
     public void basicColStats(RpcRequest request, RpcRequestContext context) {
         String[] args = request.parseArgs(String[].class);
-        BasicColStatSketch sk = new BasicColStatSketch(args, 1);
-        if (args.length < 100)
-            this.runSketch(this.table, sk, request, context);
-        else
-            // The result may be big, so we don't send it too often to the UI
-            this.runCompleteSketch(this.table, sk, (e, c) -> e, request, context);
+        BasicColStatSketch sk = new BasicColStatSketch(args, 2);
+        // If the view has many columns sending partial results to the
+        // UI overwhelms the browser, so we only send the final result.
+        this.runCompleteSketch(this.table, sk, (e, c) -> computeStdDev(e), request, context);
     }
 
     static class ContainsArgs {

@@ -59,7 +59,7 @@ public class Utilities {
                 case '?':
                     s.append(".");
                     break;
-                case '(': case ')': case '[': case ']': case '$':
+                case '(': case ')': case '$':
                 case '.': case '{': case '}': case '|':
                 case '\\':
                     s.append("\\");

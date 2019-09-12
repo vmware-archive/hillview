@@ -955,8 +955,9 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
 
     public viewSchema(): void {
         const newPage = this.dataset.newPage(new PageTitle("Schema"), this.page);
-        const sv = new SchemaView(this.remoteObjectId, newPage, this.rowCount, this.schema, 0);
+        const sv = new SchemaView(this.remoteObjectId, newPage, this.rowCount, this.schema);
         newPage.setDataView(sv);
+        sv.show(0);
         newPage.scrollIntoView();
     }
 
@@ -1235,8 +1236,9 @@ export class SchemaReceiver extends OnCompleteReceiver<TableSummary> {
         const schemaClass = new SchemaClass(summary.schema);
         if (summary.schema.length > 20 && !this.forceTableView) {
             const dataView = new SchemaView(this.remoteObject.remoteObjectId, this.page,
-                summary.rowCount, schemaClass, this.elapsedMilliseconds());
+                summary.rowCount, schemaClass);
             this.page.setDataView(dataView);
+            dataView.show(this.elapsedMilliseconds());
         } else {
             const nk: NextKList = {
                 rowsScanned: summary.rowCount,

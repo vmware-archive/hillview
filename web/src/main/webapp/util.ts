@@ -572,3 +572,50 @@ export function px(dim: number): string {
         return dim.toString();
     return dim.toString() + "px";
 }
+
+/**
+ * Convert a value expressed in milliseconds to a time interval.
+ */
+export function convertToInterval(val: number): string {
+    if (val === 0)
+        return "0";
+    const ms = val % 1000;
+    val = Math.floor(val / 1000);
+    const sec = val % 60;
+    val = Math.floor(val / 60);
+    const min = val % 60;
+    val = Math.floor(val / 60);
+    const hours = val % 24;
+    const days = Math.floor(val / 24);
+    let result: string = "";
+    if (days > 0)
+        result = significantDigits(days) + "days";
+    if (days > 1000)
+        return result;
+    if (hours > 0) {
+        if (result.length !== 0)
+            result += " ";
+        result += hours.toString() + "H";
+    }
+    if (min > 0) {
+        if (result.length !== 0)
+            result += " ";
+        result += " " + min.toString() + "M";
+    }
+    let addedSec = false;
+    if (sec > 0) {
+        if (result.length !== 0)
+            result += " ";
+        addedSec = true;
+        result += sec.toString();
+    }
+    if (ms > 0 && days === 0) {
+        if (!addedSec)
+            result += " 0";
+        addedSec = true;
+        result += "." + ms.toString();
+    }
+    if (addedSec)
+        result += "s";
+    return result;
+}
