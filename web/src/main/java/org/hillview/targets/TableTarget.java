@@ -116,7 +116,7 @@ public final class TableTarget extends RpcTarget {
         for (BasicColStats s : stats) {
             // We mutate in place; this is safe in the root node.
             if (s.moments.length > 1)
-                s.moments[1] = Math.sqrt(s.moments[1] - s.moments[0] * s.moments[0]);
+                s.moments[1] = Math.sqrt(Math.max(0, s.moments[1] - s.moments[0] * s.moments[0]));
         }
         return stats;
     }

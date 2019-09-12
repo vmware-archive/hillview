@@ -160,6 +160,7 @@ export class SchemaView extends TSViewBase {
     }
 
     public show(elapsedMs: number): void {
+        const scrollPos = this.display.scrollPosition();
         this.display.clear();
         const names = ["#", "Name", "Type"];
         const descriptions = ["Column number", "Column name", "Type of data stored within the column"];
@@ -184,6 +185,7 @@ export class SchemaView extends TSViewBase {
         if (this.rowCount != null)
             this.summary.textContent = formatNumber(this.rowCount) + " rows";
         this.page.setDataView(this);
+        this.display.setScrollPosition(scrollPos);
         this.page.reportTime(elapsedMs);
     }
 

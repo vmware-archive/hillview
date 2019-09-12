@@ -45,6 +45,14 @@ export class TabularDisplay implements IHtmlElement {
         this.clear();
     }
 
+    public scrollPosition(): number {
+        return this.topLevel.scrollTop;
+    }
+
+    public setScrollPosition(pos: number): void {
+        this.topLevel.scrollTop = pos;
+    }
+
     public clear(): void {
         if (this.table != null)
             this.topLevel.removeChild(this.table);
