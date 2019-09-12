@@ -29,6 +29,7 @@ import org.hillview.table.rows.RowSnapshot;
 import org.hillview.test.BaseTest;
 import org.hillview.utils.DateParsing;
 import org.hillview.utils.GrokExtra;
+import org.hillview.utils.Utilities;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -336,10 +337,17 @@ public class GenericLogsTest extends BaseTest {
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
         if (BaseTest.toPrint)
-            System.out.println(table.toLongString(10));
-        Assert.assertEquals("Table[11x287]", table.toString());
+            System.out.println(table.toLongString(3));
+        Assert.assertEquals("Table[15x287]", table.toString());
+        @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
         RowSnapshot row = new RowSnapshot(table, 0);
         String structured = row.getString(LogFiles.parseErrorColumn);
         Assert.assertNull(structured);
+    }
+
+    @Test
+    public void testWildcard() {
+        String re = Utilities.wildcardToRegex("/host/vsan/domTraces[34].txt-*");
+        Assert.assertEquals("^/host/vsan/domTraces[34]\\.txt-.*$", re);
     }
 }
