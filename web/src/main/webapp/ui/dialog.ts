@@ -299,7 +299,7 @@ export class Dialog extends DialogBase {
         this.topLevel.onkeydown = (ev) => this.handleKeypress(ev);
     }
 
-    public createRowContainer(fieldName: string, labelText: string, toolTip: string): HTMLDivElement {
+    private createRowContainer(fieldName: string, labelText: string, toolTip: string): HTMLDivElement {
         const fieldDiv = document.createElement("div");
         fieldDiv.style.display = "flex";
         fieldDiv.style.alignItems = "center";
@@ -311,6 +311,24 @@ export class Dialog extends DialogBase {
         fieldDiv.appendChild(label);
         this.line.set(fieldName, fieldDiv);
         return fieldDiv;
+    }
+
+    private createInputElement(fieldName: string, labelText: string,
+                               toolTip: string, type: string): HTMLInputElement {
+        const fieldDiv = this.createRowContainer(fieldName, labelText, toolTip);
+        if (type === "checkbox") {
+            const filler = document.createElement("span");
+            filler.style.flexGrow = "100";
+            fieldDiv.appendChild(filler);
+        }
+        const input: HTMLInputElement = document.createElement("input");
+        input.tabIndex = this.tabIndex++;
+        if (type !== "checkbox")
+            input.style.flexGrow = "100";
+        input.id = makeId(fieldName);
+        input.type = type;
+        fieldDiv.appendChild(input);
+        return input;
     }
 
     /**
@@ -325,17 +343,12 @@ export class Dialog extends DialogBase {
     public addTextField(fieldName: string, labelText: string,
                         type: FieldKind, value: string,
                         toolTip: string): HTMLInputElement {
-        const fieldDiv = this.createRowContainer(fieldName, labelText, toolTip);
-        const input: HTMLInputElement = document.createElement("input");
-        input.tabIndex = this.tabIndex++;
-        input.style.flexGrow = "100";
-        input.id = makeId(fieldName);
-        fieldDiv.appendChild(input);
+        let t = "string";
         if (type === FieldKind.Integer)
-            input.type = "number";
+            t = "number";
         if (type === FieldKind.Password)
-            input.type = "password";
-
+            t = "password";
+        const input = this.createInputElement(fieldName, labelText, toolTip, t);
         this.fields.set(fieldName, {html: input, type});
         if (value != null)
             input.value = value;
@@ -351,13 +364,7 @@ export class Dialog extends DialogBase {
      */
     public addFileField(
         fieldName: string, labelText: string, toolTip: string): HTMLInputElement {
-        const fieldDiv = this.createRowContainer(fieldName, labelText, toolTip);
-        const input: HTMLInputElement = document.createElement("input");
-        input.tabIndex = this.tabIndex++;
-        input.style.flexGrow = "100";
-        input.id = makeId(fieldName);
-        input.type = "file";
-        fieldDiv.appendChild(input);
+        const input = this.createInputElement(fieldName, labelText, toolTip, "file");
         this.fields.set(fieldName, {html: input, type: FieldKind.File});
         return input;
     }
@@ -377,7 +384,6 @@ export class Dialog extends DialogBase {
         const input = new EditBox(fieldName, pre, value, post);
         input.setTabIndex(this.tabIndex++);
         fieldDiv.appendChild(input.getHTMLRepresentation());
-
         this.fields.set(fieldName, {html: input});
     }
 
@@ -401,13 +407,7 @@ export class Dialog extends DialogBase {
      */
     public addBooleanField(fieldName: string, labelText: string,
                            value: boolean, toolTip: string): HTMLInputElement {
-        const fieldDiv = this.createRowContainer(fieldName, labelText, toolTip);
-        const input: HTMLInputElement = document.createElement("input");
-        input.tabIndex = this.tabIndex++;
-        input.type = "checkbox";
-        input.style.flexGrow = "100";
-        input.id = makeId(fieldName);
-        fieldDiv.appendChild(input);
+        const input = this.createInputElement(fieldName, labelText, toolTip, "checkbox");
         this.fields.set(fieldName, {html: input, type: FieldKind.Boolean });
         if (value != null && value)
             input.checked = true;
@@ -425,13 +425,7 @@ export class Dialog extends DialogBase {
     public addDateTimeField(fieldName: string, labelText: string,
                             value: Date | null,
                             toolTip: string): HTMLInputElement {
-        const fieldDiv = this.createRowContainer(fieldName, labelText, toolTip);
-        const input: HTMLInputElement = document.createElement("input");
-        input.tabIndex = this.tabIndex++;
-        input.style.flexGrow = "100";
-        input.id = makeId(fieldName);
-        fieldDiv.appendChild(input);
-        input.type = "datetime-local";
+        const input = this.createInputElement(fieldName, labelText, toolTip, "datetime-local");
         this.fields.set(fieldName, { html: input, type: FieldKind.Datetime });
         if (value != null)
             input.value = value.toISOString().slice(0, 16);
@@ -445,42 +439,63 @@ export class Dialog extends DialogBase {
      * @param options: List of strings that are the options in the selection box.
      * @param value: Initial default value.
      * @param toolTip:  Help message to show as a tool-tip.
-     * @return       A reference to the select html select field.
+     * @return       A reference to the select html input field.
      */
     public addSelectField(fieldName: string, labelText: string,
                           options: string[], value: string,
-                          toolTip: string): HTMLSelectElement {
-        const sortOptions = cloneArray(options);
-        sortOptions.sort();
+                          toolTip: string): HTMLInputElement | HTMLSelectElement {
+        let result: HTMLInputElement | HTMLSelectElement = null;
 
-        const fieldDiv = this.createRowContainer(fieldName, labelText, toolTip);
-        const select = document.createElement("select");
-        select.tabIndex = this.tabIndex++;
-        select.style.flexGrow = "100";
-        select.id = makeId(fieldName);
-        fieldDiv.appendChild(select);
-        sortOptions.forEach((option) => {
-            const optionElement = document.createElement("option");
-            optionElement.value = option;
-            optionElement.text = option;
-            select.add(optionElement);
-        });
+        // If we have lots of options use a sorted datalist, otherwise
+        // use a select field.
+        if (options.length > 20) {
+            const select = this.createInputElement(fieldName, labelText, toolTip, "string");
+            const sortOptions = cloneArray(options);
+            sortOptions.sort();
+            const datalist = document.createElement("datalist");
+            this.topLevel.appendChild(datalist);
+            datalist.id = makeId("list" + fieldName);
+            select.setAttribute("list", datalist.id);
+            sortOptions.forEach((option) => {
+                const optionElement = document.createElement("option");
+                optionElement.value = option;
+                optionElement.text = option;
+                datalist.appendChild(optionElement);
+            });
+            result = select;
+        } else {
+            const fieldDiv = this.createRowContainer(fieldName, labelText, toolTip);
+            const select = document.createElement("select");
+            select.tabIndex = this.tabIndex++;
+            select.style.flexGrow = "100";
+            select.id = makeId(fieldName);
+            fieldDiv.appendChild(select);
 
-        if (value != null) {
-            let i;
-            for (i = 0; i < sortOptions.length; i++) {
-                if (sortOptions[i] === value) {
-                    select.selectedIndex = i;
-                    break;
+            options.forEach((option) => {
+                const optionElement = document.createElement("option");
+                optionElement.value = option;
+                optionElement.text = option;
+                select.add(optionElement);
+            });
+
+            if (value != null) {
+                let i;
+                for (i = 0; i < options.length; i++) {
+                    if (options[i] === value) {
+                        select.selectedIndex = i;
+                        break;
+                    }
                 }
+                if (i === options.length)
+                    throw new Error(`Given default value ${value} not found in options.`);
             }
-            if (i === sortOptions.length)
-                throw new Error(`Given default value ${value} not found in options.`);
+            result = select;
         }
-        this.fields.set(fieldName, {html: select, type: FieldKind.String });
+
+        this.fields.set(fieldName, {html: result, type: FieldKind.String });
         if (value != null)
-            select.value = value;
-        return select;
+            result.value = value;
+        return result;
     }
 
     /**
