@@ -445,7 +445,7 @@ export abstract class TSViewBase extends BigTableView {
                 title += " equals ";
             else if (!(strFilter.asSubString || strFilter.asRegEx) && strFilter.complement)
                 title += " does not equal ";
-            title += convertToStringFormat(strFilter.compareValue, desc.kind);
+            title += strFilter.compareValue;
             const newPage = this.dataset.newPage(new PageTitle(title), this.page);
             rr.invoke(new TableOperationCompleted(newPage, rr, this.rowCount, this.schema, o, tableRowsDesired));
         });
@@ -556,14 +556,10 @@ class EqualityFilterDialog extends Dialog {
     }
 
     public getFilter(): StringRowFilterDescription {
-        let textQuery: string = this.getFieldValue("query");
+        const textQuery: string = this.getFieldValue("query");
         if (this.columnDescription == null) {
             const colName = this.getFieldValue("column");
             this.columnDescription = this.schema.find(this.schema.fromDisplayName(colName));
-        }
-        if (this.columnDescription.kind === "Date") {
-            const date = new Date(textQuery);
-            textQuery = Converters.doubleFromDate(date).toString();
         }
         const asSubString = this.getBooleanValue("asSubString");
         const asRegEx = this.getBooleanValue("asRegEx");

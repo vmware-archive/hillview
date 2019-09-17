@@ -292,8 +292,13 @@ public abstract class RpcTarget implements IJson {
             if (session == null)
                 return;
 
-            RpcReply reply = this.request.createReply(Utilities.toJsonTree(pr));
-            this.sendReply(reply);
+            try {
+                RpcReply reply = this.request.createReply(Utilities.toJsonTree(pr));
+                this.sendReply(reply);
+            } catch (Exception ex) {
+                HillviewLogger.instance.error("Exception during serialization to JSON", ex);
+                super.onError(ex);
+            }
         }
     }
 
@@ -349,19 +354,25 @@ public abstract class RpcTarget implements IJson {
                         "Completing message without result", "for {0}:{1}",
                         this.name, Utilities.stackTraceString());
             }
-            HillviewLogger.instance.info("Computation completed", "for {0}", this.name);
+
             JsonObject json = new JsonObject();
             json.addProperty("done", 1.0);
-            @Nullable
-            S result = this.postprocessing.apply(this.last, this.getComputation());
+            try {
+                @Nullable S result = this.postprocessing.apply(this.last, this.getComputation());
+                HillviewLogger.instance.info("Computation completed", "for {0}", this.name);
+                Session session = this.context.getSessionIfOpen();
+                if (session == null)
+                    return;
 
-            Session session = this.context.getSessionIfOpen();
-            if (session == null)
-                return;
-            if (result == null)
-                json.add("data", null);
-            else
-                json.add("data", result.toJsonTree());
+                if (result == null)
+                    json.add("data", null);
+                else
+                    json.add("data", result.toJsonTree());
+            } catch (Exception e) {
+                HillviewLogger.instance.error("Exception during onCompleted", e);
+                super.onError(e);
+            }
+
             RpcReply reply = this.request.createReply(json);
             this.sendReply(reply);
             super.onCompleted();
