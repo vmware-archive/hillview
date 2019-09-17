@@ -195,7 +195,7 @@ export abstract class PlottingSurface {
 }
 
 export class HtmlPlottingSurface extends PlottingSurface implements IHtmlElement {
-    protected readonly topLevel: HTMLDivElement;
+    public readonly topLevel: HTMLDivElement;
 
     constructor(parent: HTMLElement, public readonly page: FullPage, sb: SizeAndBorders) {
         super(page, sb);

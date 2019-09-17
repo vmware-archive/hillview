@@ -52,7 +52,7 @@ import {NextKReceiver, TableView} from "./tableView";
  */
 export class TrellisHeatmapView extends TrellisChartView {
     private colorLegend: HeatmapLegendPlot;
-    private legendSurface: PlottingSurface;
+    private legendSurface: HtmlPlottingSurface;
     private readonly legendDiv: HTMLDivElement;
     protected xAxisData: AxisData;
     protected yAxisData: AxisData;

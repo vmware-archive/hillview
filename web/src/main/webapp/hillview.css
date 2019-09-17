@@ -120,11 +120,11 @@ table {
     border-bottom: 1px solid black;
 }
 
-.tableView td.empty {
+.tableView .empty {
     background-color: #f0f0f0;
 }
 
-.tableView td.empty.selected {
+.tableView .empty.selected {
     background-color: lightcyan;
 }
 
@@ -147,7 +147,7 @@ td.all {
     position: relative;
 }
 
-td:not(.header) > .resizable:hover {
+td:not(.header) .truncated:hover {
     position: relative;
     background: lightyellow;
 }

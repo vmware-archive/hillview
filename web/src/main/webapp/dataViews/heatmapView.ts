@@ -58,7 +58,7 @@ export class HeatmapView extends ChartView {
     protected summary: HTMLElement;
     protected plot: HeatmapPlot;
     protected showMissingData: boolean = false;  // TODO: enable this
-    protected legendSurface: PlottingSurface;
+    protected legendSurface: HtmlPlottingSurface;
     protected xHistoSurface: PlottingSurface;
     protected xHistoPlot: HistogramPlot;
     protected heatmap: Heatmap;

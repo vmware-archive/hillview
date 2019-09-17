@@ -27,7 +27,7 @@ import {AxisData, AxisDescription, AxisKind} from "../dataViews/axisData";
 import {assert} from "../util";
 import {ContextMenu} from "./menu";
 import {Plot} from "./plot";
-import {PlottingSurface} from "./plottingSurface";
+import {HtmlPlottingSurface, PlottingSurface} from "./plottingSurface";
 import {D3Axis, D3Scale, D3SvgElement, Point, Rectangle, Resolution} from "./ui";
 import {SchemaClass} from "../schemaClass";
 
@@ -315,7 +315,7 @@ export class HeatmapLegendPlot extends Plot {
     protected xAxis: D3Axis;
     protected drawn: boolean;
 
-    constructor(surface: PlottingSurface) {
+    constructor(surface: HtmlPlottingSurface) {
         super(surface);
         this.barHeight = 16;
         this.uniqueId = HeatmapLegendPlot.nextUniqueId++;
@@ -331,7 +331,8 @@ export class HeatmapLegendPlot extends Plot {
      */
     private enableContextMenu(): void {
         this.contextMenu = new ContextMenu(
-            this.plottingSurface.svgCanvas.node(), [
+            // menus cannot be attached to SVG objects
+            (this.plottingSurface as HtmlPlottingSurface).topLevel, [
             {
                 text: "Cool",
                 help: "Use a color palette with cool colors.",
