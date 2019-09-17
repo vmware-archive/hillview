@@ -371,7 +371,6 @@ export class HeatmapLegendPlot extends Plot {
     }
 
     private showContextMenu(event: MouseEvent): void {
-        console.log("showContextMenu");
         /* Only show context menu if it is enabled. */
         if (this.contextMenu != null) {
             event.preventDefault();
