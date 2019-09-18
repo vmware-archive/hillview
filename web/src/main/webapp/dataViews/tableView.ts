@@ -17,11 +17,9 @@
 
 import {DatasetView, IViewSerialization, TableSerialization} from "../datasetView";
 import {
-    asContentsKind,
     ColumnSortOrientation,
     Comparison,
     ComparisonFilterDescription,
-    ContentsKind,
     FindResult,
     IColumnDescription,
     kindIsString, KVCreateColumnInfo,
@@ -43,7 +41,7 @@ import {FullPage, PageTitle} from "../ui/fullPage";
 import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
 import {IScrollTarget, ScrollBar} from "../ui/scroll";
 import {SelectionStateMachine} from "../ui/selectionStateMachine";
-import {HtmlString, Resolution, SpecialChars} from "../ui/ui";
+import {HtmlString, Resolution, SpecialChars, ViewKind} from "../ui/ui";
 import {
     cloneToSet,
     convertToStringFormat,
@@ -59,7 +57,7 @@ import {
 } from "../util";
 import {SchemaView} from "./schemaView";
 import {SpectrumReceiver} from "./spectrumView";
-import {ColumnConverter, ConverterDialog, TSViewBase} from "./tsViewBase";
+import {TSViewBase} from "./tsViewBase";
 import {Grid} from "../ui/grid";
 import {LogFileReceiver} from "./logFileView";
 import {FindBar} from "../ui/findBar";
@@ -493,6 +491,140 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         rr.invoke(new NextKReceiver(this.page, this, rr, false, this.order, null));
     }
 
+    private createContextMenu(thd: HTMLElement, colIndex: number, visible: boolean): void {
+        const cd = this.schema.get(colIndex);
+        thd.oncontextmenu = (e) => {
+            this.columnClick(colIndex, e);
+            if (e.ctrlKey && (e.button === 1)) {
+                // Ctrl + click is interpreted as a right-click on macOS.
+                // This makes sure it's interpreted as a column click with Ctrl.
+                return;
+            }
+
+            const selectedCount = this.selectedColumns.size();
+            this.contextMenu.clear();
+            if (visible) {
+                this.contextMenu.addItem({
+                    text: "Hide",
+                    action: () => this.showColumns(0, true),
+                    help: "Hide the data in the selected columns",
+                }, true);
+            } else {
+                this.contextMenu.addItem({
+                    text: "Show",
+                    action: () => this.showColumns(1, false),
+                    help: "Show the data in the selected columns.",
+                }, true);
+            }
+
+            this.contextMenu.addItem({
+                text: "Drop",
+                action: () => this.dropColumns(),
+                help: "Eliminate the selected columns from the view.",
+            }, selectedCount !== 0);
+            this.contextMenu.addItem({
+                text: "Estimate distinct elements",
+                action: () => this.hLogLog(),
+                help: "Compute an estimate of the number of different values that appear in the selected column.",
+            }, selectedCount === 1);
+            this.contextMenu.addItem({
+                text: "Sort ascending",
+                action: () => this.showColumns(1, true),
+                help: "Sort the data first on this colum, in increasing order.",
+            }, true);
+            this.contextMenu.addItem({
+                text: "Sort descending",
+                action: () => this.showColumns(-1, true),
+                help: "Sort the data first on this column, in decreasing order",
+            }, true);
+            this.contextMenu.addItem({
+                text: "Histogram",
+                action: () => this.histogramSelected(),
+                help: "Plot the data in the selected columns as a histogram. " +
+                    "Applies to one or two columns only.",
+            }, selectedCount >= 1 && selectedCount <= 2);
+            this.contextMenu.addItem({
+                text: "Heatmap",
+                action: () => this.heatmapSelected(),
+                help: "Plot the data in the selected columns as a heatmap. " +
+                    "Applies to two columns only.",
+            }, selectedCount === 2);
+            this.contextMenu.addItem({
+                text: "Trellis histograms",
+                action: () => this.trellisSelected(false),
+                help: "Plot the data in the selected columns as a Trellis plot of histograms. " +
+                    "Applies to two or three columns only.",
+            }, selectedCount >= 2 && selectedCount <= 3);
+            this.contextMenu.addItem({
+                text: "Trellis heatmaps",
+                action: () => this.trellisSelected(true),
+                help: "Plot the data in the selected columns as a Trellis plot of heatmaps. " +
+                    "Applies to three columns only.",
+            }, selectedCount === 3);
+            this.contextMenu.addItem({
+                text: "Rename...",
+                action: () => this.renameColumn(),
+                help: "Give a new name to this column.",
+            }, selectedCount === 1);
+            this.contextMenu.addItem({
+                text: "Frequent Elements...",
+                action: () => this.heavyHittersDialog(),
+                help: "Find the values that occur most frequently in the selected columns.",
+            }, true);
+            this.contextMenu.addItem({
+                text: "PCA...",
+                action: () => this.pca(true),
+                help: "Perform Principal Component Analysis on a set of numeric columns. " +
+                    "This produces a smaller set of columns that preserve interesting properties of the data.",
+            }, selectedCount > 1 &&
+                this.getSelectedColNames().reduce((a, b) => a && this.isNumericColumn(b), true));
+            this.contextMenu.addItem({
+                text: "Plot Singular Value Spectrum",
+                action: () => this.spectrum(true),
+                help: "Plot singular values for the selected columns. ",
+            }, selectedCount > 1 &&
+                this.getSelectedColNames().reduce((a, b) => a && this.isNumericColumn(b), true));
+            this.contextMenu.addItem({
+                text: "Filter...",
+                action: () => {
+                    const colName = this.getSelectedColNames()[0];
+                    const colDesc = this.schema.find(colName);
+                    this.showFilterDialog(colDesc.name, this.order, this.tableRowsDesired);
+                },
+                help: "Eliminate data that matches/does not match a specific value.",
+            }, selectedCount === 1);
+            this.contextMenu.addItem({
+                text: "Compare...",
+                action: () => {
+                    const colName = this.getSelectedColNames()[0];
+                    this.showCompareDialog(this.schema.displayName(colName),
+                        this.order, this.tableRowsDesired);
+                },
+                help: "Eliminate data that matches/does not match a specific value.",
+            }, selectedCount === 1);
+            this.contextMenu.addItem({
+                text: "Convert...",
+                action: () => this.convert(this.schema.displayName(cd.name), this.order, this.tableRowsDesired),
+                help: "Convert the data in the selected column to a different data type.",
+            }, selectedCount === 1);
+            this.contextMenu.addItem({
+                text: "Create column in JS...",
+                action: () => this.createJSColumnDialog(this.order, this.tableRowsDesired),
+                help: "Add a new column computed using Javascript from the selected columns.",
+            }, true);
+            this.contextMenu.addItem({
+                text: "Extract value...",
+                action: () => {
+                    const colName = this.getSelectedColNames()[0];
+                    this.createKVColumnDialog(colName, this.tableRowsDesired);
+                },
+                help: "Extract a value associated with a specific key.",
+            }, selectedCount === 1 &&
+                this.isKVColumn(this.getSelectedColNames()[0]));
+            this.contextMenu.show(e);
+        };
+    }
+
     public updateView(nextKList: NextKList,
                       revert: boolean,
                       order: RecordOrder,
@@ -557,136 +689,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                     o.addColumn({ columnDescription: cd, isAscending: true });
                 this.setOrder(o, true);
             };
-            thd.oncontextmenu = (e) => {
-                this.columnClick(i, e);
-                if (e.ctrlKey && (e.button === 1)) {
-                    // Ctrl + click is interpreted as a right-click on macOS.
-                    // This makes sure it's interpreted as a column click with Ctrl.
-                    return;
-                }
-
-                const selectedCount = this.selectedColumns.size();
-                this.contextMenu.clear();
-                if (visible) {
-                    this.contextMenu.addItem({
-                        text: "Hide",
-                        action: () => this.showColumns(0, true),
-                        help: "Hide the data in the selected columns",
-                    }, true);
-                } else {
-                    this.contextMenu.addItem({
-                        text: "Show",
-                        action: () => this.showColumns(1, false),
-                        help: "Show the data in the selected columns.",
-                    }, true);
-                }
-
-                this.contextMenu.addItem({
-                    text: "Drop",
-                    action: () => this.dropColumns(),
-                    help: "Eliminate the selected columns from the view.",
-                }, selectedCount !== 0);
-                this.contextMenu.addItem({
-                    text: "Estimate distinct elements",
-                    action: () => this.hLogLog(),
-                    help: "Compute an estimate of the number of different values that appear in the selected column.",
-                }, selectedCount === 1);
-                this.contextMenu.addItem({
-                    text: "Sort ascending",
-                    action: () => this.showColumns(1, true),
-                    help: "Sort the data first on this colum, in increasing order.",
-                }, true);
-                this.contextMenu.addItem({
-                    text: "Sort descending",
-                    action: () => this.showColumns(-1, true),
-                    help: "Sort the data first on this column, in decreasing order",
-                }, true);
-                this.contextMenu.addItem({
-                    text: "Histogram",
-                    action: () => this.histogramSelected(),
-                    help: "Plot the data in the selected columns as a histogram. " +
-                    "Applies to one or two columns only.",
-                }, selectedCount >= 1 && selectedCount <= 2);
-                this.contextMenu.addItem({
-                    text: "Heatmap",
-                    action: () => this.heatmapSelected(),
-                    help: "Plot the data in the selected columns as a heatmap. " +
-                    "Applies to two columns only.",
-                }, selectedCount === 2);
-                this.contextMenu.addItem({
-                    text: "Trellis histograms",
-                    action: () => this.trellisSelected(false),
-                    help: "Plot the data in the selected columns as a Trellis plot of histograms. " +
-                    "Applies to two or three columns only.",
-                }, selectedCount >= 2 && selectedCount <= 3);
-                this.contextMenu.addItem({
-                    text: "Trellis heatmaps",
-                    action: () => this.trellisSelected(true),
-                    help: "Plot the data in the selected columns as a Trellis plot of heatmaps. " +
-                    "Applies to three columns only.",
-                }, selectedCount === 3);
-                this.contextMenu.addItem({
-                    text: "Rename...",
-                    action: () => this.renameColumn(),
-                    help: "Give a new name to this column.",
-                }, selectedCount === 1);
-                this.contextMenu.addItem({
-                    text: "Frequent Elements...",
-                    action: () => this.heavyHittersDialog(),
-                    help: "Find the values that occur most frequently in the selected columns.",
-                }, true);
-                this.contextMenu.addItem({
-                    text: "PCA...",
-                    action: () => this.pca(true),
-                    help: "Perform Principal Component Analysis on a set of numeric columns. " +
-                    "This produces a smaller set of columns that preserve interesting properties of the data.",
-                }, selectedCount > 1 &&
-                    this.getSelectedColNames().reduce((a, b) => a && this.isNumericColumn(b), true));
-                this.contextMenu.addItem({
-                    text: "Plot Singular Value Spectrum",
-                    action: () => this.spectrum(true),
-                    help: "Plot singular values for the selected columns. ",
-                }, selectedCount > 1 &&
-                    this.getSelectedColNames().reduce((a, b) => a && this.isNumericColumn(b), true));
-                this.contextMenu.addItem({
-                    text: "Filter...",
-                    action: () => {
-                        const colName = this.getSelectedColNames()[0];
-                        const colDesc = this.schema.find(colName);
-                        this.showFilterDialog(colDesc.name, this.order, this.tableRowsDesired);
-                    },
-                    help: "Eliminate data that matches/does not match a specific value.",
-                }, selectedCount === 1);
-                this.contextMenu.addItem({
-                    text: "Compare...",
-                    action: () => {
-                        const colName = this.getSelectedColNames()[0];
-                        this.showCompareDialog(this.schema.displayName(colName),
-                            this.order, this.tableRowsDesired);
-                    },
-                    help: "Eliminate data that matches/does not match a specific value.",
-                }, selectedCount === 1);
-                this.contextMenu.addItem({
-                    text: "Convert...",
-                    action: () => this.convert(cd.name),
-                    help: "Convert the data in the selected column to a different data type.",
-                }, selectedCount === 1);
-                this.contextMenu.addItem({
-                    text: "Create column in JS...",
-                    action: () => this.createJSColumnDialog(this.order, this.tableRowsDesired),
-                    help: "Add a new column computed using Javascript from the selected columns.",
-                }, true);
-                this.contextMenu.addItem({
-                    text: "Extract value...",
-                    action: () => {
-                        const colName = this.getSelectedColNames()[0];
-                        this.createKVColumnDialog(colName, this.tableRowsDesired);
-                    },
-                    help: "Extract a value associated with a specific key.",
-                }, selectedCount === 1 &&
-                    this.isKVColumn(this.getSelectedColNames()[0]));
-                this.contextMenu.show(e);
-            };
+            this.createContextMenu(thd, i, visible);
         }
 
         this.cellsPerColumn = new Map<string, HTMLElement[]>();
@@ -751,28 +754,6 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             comparison,
         };
         this.runComparisonFilter(cfd, this.order, this.tableRowsDesired);
-    }
-
-    /**
-     * Convert the data in a column to a different column kind.
-     */
-    public convert(colName: string): void {
-        const cd = new ConverterDialog(colName, this.schema);
-        cd.setAction(
-            () => {
-                const kindStr = cd.getFieldValue("newKind");
-                const kind: ContentsKind = asContentsKind(kindStr);
-                const col = cd.getFieldValue("columnName");
-                const keep = cd.getBooleanValue("keep");
-                const newColName = keep ?
-                    cd.getFieldValue("newColumnName") :
-                    this.schema.uniqueColumnName(col);
-                const converter = new ColumnConverter(
-                    col, kind, newColName, keep, this,
-                    this.order, this.page);
-                converter.run();
-            });
-        cd.show();
     }
 
     public dropColumns(): void {
@@ -1218,12 +1199,14 @@ export class SchemaReceiver extends OnCompleteReceiver<TableSummary> {
      * @param operation       Operation that will bring the results.
      * @param remoteObject    Table object.
      * @param dataset         Dataset that this is a part of.
-     * @param forceTableView  If true the resulting view is always a table.
+     * @param schema          Schema that is used to display the data.
+     * @param viewKind        What view to use.  If null we get to choose.
      */
     constructor(page: FullPage, operation: ICancellable<TableSummary>,
                 protected remoteObject: TableTargetAPI,
                 protected dataset: DatasetView,
-                protected forceTableView) {
+                protected schema: SchemaClass,
+                protected viewKind: ViewKind | null) {
         super(page, operation, "Get schema");
     }
 
@@ -1232,9 +1215,10 @@ export class SchemaReceiver extends OnCompleteReceiver<TableSummary> {
             this.page.reportError("No schema received; empty dataset?");
             return;
         }
-
-        const schemaClass = new SchemaClass(summary.schema);
-        if (summary.schema.length > 20 && !this.forceTableView) {
+        const schemaClass = this.schema == null ? new SchemaClass(summary.schema) : this.schema;
+        const useSchema = this.viewKind === "Schema" ||
+            (this.viewKind === null && summary.schema.length > 20);
+        if (useSchema) {
             const dataView = new SchemaView(this.remoteObject.remoteObjectId, this.page,
                 summary.rowCount, schemaClass);
             this.page.setDataView(dataView);
@@ -1360,10 +1344,18 @@ class PCASchemaReceiver extends OnCompleteReceiver<TableSummary> {
 }
 
 /**
- * Receives the id of a remote table and
- * initiates a request to display the nextK rows from this table.
+ * Receives the id of a remote table and initiates a request to display the table.
  */
 export class TableOperationCompleted extends BaseReceiver {
+    /**
+     * @param page       Page where the new view will be displayed
+     * @param operation  Operation that initiated this request.
+     * @param rowCount   Number of rows in the table.
+     * @param schema     Table schema.
+     * @param order      Order desired for table rows.  If this is null we will
+     *                   actually display a SchemaView, otherwise we will display a TableView
+     * @param tableRowsDesired  Number of rows desired in table (for a table view).
+     */
     public constructor(page: FullPage,
                        operation: ICancellable<RemoteObjectId>,
                        protected rowCount: number,
@@ -1375,12 +1367,19 @@ export class TableOperationCompleted extends BaseReceiver {
 
     public run(): void {
         super.run();
-        const table = new TableView(
-            this.remoteObject.remoteObjectId, this.rowCount, this.schema, this.page);
-        this.page.setDataView(table);
-        const rr = table.createNextKRequest(this.order, null, this.tableRowsDesired);
-        rr.chain(this.operation);
-        rr.invoke(new NextKReceiver(this.page, table, rr, false, this.order, null));
+        if (this.order == null) {
+            const rr = this.remoteObject.createGetSchemaRequest();
+            rr.chain(this.operation);
+            rr.invoke(new SchemaReceiver(
+                this.page, rr, this.remoteObject, this.page.dataset, this.schema, "Schema"));
+        } else {
+            const table = new TableView(
+                this.remoteObject.remoteObjectId, this.rowCount, this.schema, this.page);
+            this.page.setDataView(table);
+            const rr = table.createNextKRequest(this.order, null, this.tableRowsDesired);
+            rr.chain(this.operation);
+            rr.invoke(new NextKReceiver(this.page, table, rr, false, this.order, null));
+        }
     }
 }
 

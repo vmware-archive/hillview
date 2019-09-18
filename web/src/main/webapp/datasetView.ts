@@ -52,7 +52,6 @@ export interface IViewSerialization {
 }
 
 export interface HeavyHittersSerialization extends IViewSerialization {
-    order: RecordOrder;
     percent: number;
     remoteTableId: string;
     isApprox: boolean;
@@ -393,7 +392,7 @@ export class DatasetView implements IHtmlElement {
         const rr = this.remoteObject.createGetSchemaRequest();
         const title = getDescription(this.loaded);
         const newPage = this.newPage(new PageTitle(title), null);
-        rr.invoke(new SchemaReceiver(newPage, rr, this.remoteObject, this, false));
+        rr.invoke(new SchemaReceiver(newPage, rr, this.remoteObject, this, null, null));
     }
 
     public saveToFile(): void {

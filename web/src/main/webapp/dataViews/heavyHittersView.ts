@@ -16,7 +16,14 @@
  */
 
 import {HeavyHittersSerialization, IViewSerialization} from "../datasetView";
-import {IColumnDescription, NextKList, RecordOrder, RemoteObjectId, TopList} from "../javaBridge";
+import {
+    ColumnSortOrientation,
+    IColumnDescription,
+    NextKList,
+    RecordOrder,
+    RemoteObjectId,
+    TopList
+} from "../javaBridge";
 import {OnCompleteReceiver, RemoteObject} from "../rpc";
 import {SchemaClass} from "../schemaClass";
 import {BaseReceiver, BigTableView, TableTargetAPI} from "../tableTarget";
@@ -46,7 +53,6 @@ export class HeavyHittersReceiver extends OnCompleteReceiver<TopList> {
                        operation: ICancellable<TopList>,
                        protected readonly rowCount: number,
                        protected readonly schema: SchemaClass,
-                       protected readonly order: RecordOrder,
                        protected readonly isApprox: boolean,
                        protected readonly percent: number,
                        protected readonly columnsShown: IColumnDescription[],
@@ -64,7 +70,7 @@ export class HeavyHittersReceiver extends OnCompleteReceiver<TopList> {
                     new PageTitle("Frequent Elements in " + names), this.page);
             const hhv = new HeavyHittersView(
                 data.heavyHittersId, newPage, this.remoteTableObject, this.rowCount, this.schema,
-                this.order, this.isApprox, this.percent, this.columnsShown);
+                this.isApprox, this.percent, this.columnsShown);
             newPage.setDataView(hhv);
             hhv.updateView(data.top);
             hhv.page.scrollIntoView();
@@ -90,7 +96,7 @@ export class HeavyHittersReceiver extends OnCompleteReceiver<TopList> {
                         this.rowCount, HeavyHittersView.switchToMG);
                     rr.invoke(new HeavyHittersReceiver(
                         this.page, this.remoteTableObject, rr, this.rowCount, this.schema,
-                        this.order, true, newPercent, this.columnsShown, false));
+                        true, newPercent, this.columnsShown, false));
                 }
             });
         } else
@@ -124,7 +130,6 @@ export class HeavyHittersView extends BigTableView {
                 public remoteTableObject: TableTargetAPI,
                 rowCount: number,
                 schema: SchemaClass,
-                public originalTableOrder: RecordOrder,
                 private isApprox: boolean,
                 public percent: number,
                 public readonly columnsShown: IColumnDescription[]) {
@@ -178,7 +183,6 @@ export class HeavyHittersView extends BigTableView {
     public serialize(): IViewSerialization {
         const result: HeavyHittersSerialization = {
             ...super.serialize(),
-            order: this.originalTableOrder,
             percent: this.percent,
             remoteTableId: this.remoteTableObject.remoteObjectId,
             isApprox: this.isApprox,
@@ -190,16 +194,15 @@ export class HeavyHittersView extends BigTableView {
     public static reconstruct(ser: HeavyHittersSerialization, page: FullPage): IDataView {
         const schema: SchemaClass = new SchemaClass([]).deserialize(ser.schema);
         const percent: number = ser.percent;
-        const order = new RecordOrder(ser.order.sortOrientationList);
         const remoteTableId: string = ser.remoteTableId;
         const isApprox: boolean = ser.isApprox;
         const columnsShown: IColumnDescription[] = ser.columnsShown;
         if (schema == null || percent == null || remoteTableId == null || isApprox == null ||
-            order == null || columnsShown == null)
+            columnsShown == null)
             return null;
         const remoteTable = new TableTargetAPI(remoteTableId);
         return new HeavyHittersView(ser.remoteObjectId, page, remoteTable, ser.rowCount, schema,
-            order, isApprox, percent, columnsShown);
+            isApprox, percent, columnsShown);
     }
 
     public refresh(): void {
@@ -207,7 +210,18 @@ export class HeavyHittersView extends BigTableView {
             this.columnsShown, this.percent, this.rowCount, HeavyHittersView.switchToMG);
         rr.invoke(new HeavyHittersReceiver(
             this.getPage(), this, rr, this.rowCount, this.schema,
-            this.originalTableOrder, this.isApprox, this.percent, this.columnsShown, true));
+            this.isApprox, this.percent, this.columnsShown, true));
+    }
+
+    public createOrder(): RecordOrder {
+        const cso: ColumnSortOrientation[] = [];
+        for (const col of this.columnsShown) {
+            cso.push({
+                columnDescription: col,
+                isAscending: true
+            });
+        }
+        return new RecordOrder(cso);
     }
 
     public resize(): void {}
@@ -226,8 +240,7 @@ export class HeavyHittersView extends BigTableView {
             const rr = this.remoteTableObject.createFilterHeavyRequest(
                 this.heavyHittersId, this.columnsShown, includeSet);
             rr.invoke(new TableOperationCompleted(
-                newPage, rr, this.rowCount, this.schema, this.originalTableOrder,
-                Resolution.tableRowsOnScreen));
+                newPage, rr, this.rowCount, this.schema, this.createOrder(), Resolution.tableRowsOnScreen));
         }
     }
 
@@ -239,7 +252,7 @@ export class HeavyHittersView extends BigTableView {
         const rr = this.remoteTableObject.createFilterListHeavy(
             this.heavyHittersId, this.columnsShown, includeSet, this.getSelectedRows());
         rr.invoke(new TableOperationCompleted(
-            newPage, rr, this.rowCount, this.schema, this.originalTableOrder,
+            newPage, rr, this.rowCount, this.schema, this.createOrder(),
             Resolution.tableRowsOnScreen));
     }
 
@@ -385,7 +398,7 @@ export class HeavyHittersView extends BigTableView {
             this.rowCount, HeavyHittersView.switchToMG);
         rr.invoke(new HeavyHittersReceiver(
             this.getPage(), this.remoteTableObject, rr, this.rowCount, this.schema,
-            this.originalTableOrder, true, newPercent, this.columnsShown, false));
+            true, newPercent, this.columnsShown, false));
     }
 
     private changeThreshold(): void {
@@ -425,7 +438,7 @@ export class HeavyHittersReceiver2 extends OnCompleteReceiver<TopList> {
     public run(newData: TopList): void {
         const newHhv = new HeavyHittersView(
             newData.heavyHittersId, this.page, this.hhv.remoteTableObject,
-            this.hhv.rowCount, this.hhv.schema, this.hhv.originalTableOrder, false,
+            this.hhv.rowCount, this.hhv.schema, false,
             this.hhv.percent, this.hhv.columnsShown);
         this.page.setDataView(newHhv);
         newHhv.updateView(newData.top);
@@ -453,7 +466,7 @@ export class HeavyHittersReceiver3 extends OnCompleteReceiver<TopList> {
         const rr = this.hhv.remoteTableObject.createFilterHeavyRequest(
             exactList.heavyHittersId, this.hhv.columnsShown, this.includeSet);
         rr.invoke(new TableOperationCompleted(
-            newPage, rr, this.hhv.rowCount, this.hhv.schema, this.hhv.originalTableOrder,
+            newPage, rr, this.hhv.rowCount, this.hhv.schema, this.hhv.createOrder(),
             Resolution.tableRowsOnScreen));
     }
 }

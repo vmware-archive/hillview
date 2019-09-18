@@ -53,8 +53,15 @@ export class SchemaClass implements Serializable<SchemaClass> {
     }
 
     public copyDisplayNames(schema: SchemaClass): void {
-        this.displayNameMap = new Map<string, string>(schema.displayNameMap);
-        this.reverseDisplayNameMap = new Map<string, string>(schema.reverseDisplayNameMap);
+        this.displayNameMap = new Map<string, string>();
+        this.reverseDisplayNameMap = new Map<string, string>();
+        for (const col of this.columnNames) {
+            if (schema.displayNameMap.has(col)) {
+                const displayName = schema.displayNameMap.get(col);
+                this.displayNameMap.set(col, displayName);
+                this.reverseDisplayNameMap.set(displayName, col);
+            }
+        }
     }
 
     public getRenameMap(): Map<string, string> {
@@ -85,6 +92,10 @@ export class SchemaClass implements Serializable<SchemaClass> {
         return this;
     }
 
+    public allDisplayNames(): string[] {
+        return this.columnNames.map((c) => this.displayName(c));
+    }
+
     /**
      * Get the display name of the specified column.
      */
@@ -99,13 +110,13 @@ export class SchemaClass implements Serializable<SchemaClass> {
     /**
      * Given a display name get the real column name.
      */
-    public fromDisplayName(name: string | null): string | null {
-        if (name == null)
+    public fromDisplayName(displayName: string | null): string | null {
+        if (displayName == null)
             return null;
-        if (this.reverseDisplayNameMap.has(name))
-            return this.reverseDisplayNameMap.get(name);
-        console.assert(this.columnMap.has(name));
-        return name;
+        if (this.reverseDisplayNameMap.has(displayName))
+            return this.reverseDisplayNameMap.get(displayName);
+        console.assert(this.columnMap.has(displayName));
+        return displayName;
     }
 
     /**
@@ -150,8 +161,8 @@ export class SchemaClass implements Serializable<SchemaClass> {
         return null;
     }
 
-    public findByDisplayName(colName: string): IColumnDescription {
-        const original = this.fromDisplayName(colName);
+    public findByDisplayName(displayName: string): IColumnDescription {
+        const original = this.fromDisplayName(displayName);
         return this.find(original);
     }
 
