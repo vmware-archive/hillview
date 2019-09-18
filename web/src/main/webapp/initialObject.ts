@@ -108,7 +108,7 @@ class FileSizeReceiver extends OnCompleteReceiver<FileSizeSketchInfo> {
             const fn = new RemoteObject(this.remoteObj.remoteObjectId);
             const rr = fn.createStreamingRpcRequest<RemoteObjectId>("loadTable", null);
             rr.chain(this.operation);
-            const observer = new RemoteTableReceiver(this.page, rr, this.data, fileSize, false);
+            const observer = new RemoteTableReceiver(this.page, rr, this.data, fileSize);
             rr.invoke(observer);
         }
     }
@@ -126,7 +126,7 @@ class FilePruneReceiver extends OnCompleteReceiver<RemoteObjectId> {
         const fn = new RemoteObject(remoteObjId);
         const rr = fn.createStreamingRpcRequest<RemoteObjectId>("loadTable", null);
         rr.chain(this.operation);
-        const observer = new RemoteTableReceiver(this.page, rr, this.data, fileSize, false);
+        const observer = new RemoteTableReceiver(this.page, rr, this.data, fileSize);
         rr.invoke(observer);
     }
 }
@@ -142,10 +142,9 @@ export class RemoteTableReceiver extends BaseReceiver {
      * @param data            Data that has been loaded.
      * @param operation       Operation that will bring the results.
      * @param progressInfo    Description of the files that are being loaded.
-     * @param forceTableView  If true the resulting view is always a table.
      */
     constructor(page: FullPage, operation: ICancellable<RemoteObjectId>, protected data: DataLoaded,
-                progressInfo: string, protected forceTableView: boolean) {
+                progressInfo: string) {
         super(page, operation, progressInfo, null);
     }
 
@@ -156,7 +155,7 @@ export class RemoteTableReceiver extends BaseReceiver {
         const title = getDescription(this.data);
         const dataset = new DatasetView(this.remoteObject.remoteObjectId, title, this.data);
         const newPage = dataset.newPage(new PageTitle(title), null);
-        rr.invoke(new SchemaReceiver(newPage, rr, this.remoteObject, dataset, this.forceTableView));
+        rr.invoke(new SchemaReceiver(newPage, rr, this.remoteObject, dataset, null, null));
     }
 }
 
@@ -192,7 +191,7 @@ export class InitialObject extends RemoteObject {
     public loadDBTable(conn: JdbcConnectionInformation, loadMenuPage: FullPage): void {
         const rr = this.createStreamingRpcRequest<RemoteObjectId>("loadDBTable", conn);
         const observer = new RemoteTableReceiver(loadMenuPage, rr,
-            { kind: "DB", description: conn }, "loading database table", false);
+            { kind: "DB", description: conn }, "loading database table");
         rr.invoke(observer);
     }
 }

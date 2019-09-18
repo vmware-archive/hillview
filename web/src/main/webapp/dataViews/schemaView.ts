@@ -19,7 +19,6 @@ import {IViewSerialization} from "../datasetView";
 import {
     allContentsKind,
     BasicColStats,
-    ColumnSortOrientation,
     kindIsString,
     NextKList,
     RecordOrder,
@@ -32,7 +31,6 @@ import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
 import {TabularDisplay} from "../ui/tabularDisplay";
-import {Resolution} from "../ui/ui";
 import {
     cloneToSet,
     convertToStringFormat, formatNumber,
@@ -236,6 +234,7 @@ export class SchemaView extends TSViewBase {
             // This makes sure it's interpreted as a column click with Ctrl.
             return;
         }
+        const selectedColumn = this.getSelectedColNames().length === 1 ? this.getSelectedColNames()[0] : null;
         this.contextMenu.clear();
         const selectedCount = this.display.selectedRows.size();
         this.contextMenu.addItem({
@@ -277,38 +276,28 @@ export class SchemaView extends TSViewBase {
         }, selectedCount === 1);
         this.contextMenu.addItem({
             text: "Filter...",
-            action: () => {
-                const colName = this.getSelectedColNames()[0];
-                const cd = this.schema.find(colName);
-                const so: ColumnSortOrientation = {
-                    columnDescription: cd, isAscending: true,
-                };
-                this.showFilterDialog(colName, new RecordOrder([so]), Resolution.tableRowsOnScreen);
-            },
+            action: () => this.showFilterDialog(this.schema.displayName(selectedColumn), null, 0),
             help : "Eliminate data that matches/does not match a specific value.",
         }, selectedCount === 1);
         this.contextMenu.addItem({
             text: "Compare...",
-            action: () => {
-                const colName = this.getSelectedColNames()[0];
-                const cd = this.schema.find(colName);
-                const so: ColumnSortOrientation = {
-                    columnDescription: cd, isAscending: true,
-                };
-                this.showCompareDialog(this.schema.displayName(colName), new RecordOrder([so]),
-                    Resolution.tableRowsOnScreen);
-            },
+            action: () => this.showCompareDialog(this.schema.displayName(selectedColumn), null, 0),
             help : "Eliminate data that matches/does not match a specific value.",
         }, selectedCount === 1);
         this.contextMenu.addItem({
             text: "Create column in JS...",
-            action: () => this.createJSColumnDialog(new RecordOrder([]), Resolution.tableRowsOnScreen),
+            action: () => this.createJSColumnDialog(null, 0),
             help: "Add a new column computed from the selected columns.",
         }, true);
         this.contextMenu.addItem({
             text: "Rename...",
             action: () => this.renameColumn(),
             help: "Give a new name to this column.",
+        }, selectedCount === 1);
+        this.contextMenu.addItem({
+            text: "Convert...",
+            action: () => this.convert(this.schema.displayName(selectedColumn), null, 0),
+            help: "Convert the data in the selected column to a different data type.",
         }, selectedCount === 1);
         this.contextMenu.addItem({
             text: "Frequent Elements...",
