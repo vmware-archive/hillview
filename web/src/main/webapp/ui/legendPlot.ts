@@ -129,7 +129,7 @@ export class HistogramLegendPlot extends Plot {
     public draw(): void {
         this.plottingSurface.getCanvas()
             .append("text")
-            .text(this.schema.displayName(this.axisData.description.name))
+            .text(this.axisData.getDisplayNameString(this.schema))
             .attr("transform", `translate(${this.getChartWidth() / 2}, 0)`)
             .attr("text-anchor", "middle")
             .attr("dominant-baseline", "text-before-edge");

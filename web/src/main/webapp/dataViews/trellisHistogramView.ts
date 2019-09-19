@@ -26,7 +26,7 @@ import {
 } from "../javaBridge";
 import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
-import {SchemaClass} from "../schemaClass";
+import {DisplayName, SchemaClass} from "../schemaClass";
 import {
     ICancellable,
     PartialResult,
@@ -191,7 +191,7 @@ export class TrellisHistogramView extends TrellisChartView {
     }
 
     public chooseSecondColumn(): void {
-        const columns: string[] = [];
+        const columns: DisplayName[] = [];
         for (let i = 0; i < this.schema.length; i++) {
             const col = this.schema.get(i);
             if (col.name === this.xAxisData.description.name ||
@@ -206,14 +206,14 @@ export class TrellisHistogramView extends TrellisChartView {
 
         const dialog = new Dialog("Choose column",
             "Select a second column to use for displaying a Trellis plot of 2D histograms.");
-        dialog.addSelectField("column", "column", columns, null,
+        dialog.addColumnSelectField("column", "column", columns, null,
             "The second column that will be used in addition to the one displayed here " +
             "for drawing a Trellis plot of two-dimensional histogram.");
-        dialog.setAction(() => this.showSecondColumn(dialog.getFieldValue("column")));
+        dialog.setAction(() => this.showSecondColumn(dialog.getColumnName("column")));
         dialog.show();
     }
 
-    protected showSecondColumn(colName: string): void {
+    protected showSecondColumn(colName: DisplayName): void {
         const col = this.schema.findByDisplayName(colName);
         const cds = [this.xAxisData.description, col, this.groupByAxisData.description];
         const rr = this.createDataRangesRequest(cds, this.page, "Trellis2DHistogram");
@@ -318,8 +318,8 @@ export class TrellisHistogramView extends TrellisChartView {
         this.setupMouse();
         this.pointDescription = new TextOverlay(this.surface.getCanvas(),
             this.surface.getActualChartSize(),
-            [this.schema.displayName(this.xAxisData.description.name),
-                this.schema.displayName(this.groupByAxisData.description.name),
+            [this.xAxisData.getDisplayNameString(this.schema),
+                this.groupByAxisData.getDisplayNameString(this.schema),
                 "count", "cdf"], 40);
         this.cdfDot = this.surface.getChart()
             .append("circle")

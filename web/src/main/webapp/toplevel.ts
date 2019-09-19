@@ -20,7 +20,7 @@ import {InitialObject} from "./initialObject";
 import {LoadMenu} from "./loadMenu";
 import {FullPage, PageTitle} from "./ui/fullPage";
 import {ContextMenu} from "./ui/menu";
-import {HtmlString, IHtmlElement, removeAllChildren} from "./ui/ui";
+import {IHtmlElement, removeAllChildren} from "./ui/ui";
 import {assert} from "./util";
 
 /**

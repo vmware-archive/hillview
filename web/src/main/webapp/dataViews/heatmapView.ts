@@ -25,7 +25,7 @@ import {
     RemoteObjectId,
 } from "../javaBridge";
 import {Receiver} from "../rpc";
-import {SchemaClass} from "../schemaClass";
+import {DisplayName, SchemaClass} from "../schemaClass";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {IDataView} from "../ui/dataview";
 import {Dialog} from "../ui/dialog";
@@ -240,8 +240,8 @@ export class HeatmapView extends ChartView {
         this.setupMouse();
         this.pointDescription = new TextOverlay(this.surface.getChart(),
             this.surface.getActualChartSize(),
-            [this.schema.displayName(this.xAxisData.description.name),
-                this.schema.displayName(this.yAxisData.description.name), "count"], 40);
+            [this.schema.displayName(this.xAxisData.description.name).displayName,
+                this.schema.displayName(this.yAxisData.description.name).displayName, "count"], 40);
         let summary = new HtmlString(formatNumber(this.plot.getVisiblePoints()) + " data points");
         if (heatmap.missingData !== 0) {
             summary = summary.appendSafeString(", " + formatNumber(heatmap.missingData) + " missing");
@@ -300,7 +300,7 @@ export class HeatmapView extends ChartView {
     }
 
     public groupBy(): void {
-        const columns: string[] = [];
+        const columns: DisplayName[] = [];
         for (let i = 0; i < this.schema.length; i++) {
             const col = this.schema.get(i);
             if (col.name !== this.xAxisData.description.name
@@ -314,9 +314,9 @@ export class HeatmapView extends ChartView {
         }
 
         const dialog = new Dialog("Choose column", "Select a column to group on.");
-        dialog.addSelectField("column", "column", columns, null,
+        dialog.addColumnSelectField("column", "column", columns, null,
             "The column that will be used to group on.");
-        dialog.setAction(() => this.showTrellis(dialog.getFieldValue("column")));
+        dialog.setAction(() => this.showTrellis(dialog.getColumnName("column")));
         dialog.show();
     }
 
@@ -332,12 +332,10 @@ export class HeatmapView extends ChartView {
      */
     public asCSV(): string[] {
         const lines: string[] = [
-            JSON.stringify(this.schema.displayName(this.xAxisData.description.name) + "_range") + "," +
-            JSON.stringify(this.schema.displayName(this.xAxisData.description.name)) + "," +
-            JSON.stringify(this.schema.displayName(this.yAxisData.description.name) + "_range") + "," +
-            JSON.stringify(this.schema.displayName(this.yAxisData.description.name)) + "," +
-                "count",
-        ];
+            JSON.stringify(this.xAxisData.getDisplayNameString(this.schema) + "_range") + "," +
+            JSON.stringify(this.xAxisData.getDisplayNameString(this.schema)) + "," +
+            JSON.stringify(this.yAxisData.getDisplayNameString(this.schema) + "_range") + "," +
+            JSON.stringify(this.yAxisData.getDisplayNameString(this.schema)) + "," + "count"];
         for (let x = 0; x < this.heatmap.buckets.length; x++) {
             const data = this.heatmap.buckets[x];
             const bdx = JSON.stringify(this.xAxisData.bucketDescription(x, 0));
@@ -353,7 +351,7 @@ export class HeatmapView extends ChartView {
         return lines;
     }
 
-    private showTrellis(colName: string): void {
+    private showTrellis(colName: DisplayName): void {
         const groupBy = this.schema.findByDisplayName(colName);
         const cds: IColumnDescription[] = [this.xAxisData.description,
                                            this.yAxisData.description, groupBy];
@@ -495,8 +493,8 @@ export class HeatmapView extends ChartView {
         const rr = this.createFilter2DRequest(xRange, yRange);
         const renderer = new FilterReceiver(
             new PageTitle(
-                "Filtered on " + this.schema.displayName(this.xAxisData.description.name) + " and " +
-                this.schema.displayName(this.yAxisData.description.name)),
+                "Filtered on " + this.xAxisData.getDisplayNameString(this.schema) + " and " +
+                this.yAxisData.getDisplayNameString(this.schema)),
             [this.xAxisData.description, this.yAxisData.description],
             this.schema, [0, 0], this.page, rr, this.dataset, {
             exact: this.samplingRate >= 1, chartKind: "Heatmap",

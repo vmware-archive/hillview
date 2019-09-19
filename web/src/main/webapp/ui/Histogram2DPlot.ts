@@ -138,7 +138,7 @@ export class Histogram2DPlot extends Plot {
         this.xAxisData.setResolution(this.getChartWidth(), AxisKind.Bottom, PlottingSurface.bottomMargin);
 
         this.plottingSurface.getCanvas().append("text")
-            .text(this.schema.displayName(this.xAxisData.description.name))
+            .text(this.xAxisData.getDisplayNameString(this.schema))
             .attr("transform", `translate(${this.getChartWidth() / 2},
             ${this.getChartHeight() + this.plottingSurface.topMargin + this.plottingSurface.bottomMargin / 2})`)
             .attr("text-anchor", "middle")

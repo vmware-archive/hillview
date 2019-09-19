@@ -20,6 +20,7 @@ import {event as d3event, select as d3select} from "d3-selection";
 import {cloneArray, makeId, makeSpan, px} from "../util";
 import {EditBox} from "./editBox";
 import {IHtmlElement, Point} from "./ui";
+import {DisplayName} from "../schemaClass";
 
 export enum FieldKind {
     String,
@@ -28,7 +29,8 @@ export enum FieldKind {
     Boolean,
     Password,
     File,
-    Datetime
+    Datetime,
+    ColumnName
 }
 
 /**
@@ -223,7 +225,7 @@ export class Dialog extends DialogBase {
      * dialog appears again.  If a set of values for this title is already
      * available, it is used to populate the dialog.
      */
-    public setCacheTitle(title: string): void {
+    public setCacheTitle(title: string | null): void {
         this.dialogTitle = title;
         if (title != null) {
             const values = Dialog.dialogValueCache.get(title);
@@ -234,7 +236,7 @@ export class Dialog extends DialogBase {
 
     public getAllValues(): DialogValues {
         const retval = new DialogValues();
-        this.fields.forEach((v, k) => retval.set(k, this.getFieldValue(k)));
+        this.fields.forEach((v, k) => retval.set(k, this.getFieldValueChecked(k, false)));
         return retval;
     }
 
@@ -432,18 +434,9 @@ export class Dialog extends DialogBase {
         return input;
     }
 
-    /**
-     * Add a drop-down selection field with the given options.
-     * @param fieldName: Internal name. Has to be used when parsing the input.
-     * @param labelText: Text in the dialog for this field.
-     * @param options: List of strings that are the options in the selection box.
-     * @param value: Initial default value.
-     * @param toolTip:  Help message to show as a tool-tip.
-     * @return       A reference to the select html input field.
-     */
-    public addSelectField(fieldName: string, labelText: string,
-                          options: string[], value: string,
-                          toolTip: string): HTMLInputElement | HTMLSelectElement {
+    private addSelectInternal(fieldName: string, labelText: string,
+                              options: string[], value: string,
+                              toolTip: string, type: FieldKind): HTMLInputElement | HTMLSelectElement {
         let result: HTMLInputElement | HTMLSelectElement = null;
 
         // If we have lots of options use a sorted datalist, otherwise
@@ -492,10 +485,48 @@ export class Dialog extends DialogBase {
             result = select;
         }
 
-        this.fields.set(fieldName, {html: result, type: FieldKind.String });
+        this.fields.set(fieldName, {html: result, type: type });
         if (value != null)
             result.value = value;
         return result;
+    }
+
+    /**
+     * Add a drop-down selection field with the given options.
+     * @param fieldName: Internal name. Has to be used when parsing the input.
+     * @param labelText: Text in the dialog for this field.
+     * @param options: List of strings that are the options in the selection box.
+     * @param value: Initial default value.
+     * @param toolTip:  Help message to show as a tool-tip.
+     * @return       A reference to the select html input field.
+     */
+    public addSelectField(fieldName: string, labelText: string,
+                          options: string[], value: string,
+                          toolTip: string): HTMLInputElement | HTMLSelectElement {
+        return this.addSelectInternal(
+            fieldName, labelText, options, value, toolTip, FieldKind.String);
+    }
+
+    /**
+     * Add a drop-down selection field for column names with the given options.
+     * @param fieldName: Internal name. Has to be used when parsing the input.
+     * @param labelText: Text in the dialog for this field.
+     * @param options: List of column display names that are the options in the selection box.
+     * @param value: Initial default value; if null the first value from the options is used.
+     * @param toolTip:  Help message to show as a tool-tip.
+     * @return       A reference to the select html input field.
+     */
+    public addColumnSelectField(fieldName: string, labelText: string,
+                                options: DisplayName[], value: DisplayName,
+                                toolTip: string): HTMLInputElement | HTMLSelectElement {
+        let v = null;
+        if (value !== null)
+            v = value.displayName;
+        else if (options.length > 0)
+            v = options[0].displayName;
+        return this.addSelectInternal(
+            fieldName, labelText, options.map((c) => c.displayName),
+            v, toolTip, FieldKind.ColumnName);
     }
 
     /**
@@ -513,19 +544,35 @@ export class Dialog extends DialogBase {
             fieldDiv.style.display = "none";
     }
 
+    private getFieldValueChecked(field: string, check: boolean): string {
+        const f = this.fields.get(field);
+        if (f.type === FieldKind.Boolean) {
+            const hi = f.html as HTMLInputElement;
+            return "" + hi.checked;
+        } else {
+            if (check)
+                console.assert(f.type !== FieldKind.ColumnName);
+            return f.html.value;
+        }
+    }
+
     /**
      * The value associated with a specific field in a dialog.
      * @param {string} field  Field whose value is sought.
      * @returns {string}      The value associated to the given field.
      */
     public getFieldValue(field: string): string {
+        return this.getFieldValueChecked(field, true);
+    }
+
+    /**
+     * Get the value associated with a field that represents a column name.
+     * @param field  Field name.
+     */
+    public getColumnName(field: string): DisplayName {
         const f = this.fields.get(field);
-        if (f.type === FieldKind.Boolean) {
-            const hi = f.html as HTMLInputElement;
-            return "" + hi.checked;
-        } else {
-            return f.html.value;
-        }
+        console.assert(f.type === FieldKind.ColumnName);
+        return new DisplayName(f.html.value);
     }
 
     /**
@@ -558,6 +605,17 @@ export class Dialog extends DialogBase {
         } else {
             f.html.value = value;
         }
+    }
+
+    /**
+     * Set the value of a column field in the dialog.
+     * @param {string} field  Field whose value is set.
+     * @param value  Value that is being set.
+     */
+    public setColumnValue(field: string, value: DisplayName): void {
+        const f = this.fields.get(field);
+        console.assert(f.type === FieldKind.ColumnName);
+        f.html.value = value.displayName;
     }
 
     /**

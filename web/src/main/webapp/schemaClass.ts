@@ -16,11 +16,27 @@
  */
 
 import {IColumnDescription, Schema} from "./javaBridge";
-import {mapToArray, Serializable} from "./util";
+import {cloneArray, mapToArray, Serializable} from "./util";
 
 export interface SchemaClassSerialization {
     schema: Schema;
     displayNameMap: string[];
+}
+
+/**
+ * A wrapper for a name of a column that is being displayed.
+ * We put this in a class to make it easier for the compiler to catch misuses of column names.
+ */
+export class DisplayName {
+    public constructor(public displayName: string) {
+        console.assert(displayName !== null);
+    }
+    public toString(): string {
+        return this.displayName;
+    }
+    public equals(other: DisplayName): boolean {
+        return this.displayName === other.displayName;
+    }
 }
 
 /**
@@ -33,7 +49,11 @@ export class SchemaClass implements Serializable<SchemaClass> {
     /**
      * Each column can have a different display name.
      */
-    private displayNameMap: Map<string, string>;
+    private displayNameMap: Map<string, DisplayName>;
+    /**
+     * Maps the display name (the string part) to the real name.
+     * Reverse of the displayNameMap.
+     */
     private reverseDisplayNameMap: Map<string, string>;
 
     private initialize(): void {
@@ -44,7 +64,7 @@ export class SchemaClass implements Serializable<SchemaClass> {
             this.columnNames.push(colName);
             this.columnMap.set(colName, i);
         }
-        this.displayNameMap = new Map<string, string>();
+        this.displayNameMap = new Map<string, DisplayName>();
         this.reverseDisplayNameMap = new Map<string, string>();
     }
 
@@ -53,19 +73,24 @@ export class SchemaClass implements Serializable<SchemaClass> {
     }
 
     public copyDisplayNames(schema: SchemaClass): void {
-        this.displayNameMap = new Map<string, string>();
-        this.reverseDisplayNameMap = new Map<string, string>();
+        this.displayNameMap = new Map<string, DisplayName>();
         for (const col of this.columnNames) {
             if (schema.displayNameMap.has(col)) {
                 const displayName = schema.displayNameMap.get(col);
                 this.displayNameMap.set(col, displayName);
-                this.reverseDisplayNameMap.set(displayName, col);
+                this.reverseDisplayNameMap.set(displayName.displayName, col);
             }
         }
     }
 
-    public getRenameMap(): Map<string, string> {
-        return this.displayNameMap;
+    /**
+     * Returns an array encoding the column renaming: even elements are original names,
+     * odd elements are new names.
+     */
+    public getRenameVector(): string[] {
+        const result = [];
+        this.displayNameMap.forEach((v, k) => { result.push(k); result.push(v.displayName); });
+        return result;
     }
 
     public serialize(): SchemaClassSerialization {
@@ -85,54 +110,54 @@ export class SchemaClass implements Serializable<SchemaClass> {
         if (dn.length % 2 !== 0)
             return null;
         for (let i = 0; i < dn.length; i += 2) {
-            const success = this.changeDisplayName(dn[i], dn[i + 1]);
+            const success = this.changeDisplayName(new DisplayName(dn[i]), dn[i + 1]);
             if (!success)
                 return null;
         }
         return this;
     }
 
-    public allDisplayNames(): string[] {
+    public allDisplayNames(): DisplayName[] {
         return this.columnNames.map((c) => this.displayName(c));
     }
 
     /**
      * Get the display name of the specified column.
      */
-    public displayName(name: string | null): string | null {
+    public displayName(name: string | null): DisplayName | null {
         if (name == null)
             return null;
         if (this.displayNameMap.has(name))
             return this.displayNameMap.get(name);
-        return name;
+        return new DisplayName(name);
     }
 
     /**
      * Given a display name get the real column name.
      */
-    public fromDisplayName(displayName: string | null): string | null {
+    public fromDisplayName(displayName: DisplayName): string | null {
         if (displayName == null)
             return null;
-        if (this.reverseDisplayNameMap.has(displayName))
-            return this.reverseDisplayNameMap.get(displayName);
-        console.assert(this.columnMap.has(displayName));
-        return displayName;
+        if (this.reverseDisplayNameMap.has(displayName.displayName))
+            return this.reverseDisplayNameMap.get(displayName.displayName);
+        console.assert(this.columnMap.has(displayName.displayName));
+        return displayName.displayName;
     }
 
     /**
-     * Change the display name of a column.
+     * Change the display name of a column.  Mutates the current schema!
      * Display names have to be unique within a schema.
      * @returns {boolean}  True if the new name is acceptable.
      */
-    public changeDisplayName(name: string, to: string): boolean {
+    public changeDisplayName(name: DisplayName, to: string): boolean {
         if (this.reverseDisplayNameMap.has(to))
             return false;
         if (this.columnMap.has(to) && !this.displayNameMap.has(to))
             return false;
-        if (this.displayNameMap.has(name))
-            this.reverseDisplayNameMap.delete(this.displayNameMap.get(name));
-        this.displayNameMap.set(name, to);
-        this.reverseDisplayNameMap.set(to, name);
+        if (this.displayNameMap.has(name.displayName))
+            this.reverseDisplayNameMap.delete(this.displayNameMap.get(name.displayName).displayName);
+        this.displayNameMap.set(name.displayName, new DisplayName(to));
+        this.reverseDisplayNameMap.set(to, name.displayName);
         return true;
     }
 
@@ -161,7 +186,7 @@ export class SchemaClass implements Serializable<SchemaClass> {
         return null;
     }
 
-    public findByDisplayName(displayName: string): IColumnDescription {
+    public findByDisplayName(displayName: DisplayName): IColumnDescription {
         const original = this.fromDisplayName(displayName);
         return this.find(original);
     }
@@ -169,6 +194,16 @@ export class SchemaClass implements Serializable<SchemaClass> {
     public filter(predicate: (IColumnDescription) => boolean): SchemaClass {
         const cols = this.schema.filter(predicate);
         const result = new SchemaClass(cols);
+        result.copyDisplayNames(this);
+        return result;
+    }
+
+    public insert(cd: IColumnDescription, index: number): SchemaClass {
+        if (index < 0 || index >= this.length)
+            return this.append(cd);
+        const copy = cloneArray(this.schema);
+        copy.splice(index, 0, cd);
+        const result = new SchemaClass(copy);
         result.copyDisplayNames(this);
         return result;
     }

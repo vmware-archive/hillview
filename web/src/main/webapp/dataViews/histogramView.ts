@@ -26,7 +26,7 @@ import {
     RemoteObjectId,
 } from "../javaBridge";
 import {Receiver} from "../rpc";
-import {SchemaClass} from "../schemaClass";
+import {DisplayName, SchemaClass} from "../schemaClass";
 import {CDFPlot} from "../ui/CDFPlot";
 import {IDataView} from "../ui/dataview";
 import {Dialog} from "../ui/dialog";
@@ -303,7 +303,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
     }
 
     public trellis(): void {
-        const columns: string[] = [];
+        const columns: DisplayName[] = [];
         for (let i = 0; i < this.schema.length; i++) {
             const col = this.schema.get(i);
             if (col.name !== this.xAxisData.description.name)
@@ -315,13 +315,13 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
         }
 
         const dialog = new Dialog("Choose column", "Select a column to group on.");
-        dialog.addSelectField("column", "column", columns, null,
+        dialog.addColumnSelectField("column", "column", columns, null,
             "The column that will be used to group on.");
-        dialog.setAction(() => this.showTrellis(dialog.getFieldValue("column")));
+        dialog.setAction(() => this.showTrellis(dialog.getColumnName("column")));
         dialog.show();
     }
 
-    private showTrellis(colName: string): void {
+    private showTrellis(colName: DisplayName): void {
         const groupBy = this.schema.findByDisplayName(colName);
         const cds: IColumnDescription[] = [this.xAxisData.description, groupBy];
         const rr = this.createDataRangesRequest(cds, this.page, "TrellisHistogram");
@@ -344,7 +344,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
     }
 
     public chooseSecondColumn(): void {
-        const columns: string[] = [];
+        const columns: DisplayName[] = [];
         for (let i = 0; i < this.schema.length; i++) {
             const col = this.schema.get(i);
             if (col.name === this.xAxisData.description.name)
@@ -357,10 +357,10 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
         }
 
         const dialog = new Dialog("Choose column", "Select a second column to use for displaying a 2D histogram.");
-        dialog.addSelectField("column", "column", columns, null,
+        dialog.addColumnSelectField("column", "column", columns, null,
             "The second column that will be used in addition to the one displayed here " +
             "for drawing a two-dimensional histogram.");
-        dialog.setAction(() => this.showSecondColumn(dialog.getFieldValue("column")));
+        dialog.setAction(() => this.showSecondColumn(dialog.getColumnName("column")));
         dialog.show();
     }
 
@@ -388,7 +388,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
         return lines;
     }
 
-    private showSecondColumn(colName: string): void {
+    private showSecondColumn(colName: DisplayName): void {
         const oc = this.schema.findByDisplayName(colName);
         const cds: IColumnDescription[] = [this.xAxisData.description, oc];
         const rr = this.createDataRangesRequest(cds, this.page, "2DHistogram");
@@ -535,17 +535,6 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
 
     public scrolledTo(position: number): void {
         // TODO
-    }
-}
-
-export class HistogramDialog extends Dialog {
-    constructor(allColumns: string[]) {
-        super("1D histogram", "Display a 1D histogram of the data in a column");
-        this.addSelectField("columnName", "Column", allColumns, allColumns[0], "Column to histogram");
-    }
-
-    public getColumn(): string {
-        return this.getFieldValue("columnName");
     }
 }
 
