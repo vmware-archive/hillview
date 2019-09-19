@@ -192,7 +192,7 @@ export class SchemaView extends TSViewBase {
             const cd = this.schema.get(i);
             const data = [
                 (i + 1).toString(),
-                this.schema.displayName(cd.name),
+                this.schema.displayName(cd.name).displayName,
                 cd.kind.toString()];
             if (this.stats != null) {
                 const cs = this.stats.get(cd.name);
@@ -341,7 +341,7 @@ export class SchemaView extends TSViewBase {
 
     private nameAction(regExp: RegExp, action: string): void {
         for (let i = 0; i < this.schema.length; i++) {
-            if (this.schema.displayName(this.schema.get(i).name).match(regExp)) {
+            if (this.schema.displayName(this.schema.get(i).name).displayName.match(regExp)) {
                 if (action === "Add")
                     this.display.selectedRows.add(i);
                 else if (action === "Remove")

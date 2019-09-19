@@ -37,6 +37,7 @@ import {
     significantDigits, truncate,
 } from "../util";
 import {AnyScale, D3Axis, D3SvgElement, SpecialChars} from "../ui/ui";
+import { SchemaClass } from "../schemaClass";
 
 export enum AxisKind {
     Bottom,
@@ -172,7 +173,7 @@ export class AxisDescription {
  * Contains all information required to build an axis and a d3 scale associated to it.
  */
 export class AxisData {
-    public readonly distinctStrings: string[];
+    public readonly leftBucketBoundaries: string[];
     public scale: AnyScale;
     public axis: AxisDescription;
     public bucketCount: number;
@@ -205,10 +206,14 @@ export class AxisData {
             }
         }
         const strings = this.range !== null ? this.range.leftBoundaries : null;
-        this.distinctStrings = strings;
+        this.leftBucketBoundaries = strings;
         // These are set when we know the screen size.
         this.scale = null;
         this.axis = null;
+    }
+
+    public getDisplayNameString(schema: SchemaClass): string {
+        return schema.displayName(this.description.name).displayName;
     }
 
     private static needsAdjustment(kind: ContentsKind): boolean {
@@ -224,11 +229,11 @@ export class AxisData {
         if (clamp) {
             if (index < 0)
                 index = 0;
-            if (index >= this.distinctStrings.length)
-                index = this.distinctStrings.length - 1;
+            if (index >= this.leftBucketBoundaries.length)
+                index = this.leftBucketBoundaries.length - 1;
         }
-        if (index >= 0 && index < this.distinctStrings.length)
-            return this.distinctStrings[index];
+        if (index >= 0 && index < this.leftBucketBoundaries.length)
+            return this.leftBucketBoundaries[index];
         return null;
     }
 

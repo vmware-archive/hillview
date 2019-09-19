@@ -27,7 +27,7 @@ import {
     RemoteObjectId,
 } from "../javaBridge";
 import {Receiver, RpcRequest} from "../rpc";
-import {SchemaClass} from "../schemaClass";
+import {DisplayName, SchemaClass} from "../schemaClass";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {CDFPlot} from "../ui/CDFPlot";
 import {IDataView} from "../ui/dataview";
@@ -202,8 +202,8 @@ export class Histogram2DView extends HistogramViewBase {
         this.legendRect = this.legendPlot.legendRectangle();
         this.pointDescription = new TextOverlay(this.surface.getChart(),
             this.surface.getActualChartSize(),
-            [   this.schema.displayName(this.xAxisData.description.name),
-                this.schema.displayName(this.yData.description.name),
+            [this.xAxisData.getDisplayNameString(this.schema),
+                this.yData.getDisplayNameString(this.schema),
                 "y", "count", "%", "cdf"], 40);
         this.pointDescription.show(false);
         let summary = new HtmlString(formatNumber(this.plot.getDisplayedPoints()) + " data points");
@@ -262,12 +262,13 @@ export class Histogram2DView extends HistogramViewBase {
     }
 
     public trellis(): void {
-        const columns: string[] = [];
+        const columns: DisplayName[] = [];
         for (let i = 0; i < this.schema.length; i++) {
             const col = this.schema.get(i);
-            if (col.name !== this.xAxisData.description.name &&
-                col.name !== this.yData.description.name)
+            if (col.name !== this.xAxisData.description.name
+                && col.name !== this.yData.description.name) {
                 columns.push(this.schema.displayName(col.name));
+            }
         }
         if (columns.length === 0) {
             this.page.reportError("No acceptable columns found");
@@ -275,13 +276,13 @@ export class Histogram2DView extends HistogramViewBase {
         }
 
         const dialog = new Dialog("Choose column", "Select a column to group on.");
-        dialog.addSelectField("column", "column", columns, null,
+        dialog.addColumnSelectField("column", "column", columns, null,
             "The column that will be used to group on.");
-        dialog.setAction(() => this.showTrellis(dialog.getFieldValue("column")));
+        dialog.setAction(() => this.showTrellis(dialog.getColumnName("column")));
         dialog.show();
     }
 
-    private showTrellis(colName: string): void {
+    private showTrellis(colName: DisplayName): void {
         const groupBy = this.schema.findByDisplayName(colName);
         const cds: IColumnDescription[] = [
             this.xAxisData.description,

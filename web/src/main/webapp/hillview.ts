@@ -26,6 +26,7 @@ import {createHillview} from "./toplevel";
  * This is a workaround webpack limitations: we export all symbols we need
  * by making them fields of the window object.
  */
+// tslint:disable-next-line:variable-name
 const public_symbols = {
     createHillview,
 };

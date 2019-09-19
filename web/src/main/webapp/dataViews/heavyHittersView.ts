@@ -170,7 +170,7 @@ export class HeavyHittersView extends BigTableView {
         let header: string[] = ["Rank"];
         let tips: string[] = ["Position in decreasing order of frequency."];
         this.columnsShown.forEach((c) => {
-            header.push(this.schema.displayName(c.name));
+            header.push(this.schema.displayName(c.name).displayName);
             tips.push("Column name");
         });
         header = header.concat(["Count", "% (Above " + this.percent.toString() + ")", "Fraction"]);

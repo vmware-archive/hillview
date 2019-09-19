@@ -32,7 +32,7 @@ import {
     TableSummary
 } from "../javaBridge";
 import {OnCompleteReceiver, Receiver} from "../rpc";
-import {SchemaClass} from "../schemaClass";
+import {DisplayName, SchemaClass} from "../schemaClass";
 import {BaseReceiver, OnNextK, TableTargetAPI} from "../tableTarget";
 import {DataRangeUI} from "../ui/dataRangeUI";
 import {IDataView} from "../ui/dataview";
@@ -429,7 +429,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
     }
 
     private addHeaderCell(cd: IColumnDescription,
-                          displayName: string,
+                          displayName: DisplayName,
                           help: string,
                           width: number): HTMLElement {
         const isVisible = this.isVisible(cd.name);
@@ -445,7 +445,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             span.onclick = () => this.toggleOrder(cd.name);
             th.appendChild(span);
         }
-        th.appendChild(makeSpan(displayName, false));
+        th.appendChild(makeSpan(displayName.toString(), false));
         return th;
     }
 
@@ -588,8 +588,8 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 text: "Filter...",
                 action: () => {
                     const colName = this.getSelectedColNames()[0];
-                    const colDesc = this.schema.find(colName);
-                    this.showFilterDialog(colDesc.name, this.order, this.tableRowsDesired);
+                    const colDesc = this.schema.displayName(colName);
+                    this.showFilterDialog(colDesc, this.order, this.tableRowsDesired);
                 },
                 help: "Eliminate data that matches/does not match a specific value.",
             }, selectedCount === 1);
@@ -660,9 +660,11 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
 
         {
             // Create column headers
-            let thd = this.addHeaderCell(posCd, posCd.name, "Position within sorted order.", DataRangeUI.width);
+            let thd = this.addHeaderCell(posCd, new DisplayName(posCd.name),
+                "Position within sorted order.", DataRangeUI.width);
             thd.oncontextmenu = () => {};
-            thd = this.addHeaderCell(ctCd, ctCd.name, "Number of occurrences.", 75);
+            thd = this.addHeaderCell(ctCd, new DisplayName(ctCd.name),
+                "Number of occurrences.", 75);
             thd.oncontextmenu = () => {};
             if (this.schema == null)
                 return;

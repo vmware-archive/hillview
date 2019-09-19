@@ -322,9 +322,9 @@ export class TrellisHeatmapView extends TrellisChartView {
         this.setupMouse();
         this.pointDescription = new TextOverlay(this.surface.getCanvas(),
             this.surface.getActualChartSize(),
-            [this.schema.displayName(this.xAxisData.description.name),
-                this.schema.displayName(this.yAxisData.description.name),
-                this.schema.displayName(this.groupByAxisData.description.name),
+            [this.xAxisData.getDisplayNameString(this.schema),
+                this.yAxisData.getDisplayNameString(this.schema),
+                this.groupByAxisData.getDisplayNameString(this.schema),
                 "count"], 40);
 
         // Axis labels
@@ -415,7 +415,7 @@ export class TrellisHeatmapView extends TrellisChartView {
                 return;
             rr = this.createFilterRequest(filter);
             title = new PageTitle(
-                "Filtered on " + this.schema.displayName(this.groupByAxisData.description.name));
+                "Filtered on " + this.groupByAxisData.getDisplayNameString(this.schema));
         }
         const renderer = new FilterReceiver(title,
             [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description],

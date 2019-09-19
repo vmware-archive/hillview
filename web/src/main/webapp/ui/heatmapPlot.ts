@@ -56,10 +56,10 @@ export class HeatmapPlot extends Plot {
         const canvas = this.plottingSurface.getCanvas();
         if (this.showAxes) {
             canvas.append("text")
-                .text(this.schema.displayName(this.yAxisData.description.name))
+                .text(this.yAxisData.getDisplayNameString(this.schema))
                 .attr("dominant-baseline", "text-before-edge");
             canvas.append("text")
-                .text(this.schema.displayName(this.xAxisData.description.name))
+                .text(this.xAxisData.getDisplayNameString(this.schema))
                 .attr("x", this.getChartWidth() / 2)
                 .attr("y", this.getChartHeight() + this.plottingSurface.topMargin +
                         this.plottingSurface.bottomMargin / 2)
