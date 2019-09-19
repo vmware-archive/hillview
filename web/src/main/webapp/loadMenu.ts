@@ -215,7 +215,11 @@ export class LoadMenu extends RemoteObject implements IDataView {
                         text: "Purge leaf datasets",
                         action: () => this.command("purgeLeafDatasets"),
                         help: "Remove all datasets stored at the worker nodes.",
-                    },
+                    }, {
+                        text: "Purge all data",
+                        action: () => this.purgeAll(),
+                        help: "Purge all data from memory (memoized, root, leaf)"
+                    }
                 ]),
             },
         );
@@ -225,6 +229,16 @@ export class LoadMenu extends RemoteObject implements IDataView {
         this.console = new ConsoleDisplay();
         this.page.setMenu(this.menu);
         this.top.appendChild(this.console.getHTMLRepresentation());
+    }
+
+    public purgeAll(): void {
+        const rr0 = this.createStreamingRpcRequest<Status[]>("purgeMemoization", null);
+        const rr1 = this.createStreamingRpcRequest<Status[]>("purgeDatasets", null);
+        const rr2 = this.createStreamingRpcRequest<Status[]>("purgeLeafDatasets", null);
+        const rec2 = new GenericReceiver<Status[]>("3", this.page, rr2, () => {});
+        const rec1 = new GenericReceiver<Status[]>("2", this.page, rr1, () => { rr2.invoke(rec2); });
+        const rec0 = new GenericReceiver<Status[]>("1", this.page, rr0, () => { rr1.invoke(rec1); });
+        rr0.invoke(rec0);
     }
 
     public refresh(): void {
@@ -521,6 +535,17 @@ class DBDialog extends Dialog {
             databaseKind: this.getFieldValue("databaseKind"),
             lazyLoading: true,
         };
+    }
+}
+
+class GenericReceiver<T> extends OnCompleteReceiver<T> {
+    public constructor(name: string, page: FullPage,
+                       operation: ICancellable<T>, protected continuation: (T) => void) {
+        super(page, operation, name);
+    }
+
+    public run(value: T): void {
+        this.continuation(value);
     }
 }
 
