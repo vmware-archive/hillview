@@ -187,13 +187,20 @@ export class LoadMenu extends RemoteObject implements IDataView {
                     dialog.show();
                 },
                 help: "A set of Orc files residing on the worker machines." },
-            { text: "DB tables...",
+            { text: "Federated DB tables...",
                 action: () => {
                     const dialog = new DBDialog();
                     dialog.setAction(() => this.init.loadDBTable(dialog.getConnection(), this.page));
                     dialog.show();
                 },
                 help: "A set of database tables residing in databases on each worker machine." },
+            { text: "Local DB table...",
+                action: () => {
+                    const dialog = new DBDialog();
+                    dialog.setAction(() => this.init.loadSimpleDBTable(dialog.getConnection(), this.page));
+                    dialog.show();
+                },
+                help: "A database table in a single database." },
         ]);
 
         const items: TopMenuItem[] = [

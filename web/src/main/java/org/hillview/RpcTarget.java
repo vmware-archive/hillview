@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * An RPC target is an object that has methods that are invoked from the UI
@@ -451,6 +452,40 @@ public abstract class RpcTarget implements IJson {
             RpcReply reply = this.request.createReply(json);
             this.sendReply(reply);
         }
+    }
+
+    private void sendCompleteReply(RpcRequest request, RpcRequestContext context, JsonObject result) {
+        Session session = context.getSessionIfOpen();
+        if (session == null)
+            return;
+        result.addProperty("done", 1);
+        RpcReply reply = request.createReply(result);
+        RpcServer.sendReply(reply, Converters.checkNull(context.session));
+        HillviewLogger.instance.info("Computation completed", "for {0}", request.toString());
+        RpcServer.requestCompleted(request, Converters.checkNull(context.session));
+        request.syncCloseSession(context.session);
+    }
+
+    /**
+     * Run a computation that creates a target immediately and return the result right away.
+     * This does not involve any streaming.
+     * @param request  Request that is being replied.
+     * @param context  Computation context.
+     * @param factory  Function that allocates the resulting Target.
+     */
+    public void createTargetDirect(RpcRequest request, RpcRequestContext context,
+                            Function<HillviewComputation, RpcTarget> factory) {
+        RpcTarget target = factory.apply(context.computation);
+        JsonObject json = new JsonObject();
+        json.addProperty("data", target.getId().toString());
+        this.sendCompleteReply(request, context, json);
+    }
+
+    public <S extends IJson> void returnResultDirect(RpcRequest request, RpcRequestContext context, S result) {
+        JsonObject json = new JsonObject();
+        json.addProperty("done", 1);
+        json.add("data", result.toJsonTree());
+        this.sendCompleteReply(request, context, json);
     }
 
     @Override

@@ -213,4 +213,11 @@ export class InitialObject extends RemoteObject {
             { kind: "DB", description: conn }, "loading database table");
         rr.invoke(observer);
     }
+
+    public loadSimpleDBTable(conn: JdbcConnectionInformation, loadMenuPage: FullPage): void {
+        const rr = this.createStreamingRpcRequest<RemoteObjectId>("loadSimpleDBTable", conn);
+        const observer = new RemoteTableReceiver(loadMenuPage, rr,
+            { kind: "DB", description: conn }, "loading database table");
+        rr.invoke(observer);
+    }
 }
