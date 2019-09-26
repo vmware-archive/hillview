@@ -55,7 +55,7 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    public void getSchema(RpcRequest request, RpcRequestContext context) {
+    public void getSummary(RpcRequest request, RpcRequestContext context) {
         SummarySketch ss = new SummarySketch();
         this.runSketch(this.table, ss, request, context);
     }
@@ -605,21 +605,6 @@ public final class TableTarget extends RpcTarget {
     }
 
     /**
-     * This serializes the result of heavyHitterSketch for the front end.
-     */
-    @SuppressWarnings("NullableProblems")
-    static class TopList implements IJson {
-        /**
-         * The NextKList stores the fields to display and their counts.
-         */
-        NextKList top;
-        /**
-         * The id of the FreqKList object which might be used for further filtering.
-         */
-        String heavyHittersId;
-    }
-
-    /**
      * Post-processing method applied to the result of a heavy hitters sketch before displaying the results. It will
      * discard elements that are too low in (estimated) frequency.
      * @param fkList The list of candidate heavy hitters
@@ -627,10 +612,8 @@ public final class TableTarget extends RpcTarget {
      * @return A TopList
      */
     private static TopList getTopList(FreqKList fkList, Schema schema, HillviewComputation computation) {
-        TopList tl = new TopList();
-        tl.top = fkList.getTop(schema);
-        tl.heavyHittersId = new HeavyHittersTarget(fkList, computation).getId().toString();
-        return tl;
+        return new TopList(fkList.getTop(schema),
+                new HeavyHittersTarget(fkList, computation).getId().toString());
     }
 
     /**
@@ -641,11 +624,10 @@ public final class TableTarget extends RpcTarget {
      * @return A TopList
      */
     private static TopList getSortedList(FreqKList fkList, Schema schema, HillviewComputation computation) {
-        TopList tl = new TopList();
-        fkList.getSortedList();
-        tl.top = fkList.sortTopK(schema);
-        tl.heavyHittersId = new HeavyHittersTarget(fkList, computation).getId().toString();
-        return tl;
+        fkList.sortList();
+        return new TopList(
+                fkList.sortTopK(schema),
+                new HeavyHittersTarget(fkList, computation).getId().toString());
     }
 
     /**

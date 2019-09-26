@@ -18,6 +18,8 @@
 package org.hillview.storage;
 
 import org.hillview.table.ColumnDescription;
+import org.hillview.table.Schema;
+import org.hillview.table.SmallTable;
 import org.hillview.table.Table;
 import org.hillview.table.api.*;
 import org.hillview.table.columns.BaseListColumn;
@@ -58,6 +60,19 @@ public class JdbcDatabase {
         }
     }
 
+    public int getRowCount() {
+        try {
+            assert this.conn.info.table != null;
+            String query = this.conn.getQueryToReadSize(this.conn.info.table);
+            ResultSet rs = this.getQueryResult(query);
+            if (!rs.next())
+                throw new RuntimeException("Could not retrieve table size for " + this.conn.info.table);
+            return rs.getInt(1);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public void disconnect() throws SQLException {
         if (this.connection == null)
             return;
@@ -69,14 +84,9 @@ public class JdbcDatabase {
         try {
             assert this.conn.info.table != null;
             if (this.conn.info.lazyLoading) {
-                String query = this.conn.getQueryToReadSize(this.conn.info.table);
-                ResultSet rs = this.getQueryResult(query);
-                if (!rs.next())
-                    throw new RuntimeException("Could not retrieve table size for " + this.conn.info.table);
-                int rowCount = rs.getInt(1);
-
+                int rowCount = this.getRowCount();
                 IColumnLoader loader = new JdbcLoader(this.conn.info);
-                ResultSetMetaData meta = this.getSchema();
+                ResultSetMetaData meta = this.getTableSchema();
                 List<ColumnDescription> cds = new ArrayList<ColumnDescription>(
                         meta.getColumnCount());
                 for (int i = 0; i < meta.getColumnCount(); i++) {
@@ -94,13 +104,57 @@ public class JdbcDatabase {
         }
     }
 
-    private ResultSetMetaData getSchema() {
+    private ResultSetMetaData getTableSchema() {
         try {
             ResultSet rs = this.getDataInTable(0);
             return rs.getMetaData();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public Schema getSchema() {
+        try {
+            Schema result = new Schema();
+            ResultSetMetaData meta = this.getTableSchema();
+            for (int i = 0; i < meta.getColumnCount(); i++) {
+                ColumnDescription cd = JdbcDatabase.getDescription(meta, i);
+                result.append(cd);
+            }
+            return result;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public int distinctCount(String columnName) {
+        try {
+            assert this.conn.info.table != null;
+            String query = this.conn.getQueryToComputeDistinctCount(this.conn.info.table, columnName);
+            ResultSet rs = this.getQueryResult(query);
+            if (!rs.next())
+                throw new RuntimeException("Could not retrieve column for " + this.conn.info.table);
+            return rs.getInt(1);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Find rows with top frequencies in the specified columns.
+     * @param schema  Columns to look at.
+     * @param maxRows Maximum number of rows expected.
+     * @return        A SmallTable that contains the frequent elements.  The
+     *                last column has the count of each row.
+     */
+    public SmallTable topFreq(Schema schema, int maxRows) {
+        assert this.conn.info.table != null;
+        String query = this.conn.getQueryToComputeFreqValues(
+                this.conn.info.table, schema, maxRows);
+        ResultSet rs = this.getQueryResult(query);
+        List<IAppendableColumn> columns = JdbcDatabase.convertResultSet(rs);
+        SmallTable tbl = new SmallTable(columns);
+        return tbl;
     }
 
     /**
@@ -308,7 +362,7 @@ public class JdbcDatabase {
         return cols;
     }
 
-    private static List<IAppendableColumn> convertResultSet(ResultSet data) {
+    public static List<IAppendableColumn> convertResultSet(ResultSet data) {
         try {
             ResultSetMetaData meta = data.getMetaData();
             List<IAppendableColumn> cols = createColumns(meta);

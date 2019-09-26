@@ -343,8 +343,9 @@ public abstract class RpcTarget implements IJson {
 
     /**
      * This observes a sketch computation, but only sends the final sketch result
-     * to the consumer.  It performs aggregation by itself.
-     * @param <R> Type of data.
+     * to the consumer.
+     * @param <R> Type of data from sketch.
+     * @param <S> Type of data sent to client.
      */
     static class CompleteSketchResultObserver<R, S extends IJson> extends ResultObserver<R> {
         /**
@@ -473,15 +474,21 @@ public abstract class RpcTarget implements IJson {
      * @param context  Computation context.
      * @param factory  Function that allocates the resulting Target.
      */
-    public void createTargetDirect(RpcRequest request, RpcRequestContext context,
-                            Function<HillviewComputation, RpcTarget> factory) {
-        RpcTarget target = factory.apply(context.computation);
+    protected void createTargetDirect(RpcRequest request, RpcRequestContext context,
+                                      Function<HillviewComputation, RpcTarget> factory) {
+        HillviewComputation computation;
+        if (context.computation != null)
+            computation = context.computation;
+        else
+            computation = new HillviewComputation(null, request);
+        RpcTarget target = factory.apply(computation);
         JsonObject json = new JsonObject();
         json.addProperty("data", target.getId().toString());
         this.sendCompleteReply(request, context, json);
     }
 
-    public <S extends IJson> void returnResultDirect(RpcRequest request, RpcRequestContext context, S result) {
+    protected <S extends IJson> void returnResultDirect(
+            RpcRequest request, RpcRequestContext context, S result) {
         JsonObject json = new JsonObject();
         json.addProperty("done", 1);
         json.add("data", result.toJsonTree());

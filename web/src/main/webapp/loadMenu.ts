@@ -326,7 +326,7 @@ export class LoadMenu extends RemoteObject implements IDataView {
     public showAdvanced(show: boolean): void {
         this.menu.enable("Manage", show);
         this.menu.enable("Test", show);
-        this.loadMenu.enable("DB tables...", show);
+        this.loadMenu.enable("Federated DB tables...", show);
         this.loadMenu.enable("CSV files...", show);
         this.loadMenu.enable("JSON files...", show);
         this.loadMenu.enable("Parquet files...", show);

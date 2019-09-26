@@ -722,7 +722,7 @@ class ComparisonFilterDialog extends Dialog {
 class CountReceiver extends OnCompleteReceiver<HLogLog> {
     constructor(page: FullPage, operation: ICancellable<HLogLog>,
                 protected colName: DisplayName) {
-        super(page, operation, "HyperLogLog");
+        super(page, operation, "Estimate distinct count");
     }
 
     public run(data: HLogLog): void {

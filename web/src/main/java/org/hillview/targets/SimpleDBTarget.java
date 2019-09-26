@@ -17,13 +17,21 @@
 
 package org.hillview.targets;
 
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import org.hillview.*;
+import org.hillview.dataset.api.IJson;
+import org.hillview.sketches.FreqKList;
+import org.hillview.sketches.SummarySketch;
 import org.hillview.storage.JdbcConnectionInformation;
 import org.hillview.storage.JdbcDatabase;
 import org.hillview.table.Schema;
-import org.hillview.table.api.ITable;
+import org.hillview.table.SmallTable;
+import org.hillview.table.rows.RowSnapshot;
 
+import javax.annotation.Nullable;
+import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.List;
 
 /**
  * This targets represents a simple database that is accessed directly using SQL from
@@ -31,18 +39,30 @@ import java.sql.SQLException;
  */
 public final class SimpleDBTarget extends RpcTarget {
     private final JdbcConnectionInformation jdbc;
-    // TODO: no table, send direct SQL
-    private final ITable table;
+    private final JdbcDatabase database;
+    private final int rowCount;
+    @Nullable
+    private Schema schema;
+
+    static {
+        try {
+            DriverManager.registerDriver(new com.mysql.jdbc.Driver ());
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 
     SimpleDBTarget(JdbcConnectionInformation jdbc, HillviewComputation computation) {
         super(computation);
         this.jdbc = jdbc;
+        this.schema = null;
         this.registerObject();
-        JdbcDatabase db = new JdbcDatabase(this.jdbc);
+        this.database = new JdbcDatabase(this.jdbc);
         try {
-            db.connect();
-            this.table = db.readTable();
-            db.disconnect();
+            this.database.connect();
+            this.rowCount = this.database.getRowCount();
+            this.schema = this.database.getSchema();
+            this.database.disconnect();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -50,12 +70,80 @@ public final class SimpleDBTarget extends RpcTarget {
 
     @Override
     public String toString() {
-        return this.jdbc.toString();
+        return "Local database: " + this.jdbc.toString();
     }
 
     @HillviewRpc
-    public void getSchema(RpcRequest request, RpcRequestContext context) {
-        Schema schema = table.getSchema();
-        this.returnResultDirect(request, context, schema);
+    public void getSummary(RpcRequest request, RpcRequestContext context) {
+        SummarySketch.TableSummary summary = new SummarySketch.TableSummary(this.schema, this.rowCount);
+        this.returnResultDirect(request, context, summary);
+    }
+
+    static class HLogLogInfo {
+        String columnName = "";
+        long seed;
+    }
+
+    static class DistinctCount implements IJson {
+        public final int distinctItemCount;
+
+        DistinctCount(int dc) {
+            this.distinctItemCount = dc;
+        }
+    }
+
+    @HillviewRpc
+    public void hLogLog(RpcRequest request, RpcRequestContext context) {
+        TableTarget.HLogLogInfo col = request.parseArgs(TableTarget.HLogLogInfo.class);
+        try {
+            this.database.connect();
+            int result = this.database.distinctCount(col.columnName);
+            this.database.disconnect();
+            DistinctCount dc = new DistinctCount(result);
+            this.returnResultDirect(request, context, dc);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @HillviewRpc
+    public void heavyHitters(RpcRequest request, RpcRequestContext context) {
+        TableTarget.HeavyHittersInfo info = request.parseArgs(TableTarget.HeavyHittersInfo.class);
+        try {
+            this.database.connect();
+            SmallTable tbl = this.database.topFreq(
+                    info.columns, (int)Math.ceil(info.amount * info.totalRows / 100));
+            List<String> cols = tbl.getSchema().getColumnNames();
+            String lastCol = cols.get(cols.size() - 1);
+            Object2IntOpenHashMap<RowSnapshot> map = new Object2IntOpenHashMap<RowSnapshot>();
+            for (int i = 0; i < tbl.getNumOfRows(); i++) {
+                RowSnapshot rs = new RowSnapshot(tbl, i);
+                RowSnapshot proj = new RowSnapshot(rs, info.columns);
+                map.put(proj, (int)rs.getDouble(lastCol));
+            }
+            this.database.disconnect();
+            FreqKList fkList = new FreqKList(info.totalRows, 0, map);
+            fkList.sortList();
+            HillviewComputation computation;
+            if (context.computation != null)
+                computation = context.computation;
+            else
+                computation = new HillviewComputation(null, request);
+            HeavyHittersTarget hht = new HeavyHittersTarget(fkList, computation);
+            TopList result = new TopList(fkList.sortTopK(info.columns), hht.getId().toString());
+            this.returnResultDirect(request, context, result);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @HillviewRpc
+    public void heavyHittersMG(RpcRequest request, RpcRequestContext context) {
+        this.heavyHitters(request, context);
+    }
+
+    @HillviewRpc
+    public void heavyHittersSampling(RpcRequest request, RpcRequestContext context) {
+        this.heavyHitters(request, context);
     }
 }

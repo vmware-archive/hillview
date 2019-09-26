@@ -54,7 +54,7 @@ public class HillviewComputation implements Serializable {
      */
     private List<Observer<RpcTarget>> onCreate;
 
-    HillviewComputation(@Nullable RpcTarget.Id resultId, RpcRequest request) {
+    public HillviewComputation(@Nullable RpcTarget.Id resultId, RpcRequest request) {
         this.id = HillviewComputation.currentId.getAndIncrement();
         this.request = request;
         assert resultId != request.objectId;

@@ -201,8 +201,8 @@ export class TableTargetAPI extends RemoteObject {
         return this.createStreamingRpcRequest<NextKList>("getNextK", nextKArgs);
     }
 
-    public createGetSchemaRequest(): RpcRequest<PartialResult<TableSummary>> {
-        return this.createStreamingRpcRequest<TableSummary>("getSchema", null);
+    public createGetSummaryRequest(): RpcRequest<PartialResult<TableSummary>> {
+        return this.createStreamingRpcRequest<TableSummary>("getSummary", null);
     }
 
     public createHLogLogRequest(colName: string): RpcRequest<PartialResult<HLogLog>> {
@@ -221,7 +221,7 @@ export class TableTargetAPI extends RemoteObject {
         if (percent < threshold) {
             return this.createStreamingRpcRequest<TopList>("heavyHittersMG",
                 { columns: columns, amount: percent,
-                    totalRows: totalRows, seed: Seed.instance.get() });
+                    totalRows: totalRows, seed: 0 });  // no randomness needed
         } else {
             return this.createStreamingRpcRequest<TopList>("heavyHittersSampling",
                 { columns: columns, amount: percent,

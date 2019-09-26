@@ -17,6 +17,7 @@
 
 package org.hillview.storage;
 
+import org.hillview.table.Schema;
 import org.hillview.utils.Utilities;
 
 import java.util.HashMap;
@@ -62,8 +63,12 @@ abstract class JdbcConnection {
      */
     public abstract String getQueryToReadTable(String table, int rowCount);
 
-    public String getQueryToReadSize(String table) {
+    String getQueryToReadSize(String table) {
         return "SELECT COUNT(*) FROM " + table;
+    }
+
+    String getQueryToComputeDistinctCount(String table, String column) {
+        return "SELECT COUNT(DISTINCT " + column + ") FROM " + table;
     }
 
     void addBaseUrl(StringBuilder urlBuilder) {
@@ -106,5 +111,37 @@ abstract class JdbcConnection {
         this.urlOptionsSeparator = urlOptionsSeparator;
         this.urlOptionsBegin = urlOptionsBegin;
         this.info = info;
+    }
+
+    String getQueryToComputeFreqValues(String table, Schema schema, int minCt) {
+        StringBuilder builder = new StringBuilder();
+        String ctcol = schema.newColumnName("countcol");
+
+        /*
+        e.g., select * from
+                 (select gender, first_name, count(*) as count
+                 from employees
+                 group by gender, first_name) tmp
+              where count > minCt
+              order by count desc
+         */
+
+        boolean first = true;
+        StringBuilder cols = new StringBuilder();
+        for (String col : schema.getColumnNames()) {
+            if (!first)
+                cols.append(", ");
+            first = false;
+            cols.append(col);
+        }
+        builder.append("SELECT * FROM (SELECT ");
+        builder.append(cols.toString());
+        builder.append(", count(*) AS ").append(ctcol).append(" FROM ")
+                .append(table);
+        builder.append(" group by ")
+                .append(cols.toString());
+        builder.append(") tmp where ").append(ctcol).append(" > ").append(minCt);
+        builder.append(" order by ").append(ctcol).append(" desc");
+        return builder.toString();
     }
 }

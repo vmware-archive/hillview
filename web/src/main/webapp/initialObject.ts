@@ -169,7 +169,7 @@ export class RemoteTableReceiver extends BaseReceiver {
 
     public run(): void {
         super.run();
-        const rr = this.remoteObject.createGetSchemaRequest();
+        const rr = this.remoteObject.createGetSummaryRequest();
         rr.chain(this.operation);
         const title = getDescription(this.data);
         const dataset = new DatasetView(this.remoteObject.remoteObjectId, title, this.data);

@@ -393,7 +393,7 @@ export class DatasetView implements IHtmlElement {
      * Displays again the original data.
      */
     public redisplay(): void {
-        const rr = this.remoteObject.createGetSchemaRequest();
+        const rr = this.remoteObject.createGetSummaryRequest();
         const title = getDescription(this.loaded);
         const newPage = this.newPage(new PageTitle(title), null);
         rr.invoke(new SchemaReceiver(newPage, rr, this.remoteObject, this, null, null));

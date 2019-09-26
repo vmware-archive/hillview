@@ -44,7 +44,7 @@ public class SummarySketch implements ISketch<ITable, SummarySketch.TableSummary
         public final Schema schema;
         public final long   rowCount;
 
-        TableSummary(@Nullable Schema schema, long rowCount) {
+        public TableSummary(@Nullable Schema schema, long rowCount) {
             this.schema = schema;
             this.rowCount = rowCount;
         }
@@ -55,7 +55,7 @@ public class SummarySketch implements ISketch<ITable, SummarySketch.TableSummary
         }
 
         TableSummary add(TableSummary other) {
-            Schema s = this.schema;
+            @Nullable Schema s = null;
             if (this.schema == null)
                 s = other.schema;
             else if (other.schema == null)
