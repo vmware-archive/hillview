@@ -17,6 +17,7 @@
 
 import {IViewSerialization, SpectrumSerialization} from "../datasetView";
 import {
+    AugmentedHistogram,
     CombineOperators,
     DataRange,
     EigenVal,
@@ -75,8 +76,7 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
         this.newPage.setDataView(this.specView);
 
         const ev: number [] = eVals.eigenValues;
-        const histogram: HistogramBase = { buckets: ev, cdfBuckets: null, missingData: 0,
-					   confMins: null, confMaxes: null };
+        const histogram: HistogramBase = { buckets: ev, missingData: 0 };
         const icd: IColumnDescription = { kind: "Integer", name: "Singular Values" };
         const range: DataRange = { min: -.5, max: ev.length - .5,
             presentCount: 0, missingCount: 0 };
@@ -166,7 +166,15 @@ export class SpectrumView extends ChartView {
         this.axisData = axisData;
         this.title = title;
         this.histogram = h;
-        this.plot.setHistogram(h, 1, axisData, null, this.page.dataset.isPrivate());
+
+        const augHist: AugmentedHistogram = {
+            histogram: h,
+            cdfBuckets: null,
+            confMins: null,
+            confMaxes: null
+        }
+        
+        this.plot.setHistogram(augHist, 1, axisData, null, this.page.dataset.isPrivate());
         this.plot.draw();
 
         this.summary.textContent = "Columns: " + this.colNames.join(", ");

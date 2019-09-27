@@ -5,33 +5,26 @@ import org.hillview.*;
 import org.hillview.dataset.ConcurrentSketch;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IJson;
-import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.Pair;
-import org.hillview.maps.FilterMap;
+import org.hillview.dataStructures.PrivateHistogram;
 import org.hillview.sketches.*;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.PrivacySchema;
 import org.hillview.table.Schema;
 import org.hillview.table.api.ITable;
-import org.hillview.table.filters.RangeFilterDescription;
 import org.hillview.table.rows.PrivacyMetadata;
 import org.hillview.utils.Converters;
-import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.JsonList;
-import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
-import java.lang.reflect.ReflectPermission;
-import java.security.Provider;
-import java.util.HashMap;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * This class represents a remote dataset that can only be accessed using differentially-private operations.
  */
 public class PrivateTableTarget extends RpcTarget {
-
     /* Used to send a reply immediately without running a sketch. */
     private static <S extends IJson> void constructAndSendReply(S result, RpcRequest request, RpcRequestContext context) {
         JsonObject json = new JsonObject();
@@ -113,18 +106,11 @@ public class PrivateTableTarget extends RpcTarget {
         }
     }
 
+    // compute CDF on the second histogram (at finer CDF granularity)
     static BiFunction<Pair<Histogram, Histogram>,
             HillviewComputation,
-            Pair<Histogram, Histogram>> addLaplaceNoise(PrivacyMetadata metadata) {
-        return (e, c) -> {
-            PrivateHistogram privateHist = new PrivateHistogram(e.first);
-            privateHist.addDyadicLaplaceNoise();
-
-            PrivateHistogram privateCDF = new PrivateHistogram(e.second);
-            privateCDF.addDyadicLaplaceNoise();
-
-            return new Pair(privateHist.histogram, privateCDF.histogram);
-        };
+            Pair<PrivateHistogram, PrivateHistogram>> makePrivateFunction() {
+        return (e, c) -> new Pair(new PrivateHistogram(e.first, false), new PrivateHistogram(e.second, true));
     }
 
     // Returns both the histogram and the precomputed CDF of the data.
@@ -139,7 +125,7 @@ public class PrivateTableTarget extends RpcTarget {
         ConcurrentSketch<ITable, Histogram, Histogram> csk =
                 new ConcurrentSketch<>(sk, cdf);
         this.runCompleteSketch(this.table, csk,
-                addLaplaceNoise(info[0].getMetadata(metadata)), request, context);
+                makePrivateFunction(), request, context);
     }
 
     static class PrivateRangeArgs {

@@ -16,7 +16,7 @@
  */
 
 import {line as d3line} from "d3-shape";
-import {HistogramBase} from "../javaBridge";
+import {AugmentedHistogram} from "../javaBridge";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 
@@ -24,7 +24,7 @@ import {PlottingSurface} from "./plottingSurface";
  * A CDFPlot draws a CDF curve on a PlottingSurface.
  */
 export class CDFPlot extends Plot {
-    protected cdf: HistogramBase;
+    protected cdf: AugmentedHistogram;
     protected cdfData: number[];
     protected max: number;
     // True if we need to adjust for the range of the data
@@ -37,7 +37,7 @@ export class CDFPlot extends Plot {
         super(plottingSurface);
     }
 
-    public setData(cdf: HistogramBase, adjust: boolean, integrate: boolean): void {
+    public setData(cdf: AugmentedHistogram, adjust: boolean, integrate: boolean): void {
         this.cdf = cdf;
         this.adjust = adjust;
         this.cdfData = [];

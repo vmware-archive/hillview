@@ -21,7 +21,7 @@ import org.apache.commons.math3.distribution.LaplaceDistribution;
 import org.hillview.dataset.api.Pair;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.rows.PrivacyMetadata;
-import org.hillview.utils.Numeric;
+import org.hillview.utils.Utilities;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,8 +43,6 @@ public class DyadicHistogramBuckets implements IHistogramBuckets {
     private double globalMax;
 
     private int numOfBuckets;
-
-    private final double bucketSize; // The desired bucket size specified by the user or UI.
 
     private final double granularity; // The quantization interval (leaf size).
     private final double epsilon; // The privacy budget parameter for the histogram.
@@ -150,7 +148,6 @@ public class DyadicHistogramBuckets implements IHistogramBuckets {
         this.globalMin = metadata.globalMin;
         this.globalMax = metadata.globalMax;
 
-        this.bucketSize = (maxValue - minValue) / this.numOfBuckets;
         this.numLeaves = (int)((maxValue - minValue) / this.granularity);
 
         // Preserves semantics, will make noise computation easier
@@ -213,40 +210,37 @@ public class DyadicHistogramBuckets implements IHistogramBuckets {
     // Return the dyadic decomposition of this interval, as a list of <left boundary, right boundary> pairs
     // for each interval in the decomposition. The decomposition assumes that the first leaf of the dyadic tree
     // is at index 0.
-    public static ArrayList<Pair<Long, Long>> dyadicDecomposition(Long left, Long right) {
-        if ( left < 0 || right < left ) {
+    public static ArrayList<Pair<Long, Long>> dyadicDecomposition(long left, long right) {
+        if (left < 0 || right < left) {
             throw new IllegalArgumentException("Invalid interval bounds");
         }
 
-        System.out.println("Getting dyadic decomposition for left: " + left + ", right: " + right);
-
         ArrayList<Pair<Long, Long>> nodes = new ArrayList<>();
         while (left < right) {
-            System.out.println(">>> " + left + " " + right);
             // get largest valid interval starting at left and not extending past right
             long lob = Long.lowestOneBit(left);
-            long lsb = lob > 0 ? Numeric.longLog2(lob) : -1; // smallest power of 2 that divides left
+            long lsb = lob > 0 ? Utilities.longLog2(lob) : -1; // smallest power of 2 that divides left
 
-            long rem = Numeric.longLog2(right - left); // smallest power of 2 contained in remaining interval
+            long rem = Utilities.longLog2(right - left); // smallest power of 2 contained in remaining interval
 
             long pow = lsb < 0 ? rem : Math.min(lsb, rem); // largest valid covering interval
             long nodeEnd = (long)Math.pow(2, pow);
 
-            System.out.println(pow + " " + left + " " + nodeEnd);
             nodes.add(new Pair(left, nodeEnd));
 
-            left += nodeEnd; // Long is immutable, so this makes a local copy...
+            left += nodeEnd;
         }
 
-        assert(right.equals(left));
+        assert(right == left);
 
         return nodes;
     }
 
     // Compute the intervals in the dyadic tree that correspond to this bucket.
     public ArrayList<Pair<Long, Long>> bucketDecomposition(int bucketIdx, boolean cdf) {
-        if (bucketIdx >= this.numOfBuckets || bucketIdx < 0) throw new IllegalArgumentException("Invalid bucket index");
-        System.out.println("Getting bucket decomposition for bucket: " + bucketIdx);
+        if (bucketIdx >= this.numOfBuckets || bucketIdx < 0) {
+            throw new IllegalArgumentException("Invalid bucket index");
+        }
 
         Long leftLeaf;
         if (cdf) {
@@ -282,7 +276,6 @@ public class DyadicHistogramBuckets implements IHistogramBuckets {
             variance += 2*(Math.pow(scale, 2));
         }
 
-        System.out.println("Scale: " + scale + ", Noise: " + noise + ", Stdev: " + Math.sqrt(variance));
         return new Pair(noise, variance);
     }
 

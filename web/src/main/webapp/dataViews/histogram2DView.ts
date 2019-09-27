@@ -18,6 +18,7 @@
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {Histogram2DSerialization, IViewSerialization} from "../datasetView";
 import {
+    AugmentedHistogram,
     FilterDescription,
     Heatmap,
     HistogramBase,
@@ -188,7 +189,15 @@ export class Histogram2DView extends HistogramViewBase {
         this.plot.draw();
         const discrete = kindIsString(this.xAxisData.description.kind) ||
             this.xAxisData.description.kind === "Integer";
-        this.cdfPlot.setData(cdf, discrete, true);
+
+        const augHist: AugmentedHistogram = {
+            histogram: cdf,
+            cdfBuckets: cdf.buckets,
+            confMins: null,
+            confMaxes: null
+        }
+        
+        this.cdfPlot.setData(augHist, discrete, true);
         this.cdfPlot.draw();
         this.legendPlot.setData(this.yData, this.plot.getMissingDisplayed() > 0, this.schema);
         this.legendPlot.draw();

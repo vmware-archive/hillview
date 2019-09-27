@@ -14,8 +14,11 @@ public class DyadicDecompositionTest extends BaseTest {
         long rightLeafIdx = 10;
 
         ArrayList<Pair<Long, Long>> ret = DyadicHistogramBuckets.dyadicDecomposition(leftLeafIdx, rightLeafIdx);
-        for ( Pair<Long, Long> x : ret ) {
-            System.out.println(x.first + " " + x.second);
-        }
+
+        assert(ret.get(0).first == 0);
+        assert(ret.get(0).second == 8);
+
+        assert(ret.get(1).first == 8);
+        assert(ret.get(1).second == 2);
     }
 }

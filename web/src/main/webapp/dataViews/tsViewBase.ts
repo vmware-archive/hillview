@@ -28,8 +28,6 @@ import {
     HLogLog,
     IColumnDescription,
     kindIsString,
-    PrivateHistogramArgs,
-    PrivateHistogramData,
     RecordOrder,
     RemoteObjectId,
     StringFilterDescription,

@@ -17,6 +17,7 @@
 
 import {Receiver, RpcRequest} from "../rpc";
 import {
+    AugmentedHistogram,
     FilterDescription,
     Heatmap,
     HistogramBase,
@@ -288,24 +289,37 @@ export class TrellisHistogramView extends TrellisChartView {
             const bucketData = data.buckets[i];
             const histo: HistogramBase = {
                 buckets: bucketData,
-		cdfBuckets: null,
                 missingData: data.missingData,
-		confMins: null,
-		confMaxes: null
             };
 
+            const augHisto: AugmentedHistogram = {
+                histogram: histo,
+                cdfBuckets: histo.buckets,
+                confMins: null,
+                confMaxes: null
+            }
+            
             const cdfp = this.cdfs[i];
-            cdfp.setData(histo, discrete, true);
+            cdfp.setData(augHisto, discrete, true);
 
-            const coarse = HistogramView.coarsen(histo, this.bucketCount);
-            max = Math.max(max, Math.max(...coarse.buckets));
-            coarsened.push(coarse);
+            const coarse = HistogramView.coarsen(augHisto, this.bucketCount);
+            max = Math.max(max, Math.max(...coarse.histogram.buckets));
+            coarsened.push(coarse.histogram);
         }
 
         for (let i = 0; i < coarsened.length; i++) {
             const plot = this.hps[i];
             const coarse = coarsened[i];
-            plot.setHistogram(coarse, this.samplingRate, this.xAxisData, max, this.page.dataset.isPrivate());
+
+            const augHist: AugmentedHistogram = {
+                histogram: coarse,
+                cdfBuckets: null,
+                confMins: null,
+                confMaxes: null
+            }
+            
+            plot.setHistogram(augHist, this.samplingRate, this.xAxisData,
+                              max, this.page.dataset.isPrivate());
             plot.displayAxes = false;
             plot.draw();
             plot.border(1);
