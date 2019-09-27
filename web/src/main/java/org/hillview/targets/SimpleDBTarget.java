@@ -174,7 +174,7 @@ public final class SimpleDBTarget extends RpcTarget {
         if (info.cd.kind == ContentsKind.Integer || info.cd.kind == ContentsKind.Double) {
             try {
                 this.database.connect();
-                Histogram result = this.database.numericHistogram(
+                Histogram result = this.database.histogram(
                         info.cd, (DoubleHistogramBuckets)info.getBuckets());
                 this.database.disconnect();
                 this.returnResultDirect(request, context, result);

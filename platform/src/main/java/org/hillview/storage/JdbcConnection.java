@@ -18,6 +18,7 @@
 package org.hillview.storage;
 
 import org.hillview.sketches.DoubleHistogramBuckets;
+import org.hillview.sketches.StringHistogramBuckets;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.utils.Utilities;
@@ -145,12 +146,15 @@ abstract class JdbcConnection {
     public abstract String getQueryForNumericHistogram(
             String table, ColumnDescription cd, DoubleHistogramBuckets buckets);
 
+    public abstract String getQueryForStringHistogram(
+            String table, ColumnDescription cd, StringHistogramBuckets buckets);
+
     /**
      * Returns a query that computes 4 values for a given numeric column.
      * @param table  Table used.
      * @param column Column name.
-     * @return       A query that computes the min, max, total rows, total nulls in the specified column.
-     *               These are returned in columns min, max, total and nulls respectively.
+     * @return       A query that computes the min, max, total rows, and non-nulls in the specified column.
+     *               These are returned in columns min, max, total and nonnulls respectively.
      */
     public abstract String getQueryForNumericRange(String table, String column);
 }

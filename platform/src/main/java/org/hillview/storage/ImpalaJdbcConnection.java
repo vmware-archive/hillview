@@ -18,6 +18,7 @@
 package org.hillview.storage;
 
 import org.hillview.sketches.DoubleHistogramBuckets;
+import org.hillview.sketches.StringHistogramBuckets;
 import org.hillview.table.ColumnDescription;
 import org.hillview.utils.Utilities;
 
@@ -35,7 +36,14 @@ public class ImpalaJdbcConnection extends JdbcConnection {
     }
 
     @Override
-    public String getQueryForNumericHistogram(String table, ColumnDescription cd, DoubleHistogramBuckets buckets) {
+    public String getQueryForNumericHistogram(
+            String table, ColumnDescription cd, DoubleHistogramBuckets buckets) {
+        throw new RuntimeException("Not yet implemented");
+    }
+
+    @Override
+    public String getQueryForStringHistogram(
+            String table, ColumnDescription cd, StringHistogramBuckets buckets) {
         throw new RuntimeException("Not yet implemented");
     }
 

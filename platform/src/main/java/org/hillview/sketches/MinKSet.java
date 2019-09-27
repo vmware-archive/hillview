@@ -13,8 +13,8 @@ import java.util.List;
  *  that hash to the minimum value.
  */
 public class MinKSet<T> extends BucketsInfo {
-    public final Comparator<T> comp;
-    final int maxSize;
+    final Comparator<T> comp;
+    private final int maxSize;
     final Long2ObjectRBTreeMap<T> data;
     @Nullable public T min;
     @Nullable public T max;

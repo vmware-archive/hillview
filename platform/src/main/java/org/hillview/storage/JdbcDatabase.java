@@ -17,9 +17,7 @@
 
 package org.hillview.storage;
 
-import org.hillview.sketches.DataRange;
-import org.hillview.sketches.DoubleHistogramBuckets;
-import org.hillview.sketches.Histogram;
+import org.hillview.sketches.*;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.SmallTable;
@@ -161,24 +159,40 @@ public class JdbcDatabase {
     }
 
     /**
-     * Computes a numeric histogram on the specified numeric column with the specified buckets.
+     * Computes a histogram on the specified column with the specified buckets.
      * @param cd       Description of column to histogram.
      * @param buckets  Bucket description
      * @return         The histogram of the data.
      */
-    public Histogram numericHistogram(ColumnDescription cd, DoubleHistogramBuckets buckets) {
+    public Histogram histogram(ColumnDescription cd, IHistogramBuckets buckets) {
         assert this.conn.info.table != null;
-        String query = this.conn.getQueryForNumericHistogram(this.conn.info.table, cd, buckets);
+        String query;
+        if (buckets instanceof DoubleHistogramBuckets) {
+            query = this.conn.getQueryForNumericHistogram(
+                    this.conn.info.table, cd, (DoubleHistogramBuckets)buckets);
+        } else {
+            query = this.conn.getQueryForStringHistogram(
+                    this.conn.info.table, cd, (StringHistogramBuckets)buckets);
+        }
         ResultSet rs = this.getQueryResult(query);
         List<IAppendableColumn> cols = JdbcDatabase.convertResultSet(rs);
-        assert cols.size() == 1;
-        IColumn col = cols.get(0);
-        assert col.sizeInRows() == buckets.getNumOfBuckets();
-        long[] data = new long[buckets.getNumOfBuckets()];
+        assert cols.size() == 2;
+        IColumn bucketNr = cols.get(0);
+        IColumn bucketSize = cols.get(1);
+        boolean isDouble = bucketNr.getDescription().kind == ContentsKind.Double;
+        int bucketCount = buckets.getNumOfBuckets();
+        long[] data = new long[bucketCount];
         long nonNulls = 0;
-        for (int i = 0; i < buckets.getNumOfBuckets(); i++) {
-            data[i] = (int) col.getDouble(i);
-            nonNulls += data[i];
+        for (int i = 0; i < bucketNr.sizeInRows(); i++) {
+            int index = isDouble ? (int)bucketNr.getDouble(i) : bucketNr.getInt(i);
+            // In SQL the last bucket boundary is not inclusive, so sometimes
+            // we may get an extra bucket.  The semantics in Hillview is to fold
+            // that into the penultimate bucket.
+            if (index == bucketCount)
+                index = bucketCount - 1;
+            long count = (long)bucketSize.getDouble(i);
+            data[index] = count;
+            nonNulls += count;
         }
         long nulls = this.getRowCount() - nonNulls;
         return new Histogram(buckets, data, nulls);
@@ -195,7 +209,6 @@ public class JdbcDatabase {
         List<IAppendableColumn> cols = JdbcDatabase.convertResultSet(rs);
         SmallTable table = new SmallTable(cols);
         assert table.getNumOfRows() == 1;
-        @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
         RowSnapshot row = new RowSnapshot(table, 0);
         DataRange range = new DataRange();
         if (cd.kind == ContentsKind.Double) {
@@ -205,8 +218,8 @@ public class JdbcDatabase {
             range.min = row.getInt("min");
             range.max = row.getInt("max");
         }
-        range.missingCount = (long)row.getDouble("nulls");
-        range.presentCount = (long)(row.getDouble("total")) - range.missingCount;
+        range.presentCount = (long)row.getDouble("nonnulls");
+        range.missingCount = (long)(row.getDouble("total")) - range.presentCount;
         return range;
     }
 

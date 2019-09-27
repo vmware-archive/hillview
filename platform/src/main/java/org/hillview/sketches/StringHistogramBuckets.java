@@ -31,7 +31,7 @@ public class StringHistogramBuckets implements IHistogramBuckets {
     /**
      * These are the *left endpoints* of the buckets.
      */
-    private final String[] leftBoundaries;
+    public final String[] leftBoundaries;
 
     public StringHistogramBuckets(final String[] leftBoundaries) {
         if (leftBoundaries.length == 0)

@@ -18,6 +18,7 @@
 package org.hillview.storage;
 
 import org.hillview.sketches.DoubleHistogramBuckets;
+import org.hillview.sketches.StringHistogramBuckets;
 import org.hillview.table.ColumnDescription;
 
 public class MySqlJdbcConnection extends JdbcConnection {
@@ -46,16 +47,33 @@ public class MySqlJdbcConnection extends JdbcConnection {
     @Override
     public String getQueryForNumericHistogram(
             String table, ColumnDescription cd, DoubleHistogramBuckets buckets) {
-        String arithm = "FLOOR((" + cd.name + " - " + buckets.minValue + ") * @scale)";
-        return "select @scale := " + buckets.numOfBuckets + "/" + buckets.range + ";" +
-                "select count(" + arithm + ")" +
-                " from " + table +
-                " group by " + arithm;
+        double scale = (double)buckets.numOfBuckets / buckets.range;
+        return "select bucket, count(bucket) from (" +
+                "select CAST(FLOOR((" + cd.name + " - " + buckets.minValue + ") * " + scale + ") as UNSIGNED) as bucket" +
+               " from " + table + ") tmp" +
+               " group by bucket";
+    }
+
+    @Override
+    public String getQueryForStringHistogram(
+            String table, ColumnDescription cd, StringHistogramBuckets buckets) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("select bucket, count(bucket) from (");
+        builder.append("select (CASE ");
+        for (int i = 0; i < buckets.leftBoundaries.length; i++) {
+            builder.append("WHEN ").append(cd.name).append(" >= '").append(buckets.leftBoundaries[i]).append("'");
+            if (i < buckets.leftBoundaries.length - 1)
+                builder.append(" and ").append(cd.name).append(" < '").append(buckets.leftBoundaries[i+1]).append("'");
+            builder.append(" then ").append(i).append(" ");
+        }
+        builder.append("end) as bucket from ").append(table).append(") tmp");
+        builder.append(" group by bucket");
+        return builder.toString();
     }
 
     @Override
     public String getQueryForNumericRange(String table, String colName) {
         return "select MIN(" + colName + ") as min, MAX(" + colName +
-                ") as max, COUNT(*) as total, COUNT(IFNULL(" + colName + ", 1)) as nulls from " + table;
+                ") as max, COUNT(*) as total, COUNT(" + colName + ") as nonnulls from " + table;
     }
 }
