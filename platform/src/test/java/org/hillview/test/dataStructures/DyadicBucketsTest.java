@@ -1,19 +1,16 @@
 package org.hillview.test.dataStructures;
 
 import org.hillview.sketches.DyadicHistogramBuckets;
-import org.hillview.sketches.Histogram;
-import org.hillview.sketches.PrivateHistogram;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.columns.DoubleArrayColumn;
-import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.table.rows.PrivacyMetadata;
 import org.hillview.test.BaseTest;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class PrivateHistogramTest extends BaseTest {
+public class DyadicBucketsTest extends BaseTest {
     // Generate a column s.t. value i for i in [minVal, maxVal) is repeated nPerValue times.
     private static DoubleArrayColumn generateLinearColumn(final int minVal, final int maxVal, final int nPerValue) {
         final ColumnDescription desc = new

@@ -303,6 +303,44 @@ public abstract class RpcTarget implements IJson {
     }
 
     /**
+     * Observes a sketch computation and applies a postprocessing function to intermediate results
+     * before returning them.
+     *
+     * @param <R> Type of data.
+     */
+    class SketchResultObserverPostprocess<R, S extends IJson> extends ResultObserver<R> {
+        private final BiFunction<R, HillviewComputation, S> postprocessing;
+
+        SketchResultObserverPostprocess(String name, RpcTarget target, RpcRequest request,
+                                     RpcRequestContext context,
+                                     BiFunction<R, HillviewComputation, S> postprocessing) {
+            super(name, request, target, context);
+            this.postprocessing = postprocessing;
+        }
+
+        @Override
+        public void onNext(PartialResult<R> pr) {
+            HillviewLogger.instance.info("Received partial sketch", "from {0}", this.name);
+            Session session = this.context.getSessionIfOpen();
+            if (session == null)
+                return;
+
+            @Nullable
+            S result = this.postprocessing.apply(pr.deltaValue, this.getComputation());
+
+            JsonObject json = new JsonObject();
+            json.addProperty("done", pr.deltaDone);
+            if (result == null)
+                json.add("data", null);
+            else
+                json.add("data", result.toJsonTree());
+
+            RpcReply reply = this.request.createReply(json);
+            this.sendReply(reply);
+        }
+    }
+
+    /**
      * This observes a sketch computation, but only sends the final sketch result
      * to the consumer.  It performs aggregation by itself.
      * @param <R> Type of data.
@@ -447,6 +485,34 @@ public abstract class RpcTarget implements IJson {
         // Send the partial results back
         SketchResultObserver<R> robs = new SketchResultObserver<R>(
                 sketch.asString(), this, request, context);
+        Subscription sub = add
+                .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
+                .subscribe(robs);
+        this.saveSubscription(context, sub);
+    }
+
+    /**
+     * Runs a sketch and sends the data received directly to the client.
+     * Applies a postprocessing function to each partial result returned.
+     * @param data    Dataset to run the sketch on.
+     * @param sketch  Sketch to run.
+     * @param postprocessing  This function is applied to the sketch results at the end.
+     * @param request Web socket request, where replies are sent.
+     * @param context Context for the computation.
+     */
+    protected <T, R, S extends IJson> void
+    runSketchPostprocessing(IDataSet<T> data, ISketch<T, R> sketch,
+                            BiFunction<R, HillviewComputation, S> postprocessing,
+                            RpcRequest request, RpcRequestContext context) {
+        // Run the sketch
+        Observable<PartialResult<R>> sketches = data.sketch(sketch);
+        // Knows how to add partial results
+        PartialResultMonoid<R> prm = new PartialResultMonoid<R>(sketch);
+        // Prefix sum of the partial results
+        Observable<PartialResult<R>> add = sketches.scan(prm::add);
+        // Send the partial results back
+        SketchResultObserverPostprocess<R, S> robs = new SketchResultObserverPostprocess<>(
+                sketch.asString(), this, request, context, postprocessing);
         Subscription sub = add
                 .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
                 .subscribe(robs);

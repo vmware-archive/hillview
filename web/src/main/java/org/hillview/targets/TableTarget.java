@@ -19,6 +19,8 @@ package org.hillview.targets;
 
 import com.google.gson.JsonObject;
 import org.hillview.*;
+import org.hillview.dataStructures.AugmentedHistogram;
+import org.hillview.dataStructures.HistogramWithCDF;
 import org.hillview.dataset.ConcurrentSketch;
 import org.hillview.dataset.TripleSketch;
 import org.hillview.dataset.api.*;
@@ -302,6 +304,7 @@ public final class TableTarget extends RpcTarget {
         ColumnDescription cd = new ColumnDescription();
         double samplingRate;
         long seed;
+
         // Only used when doing string histograms
         @Nullable
         String[] leftBoundaries;
@@ -325,14 +328,21 @@ public final class TableTarget extends RpcTarget {
         }
     }
 
+    // compute CDF on the second histogram (at finer CDF granularity)
+    private static BiFunction<Pair<Histogram, Histogram>,
+            HillviewComputation,
+            Pair<AugmentedHistogram, HistogramWithCDF>> computeCDFFunction() {
+        return (e, c) -> new Pair(new AugmentedHistogram(e.first), new HistogramWithCDF(e.second));
+    }
+
     @HillviewRpc
     public void histogram(RpcRequest request, RpcRequestContext context) {
         HistogramArgs[] info = request.parseArgs(HistogramArgs[].class);
         HistogramSketch sk = info[0].getSketch(); // Histogram
-        HistogramSketch cdf = info[1].getSketch(); // CDF
+        HistogramSketch cdf = info[1].getSketch(); // CDF: also histogram but at finer granularity
         ConcurrentSketch<ITable, Histogram, Histogram> csk =
                 new ConcurrentSketch<>(sk, cdf);
-        this.runSketch(this.table, csk, request, context);
+        this.runSketchPostprocessing(this.table, csk, computeCDFFunction(), request, context);
     }
 
     @HillviewRpc

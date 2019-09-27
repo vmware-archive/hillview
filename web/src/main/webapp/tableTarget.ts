@@ -27,7 +27,6 @@ import {
     FilterDescription,
     Heatmap,
     HistogramArgs,
-    PrivateHistogramArgs,
     HistogramBase,
     HLogLog,
     IColumnDescription,
@@ -341,12 +340,6 @@ RpcRequest<PartialResult<RemoteObjectId>> {
     RpcRequest<PartialResult<Pair<HistogramBase, HistogramBase>>> {
         return this.createStreamingRpcRequest<Pair<HistogramBase, HistogramBase>>(
             "histogram", info);
-    }
-
-    public createPrivateHistogramRequest(info: PrivateHistogramArgs):
-        RpcRequest<PartialResult<HistogramBase>> {
-        return this.createStreamingRpcRequest<HistogramBase>(
-            "privateHistogram", info);
     }
 
     public createSetOperationRequest(setOp: CombineOperators): RpcRequest<PartialResult<RemoteObjectId>> {

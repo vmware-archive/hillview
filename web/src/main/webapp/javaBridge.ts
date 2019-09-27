@@ -213,11 +213,19 @@ export interface ColumnSortOrientation {
 
 export interface HistogramBase {
     buckets: number[];
-    cdfBuckets: number[];
     missingData: number;
+}
 
-    confMins: number[];
-    confMaxes: number[];
+// This data structure corresponds to the union of
+// classes that extend AugmentedHistogram, so that any of those classes
+// can be passed into plots that take AugmentedHistograms.
+export interface AugmentedHistogram {
+    histogram: HistogramBase;
+
+    cdfBuckets?: number[];
+
+    confMins?: number[];
+    confMaxes?: number[];
 }
 
 // This is actually a union of several java classes:

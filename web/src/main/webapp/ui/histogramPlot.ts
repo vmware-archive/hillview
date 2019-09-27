@@ -20,7 +20,7 @@ import {axisLeft as d3axisLeft} from "d3-axis";
 import {format as d3format} from "d3-format";
 import {scaleLinear as d3scaleLinear} from "d3-scale";
 import {AxisData, AxisDescription, AxisKind} from "../dataViews/axisData";
-import {HistogramBase} from "../javaBridge";
+import {AugmentedHistogram} from "../javaBridge";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {D3Axis, D3Scale} from "./ui";
@@ -36,7 +36,7 @@ export class HistogramPlot extends Plot {
     /**
      * Histogram that is being drawn.
      */
-    public histogram: HistogramBase;
+    public histogram: AugmentedHistogram;
     /**
      * Sampling rate that was used to compute the histogram.
      */
@@ -62,24 +62,76 @@ export class HistogramPlot extends Plot {
      * @param axisData      Description of the X axis.
      * @param maxYAxis      If present it is used to scale the maximum value for the Y axis.
      */
-    public setHistogram(bars: HistogramBase, samplingRate: number,
+    public setHistogram(bars: AugmentedHistogram, samplingRate: number,
                         axisData: AxisData, maxYAxis: number | null, isPrivate: boolean): void {
         this.histogram = bars;
+        
         this.samplingRate = samplingRate;
         this.xAxisData = axisData;
         const chartWidth = this.getChartWidth();
-        const bucketCount = this.histogram.buckets.length;
+        const bucketCount = this.histogram.histogram.buckets.length;
         this.barWidth = chartWidth / bucketCount;
         this.maxYAxis = maxYAxis;
-	this.isPrivate = isPrivate;
+        this.isPrivate = isPrivate;
     }
 
-    public draw(): void {
-        if (this.histogram == null)
-            return;
+    public drawPublic(): void {
 
-        const counts = this.histogram.buckets;
-	var zippedData = d3zip(this.histogram.buckets, this.histogram.confMins, this.histogram.confMaxes);
+        const counts = this.histogram.histogram.buckets;
+        this.max = Math.max(...counts);
+        const displayMax = this.maxYAxis == null ? this.max : this.maxYAxis;
+
+        const chartWidth = this.getChartWidth();
+        const chartHeight = this.getChartHeight();
+
+        const bars = this.plottingSurface
+            .getChart()
+            .selectAll("g")
+            .data(counts)
+            .enter().append("g")
+            .attr("transform", (d, i) => `translate(${i * this.barWidth}, 0)`);
+
+        this.yScale = d3scaleLinear()
+            .domain([0, displayMax])
+            .range([chartHeight, 0]);
+
+        // Boxes can be taller than the maxYAxis height.  In this case yScale returns
+        // a negative value, and we have to truncate the rectangles.
+        bars.append("rect")
+            .attr("y", (d) => this.yScale(d) < 0 ? 0 : this.yScale(d))
+            .attr("fill", "darkcyan")
+            .attr("height", (d) => chartHeight - (this.yScale(d) < 0 ? 0 : this.yScale(d)))
+            .attr("width", this.barWidth - 1);
+
+        // overflow signs if necessary
+        bars.append("svg:path")
+            // I am not sure how triangle size is measured; this 7 below seems to work find
+            .attr("d", symbol().type(symbolTriangle).size( (d) => this.yScale(d) < 0 ? 7 * this.barWidth : 0))
+            .attr("transform", () => `translate(${this.barWidth / 2}, 0)`)
+            .style("fill", "red")
+            .append("svg:title")
+            .text("Bar is truncated");
+
+        bars.append("text")
+	    .attr("class", "histogramBoxLabel")
+	    .attr("x", this.barWidth / 2)
+	    .attr("y", (d) => this.yScale(d) < 0 ? 0 : this.yScale(d))
+	    .attr("text-anchor", "middle")
+	    .attr("dy", (d) => d <= (9 * displayMax / 10) ? "-.25em" : ".75em")
+	    .text((d) => HistogramPlot.boxHeight(
+                d, this.samplingRate, this.xAxisData.range.presentCount))
+	    .exit();
+
+        this.yAxis = d3axisLeft(this.yScale)
+            .tickFormat(d3format(".2s"));
+
+        this.xAxisData.setResolution(chartWidth, AxisKind.Bottom, PlottingSurface.bottomMargin);
+    }
+
+    public drawPrivate(): void {
+        const counts = this.histogram.histogram.buckets;
+	var zippedData = d3zip(this.histogram.histogram.buckets,
+                               this.histogram.confMins, this.histogram.confMaxes);
         this.max = Math.max(...counts);
         const displayMax = this.maxYAxis == null ? this.max : this.maxYAxis;
 
@@ -114,35 +166,35 @@ export class HistogramPlot extends Plot {
             .append("svg:title")
             .text("Bar is truncated");
 
-	if (this.isPrivate) {
-            // confidence intervals
-            bars.append("line")
-		.attr("x1", 0)
-		.attr("y1", (d) => this.yScale(d[0] - d[1]))
-		.attr("x2", 0)
-		.attr("y2", (d) => this.yScale(d[0] + d[2]))
-		.attr("stroke-width", 1)
-		.attr("stroke", "black")
-		.attr("stroke-linecap", "round")
-		.attr("transform", () => `translate(${this.barWidth / 2}, 0)`);
-	}
-
-	if (!this.isPrivate) {
-            bars.append("text")
-		.attr("class", "histogramBoxLabel")
-		.attr("x", this.barWidth / 2)
-		.attr("y", (d) => this.yScale(d[0]) < 0 ? 0 : this.yScale(d[0]))
-		.attr("text-anchor", "middle")
-		.attr("dy", (d) => d <= (9 * displayMax / 10) ? "-.25em" : ".75em")
-		.text((d) => HistogramPlot.boxHeight(
-                    d[0], this.samplingRate, this.xAxisData.range.presentCount))
-		.exit();
-	}
+        // confidence intervals
+        bars.append("line")
+	    .attr("x1", 0)
+	    .attr("y1", (d) => this.yScale(d[0] - d[1]))
+	    .attr("x2", 0)
+	    .attr("y2", (d) => this.yScale(d[0] + d[2]))
+	    .attr("stroke-width", 1)
+	    .attr("stroke", "black")
+	    .attr("stroke-linecap", "round")
+	    .attr("transform", () => `translate(${this.barWidth / 2}, 0)`);
 
         this.yAxis = d3axisLeft(this.yScale)
             .tickFormat(d3format(".2s"));
 
         this.xAxisData.setResolution(chartWidth, AxisKind.Bottom, PlottingSurface.bottomMargin);
+        if (this.displayAxes)
+            this.drawAxes();
+    }
+    
+    public draw(): void {
+        if (this.histogram == null)
+            return;
+
+        if (this.isPrivate) {
+            this.drawPrivate();
+        } else {
+            this.drawPublic();
+        }
+        
         if (this.displayAxes)
             this.drawAxes();
     }
@@ -157,9 +209,9 @@ export class HistogramPlot extends Plot {
 
     public get(x: number): number {
         const bucket = Math.floor(x / this.barWidth);
-        if (bucket < 0 || bucket >= this.histogram.buckets.length)
+        if (bucket < 0 || bucket >= this.histogram.histogram.buckets.length)
             return 0;
-        const value = this.histogram.buckets[bucket];
+        const value = this.histogram.histogram.buckets[bucket];
         return value;
     }
 }

@@ -25,25 +25,15 @@ import org.hillview.table.api.ISampledRowIterator;
  * One dimensional histogram.
  */
 public class Histogram extends HistogramBase {
-    private final IHistogramBuckets bucketDescription;
+    public final IHistogramBuckets bucketDescription;
 
     public Histogram(final IHistogramBuckets bucketDescription) {
         this.bucketDescription = bucketDescription;
         this.buckets = new long[bucketDescription.getNumOfBuckets()];
-        this.cdfBuckets = new long[bucketDescription.getNumOfBuckets()];
-        this.confMins  = new double[bucketDescription.getNumOfBuckets()];
-        this.confMaxes  = new double[bucketDescription.getNumOfBuckets()];
     }
 
     public IHistogramBuckets getBucketDescription() {
         return this.bucketDescription;
-    }
-
-    private void recomputeCDF() {
-        this.cdfBuckets[0] = this.buckets[0];
-        for (int i = 1; i < this.buckets.length; i++) {
-            this.cdfBuckets[i] = this.cdfBuckets[i-1] + this.buckets[i];
-        }
     }
 
     public void rescale(double sampleRate) {
@@ -53,8 +43,6 @@ public class Histogram extends HistogramBase {
         for (int i = 0; i < this.buckets.length; i++) {
             this.buckets[i] = (long) ((double) this.buckets[i] / sampleRate);
         }
-
-        this.recomputeCDF();
     }
 
     public void add(IColumn column, int currRow) {
@@ -64,10 +52,6 @@ public class Histogram extends HistogramBase {
             int index = this.bucketDescription.indexOf(column, currRow);
             if (index >= 0)
                 this.buckets[index]++;
-
-            for (int i = 0; i < index+1; i++) {
-                this.cdfBuckets[i]++;
-            }
         }
     }
 
@@ -102,7 +86,6 @@ public class Histogram extends HistogramBase {
             unionH.buckets[i] = this.buckets[i] + otherHistogram.buckets[i];
         }
         unionH.missingData = this.missingData + otherHistogram.missingData;
-        unionH.recomputeCDF();
         return unionH;
     }
 

@@ -18,6 +18,7 @@
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {HistogramSerialization, IViewSerialization} from "../datasetView";
 import {
+    AugmentedHistogram,
     FilterDescription,
     HistogramBase,
     IColumnDescription,
@@ -57,7 +58,8 @@ import {BaseReceiver} from "../tableTarget";
  * A HistogramView is responsible for showing a one-dimensional histogram on the screen.
  */
 export class HistogramView extends HistogramViewBase implements IScrollTarget {
-    protected cdf: HistogramBase;
+    protected cdf: AugmentedHistogram;
+    protected augmentedHistogram: AugmentedHistogram;
     protected histogram: HistogramBase;
     protected plot: HistogramPlot;
     protected bucketCount: number;
@@ -152,7 +154,8 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
             collector.finished();
         } else if (eventKind === "YAxis") {
             // TODO
-            this.updateView(this.cdf, this.histogram, this.bucketCount, sourceRange.max);
+            this.updateView(this.cdf, this.augmentedHistogram,
+                            this.bucketCount, sourceRange.max);
         }
     }
 
@@ -187,8 +190,8 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
         return hv;
     }
 
-    public static coarsen(cdf: HistogramBase, bucketCount: number): HistogramBase {
-        const cdfBucketCount = cdf.buckets.length;
+    public static coarsen(cdf: AugmentedHistogram, bucketCount: number): AugmentedHistogram {
+        const cdfBucketCount = cdf.histogram.buckets.length;
         if (bucketCount === cdfBucketCount)
             return cdf;
 
@@ -220,16 +223,17 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
             const leftBoundary = i * bucketWidth - .5;
             const rightBoundary = leftBoundary + bucketWidth;
             for (let j = Math.ceil(leftBoundary); j < rightBoundary; j++) {
-                console.assert(j < cdf.buckets.length);
-                sum += cdf.buckets[j];
+                console.assert(j < cdf.histogram.buckets.length);
+                sum += cdf.histogram.buckets[j];
             }
             buckets.push(sum);
         }
 
+        const hist: HistogramBase = { buckets: buckets,
+                                      missingData: cdf.histogram.missingData };
         return {
-            buckets: buckets,
+            histogram: hist,
             cdfBuckets: null,
-            missingData: cdf.missingData,
             confMins: null,
             confMaxes: null,
         };
@@ -245,7 +249,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
      * @param bucketCount: Number of buckets to display.  If 0 the bucket count will be computed
      * @param maxYAxis: maximum value to use for Y axis if not null
      */
-    public updateView(cdf: HistogramBase, histogram: HistogramBase,
+    public updateView(cdf: AugmentedHistogram, augmentedHistogram: AugmentedHistogram,
                       bucketCount: number, maxYAxis: number | null): void {
         this.createNewSurfaces();
         if (cdf == null) {
@@ -264,19 +268,22 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
                 bucketCount = Math.min(
                     bucketCount,
                     this.xAxisData.range.max - this.xAxisData.range.min);
-        }*/
-	const h = histogram;
-	this.histogram = h;
+                    }*/
+        this.augmentedHistogram = augmentedHistogram;
+
+        const h = augmentedHistogram.histogram;
+        this.histogram = h;
         this.cdf = cdf;
 
         const counts = h.buckets;
         this.bucketCount = counts.length;
-        this.plot.setHistogram(h, this.samplingRate, this.xAxisData, maxYAxis, this.page.dataset.isPrivate());
+        this.plot.setHistogram(augmentedHistogram, this.samplingRate,
+                               this.xAxisData, maxYAxis, this.page.dataset.isPrivate());
         this.plot.draw();
 
         const discrete = kindIsString(this.xAxisData.description.kind) ||
             this.xAxisData.description.kind === "Integer";
-	// CDF is precomputed separately, so don't integrate the points
+	    // CDF is precomputed separately, so don't integrate the points
         this.cdfPlot.setData(cdf, discrete, false);
         this.cdfPlot.draw();
         this.setupMouse();
@@ -410,7 +417,8 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
 
     public changeBuckets(bucketCount: number): void {
 	    // TODO
-        this.updateView(this.cdf, this.histogram, bucketCount, this.plot.maxYAxis);
+        this.updateView(this.cdf, this.augmentedHistogram,
+                        bucketCount, this.plot.maxYAxis);
     }
 
     public chooseBuckets(): void {
@@ -422,7 +430,8 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
     public resize(): void {
         if (this.cdf == null)
             return;
-        this.updateView(this.cdf, this.histogram, this.bucketCount, this.plot.maxYAxis);
+        this.updateView(this.cdf, this.augmentedHistogram,
+                        this.bucketCount, this.plot.maxYAxis);
     }
 
     public refresh(): void {
@@ -557,7 +566,7 @@ export class HistogramDialog extends Dialog {
     }
 }
 
-export class HistogramReceiver extends Receiver<Pair<HistogramBase, HistogramBase>>  {
+export class HistogramRenderer extends Receiver<Pair<AugmentedHistogram, AugmentedHistogram>>  {
     private readonly view: HistogramView;
 
     constructor(protected title: PageTitle,
@@ -567,7 +576,7 @@ export class HistogramReceiver extends Receiver<Pair<HistogramBase, HistogramBas
                 protected schema: SchemaClass,
                 protected bucketCount: number,
                 protected xAxisData: AxisData,
-                operation: ICancellable<HistogramBase>,
+                operation: ICancellable<Pair<AugmentedHistogram, AugmentedHistogram>>,
                 protected samplingRate: number,
                 reusePage: boolean) {
         super(reusePage ? sourcePage : sourcePage.dataset.newPage(title, sourcePage),
@@ -578,7 +587,7 @@ export class HistogramReceiver extends Receiver<Pair<HistogramBase, HistogramBas
         this.page.setDataView(this.view);
     }
 
-    public onNext(value: PartialResult<Pair<HistogramBase, HistogramBase>>): void {
+    public onNext(value: PartialResult<Pair<AugmentedHistogram, AugmentedHistogram>>): void {
         super.onNext(value);
 	    // TODO
         if (value == null)
