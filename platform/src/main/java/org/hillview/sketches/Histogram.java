@@ -32,6 +32,12 @@ public class Histogram extends HistogramBase {
         this.buckets = new long[bucketDescription.getNumOfBuckets()];
     }
 
+    public Histogram(IHistogramBuckets bucketDescription, long[] data, long missing) {
+        this.bucketDescription = bucketDescription;
+        this.buckets = data;
+        this.missingData = missing;
+    }
+
     public IHistogramBuckets getBucketDescription() {
         return this.bucketDescription;
     }

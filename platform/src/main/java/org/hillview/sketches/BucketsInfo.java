@@ -34,7 +34,7 @@ public abstract class BucketsInfo implements Serializable, IJson {
         this.missingCount = 0;
     }
 
-    public void addMissing() {
+    void addMissing() {
         this.missingCount++;
     }
 }

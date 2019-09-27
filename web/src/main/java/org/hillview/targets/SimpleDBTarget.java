@@ -20,13 +20,14 @@ package org.hillview.targets;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import org.hillview.*;
 import org.hillview.dataset.api.IJson;
-import org.hillview.sketches.FreqKList;
-import org.hillview.sketches.SummarySketch;
+import org.hillview.sketches.*;
 import org.hillview.storage.JdbcConnectionInformation;
 import org.hillview.storage.JdbcDatabase;
 import org.hillview.table.Schema;
 import org.hillview.table.SmallTable;
+import org.hillview.table.api.ContentsKind;
 import org.hillview.table.rows.RowSnapshot;
+import org.hillview.utils.JsonList;
 
 import javax.annotation.Nullable;
 import java.sql.DriverManager;
@@ -145,5 +146,43 @@ public final class SimpleDBTarget extends RpcTarget {
     @HillviewRpc
     public void heavyHittersSampling(RpcRequest request, RpcRequestContext context) {
         this.heavyHitters(request, context);
+    }
+
+    @HillviewRpc
+    public void getDataRanges1D(RpcRequest request, RpcRequestContext context) {
+        RangeArgs[] info = request.parseArgs(RangeArgs[].class);
+        assert info.length == 1;
+        if (info[0].cd.kind == ContentsKind.Integer || info[0].cd.kind == ContentsKind.Double) {
+            try {
+                this.database.connect();
+                DataRange range = this.database.numericDataRange(info[0].cd);
+                this.database.disconnect();
+                JsonList<BucketsInfo> result = new JsonList<BucketsInfo>(1);
+                result.add(range);
+                this.returnResultDirect(request, context, result);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            throw new RuntimeException("Not yet implemented");
+        }
+    }
+
+    @HillviewRpc
+    public void histogram(RpcRequest request, RpcRequestContext context) {
+        HistogramArgs info = request.parseArgs(HistogramArgs.class);
+        if (info.cd.kind == ContentsKind.Integer || info.cd.kind == ContentsKind.Double) {
+            try {
+                this.database.connect();
+                Histogram result = this.database.numericHistogram(
+                        info.cd, (DoubleHistogramBuckets)info.getBuckets());
+                this.database.disconnect();
+                this.returnResultDirect(request, context, result);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            throw new RuntimeException("String columns not yet supported");
+        }
     }
 }

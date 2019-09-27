@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.hillview;
+package org.hillview.targets;
 
 import org.hillview.dataset.api.IJson;
 import org.hillview.sketches.NextKList;

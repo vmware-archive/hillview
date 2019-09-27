@@ -17,6 +17,9 @@
 
 package org.hillview.storage;
 
+import org.hillview.sketches.DoubleHistogramBuckets;
+import org.hillview.table.ColumnDescription;
+
 public class MySqlJdbcConnection extends JdbcConnection {
     MySqlJdbcConnection(JdbcConnectionInformation conn) {
         super('&', '?', conn);
@@ -38,5 +41,21 @@ public class MySqlJdbcConnection extends JdbcConnection {
         this.addBaseUrl(builder);
         this.appendParametersToUrl(builder);
         return builder.toString();
+    }
+
+    @Override
+    public String getQueryForNumericHistogram(
+            String table, ColumnDescription cd, DoubleHistogramBuckets buckets) {
+        String arithm = "FLOOR((" + cd.name + " - " + buckets.minValue + ") * @scale)";
+        return "select @scale := " + buckets.numOfBuckets + "/" + buckets.range + ";" +
+                "select count(" + arithm + ")" +
+                " from " + table +
+                " group by " + arithm;
+    }
+
+    @Override
+    public String getQueryForNumericRange(String table, String colName) {
+        return "select MIN(" + colName + ") as min, MAX(" + colName +
+                ") as max, COUNT(*) as total, COUNT(IFNULL(" + colName + ", 1)) as nulls from " + table;
     }
 }

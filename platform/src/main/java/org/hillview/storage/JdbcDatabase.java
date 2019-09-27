@@ -17,12 +17,16 @@
 
 package org.hillview.storage;
 
+import org.hillview.sketches.DataRange;
+import org.hillview.sketches.DoubleHistogramBuckets;
+import org.hillview.sketches.Histogram;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.SmallTable;
 import org.hillview.table.Table;
 import org.hillview.table.api.*;
 import org.hillview.table.columns.BaseListColumn;
+import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Linq;
@@ -130,7 +134,7 @@ public class JdbcDatabase {
     public int distinctCount(String columnName) {
         try {
             assert this.conn.info.table != null;
-            String query = this.conn.getQueryToComputeDistinctCount(this.conn.info.table, columnName);
+            String query = this.conn.getQueryForDistinctCount(this.conn.info.table, columnName);
             ResultSet rs = this.getQueryResult(query);
             if (!rs.next())
                 throw new RuntimeException("Could not retrieve column for " + this.conn.info.table);
@@ -153,8 +157,57 @@ public class JdbcDatabase {
                 this.conn.info.table, schema, maxRows);
         ResultSet rs = this.getQueryResult(query);
         List<IAppendableColumn> columns = JdbcDatabase.convertResultSet(rs);
-        SmallTable tbl = new SmallTable(columns);
-        return tbl;
+        return new SmallTable(columns);
+    }
+
+    /**
+     * Computes a numeric histogram on the specified numeric column with the specified buckets.
+     * @param cd       Description of column to histogram.
+     * @param buckets  Bucket description
+     * @return         The histogram of the data.
+     */
+    public Histogram numericHistogram(ColumnDescription cd, DoubleHistogramBuckets buckets) {
+        assert this.conn.info.table != null;
+        String query = this.conn.getQueryForNumericHistogram(this.conn.info.table, cd, buckets);
+        ResultSet rs = this.getQueryResult(query);
+        List<IAppendableColumn> cols = JdbcDatabase.convertResultSet(rs);
+        assert cols.size() == 1;
+        IColumn col = cols.get(0);
+        assert col.sizeInRows() == buckets.getNumOfBuckets();
+        long[] data = new long[buckets.getNumOfBuckets()];
+        long nonNulls = 0;
+        for (int i = 0; i < buckets.getNumOfBuckets(); i++) {
+            data[i] = (int) col.getDouble(i);
+            nonNulls += data[i];
+        }
+        long nulls = this.getRowCount() - nonNulls;
+        return new Histogram(buckets, data, nulls);
+    }
+
+    /**
+     * Computes the range of the data in a column.
+     * @param cd  Description of the column.
+     */
+    public DataRange numericDataRange(ColumnDescription cd) {
+        assert this.conn.info.table != null;
+        String query = this.conn.getQueryForNumericRange(this.conn.info.table, cd.name);
+        ResultSet rs = this.getQueryResult(query);
+        List<IAppendableColumn> cols = JdbcDatabase.convertResultSet(rs);
+        SmallTable table = new SmallTable(cols);
+        assert table.getNumOfRows() == 1;
+        @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
+        RowSnapshot row = new RowSnapshot(table, 0);
+        DataRange range = new DataRange();
+        if (cd.kind == ContentsKind.Double) {
+            range.min = row.getDouble("min");
+            range.max = row.getDouble("max");
+        } else {
+            range.min = row.getInt("min");
+            range.max = row.getInt("max");
+        }
+        range.missingCount = (long)row.getDouble("nulls");
+        range.presentCount = (long)(row.getDouble("total")) - range.missingCount;
+        return range;
     }
 
     /**
@@ -362,7 +415,7 @@ public class JdbcDatabase {
         return cols;
     }
 
-    public static List<IAppendableColumn> convertResultSet(ResultSet data) {
+    private static List<IAppendableColumn> convertResultSet(ResultSet data) {
         try {
             ResultSetMetaData meta = data.getMetaData();
             List<IAppendableColumn> cols = createColumns(meta);

@@ -24,10 +24,10 @@ import org.hillview.table.api.IColumn;
  * The last bucket is right-inclusive.
  */
 public class DoubleHistogramBuckets implements IHistogramBuckets {
-    private final double minValue;
-    private final double maxValue;
-    private final int numOfBuckets;
-    private final double range;
+    public final double minValue;
+    public final double maxValue;
+    public final int numOfBuckets;
+    public final double range;
 
     public DoubleHistogramBuckets(final double minValue, final double maxValue, final int numOfBuckets) {
         if (maxValue < minValue || numOfBuckets <= 0)

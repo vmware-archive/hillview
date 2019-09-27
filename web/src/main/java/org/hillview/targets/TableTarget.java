@@ -201,41 +201,6 @@ public final class TableTarget extends RpcTarget {
         }
     }
 
-    static class RangeArgs {
-        // if this is String, or Json we are sampling strings
-        ColumnDescription cd = new ColumnDescription();
-        long seed;       // only used if sampling strings
-        int stringsToSample;  // only used if sampling strings
-
-        // This class has a bunch of unchecked casts, but the Java
-        // type system is not good enough to express these operations
-        // in a type-safe manner.
-        ISketch<ITable, BucketsInfo> getSketch() {
-            if (this.cd.kind.isString()) {
-                int samples = Math.min(this.stringsToSample * this.stringsToSample, 100000);
-                ISketch<ITable, MinKSet<String>> s = new SampleDistinctElementsSketch(
-                        // We sample stringsToSample squared
-                        this.cd.name, this.seed, samples);
-                //noinspection unchecked
-                return (ISketch<ITable, BucketsInfo>)(Object)s;
-            } else {
-                ISketch<ITable, DataRange> s = new DoubleDataRangeSketch(this.cd.name);
-                //noinspection unchecked
-                return (ISketch<ITable, BucketsInfo>)(Object)s;
-            }
-        }
-
-        BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> getPostProcessing() {
-            if (this.cd.kind.isString()) {
-                int b = this.stringsToSample;
-                //noinspection unchecked
-                return (e, c) -> new StringBucketLeftBoundaries((MinKSet<String>)e, b);
-            } else {
-                return (e, c) -> e;
-            }
-        }
-    }
-
     // The following functions return lists with subclasses of BucketsInfo: either
     // StringBucketBoundaries or DataRange.
 
@@ -298,34 +263,6 @@ public final class TableTarget extends RpcTarget {
                     return result;
                 };
         this.runCompleteSketch(this.table, csk, post, request, context);
-    }
-
-    static class HistogramArgs {
-        ColumnDescription cd = new ColumnDescription();
-        double samplingRate;
-        long seed;
-
-        // Only used when doing string histograms
-        @Nullable
-        String[] leftBoundaries;
-        // Only used when doing double histograms
-        double min;
-        double max;
-        int bucketCount;
-
-        IHistogramBuckets getBuckets() {
-            if (cd.kind.isString()) {
-                assert this.leftBoundaries != null;
-                return new StringHistogramBuckets(this.leftBoundaries);
-            } else {
-                return new DoubleHistogramBuckets(this.min, this.max, this.bucketCount);
-            }
-        }
-
-        HistogramSketch getSketch() {
-            IHistogramBuckets buckets = this.getBuckets();
-            return new HistogramSketch(buckets, this.cd.name, this.samplingRate, this.seed);
-        }
     }
 
     // compute CDF on the second histogram (at finer CDF granularity)

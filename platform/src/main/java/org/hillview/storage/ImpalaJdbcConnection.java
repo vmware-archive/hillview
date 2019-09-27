@@ -17,10 +17,12 @@
 
 package org.hillview.storage;
 
+import org.hillview.sketches.DoubleHistogramBuckets;
+import org.hillview.table.ColumnDescription;
 import org.hillview.utils.Utilities;
 
 public class ImpalaJdbcConnection extends JdbcConnection {
-    public ImpalaJdbcConnection(JdbcConnectionInformation conn) {
+    ImpalaJdbcConnection(JdbcConnectionInformation conn) {
         super(';', ';', conn);
     }
 
@@ -30,6 +32,16 @@ public class ImpalaJdbcConnection extends JdbcConnection {
         if (rowCount >= 0)
             result += " LIMIT " + rowCount;
         return result;
+    }
+
+    @Override
+    public String getQueryForNumericHistogram(String table, ColumnDescription cd, DoubleHistogramBuckets buckets) {
+        throw new RuntimeException("Not yet implemented");
+    }
+
+    @Override
+    public String getQueryForNumericRange(String table, String column) {
+        throw new RuntimeException("Not yet implemented");
     }
 
     @Override
