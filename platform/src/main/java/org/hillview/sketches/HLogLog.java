@@ -113,7 +113,7 @@ public class HLogLog implements IJson {
         long result = Math.round(rawEstimate);
         if ((zeroRegs > 0) && (rawEstimate < (2.5 * this.regNum)))
             result = Math.round(this.regNum * (Math.log(this.regNum / (double) zeroRegs)));
-        else if (rawEstimate > (Integer.MAX_VALUE / 30 ))
+        else if (rawEstimate > ((double)Integer.MAX_VALUE / 30 ))
             result = (long) (- Math.pow(2,32) * Math.log(1 - (rawEstimate /  Math.pow(2,32))));
         this.distinctItemCount = result;
         return result;
@@ -124,7 +124,7 @@ public class HLogLog implements IJson {
      * Going beyond 16 is too big and does not
      * add accuracy. Going below 4 does not save Space.
      */
-    public static void checkSpaceValid(int logSpaceSize) {
+    static void checkSpaceValid(int logSpaceSize) {
         if ((logSpaceSize > 16) || (logSpaceSize < 4))
             throw new IllegalArgumentException("HLogLog initialized with logSpaceSize out of range");
     }

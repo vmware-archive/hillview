@@ -48,12 +48,12 @@ export class CDFPlot extends Plot {
         for (const bucket of cdf.cdfBuckets) {
             // each point is inserted twice.
             this.cdfData.push(point);
-	    if (integrate) {
-	 	// Underlying data is the PDF, so integrate to compute the CDF
-		point += bucket;
-	    } else {
-		point = bucket;
-	    }
+            if (integrate) {
+                // Underlying data is the PDF, so integrate to compute the CDF
+                point += bucket;
+            } else {
+                point = bucket;
+            }
             this.cdfData.push(point);
         }
         this.max = point;

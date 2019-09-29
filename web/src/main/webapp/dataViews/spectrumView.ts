@@ -172,8 +172,8 @@ export class SpectrumView extends ChartView {
             cdfBuckets: null,
             confMins: null,
             confMaxes: null
-        }
-        
+        };
+
         this.plot.setHistogram(augHist, 1, axisData, null, this.page.dataset.isPrivate());
         this.plot.draw();
 

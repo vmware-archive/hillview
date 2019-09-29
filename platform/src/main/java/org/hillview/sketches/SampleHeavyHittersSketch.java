@@ -9,6 +9,7 @@ import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.VirtualRowHashStrategy;
+import org.hillview.utils.Converters;
 import org.hillview.utils.MutableInteger;
 
 import javax.annotation.Nullable;
@@ -56,6 +57,8 @@ public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKListSample
      * elements.
      */
     public FreqKListSample add(@Nullable FreqKListSample left, @Nullable FreqKListSample right) {
+        Converters.checkNull(left);
+        Converters.checkNull(right);
         return new FreqKListSample(left.totalRows + right.totalRows, this.epsilon,
                 left.sampleSize + right.sampleSize, FreqKList.getUnion(left, right));
     }
@@ -63,7 +66,8 @@ public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKListSample
     /**
      * Create computes a histogram of RowSnapShots over the sample.
      */
-    public FreqKListSample create(ITable data) {
+    public FreqKListSample create(@Nullable ITable data) {
+        Converters.checkNull(data);
         VirtualRowHashStrategy hashStrategy = new VirtualRowHashStrategy(data, this.schema);
         Int2ObjectOpenCustomHashMap<MutableInteger> hMap = new Int2ObjectOpenCustomHashMap<MutableInteger>(hashStrategy);
         final IMembershipSet sampleSet = data.

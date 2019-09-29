@@ -81,6 +81,7 @@ public class MinKTest {
 
     private void TestStringSamplingSketch(int suppSize) {
         Table table = this.getStringTable(suppSize).first;
+        Assert.assertNotNull(table);
         List<String> randomString = this.getStringTable(suppSize).second;
         int numSamples = 10000;
         SampleDistinctElementsSketch bks = new SampleDistinctElementsSketch("Name", 176864, numSamples);
@@ -90,6 +91,7 @@ public class MinKTest {
             System.out.printf("Table size: %d, non-null %d\n", table.getNumOfRows(), mks.presentCount);
         int maxBuckets = 100;
         List<String> boundaries = mks.getLeftBoundaries(maxBuckets);
+        Assert.assertNotNull(randomString);
         List<Integer> ranks = TestTables.getRanks(boundaries, randomString);
         this.printBoundaries(boundaries, ranks);
         double maxErr = this.getMaxErr(suppSize, ranks);
@@ -99,13 +101,16 @@ public class MinKTest {
 
     private void StringTableRowSampling(int suppSize) {
         Table table = this.getStringTable(suppSize).first;
+        Assert.assertNotNull(table);
         List<String> randomString = this.getStringTable(suppSize).second;
+        Assert.assertNotNull(randomString);
         int numSamples = 1000;
         long seed = 57609102;
         SampleDistinctRowsSketch sdrs = new SampleDistinctRowsSketch(
                 table.getRecordOrder(true), numSamples, seed);
         MinKSet<RowSnapshot> mks = sdrs.create(table);
         int maxBuckets = 10;
+        Assert.assertNotNull(mks);
         List<RowSnapshot> rsBoundaries = mks.getLeftBoundaries(maxBuckets);
         List<String>  boundaries = new ArrayList<>();
         for (RowSnapshot rss: rsBoundaries)
@@ -137,6 +142,7 @@ public class MinKTest {
         SampleDistinctRowsSketch sdrs = new SampleDistinctRowsSketch(
                 table.getRecordOrder(isAscending), numSamples, seed);
         MinKSet<RowSnapshot> mks = sdrs.create(table);
+        Assert.assertNotNull(mks);
         List<RowSnapshot> rsBoundaries = mks.getLeftBoundaries(maxBuckets);
         if (printOn) {
             System.out.printf("\n Boundaries for %d buckets: \n", maxBuckets);

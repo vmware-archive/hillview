@@ -198,6 +198,12 @@ public class GuessSchema {
                 case NULL:
                     jsonReader.skipValue();
                     break;
+<<<<<<< a2103e64128defbc000855d32a1e582f21270e99
+=======
+                //noinspection ConstantConditions
+                case END_DOCUMENT:
+                    break loop;
+>>>>>>> Code inspection
                 default:
                     throw new AssertionError(token);
             }
@@ -205,6 +211,7 @@ public class GuessSchema {
         return isComplex;
     }
 
+    @SuppressWarnings("DuplicateBranchesInSwitch")
     private CanParse canParse(@Nullable String value, final ContentsKind with) {
         if (value == null)
             return CanParse.AsNull;

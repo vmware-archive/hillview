@@ -308,7 +308,7 @@ public abstract class RpcTarget implements IJson {
      *
      * @param <R> Type of data.
      */
-    class SketchResultObserverPostprocess<R, S extends IJson> extends ResultObserver<R> {
+    static class SketchResultObserverPostprocess<R, S extends IJson> extends ResultObserver<R> {
         private final BiFunction<R, HillviewComputation, S> postprocessing;
 
         SketchResultObserverPostprocess(String name, RpcTarget target, RpcRequest request,
@@ -665,7 +665,7 @@ public abstract class RpcTarget implements IJson {
         // Send the partial results back
         SketchResultObserver<ControlMessage.StatusList> robs =
                 new SketchResultObserver<ControlMessage.StatusList>(
-                    command.toString(), this, request, context);
+                        command.toString(), this, request, context);
         Subscription sub = add
                 .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
                 .subscribe(robs);

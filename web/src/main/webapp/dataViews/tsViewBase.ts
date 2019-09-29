@@ -23,7 +23,6 @@ import {
     ComparisonFilterDescription,
     ContentsKind,
     ConvertColumnInfo,
-    DataRange,
     JSCreateColumnInfo,
     HLogLog,
     IColumnDescription,
@@ -33,7 +32,6 @@ import {
     StringFilterDescription,
     StringRowFilterDescription
 } from "../javaBridge";
-import {AxisData} from "./axisData";
 import {OnCompleteReceiver} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
 import {BigTableView} from "../tableTarget";
@@ -47,7 +45,6 @@ import {
     convertToStringFormat,
     ICancellable,
     significantDigits,
-    Seed,
 } from "../util";
 import {HeavyHittersReceiver, HeavyHittersView} from "./heavyHittersView";
 import {DataRangesCollector} from "./dataRangesCollectors";
@@ -238,10 +235,10 @@ export abstract class TSViewBase extends BigTableView {
 
     protected histogram1D(cd: IColumnDescription): void {
         const rr = this.createDataRangesRequest([cd], this.page, "Histogram");
-	var exact = this.isPrivate(); // If private, do not subsample
+        const exact = this.isPrivate(); // If private, do not subsample
         rr.invoke(new DataRangesCollector(
-		this, this.page, rr, this.schema, [0], [cd], null,
-		{ chartKind: "Histogram", relative: false, exact: exact, reusePage: false }));
+            this, this.page, rr, this.schema, [0], [cd], null,
+            { chartKind: "Histogram", relative: false, exact: exact, reusePage: false }));
     }
 
     protected histogram2D(cds: IColumnDescription[]): void {

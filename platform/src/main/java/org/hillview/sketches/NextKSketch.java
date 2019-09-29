@@ -40,7 +40,6 @@ import java.util.List;
  * RecordOrder) starting from a specified rowSnapShot (topRow). It also computes counts for how many
  * rows in the data project onto each entry, and how many rows come before topRow.
  */
-@SuppressWarnings("Duplicates")
 public class NextKSketch implements ISketch<ITable, NextKList> {
     private final RecordOrder recordOrder;
     @Nullable

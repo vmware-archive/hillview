@@ -34,7 +34,7 @@ public class DyadicBucketsTest extends BaseTest {
 
         for (int i = 0; i < numValues; i++) {
             for (int j = 0; j < nPerValue; j++) {
-                assertEquals(col.getDouble(i*nPerValue+j), (double)i, 1e-3);
+                assertEquals(col.getDouble(i*nPerValue+j), i, 1e-3);
             }
         }
     }

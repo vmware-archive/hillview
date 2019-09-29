@@ -22,6 +22,7 @@ package org.hillview.utils;
  * static methods.
  * Based on the class HashCommons in http://fastutil.di.unimi.it
  */
+@SuppressWarnings("RedundantCast")
 public class HashUtil {
     public static final Object REMOVED = new Object();
     private static final int INT_PHI = -1640531527;

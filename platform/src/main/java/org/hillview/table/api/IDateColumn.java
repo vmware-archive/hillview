@@ -20,7 +20,6 @@ package org.hillview.table.api;
 import net.openhft.hashing.LongHashFunction;
 import org.hillview.utils.Converters;
 
-import javax.annotation.Nullable;
 import java.time.Instant;
 
 public interface IDateColumn extends IColumn {

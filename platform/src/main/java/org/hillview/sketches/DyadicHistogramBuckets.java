@@ -97,7 +97,7 @@ public class DyadicHistogramBuckets implements IHistogramBuckets {
     /**
      * Compute the largest leaf whose left boundary is <= min
      */
-    public long computeMinLeafIdx(double min) {
+     private long computeMinLeafIdx(double min) {
         long minIdx = 0;
         if (min < 0) {
             while (this.leafLeftBoundary(minIdx) > min) {
@@ -116,7 +116,7 @@ public class DyadicHistogramBuckets implements IHistogramBuckets {
     /**
      * Compute the smallest leaf whose right boundary is >= max
      */
-    public long computeMaxLeafIdx(double max) {
+    private long computeMaxLeafIdx(double max) {
         long maxIdx = 0;
         if (max < 0) {
             while (this.leafLeftBoundary(maxIdx) > max) {
@@ -226,7 +226,7 @@ public class DyadicHistogramBuckets implements IHistogramBuckets {
             long pow = lsb < 0 ? rem : Math.min(lsb, rem); // largest valid covering interval
             long nodeEnd = (long)Math.pow(2, pow);
 
-            nodes.add(new Pair(left, nodeEnd));
+            nodes.add(new Pair<Long, Long>(left, nodeEnd));
 
             left += nodeEnd;
         }
@@ -237,19 +237,19 @@ public class DyadicHistogramBuckets implements IHistogramBuckets {
     }
 
     // Compute the intervals in the dyadic tree that correspond to this bucket.
-    public ArrayList<Pair<Long, Long>> bucketDecomposition(int bucketIdx, boolean cdf) {
+    private ArrayList<Pair<Long, Long>> bucketDecomposition(int bucketIdx, boolean cdf) {
         if (bucketIdx >= this.numOfBuckets || bucketIdx < 0) {
             throw new IllegalArgumentException("Invalid bucket index");
         }
 
-        Long leftLeaf;
+        long leftLeaf;
         if (cdf) {
             leftLeaf = 0L;
         } else {
             leftLeaf = this.bucketLeftLeaves[bucketIdx];
         }
 
-        Long rightLeaf;
+        long rightLeaf;
         if (bucketIdx == this.numOfBuckets - 1) {
             rightLeaf = this.numLeaves;
         } else {
@@ -276,7 +276,7 @@ public class DyadicHistogramBuckets implements IHistogramBuckets {
             variance += 2*(Math.pow(scale, 2));
         }
 
-        return new Pair(noise, variance);
+        return new Pair<Double, Double>(noise, variance);
     }
 
     public double getMin() { return this.minValue; }

@@ -51,7 +51,6 @@ public class DateListColumn
     }
 
     @Override
-    @SuppressWarnings("Duplicates")
     public void append(@Nullable final Instant value) {
         if (value == null) {
             this.appendMissing();

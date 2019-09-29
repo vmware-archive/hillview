@@ -136,7 +136,7 @@ public class CorrMatrix implements ICorrelation, Serializable, IJson {
     }
 
     public String toString() {
-        return "Number of columns:  " + String.valueOf(this.colNum.size()) + "\n" +
+        return "Number of columns:  " + this.colNum.size() + "\n" +
                 Arrays.deepToString(this.rawMatrix);
     }
 

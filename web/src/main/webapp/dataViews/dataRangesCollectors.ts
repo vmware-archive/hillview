@@ -290,8 +290,8 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                     this.cds[0], ranges[0], maxXBucketCount,
                     // Relative views cannot sample
                     this.options.exact || this.options.relative, chartSize);
-		args.push(xarg);
-		
+                args.push(xarg);
+
                 const cdfArg = DataRangesCollector.computeHistogramArgs(
                     this.cds[0], ranges[0], 0,
                     this.options.exact || this.options.relative, chartSize);
@@ -487,8 +487,6 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
  * rendering.
  */
 export class FilterReceiver extends BaseReceiver {
-    private descs: FilterDescription[];
-
     constructor(protected title: PageTitle,
                 protected cds: IColumnDescription[],
                 protected schema: SchemaClass,
@@ -496,18 +494,17 @@ export class FilterReceiver extends BaseReceiver {
                 page: FullPage,
                 operation: ICancellable<RemoteObjectId>,
                 dataset: DatasetView,
-                descs: FilterDescription[],
+                private descs: FilterDescription[],
                 protected options: ChartOptions) {
         super(page, operation, "Filter", dataset);
-        this.descs = descs;
     }
 
     public run(): void {
         super.run();
         if (!this.page.dataset.isPrivate()) {
-                const rr = this.remoteObject.createDataRangesRequest(this.cds, this.page, this.options.chartKind);
-                rr.invoke(new DataRangesCollector(this.remoteObject, this.page, rr, this.schema,
-                              this.bucketCounts, this.cds, this.title, this.options));
+            const rr = this.remoteObject.createDataRangesRequest(this.cds, this.page, this.options.chartKind);
+            rr.invoke(new DataRangesCollector(this.remoteObject, this.page, rr, this.schema,
+                      this.bucketCounts, this.cds, this.title, this.options));
         } else {
             // We want to bypass the normal range collection since the min/max are fixed
             const dummyRangesCollector = new DataRangesCollector(this.remoteObject, this.page, null, this.schema,
@@ -515,7 +512,7 @@ export class FilterReceiver extends BaseReceiver {
             const ranges: DataRange[] = [];
             for (const desc of this.descs) {
                 const dr: DataRange = { presentCount: -1, missingCount: -1,
-                            min: desc.min, max: desc.max };
+                        min: desc.min, max: desc.max };
                 ranges.push(dr);
             }
             dummyRangesCollector.run(ranges);

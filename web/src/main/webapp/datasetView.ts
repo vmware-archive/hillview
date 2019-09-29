@@ -154,7 +154,7 @@ export class DatasetView implements IHtmlElement {
     }
 
     public isPrivate(): boolean {
-	return this.loaded.kind == 'Private files';
+        return this.loaded.kind === "Private files";
     }
 
     public getHTMLRepresentation(): HTMLElement {

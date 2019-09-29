@@ -27,9 +27,7 @@ import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.io.ByteOrderMark;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.input.BOMInputStream;
-import org.hillview.management.ClusterConfig;
 import org.hillview.storage.CsvFileLoader;
 import org.hillview.storage.CsvFileWriter;
 import org.hillview.storage.OrcFileWriter;
@@ -46,9 +44,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import com.univocity.parsers.csv.CsvFormat;
 import com.univocity.parsers.csv.CsvParser;
-import com.univocity.parsers.csv.CsvParserSettings;
 
 /**
  * This entry point is only used for uploading data to a cluster. The user provides configuration details such as the
@@ -376,14 +372,14 @@ public class DataUpload {
                 Table table = new Table(sealed, null, null);
                 while (true) {
                     chunkName = getFileName(parameters.filename).concat(Integer.toString(chunk));
-                if (parameters.orc)
-                    chunkName = chunkName.concat(".orc");
-                else
-                    chunkName = chunkName.concat(".csv");
-                if (Files.exists(Paths.get(chunkName)))
-                    chunk++;
-                else
-                    break;
+                    if (parameters.orc)
+                        chunkName = chunkName.concat(".orc");
+                    else
+                        chunkName = chunkName.concat(".csv");
+                    if (Files.exists(Paths.get(chunkName)))
+                        chunk++;
+                    else
+                        break;
                 }
                 writeTable(table, chunkName, parameters.orc);
                 if (clusterConfig != null) {
@@ -449,7 +445,7 @@ public class DataUpload {
     }
 
     /** Writes the table in ORC or CSV format
-      */
+     */
     private static void writeTable(Table table, String filename, boolean orc) {
         HillviewLogger.instance.info("Writing chunk in: " + filename);
         if (orc) {
@@ -501,7 +497,7 @@ public class DataUpload {
                             createArchiveInputStream(ArchiveStreamFactory.ZIP, fis);
                     ArchiveEntry entry = is.getNextEntry();
                     if (entry == null)
-                         throw new RuntimeException("No files in zip archive");
+                        throw new RuntimeException("No files in zip archive");
                     ZipArchiveEntry ze = (ZipArchiveEntry)entry;
                     if (ze.isDirectory())
                         throw new RuntimeException("zip archive contains a directory");

@@ -94,6 +94,7 @@ public class JavascriptNashornTest extends BaseTest {
         CreateColumnJSMap map = new CreateColumnJSMap(function, table.getSchema(), null, outCol);
         IDataSet<ITable> mapped = lds.blockingMap(map);
         ITable outTable = ((LocalDataSet<ITable>)mapped).data;
+        Assert.assertNotNull(outTable);
         String data = outTable.toLongString(3);
         Assert.assertEquals("Table[3x15]\n" +
                 "Mike,20,true\n" +
@@ -110,7 +111,7 @@ public class JavascriptNashornTest extends BaseTest {
         CreateColumnJSMap map = new CreateColumnJSMap(function, table.getSchema(), null, outCol);
         IDataSet<ITable> mapped = lds.blockingMap(map);
         ITable outTable = ((LocalDataSet<ITable>)mapped).data;
-
+        Assert.assertNotNull(outTable);
         IColumn dateColumn = outTable.getLoadedColumn("Date");
         Instant instant = dateColumn.getDate(0);
         String expectedDate = "1990-01-01";
@@ -136,6 +137,7 @@ public class JavascriptNashornTest extends BaseTest {
         CreateColumnJSMap map = new CreateColumnJSMap(function, table.getSchema(), null, outCol);
         IDataSet<ITable> mapped = lds.blockingMap(map);
         ITable outTable = ((LocalDataSet<ITable>)mapped).data;
+        Assert.assertNotNull(outTable);
         String data = outTable.toLongString(3);
         Assert.assertEquals("Table[3x15]\n" +
                 "Mike,20,30\n" +
@@ -155,6 +157,7 @@ public class JavascriptNashornTest extends BaseTest {
                 function, table.getSchema(), renameMap, outCol);
         IDataSet<ITable> mapped = lds.blockingMap(map);
         ITable outTable = ((LocalDataSet<ITable>)mapped).data;
+        Assert.assertNotNull(outTable);
         String data = outTable.toLongString(3);
         Assert.assertEquals("Table[3x15]\n" +
                 "Mike,20,30\n" +
@@ -175,6 +178,7 @@ public class JavascriptNashornTest extends BaseTest {
         CreateColumnJSMap map = new CreateColumnJSMap(function, table.getSchema(), null, outCol);
         IDataSet<ITable> mapped = lds.blockingMap(map);
         ITable outTable = ((LocalDataSet<ITable>) mapped).data;
+        Assert.assertNotNull(outTable);
         String data = outTable.toLongString(3);
         Assert.assertEquals("Table[3x2]\n" +
                 "Mike,20,30\n" +
@@ -202,6 +206,7 @@ public class JavascriptNashornTest extends BaseTest {
         map = new CreateColumnJSMap(function, outSchema, null, outCol1);
         mapped = mapped.blockingMap(map);
         ITable outTable = ((LocalDataSet<ITable>)mapped).data;
+        Assert.assertNotNull(outTable);
         String data = outTable.toLongString(3);
 
         String someDate = "1990-01-01";

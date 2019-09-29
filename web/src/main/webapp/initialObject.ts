@@ -122,11 +122,11 @@ class FileSizeReceiver extends OnCompleteReceiver<FileSizeSketchInfo> {
 
             if (size.isPrivate) {
                 const observer = new RemoteTableReceiver(this.page, rr,
-                                 {kind: "Private files",
-                                  description: (this.data as FilesLoaded).description}, fileSize);
+                                     {kind: "Private files",
+                                      description: (this.data as FilesLoaded).description}, fileSize, false);
                 rr.invoke(observer);
             } else {
-                const observer = new RemoteTableReceiver(this.page, rr, this.data, fileSize);
+                const observer = new RemoteTableReceiver(this.page, rr, this.data, fileSize, false);
                 rr.invoke(observer);
             }
         }

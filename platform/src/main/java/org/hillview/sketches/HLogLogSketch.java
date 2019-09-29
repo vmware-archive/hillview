@@ -20,6 +20,7 @@ package org.hillview.sketches;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
+import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 
@@ -44,10 +45,10 @@ public class HLogLogSketch implements ISketch<ITable, HLogLog> {
     }
 
     @Override
-    public HLogLog create(final ITable data) {
+    public HLogLog create(@Nullable final ITable data) {
         HLogLog result = this.getZero();
-        IColumn col = data.getLoadedColumn(this.colName);
-        result.createHLL(col, data.getMembershipSet());
+        IColumn col = Converters.checkNull(data).getLoadedColumn(this.colName);
+        Converters.checkNull(result).createHLL(col, data.getMembershipSet());
         return result;
     }
 

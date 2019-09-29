@@ -37,11 +37,12 @@ public class SampleCorrTest extends BaseTest {
         //System.out.println(data.toLongString(20));
         String[] cn = new String[numCols];
         for (int i = 0; i < numCols; i++) {
-            cn[i] = "Col" + String.valueOf(i);
+            cn[i] = "Col" + i;
         }
         for (int i = 0; i <= 3; i++) {
             SampleCorrelationSketch ip = new SampleCorrelationSketch(cn, Math.pow(0.5, i), 0);
             CorrMatrix cm = ip.create(data);
+            Assert.assertNotNull(cm);
             //System.out.printf("Sampling rate %f: ", Math.pow(0.5, i));
             for (int j = 0; j < cn.length; j++)
                 for (int k = 0; k < cn.length; k++) {
@@ -66,22 +67,25 @@ public class SampleCorrTest extends BaseTest {
         ParallelDataSet<ITable> all = TestTables.makeParallel(data, 100);
         String[] cn = new String[numCols];
         for (int i = 0; i < numCols; i++) {
-            cn[i] = "Col" + String.valueOf(i);
+            cn[i] = "Col" + i;
         }
         long start, end;
         start = System.currentTimeMillis();
         SampleCorrelationSketch exactIP = new SampleCorrelationSketch(cn, 1);
         ICorrelation exactCorr = all.blockingSketch(exactIP);
+        Assert.assertNotNull(exactCorr);
         end = System.currentTimeMillis();
         TestUtil.comparePerf("Exact", end - start);
         start = System.currentTimeMillis();
         SampleCorrelationSketch ip = new SampleCorrelationSketch(cn, p, 0);
         ICorrelation cm = all.blockingSketch(ip);
+        Assert.assertNotNull(cm);
         end = System.currentTimeMillis();
         TestUtil.comparePerf("SampleIP", end - start);
         start = System.currentTimeMillis();
         JLSketch jl = new JLSketch(cn, lowDim, 0);
         ICorrelation jlp = all.blockingSketch(jl);
+        Assert.assertNotNull(jlp);
         end = System.currentTimeMillis();
         TestUtil.comparePerf("JL", end - start);
         for (int j = 0; j < cn.length; j++)

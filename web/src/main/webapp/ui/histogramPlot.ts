@@ -49,7 +49,7 @@ export class HistogramPlot extends Plot {
     public max: number;  // maximum value in a bucket
     public displayAxes: boolean;
     public isPrivate: boolean;
-    
+
     public constructor(protected plottingSurface: PlottingSurface) {
         super(plottingSurface);
         this.displayAxes = true;
@@ -61,11 +61,12 @@ export class HistogramPlot extends Plot {
      * @param samplingRate  Sampling rate used to compute this histogram.
      * @param axisData      Description of the X axis.
      * @param maxYAxis      If present it is used to scale the maximum value for the Y axis.
+     * @param isPrivate     True if we are plotting private data.
      */
     public setHistogram(bars: AugmentedHistogram, samplingRate: number,
                         axisData: AxisData, maxYAxis: number | null, isPrivate: boolean): void {
         this.histogram = bars;
-        
+
         this.samplingRate = samplingRate;
         this.xAxisData = axisData;
         const chartWidth = this.getChartWidth();
@@ -113,14 +114,14 @@ export class HistogramPlot extends Plot {
             .text("Bar is truncated");
 
         bars.append("text")
-	    .attr("class", "histogramBoxLabel")
-	    .attr("x", this.barWidth / 2)
-	    .attr("y", (d) => this.yScale(d) < 0 ? 0 : this.yScale(d))
-	    .attr("text-anchor", "middle")
-	    .attr("dy", (d) => d <= (9 * displayMax / 10) ? "-.25em" : ".75em")
-	    .text((d) => HistogramPlot.boxHeight(
-                d, this.samplingRate, this.xAxisData.range.presentCount))
-	    .exit();
+            .attr("class", "histogramBoxLabel")
+            .attr("x", this.barWidth / 2)
+            .attr("y", (d) => this.yScale(d) < 0 ? 0 : this.yScale(d))
+            .attr("text-anchor", "middle")
+            .attr("dy", (d) => d <= (9 * displayMax / 10) ? "-.25em" : ".75em")
+            .text((d) => HistogramPlot.boxHeight(
+                    d, this.samplingRate, this.xAxisData.range.presentCount))
+            .exit();
 
         this.yAxis = d3axisLeft(this.yScale)
             .tickFormat(d3format(".2s"));
@@ -130,7 +131,7 @@ export class HistogramPlot extends Plot {
 
     public drawPrivate(): void {
         const counts = this.histogram.histogram.buckets;
-	var zippedData = d3zip(this.histogram.histogram.buckets,
+        const zippedData = d3zip(this.histogram.histogram.buckets,
                                this.histogram.confMins, this.histogram.confMaxes);
         this.max = Math.max(...counts);
         const displayMax = this.maxYAxis == null ? this.max : this.maxYAxis;
@@ -168,14 +169,14 @@ export class HistogramPlot extends Plot {
 
         // confidence intervals
         bars.append("line")
-	    .attr("x1", 0)
-	    .attr("y1", (d) => this.yScale(d[0] - d[1]))
-	    .attr("x2", 0)
-	    .attr("y2", (d) => this.yScale(d[0] + d[2]))
-	    .attr("stroke-width", 1)
-	    .attr("stroke", "black")
-	    .attr("stroke-linecap", "round")
-	    .attr("transform", () => `translate(${this.barWidth / 2}, 0)`);
+            .attr("x1", 0)
+            .attr("y1", (d) => this.yScale(d[0] - d[1]))
+            .attr("x2", 0)
+            .attr("y2", (d) => this.yScale(d[0] + d[2]))
+            .attr("stroke-width", 1)
+            .attr("stroke", "black")
+            .attr("stroke-linecap", "round")
+            .attr("transform", () => `translate(${this.barWidth / 2}, 0)`);
 
         this.yAxis = d3axisLeft(this.yScale)
             .tickFormat(d3format(".2s"));
@@ -184,7 +185,7 @@ export class HistogramPlot extends Plot {
         if (this.displayAxes)
             this.drawAxes();
     }
-    
+
     public draw(): void {
         if (this.histogram == null)
             return;
@@ -194,7 +195,7 @@ export class HistogramPlot extends Plot {
         } else {
             this.drawPublic();
         }
-        
+
         if (this.displayAxes)
             this.drawAxes();
     }

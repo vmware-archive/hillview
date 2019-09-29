@@ -22,6 +22,7 @@ import org.hillview.dataset.api.ISketch;
 import org.hillview.storage.OrcFileWriter;
 import org.hillview.table.Schema;
 import org.hillview.table.api.ITable;
+import org.hillview.utils.Converters;
 import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
@@ -65,7 +66,8 @@ public class SaveAsOrcSketch implements ISketch<ITable, Empty> {
     }
 
     @Override
-    public Empty create(ITable data) {
+    public Empty create(@Nullable ITable data) {
+        Converters.checkNull(data);
         try {
             if (this.schema != null)
                 data = data.project(this.schema);

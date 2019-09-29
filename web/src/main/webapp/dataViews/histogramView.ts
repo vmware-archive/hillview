@@ -235,7 +235,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
             histogram: hist,
             cdfBuckets: null,
             confMins: null,
-            confMaxes: null,
+            confMaxes: null
         };
     }
 
@@ -245,7 +245,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
 
     /**
      * @param cdf: Data for the cdf.
-     * @param histogram: Data for the histogram buckets.
+     * @param augmentedHistogram: Data for the histogram buckets.
      * @param bucketCount: Number of buckets to display.  If 0 the bucket count will be computed
      * @param maxYAxis: maximum value to use for Y axis if not null
      */
@@ -283,7 +283,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
 
         const discrete = kindIsString(this.xAxisData.description.kind) ||
             this.xAxisData.description.kind === "Integer";
-	    // CDF is precomputed separately, so don't integrate the points
+        // CDF is precomputed separately, so don't integrate the points
         this.cdfPlot.setData(cdf, discrete, false);
         this.cdfPlot.draw();
         this.setupMouse();
@@ -416,7 +416,7 @@ export class HistogramView extends HistogramViewBase implements IScrollTarget {
     }
 
     public changeBuckets(bucketCount: number): void {
-	    // TODO
+        // TODO
         this.updateView(this.cdf, this.augmentedHistogram,
                         bucketCount, this.plot.maxYAxis);
     }
@@ -589,7 +589,7 @@ export class HistogramRenderer extends Receiver<Pair<AugmentedHistogram, Augment
 
     public onNext(value: PartialResult<Pair<AugmentedHistogram, AugmentedHistogram>>): void {
         super.onNext(value);
-	    // TODO
+        // TODO
         if (value == null)
             return;
         const histogram = value.data.first;

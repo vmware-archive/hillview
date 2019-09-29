@@ -23,8 +23,10 @@ import org.hillview.table.api.*;
 import org.hillview.table.columns.DoubleArrayColumn;
 import org.hillview.table.columns.SparseColumn;
 import org.hillview.utils.BlasConversions;
+import org.hillview.utils.Converters;
 import org.jblas.DoubleMatrix;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -70,10 +72,11 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
     }
 
     @Override
-    public ITable apply(ITable table) {
+    public ITable apply(@Nullable ITable table) {
         List<IColumn> columns = new ArrayList<IColumn>(this.newColNames.length);
         // Compute the projection with BLAS
-        DoubleMatrix mat = BlasConversions.toDoubleMatrix(table, Arrays.asList(this.colNames));
+        DoubleMatrix mat = BlasConversions.toDoubleMatrix(
+                Converters.checkNull(table), Arrays.asList(this.colNames));
         DoubleMatrix resultMat = mat.mmul(this.projectionMatrix.transpose());
 
         // Copy the result to new columns with the same membershipSet size. (Can't use

@@ -13,7 +13,7 @@ import java.util.BitSet;
  */
 public class NumItemsThreshold implements IJson {
     private final int logThreshold;
-    private final int threshold;
+    @SuppressWarnings("FieldCanBeLocal")
     private final int maxLogThreshold = 15;
     private final BitSet bits;
     private final long seed;
@@ -31,7 +31,7 @@ public class NumItemsThreshold implements IJson {
             throw new IllegalArgumentException("NumItemsThreshold called with illegal size of " + logThreshold);
         this.seed = seed;
         this.logThreshold = logThreshold;
-        this.threshold = 1 << logThreshold;
+        int threshold = 1 << logThreshold;
         if (threshold >= 1024) {
             logSize = logThreshold;
             bits = new BitSet(threshold);

@@ -47,10 +47,12 @@ public class PCATest extends BaseTest {
         PCACorrelationSketch fcs2 = new PCACorrelationSketch(colNames);
         CorrMatrix cm2 = dataset.blockingSketch(fcs2);
 
+        Assert.assertNotNull(cm1);
         DoubleMatrix corrMatrix1 = new DoubleMatrix(cm1.getCorrelationMatrix());
         // Get just the eigenvector corresponding to the largest eigenvalue (because we know the data is approximately
         // linear).
         DoubleMatrix eigenVectors1 = LinAlg.eigenVectors(corrMatrix1, 1);
+        Assert.assertNotNull(cm2);
         DoubleMatrix corrMatrix2 = new DoubleMatrix(cm2.getCorrelationMatrix());
         DoubleMatrix eigenVectors2 = LinAlg.eigenVectors(corrMatrix2, 1);
 
@@ -82,6 +84,7 @@ public class PCATest extends BaseTest {
             String[] numericColNames = Utilities.toArray(TestUtils.getNumericColumnNames(table));
             PCACorrelationSketch fcs = new PCACorrelationSketch(numericColNames);
             CorrMatrix cm = fcs.create(table);
+            Assert.assertNotNull(cm);
             DoubleMatrix corrMatrix = new DoubleMatrix(cm.getCorrelationMatrix());
             DoubleMatrix eigenVectors = LinAlg.eigenVectors(corrMatrix, 2);
             LinearProjectionMap lpm = new LinearProjectionMap(numericColNames, eigenVectors, "PCA");

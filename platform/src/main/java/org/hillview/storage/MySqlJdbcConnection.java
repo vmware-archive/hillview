@@ -26,7 +26,7 @@ public class MySqlJdbcConnection extends JdbcConnection {
     public String getQueryToReadTable(String table, int rowCount) {
         String result = "SELECT * FROM " + table;
         if (rowCount >= 0)
-            result += " LIMIT " + Integer.toString(rowCount);
+            result += " LIMIT " + rowCount;
         return result;
     }
 

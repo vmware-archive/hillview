@@ -165,6 +165,13 @@ public class JdbcDatabase {
         switch (colType) {
             case Types.BOOLEAN:
             case Types.BIT:
+            case Types.CHAR:
+            case Types.VARCHAR:
+            case Types.LONGVARCHAR:
+            case Types.NCHAR:
+            case Types.NVARCHAR:
+            case Types.LONGNVARCHAR:
+            case Types.SQLXML:
                 kind = ContentsKind.String;
                 break;
             case Types.TINYINT:
@@ -179,15 +186,6 @@ public class JdbcDatabase {
             case Types.NUMERIC:
             case Types.DECIMAL:
                 kind = ContentsKind.Double;
-                break;
-            case Types.CHAR:
-            case Types.VARCHAR:
-            case Types.LONGVARCHAR:
-            case Types.NCHAR:
-            case Types.NVARCHAR:
-            case Types.LONGNVARCHAR:
-            case Types.SQLXML:
-                kind = ContentsKind.String;
                 break;
             case Types.DATE:
             case Types.TIME:

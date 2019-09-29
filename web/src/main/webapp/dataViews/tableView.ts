@@ -1259,7 +1259,7 @@ export class SchemaReceiver extends OnCompleteReceiver<TableSummary> {
             const nk: NextKList = {
                 rowsScanned: summary.rowCount,
                 startPosition: 0,
-                rows: [],
+                rows: []
             };
 
             const order = new RecordOrder([]);

@@ -23,10 +23,12 @@ import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.*;
 import org.hillview.table.columns.DoubleArrayColumn;
 import org.hillview.table.columns.SparseColumn;
+import org.hillview.utils.Converters;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
 import org.jblas.Singular;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -57,8 +59,8 @@ public class LAMPMap implements IMap<ITable, ITable> {
     }
 
     @Override
-    public ITable apply(ITable data) {
-        List<IColumn> columns = data.getLoadedColumns(this.numColNames);
+    public ITable apply(@Nullable ITable data) {
+        List<IColumn> columns = Converters.checkNull(data).getLoadedColumns(this.numColNames);
         List<IMutableColumn> newColumns = new ArrayList<IMutableColumn>(this.lowDims);
         IMembershipSet set = data.getMembershipSet();
         int colSize = set.getMax();

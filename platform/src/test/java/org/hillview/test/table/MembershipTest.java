@@ -95,7 +95,7 @@ public class MembershipTest extends BaseTest {
             tmp = iter.getNextRow();
             IS1.add(tmp);
         }
-        Assert.assertTrue(mms.size() == IS1.size());
+        Assert.assertEquals(mms.size(), IS1.size());
         final IMembershipSet mySample = MS.sample(20, 0);
         final IRowIterator sIter = mySample.getIterator();
         int curr = sIter.getNextRow();

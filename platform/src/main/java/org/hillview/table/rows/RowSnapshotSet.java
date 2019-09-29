@@ -34,7 +34,6 @@ import java.util.function.Consumer;
  * we are using custom equality and hashcode functions.
  */
 public class RowSnapshotSet implements Serializable {
-    @SuppressWarnings("FieldCanBeLocal")
     private final Schema schema;
     private final ObjectSet<BaseRowSnapshot> rowSet;
 
@@ -76,7 +75,7 @@ public class RowSnapshotSet implements Serializable {
         @Override
         public boolean test(int rowIndex) {
             this.vrs.setRow(rowIndex);
-            return includeSet ? this.set.contains(this.vrs): (!this.set.contains(this.vrs));
+            return includeSet == this.set.contains(this.vrs);
         }
     }
 

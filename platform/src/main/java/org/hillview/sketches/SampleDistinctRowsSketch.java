@@ -27,6 +27,8 @@ import org.hillview.table.api.ITable;
 import org.hillview.table.api.IndexComparator;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.VirtualRowSnapshot;
+import org.hillview.utils.Converters;
+
 import javax.annotation.Nullable;
 import java.util.Comparator;
 
@@ -50,8 +52,8 @@ public class SampleDistinctRowsSketch implements ISketch<ITable, MinKSet<RowSnap
     }
 
     @Override
-    public MinKSet<RowSnapshot> create(ITable data) {
-        IndexComparator comp = this.recordOrder.getIndexComparator(data);
+    public MinKSet<RowSnapshot> create(@Nullable ITable data) {
+        IndexComparator comp = this.recordOrder.getIndexComparator(Converters.checkNull(data));
         Schema schema = this.recordOrder.toSchema();
         VirtualRowSnapshot vw = new VirtualRowSnapshot(data, schema);
         MinKRows mkRows = new MinKRows(numSamples);

@@ -25,7 +25,6 @@ import rx.Subscription;
 import javax.annotation.Nullable;
 import javax.websocket.Session;
 import java.util.HashMap;
-import java.util.HashSet;
 
 /**
  * The RpcObjectManager manages a pool of objects that are the targets of RPC calls

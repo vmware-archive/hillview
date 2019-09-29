@@ -68,6 +68,7 @@ public class ParquetFileLoader extends TextFileLoader {
         }
     }
 
+    @SuppressWarnings("RedundantCast")
     private static void appendGroup(
             List<IAppendableColumn> cols, Group g, List<ColumnDescriptor> cds) {
         int fieldCount = g.getType().getFieldCount();
@@ -153,8 +154,6 @@ public class ParquetFileLoader extends TextFileLoader {
                 kind = ContentsKind.Integer;
                 break;
             case BOOLEAN:
-                kind = ContentsKind.String;
-                break;
             case BINARY:
             case FIXED_LEN_BYTE_ARRAY:
                 kind = ContentsKind.String;

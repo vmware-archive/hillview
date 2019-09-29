@@ -410,14 +410,11 @@ export class TrellisHeatmapView extends TrellisChartView {
                 this.schema.displayName(this.xAxisData.description.name) +
                 " and " + this.schema.displayName(this.yAxisData.description.name));
             const renderer = new FilterReceiver(title,
-                [this.xAxisData.description, this.yAxisData.description,
-                    this.groupByAxisData.description],
-                this.schema, [0, 0, 0], this.page, rr, this.dataset, [xRange, yRange],
-                {
-                    chartKind: "TrellisHeatmap", relative: false, reusePage: false,
-                    exact: this.samplingRate >= 1
-            });
-        rr.invoke(renderer);
+                [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description],
+                this.schema, [0, 0, 0], this.page, rr, this.dataset, [xRange, yRange], {
+                chartKind: "TrellisHeatmap", relative: false, reusePage: false,
+                    exact: this.samplingRate >= 1 });
+            rr.invoke(renderer);
         } else {
             const filter = this.getGroupBySelectionFilter();
             if (filter == null)
@@ -426,13 +423,10 @@ export class TrellisHeatmapView extends TrellisChartView {
             title = new PageTitle(
                 "Filtered on " + this.groupByAxisData.getDisplayNameString(this.schema));
             const renderer = new FilterReceiver(title,
-                [this.xAxisData.description, this.yAxisData.description,
-                    this.groupByAxisData.description],
-                this.schema, [0, 0, 0], this.page, rr, this.dataset, [filter],
-                {
-                    chartKind: "TrellisHeatmap", relative: false, reusePage: false,
-                    exact: this.samplingRate >= 1
-                });
+                [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description],
+                this.schema, [0, 0, 0], this.page, rr, this.dataset, [filter], {
+                chartKind: "TrellisHeatmap", relative: false, reusePage: false,
+                    exact: this.samplingRate >= 1 });
             rr.invoke(renderer);
         }
     }

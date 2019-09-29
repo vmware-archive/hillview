@@ -19,14 +19,14 @@ import org.hillview.utils.JsonList;
 import javax.annotation.Nullable;
 import javax.websocket.Session;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 /**
  * This class represents a remote dataset that can only be accessed using differentially-private operations.
  */
 public class PrivateTableTarget extends RpcTarget {
     /* Used to send a reply immediately without running a sketch. */
-    private static <S extends IJson> void constructAndSendReply(S result, RpcRequest request, RpcRequestContext context) {
+    private static <S extends IJson> void constructAndSendReply(
+            @Nullable S result, RpcRequest request, RpcRequestContext context) {
         JsonObject json = new JsonObject();
         json.addProperty("done", 1.0);
 
@@ -60,8 +60,10 @@ public class PrivateTableTarget extends RpcTarget {
     }
 
     public static class PrivacySummary implements IJson {
+        @Nullable
         public Schema schema;
         public int rowCount = 0;
+        @Nullable
         public PrivacySchema metadata;
     }
 
@@ -107,10 +109,11 @@ public class PrivateTableTarget extends RpcTarget {
     }
 
     // compute CDF on the second histogram (at finer CDF granularity)
-    static BiFunction<Pair<Histogram, Histogram>,
+    private static BiFunction<Pair<Histogram, Histogram>,
             HillviewComputation,
             Pair<PrivateHistogram, PrivateHistogram>> makePrivateFunction() {
-        return (e, c) -> new Pair(new PrivateHistogram(e.first, false), new PrivateHistogram(e.second, true));
+        return (e, c) -> new Pair<PrivateHistogram, PrivateHistogram>(
+                new PrivateHistogram(e.first, false), new PrivateHistogram(e.second, true));
     }
 
     // Returns both the histogram and the precomputed CDF of the data.

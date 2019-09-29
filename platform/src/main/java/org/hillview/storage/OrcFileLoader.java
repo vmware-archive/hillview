@@ -109,6 +109,7 @@ public class OrcFileLoader extends TextFileLoader {
     private static ContentsKind getKind(TypeDescription desc) {
         switch (desc.getCategory()) {
             case BOOLEAN:
+            case STRING:
                 return ContentsKind.String;
             case BYTE:
             case SHORT:
@@ -118,8 +119,6 @@ public class OrcFileLoader extends TextFileLoader {
             case FLOAT:
             case DOUBLE:
                 return ContentsKind.Double;
-            case STRING:
-                return ContentsKind.String;
             case DATE:
             case TIMESTAMP:
                 return ContentsKind.Date;

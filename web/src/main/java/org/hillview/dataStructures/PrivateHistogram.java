@@ -4,6 +4,7 @@ import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.Pair;
 import org.hillview.sketches.DyadicHistogramBuckets;
 import org.hillview.sketches.Histogram;
+import org.hillview.utils.Converters;
 
 import java.io.Serializable;
 
@@ -11,6 +12,7 @@ import java.io.Serializable;
  * Contains methods for adding privacy to a non-private histogram computed over dyadic buckets,
  * and for computing the CDF and confidence intervals on the buckets.
  */
+@SuppressWarnings("MismatchedReadAndWriteOfArray")
 public class PrivateHistogram extends HistogramWithCDF implements Serializable, IJson {
     private DyadicHistogramBuckets bucketDescription; // Just an alias for the buckets in the histogram.
 
@@ -38,7 +40,9 @@ public class PrivateHistogram extends HistogramWithCDF implements Serializable, 
      * noise for that prefix. */
     private void recomputeCDF() {
         for (int i = 0; i < this.cdfBuckets.length; i++) {
-            this.cdfBuckets[i] += this.bucketDescription.noiseForBucket(i, true).first;
+            Pair<Double, Double> p = this.bucketDescription.noiseForBucket(i, true);
+            Converters.checkNull(p.first);
+            this.cdfBuckets[i] += p.first;
             if (i > 0) {
                 // Postprocess CDF to be monotonically increasing
                 this.cdfBuckets[i] = Math.max(this.cdfBuckets[i-1], this.cdfBuckets[i]);
@@ -56,13 +60,14 @@ public class PrivateHistogram extends HistogramWithCDF implements Serializable, 
     private void addDyadicLaplaceNoise() {
         for (int i = 0; i < this.histogram.buckets.length; i++) {
             Pair<Double, Double> noise = this.bucketDescription.noiseForBucket(i, false);
-            this.histogram.buckets[i] += noise.first;
+            this.histogram.buckets[i] += Converters.checkNull(noise.first);
             // Postprocess so that no buckets are negative
             this.histogram.buckets[i] = Math.max(0, this.histogram.buckets[i]);
 
             // also set confidence intervals for this noise level
-            this.confMins[i] = 2*Math.sqrt(noise.second);
-            this.confMaxes[i] = 2*Math.sqrt(noise.second);
+            Converters.checkNull(noise.second);
+            this.confMins[i] = 2 * Math.sqrt(noise.second);
+            this.confMaxes[i] = 2 * Math.sqrt(noise.second);
         }
     }
 }

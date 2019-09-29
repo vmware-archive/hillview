@@ -71,7 +71,6 @@ public class JsonTest extends BaseTest {
         l.add(dac);
         l.add(sac);
         SmallTable t = new SmallTable(l);
-        @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
         RowSnapshot rs = new RowSnapshot(t, 0);
         s = rs.toJson();
         Assert.assertEquals(s, "[10,90.0,\"John\"]");

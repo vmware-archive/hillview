@@ -239,10 +239,10 @@ export class HeatmapView extends ChartView {
                 cdfBuckets: null,
                 confMins: null,
                 confMaxes: null
-            }
-            
+            };
+
             this.xHistoPlot.setHistogram(augHist, this.samplingRate, this.xAxisData, null,
-					 this.page.dataset.isPrivate());
+                this.page.dataset.isPrivate());
             this.xHistoPlot.draw();
         }
 
@@ -378,7 +378,7 @@ export class HeatmapView extends ChartView {
             return new FilterReceiver(
                 title,
                 [this.xAxisData.description, this.yAxisData.description],
-                this.schema, [0, 0], page, operation, this.dataset, null, 
+                this.schema, [0, 0], page, operation, this.dataset, null,
                 { exact: true, chartKind: "Heatmap",
                     reusePage: false, relative: false, });
         };

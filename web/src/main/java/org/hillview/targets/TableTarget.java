@@ -332,7 +332,8 @@ public final class TableTarget extends RpcTarget {
     private static BiFunction<Pair<Histogram, Histogram>,
             HillviewComputation,
             Pair<AugmentedHistogram, HistogramWithCDF>> computeCDFFunction() {
-        return (e, c) -> new Pair(new AugmentedHistogram(e.first), new HistogramWithCDF(e.second));
+        return (e, c) -> new Pair<AugmentedHistogram, HistogramWithCDF>(
+                new AugmentedHistogram(e.first), new HistogramWithCDF(e.second));
     }
 
     @HillviewRpc

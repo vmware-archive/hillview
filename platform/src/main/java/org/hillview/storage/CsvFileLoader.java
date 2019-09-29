@@ -103,7 +103,7 @@ public class CsvFileLoader extends TextFileLoader {
                     int index = 0;
                     for (String col : line) {
                         if ((col == null) || col.isEmpty())
-                            col = this.actualSchema.newColumnName("Column_" + Integer.toString(index));
+                            col = this.actualSchema.newColumnName("Column_" + index);
                         col = this.actualSchema.newColumnName(col);
                         ColumnDescription cd = new ColumnDescription(col,
                                 ContentsKind.String);
@@ -125,7 +125,7 @@ public class CsvFileLoader extends TextFileLoader {
                 columnCount = firstLine.length;
 
                 for (int i = 0; i < columnCount; i++) {
-                    ColumnDescription cd = new ColumnDescription("Column " + Integer.toString(i),
+                    ColumnDescription cd = new ColumnDescription("Column " + i,
                             ContentsKind.String);
                     this.actualSchema.append(cd);
                 }

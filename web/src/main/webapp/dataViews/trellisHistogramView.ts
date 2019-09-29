@@ -297,8 +297,8 @@ export class TrellisHistogramView extends TrellisChartView {
                 cdfBuckets: histo.buckets,
                 confMins: null,
                 confMaxes: null
-            }
-            
+            };
+
             const cdfp = this.cdfs[i];
             cdfp.setData(augHisto, discrete, true);
 
@@ -316,8 +316,8 @@ export class TrellisHistogramView extends TrellisChartView {
                 cdfBuckets: null,
                 confMins: null,
                 confMaxes: null
-            }
-            
+            };
+
             plot.setHistogram(augHist, this.samplingRate, this.xAxisData,
                               max, this.page.dataset.isPrivate());
             plot.displayAxes = false;
@@ -412,7 +412,7 @@ export class TrellisHistogramView extends TrellisChartView {
         const local = this.selectionIsLocal();
         let title: PageTitle;
         let rr: RpcRequest<PartialResult<RemoteObjectId>>;
-	var filter: FilterDescription;
+        let filter: FilterDescription;
         if (local != null) {
             const origin = this.canvasToChart(this.selectionOrigin);
             const left = this.position(origin.x, origin.y);
@@ -439,10 +439,9 @@ export class TrellisHistogramView extends TrellisChartView {
         }
         const renderer = new FilterReceiver(title,
             [this.xAxisData.description, this.groupByAxisData.description], this.schema,
-					    [0, 0], this.page, rr, this.dataset, [filter], {
-						chartKind: "TrellisHistogram", relative: false,
-						reusePage: false, exact: this.samplingRate >= 1
-					    });
+            [0, 0], this.page, rr, this.dataset, [filter], {
+            chartKind: "TrellisHistogram", relative: false,
+                reusePage: false, exact: this.samplingRate >= 1 });
         rr.invoke(renderer);
     }
 }

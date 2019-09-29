@@ -466,7 +466,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
         const renderer = new FilterReceiver(title,
             [this.xAxisData.description, this.legendAxisData.description,
                 this.groupByAxisData.description],
-					    this.schema, [0, 0, 0], this.page, rr, this.dataset, [filter], {
+            this.schema, [0, 0, 0], this.page, rr, this.dataset, [filter], {
                 chartKind: "Trellis2DHistogram", relative: this.relative,
                 reusePage: false, exact: this.samplingRate >= 1
             });

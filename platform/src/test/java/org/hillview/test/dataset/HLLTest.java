@@ -27,6 +27,7 @@ import org.hillview.test.BaseTest;
 import org.hillview.utils.IntArrayGenerator;
 import org.hillview.utils.Randomness;
 import org.hillview.utils.TestTables;
+import org.junit.Assert;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -48,8 +49,7 @@ public class HLLTest extends BaseTest {
         hll.createHLL(col, memSet);
         long alsoResult = hll.distinctItemCount;
         long result = hll.distinctItemsEstimator();
-        assertTrue(alsoResult == result);
-        assertTrue((result > (0.9 * range)) && (result < (1.1 * range)));
+        assertEquals(alsoResult, result);
         assertTrue((result > (0.9 * range)) && (result < (1.1 * range)));
     }
 
@@ -61,6 +61,7 @@ public class HLLTest extends BaseTest {
         final String colName = bigTable.getSchema().getColumnNames().get(0);
         final ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize / 10);
         final HLogLog hll = all.blockingSketch(new HLogLogSketch(colName,16,12345678));
+        Assert.assertNotNull(hll);
         assertTrue(hll.distinctItemsEstimator() > 85000);
     }
 }

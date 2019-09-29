@@ -46,6 +46,7 @@ public class CorrelationTest extends BaseTest {
         PCACorrelationSketch fcs = new PCACorrelationSketch(Utilities.toArray(colNames));
         CorrMatrix cm = fcs.create(table);
 
+        Assert.assertNotNull(cm);
         DoubleMatrix corrMatrix = new DoubleMatrix(cm.getCorrelationMatrix());
         DoubleMatrix eigenVectors = LinAlg.eigenVectors(corrMatrix, 2);
         DoubleMatrix actualCorrMatrix = new DoubleMatrix(new double[][]{
@@ -91,6 +92,8 @@ public class CorrelationTest extends BaseTest {
                 cmCheck.put(j, i, corr);
             }
         }
+
+        Assert.assertNotNull(cm);
         for (int i = 0; i < cm.getCorrelationMatrix().length; i++) {
             double[] row = cm.getCorrelationMatrix()[i];
             for (int j = 0; j < row.length; j++) {

@@ -21,6 +21,7 @@ import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
+import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;
@@ -32,8 +33,8 @@ import java.util.List;
  */
 public class ParseErrorsSketch implements ISketch<ITable, ParseErrorsSketch.PerColumnErrors> {
     @Override
-    public PerColumnErrors create(ITable data) {
-        List<IColumn> columns = data.getColumns(data.getSchema());
+    public PerColumnErrors create(@Nullable ITable data) {
+        List<IColumn> columns = Converters.checkNull(data).getColumns(data.getSchema());
         PerColumnErrors result = new PerColumnErrors();
         for (IColumn col: columns)
             result.errorsPerColumn.put(col.getName(), (long)col.getParsingExceptionCount());

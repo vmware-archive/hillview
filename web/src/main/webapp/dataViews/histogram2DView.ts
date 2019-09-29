@@ -195,8 +195,8 @@ export class Histogram2DView extends HistogramViewBase {
             cdfBuckets: cdf.buckets,
             confMins: null,
             confMaxes: null
-        }
-        
+        };
+
         this.cdfPlot.setData(augHist, discrete, true);
         this.cdfPlot.draw();
         this.legendPlot.setData(this.yData, this.plot.getMissingDisplayed() > 0, this.schema);

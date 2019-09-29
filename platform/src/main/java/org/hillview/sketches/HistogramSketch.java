@@ -18,6 +18,7 @@
 package org.hillview.sketches;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.table.api.ITable;
+import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 
@@ -39,9 +40,10 @@ public class HistogramSketch implements ISketch<ITable, Histogram> {
     }
 
     @Override
-    public Histogram create(final ITable data) {
+    public Histogram create(@Nullable final ITable data) {
         Histogram result = this.getZero();
-        result.create(data.getLoadedColumn(this.columnName),
+        Converters.checkNull(data);
+        Converters.checkNull(result).create(data.getLoadedColumn(this.columnName),
                 data.getMembershipSet(),
                 this.rate, this.seed, false);
         return result;
