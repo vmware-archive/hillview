@@ -25,6 +25,7 @@ import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.IRowOrder;
 import org.hillview.table.api.ITable;
+import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 
@@ -72,8 +73,8 @@ public class SampleQuantileSketch  implements ISketch<ITable, SampleList> {
      * @return A table with samples sorted, and columns compressed to the relevant ones.
      */
     @Override
-    public SampleList create(ITable data) {
-        final IMembershipSet sampleSet = data.getMembershipSet().sample(
+    public SampleList create(@Nullable ITable data) {
+        final IMembershipSet sampleSet = Converters.checkNull(data).getMembershipSet().sample(
                 this.samplingRate, this.seed);
         final IRowOrder rowOrder = new ArrayRowOrder(this.
                 colSortOrder.getSortedRowOrder(data, sampleSet));

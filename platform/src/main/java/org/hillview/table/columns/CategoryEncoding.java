@@ -51,7 +51,7 @@ class CategoryEncoding {
     }
 
     public void clear() {
-        this.intDecoding.clear();
+        this.intEncoding.clear();
         this.intDecoding.clear();
     }
 }

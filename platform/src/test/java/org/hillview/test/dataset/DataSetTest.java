@@ -42,16 +42,15 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-@SuppressWarnings("UnstableApiUsage")
 public class DataSetTest extends BaseTest {
-    private class Increment implements IMap<Integer, Integer> {
+    private static class Increment implements IMap<Integer, Integer> {
         @Override
         public Integer apply(final @Nullable Integer data) {
             return Converters.checkNull(data) + 1;
         }
     }
 
-    private class Sketch implements ISketch<Integer, Integer> {
+    private static class Sketch implements ISketch<Integer, Integer> {
         @Override
         public Integer zero() {
             return 0;
@@ -180,7 +179,7 @@ public class DataSetTest extends BaseTest {
         flat.toBlocking().subscribe(obs);
     }
 
-    private class Sum implements ISketch<int[], Integer> {
+    private static class Sum implements ISketch<int[], Integer> {
         @Override
         public Integer zero() {
             return 0;

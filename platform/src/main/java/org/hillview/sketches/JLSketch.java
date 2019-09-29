@@ -19,6 +19,7 @@ package org.hillview.sketches;
 
 import org.hillview.dataset.api.ISketch;
 import org.hillview.table.api.*;
+import org.hillview.utils.Converters;
 import org.hillview.utils.Randomness;
 
 import javax.annotation.Nullable;
@@ -66,9 +67,9 @@ public class JLSketch implements ISketch<ITable, JLProjection>{
         assert left != null;
         assert right != null;
         for (String s: left.colNames) {
-            double a[] = left.hMap.get(s);
-            double b[] = right.hMap.get(s);
-            double val[] = new double[this.lowDim];
+            double[] a = left.hMap.get(s);
+            double[] b = right.hMap.get(s);
+            double[] val = new double[this.lowDim];
             for (int i = 0; i < this.lowDim; i++)
                 val[i] = a[i] + b[i];
             left.hMap.put(s, val);
@@ -85,7 +86,8 @@ public class JLSketch implements ISketch<ITable, JLProjection>{
      * @return A JL projection.
      */
     @Override
-    public JLProjection create(ITable data) {
+    public JLProjection create(@Nullable ITable data) {
+        Converters.checkNull(data);
         for (String col : this.colNames) {
             if ((data.getSchema().getKind(col) != ContentsKind.Double) &&
                     (data.getSchema().getKind(col) != ContentsKind.Integer))

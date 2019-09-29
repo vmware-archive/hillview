@@ -37,6 +37,7 @@ import org.hillview.table.columns.DoubleArrayColumn;
 import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.utils.*;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -80,7 +81,6 @@ public class Benchmarks {
     public static class GenerateStringColumnMapper implements IMap<Empty, ITable> {
         private final int distinctValues;
         private final int totalElements;
-        private final int length = 10;
 
         GenerateStringColumnMapper(int distinctValues, int totalElements) {
             this.distinctValues = distinctValues;
@@ -88,7 +88,8 @@ public class Benchmarks {
         }
 
         @Override
-        public ITable apply(Empty data) {
+        public ITable apply(@Nullable Empty data) {
+            int length = 10;
             List<String> randomString = TestTables.randStringList(this.distinctValues, length);
             return TestTables.randStringTable(this.totalElements, randomString);
         }
@@ -105,7 +106,7 @@ public class Benchmarks {
         return String.format("%.2f", d);
     }
 
-    public static void runNTimes(Runnable runnable, int count, String message, int elemCount) {
+    private static void runNTimes(Runnable runnable, int count, String message, int elemCount) {
         long[] times = new long[count];
         for (int i=0; i < count; i++) {
             long t = time(runnable);
@@ -381,8 +382,7 @@ public class Benchmarks {
         else {
             bench = args[0];
             String[] elimFirst = new String[args.length - 1];
-            for (int i = 1; i < args.length; i++)
-                elimFirst[i - 1] = args[i];
+            System.arraycopy(args, 1, elimFirst, 0, args.length - 1);
             args = elimFirst;
         }
         switch (bench) {

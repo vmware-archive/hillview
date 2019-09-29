@@ -25,6 +25,7 @@ import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;
 import org.hillview.utils.*;
 import org.jblas.DoubleMatrix;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -40,6 +41,7 @@ public class LAMPMapTest extends BaseTest {
         RandomSamplingSketch sketch = new RandomSamplingSketch(
                 samplingRate, seed, colNames, false);
         SmallTable sampling = dataset.blockingSketch(sketch);
+        Assert.assertNotNull(sampling);
         sampling = sampling.compress(sampling.getMembershipSet().sample(numSamples, 0));
 
         DoubleMatrix ndControlPoints = BlasConversions.toDoubleMatrix(sampling,
@@ -60,7 +62,7 @@ public class LAMPMapTest extends BaseTest {
                 Utilities.toArray(newColNames));
         ITable result = map.apply(table);
         IDataSet<ITable> datasetResult = dataset.blockingMap(map);
-
+        Assert.assertNotNull(result);
         DoubleMatrix lampProjection = BlasConversions.toDoubleMatrix(result, newColNames);
         System.out.println("\nLAMP projection:");
         System.out.println("\tMin x: " + lampProjection.getColumn(0).min());

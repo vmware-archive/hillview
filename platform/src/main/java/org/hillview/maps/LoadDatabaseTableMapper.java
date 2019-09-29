@@ -23,6 +23,7 @@ import org.hillview.storage.JdbcConnectionInformation;
 import org.hillview.table.api.ITable;
 import org.hillview.storage.JdbcDatabase;
 
+import javax.annotation.Nullable;
 import java.sql.SQLException;
 
 public class LoadDatabaseTableMapper implements IMap<Empty, ITable> {
@@ -33,7 +34,7 @@ public class LoadDatabaseTableMapper implements IMap<Empty, ITable> {
     }
 
     @Override
-    public ITable apply(Empty data) {
+    public ITable apply(@Nullable Empty data) {
         try {
             JdbcDatabase db = new JdbcDatabase(this.conn);
             db.connect();

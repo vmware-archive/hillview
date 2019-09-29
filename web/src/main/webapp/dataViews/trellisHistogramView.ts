@@ -17,6 +17,7 @@
 
 import {Receiver, RpcRequest} from "../rpc";
 import {
+    AugmentedHistogram,
     FilterDescription,
     Heatmap,
     HistogramBase,
@@ -159,7 +160,7 @@ export class TrellisHistogramView extends TrellisChartView {
 
     protected showTable(): void {
         const newPage = this.dataset.newPage(new PageTitle("Table"), this.page);
-        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newPage);
+        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newPage, null);
         newPage.setDataView(table);
         table.schema = this.schema;
 
@@ -288,21 +289,37 @@ export class TrellisHistogramView extends TrellisChartView {
             const bucketData = data.buckets[i];
             const histo: HistogramBase = {
                 buckets: bucketData,
-                missingData: data.missingData
+                missingData: data.missingData,
+            };
+
+            const augHisto: AugmentedHistogram = {
+                histogram: histo,
+                cdfBuckets: histo.buckets,
+                confMins: null,
+                confMaxes: null
             };
 
             const cdfp = this.cdfs[i];
-            cdfp.setData(histo, discrete);
+            cdfp.setData(augHisto, discrete, true);
 
-            const coarse = HistogramView.coarsen(histo, this.bucketCount);
-            max = Math.max(max, Math.max(...coarse.buckets));
-            coarsened.push(coarse);
+            const coarse = HistogramView.coarsen(augHisto, this.bucketCount);
+            max = Math.max(max, Math.max(...coarse.histogram.buckets));
+            coarsened.push(coarse.histogram);
         }
 
         for (let i = 0; i < coarsened.length; i++) {
             const plot = this.hps[i];
             const coarse = coarsened[i];
-            plot.setHistogram(coarse, this.samplingRate, this.xAxisData, max);
+
+            const augHist: AugmentedHistogram = {
+                histogram: coarse,
+                cdfBuckets: null,
+                confMins: null,
+                confMaxes: null
+            };
+
+            plot.setHistogram(augHist, this.samplingRate, this.xAxisData,
+                              max, this.page.dataset.isPrivate());
             plot.displayAxes = false;
             plot.draw();
             plot.border(1);
@@ -384,7 +401,7 @@ export class TrellisHistogramView extends TrellisChartView {
             return new FilterReceiver(
                 title,
                 [this.xAxisData.description, this.groupByAxisData.description], this.schema,
-                [0, 0], page, operation, this.dataset, {
+                [0, 0], page, operation, this.dataset, null, {
                     chartKind: "TrellisHistogram", relative: false,
                     reusePage: false, exact: this.samplingRate >= 1
                 });
@@ -395,6 +412,7 @@ export class TrellisHistogramView extends TrellisChartView {
         const local = this.selectionIsLocal();
         let title: PageTitle;
         let rr: RpcRequest<PartialResult<RemoteObjectId>>;
+        let filter: FilterDescription;
         if (local != null) {
             const origin = this.canvasToChart(this.selectionOrigin);
             const left = this.position(origin.x, origin.y);
@@ -402,7 +420,7 @@ export class TrellisHistogramView extends TrellisChartView {
             const right = this.position(end.x, end.y);
             const [xl, xr] = reorder(left.x, right.x);
 
-            const filter: FilterDescription = {
+            filter = {
                 min: this.xAxisData.invertToNumber(xl),
                 max: this.xAxisData.invertToNumber(xr),
                 minString: this.xAxisData.invert(xl),
@@ -413,7 +431,7 @@ export class TrellisHistogramView extends TrellisChartView {
             rr = this.createFilterRequest(filter);
             title = new PageTitle("Filtered on " + this.schema.displayName(this.xAxisData.description.name));
         } else {
-            const filter = this.getGroupBySelectionFilter();
+            filter = this.getGroupBySelectionFilter();
             if (filter == null)
                 return;
             rr = this.createFilterRequest(filter);
@@ -421,10 +439,9 @@ export class TrellisHistogramView extends TrellisChartView {
         }
         const renderer = new FilterReceiver(title,
             [this.xAxisData.description, this.groupByAxisData.description], this.schema,
-            [0, 0], this.page, rr, this.dataset, {
-                chartKind: "TrellisHistogram", relative: false,
-                reusePage: false, exact: this.samplingRate >= 1
-            });
+            [0, 0], this.page, rr, this.dataset, [filter], {
+            chartKind: "TrellisHistogram", relative: false,
+                reusePage: false, exact: this.samplingRate >= 1 });
         rr.invoke(renderer);
     }
 }

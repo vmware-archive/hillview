@@ -76,7 +76,7 @@ public class CDFTest extends BaseTest {
     @Test
     public void HistE2E() {
         CDFTest cdftest = new CDFTest();
-        TestUtil.runPerfTest("Running time of cdf: ",
+        TestUtil.runPerfTest("Running time of cdfBuckets: ",
                 k -> cdftest.prepareCDF(1000, 1000, false), 2);
         TestUtil.runPerfTest("Running time of hist with sampling: ",
                 k -> prepareHist(1000, 100, 10, true), 2);

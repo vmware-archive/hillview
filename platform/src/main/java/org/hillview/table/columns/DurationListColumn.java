@@ -43,7 +43,6 @@ class DurationListColumn extends DoubleListColumn implements IDurationColumn {
     }
 
     @Override
-    @SuppressWarnings("Duplicates")
     public void append(@Nullable final Duration value) {
         if (value == null) {
             this.appendMissing();

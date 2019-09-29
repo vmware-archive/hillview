@@ -19,6 +19,8 @@ package org.hillview.dataset;
 
 import org.hillview.dataset.api.IMap;
 
+import javax.annotation.Nullable;
+
 public class CompositeMap<T, S, V> implements IMap<T, V> {
     private final IMap<T, S> first;
     private final IMap<S, V> second;
@@ -29,7 +31,7 @@ public class CompositeMap<T, S, V> implements IMap<T, V> {
     }
 
     @Override
-    public V apply(T data) {
+    public V apply(@Nullable T data) {
         S second = this.first.apply(data);
         return this.second.apply(second);
     }

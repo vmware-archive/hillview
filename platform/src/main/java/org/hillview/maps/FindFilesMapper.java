@@ -61,16 +61,13 @@ public class FindFilesMapper implements IMap<Empty, List<IFileReference>> {
         HillviewLogger.instance.info("Find files", "pattern: {0}", this.description.fileNamePattern);
         List<File> files = new ArrayList<File>();
         FilenameFilter filter;
-        for (int i = 0; i < paths.length; i++) {
-            String folder = Utilities.getFolder(paths[i]);
-            if (folder == null) continue;
+        for (String path : paths) {
+            String folder = Utilities.getFolder(path);
+            if (Utilities.isNullOrEmpty(folder)) continue;
 
             Path dir_path = Paths.get(folder);
-            String wildcard = Utilities.getWildcard(paths[i]);
-            if (wildcard == null)
-                filter = (d, name) -> true;
-            else
-                filter = new WildcardFileFilter(wildcard);
+            String wildcard = Utilities.getWildcard(path);
+            filter = new WildcardFileFilter(wildcard);
 
             if (Files.exists(dir_path) && Files.isDirectory(dir_path)) {
                 File[] contained = new File(folder).listFiles(filter);

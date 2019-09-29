@@ -27,6 +27,7 @@ import org.hillview.table.api.ITable;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
@@ -61,8 +62,7 @@ public class HillviewLogs extends LogFiles {
         boolean parse(String line, String[] output) {
             Matcher m = pattern.matcher(line);
             if (!m.find()) {
-                for (int i = 0; i < output.length; i++)
-                    output[i] = null;
+                Arrays.fill(output, null);
                 return false;
             }
             output[0] = m.group(1); // Time

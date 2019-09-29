@@ -19,6 +19,7 @@ package org.hillview.sketches;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
+import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 
@@ -42,11 +43,13 @@ public class HeatmapSketch implements ISketch<ITable, Heatmap> {
     }
 
     @Override
-    public Heatmap create(final ITable data) {
+    public Heatmap create(@Nullable final ITable data) {
         Heatmap result = this.getZero();
+        Converters.checkNull(data);
         IColumn c0  = data.getLoadedColumn(this.col0);
         IColumn c1  = data.getLoadedColumn(this.col1);
-        result.createHeatmap(c0, c1, data.getMembershipSet(), this.rate, this.seed, false);
+        Converters.checkNull(result).createHeatmap(
+                c0, c1, data.getMembershipSet(), this.rate, this.seed, false);
         return result;
     }
 

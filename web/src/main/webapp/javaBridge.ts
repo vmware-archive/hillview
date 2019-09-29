@@ -76,9 +76,21 @@ export class GenericLogs {
     ];
 }
 
+export interface PrivacyMetadata {
+    epsilon: number;
+    granularity: number;
+    globalMin: number;
+    globalMax: number;
+}
+
+export interface PrivacySchema {
+    metadata: { [colName: string]: PrivacyMetadata};
+}
+
 export interface TableSummary {
     schema: Schema;
     rowCount: number;
+    metadata: PrivacySchema;
 }
 
 export interface ConvertColumnInfo {
@@ -191,6 +203,7 @@ export interface RowData {
 export interface FileSizeSketchInfo {
     fileCount: number;
     totalSize: number;
+    isPrivate: boolean;
 }
 
 export interface ColumnSortOrientation {
@@ -201,6 +214,18 @@ export interface ColumnSortOrientation {
 export interface HistogramBase {
     buckets: number[];
     missingData: number;
+}
+
+// This data structure corresponds to the union of
+// classes that extend AugmentedHistogram, so that any of those classes
+// can be passed into plots that take AugmentedHistograms.
+export interface AugmentedHistogram {
+    histogram: HistogramBase;
+
+    cdfBuckets?: number[];
+
+    confMins?: number[];
+    confMaxes?: number[];
 }
 
 // This is actually a union of several java classes:
@@ -250,6 +275,33 @@ export interface HistogramArgs {
     // only used when doing string histograms
     leftBoundaries?: string[];
     // only used when doing double histograms
+    min?: number;
+    max?: number;
+}
+
+// Data returned by private histogram call
+export interface PrivateHistogramData {
+    buckets: number[];
+
+    // Backend may adjust min/max to render
+    minValue: number;
+    maxValue: number;
+
+    // Confidence intervals
+    confMins: number[];
+    confMaxes: number[];
+
+    missingData: number;
+}
+
+export interface PrivateHistogramArgs {
+    cd: IColumnDescription;
+    seed: number;
+    samplingRate: number;
+    bucketCount: number;
+    epsilon: number;
+    granularity: number;
+
     min?: number;
     max?: number;
 }

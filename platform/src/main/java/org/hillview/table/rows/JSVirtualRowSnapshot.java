@@ -53,15 +53,12 @@ public class JSVirtualRowSnapshot extends VirtualRowSnapshot {
             // https://stackoverflow.com/questions/33110942/supply-javascript-date-to-nashorn-script
             try {
                 //noinspection RedundantCast
-                return (JSObject) this.engine.eval("new Date(" + Double.toString(dateEncoding) + ")");
+                return (JSObject) this.engine.eval("new Date(" + dateEncoding + ")");
             } catch (ScriptException e) {
                 throw new RuntimeException(e);
             }
         }
 
-        Object result = super.get(key);
-        if (result == null)
-            return null;
-        return result;
+        return super.get(key);
     }
 }

@@ -26,6 +26,8 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.cli.*;
 
+import javax.annotation.Nullable;
+
 /**
  * This class is used for generating Timestamp-errorCode heatmaps data files from syslogs of bugs.
  * The inputs are syslog files of format RFC5424. Rows in syslog files have a field called "errorCode" in the "StructuredData" column.
@@ -38,6 +40,7 @@ import org.apache.commons.cli.*;
 public class BatchLogAnalysis {
 
     private static class HeatmapData {
+        @Nullable
         long[][] matrix;
         JsonList<String> errorCodeLabels = new JsonList<>();
         ArrayList<String> timeLabels = new ArrayList<>();
@@ -72,6 +75,7 @@ public class BatchLogAnalysis {
         /* Find Timestamp (x-axis) buckets for the heatmap */
         DoubleDataRangeSketch rangeSketch = new DoubleDataRangeSketch("Timestamp");
         DataRange dataRange = table1.blockingSketch(rangeSketch);
+        assert dataRange != null;
         DoubleHistogramBuckets bucketsTimestamp = new DoubleHistogramBuckets(dataRange.min, dataRange.max, numOfTimestampBuckets);
 
         /* Find errorCode (y-axis) buckets for the heatmap */
@@ -83,6 +87,7 @@ public class BatchLogAnalysis {
         /* Generate heatmap based on Timestamp buckets and errorCode buckets, and get the count in each bucket */
         HeatmapSketch heatmapSketch = new HeatmapSketch(bucketsTimestamp, bucketsErrorCode, "Timestamp", "errorCode", 1.0, 0);
         Heatmap heatmap = table1.blockingSketch(heatmapSketch);
+        assert heatmap != null;
         HeatmapData heatmapData = new HeatmapData();
         int numOfBucketsD1 = heatmap.getNumOfBucketsD1();
         int numOfBucketsD2 = heatmap.getNumOfBucketsD2();
@@ -121,7 +126,7 @@ public class BatchLogAnalysis {
                 sb.append(',');
                 sb.append("Count");
                 sb.append('\n');
-                for (int x = 0; x < heatmapData.matrix.length; x++) {
+                for (int x = 0; x < Converters.checkNull(heatmapData).matrix.length; x++) {
                     for (int y = 0; y < heatmapData.matrix[0].length; y++) {
                         if (heatmapData.matrix[x][y] >= 0) {        // keep zeros or not
                             sb.append(heatmapData.timeLabels.get(x));

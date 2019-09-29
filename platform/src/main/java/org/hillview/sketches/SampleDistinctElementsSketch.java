@@ -4,6 +4,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectRBTreeMap;
 import net.openhft.hashing.LongHashFunction;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.table.api.*;
+import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.util.Comparator;
@@ -30,8 +31,8 @@ public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<Str
      * that have the minimum hash values.
      */
     @Override
-    public MinKSet<String> create(ITable data) {
-        IColumn col = data.getLoadedColumn(this.colName);
+    public MinKSet<String> create(@Nullable ITable data) {
+        IColumn col = Converters.checkNull(data).getLoadedColumn(this.colName);
         if (!col.getDescription().kind.isString())
             throw new IllegalArgumentException(
                     "SampleDistinctElementsSketch only supports String-like columns");

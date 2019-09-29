@@ -48,7 +48,7 @@ public class ConcurrentSketch<T, R1, R2> implements ISketch<T, Pair<R1, R2>> {
     }
 
     @Override
-    public Pair<R1, R2> create(T data) {
+    public Pair<R1, R2> create(@Nullable T data) {
         R1 first = this.first.create(data);
         R2 second = this.second.create(data);
         return new Pair<R1, R2>(first, second);

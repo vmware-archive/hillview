@@ -38,6 +38,7 @@ public class StringRowFilterTest extends BaseTest {
                 new StringFilterDescription("Ed"));
         FilterMap filterMap = new FilterMap(equalityFilter);
         ITable result = filterMap.apply(table);
+        Assert.assertNotNull(result);
 
         // Assert number of rows are as expected
         Assert.assertEquals(1, result.getNumOfRows());
@@ -56,7 +57,7 @@ public class StringRowFilterTest extends BaseTest {
                 new StringFilterDescription("Mike"));
         filterMap = new FilterMap(equalityFilter);
         result = filterMap.apply(table);
-
+        Assert.assertNotNull(result);
         Assert.assertEquals(2, result.getNumOfRows());
 
         it = result.getMembershipSet().getIterator();
@@ -76,7 +77,7 @@ public class StringRowFilterTest extends BaseTest {
         StringRowFilterDescription equalityFilter = new StringRowFilterDescription("Age", new StringFilterDescription("10"));
         FilterMap filterMap = new FilterMap(equalityFilter);
         ITable result = filterMap.apply(table);
-
+        Assert.assertNotNull(result);
         // Assert number of rows are as expected
         Assert.assertEquals(4, result.getNumOfRows());
 
@@ -84,7 +85,7 @@ public class StringRowFilterTest extends BaseTest {
         equalityFilter = new StringRowFilterDescription("Age", new StringFilterDescription("40"));
         filterMap = new FilterMap(equalityFilter);
         result = filterMap.apply(table);
-
+        Assert.assertNotNull(result);
         // Assert number of rows are as expected
         Assert.assertEquals(2, result.getNumOfRows());
     }
@@ -105,7 +106,7 @@ public class StringRowFilterTest extends BaseTest {
 
         // Apply the filter map
         ITable result = filterMap.apply(table);
-
+        Assert.assertNotNull(result);
         // Assert that the number of occurrences is correct.
         Assert.assertEquals(count, result.getNumOfRows());
         IColumn col = result.getLoadedColumn("Name");

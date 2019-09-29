@@ -29,6 +29,7 @@ public class HillviewLogFormatter extends SimpleFormatter {
     private final DateFormat df = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss.SSS");
     private StringBuilder builder = new StringBuilder();
 
+    @SuppressWarnings("ConstantConditions")
     @Override
     public synchronized String format(LogRecord record) {
         @Nullable

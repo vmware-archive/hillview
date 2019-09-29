@@ -27,6 +27,7 @@ import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.VirtualRowHashStrategy;
+import org.hillview.utils.Converters;
 import org.hillview.utils.MutableInteger;
 
 import javax.annotation.Nullable;
@@ -110,8 +111,8 @@ public class FreqKSketchMG implements ISketch<ITable, FreqKListMG> {
      * @return A FreqKList.
      */
     @Override
-    public FreqKListMG create(ITable data) {
-        VirtualRowHashStrategy hashStrategy = new VirtualRowHashStrategy(data, this.schema);
+    public FreqKListMG create(@Nullable ITable data) {
+        VirtualRowHashStrategy hashStrategy = new VirtualRowHashStrategy(Converters.checkNull(data), this.schema);
         Int2ObjectOpenCustomHashMap<MutableInteger> hMap = new Int2ObjectOpenCustomHashMap<MutableInteger>(hashStrategy);
         IntSet toRemove = new IntOpenHashSet(this.maxSize);
         IRowIterator rowIt = data.getRowIterator();

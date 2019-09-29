@@ -27,7 +27,6 @@ import javax.script.Invocable;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
-import java.io.StringWriter;
 import java.time.*;
 
 public final class DateTests extends BaseTest {

@@ -72,15 +72,18 @@ def prepare_webserver(config):
         "hillview-webserver-manager.sh", config.service_folder, "")
     os.unlink("hillview-webserver-manager.sh")
 
+def create_service_folder(config, rh):
+    assert isinstance(config, ClusterConfiguration)
+    rh.create_remote_folder(config.service_folder)
+    rh.run_remote_shell_command("chown " + config.get_user() + " " + config.service_folder)
+    rh.create_remote_folder(config.service_folder + "/hillview")
+
 def prepare_worker(config, rh):
     """Prepares files needed by a Hillview worker on a remote machine"""
     assert isinstance(config, ClusterConfiguration)
     message = "Preparing worker " + str(rh)
     logger.info(message)
-    # rh.run_remote_shell_command("sudo apt-get install libgfortran3")
-
-    rh.create_remote_folder(config.service_folder)
-    rh.run_remote_shell_command("chown " + config.get_user() + " " + config.service_folder)
+    create_service_folder(config, rh)
     rh.copy_file_to_remote(
         config.scriptFolder +
         "/../platform/target/hillview-server-jar-with-dependencies.jar",
@@ -105,13 +108,15 @@ def prepare_aggregator(config, rh):
             break
 
     if not isWorker:
-        rh.create_remote_folder(config.service_folder)
-        rh.run_remote_shell_command("chown " + config.get_user() + " " + config.service_folder)
+        create_service_folder(config, rh)
         rh.copy_file_to_remote(
-            config.scriptFolder + "/../platform/target/hillview-server-jar-with-dependencies.jar",
-            config.service_folder, "")
-        rh.copy_file_to_remote("forever.sh", config.service_folder, "")
-
+            config.scriptFolder +
+            "/../platform/target/hillview-server-jar-with-dependencies.jar",
+            config.service_folder + "/hillview", "")
+        if config.cleanup_on_install():
+            rh.run_remote_shell_command(
+                "cd " + config.service_folder + "/hillview;"
+                "rm -f hillview-agg.log hillview-agg.log.* hillview-agg.log*.lck")
     tmp = tempfile.NamedTemporaryFile(mode="w", delete=False)
     for h in rh.children:
         tmp.write(h + ":" + str(config.worker_port) + "\n")

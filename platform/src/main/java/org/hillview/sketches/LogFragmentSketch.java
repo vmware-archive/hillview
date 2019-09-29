@@ -76,7 +76,7 @@ public class LogFragmentSketch implements ISketch<ITable, NextKList> {
         IntList ones = new IntArrayList();
         for (int i = index; i < index + maxCount; i++)
             ones.add(1);
-        return new NextKList(rows, ones, (long)index, (long)data.getNumOfRows());
+        return new NextKList(rows, ones, index, data.getNumOfRows());
     }
 
     @Nullable

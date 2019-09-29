@@ -18,13 +18,13 @@
 package org.hillview.test.dataStructures;
 
 
+import org.hillview.test.BaseTest;
 import org.hillview.test.dataStructures.ComputeTrellisShape;
 import org.junit.Test;
 
-public class TrellisShapeTest {
+public class TrellisShapeTest extends BaseTest {
     @Test
     public void tShapeTest() {
-        boolean toPrint = false;
         double[] ratios = {1.25, 1.5, 2};
         for (double ratio : ratios) {
             ComputeTrellisShape tShape = new ComputeTrellisShape(70, 10, 50,

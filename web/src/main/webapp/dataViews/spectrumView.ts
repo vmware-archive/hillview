@@ -17,6 +17,7 @@
 
 import {IViewSerialization, SpectrumSerialization} from "../datasetView";
 import {
+    AugmentedHistogram,
     CombineOperators,
     DataRange,
     EigenVal,
@@ -113,7 +114,7 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
             }
             const rr = this.originator.createCorrelationMatrixRequest(this.colNames, this.rowCount, true);
             const newestPage = this.newPage.dataset.newPage(new PageTitle("Table"), this.newPage);
-            const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newestPage);
+            const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newestPage, null);
             newestPage.setDataView(table);
             const order  = new RecordOrder([]);
             rr.invoke(new CorrelationMatrixReceiver(newestPage, table, rr, order, numComponents, projectionName));
@@ -165,7 +166,15 @@ export class SpectrumView extends ChartView {
         this.axisData = axisData;
         this.title = title;
         this.histogram = h;
-        this.plot.setHistogram(h, 1, axisData, null);
+
+        const augHist: AugmentedHistogram = {
+            histogram: h,
+            cdfBuckets: null,
+            confMins: null,
+            confMaxes: null
+        };
+
+        this.plot.setHistogram(augHist, 1, axisData, null, this.page.dataset.isPrivate());
         this.plot.draw();
 
         this.summary.textContent = "Columns: " + this.colNames.join(", ");

@@ -16,7 +16,7 @@
  */
 
 import {line as d3line} from "d3-shape";
-import {HistogramBase} from "../javaBridge";
+import {AugmentedHistogram} from "../javaBridge";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 
@@ -24,7 +24,7 @@ import {PlottingSurface} from "./plottingSurface";
  * A CDFPlot draws a CDF curve on a PlottingSurface.
  */
 export class CDFPlot extends Plot {
-    protected cdf: HistogramBase;
+    protected cdf: AugmentedHistogram;
     protected cdfData: number[];
     protected max: number;
     // True if we need to adjust for the range of the data
@@ -37,7 +37,7 @@ export class CDFPlot extends Plot {
         super(plottingSurface);
     }
 
-    public setData(cdf: HistogramBase, adjust: boolean): void {
+    public setData(cdf: AugmentedHistogram, adjust: boolean, integrate: boolean): void {
         this.cdf = cdf;
         this.adjust = adjust;
         this.cdfData = [];
@@ -45,10 +45,15 @@ export class CDFPlot extends Plot {
         if (adjust) {
             this.cdfData.push(point);
         }
-        for (const bucket of cdf.buckets) {
+        for (const bucket of cdf.cdfBuckets) {
             // each point is inserted twice.
             this.cdfData.push(point);
-            point += bucket;
+            if (integrate) {
+                // Underlying data is the PDF, so integrate to compute the CDF
+                point += bucket;
+            } else {
+                point = bucket;
+            }
             this.cdfData.push(point);
         }
         this.max = point;
@@ -109,7 +114,7 @@ export class CDFPlot extends Plot {
         const cdfX = x / this.bucketWidth;
         if (cdfX < 0) {
             return 0;
-        } else if (cdfX >= this.cdf.buckets.length) {
+        } else if (cdfX >= this.cdf.cdfBuckets.length) {
             return 1;
         } else {
             // 2 values for each pixel

@@ -21,6 +21,7 @@ import org.hillview.dataset.api.ISketch;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;
+import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 
@@ -36,8 +37,8 @@ public class DoubleDataRangeSketch implements ISketch<ITable, DataRange> {
     }
 
     @Override
-    public DataRange create(final ITable data) {
-        IColumn column = data.getLoadedColumn(this.col);
+    public DataRange create(@Nullable final ITable data) {
+        IColumn column = Converters.checkNull(data).getLoadedColumn(this.col);
         DataRange result = new DataRange();
         final IRowIterator myIter = data.getMembershipSet().getIterator();
         int currRow = myIter.getNextRow();

@@ -22,6 +22,6 @@ import org.hillview.dataset.api.IJson;
 import java.io.Serializable;
 
 public abstract class HistogramBase implements Serializable, IJson {
-    protected long[] buckets = new long[0];
+    public long[] buckets = new long[0];
     protected long missingData;
 }

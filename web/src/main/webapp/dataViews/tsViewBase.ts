@@ -235,9 +235,10 @@ export abstract class TSViewBase extends BigTableView {
 
     protected histogram1D(cd: IColumnDescription): void {
         const rr = this.createDataRangesRequest([cd], this.page, "Histogram");
+        const exact = this.isPrivate(); // If private, do not subsample
         rr.invoke(new DataRangesCollector(
             this, this.page, rr, this.schema, [0], [cd], null,
-            { chartKind: "Histogram", relative: false, exact: false, reusePage: false }));
+            { chartKind: "Histogram", relative: false, exact: exact, reusePage: false }));
     }
 
     protected histogram2D(cds: IColumnDescription[]): void {
@@ -318,6 +319,14 @@ export abstract class TSViewBase extends BigTableView {
             return;
         }
         this.histogram(this.getSelectedColNames());
+    }
+
+    protected privateHistSelected(): void {
+        if (this.getSelectedColCount() !== 1) {
+            this.page.reportError("Must select 1 column for private histogram");
+            return;
+        }
+        this.histogram(this.getSelectedColNames()); // backend will multiplex over histogram type
     }
 
     protected trellisSelected(heatmap: boolean): void {

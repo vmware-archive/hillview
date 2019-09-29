@@ -19,6 +19,7 @@ package org.hillview.sketches;
 
 import org.hillview.dataset.api.ISketch;
 import org.hillview.table.api.*;
+import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
@@ -74,7 +75,8 @@ public class SampleCorrelationSketch implements ISketch<ITable, CorrMatrix> {
      * @return A correlation matrix computed over the sampled table.
      */
     @Override
-    public CorrMatrix create(ITable data) {
+    public CorrMatrix create(@Nullable ITable data) {
+        Converters.checkNull(data);
         for (String col : this.colNames) {
             if ((data.getSchema().getKind(col) != ContentsKind.Double) &&
                     (data.getSchema().getKind(col) != ContentsKind.Integer))

@@ -56,7 +56,7 @@ public class SampleList implements Serializable {
         else {
             int[] order = new int[resolution];
             for (int i = 0; i < resolution; i++) {
-                order[i] = Math.round((((i + 1) * this.table.getNumOfRows()) / (resolution + 1)) - 1);
+                order[i] = (int)Math.round((((i + 1) * (double)this.table.getNumOfRows()) / (resolution + 1)) - 1);
             }
             return this.table.compress(new ArrayRowOrder(order));
         }

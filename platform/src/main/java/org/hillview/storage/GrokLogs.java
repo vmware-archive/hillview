@@ -48,7 +48,6 @@ public class GrokLogs extends LogFiles {
 
     public class LogFileLoader extends BaseLogLoader {
         private final Grok grok;
-        private final GrokCompiler grokCompiler;
 
         @Nullable
         private final Instant start;
@@ -66,22 +65,22 @@ public class GrokLogs extends LogFiles {
 
         LogFileLoader(final String path, @Nullable Instant start, @Nullable Instant end) {
             super(path);
-            this.grokCompiler = GrokCompiler.newInstance();
-            this.grokCompiler.registerDefaultPatterns();
-            this.grokCompiler.registerPatternFromClasspath("/patterns/log-patterns");
+            GrokCompiler grokCompiler = GrokCompiler.newInstance();
+            grokCompiler.registerDefaultPatterns();
+            grokCompiler.registerPatternFromClasspath("/patterns/log-patterns");
             this.grok = grokCompiler.compile(logFormat, true);
             this.start = start;
             this.end = end;
             String originalPattern = this.grok.getOriginalGrokPattern();
             String timestampPattern = GrokExtra.extractGroupPattern(
-                    this.grokCompiler.getPatternDefinitions(),
+                    grokCompiler.getPatternDefinitions(),
                     originalPattern, LogFiles.timestampColumnName);
             if (timestampPattern == null) {
                 HillviewLogger.instance.warn("Pattern does not contain column named 'Timestamp'",
                         "{0}", originalPattern);
                 this.dateTime = null;
             } else {
-                this.dateTime = this.grokCompiler.compile(
+                this.dateTime = grokCompiler.compile(
                         "%{" + timestampPattern + ":" + LogFiles.timestampColumnName + "}", true);
             }
         }

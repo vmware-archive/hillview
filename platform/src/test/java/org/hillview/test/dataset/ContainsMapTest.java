@@ -37,6 +37,7 @@ public class ContainsMapTest extends BaseTest {
         IDataSet<ITable> ds = new LocalDataSet<ITable>(t);
         IDataSet<ITable> find = ds.blockingMap(map);
         LocalDataSet<ITable> lds = (LocalDataSet<ITable>)find;
+        Assert.assertNotNull(lds.data);
         Assert.assertEquals(t.getNumOfRows(), lds.data.getNumOfRows());
 
         Object[] values = new Object[2];
@@ -47,6 +48,7 @@ public class ContainsMapTest extends BaseTest {
         ds = new LocalDataSet<ITable>(t);
         find = ds.blockingMap(map);
         lds = (LocalDataSet<ITable>)find;
+        Assert.assertNotNull(lds.data);
         Assert.assertEquals(0, lds.data.getNumOfRows());
     }
 }

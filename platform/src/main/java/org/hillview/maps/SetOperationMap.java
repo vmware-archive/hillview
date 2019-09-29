@@ -21,6 +21,9 @@ import org.hillview.dataset.api.IMap;
 import org.hillview.dataset.api.Pair;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ITable;
+import org.hillview.utils.Converters;
+
+import javax.annotation.Nullable;
 
 public class SetOperationMap implements IMap<Pair<ITable, ITable>, ITable> {
     private final String operation;
@@ -30,9 +33,10 @@ public class SetOperationMap implements IMap<Pair<ITable, ITable>, ITable> {
     }
 
     @Override
-    public ITable apply(Pair<ITable, ITable> data) {
-        assert data.first != null;
-        assert data.second != null;
+    public ITable apply(@Nullable Pair<ITable, ITable> data) {
+        Converters.checkNull(data);
+        Converters.checkNull(data.first);
+        Converters.checkNull(data.second);
         IMembershipSet first = data.first.getMembershipSet();
         IMembershipSet second = data.second.getMembershipSet();
         IMembershipSet rows;

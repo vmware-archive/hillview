@@ -36,11 +36,12 @@ public class JLSketchTest extends BaseTest {
         SmallTable data = TestTables.getCorrelatedCols(size, numCols, range);
         String[] cn = new String[numCols];
         for (int i = 0; i < numCols; i++) {
-            cn[i] = "Col" + String.valueOf(i);
+            cn[i] = "Col" + i;
         }
         for (int a = 1; a < 3; a++) {
             JLSketch jls = new JLSketch(cn, a * 100, 0);
             JLProjection jlp = jls.create(data);
+            Assert.assertNotNull(jlp);
             for (int j = 0; j < cn.length; j++)
                 for (int k = 0; k < cn.length; k++) {
                     Assert.assertEquals(jlp.getCorrelationMatrix()[j][k],
@@ -62,7 +63,7 @@ public class JLSketchTest extends BaseTest {
         SmallTable rightTable = TestTables.getCorrelatedCols(size, numCols, range);
         String[] cn = new String[numCols];
         for (int i = 0; i < numCols; i++) {
-            cn[i] = "Col" + String.valueOf(i);
+            cn[i] = "Col" + i;
         }
         JLSketch jls = new JLSketch(cn, 100, 0);
         JLProjection jlp = jls.add(jls.create(leftTable), jls.create(rightTable));

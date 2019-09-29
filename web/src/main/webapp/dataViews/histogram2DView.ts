@@ -18,6 +18,7 @@
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {Histogram2DSerialization, IViewSerialization} from "../datasetView";
 import {
+    AugmentedHistogram,
     FilterDescription,
     Heatmap,
     HistogramBase,
@@ -188,7 +189,15 @@ export class Histogram2DView extends HistogramViewBase {
         this.plot.draw();
         const discrete = kindIsString(this.xAxisData.description.kind) ||
             this.xAxisData.description.kind === "Integer";
-        this.cdfPlot.setData(cdf, discrete);
+
+        const augHist: AugmentedHistogram = {
+            histogram: cdf,
+            cdfBuckets: cdf.buckets,
+            confMins: null,
+            confMaxes: null
+        };
+
+        this.cdfPlot.setData(augHist, discrete, true);
         this.cdfPlot.draw();
         this.legendPlot.setData(this.yData, this.plot.getMissingDisplayed() > 0, this.schema);
         this.legendPlot.draw();
@@ -359,7 +368,7 @@ export class Histogram2DView extends HistogramViewBase {
             return new FilterReceiver(
                 title,
                 [this.xAxisData.description, this.yData.description],
-                this.schema, [0, 0], page, operation, this.dataset,
+                this.schema, [0, 0], page, operation, this.dataset, null,
                 { exact: this.samplingRate >= 1, chartKind: "Histogram",
                     relative: this.relative, reusePage: false });
         };
@@ -540,7 +549,7 @@ export class Histogram2DView extends HistogramViewBase {
             [this.xAxisData.description, this.yData.description],
             this.schema,
             [inLegend ? this.xPoints : 0, this.yPoints], this.page, rr,
-            this.dataset, {
+            this.dataset, [filter], {
             exact: this.samplingRate >= 1.0,
             chartKind: "2DHistogram",
             reusePage: false,
@@ -560,7 +569,7 @@ export class Histogram2DView extends HistogramViewBase {
         } ]);
 
         const page = this.dataset.newPage(new PageTitle("Table"), this.page);
-        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, page);
+        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, page, null);
         const rr = table.createNextKRequest(order, null, Resolution.tableRowsOnScreen);
         page.setDataView(table);
         rr.invoke(new NextKReceiver(page, table, rr, false, order, null));

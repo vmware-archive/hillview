@@ -33,7 +33,7 @@ import java.util.Arrays;
 public class DistinctStringsSketch implements ISketch<ITable, DistinctStringsSketch.DistinctStrings> {
     private String column;
 
-    public class DistinctStrings implements IJson {
+    public static class DistinctStrings implements IJson {
         private final ObjectOpenHashSet<String> uniqueStrings;
 
         DistinctStrings() {
@@ -99,9 +99,10 @@ public class DistinctStringsSketch implements ISketch<ITable, DistinctStringsSke
     }
 
     @Override
-    public DistinctStrings create(final ITable data) {
-        IColumn col = data.getLoadedColumn(this.column);
+    public DistinctStrings create(@Nullable final ITable data) {
+        IColumn col = Converters.checkNull(data).getLoadedColumn(this.column);
         DistinctStrings result = this.getZero();
+        Converters.checkNull(result);
         IRowIterator it = data.getMembershipSet().getIterator();
         int row = it.getNextRow();
         while (row >= 0) {

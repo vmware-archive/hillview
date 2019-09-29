@@ -49,6 +49,23 @@ export class LoadMenu extends RemoteObject implements IDataView {
 
         this.top = document.createElement("div");
         this.testDatasetsMenu = new SubMenu([
+            { text: "Gaussian (1 column, private, CSV)", // TODO: to delete
+                action: () => {
+                    const files: FileSetDescription = {
+                        fileNamePattern: "../data/synthetic/????*.csv*",
+                        schemaFile: "gaussian.schema",
+                        headerRow: true,
+                        repeat: 1,
+                        name: "Gaussian (1 column)",
+                        fileKind: "csv",
+                        logFormat: null,
+                        startTime: null,
+                        endTime: null
+                    };
+                    this.init.loadFiles(files, this.page);
+                },
+                help: "Synthetic Gaussian data.",
+            },
             { text: "Flights (15 columns, CSV)",
                 action: () => {
                     const files: FileSetDescription = {
@@ -57,6 +74,23 @@ export class LoadMenu extends RemoteObject implements IDataView {
                         headerRow: true,
                         repeat: 1,
                         name: "Flights (15 columns)",
+                        fileKind: "csv",
+                        logFormat: null,
+                        startTime: null,
+                        endTime: null
+                    };
+                    this.init.loadFiles(files, this.page);
+                },
+                help: "The US flights dataset.",
+            },
+            { text: "Flights (15 columns, CSV, private)",
+                action: () => {
+                    const files: FileSetDescription = {
+                        fileNamePattern: "../data/ontime_private/????_*.csv*",
+                        schemaFile: "short.schema",
+                        headerRow: true,
+                        repeat: 1,
+                        name: "Flights (15 columns, private)",
                         fileKind: "csv",
                         logFormat: null,
                         startTime: null,

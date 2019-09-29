@@ -24,6 +24,7 @@ import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.table.Schema;
 import org.hillview.table.api.ITable;
+import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 
@@ -89,7 +90,8 @@ public class SummarySketch implements ISketch<ITable, SummarySketch.TableSummary
     }
 
     @Override
-    public TableSummary create(ITable data) {
+    public TableSummary create(@Nullable ITable data) {
+        Converters.checkNull(data);
         return new TableSummary(data.getSchema(), data.getNumOfRows());
     }
 }

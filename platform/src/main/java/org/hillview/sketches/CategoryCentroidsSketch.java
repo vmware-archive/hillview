@@ -20,6 +20,7 @@ package org.hillview.sketches;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
+import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -41,12 +42,12 @@ public class CategoryCentroidsSketch implements ISketch<ITable,Centroids<String>
     }
 
     @Override
-    public Centroids<String> create(ITable data) {
+    public Centroids<String> create(@Nullable ITable data) {
         List<String> allColumns = new ArrayList<String>(this.columns.length + 1);
         allColumns.add(this.catColName);
         allColumns.addAll(Arrays.asList(this.columns));
 
-        List<IColumn> cols = data.getLoadedColumns(allColumns);
+        List<IColumn> cols = Converters.checkNull(data).getLoadedColumns(allColumns);
         List<IColumn> numericColumns =
                 new ArrayList<IColumn>(this.columns.length);
         for (int i=1; i < cols.size(); i++)

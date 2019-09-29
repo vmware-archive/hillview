@@ -87,7 +87,7 @@ public class JLProjection implements ICorrelation {
         if (this.highDim <= 0)
             throw new InvalidParameterException("Dimension must be positive.");
         double sum = 0;
-        double a[] = this.hMap.get(s);
+        double[] a = this.hMap.get(s);
         for (int i = 0; i < this.lowDim; i++)
             sum += Math.pow(a[i], 2);
         return Math.sqrt(sum/(this.lowDim * this.highDim));
@@ -101,8 +101,8 @@ public class JLProjection implements ICorrelation {
         if (this.highDim <= 0)
             throw new InvalidParameterException("Dimension must be positive.");
         double sum = 0;
-        double a[] = this.hMap.get(s);
-        double b[] = this.hMap.get(t);
+        double[] a = this.hMap.get(s);
+        double[] b = this.hMap.get(t);
         for (int i = 0; i < this.lowDim; i++)
             sum += a[i]*b[i];
         return (sum/(this.lowDim * this.highDim));
@@ -116,8 +116,8 @@ public class JLProjection implements ICorrelation {
             for (int i = 0; i < d; i++)
                 for (int j = i; j < d; j++) {
                     double sum = 0, first = 0, second = 0;
-                    double a[] = this.hMap.get(this.colNames[i]);
-                    double b[] = this.hMap.get(this.colNames[j]);
+                    double[] a = this.hMap.get(this.colNames[i]);
+                    double[] b = this.hMap.get(this.colNames[j]);
                     for(int k = 0; k < this.lowDim; k++) {
                         sum += a[k]*b[k];
                         first += Math.pow(a[k], 2);

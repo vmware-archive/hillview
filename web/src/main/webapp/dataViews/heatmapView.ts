@@ -18,6 +18,7 @@
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {HeatmapSerialization, IViewSerialization} from "../datasetView";
 import {
+    AugmentedHistogram,
     FilterDescription,
     Heatmap,
     IColumnDescription,
@@ -233,7 +234,15 @@ export class HeatmapView extends ChartView {
         }
         */
         if (this.showMissingData) {
-            this.xHistoPlot.setHistogram(heatmap.histogramMissingX, this.samplingRate, this.xAxisData, null);
+            const augHist: AugmentedHistogram = {
+                histogram: heatmap.histogramMissingX,
+                cdfBuckets: null,
+                confMins: null,
+                confMaxes: null
+            };
+
+            this.xHistoPlot.setHistogram(augHist, this.samplingRate, this.xAxisData, null,
+                this.page.dataset.isPrivate());
             this.xHistoPlot.draw();
         }
 
@@ -369,7 +378,7 @@ export class HeatmapView extends ChartView {
             return new FilterReceiver(
                 title,
                 [this.xAxisData.description, this.yAxisData.description],
-                this.schema, [0, 0], page, operation, this.dataset,
+                this.schema, [0, 0], page, operation, this.dataset, null,
                 { exact: true, chartKind: "Heatmap",
                     reusePage: false, relative: false, });
         };
@@ -385,7 +394,7 @@ export class HeatmapView extends ChartView {
             isAscending: true,
         }]);
         const page = this.dataset.newPage(new PageTitle("Table"), this.page);
-        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, page);
+        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, page, null);
         page.setDataView(table);
         table.schema = this.schema;
         const rr = table.createNextKRequest(order, null, Resolution.tableRowsOnScreen);
@@ -496,7 +505,7 @@ export class HeatmapView extends ChartView {
                 "Filtered on " + this.xAxisData.getDisplayNameString(this.schema) + " and " +
                 this.yAxisData.getDisplayNameString(this.schema)),
             [this.xAxisData.description, this.yAxisData.description],
-            this.schema, [0, 0], this.page, rr, this.dataset, {
+            this.schema, [0, 0], this.page, rr, this.dataset, [xRange, yRange], {
             exact: this.samplingRate >= 1, chartKind: "Heatmap",
             relative: false, reusePage: false
         });

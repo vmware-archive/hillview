@@ -20,13 +20,16 @@ package org.hillview.maps;
 import org.hillview.dataset.api.IMap;
 import org.hillview.storage.IFileReference;
 import org.hillview.table.api.ITable;
+import org.hillview.utils.Converters;
+
+import javax.annotation.Nullable;
 
 public class LoadFilesMapper implements IMap<IFileReference, ITable> {
     public LoadFilesMapper() {}
 
     @Override
-    public ITable apply(IFileReference data) {
-        return data.load();
+    public ITable apply(@Nullable IFileReference data) {
+        return Converters.checkNull(data).load();
     }
 
     @Override

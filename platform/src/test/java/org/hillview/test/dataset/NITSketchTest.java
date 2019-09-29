@@ -28,8 +28,8 @@ import org.hillview.test.BaseTest;
 import org.hillview.utils.IntArrayGenerator;
 import org.hillview.utils.Randomness;
 import org.hillview.utils.TestTables;
+import org.junit.Assert;
 import org.junit.Test;
-import static org.junit.Assert.assertTrue;
 
 public class NITSketchTest extends BaseTest {
     @Test
@@ -43,7 +43,7 @@ public class NITSketchTest extends BaseTest {
         final NumItemsThreshold nit = new NumItemsThreshold(13, 123456);
         final FullMembershipSet memSet = new FullMembershipSet(size);
         nit.createBits(col, memSet);
-        assertTrue(nit.exceedThreshold());
+        Assert.assertTrue(nit.exceedThreshold());
     }
 
     @Test
@@ -54,19 +54,22 @@ public class NITSketchTest extends BaseTest {
         final String colName = bigTable.getSchema().getColumnNames().get(0);
         final ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize / 10);
         final NumItemsThreshold nit = all.blockingSketch(new NIThresholdSketch(colName, 13, 12345678));
-        assertTrue(nit.exceedThreshold());
+        Assert.assertNotNull(nit);
+        Assert.assertTrue(nit.exceedThreshold());
 
         final SmallTable bigTable1 = TestTables.getIntTable(bigSize, numCols, 8000);
         final String colName1= bigTable1.getSchema().getColumnNames().get(0);
         final ParallelDataSet<ITable> all1 = TestTables.makeParallel(bigTable1, bigSize / 10);
         final NumItemsThreshold nit1 = all1.blockingSketch(new NIThresholdSketch(colName1,13,12345678));
-        assertTrue(!nit1.exceedThreshold());
+        Assert.assertNotNull(nit1);
+        Assert.assertFalse(nit1.exceedThreshold());
 
         final SmallTable bigTable2 = TestTables.getIntTable(bigSize, numCols, 150);
         final String colName2= bigTable2.getSchema().getColumnNames().get(0);
         final ParallelDataSet<ITable> all2 = TestTables.makeParallel(bigTable2, bigSize / 10);
         final NumItemsThreshold nit2 = all2.blockingSketch(new NIThresholdSketch(colName2, 7, 12345678));
-        assertTrue(nit2.exceedThreshold());
+        Assert.assertNotNull(nit2);
+        Assert.assertTrue(nit2.exceedThreshold());
     }
 
 }

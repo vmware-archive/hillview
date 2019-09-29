@@ -23,6 +23,7 @@ import org.hillview.table.SmallTable;
 import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;
 import org.hillview.utils.TestTables;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class RandomSamplingSketchTest extends BaseTest {
@@ -35,6 +36,7 @@ public class RandomSamplingSketchTest extends BaseTest {
         double samplingRate = ((double) numSamples) / table.getNumOfRows();
         RandomSamplingSketch sketch = new RandomSamplingSketch(samplingRate, seed);
         SmallTable result = dataset.blockingSketch(sketch);
+        Assert.assertNotNull(result);
         System.out.println(String.format("Result has %d rows.", result.getNumOfRows()));
         result = result.compress(result.getMembershipSet().sample(numSamples, 0));
         System.out.println(String.format("Resampled result has %d rows.", result.getNumOfRows()));

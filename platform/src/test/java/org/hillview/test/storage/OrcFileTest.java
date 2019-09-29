@@ -120,6 +120,7 @@ public class OrcFileTest extends BaseTest {
         deleteOrcFile(orcFolder, "tmp.orc");
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     public void readOrcColumnTest() throws IOException {
         String orcFile = orcFolder + orcOutFile;

@@ -20,6 +20,8 @@ package org.hillview.dataset;
 import org.hillview.dataset.api.IMap;
 import org.hillview.dataset.api.Pair;
 
+import javax.annotation.Nullable;
+
 public class ConcurrentMap<T, S1, S2> implements IMap<T, Pair<S1, S2>> {
     private final IMap<T, S1> first;
     private final IMap<T, S2> second;
@@ -30,7 +32,7 @@ public class ConcurrentMap<T, S1, S2> implements IMap<T, Pair<S1, S2>> {
     }
 
     @Override
-    public Pair<S1, S2> apply(T data) {
+    public Pair<S1, S2> apply(@Nullable T data) {
         S1 first = this.first.apply(data);
         S2 second = this.second.apply(data);
         return new Pair<S1, S2>(first, second);

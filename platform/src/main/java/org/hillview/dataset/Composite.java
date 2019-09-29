@@ -44,7 +44,7 @@ public class Composite<T, S, R> implements ISketch<T, R> {
     }
 
     @Override
-    public R create(T data) {
+    public R create(@Nullable T data) {
         S first = this.map.apply(data);
         return this.sketch.create(first);
     }

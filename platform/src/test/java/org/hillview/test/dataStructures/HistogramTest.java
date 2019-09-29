@@ -23,7 +23,6 @@ import org.hillview.sketches.Histogram;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IAppendableColumn;
-import org.hillview.table.api.IColumn;
 import org.hillview.table.columns.BaseListColumn;
 import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.table.columns.DoubleArrayColumn;
@@ -99,9 +98,6 @@ public class HistogramTest extends BaseTest {
         for (int i = 0; i < 4; i++)
             col1.appendMissing();
 
-        IColumn[] cols = new IColumn[2];
-        cols[0] = col0;
-        cols[1] = col1;
         DoubleHistogramBuckets buckDes1 = new DoubleHistogramBuckets(0, 2, 3);
         DoubleHistogramBuckets buckDes2 = new DoubleHistogramBuckets(0, 1, 2);
         Heatmap hm = new Heatmap(buckDes1, buckDes2);

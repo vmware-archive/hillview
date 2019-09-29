@@ -20,6 +20,7 @@ package org.hillview.sketches;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.table.SmallTable;
 import org.hillview.table.api.*;
+import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -66,7 +67,8 @@ public class RandomSamplingSketch implements ISketch<ITable, SmallTable> {
     }
 
     @Override
-    public SmallTable create(ITable data) {
+    public SmallTable create(@Nullable ITable data) {
+        Converters.checkNull(data);
         List<IColumn> cols;
         if (this.columnNames.length != 0)
             cols = data.getLoadedColumns(this.columnNames);

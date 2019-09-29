@@ -25,6 +25,7 @@ import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;
 import org.hillview.utils.RankInTable;
 import org.hillview.utils.TestTables;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -45,6 +46,7 @@ public class SampleQuantileSketchTest extends BaseTest {
         final SampleQuantileSketch sqSketch = new
                 SampleQuantileSketch(rso, resolution, leftSize + rightSize, 0);
         final SampleList leftQ = sqSketch.create(leftTable);
+        Assert.assertNotNull(leftQ);
         RankInTable rLT = new RankInTable(leftTable, rso);
         System.out.println(Arrays.toString(rLT.getRank(leftQ.getQuantiles(9))));
         /*
@@ -69,6 +71,7 @@ public class SampleQuantileSketchTest extends BaseTest {
         }
         ParallelDataSet<ITable> all = TestTables.makeParallel(Table, 200000);
         SampleList sl = all.blockingSketch(new SampleQuantileSketch(rso, resolution, size, 0));
+        Assert.assertNotNull(sl);
         /*
         System.out.printf("Sample of size: %d", sl.table.getNumOfRows());
         for (int i =0; i < 10; i++)

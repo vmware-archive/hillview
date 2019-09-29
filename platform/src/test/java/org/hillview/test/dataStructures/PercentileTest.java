@@ -23,6 +23,7 @@ import org.junit.Test;
 import java.util.Arrays;
 
 public class PercentileTest extends BaseTest {
+    @SuppressWarnings("MismatchedReadAndWriteOfArray")
     @Test
     public void plotPercentile() {
         final int resolution = 2000;

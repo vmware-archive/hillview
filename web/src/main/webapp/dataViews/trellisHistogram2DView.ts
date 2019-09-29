@@ -252,7 +252,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
 
     protected showTable(): void {
         const newPage = this.dataset.newPage(new PageTitle("Table"), this.page);
-        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newPage);
+        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newPage, null);
         newPage.setDataView(table);
         table.schema = this.schema;
 
@@ -451,7 +451,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
                 title,
                 [this.xAxisData.description, this.legendAxisData.description,
                     this.groupByAxisData.description],
-                this.schema, [0, 0, 0], page, operation, this.dataset, {
+                this.schema, [0, 0, 0], page, operation, this.dataset, null, {
                     chartKind: "Trellis2DHistogram", relative: this.relative,
                     reusePage: false, exact: this.samplingRate >= 1
                 });
@@ -466,7 +466,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
         const renderer = new FilterReceiver(title,
             [this.xAxisData.description, this.legendAxisData.description,
                 this.groupByAxisData.description],
-            this.schema, [0, 0, 0], this.page, rr, this.dataset, {
+            this.schema, [0, 0, 0], this.page, rr, this.dataset, [filter], {
                 chartKind: "Trellis2DHistogram", relative: this.relative,
                 reusePage: false, exact: this.samplingRate >= 1
             });

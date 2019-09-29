@@ -78,8 +78,8 @@ public class ExactFreqSketch implements ISketch<ITable, FreqKListExact> {
      * Compute frequency for each RowSnapShot over a table.
      */
     @Override
-    public FreqKListExact create(ITable data) {
-        data.getColumns(this.schema);
+    public FreqKListExact create(@Nullable ITable data) {
+        Converters.checkNull(data).getColumns(this.schema);
         Hash.Strategy<BaseRowSnapshot> hs = new Hash.Strategy<BaseRowSnapshot>() {
             @Override
             public int hashCode(BaseRowSnapshot brs) {

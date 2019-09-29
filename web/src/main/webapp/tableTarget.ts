@@ -220,11 +220,11 @@ export class TableTargetAPI extends RemoteObject {
                                      threshold: number): RpcRequest<PartialResult<TopList>> {
         if (percent < threshold) {
             return this.createStreamingRpcRequest<TopList>("heavyHittersMG",
-                {columns: columns, amount: percent,
+                { columns: columns, amount: percent,
                     totalRows: totalRows, seed: Seed.instance.get() });
         } else {
             return this.createStreamingRpcRequest<TopList>("heavyHittersSampling",
-                {columns: columns, amount: percent,
+                { columns: columns, amount: percent,
                     totalRows: totalRows, seed: Seed.instance.get() });
         }
     }
@@ -336,9 +336,9 @@ RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<Heatmap3D>("heatmap3D", info);
     }
 
-    public createHistogramRequest(info: HistogramArgs):
-        RpcRequest<PartialResult<HistogramBase>> {
-        return this.createStreamingRpcRequest<HistogramBase>(
+    public createHistogramRequest(info: HistogramArgs[]):
+    RpcRequest<PartialResult<Pair<HistogramBase, HistogramBase>>> {
+        return this.createStreamingRpcRequest<Pair<HistogramBase, HistogramBase>>(
             "histogram", info);
     }
 
@@ -478,6 +478,10 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
      */
     public updateCompleted(timeInMs: number): void {
         this.page.reportTime(timeInMs);
+    }
+
+    public isPrivate(): boolean {
+        return this.dataset.isPrivate();
     }
 }
 

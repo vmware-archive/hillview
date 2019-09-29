@@ -29,7 +29,6 @@ import org.junit.Test;
 import static junit.framework.TestCase.assertTrue;
 
 public class ExactFreqSketchTest extends BaseTest {
-    @SuppressWarnings("SuspiciousMethodCalls")
     // Idea is complaining about the hMap.get calls below,
     // but it also complains if I add explicit casts.
     private void getFrequencies(ITable table, int maxSize) {

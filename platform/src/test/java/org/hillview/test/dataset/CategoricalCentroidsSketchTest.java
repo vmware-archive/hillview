@@ -37,6 +37,7 @@ public class CategoricalCentroidsSketchTest extends BaseTest {
                 new String[] { "x", "y" }
         );
         Centroids<String> centroids = sketch.create(table);
+        Assert.assertNotNull(centroids);
         HashMap<String, double[]> centroidsMap = centroids.computeCentroids();
         Assert.assertEquals(2, centroidsMap.get("Banana")[0], Math.ulp(2));
         Assert.assertEquals(11, centroidsMap.get("Banana")[1], Math.ulp(11));
@@ -45,6 +46,7 @@ public class CategoricalCentroidsSketchTest extends BaseTest {
 
         IDataSet<ITable> dataset = TestTables.makeParallel(table, 2);
         centroids = dataset.blockingSketch(sketch);
+        Assert.assertNotNull(centroids);
         centroidsMap = centroids.computeCentroids();
         Assert.assertEquals(2, centroidsMap.get("Banana")[0], Math.ulp(2));
         Assert.assertEquals(11, centroidsMap.get("Banana")[1], Math.ulp(11));

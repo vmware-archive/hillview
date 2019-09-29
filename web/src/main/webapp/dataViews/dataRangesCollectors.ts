@@ -18,10 +18,11 @@
 import {OnCompleteReceiver} from "../rpc";
 import {
     DataRange,
+    FilterDescription,
     HistogramArgs,
     IColumnDescription,
     kindIsString,
-    RemoteObjectId
+    RemoteObjectId,
 } from "../javaBridge";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {FullPage, PageTitle} from "../ui/fullPage";
@@ -163,7 +164,7 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
     }
 
     /**
-     * Compute the parameters to use for a histogram
+     * Compute the parameters to use for ag histogram
      * @param cd           Column to compute histogram for.
      * @param range        Range of the data in the column.
      * @param bucketCount  Desired number of buckets; if 0 it will be computed.
@@ -270,13 +271,32 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
 
         switch (this.options.chartKind) {
             case "Histogram": {
+                const args: HistogramArgs[] = [];
+
                 if (ranges[0].presentCount === 0) {
                     this.page.reportError("All values are missing");
                     return;
                 }
-                const args = DataRangesCollector.computeHistogramArgs(
-                    this.cds[0], ranges[0], 0, // ignore the bucket count; we'll integrate the CDF
-                    this.options.exact, chartSize);
+
+                let maxXBucketCount = this.bucketCounts[0];
+                if (maxXBucketCount === 0) {
+                    maxXBucketCount = Math.min(
+                        Math.floor(chartSize.width / Resolution.minBarWidth),
+                        Resolution.maxBucketCount);
+                }
+
+                // The first two represent the resolution for the 2D histogram
+                const xarg = DataRangesCollector.computeHistogramArgs(
+                    this.cds[0], ranges[0], maxXBucketCount,
+                    // Relative views cannot sample
+                    this.options.exact || this.options.relative, chartSize);
+                args.push(xarg);
+
+                const cdfArg = DataRangesCollector.computeHistogramArgs(
+                    this.cds[0], ranges[0], 0,
+                    this.options.exact || this.options.relative, chartSize);
+                args.push(cdfArg);
+
                 const rr = this.originator.createHistogramRequest(args);
                 rr.chain(this.operation);
                 const axisData = new AxisData(this.cds[0], ranges[0]);
@@ -285,7 +305,7 @@ export class DataRangesCollector extends OnCompleteReceiver<DataRange[]> {
                         "Histogram of " + this.schema.displayName(this.cds[0].name).toString());
                 const renderer = new HistogramReceiver(this.title, this.page,
                     this.originator.remoteObjectId, rowCount, this.schema, this.bucketCounts[0],
-                    axisData, rr, args.samplingRate, this.options.reusePage);
+                    axisData, rr, cdfArg.samplingRate, this.options.reusePage); // TODO sampling rate?
                 rr.invoke(renderer);
                 break;
             }
@@ -474,14 +494,28 @@ export class FilterReceiver extends BaseReceiver {
                 page: FullPage,
                 operation: ICancellable<RemoteObjectId>,
                 dataset: DatasetView,
+                private descs: FilterDescription[],
                 protected options: ChartOptions) {
         super(page, operation, "Filter", dataset);
     }
 
     public run(): void {
         super.run();
-        const rr = this.remoteObject.createDataRangesRequest(this.cds, this.page, this.options.chartKind);
-        rr.invoke(new DataRangesCollector(this.remoteObject, this.page, rr, this.schema,
-            this.bucketCounts, this.cds, this.title, this.options));
+        if (!this.page.dataset.isPrivate()) {
+            const rr = this.remoteObject.createDataRangesRequest(this.cds, this.page, this.options.chartKind);
+            rr.invoke(new DataRangesCollector(this.remoteObject, this.page, rr, this.schema,
+                      this.bucketCounts, this.cds, this.title, this.options));
+        } else {
+            // We want to bypass the normal range collection since the min/max are fixed
+            const dummyRangesCollector = new DataRangesCollector(this.remoteObject, this.page, null, this.schema,
+                                     this.bucketCounts, this.cds, this.title, this.options);
+            const ranges: DataRange[] = [];
+            for (const desc of this.descs) {
+                const dr: DataRange = { presentCount: -1, missingCount: -1,
+                        min: desc.min, max: desc.max };
+                ranges.push(dr);
+            }
+            dummyRangesCollector.run(ranges);
+        }
     }
 }

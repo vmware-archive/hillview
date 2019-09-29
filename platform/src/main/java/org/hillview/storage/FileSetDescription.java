@@ -72,6 +72,22 @@ public class FileSetDescription implements Serializable, IJson {
     @Nullable
     public Double endTime;
 
+    /**
+     * If a dataset composed of files is private, we expect that a corresponding directory exists at the root server
+     * with a matching name and with such a file inside.
+     */
+    public static final String PRIVACY_METADATA_NAME = "privacy_metadata.json";
+
+    public boolean privacyMetadataExists() {
+        String basename = Utilities.getFolder(this.fileNamePattern);
+        File metadataFile = new File(basename, PRIVACY_METADATA_NAME);
+        return metadataFile.exists();
+    }
+
+    public String getBasename() {
+        return Utilities.getFolder(this.fileNamePattern);
+    }
+
     @Nullable
     private String getSchemaPath() {
         if (Utilities.isNullOrEmpty(this.schemaFile))

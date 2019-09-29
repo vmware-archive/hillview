@@ -83,7 +83,7 @@ public class ColumnTest extends BaseTest {
         assertEquals(col.sizeInRows(), size);
         assertEquals(col.getDouble(0), 0.0, 10e-3);
         for (int i = 0; i < size; i++)
-            assertEquals((double) i, col.getDouble(i), 1e-3);
+            assertEquals(i, col.getDouble(i), 1e-3);
         assertEquals(col.asDouble(0), 0.0, 1e-3);
     }
 

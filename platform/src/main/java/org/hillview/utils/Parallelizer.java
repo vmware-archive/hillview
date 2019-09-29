@@ -20,6 +20,7 @@ package org.hillview.utils;
 import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IMap;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,7 +36,7 @@ public class Parallelizer implements IMap<Empty, List<Empty>> {
     }
 
     @Override
-    public List<Empty> apply(Empty data) {
+    public List<Empty> apply(@Nullable Empty data) {
         List<Empty> result = new ArrayList<Empty>();
         for (int i = 0; i < cores; i++)
         result.add(new Empty());

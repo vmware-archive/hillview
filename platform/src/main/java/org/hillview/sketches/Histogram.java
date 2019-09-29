@@ -25,19 +25,24 @@ import org.hillview.table.api.ISampledRowIterator;
  * One dimensional histogram.
  */
 public class Histogram extends HistogramBase {
-    private final IHistogramBuckets bucketDescription;
+    public final IHistogramBuckets bucketDescription;
 
     public Histogram(final IHistogramBuckets bucketDescription) {
         this.bucketDescription = bucketDescription;
         this.buckets = new long[bucketDescription.getNumOfBuckets()];
     }
 
+    public IHistogramBuckets getBucketDescription() {
+        return this.bucketDescription;
+    }
+
     public void rescale(double sampleRate) {
         if (sampleRate >= 1)
             return;
         this.missingData = (long) ((double) this.missingData / sampleRate);
-        for (int i = 0; i < this.buckets.length; i++)
+        for (int i = 0; i < this.buckets.length; i++) {
             this.buckets[i] = (long) ((double) this.buckets[i] / sampleRate);
+        }
     }
 
     public void add(IColumn column, int currRow) {
@@ -77,8 +82,9 @@ public class Histogram extends HistogramBase {
      */
     public Histogram union(Histogram otherHistogram) {
         Histogram unionH = new Histogram(this.bucketDescription);
-        for (int i = 0; i < unionH.bucketDescription.getNumOfBuckets(); i++)
+        for (int i = 0; i < unionH.bucketDescription.getNumOfBuckets(); i++) {
             unionH.buckets[i] = this.buckets[i] + otherHistogram.buckets[i];
+        }
         unionH.missingData = this.missingData + otherHistogram.missingData;
         return unionH;
     }

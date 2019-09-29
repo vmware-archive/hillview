@@ -98,7 +98,7 @@ public class MinKSet<T> extends BucketsInfo {
             boundaries.addAll(samples);
         } else {
             for (int i = 1; i < maxBuckets; i++) {
-                int j = this.getIntegerRank(i, maxBuckets, numSamples);
+                int j = getIntegerRank(i, maxBuckets, numSamples);
                 // The samples list does not contain the minimum anymore.
                 boundaries.add(samples.get(j - 1));
             }
