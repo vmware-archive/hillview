@@ -566,7 +566,7 @@ export class HistogramDialog extends Dialog {
     }
 }
 
-export class HistogramRenderer extends Receiver<Pair<AugmentedHistogram, AugmentedHistogram>>  {
+export class HistogramReceiver extends Receiver<Pair<AugmentedHistogram, AugmentedHistogram>>  {
     private readonly view: HistogramView;
 
     constructor(protected title: PageTitle,
@@ -589,7 +589,6 @@ export class HistogramRenderer extends Receiver<Pair<AugmentedHistogram, Augment
 
     public onNext(value: PartialResult<Pair<AugmentedHistogram, AugmentedHistogram>>): void {
         super.onNext(value);
-        // TODO
         if (value == null)
             return;
         const histogram = value.data.first;

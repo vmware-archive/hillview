@@ -93,6 +93,12 @@ export interface TableSummary {
     metadata: PrivacySchema;
 }
 
+export interface PrivacySummary {
+    schema: Schema;
+    rowCount: number;
+    metadta: PrivacySchema;
+}
+
 export interface ConvertColumnInfo {
     colName: string;
     newColName: string;

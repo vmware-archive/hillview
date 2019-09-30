@@ -41,7 +41,7 @@ public class ComparisonFilterTest extends BaseTest {
         FilterMap filterMap = new FilterMap(filter);
         ITable result = filterMap.apply(table);
 
-        assert result != null;
+        Assert.assertNotNull(result);
         IColumn col = result.getLoadedColumn("Name");
         IRowIterator it = result.getMembershipSet().getIterator();
         int row = it.getNextRow();
@@ -54,7 +54,7 @@ public class ComparisonFilterTest extends BaseTest {
                 namecd, "Ed", null, "<=");
         filterMap = new FilterMap(filter);
         result = filterMap.apply(table);
-        assert result != null;
+        Assert.assertNotNull(result);
         it = result.getMembershipSet().getIterator();
         row = it.getNextRow();
         while (row != -1) {
@@ -67,7 +67,7 @@ public class ComparisonFilterTest extends BaseTest {
                 namecd, "Ed", null, ">=");
         filterMap = new FilterMap(filter);
         result = filterMap.apply(table);
-        assert result != null;
+        Assert.assertNotNull(result);
         it = result.getMembershipSet().getIterator();
         row = it.getNextRow();
         while (row != -1) {
@@ -81,7 +81,7 @@ public class ComparisonFilterTest extends BaseTest {
                 namecd, "Ed", null, "!=");
         filterMap = new FilterMap(filter);
         result = filterMap.apply(table);
-        assert result != null;
+        Assert.assertNotNull(result);
         it = result.getMembershipSet().getIterator();
         row = it.getNextRow();
         while (row != -1) {
@@ -94,7 +94,7 @@ public class ComparisonFilterTest extends BaseTest {
                 namecd, "Ed", null, "<");
         filterMap = new FilterMap(filter);
         result = filterMap.apply(table);
-        assert result != null;
+        Assert.assertNotNull(result);
         it = result.getMembershipSet().getIterator();
         row = it.getNextRow();
         while (row != -1) {
@@ -107,7 +107,7 @@ public class ComparisonFilterTest extends BaseTest {
                 namecd, "Ed", null, ">");
         filterMap = new FilterMap(filter);
         result = filterMap.apply(table);
-        assert result != null;
+        Assert.assertNotNull(result);
         it = result.getMembershipSet().getIterator();
         row = it.getNextRow();
         while (row != -1) {
@@ -129,7 +129,7 @@ public class ComparisonFilterTest extends BaseTest {
         FilterMap filterMap = new FilterMap(filter);
         ITable result = filterMap.apply(table);
 
-        assert result != null;
+        Assert.assertNotNull(result);
         IColumn col = result.getLoadedColumn("Age");
         IRowIterator it = result.getMembershipSet().getIterator();
         int row = it.getNextRow();
@@ -142,7 +142,7 @@ public class ComparisonFilterTest extends BaseTest {
                 agecd, null, 10.0, "<=");
         filterMap = new FilterMap(filter);
         result = filterMap.apply(table);
-        assert result != null;
+        Assert.assertNotNull(result);
         it = result.getMembershipSet().getIterator();
         row = it.getNextRow();
         while (row != -1) {
@@ -157,7 +157,7 @@ public class ComparisonFilterTest extends BaseTest {
                 agecd, null, 10.0, ">=");
         filterMap = new FilterMap(filter);
         result = filterMap.apply(table);
-        assert result != null;
+        Assert.assertNotNull(result);
         it = result.getMembershipSet().getIterator();
         row = it.getNextRow();
         while (row != -1) {
@@ -171,7 +171,7 @@ public class ComparisonFilterTest extends BaseTest {
                 agecd, null, 10.0, "!=");
         filterMap = new FilterMap(filter);
         result = filterMap.apply(table);
-        assert result != null;
+        Assert.assertNotNull(result);
         it = result.getMembershipSet().getIterator();
         row = it.getNextRow();
         while (row != -1) {
@@ -186,7 +186,7 @@ public class ComparisonFilterTest extends BaseTest {
                 agecd, null, 10.0, "<");
         filterMap = new FilterMap(filter);
         result = filterMap.apply(table);
-        assert result != null;
+        Assert.assertNotNull(result);
         it = result.getMembershipSet().getIterator();
         row = it.getNextRow();
         while (row != -1) {
@@ -201,7 +201,7 @@ public class ComparisonFilterTest extends BaseTest {
                 agecd, null, 10.0, ">");
         filterMap = new FilterMap(filter);
         result = filterMap.apply(table);
-        assert result != null;
+        Assert.assertNotNull(result);
         it = result.getMembershipSet().getIterator();
         row = it.getNextRow();
         while (row != -1) {

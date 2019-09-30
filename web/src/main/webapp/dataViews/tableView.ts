@@ -24,7 +24,7 @@ import {
     IColumnDescription,
     kindIsString, KVCreateColumnInfo,
     NextKList,
-    PrivacySchema,
+    PrivacySchema, PrivacySummary,
     RecordOrder,
     RemoteObjectId,
     RowData,

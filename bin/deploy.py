@@ -113,10 +113,6 @@ def prepare_aggregator(config, rh):
             config.scriptFolder +
             "/../platform/target/hillview-server-jar-with-dependencies.jar",
             config.service_folder + "/hillview", "")
-        if config.cleanup_on_install():
-            rh.run_remote_shell_command(
-                "cd " + config.service_folder + "/hillview;"
-                "rm -f hillview-agg.log hillview-agg.log.* hillview-agg.log*.lck")
     tmp = tempfile.NamedTemporaryFile(mode="w", delete=False)
     for h in rh.children:
         tmp.write(h + ":" + str(config.worker_port) + "\n")

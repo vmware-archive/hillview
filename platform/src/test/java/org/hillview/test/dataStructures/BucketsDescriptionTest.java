@@ -24,8 +24,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-
-class BucketsDescriptionTest extends BaseTest {
+public class BucketsDescriptionTest extends BaseTest {
     @Test
     public void testEqSize() {
         DoubleHistogramBuckets bdEqSize = new DoubleHistogramBuckets(0.5, 100.5, 100);
