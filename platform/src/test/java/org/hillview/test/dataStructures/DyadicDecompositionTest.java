@@ -11,13 +11,13 @@ import java.util.ArrayList;
 public class DyadicDecompositionTest extends BaseTest {
     @Test
     public void testDyadicDecomposition() {
-        long leftLeafIdx = 0;
-        long rightLeafIdx = 10;
+        int leftLeafIdx = 0;
+        int rightLeafIdx = 10;
 
-        ArrayList<Pair<Long, Long>> ret = DyadicHistogramBuckets.dyadicDecomposition(leftLeafIdx, rightLeafIdx);
+        ArrayList<Pair<Integer, Integer>> ret = DyadicHistogramBuckets.dyadicDecomposition(leftLeafIdx, rightLeafIdx);
 
         Assert.assertNotNull(ret);
-        Pair<Long, Long> e = ret.get(0);
+        Pair<Integer, Integer> e = ret.get(0);
         Assert.assertNotNull(e);
         Assert.assertNotNull(e.first);
         Assert.assertNotNull(e.second);

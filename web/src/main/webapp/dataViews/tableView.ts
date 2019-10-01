@@ -526,6 +526,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                         help: "Show the data in the selected columns.",
                     }, true);
                 }
+                
                 this.contextMenu.addItem({
                     text: "Drop",
                     action: () => this.dropColumns(),
@@ -636,8 +637,14 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                     action: () => this.privateHistSelected(),
                     help: "Plot the data in the selected columns as a private histogram. " +
                         "Applies to one numeric column only.",
-                }, selectedCount === 1);
-            }
+                }, selectedCount === 1 && this.getSelectedColNames().reduce((a, b) => a && this.isNumericColumn(b), true));
+                this.contextMenu.addItem({
+                    text: "Private Heatmap",
+                    action: () => this.heatmapSelected(),
+                    help: "Plot the data in the selected columns as a heatmap. " +
+                        "Applies to two numeric columns only.",
+                }, selectedCount === 2 && this.getSelectedColNames().reduce((a, b) => a && this.isNumericColumn(b), true));
+	    }
             this.contextMenu.show(e);
         };
     }
