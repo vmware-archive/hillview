@@ -163,6 +163,16 @@ export function formatNumber(n: number): string {
     return n.toLocaleString();
 }
 
+export function prefixSum(n: number[]): number[] {
+    let s = 0;
+    const result = [];
+    for (const c of n) {
+        s += c;
+        result.push(s);
+    }
+    return result;
+}
+
 /**
  * Convert n to a string representing a percent value
  * where we keep at most one digit after the decimal point

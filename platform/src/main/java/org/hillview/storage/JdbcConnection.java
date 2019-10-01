@@ -157,4 +157,13 @@ abstract class JdbcConnection {
      *               These are returned in columns min, max, total and nonnulls respectively.
      */
     public abstract String getQueryForNumericRange(String table, String column);
+
+    @SuppressWarnings("WeakerAccess")
+    public String getQueryForCounts(String table, String column) {
+        return "select COUNT(*) as total, COUNT(" + column + ") as nonnulls from " + table;
+    }
+
+    public String getQueryForDistinct(String table, String column) {
+        return "SELECT DISTINCT " + column + " FROM " + table + " ORDER BY " + column;
+    }
 }

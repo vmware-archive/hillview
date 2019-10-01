@@ -45,7 +45,7 @@ import {
     FindResult,
     Heatmap3D,
     StringFilterDescription,
-    ContainsArgs, KVCreateColumnInfo, BasicColStats,
+    ContainsArgs, KVCreateColumnInfo, BasicColStats, AugmentedHistogram,
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
 import {FullPage, PageTitle} from "./ui/fullPage";
@@ -320,8 +320,8 @@ RpcRequest<PartialResult<RemoteObjectId>> {
     }
 
     public createHistogram2DRequest(info: HistogramArgs[]):
-        RpcRequest<PartialResult<Pair<Heatmap, HistogramBase>>> {
-        return this.createStreamingRpcRequest<Pair<Heatmap, HistogramBase>>("histogram2D", info);
+        RpcRequest<PartialResult<Pair<Heatmap, AugmentedHistogram>>> {
+        return this.createStreamingRpcRequest<Pair<Heatmap, AugmentedHistogram>>("histogram2D", info);
     }
 
     public createHeatmapRequest(info: HistogramArgs[]): RpcRequest<PartialResult<Heatmap>> {

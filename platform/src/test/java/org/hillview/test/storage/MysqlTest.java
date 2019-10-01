@@ -17,10 +17,7 @@
 
 package org.hillview.test.storage;
 
-import org.hillview.sketches.DataRange;
-import org.hillview.sketches.DoubleHistogramBuckets;
-import org.hillview.sketches.Histogram;
-import org.hillview.sketches.StringHistogramBuckets;
+import org.hillview.sketches.*;
 import org.hillview.storage.JdbcConnectionInformation;
 import org.hillview.storage.JdbcDatabase;
 import org.hillview.table.ColumnDescription;
@@ -149,6 +146,33 @@ public class MysqlTest extends JdbcTest {
         Assert.assertEquals(158220.0, range.max, .1);
         Assert.assertEquals(2844047, range.presentCount);
         Assert.assertEquals(0, range.missingCount);
+        db.disconnect();
+    }
+
+    @Test
+    public void testMysqlStringRange() throws SQLException {
+        JdbcConnectionInformation conn = this.mySqlTestDbConnection();
+        conn.table = "employees";
+        JdbcDatabase db = new JdbcDatabase(conn);
+        try {
+            db.connect();
+        } catch (Exception e) {
+            // This will fail if a database is not deployed, but we don't want to fail the test.
+            this.ignoringException("Cannot connect to database", e);
+            return;
+        }
+        StringBucketLeftBoundaries range = db.stringBuckets(new ColumnDescription("first_name", ContentsKind.String), 10);
+        Assert.assertNotNull(range);
+        Assert.assertEquals(10, range.leftBoundaries.size());
+        Assert.assertFalse(range.allStringsKnown);
+        Assert.assertEquals(300024, range.presentCount);
+        Assert.assertEquals(0, range.missingCount);
+        String previous = range.leftBoundaries.get(0);
+        for (int i = 1; i < range.leftBoundaries.size(); i++) {
+            String current = range.leftBoundaries.get(i);
+            Assert.assertTrue(previous.compareTo(current) < 0);
+            previous = current;
+        }
         db.disconnect();
     }
 

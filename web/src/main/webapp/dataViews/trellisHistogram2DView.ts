@@ -37,7 +37,7 @@ import {SubMenu, TopMenu} from "../ui/menu";
 import {Histogram2DPlot} from "../ui/Histogram2DPlot";
 import {
     FilterReceiver,
-    DataRangesCollector,
+    DataRangesReceiver,
     TrellisShape,
     TrellisLayoutComputation
 } from "./dataRangesCollectors";
@@ -187,7 +187,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
             return;
         }
 
-        const collector = new DataRangesCollector(this,
+        const collector = new DataRangesReceiver(this,
             this.page, null, this.schema, [0, 0, 0],  // any number of buckets
             [this.xAxisData.description, this.legendAxisData.description, this.groupByAxisData.description],
             this.page.title, {
@@ -202,7 +202,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
         const cds = [this.legendAxisData.description,
             this.xAxisData.description, this.groupByAxisData.description];
         const rr = this.createDataRangesRequest(cds, this.page, "Trellis2DHistogram");
-        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [this.legendAxisData.bucketCount, this.buckets, this.shape.bucketCount],
             cds, null, {
                 reusePage: true, relative: this.relative,
@@ -274,7 +274,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
         const cds = [this.xAxisData.description,
             this.legendAxisData.description, this.groupByAxisData.description];
         const rr = this.createDataRangesRequest(cds, this.page, "Trellis2DHistogram");
-        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [this.buckets, this.legendAxisData.bucketCount, this.shape.bucketCount],
                 cds, null, {
                 reusePage: true, relative: this.relative,
@@ -299,7 +299,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
             const cds = [this.xAxisData.description,
                 this.legendAxisData.description];
             const rr = this.createDataRangesRequest(cds, this.page, "2DHistogram");
-            rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+            rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
                 [0, 0],
                 cds, null, {
                     reusePage: true, relative: this.relative,
@@ -309,7 +309,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
             const cds = [this.xAxisData.description,
                 this.legendAxisData.description, this.groupByAxisData.description];
             const rr = this.createDataRangesRequest(cds, this.page, "Trellis2DHistogram");
-            rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+            rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
                 [0, 0, groupCount],
                 cds, null, {
                     reusePage: true, relative: this.relative,
@@ -322,7 +322,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
         const cds = [this.xAxisData.description,
             this.legendAxisData.description, this.groupByAxisData.description];
         const rr = this.createDataRangesRequest(cds, this.page, "TrellisHeatmap");
-        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [this.buckets, this.legendAxisData.bucketCount, this.shape.bucketCount],
             cds, null, {
                 reusePage: false, relative: this.relative,
@@ -343,7 +343,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
     public refresh(): void {
         const cds = [this.xAxisData.description, this.legendAxisData.description, this.groupByAxisData.description];
         const rr = this.createDataRangesRequest(cds, this.page, "Trellis2DHistogram");
-        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [this.xAxisData.bucketCount, this.legendAxisData.bucketCount, this.shape.bucketCount],
             cds, null, {
             reusePage: true, relative: this.relative,

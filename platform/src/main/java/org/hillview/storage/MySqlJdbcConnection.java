@@ -61,9 +61,9 @@ public class MySqlJdbcConnection extends JdbcConnection {
         builder.append("select bucket, count(bucket) from (");
         builder.append("select (CASE ");
         for (int i = 0; i < buckets.leftBoundaries.length; i++) {
-            builder.append("WHEN ").append(cd.name).append(" >= '").append(buckets.leftBoundaries[i]).append("'");
+            builder.append("WHEN ").append(cd.name).append(" >= BINARY '").append(buckets.leftBoundaries[i]).append("'");
             if (i < buckets.leftBoundaries.length - 1)
-                builder.append(" and ").append(cd.name).append(" < '").append(buckets.leftBoundaries[i+1]).append("'");
+                builder.append(" and ").append(cd.name).append(" < BINARY '").append(buckets.leftBoundaries[i+1]).append("'");
             builder.append(" then ").append(i).append(" ");
         }
         builder.append("end) as bucket from ").append(table).append(") tmp");
@@ -75,5 +75,12 @@ public class MySqlJdbcConnection extends JdbcConnection {
     public String getQueryForNumericRange(String table, String colName) {
         return "select MIN(" + colName + ") as min, MAX(" + colName +
                 ") as max, COUNT(*) as total, COUNT(" + colName + ") as nonnulls from " + table;
+    }
+
+    @Override
+    public String getQueryForDistinct(String table, String column) {
+        // BINARY is needed to force mysql to do a case-sensitive comparison
+        return "SELECT CAST(" + column + " AS CHAR) FROM " +
+                "(SELECT DISTINCT BINARY " + column + " AS " + column + " FROM " + table + " ORDER BY BINARY " + column + ") tmp";
     }
 }

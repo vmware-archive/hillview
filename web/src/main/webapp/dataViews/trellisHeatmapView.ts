@@ -33,7 +33,7 @@ import {Resolution} from "../ui/ui";
 import {AxisData, AxisKind} from "./axisData";
 import {
     FilterReceiver,
-    DataRangesCollector,
+    DataRangesReceiver,
     TrellisShape,
     TrellisLayoutComputation
 } from "./dataRangesCollectors";
@@ -186,7 +186,7 @@ export class TrellisHeatmapView extends TrellisChartView {
             return;
         }
 
-        const collector = new DataRangesCollector(this,
+        const collector = new DataRangesReceiver(this,
             this.page, null, this.schema, [0, 0, 0],  // any number of buckets
             [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description],
             this.page.title, {
@@ -200,7 +200,7 @@ export class TrellisHeatmapView extends TrellisChartView {
     public refresh(): void {
         const cds = [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description];
         const rr = this.createDataRangesRequest(cds, this.page, "TrellisHeatmap");
-        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [this.xAxisData.bucketCount, this.yAxisData.bucketCount, this.shape.bucketCount], cds, null, {
                 reusePage: true, relative: false,
                 chartKind: "TrellisHeatmap", exact: true
@@ -221,7 +221,7 @@ export class TrellisHeatmapView extends TrellisChartView {
         if (groupCount === 1) {
             const cds = [this.xAxisData.description, this.yAxisData.description];
             const rr = this.createDataRangesRequest(cds, this.page, "Heatmap");
-            rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+            rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
                 [0], cds, null, {
                     reusePage: true, relative: false,
                     chartKind: "Heatmap", exact: this.samplingRate >= 1
@@ -229,7 +229,7 @@ export class TrellisHeatmapView extends TrellisChartView {
         } else {
             const cds = [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description];
             const rr = this.createDataRangesRequest(cds, this.page, "TrellisHeatmap");
-            rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+            rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
                 [0, 0, groupCount], cds, null, {
                     reusePage: true, relative: false,
                     chartKind: "TrellisHeatmap", exact: this.samplingRate >= 1
@@ -241,7 +241,7 @@ export class TrellisHeatmapView extends TrellisChartView {
         const cds: IColumnDescription[] = [
             this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description];
         const rr = this.createDataRangesRequest(cds, this.page, "Trellis2DHistogram");
-        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0, 0], cds, null, {
                 chartKind: "Trellis2DHistogram",
                 exact: true,
@@ -254,7 +254,7 @@ export class TrellisHeatmapView extends TrellisChartView {
         const cds: IColumnDescription[] = [
             this.yAxisData.description, this.xAxisData.description, this.groupByAxisData.description];
         const rr = this.createDataRangesRequest(cds, this.page, "TrellisHeatmap");
-        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
                 chartKind: "TrellisHeatmap",
                 exact: true,

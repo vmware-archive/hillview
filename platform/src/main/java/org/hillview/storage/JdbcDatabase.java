@@ -25,10 +25,7 @@ import org.hillview.table.Table;
 import org.hillview.table.api.*;
 import org.hillview.table.columns.BaseListColumn;
 import org.hillview.table.rows.RowSnapshot;
-import org.hillview.utils.Converters;
-import org.hillview.utils.HillviewLogger;
-import org.hillview.utils.Linq;
-import org.hillview.utils.Utilities;
+import org.hillview.utils.*;
 
 import javax.annotation.Nullable;
 import java.sql.*;
@@ -221,6 +218,47 @@ public class JdbcDatabase {
         range.presentCount = (long)row.getDouble("nonnulls");
         range.missingCount = (long)(row.getDouble("total")) - range.presentCount;
         return range;
+    }
+
+    public StringBucketLeftBoundaries stringBuckets(ColumnDescription cd, int stringsToSample) {
+        assert this.conn.info.table != null;
+        @Nullable String max = null;
+        JsonList<String> boundaries = new JsonList<String>();
+        long presentCount, missingCount;
+        int rows;
+        {
+            // Compute boundaries
+            String query = this.conn.getQueryForDistinct(this.conn.info.table, cd.name);
+            ResultSet rs = this.getQueryResult(query);
+            List<IAppendableColumn> cols = JdbcDatabase.convertResultSet(rs);
+            assert cols.size() == 1;
+            IAppendableColumn col = cols.get(0);
+            rows = col.sizeInRows();
+            if (rows <= stringsToSample) {
+                for (int i = 0; i < rows; i++) {
+                    max = col.getString(i);
+                    boundaries.add(max);
+                }
+            } else {
+                for (int i = 0; i < stringsToSample; i++)
+                    boundaries.add(col.getString(i * rows / stringsToSample));
+                max = col.getString(col.sizeInRows() - 1);
+            }
+        }
+        {
+            // Compute presentCount and missingCount
+            String query = this.conn.getQueryForCounts(this.conn.info.table, cd.name);
+            ResultSet rs = this.getQueryResult(query);
+            List<IAppendableColumn> cols = JdbcDatabase.convertResultSet(rs);
+            SmallTable table = new SmallTable(cols);
+            assert table.getNumOfRows() == 1;
+            RowSnapshot row = new RowSnapshot(table, 0);
+            presentCount = (long) row.getDouble("nonnulls");
+            missingCount = (long) (row.getDouble("total")) - presentCount;
+        }
+
+        return new StringBucketLeftBoundaries(
+                boundaries, max, rows <= stringsToSample, presentCount, missingCount);
     }
 
     /**

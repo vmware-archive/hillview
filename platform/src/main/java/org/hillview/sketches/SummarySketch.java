@@ -17,12 +17,7 @@
 
 package org.hillview.sketches;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
-import com.google.gson.JsonObject;
-import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.ISketch;
-import org.hillview.table.Schema;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 
@@ -32,51 +27,8 @@ import javax.annotation.Nullable;
  * A sketch which retrieves the Schema and size of a distributed table.
  * Two schemas can be added only if they are identical.
  * We use a null to represent a "zero" for the schemas.
- * (This Sketch is logically a ConcurrentSketch combining
- * an OptionMonoid[Schema] sketch and integer addition).
  */
-public class SummarySketch implements ISketch<ITable, SummarySketch.TableSummary> {
-    public static class TableSummary implements IJson {
-        // The sketch zero() element can be produced without looking at the data at all.
-        // So we need a way to represent a "zero" schema.  An empty schema is in principle
-        // legal for a table, so we use a null to represent a yet "unknown" schema.
-        @Nullable
-        public final Schema schema;
-        public final long   rowCount;
-
-        public TableSummary(@Nullable Schema schema, long rowCount) {
-            this.schema = schema;
-            this.rowCount = rowCount;
-        }
-
-        TableSummary() {
-            this.schema = null;
-            this.rowCount = 0;
-        }
-
-        TableSummary add(TableSummary other) {
-            @Nullable Schema s = null;
-            if (this.schema == null)
-                s = other.schema;
-            else if (other.schema == null)
-                s = this.schema;
-            else if (!this.schema.equals(other.schema))
-                throw new RuntimeException("Schemas differ");
-            return new TableSummary(s, this.rowCount + other.rowCount);
-        }
-
-        @Override
-        public JsonElement toJsonTree() {
-            JsonObject result = new JsonObject();
-            result.addProperty("rowCount", this.rowCount);
-            if (this.schema == null)
-                result.add("schema", JsonNull.INSTANCE);
-            else
-                result.add("schema", this.schema.toJsonTree());
-            return result;
-        }
-    }
-
+public class SummarySketch implements ISketch<ITable, TableSummary> {
     @Override @Nullable
     public TableSummary zero() {
         return new TableSummary();

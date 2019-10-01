@@ -20,7 +20,7 @@ package org.hillview.targets;
 import com.google.gson.JsonObject;
 import org.hillview.*;
 import org.hillview.dataStructures.AugmentedHistogram;
-import org.hillview.dataStructures.HistogramWithCDF;
+import org.hillview.dataStructures.HistogramPrefixSum;
 import org.hillview.dataset.ConcurrentSketch;
 import org.hillview.dataset.TripleSketch;
 import org.hillview.dataset.api.*;
@@ -186,21 +186,6 @@ public final class TableTarget extends RpcTarget {
         this.runCompleteSketch(this.table, sk, (e, c) -> e, request, context);
     }
 
-    static class StringBucketLeftBoundaries extends BucketsInfo {
-        JsonList<String> leftBoundaries;
-        @Nullable
-        String           maxBoundary;
-        boolean          allStringsKnown;
-
-        StringBucketLeftBoundaries(MinKSet<String> samples, int bucketCount) {
-            this.leftBoundaries = samples.getLeftBoundaries(bucketCount);
-            this.maxBoundary = samples.max;
-            this.allStringsKnown = samples.allStringsKnown(bucketCount);
-            this.presentCount = samples.presentCount;
-            this.missingCount = samples.missingCount;
-        }
-    }
-
     // The following functions return lists with subclasses of BucketsInfo: either
     // StringBucketBoundaries or DataRange.
 
@@ -265,22 +250,18 @@ public final class TableTarget extends RpcTarget {
         this.runCompleteSketch(this.table, csk, post, request, context);
     }
 
-    // compute CDF on the second histogram (at finer CDF granularity)
-    private static BiFunction<Pair<Histogram, Histogram>,
-            HillviewComputation,
-            Pair<AugmentedHistogram, HistogramWithCDF>> computeCDFFunction() {
-        return (e, c) -> new Pair<AugmentedHistogram, HistogramWithCDF>(
-                new AugmentedHistogram(e.first), new HistogramWithCDF(e.second));
-    }
-
     @HillviewRpc
     public void histogram(RpcRequest request, RpcRequestContext context) {
         HistogramArgs[] info = request.parseArgs(HistogramArgs[].class);
+        assert info.length == 2;
         HistogramSketch sk = info[0].getSketch(); // Histogram
         HistogramSketch cdf = info[1].getSketch(); // CDF: also histogram but at finer granularity
         ConcurrentSketch<ITable, Histogram, Histogram> csk =
-                new ConcurrentSketch<>(sk, cdf);
-        this.runSketchPostprocessing(this.table, csk, computeCDFFunction(), request, context);
+                new ConcurrentSketch<ITable, Histogram, Histogram>(sk, cdf);
+        this.runSketchPostprocessing(
+                this.table, csk, (e, c) -> new Pair<AugmentedHistogram, HistogramPrefixSum>(
+                        new AugmentedHistogram(e.first), new HistogramPrefixSum(e.second)),
+                request, context);
     }
 
     @HillviewRpc
@@ -308,7 +289,9 @@ public final class TableTarget extends RpcTarget {
         HistogramSketch cdf = info[2].getSketch();
         ConcurrentSketch<ITable, Heatmap, Histogram> csk =
                 new ConcurrentSketch<ITable, Heatmap, Histogram>(sk, cdf);
-        this.runSketch(this.table, csk, request, context);
+        this.runSketchPostprocessing(this.table, csk,
+                (e, c) -> new Pair<Heatmap, AugmentedHistogram>(e.first, new HistogramPrefixSum(e.second)),
+                request, context);
     }
 
     @HillviewRpc

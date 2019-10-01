@@ -274,7 +274,7 @@ public class Benchmarks {
             GenerateStringColumnMapper generator = new GenerateStringColumnMapper(distinct, elementsPerPartition);
             IDataSet<ITable> data = original.blockingMap(generator);
             SummarySketch summary = new SummarySketch();
-            SummarySketch.TableSummary s = data.blockingSketch(summary);
+            TableSummary s = data.blockingSketch(summary);
             String colName = s.schema.getColumnNames().get(0);
             ISketch<ITable, DistinctStringsSketch.DistinctStrings> sk =
                     new DistinctStringsSketch(colName);
@@ -315,7 +315,7 @@ public class Benchmarks {
             GenerateStringColumnMapper generator = new GenerateStringColumnMapper(distinct, elementsPerPartition);
             IDataSet<ITable> data = original.blockingMap(generator);
             SummarySketch summary = new SummarySketch();
-            SummarySketch.TableSummary s = data.blockingSketch(summary);
+            TableSummary s = data.blockingSketch(summary);
             System.out.println("Table has " + s.rowCount + " rows");
             String colName = s.schema.getColumnNames().get(0);
             ISketch<ITable, DistinctStringsSketch.DistinctStrings> sk =
@@ -347,7 +347,7 @@ public class Benchmarks {
             GenerateStringColumnMapper generator = new GenerateStringColumnMapper(distinct, elementsPerPartition);
             IDataSet<ITable> data = original.blockingMap(generator);
             SummarySketch summary = new SummarySketch();
-            SummarySketch.TableSummary s = data.blockingSketch(summary);
+            TableSummary s = data.blockingSketch(summary);
             String colName = s.schema.getColumnNames().get(0);
             ISketch<ITable, DistinctStringsSketch.DistinctStrings> sk =
                     new DistinctStringsSketch(colName);

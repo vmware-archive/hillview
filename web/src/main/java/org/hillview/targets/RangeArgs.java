@@ -25,7 +25,7 @@ import org.hillview.table.api.ITable;
 
 import java.util.function.BiFunction;
 
-class RangeArgs {
+public class RangeArgs {
     // if this is String, or Json we are sampling strings
     public ColumnDescription cd = new ColumnDescription();
     public long seed;       // only used if sampling strings
@@ -52,8 +52,13 @@ class RangeArgs {
     BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> getPostProcessing() {
         if (this.cd.kind.isString()) {
             int b = this.stringsToSample;
-            //noinspection unchecked
-            return (e, c) -> new TableTarget.StringBucketLeftBoundaries((MinKSet<String>)e, b);
+            return (e, c) -> {
+                //noinspection unchecked
+                MinKSet<String> mks = (MinKSet<String>)e;
+                return new StringBucketLeftBoundaries(
+                        mks.getLeftBoundaries(b), mks.max, mks.allStringsKnown(b),
+                        mks.presentCount, mks.missingCount);
+            };
         } else {
             return (e, c) -> e;
         }

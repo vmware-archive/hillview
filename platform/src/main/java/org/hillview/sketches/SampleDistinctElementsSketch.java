@@ -18,7 +18,7 @@ import java.util.Comparator;
 public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<String>> {
     private final String colName;
     private final long seed;
-    final int maxSize;
+    private final int maxSize;
 
     public SampleDistinctElementsSketch(String colName, long seed, int maxSize) {
         this.colName = colName;

@@ -19,10 +19,14 @@ package org.hillview.targets;
 
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import org.hillview.*;
+import org.hillview.dataStructures.AugmentedHistogram;
+import org.hillview.dataStructures.HistogramPrefixSum;
 import org.hillview.dataset.api.IJson;
+import org.hillview.dataset.api.Pair;
 import org.hillview.sketches.*;
 import org.hillview.storage.JdbcConnectionInformation;
 import org.hillview.storage.JdbcDatabase;
+import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.SmallTable;
 import org.hillview.table.api.ContentsKind;
@@ -36,7 +40,8 @@ import java.util.List;
 
 /**
  * This targets represents a simple database that is accessed directly using SQL from
- * the front-end.
+ * the front-end.  Note that all operations on the local database are not scalable -
+ * they are not expected to scale to billions of rows.
  */
 public final class SimpleDBTarget extends RpcTarget {
     private final JdbcConnectionInformation jdbc;
@@ -76,7 +81,7 @@ public final class SimpleDBTarget extends RpcTarget {
 
     @HillviewRpc
     public void getSummary(RpcRequest request, RpcRequestContext context) {
-        SummarySketch.TableSummary summary = new SummarySketch.TableSummary(this.schema, this.rowCount);
+        TableSummary summary = new TableSummary(this.schema, this.rowCount);
         this.returnResultDirect(request, context, summary);
     }
 
@@ -152,37 +157,39 @@ public final class SimpleDBTarget extends RpcTarget {
     public void getDataRanges1D(RpcRequest request, RpcRequestContext context) {
         RangeArgs[] info = request.parseArgs(RangeArgs[].class);
         assert info.length == 1;
-        if (info[0].cd.kind == ContentsKind.Integer || info[0].cd.kind == ContentsKind.Double) {
-            try {
-                this.database.connect();
-                DataRange range = this.database.numericDataRange(info[0].cd);
-                this.database.disconnect();
-                JsonList<BucketsInfo> result = new JsonList<BucketsInfo>(1);
-                result.add(range);
-                this.returnResultDirect(request, context, result);
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
+        try {
+            BucketsInfo range;
+            this.database.connect();
+            if (info[0].cd.kind == ContentsKind.Integer || info[0].cd.kind == ContentsKind.Double) {
+                range = this.database.numericDataRange(info[0].cd);
+            } else {
+                range = this.database.stringBuckets(info[0].cd, info[0].stringsToSample);
             }
-        } else {
-            throw new RuntimeException("Not yet implemented");
+            this.database.disconnect();
+            JsonList<BucketsInfo> result = new JsonList<BucketsInfo>(1);
+            result.add(range);
+            this.returnResultDirect(request, context, result);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 
     @HillviewRpc
     public void histogram(RpcRequest request, RpcRequestContext context) {
-        HistogramArgs info = request.parseArgs(HistogramArgs.class);
-        if (info.cd.kind == ContentsKind.Integer || info.cd.kind == ContentsKind.Double) {
-            try {
-                this.database.connect();
-                Histogram result = this.database.histogram(
-                        info.cd, (DoubleHistogramBuckets)info.getBuckets());
-                this.database.disconnect();
-                this.returnResultDirect(request, context, result);
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        } else {
-            throw new RuntimeException("String columns not yet supported");
+        HistogramArgs[] info = request.parseArgs(HistogramArgs[].class);
+        assert info.length == 2;
+        ColumnDescription cd = info[0].cd;  // both args should be on the same column
+        try {
+            this.database.connect();
+            Histogram histo = this.database.histogram(cd, info[0].getBuckets());
+            Histogram cdf = this.database.histogram(cd, info[1].getBuckets());
+            Pair<AugmentedHistogram, HistogramPrefixSum> result = new
+                    Pair<AugmentedHistogram, HistogramPrefixSum>(
+                            new AugmentedHistogram(histo), new HistogramPrefixSum(cdf));
+            this.database.disconnect();
+            this.returnResultDirect(request, context, result);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 }

@@ -48,7 +48,7 @@ import {
 } from "../util";
 import {AxisData} from "./axisData";
 import {NextKReceiver, TableView} from "./tableView";
-import {DataRangesCollector, FilterReceiver} from "./dataRangesCollectors";
+import {DataRangesReceiver, FilterReceiver} from "./dataRangesCollectors";
 import {ChartView} from "./chartView";
 
 /**
@@ -194,7 +194,7 @@ export class HeatmapView extends ChartView {
             return;
         }
 
-        const collector = new DataRangesCollector(this,
+        const collector = new DataRangesReceiver(this,
             this.page, null, this.schema, [0, 0],  // any number of buckets
             [this.xAxisData.description, this.yAxisData.description], this.page.title, {
                 chartKind: "Heatmap", exact: this.samplingRate >= 1,
@@ -299,7 +299,7 @@ export class HeatmapView extends ChartView {
     public histogram(): void {
         const cds = [this.xAxisData.description, this.yAxisData.description];
         const rr = this.createDataRangesRequest(cds, this.page, "2DHistogram");
-        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
             reusePage: false,
             relative: false,
@@ -365,7 +365,7 @@ export class HeatmapView extends ChartView {
         const cds: IColumnDescription[] = [this.xAxisData.description,
                                            this.yAxisData.description, groupBy];
         const rr = this.createDataRangesRequest(cds, this.page, "TrellisHeatmap");
-        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0, 0], cds, null, {
             reusePage: false, relative: false,
             chartKind: "TrellisHeatmap", exact: true
@@ -405,7 +405,7 @@ export class HeatmapView extends ChartView {
         const cds: IColumnDescription[] = [
             this.yAxisData.description, this.xAxisData.description];
         const rr = this.createDataRangesRequest(cds, this.page, "Heatmap");
-        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
             chartKind: "Heatmap",
             exact: true,
@@ -417,7 +417,7 @@ export class HeatmapView extends ChartView {
     public refresh(): void {
         const cds = [this.xAxisData.description, this.yAxisData.description];
         const rr = this.createDataRangesRequest(cds, this.page, "Heatmap");
-        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [this.xAxisData.bucketCount, this.yAxisData.bucketCount],
             cds, this.page.title, {
             reusePage: true,

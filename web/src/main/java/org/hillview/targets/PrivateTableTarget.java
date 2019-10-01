@@ -67,7 +67,7 @@ public class PrivateTableTarget extends RpcTarget {
         public PrivacySchema metadata;
     }
 
-    private PrivacySummary addPrivateMetadata(SummarySketch.TableSummary summary) {
+    private PrivacySummary addPrivateMetadata(TableSummary summary) {
         PrivacySummary pSumm = new PrivacySummary();
         pSumm.schema = summary.schema;
         pSumm.metadata = this.metadata;
