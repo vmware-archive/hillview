@@ -169,7 +169,7 @@ export class RemoteTableReceiver extends BaseReceiver {
 
     public run(): void {
         super.run();
-        const rr = this.remoteObject.createGetSchemaRequest();
+        const rr = this.remoteObject.createGetSummaryRequest();
         rr.chain(this.operation);
         const title = getDescription(this.data);
         const dataset = new DatasetView(this.remoteObject.remoteObjectId, title, this.data);
@@ -209,6 +209,13 @@ export class InitialObject extends RemoteObject {
 
     public loadDBTable(conn: JdbcConnectionInformation, loadMenuPage: FullPage): void {
         const rr = this.createStreamingRpcRequest<RemoteObjectId>("loadDBTable", conn);
+        const observer = new RemoteTableReceiver(loadMenuPage, rr,
+            { kind: "DB", description: conn }, "loading database table");
+        rr.invoke(observer);
+    }
+
+    public loadSimpleDBTable(conn: JdbcConnectionInformation, loadMenuPage: FullPage): void {
+        const rr = this.createStreamingRpcRequest<RemoteObjectId>("loadSimpleDBTable", conn);
         const observer = new RemoteTableReceiver(loadMenuPage, rr,
             { kind: "DB", description: conn }, "loading database table");
         rr.invoke(observer);

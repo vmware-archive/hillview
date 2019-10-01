@@ -14,9 +14,9 @@ public class FreqKListSample extends FreqKList {
     /**
      * In sampleHeavyHitters, it is used to store the number of samples taken.
      */
-    public final int sampleSize;
+    final int sampleSize;
 
-    public FreqKListSample(long totalRows, double epsilon, int sampleSize,
+    FreqKListSample(long totalRows, double epsilon, int sampleSize,
                            Object2IntOpenHashMap<RowSnapshot> hMap) {
         super(totalRows, epsilon, hMap);
         this.sampleSize = sampleSize;

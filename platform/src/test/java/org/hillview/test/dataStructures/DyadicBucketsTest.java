@@ -96,7 +96,6 @@ public class DyadicBucketsTest extends BaseTest {
     }
 
     // Test leaf assignment to buckets
-    // TODO
     @Test
     public void testLeafAssignment() {
         final double min = 0;
@@ -106,7 +105,7 @@ public class DyadicBucketsTest extends BaseTest {
         final double epsilon = 0.01;
         DyadicHistogramBuckets buckDes = new DyadicHistogramBuckets(min, max, numBuckets,
                 new PrivacyMetadata(epsilon, granularity, min, max));
-
+        // TODO
         for (int i = 0; i < buckDes.getNumOfBuckets(); i++) {
             System.out.println("> " + i);
             System.out.println(buckDes.bucketLeafIdx(i));
@@ -123,7 +122,7 @@ public class DyadicBucketsTest extends BaseTest {
         final double epsilon = 0.01;
         DyadicHistogramBuckets buckDes = new DyadicHistogramBuckets(min, max, numBuckets,
                 new PrivacyMetadata(epsilon, granularity, min, max));
-
+        // TODO
         for (int i = 0; i < buckDes.getNumOfBuckets(); i++) {
             System.out.println("> " + i);
             System.out.println(buckDes.bucketLeafIdx(i));

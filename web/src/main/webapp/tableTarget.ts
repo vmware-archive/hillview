@@ -45,7 +45,7 @@ import {
     FindResult,
     Heatmap3D,
     StringFilterDescription,
-    ContainsArgs, KVCreateColumnInfo, BasicColStats,
+    ContainsArgs, KVCreateColumnInfo, BasicColStats, AugmentedHistogram,
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
 import {FullPage, PageTitle} from "./ui/fullPage";
@@ -201,8 +201,8 @@ export class TableTargetAPI extends RemoteObject {
         return this.createStreamingRpcRequest<NextKList>("getNextK", nextKArgs);
     }
 
-    public createGetSchemaRequest(): RpcRequest<PartialResult<TableSummary>> {
-        return this.createStreamingRpcRequest<TableSummary>("getSchema", null);
+    public createGetSummaryRequest(): RpcRequest<PartialResult<TableSummary>> {
+        return this.createStreamingRpcRequest<TableSummary>("getSummary", null);
     }
 
     public createHLogLogRequest(colName: string): RpcRequest<PartialResult<HLogLog>> {
@@ -221,7 +221,7 @@ export class TableTargetAPI extends RemoteObject {
         if (percent < threshold) {
             return this.createStreamingRpcRequest<TopList>("heavyHittersMG",
                 { columns: columns, amount: percent,
-                    totalRows: totalRows, seed: Seed.instance.get() });
+                    totalRows: totalRows, seed: 0 });  // no randomness needed
         } else {
             return this.createStreamingRpcRequest<TopList>("heavyHittersSampling",
                 { columns: columns, amount: percent,
@@ -320,8 +320,8 @@ RpcRequest<PartialResult<RemoteObjectId>> {
     }
 
     public createHistogram2DRequest(info: HistogramArgs[]):
-        RpcRequest<PartialResult<Pair<Heatmap, HistogramBase>>> {
-        return this.createStreamingRpcRequest<Pair<Heatmap, HistogramBase>>("histogram2D", info);
+        RpcRequest<PartialResult<Pair<Heatmap, AugmentedHistogram>>> {
+        return this.createStreamingRpcRequest<Pair<Heatmap, AugmentedHistogram>>("histogram2D", info);
     }
 
     public createHeatmapRequest(info: HistogramArgs[]): RpcRequest<PartialResult<Heatmap>> {

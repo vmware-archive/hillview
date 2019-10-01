@@ -17,6 +17,10 @@
 
 package org.hillview.storage;
 
+import org.hillview.sketches.DoubleHistogramBuckets;
+import org.hillview.sketches.StringHistogramBuckets;
+import org.hillview.table.ColumnDescription;
+
 public class MySqlJdbcConnection extends JdbcConnection {
     MySqlJdbcConnection(JdbcConnectionInformation conn) {
         super('&', '?', conn);
@@ -38,5 +42,45 @@ public class MySqlJdbcConnection extends JdbcConnection {
         this.addBaseUrl(builder);
         this.appendParametersToUrl(builder);
         return builder.toString();
+    }
+
+    @Override
+    public String getQueryForNumericHistogram(
+            String table, ColumnDescription cd, DoubleHistogramBuckets buckets) {
+        double scale = (double)buckets.numOfBuckets / buckets.range;
+        return "select bucket, count(bucket) from (" +
+                "select CAST(FLOOR((" + cd.name + " - " + buckets.minValue + ") * " + scale + ") as UNSIGNED) as bucket" +
+               " from " + table + ") tmp" +
+               " group by bucket";
+    }
+
+    @Override
+    public String getQueryForStringHistogram(
+            String table, ColumnDescription cd, StringHistogramBuckets buckets) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("select bucket, count(bucket) from (");
+        builder.append("select (CASE ");
+        for (int i = 0; i < buckets.leftBoundaries.length; i++) {
+            builder.append("WHEN ").append(cd.name).append(" >= BINARY '").append(buckets.leftBoundaries[i]).append("'");
+            if (i < buckets.leftBoundaries.length - 1)
+                builder.append(" and ").append(cd.name).append(" < BINARY '").append(buckets.leftBoundaries[i+1]).append("'");
+            builder.append(" then ").append(i).append(" ");
+        }
+        builder.append("end) as bucket from ").append(table).append(") tmp");
+        builder.append(" group by bucket");
+        return builder.toString();
+    }
+
+    @Override
+    public String getQueryForNumericRange(String table, String colName) {
+        return "select MIN(" + colName + ") as min, MAX(" + colName +
+                ") as max, COUNT(*) as total, COUNT(" + colName + ") as nonnulls from " + table;
+    }
+
+    @Override
+    public String getQueryForDistinct(String table, String column) {
+        // BINARY is needed to force mysql to do a case-sensitive comparison
+        return "SELECT CAST(" + column + " AS CHAR) FROM " +
+                "(SELECT DISTINCT BINARY " + column + " AS " + column + " FROM " + table + " ORDER BY BINARY " + column + ") tmp";
     }
 }

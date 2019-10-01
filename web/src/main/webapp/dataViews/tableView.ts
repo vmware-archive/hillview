@@ -1365,7 +1365,7 @@ class PCATableReceiver extends BaseReceiver {
 
     public run(): void {
         super.run();
-        const rr = this.remoteObject.createGetSchemaRequest();
+        const rr = this.remoteObject.createGetSummaryRequest();
         rr.chain(this.operation);
         rr.invoke(new PCASchemaReceiver(this.page, rr, this.remoteObject, this.tv,
             this.title, this.order, this.numComponents, this.tableRowsDesired));
@@ -1436,7 +1436,7 @@ export class TableOperationCompleted extends BaseReceiver {
     public run(): void {
         super.run();
         if (this.order == null) {
-            const rr = this.remoteObject.createGetSchemaRequest();
+            const rr = this.remoteObject.createGetSummaryRequest();
             rr.chain(this.operation);
             rr.invoke(new SchemaReceiver(
                 this.page, rr, this.remoteObject, this.page.dataset, this.schema, "Schema"));

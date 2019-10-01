@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * An RPC target is an object that has methods that are invoked from the UI
@@ -305,15 +306,14 @@ public abstract class RpcTarget implements IJson {
     /**
      * Observes a sketch computation and applies a postprocessing function to intermediate results
      * before returning them.
-     *
      * @param <R> Type of data.
      */
     static class SketchResultObserverPostprocess<R, S extends IJson> extends ResultObserver<R> {
         private final BiFunction<R, HillviewComputation, S> postprocessing;
 
         SketchResultObserverPostprocess(String name, RpcTarget target, RpcRequest request,
-                                     RpcRequestContext context,
-                                     BiFunction<R, HillviewComputation, S> postprocessing) {
+                                        RpcRequestContext context,
+                                        BiFunction<R, HillviewComputation, S> postprocessing) {
             super(name, request, target, context);
             this.postprocessing = postprocessing;
         }
@@ -325,25 +325,29 @@ public abstract class RpcTarget implements IJson {
             if (session == null)
                 return;
 
-            @Nullable
-            S result = this.postprocessing.apply(pr.deltaValue, this.getComputation());
-
-            JsonObject json = new JsonObject();
-            json.addProperty("done", pr.deltaDone);
-            if (result == null)
-                json.add("data", null);
-            else
-                json.add("data", result.toJsonTree());
-
-            RpcReply reply = this.request.createReply(json);
-            this.sendReply(reply);
+            try {
+                @Nullable
+                S result = this.postprocessing.apply(pr.deltaValue, this.getComputation());
+                JsonObject json = new JsonObject();
+                json.addProperty("done", pr.deltaDone);
+                if (result == null)
+                    json.add("data", null);
+                else
+                    json.add("data", result.toJsonTree());
+                RpcReply reply = this.request.createReply(json);
+                this.sendReply(reply);
+            } catch (Exception ex) {
+                HillviewLogger.instance.error("Exception during serialization to JSON", ex);
+                super.onError(ex);
+            }
         }
     }
 
     /**
      * This observes a sketch computation, but only sends the final sketch result
-     * to the consumer.  It performs aggregation by itself.
-     * @param <R> Type of data.
+     * to the consumer.
+     * @param <R> Type of data from sketch.
+     * @param <S> Type of data sent to client.
      */
     static class CompleteSketchResultObserver<R, S extends IJson> extends ResultObserver<R> {
         /**
@@ -453,6 +457,46 @@ public abstract class RpcTarget implements IJson {
         }
     }
 
+    private void sendCompleteReply(RpcRequest request, RpcRequestContext context, JsonObject result) {
+        Session session = context.getSessionIfOpen();
+        if (session == null)
+            return;
+        result.addProperty("done", 1);
+        RpcReply reply = request.createReply(result);
+        RpcServer.sendReply(reply, Converters.checkNull(context.session));
+        HillviewLogger.instance.info("Computation completed", "for {0}", request.toString());
+        RpcServer.requestCompleted(request, Converters.checkNull(context.session));
+        request.syncCloseSession(context.session);
+    }
+
+    /**
+     * Run a computation that creates a target immediately and return the result right away.
+     * This does not involve any streaming.
+     * @param request  Request that is being replied.
+     * @param context  Computation context.
+     * @param factory  Function that allocates the resulting Target.
+     */
+    protected void createTargetDirect(RpcRequest request, RpcRequestContext context,
+                                      Function<HillviewComputation, RpcTarget> factory) {
+        HillviewComputation computation;
+        if (context.computation != null)
+            computation = context.computation;
+        else
+            computation = new HillviewComputation(null, request);
+        RpcTarget target = factory.apply(computation);
+        JsonObject json = new JsonObject();
+        json.addProperty("data", target.getId().toString());
+        this.sendCompleteReply(request, context, json);
+    }
+
+    protected <S extends IJson> void returnResultDirect(
+            RpcRequest request, RpcRequestContext context, S result) {
+        JsonObject json = new JsonObject();
+        json.addProperty("done", 1);
+        json.add("data", result.toJsonTree());
+        this.sendCompleteReply(request, context, json);
+    }
+
     @Override
     public String toString() {
         return this.getClass().getName() + "::" + this.objectId;
@@ -464,31 +508,6 @@ public abstract class RpcTarget implements IJson {
     @Override
     public JsonElement toJsonTree() {
         return IJson.gsonInstance.toJsonTree(this.objectId.toString());
-    }
-
-    /**
-     * Runs a sketch and sends the data received directly to the client.
-     * @param data    Dataset to run the sketch on.
-     * @param sketch  Sketch to run.
-     * @param request Web socket request, where replies are sent.
-     * @param context Context for the computation.
-     */
-    protected <T, R extends IJson> void
-    runSketch(IDataSet<T> data, ISketch<T, R> sketch,
-              RpcRequest request, RpcRequestContext context) {
-        // Run the sketch
-        Observable<PartialResult<R>> sketches = data.sketch(sketch);
-        // Knows how to add partial results
-        PartialResultMonoid<R> prm = new PartialResultMonoid<R>(sketch);
-        // Prefix sum of the partial results
-        Observable<PartialResult<R>> add = sketches.scan(prm::add);
-        // Send the partial results back
-        SketchResultObserver<R> robs = new SketchResultObserver<R>(
-                sketch.asString(), this, request, context);
-        Subscription sub = add
-                .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
-                .subscribe(robs);
-        this.saveSubscription(context, sub);
     }
 
     /**
@@ -511,8 +530,34 @@ public abstract class RpcTarget implements IJson {
         // Prefix sum of the partial results
         Observable<PartialResult<R>> add = sketches.scan(prm::add);
         // Send the partial results back
-        SketchResultObserverPostprocess<R, S> robs = new SketchResultObserverPostprocess<>(
+        SketchResultObserverPostprocess<R, S> robs =
+                new SketchResultObserverPostprocess<R, S>(
                 sketch.asString(), this, request, context, postprocessing);
+        Subscription sub = add
+                .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
+                .subscribe(robs);
+        this.saveSubscription(context, sub);
+    }
+
+    /**
+     * Runs a sketch and sends the data received directly to the client.
+     * @param data    Dataset to run the sketch on.
+     * @param sketch  Sketch to run.
+     * @param request Web socket request, where replies are sent.
+     * @param context Context for the computation.
+     */
+    protected <T, R extends IJson> void
+    runSketch(IDataSet<T> data, ISketch<T, R> sketch,
+              RpcRequest request, RpcRequestContext context) {
+        // Run the sketch
+        Observable<PartialResult<R>> sketches = data.sketch(sketch);
+        // Knows how to add partial results
+        PartialResultMonoid<R> prm = new PartialResultMonoid<R>(sketch);
+        // Prefix sum of the partial results
+        Observable<PartialResult<R>> add = sketches.scan(prm::add);
+        // Send the partial results back
+        SketchResultObserver<R> robs = new SketchResultObserver<R>(
+                sketch.asString(), this, request, context);
         Subscription sub = add
                 .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
                 .subscribe(robs);

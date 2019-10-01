@@ -21,7 +21,6 @@ import {
     AugmentedHistogram,
     FilterDescription,
     Heatmap,
-    HistogramBase,
     IColumnDescription,
     kindIsString,
     RecordOrder,
@@ -53,7 +52,7 @@ import {AxisData} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
 import {Dialog} from "../ui/dialog";
-import {FilterReceiver, DataRangesCollector} from "./dataRangesCollectors";
+import {FilterReceiver, DataRangesReceiver} from "./dataRangesCollectors";
 
 /**
  * This class is responsible for rendering a 2D histogram.
@@ -61,7 +60,7 @@ import {FilterReceiver, DataRangesCollector} from "./dataRangesCollectors";
  */
 export class Histogram2DView extends HistogramViewBase {
     protected yData: AxisData;
-    protected cdf: HistogramBase;
+    protected cdf: AugmentedHistogram;
     protected heatMap: Heatmap;
     protected xPoints: number;
     protected yPoints: number;
@@ -167,7 +166,7 @@ export class Histogram2DView extends HistogramViewBase {
         return null;
     }
 
-    public updateView(heatmap: Heatmap, cdf: HistogramBase, maxYAxis: number | null): void {
+    public updateView(heatmap: Heatmap, cdf: AugmentedHistogram, maxYAxis: number | null): void {
         this.createNewSurfaces();
         if (heatmap == null || heatmap.buckets.length === 0) {
             this.page.reportError("No data to display");
@@ -190,14 +189,7 @@ export class Histogram2DView extends HistogramViewBase {
         const discrete = kindIsString(this.xAxisData.description.kind) ||
             this.xAxisData.description.kind === "Integer";
 
-        const augHist: AugmentedHistogram = {
-            histogram: cdf,
-            cdfBuckets: cdf.buckets,
-            confMins: null,
-            confMaxes: null
-        };
-
-        this.cdfPlot.setData(augHist, discrete, true);
+        this.cdfPlot.setData(cdf.cdfBuckets, discrete);
         this.cdfPlot.draw();
         this.legendPlot.setData(this.yData, this.plot.getMissingDisplayed() > 0, this.schema);
         this.legendPlot.draw();
@@ -298,7 +290,7 @@ export class Histogram2DView extends HistogramViewBase {
             this.yData.description,
             groupBy];
         const rr = this.createDataRangesRequest(cds, this.page, "Trellis2DHistogram");
-        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0, 0], cds, null, {
             reusePage: false, relative: this.relative,
             chartKind: "Trellis2DHistogram", exact: this.samplingRate >= 1.0
@@ -318,7 +310,7 @@ export class Histogram2DView extends HistogramViewBase {
     public doHeatmap(): void {
         const cds = [this.xAxisData.description, this.yData.description];
         const rr = this.createDataRangesRequest(cds, this.page, "Heatmap");
-        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
             reusePage: false,
             relative: false,
@@ -379,7 +371,7 @@ export class Histogram2DView extends HistogramViewBase {
             return;
         const cds = [this.yData.description, this.xAxisData.description];
         const rr = this.createDataRangesRequest(cds, this.page, "2DHistogram");
-        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
             reusePage: true, relative: this.relative,
             chartKind: "2DHistogram", exact: this.samplingRate >= 1.0
@@ -391,7 +383,7 @@ export class Histogram2DView extends HistogramViewBase {
             return;
         const cds = [this.xAxisData.description, this.yData.description];
         const rr = this.createDataRangesRequest(cds, this.page, "2DHistogram");
-        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [this.xPoints, this.yPoints], cds, this.page.title, {
             reusePage: true,
             relative: this.relative,
@@ -403,7 +395,7 @@ export class Histogram2DView extends HistogramViewBase {
     public changeBuckets(bucketCount: number): void {
         const cds = [this.xAxisData.description, this.yData.description];
         const rr = this.createDataRangesRequest(cds, this.page, "2DHistogram");
-        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [bucketCount, this.yPoints], cds, null, {
             reusePage: true,
             relative: this.relative,
@@ -421,7 +413,7 @@ export class Histogram2DView extends HistogramViewBase {
             return;
 
         if (eventKind === "XAxis") {
-            const collector = new DataRangesCollector(this,
+            const collector = new DataRangesReceiver(this,
                 this.page, null, this.schema, [0, 0],  // any number of buckets
                 [this.xAxisData.description, this.yData.description], this.page.title, {
                     chartKind: "2DHistogram", exact: this.samplingRate >= 1,
@@ -453,7 +445,7 @@ export class Histogram2DView extends HistogramViewBase {
     public refresh(): void {
         const cds = [this.xAxisData.description, this.yData.description];
         const rr = this.createDataRangesRequest(cds, this.page, "2DHistogram");
-        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [this.xPoints, this.yPoints], cds, null, {
             reusePage: true, relative: this.relative,
             chartKind: "2DHistogram", exact: false
@@ -580,7 +572,7 @@ export class Histogram2DView extends HistogramViewBase {
  * Receives partial results and renders a 2D histogram.
  * The 2D histogram data and the Heatmap data use the same data structure.
  */
-export class Histogram2DReceiver extends Receiver<Pair<Heatmap, HistogramBase>> {
+export class Histogram2DReceiver extends Receiver<Pair<Heatmap, AugmentedHistogram>> {
     protected view: Histogram2DView;
 
     constructor(title: PageTitle,
@@ -590,7 +582,7 @@ export class Histogram2DReceiver extends Receiver<Pair<Heatmap, HistogramBase>> 
                 protected schema: SchemaClass,
                 protected axes: AxisData[],
                 protected samplingRate: number,
-                operation: RpcRequest<PartialResult<Pair<Heatmap, HistogramBase>>>,
+                operation: RpcRequest<PartialResult<Pair<Heatmap, AugmentedHistogram>>>,
                 protected options: ChartOptions) {
         super(options.reusePage ? page : page.dataset.newPage(title, page), operation, "histogram");
         this.view = new Histogram2DView(
@@ -599,7 +591,7 @@ export class Histogram2DReceiver extends Receiver<Pair<Heatmap, HistogramBase>> 
         this.view.setAxes(axes[0], axes[1], options.relative);
     }
 
-    public onNext(value: PartialResult<Pair<Heatmap, HistogramBase>>): void {
+    public onNext(value: PartialResult<Pair<Heatmap, AugmentedHistogram>>): void {
         super.onNext(value);
         if (value == null)
             return;

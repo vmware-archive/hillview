@@ -24,12 +24,12 @@ public class FreqKListExact extends FreqKList {
         return hMap;
     }
 
-    public FreqKListExact(double epsilon, List<RowSnapshot> rssList) {
+    FreqKListExact(double epsilon, List<RowSnapshot> rssList) {
         super(0, epsilon, buildHashMap(rssList));
         this.rssList = rssList;
     }
 
-    public FreqKListExact(long totalRows, double epsilon, Object2IntOpenHashMap<RowSnapshot> hMap,
+    FreqKListExact(long totalRows, double epsilon, Object2IntOpenHashMap<RowSnapshot> hMap,
                           List<RowSnapshot> rssList) {
         super(totalRows, epsilon, hMap);
         this.rssList = rssList;
@@ -48,6 +48,6 @@ public class FreqKListExact extends FreqKList {
     public NextKList getTop(Schema schema) {
         this.filter();
         this.hMap.forEach((rs, j) -> this.pList.add(new Pair<RowSnapshot, Integer>(rs, j)));
-        return sortTopK(schema);
+        return this.sortTopK(schema);
     }
 }

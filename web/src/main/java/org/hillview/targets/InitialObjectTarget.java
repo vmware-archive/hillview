@@ -33,6 +33,10 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * This is the first RpcTarget that is created on the front-end.  It receives the
+ * RPC requests to create other targets by loading them from storage.
+ */
 public class InitialObjectTarget extends RpcTarget {
     private static final String LOCALHOST = "127.0.0.1";
     private static final String ENV_VARIABLE = "WEB_CLUSTER_DESCRIPTOR";
@@ -68,6 +72,12 @@ public class InitialObjectTarget extends RpcTarget {
 
     private void initialize(final HostList description) {
         this.emptyDataset = RemoteDataSet.createCluster(description, RemoteDataSet.defaultDatasetIndex);
+    }
+
+    @HillviewRpc
+    public void loadSimpleDBTable(RpcRequest request, RpcRequestContext context) {
+        JdbcConnectionInformation conn = request.parseArgs(JdbcConnectionInformation.class);
+        this.createTargetDirect(request, context, (c) -> new SimpleDBTarget(conn, c));
     }
 
     @HillviewRpc

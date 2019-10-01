@@ -47,6 +47,12 @@
             <artifactId>grpc-core</artifactId>
             <version>1.15.0</version>
         </dependency>
+        <!-- mysql database connector - for direct database connections -->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>5.1.48</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

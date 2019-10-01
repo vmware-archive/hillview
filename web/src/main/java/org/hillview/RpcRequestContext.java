@@ -39,7 +39,7 @@ public final class RpcRequestContext {
      * If non-null this request is being executed when replaying the specified computation.
      */
     @Nullable
-    final HillviewComputation computation;
+    public final HillviewComputation computation;
 
     RpcRequestContext(Session session) {
         this.id = currentId.getAndIncrement();

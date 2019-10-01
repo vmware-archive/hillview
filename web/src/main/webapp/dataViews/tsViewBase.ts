@@ -47,7 +47,7 @@ import {
     significantDigits,
 } from "../util";
 import {HeavyHittersReceiver, HeavyHittersView} from "./heavyHittersView";
-import {DataRangesCollector} from "./dataRangesCollectors";
+import {DataRangesReceiver} from "./dataRangesCollectors";
 import {TableOperationCompleted} from "./tableView";
 import {ErrorReporter} from "../ui/errReporter";
 
@@ -236,14 +236,14 @@ export abstract class TSViewBase extends BigTableView {
     protected histogram1D(cd: IColumnDescription): void {
         const rr = this.createDataRangesRequest([cd], this.page, "Histogram");
         const exact = this.isPrivate(); // If private, do not subsample
-        rr.invoke(new DataRangesCollector(
+        rr.invoke(new DataRangesReceiver(
             this, this.page, rr, this.schema, [0], [cd], null,
             { chartKind: "Histogram", relative: false, exact: exact, reusePage: false }));
     }
 
     protected histogram2D(cds: IColumnDescription[]): void {
         const rr = this.createDataRangesRequest(cds, this.page, "2DHistogram");
-        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
             reusePage: false, relative: false,
             chartKind: "2DHistogram", exact: false
@@ -252,7 +252,7 @@ export abstract class TSViewBase extends BigTableView {
 
     protected trellis2D(cds: IColumnDescription[]): void {
         const rr = this.createDataRangesRequest(cds, this.page, "TrellisHistogram");
-        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
             reusePage: false, relative: false,
             chartKind: "TrellisHistogram", exact: false
@@ -267,7 +267,7 @@ export abstract class TSViewBase extends BigTableView {
             chartKind = "Trellis2DHistogram";
         }
         const rr = this.createDataRangesRequest(cds, this.page, chartKind);
-        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0, 0], cds, null, {
             reusePage: false, relative: false,
             chartKind: chartKind, exact: false
@@ -296,7 +296,7 @@ export abstract class TSViewBase extends BigTableView {
     protected heatmap(columns: string[]): void {
         const cds = this.schema.getDescriptions(columns);
         const rr = this.createDataRangesRequest(cds, this.page, "Heatmap");
-        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
             reusePage: false,
             relative: false,
@@ -722,7 +722,7 @@ class ComparisonFilterDialog extends Dialog {
 class CountReceiver extends OnCompleteReceiver<HLogLog> {
     constructor(page: FullPage, operation: ICancellable<HLogLog>,
                 protected colName: DisplayName) {
-        super(page, operation, "HyperLogLog");
+        super(page, operation, "Estimate distinct count");
     }
 
     public run(data: HLogLog): void {

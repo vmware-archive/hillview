@@ -18,14 +18,14 @@
 package org.hillview.test.storage;
 
 import org.hillview.storage.JdbcConnectionInformation;
-import org.hillview.table.api.IColumn;
-import org.hillview.table.api.ITable;
 import org.hillview.storage.JdbcDatabase;
+import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;
 import org.junit.Assert;
 import org.junit.Test;
 
 import javax.annotation.Nullable;
+import java.sql.SQLException;
 
 /**
  * Various tests for reading data from databases through JDBC.
@@ -35,38 +35,23 @@ import javax.annotation.Nullable;
  */
 public class JdbcTest extends BaseTest {
     @Nullable
-    private ITable getTable(JdbcConnectionInformation conn) {
+    ITable getTable(JdbcConnectionInformation conn) throws SQLException {
         Assert.assertNotNull(conn.table);
         JdbcDatabase db = new JdbcDatabase(conn);
         try {
             db.connect();
-            ITable table = db.readTable();
-            db.disconnect();
-            return table;
         } catch (Exception e) {
             // This will fail if a database is not deployed, but we don't want to fail the test.
             this.ignoringException("Cannot connect to database", e);
             return null;
         }
+        ITable table = db.readTable();
+        db.disconnect();
+        return table;
     }
 
     @Test
-    public void testMysqlConnection() {
-        JdbcConnectionInformation conn = new JdbcConnectionInformation();
-        conn.databaseKind = "mysql";
-        conn.port = 3306;
-        conn.host = "localhost";
-        conn.database = "employees";
-        conn.table = "salaries";
-        conn.user = "user";
-        conn.password = "password";
-        ITable table = this.getTable(conn);
-        if (table != null)
-            Assert.assertEquals("Table[4x2844047]", table.toString());
-    }
-
-    @Test
-    public void testImpalaConnection() {
+    public void testImpalaConnection() throws SQLException {
         JdbcConnectionInformation conn = new JdbcConnectionInformation();
         conn.databaseKind = "impala";
         conn.host = "localhost";
@@ -76,29 +61,5 @@ public class JdbcTest extends BaseTest {
         conn.user = "user";
         conn.password = "password";
         this.getTable(conn);
-    }
-
-    @Test
-    public void testMysqlLazy() {
-        JdbcConnectionInformation conn = new JdbcConnectionInformation();
-        conn.databaseKind = "mysql";
-        conn.port = 3306;
-        conn.host = "localhost";
-        conn.database = "employees";
-        conn.table = "salaries";
-        conn.user = "user";
-        conn.password = "password";
-        conn.lazyLoading = true;
-        ITable table = this.getTable(conn);
-        if (table != null) {
-            Assert.assertEquals("Table[4x2844047]", table.toString());
-            IColumn col = table.getLoadedColumn("salary");
-            int firstSalary = col.getInt(0);
-            Assert.assertEquals(60117, firstSalary);
-
-            IColumn emp = table.getLoadedColumn("emp_no");
-            int empNo = emp.getInt(0);
-            Assert.assertEquals(10001, empNo);
-        }
     }
 }

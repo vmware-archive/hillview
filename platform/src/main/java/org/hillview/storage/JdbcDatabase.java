@@ -17,14 +17,15 @@
 
 package org.hillview.storage;
 
+import org.hillview.sketches.*;
 import org.hillview.table.ColumnDescription;
+import org.hillview.table.Schema;
+import org.hillview.table.SmallTable;
 import org.hillview.table.Table;
 import org.hillview.table.api.*;
 import org.hillview.table.columns.BaseListColumn;
-import org.hillview.utils.Converters;
-import org.hillview.utils.HillviewLogger;
-import org.hillview.utils.Linq;
-import org.hillview.utils.Utilities;
+import org.hillview.table.rows.RowSnapshot;
+import org.hillview.utils.*;
 
 import javax.annotation.Nullable;
 import java.sql.*;
@@ -58,6 +59,19 @@ public class JdbcDatabase {
         }
     }
 
+    public int getRowCount() {
+        try {
+            assert this.conn.info.table != null;
+            String query = this.conn.getQueryToReadSize(this.conn.info.table);
+            ResultSet rs = this.getQueryResult(query);
+            if (!rs.next())
+                throw new RuntimeException("Could not retrieve table size for " + this.conn.info.table);
+            return rs.getInt(1);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public void disconnect() throws SQLException {
         if (this.connection == null)
             return;
@@ -69,14 +83,9 @@ public class JdbcDatabase {
         try {
             assert this.conn.info.table != null;
             if (this.conn.info.lazyLoading) {
-                String query = this.conn.getQueryToReadSize(this.conn.info.table);
-                ResultSet rs = this.getQueryResult(query);
-                if (!rs.next())
-                    throw new RuntimeException("Could not retrieve table size for " + this.conn.info.table);
-                int rowCount = rs.getInt(1);
-
+                int rowCount = this.getRowCount();
                 IColumnLoader loader = new JdbcLoader(this.conn.info);
-                ResultSetMetaData meta = this.getSchema();
+                ResultSetMetaData meta = this.getTableSchema();
                 List<ColumnDescription> cds = new ArrayList<ColumnDescription>(
                         meta.getColumnCount());
                 for (int i = 0; i < meta.getColumnCount(); i++) {
@@ -94,13 +103,162 @@ public class JdbcDatabase {
         }
     }
 
-    private ResultSetMetaData getSchema() {
+    private ResultSetMetaData getTableSchema() {
         try {
             ResultSet rs = this.getDataInTable(0);
             return rs.getMetaData();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public Schema getSchema() {
+        try {
+            Schema result = new Schema();
+            ResultSetMetaData meta = this.getTableSchema();
+            for (int i = 0; i < meta.getColumnCount(); i++) {
+                ColumnDescription cd = JdbcDatabase.getDescription(meta, i);
+                result.append(cd);
+            }
+            return result;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public int distinctCount(String columnName) {
+        try {
+            assert this.conn.info.table != null;
+            String query = this.conn.getQueryForDistinctCount(this.conn.info.table, columnName);
+            ResultSet rs = this.getQueryResult(query);
+            if (!rs.next())
+                throw new RuntimeException("Could not retrieve column for " + this.conn.info.table);
+            return rs.getInt(1);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Find rows with top frequencies in the specified columns.
+     * @param schema  Columns to look at.
+     * @param maxRows Maximum number of rows expected.
+     * @return        A SmallTable that contains the frequent elements.  The
+     *                last column has the count of each row.
+     */
+    public SmallTable topFreq(Schema schema, int maxRows) {
+        assert this.conn.info.table != null;
+        String query = this.conn.getQueryToComputeFreqValues(
+                this.conn.info.table, schema, maxRows);
+        ResultSet rs = this.getQueryResult(query);
+        List<IAppendableColumn> columns = JdbcDatabase.convertResultSet(rs);
+        return new SmallTable(columns);
+    }
+
+    /**
+     * Computes a histogram on the specified column with the specified buckets.
+     * @param cd       Description of column to histogram.
+     * @param buckets  Bucket description
+     * @return         The histogram of the data.
+     */
+    public Histogram histogram(ColumnDescription cd, IHistogramBuckets buckets) {
+        assert this.conn.info.table != null;
+        String query;
+        if (buckets instanceof DoubleHistogramBuckets) {
+            query = this.conn.getQueryForNumericHistogram(
+                    this.conn.info.table, cd, (DoubleHistogramBuckets)buckets);
+        } else {
+            query = this.conn.getQueryForStringHistogram(
+                    this.conn.info.table, cd, (StringHistogramBuckets)buckets);
+        }
+        ResultSet rs = this.getQueryResult(query);
+        List<IAppendableColumn> cols = JdbcDatabase.convertResultSet(rs);
+        assert cols.size() == 2;
+        IColumn bucketNr = cols.get(0);
+        IColumn bucketSize = cols.get(1);
+        boolean isDouble = bucketNr.getDescription().kind == ContentsKind.Double;
+        int bucketCount = buckets.getNumOfBuckets();
+        long[] data = new long[bucketCount];
+        long nonNulls = 0;
+        for (int i = 0; i < bucketNr.sizeInRows(); i++) {
+            int index = isDouble ? (int)bucketNr.getDouble(i) : bucketNr.getInt(i);
+            // In SQL the last bucket boundary is not inclusive, so sometimes
+            // we may get an extra bucket.  The semantics in Hillview is to fold
+            // that into the penultimate bucket.
+            if (index == bucketCount)
+                index = bucketCount - 1;
+            long count = (long)bucketSize.getDouble(i);
+            data[index] = count;
+            nonNulls += count;
+        }
+        long nulls = this.getRowCount() - nonNulls;
+        return new Histogram(buckets, data, nulls);
+    }
+
+    /**
+     * Computes the range of the data in a column.
+     * @param cd  Description of the column.
+     */
+    public DataRange numericDataRange(ColumnDescription cd) {
+        assert this.conn.info.table != null;
+        String query = this.conn.getQueryForNumericRange(this.conn.info.table, cd.name);
+        ResultSet rs = this.getQueryResult(query);
+        List<IAppendableColumn> cols = JdbcDatabase.convertResultSet(rs);
+        SmallTable table = new SmallTable(cols);
+        assert table.getNumOfRows() == 1;
+        RowSnapshot row = new RowSnapshot(table, 0);
+        DataRange range = new DataRange();
+        if (cd.kind == ContentsKind.Double) {
+            range.min = row.getDouble("min");
+            range.max = row.getDouble("max");
+        } else {
+            range.min = row.getInt("min");
+            range.max = row.getInt("max");
+        }
+        range.presentCount = (long)row.getDouble("nonnulls");
+        range.missingCount = (long)(row.getDouble("total")) - range.presentCount;
+        return range;
+    }
+
+    public StringBucketLeftBoundaries stringBuckets(ColumnDescription cd, int stringsToSample) {
+        assert this.conn.info.table != null;
+        @Nullable String max = null;
+        JsonList<String> boundaries = new JsonList<String>();
+        long presentCount, missingCount;
+        int rows;
+        {
+            // Compute boundaries
+            String query = this.conn.getQueryForDistinct(this.conn.info.table, cd.name);
+            ResultSet rs = this.getQueryResult(query);
+            List<IAppendableColumn> cols = JdbcDatabase.convertResultSet(rs);
+            assert cols.size() == 1;
+            IAppendableColumn col = cols.get(0);
+            rows = col.sizeInRows();
+            if (rows <= stringsToSample) {
+                for (int i = 0; i < rows; i++) {
+                    max = col.getString(i);
+                    boundaries.add(max);
+                }
+            } else {
+                for (int i = 0; i < stringsToSample; i++)
+                    boundaries.add(col.getString(i * rows / stringsToSample));
+                max = col.getString(col.sizeInRows() - 1);
+            }
+        }
+        {
+            // Compute presentCount and missingCount
+            String query = this.conn.getQueryForCounts(this.conn.info.table, cd.name);
+            ResultSet rs = this.getQueryResult(query);
+            List<IAppendableColumn> cols = JdbcDatabase.convertResultSet(rs);
+            SmallTable table = new SmallTable(cols);
+            assert table.getNumOfRows() == 1;
+            RowSnapshot row = new RowSnapshot(table, 0);
+            presentCount = (long) row.getDouble("nonnulls");
+            missingCount = (long) (row.getDouble("total")) - presentCount;
+        }
+
+        return new StringBucketLeftBoundaries(
+                boundaries, max, rows <= stringsToSample, presentCount, missingCount);
     }
 
     /**

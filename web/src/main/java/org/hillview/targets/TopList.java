@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2019 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,26 +15,26 @@
  * limitations under the License.
  */
 
-package org.hillview.sketches;
+package org.hillview.targets;
 
 import org.hillview.dataset.api.IJson;
-
-import java.io.Serializable;
+import org.hillview.sketches.NextKList;
 
 /**
- * This interface is a base class for all sketch results that are
- * used to compute the buckets of a histogram.
+ * The result of heavyHitterSketch.
  */
-public abstract class BucketsInfo implements Serializable, IJson {
-    public long presentCount;
-    public long missingCount;
+public class TopList implements IJson {
+    /**
+     * The NextKList stores the fields to display and their counts.
+     */
+    public final NextKList top;
+    /**
+     * The id of the FreqKList object which might be used for further filtering.
+     */
+    public final String heavyHittersId;
 
-    protected BucketsInfo() {
-        this.presentCount = 0;
-        this.missingCount = 0;
-    }
-
-    void addMissing() {
-        this.missingCount++;
+    public TopList(NextKList top, String heavyHittersId) {
+        this.top = top;
+        this.heavyHittersId = heavyHittersId;
     }
 }

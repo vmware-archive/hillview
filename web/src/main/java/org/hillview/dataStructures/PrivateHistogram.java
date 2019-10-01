@@ -13,7 +13,7 @@ import java.io.Serializable;
  * and for computing the CDF and confidence intervals on the buckets.
  */
 @SuppressWarnings("MismatchedReadAndWriteOfArray")
-public class PrivateHistogram extends HistogramWithCDF implements Serializable, IJson {
+public class PrivateHistogram extends HistogramPrefixSum implements IJson {
     private DyadicHistogramBuckets bucketDescription; // Just an alias for the buckets in the histogram.
 
     private double[] confMins;
@@ -22,12 +22,9 @@ public class PrivateHistogram extends HistogramWithCDF implements Serializable, 
     public PrivateHistogram(final Histogram histogram, boolean cdf) {
         super(histogram);
         this.bucketDescription = (DyadicHistogramBuckets)histogram.getBucketDescription();
-
         this.confMins  = new double[this.bucketDescription.getNumOfBuckets()];
         this.confMaxes = new double[this.bucketDescription.getNumOfBuckets()];
-
         this.addDyadicLaplaceNoise();
-
         if (cdf) {
             this.recomputeCDF();
         }

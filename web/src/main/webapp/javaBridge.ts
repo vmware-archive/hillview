@@ -227,10 +227,11 @@ export interface HistogramBase {
 // can be passed into plots that take AugmentedHistograms.
 export interface AugmentedHistogram {
     histogram: HistogramBase;
-
+    /// values of the cdf
     cdfBuckets?: number[];
-
+    /// minimum confidence value for each histogram bucket
     confMins?: number[];
+    /// maximum confidence value for each histogram bucket
     confMaxes?: number[];
 }
 

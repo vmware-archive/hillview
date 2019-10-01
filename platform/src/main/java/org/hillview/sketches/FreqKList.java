@@ -61,7 +61,7 @@ public class FreqKList implements Serializable {
      */
     private static final int maxDisplay = 200;
 
-    FreqKList(long totalRows, double epsilon, Object2IntOpenHashMap<RowSnapshot> hMap) {
+    public FreqKList(long totalRows, double epsilon, Object2IntOpenHashMap<RowSnapshot> hMap) {
         this.totalRows = totalRows;
         this.epsilon = epsilon;
         this.hMap = hMap;
@@ -88,11 +88,10 @@ public class FreqKList implements Serializable {
         return this.sortTopK(schema);
     }
 
-    public List<Pair<RowSnapshot, Integer>> getSortedList() {
+    public void sortList() {
         this.hMap.forEach((rs, j) -> this.pList.add(new Pair<RowSnapshot, Integer>(rs, j)));
         this.pList.sort((p1, p2) -> Integer.compare(Converters.checkNull(p2.second),
                 Converters.checkNull(p1.second)));
-        return this.pList;
     }
 
     /**

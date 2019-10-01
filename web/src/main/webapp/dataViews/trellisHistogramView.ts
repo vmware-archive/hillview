@@ -31,7 +31,7 @@ import {DisplayName, SchemaClass} from "../schemaClass";
 import {
     ICancellable,
     PartialResult,
-    percent,
+    percent, prefixSum,
     reorder,
     significantDigits,
 } from "../util";
@@ -40,12 +40,11 @@ import {IViewSerialization, TrellisHistogramSerialization} from "../datasetView"
 import {IDataView} from "../ui/dataview";
 import {D3SvgElement, Resolution} from "../ui/ui";
 import {HistogramPlot} from "../ui/histogramPlot";
-import {HistogramView} from "./histogramView";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {CDFPlot} from "../ui/CDFPlot";
 import {
     FilterReceiver,
-    DataRangesCollector,
+    DataRangesReceiver,
     TrellisShape,
     TrellisLayoutComputation
 } from "./dataRangesCollectors";
@@ -142,7 +141,7 @@ export class TrellisHistogramView extends TrellisChartView {
         if (groupCount === 1) {
             const cds = [this.xAxisData.description];
             const rr = this.createDataRangesRequest(cds, this.page, "Histogram");
-            rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+            rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
                 [0], cds, null, {
                     reusePage: true, relative: false,
                     chartKind: "Histogram", exact: this.samplingRate >= 1
@@ -150,7 +149,7 @@ export class TrellisHistogramView extends TrellisChartView {
         } else {
             const cds = [this.xAxisData.description, this.groupByAxisData.description];
             const rr = this.createDataRangesRequest(cds, this.page, "TrellisHistogram");
-            rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+            rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
                 [0, groupCount], cds, null, {
                     reusePage: true, relative: false,
                     chartKind: "TrellisHistogram", exact: this.samplingRate >= 1
@@ -178,7 +177,7 @@ export class TrellisHistogramView extends TrellisChartView {
     protected exactHistogram(): void {
         const cds = [this.xAxisData.description, this.groupByAxisData.description];
         const rr = this.createDataRangesRequest(cds, this.page, "TrellisHistogram");
-        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [this.bucketCount, this.shape.bucketCount], cds, null, {
                 reusePage: true, relative: false,
                 chartKind: "TrellisHistogram", exact: true
@@ -218,7 +217,7 @@ export class TrellisHistogramView extends TrellisChartView {
         const col = this.schema.findByDisplayName(colName);
         const cds = [this.xAxisData.description, col, this.groupByAxisData.description];
         const rr = this.createDataRangesRequest(cds, this.page, "Trellis2DHistogram");
-        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [this.bucketCount, 0, this.shape.bucketCount], cds, null, {
                 reusePage: true, relative: false,
                 chartKind: "Trellis2DHistogram", exact: this.samplingRate >= 1
@@ -238,7 +237,7 @@ export class TrellisHistogramView extends TrellisChartView {
     public refresh(): void {
         const cds = [this.xAxisData.description, this.groupByAxisData.description];
         const rr = this.createDataRangesRequest(cds, this.page, "TrellisHistogram");
-        rr.invoke(new DataRangesCollector(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [this.bucketCount, this.shape.bucketCount], cds, null, {
                 reusePage: true, relative: false,
                 chartKind: "TrellisHistogram", exact: this.samplingRate >= 1
@@ -273,6 +272,50 @@ export class TrellisHistogramView extends TrellisChartView {
         return view;
     }
 
+    private static coarsen(cdf: HistogramBase, bucketCount: number): HistogramBase {
+        const cdfBucketCount = cdf.buckets.length;
+        if (bucketCount === cdfBucketCount)
+            return cdf;
+
+        /*
+        TODO: switch to this implementation eventually.
+        This does not suffer from combing.
+
+        const buckets = [];
+        const groupSize = Math.ceil(cdfBucketCount / bucketCount);
+        const fullBuckets = Math.floor(cdfBucketCount / groupSize);
+        for (let i = 0; i < fullBuckets; i++) {
+            let sum = 0;
+            for (let j = 0; j < groupSize; j++) {
+                sum += value.data.buckets[i * groupSize + j];
+            }
+            buckets.push(sum);
+        }
+        if (fullBuckets < bucketCount) {
+            let sum = 0;
+            for (let j = fullBuckets * groupSize; j < cdfBucketCount; j++)
+                sum += value.data.buckets[j];
+            buckets.push(sum);
+        }
+        */
+        const buckets = [];
+        const bucketWidth = cdfBucketCount / bucketCount;
+        for (let i = 0; i < bucketCount; i++) {
+            let sum = 0;
+            const leftBoundary = i * bucketWidth - .5;
+            const rightBoundary = leftBoundary + bucketWidth;
+            for (let j = Math.ceil(leftBoundary); j < rightBoundary; j++) {
+                console.assert(j < cdf.buckets.length);
+                sum += cdf.buckets[j];
+            }
+            buckets.push(sum);
+        }
+
+        const hist: HistogramBase = { buckets: buckets,
+            missingData: cdf.missingData };
+        return hist;
+    }
+
     public updateView(data: Heatmap, bucketCount: number): void {
         this.createNewSurfaces();
         if (bucketCount !== 0)
@@ -292,19 +335,12 @@ export class TrellisHistogramView extends TrellisChartView {
                 missingData: data.missingData,
             };
 
-            const augHisto: AugmentedHistogram = {
-                histogram: histo,
-                cdfBuckets: histo.buckets,
-                confMins: null,
-                confMaxes: null
-            };
-
             const cdfp = this.cdfs[i];
-            cdfp.setData(augHisto, discrete, true);
+            cdfp.setData(prefixSum(histo.buckets), discrete);
 
-            const coarse = HistogramView.coarsen(augHisto, this.bucketCount);
-            max = Math.max(max, Math.max(...coarse.histogram.buckets));
-            coarsened.push(coarse.histogram);
+            const coarse = TrellisHistogramView.coarsen(histo, this.bucketCount);
+            max = Math.max(max, Math.max(...coarse.buckets));
+            coarsened.push(coarse);
         }
 
         for (let i = 0; i < coarsened.length; i++) {

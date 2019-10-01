@@ -31,13 +31,12 @@ public class StringHistogramBuckets implements IHistogramBuckets {
     /**
      * These are the *left endpoints* of the buckets.
      */
-    private final String[] leftBoundaries;
+    public final String[] leftBoundaries;
 
     public StringHistogramBuckets(final String[] leftBoundaries) {
         if (leftBoundaries.length == 0)
             throw new IllegalArgumentException("Boundaries of buckets can't be empty");
-        if (!isSorted(leftBoundaries))
-            throw new IllegalArgumentException("Boundaries of buckets have to be sorted");
+        checkSorted(leftBoundaries);
         this.leftBoundaries = leftBoundaries;
         this.numOfBuckets = leftBoundaries.length;
         this.minValue = this.leftBoundaries[0];
@@ -47,11 +46,11 @@ public class StringHistogramBuckets implements IHistogramBuckets {
     /**
      * Checks that an array is strongly sorted.
      */
-    private static boolean isSorted(final String[] a) {
+    private static void checkSorted(final String[] a) {
         for (int i = 0; i < (a.length - 1); i++)
             if (a[i].compareTo(a[i + 1]) >= 0)
-                return false;
-        return true;
+                throw new IllegalArgumentException(a[i] + " and " + a[i+1] + " (index " + i +
+                        ") are not in sorted order.");
     }
 
     public int indexOf(String item) {

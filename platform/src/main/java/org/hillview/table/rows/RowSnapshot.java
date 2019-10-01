@@ -66,6 +66,22 @@ public class RowSnapshot extends BaseRowSnapshot
     }
 
     /**
+     * Create a row snapshot by projecting another one onto a specified schema.
+     * @param other    Row snapshot to project.
+     * @param schema   Schema to keep.
+     */
+    public RowSnapshot(RowSnapshot other, Schema schema) {
+        this.schema = schema;
+        for (ColumnDescription cd : schema.getColumnDescriptions()) {
+            if (cd.kind == ContentsKind.Date || cd.kind == ContentsKind.Duration)
+                this.fields.put(cd.name, other.getDouble(cd.name));
+            else
+                this.fields.put(cd.name, other.getObject(cd.name));
+        }
+        this.cachedHashcode = this.computeHashCode(this.schema);
+    }
+
+    /**
      * Creates a row snapshot taking the data from the specified table.
      * @param data     Table storing the data.
      * @param rowIndex Index of the row containing the data.

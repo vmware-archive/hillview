@@ -20,7 +20,7 @@ package org.hillview.targets;
 import com.google.gson.JsonObject;
 import org.hillview.*;
 import org.hillview.dataStructures.AugmentedHistogram;
-import org.hillview.dataStructures.HistogramWithCDF;
+import org.hillview.dataStructures.HistogramPrefixSum;
 import org.hillview.dataset.ConcurrentSketch;
 import org.hillview.dataset.TripleSketch;
 import org.hillview.dataset.api.*;
@@ -55,7 +55,7 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    public void getSchema(RpcRequest request, RpcRequestContext context) {
+    public void getSummary(RpcRequest request, RpcRequestContext context) {
         SummarySketch ss = new SummarySketch();
         this.runSketch(this.table, ss, request, context);
     }
@@ -186,56 +186,6 @@ public final class TableTarget extends RpcTarget {
         this.runCompleteSketch(this.table, sk, (e, c) -> e, request, context);
     }
 
-    static class StringBucketLeftBoundaries extends BucketsInfo {
-        JsonList<String> leftBoundaries;
-        @Nullable
-        String           maxBoundary;
-        boolean          allStringsKnown;
-
-        StringBucketLeftBoundaries(MinKSet<String> samples, int bucketCount) {
-            this.leftBoundaries = samples.getLeftBoundaries(bucketCount);
-            this.maxBoundary = samples.max;
-            this.allStringsKnown = samples.allStringsKnown(bucketCount);
-            this.presentCount = samples.presentCount;
-            this.missingCount = samples.missingCount;
-        }
-    }
-
-    static class RangeArgs {
-        // if this is String, or Json we are sampling strings
-        ColumnDescription cd = new ColumnDescription();
-        long seed;       // only used if sampling strings
-        int stringsToSample;  // only used if sampling strings
-
-        // This class has a bunch of unchecked casts, but the Java
-        // type system is not good enough to express these operations
-        // in a type-safe manner.
-        ISketch<ITable, BucketsInfo> getSketch() {
-            if (this.cd.kind.isString()) {
-                int samples = Math.min(this.stringsToSample * this.stringsToSample, 100000);
-                ISketch<ITable, MinKSet<String>> s = new SampleDistinctElementsSketch(
-                        // We sample stringsToSample squared
-                        this.cd.name, this.seed, samples);
-                //noinspection unchecked
-                return (ISketch<ITable, BucketsInfo>)(Object)s;
-            } else {
-                ISketch<ITable, DataRange> s = new DoubleDataRangeSketch(this.cd.name);
-                //noinspection unchecked
-                return (ISketch<ITable, BucketsInfo>)(Object)s;
-            }
-        }
-
-        BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> getPostProcessing() {
-            if (this.cd.kind.isString()) {
-                int b = this.stringsToSample;
-                //noinspection unchecked
-                return (e, c) -> new StringBucketLeftBoundaries((MinKSet<String>)e, b);
-            } else {
-                return (e, c) -> e;
-            }
-        }
-    }
-
     // The following functions return lists with subclasses of BucketsInfo: either
     // StringBucketBoundaries or DataRange.
 
@@ -300,50 +250,18 @@ public final class TableTarget extends RpcTarget {
         this.runCompleteSketch(this.table, csk, post, request, context);
     }
 
-    static class HistogramArgs {
-        ColumnDescription cd = new ColumnDescription();
-        double samplingRate;
-        long seed;
-
-        // Only used when doing string histograms
-        @Nullable
-        String[] leftBoundaries;
-        // Only used when doing double histograms
-        double min;
-        double max;
-        int bucketCount;
-
-        IHistogramBuckets getBuckets() {
-            if (cd.kind.isString()) {
-                assert this.leftBoundaries != null;
-                return new StringHistogramBuckets(this.leftBoundaries);
-            } else {
-                return new DoubleHistogramBuckets(this.min, this.max, this.bucketCount);
-            }
-        }
-
-        HistogramSketch getSketch() {
-            IHistogramBuckets buckets = this.getBuckets();
-            return new HistogramSketch(buckets, this.cd.name, this.samplingRate, this.seed);
-        }
-    }
-
-    // compute CDF on the second histogram (at finer CDF granularity)
-    private static BiFunction<Pair<Histogram, Histogram>,
-            HillviewComputation,
-            Pair<AugmentedHistogram, HistogramWithCDF>> computeCDFFunction() {
-        return (e, c) -> new Pair<AugmentedHistogram, HistogramWithCDF>(
-                new AugmentedHistogram(e.first), new HistogramWithCDF(e.second));
-    }
-
     @HillviewRpc
     public void histogram(RpcRequest request, RpcRequestContext context) {
         HistogramArgs[] info = request.parseArgs(HistogramArgs[].class);
+        assert info.length == 2;
         HistogramSketch sk = info[0].getSketch(); // Histogram
         HistogramSketch cdf = info[1].getSketch(); // CDF: also histogram but at finer granularity
         ConcurrentSketch<ITable, Histogram, Histogram> csk =
-                new ConcurrentSketch<>(sk, cdf);
-        this.runSketchPostprocessing(this.table, csk, computeCDFFunction(), request, context);
+                new ConcurrentSketch<ITable, Histogram, Histogram>(sk, cdf);
+        this.runSketchPostprocessing(
+                this.table, csk, (e, c) -> new Pair<AugmentedHistogram, HistogramPrefixSum>(
+                        new AugmentedHistogram(e.first), new HistogramPrefixSum(e.second)),
+                request, context);
     }
 
     @HillviewRpc
@@ -371,7 +289,9 @@ public final class TableTarget extends RpcTarget {
         HistogramSketch cdf = info[2].getSketch();
         ConcurrentSketch<ITable, Heatmap, Histogram> csk =
                 new ConcurrentSketch<ITable, Heatmap, Histogram>(sk, cdf);
-        this.runSketch(this.table, csk, request, context);
+        this.runSketchPostprocessing(this.table, csk,
+                (e, c) -> new Pair<Heatmap, AugmentedHistogram>(e.first, new HistogramPrefixSum(e.second)),
+                request, context);
     }
 
     @HillviewRpc
@@ -605,21 +525,6 @@ public final class TableTarget extends RpcTarget {
     }
 
     /**
-     * This serializes the result of heavyHitterSketch for the front end.
-     */
-    @SuppressWarnings("NullableProblems")
-    static class TopList implements IJson {
-        /**
-         * The NextKList stores the fields to display and their counts.
-         */
-        NextKList top;
-        /**
-         * The id of the FreqKList object which might be used for further filtering.
-         */
-        String heavyHittersId;
-    }
-
-    /**
      * Post-processing method applied to the result of a heavy hitters sketch before displaying the results. It will
      * discard elements that are too low in (estimated) frequency.
      * @param fkList The list of candidate heavy hitters
@@ -627,10 +532,8 @@ public final class TableTarget extends RpcTarget {
      * @return A TopList
      */
     private static TopList getTopList(FreqKList fkList, Schema schema, HillviewComputation computation) {
-        TopList tl = new TopList();
-        tl.top = fkList.getTop(schema);
-        tl.heavyHittersId = new HeavyHittersTarget(fkList, computation).getId().toString();
-        return tl;
+        return new TopList(fkList.getTop(schema),
+                new HeavyHittersTarget(fkList, computation).getId().toString());
     }
 
     /**
@@ -641,11 +544,10 @@ public final class TableTarget extends RpcTarget {
      * @return A TopList
      */
     private static TopList getSortedList(FreqKList fkList, Schema schema, HillviewComputation computation) {
-        TopList tl = new TopList();
-        fkList.getSortedList();
-        tl.top = fkList.sortTopK(schema);
-        tl.heavyHittersId = new HeavyHittersTarget(fkList, computation).getId().toString();
-        return tl;
+        fkList.sortList();
+        return new TopList(
+                fkList.sortTopK(schema),
+                new HeavyHittersTarget(fkList, computation).getId().toString());
     }
 
     /**
