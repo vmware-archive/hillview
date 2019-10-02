@@ -49,11 +49,10 @@ export class LoadMenu extends RemoteObject implements IDataView {
 
         this.top = document.createElement("div");
         this.testDatasetsMenu = new SubMenu([
-            /*
             { text: "Gaussian (1 column, private, CSV)", // TODO: to delete
                 action: () => {
                     const files: FileSetDescription = {
-                        fileNamePattern: "../data/synthetic/????*.csv*",
+                        fileNamePattern: "data/synthetic/*.csv*",
                         schemaFile: "gaussian.schema",
                         headerRow: true,
                         repeat: 1,
@@ -66,7 +65,7 @@ export class LoadMenu extends RemoteObject implements IDataView {
                     this.init.loadFiles(files, this.page);
                 },
                 help: "Synthetic Gaussian data.",
-            }, */
+            },
             { text: "Flights (15 columns, CSV)",
                 action: () => {
                     const files: FileSetDescription = {

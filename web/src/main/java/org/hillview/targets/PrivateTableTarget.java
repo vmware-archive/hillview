@@ -1,6 +1,5 @@
 package org.hillview.targets;
 
-import com.google.gson.JsonObject;
 import org.hillview.*;
 import org.hillview.dataStructures.PrivateHeatmap;
 import org.hillview.dataset.ConcurrentSketch;
@@ -14,36 +13,15 @@ import org.hillview.table.PrivacySchema;
 import org.hillview.table.Schema;
 import org.hillview.table.api.ITable;
 import org.hillview.table.rows.PrivacyMetadata;
-import org.hillview.utils.Converters;
 import org.hillview.utils.JsonList;
 
 import javax.annotation.Nullable;
-import javax.websocket.Session;
 import java.util.function.BiFunction;
 
 /**
  * This class represents a remote dataset that can only be accessed using differentially-private operations.
  */
 public class PrivateTableTarget extends RpcTarget {
-    /* Used to send a reply immediately without running a sketch. */
-    private static <S extends IJson> void constructAndSendReply(
-            @Nullable S result, RpcRequest request, RpcRequestContext context) {
-        JsonObject json = new JsonObject();
-        json.addProperty("done", 1.0);
-
-        Session session = context.getSessionIfOpen();
-        if (session == null)
-            return;
-        if (result == null)
-            json.add("data", null);
-        else
-            json.add("data", result.toJsonTree());
-        RpcReply reply = request.createReply(json);
-        RpcServer.sendReply(reply, Converters.checkNull(session));
-        RpcServer.requestCompleted(request, Converters.checkNull(session));
-        request.syncCloseSession(session);
-    }
-
     private final IDataSet<ITable> table;
 
     /* Global parameters for differentially-private histograms using the binary mechanism. */
@@ -110,6 +88,10 @@ public class PrivateTableTarget extends RpcTarget {
             DyadicHistogramBuckets buckets = this.getBuckets();
             return new HistogramSketch(buckets, this.cd.name, this.samplingRate, this.seed);
         }
+
+        PrivacyMetadata getMetadata(PrivacySchema metadata) {
+            return metadata.get(cd.name);
+        }
     }
 
     // Returns both the histogram and the precomputed CDF of the data.
@@ -126,11 +108,11 @@ public class PrivateTableTarget extends RpcTarget {
         HistogramSketch sk = info[0].getSketch(); // Histogram
         HistogramSketch cdf = info[1].getSketch(); // CDF
         ConcurrentSketch<ITable, Histogram, Histogram> csk =
-                new ConcurrentSketch<>(sk, cdf);
+                new ConcurrentSketch<ITable, Histogram, Histogram>(sk, cdf);
         this.runCompleteSketch(this.table, csk,
-                (e, c) -> new Pair(new PrivateHistogram(e.first, epsilon, false),
-                        new PrivateHistogram(e.second, epsilon, true)),
-                request, context);
+                (e, c) -> new Pair<PrivateHistogram, PrivateHistogram>(
+                        new PrivateHistogram(e.first, epsilon, false),
+                        new PrivateHistogram(e.second, epsilon, true)), request, context);
     }
 
     static class PrivateRangeArgs {
@@ -172,7 +154,9 @@ public class PrivateTableTarget extends RpcTarget {
 
         JsonList<DataRange> rangeList = new JsonList<>();
         rangeList.add(retRange);
-        constructAndSendReply(rangeList, request, context);
+        PrecomputedSketch<ITable, JsonList<DataRange>> sk =
+                new PrecomputedSketch<ITable, JsonList<DataRange>>(rangeList, null);
+        this.runCompleteSketch(this.table, sk, (e, c) -> e, request, context);
     }
 
     // This is just a dummy function in order to parallel the TableTargetAPI.
@@ -180,7 +164,7 @@ public class PrivateTableTarget extends RpcTarget {
     // on the underlying table; this will be done in the histogram request.
     @HillviewRpc
     public void filterRange(RpcRequest request, RpcRequestContext context) {
-        constructAndSendReply(this, request, context);
+        this.createTargetDirect(request, context, (c) -> this);
     }
 
     // For numeric-valued private histograms, this function returns the global min/max
@@ -218,8 +202,8 @@ public class PrivateTableTarget extends RpcTarget {
 
     // compute CDF on the second histogram (at finer CDF granularity)
     static BiFunction<Heatmap,
-            HillviewComputation,
-            Heatmap> makePrivateHeatmapFunction(double epsilon) {
+                HillviewComputation,
+                Heatmap> makePrivateHeatmapFunction(double epsilon) {
         return (e, c) -> new PrivateHeatmap(e, epsilon).heatmap;
     }
 

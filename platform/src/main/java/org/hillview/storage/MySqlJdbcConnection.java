@@ -20,6 +20,9 @@ package org.hillview.storage;
 import org.hillview.sketches.DoubleHistogramBuckets;
 import org.hillview.sketches.StringHistogramBuckets;
 import org.hillview.table.ColumnDescription;
+import org.hillview.utils.Converters;
+
+import java.time.Instant;
 
 public class MySqlJdbcConnection extends JdbcConnection {
     MySqlJdbcConnection(JdbcConnectionInformation conn) {
@@ -50,25 +53,30 @@ public class MySqlJdbcConnection extends JdbcConnection {
         double scale = (double)buckets.numOfBuckets / buckets.range;
         return "select bucket, count(bucket) from (" +
                 "select CAST(FLOOR((" + cd.name + " - " + buckets.minValue + ") * " + scale + ") as UNSIGNED) as bucket" +
-               " from " + table + ") tmp" +
-               " group by bucket";
+                " from " + table +
+                " where " + cd.name + " between " + buckets.minValue + " and " + buckets.maxValue +
+                ") tmp group by bucket";
+    }
+
+    private static String searchInterval(int left, int right, String[] boundaries, String column) {
+        if (left == right - 1)
+            return Integer.toString(left);
+        int mid = left + (right - left) / 2;
+        String result = "if(" + column + " < BINARY '" + boundaries[mid] + "', ";
+        String recLeft = searchInterval(left, mid, boundaries, column);
+        String recRight = searchInterval(mid, right, boundaries, column);
+        return result + recLeft + ", " + recRight + ")";
     }
 
     @Override
     public String getQueryForStringHistogram(
             String table, ColumnDescription cd, StringHistogramBuckets buckets) {
-        StringBuilder builder = new StringBuilder();
-        builder.append("select bucket, count(bucket) from (");
-        builder.append("select (CASE ");
-        for (int i = 0; i < buckets.leftBoundaries.length; i++) {
-            builder.append("WHEN ").append(cd.name).append(" >= BINARY '").append(buckets.leftBoundaries[i]).append("'");
-            if (i < buckets.leftBoundaries.length - 1)
-                builder.append(" and ").append(cd.name).append(" < BINARY '").append(buckets.leftBoundaries[i+1]).append("'");
-            builder.append(" then ").append(i).append(" ");
-        }
-        builder.append("end) as bucket from ").append(table).append(") tmp");
-        builder.append(" group by bucket");
-        return builder.toString();
+        // We synthesize a binary search three
+        return "select bucket, count(bucket) from (" +
+                "select (" +
+                searchInterval(0, buckets.getNumOfBuckets(), buckets.leftBoundaries, cd.name) +
+                ") as bucket from " + table + ") tmp" +
+                " group by bucket";
     }
 
     @Override
@@ -82,5 +90,20 @@ public class MySqlJdbcConnection extends JdbcConnection {
         // BINARY is needed to force mysql to do a case-sensitive comparison
         return "SELECT CAST(" + column + " AS CHAR) FROM " +
                 "(SELECT DISTINCT BINARY " + column + " AS " + column + " FROM " + table + " ORDER BY BINARY " + column + ") tmp";
+    }
+
+    public String getQueryForDateHistogram(String table, ColumnDescription cd, DoubleHistogramBuckets buckets) {
+        Instant minDate = Converters.toDate(buckets.minValue);
+        Instant maxDate = Converters.toDate(buckets.maxValue);
+        String minString = minDate.toString();
+        String maxString = maxDate.toString();
+        double min = minDate.toEpochMilli() * 1000.0;
+        double max = maxDate.toEpochMilli() * 1000.0;
+        double scale = (double)buckets.numOfBuckets / (max - min);
+        return "select bucket, count(bucket) from (" +
+                "select CAST(FLOOR(TIMESTAMPDIFF(MICROSECOND, '" + minDate + "', " + cd.name + ") * " + scale + ") as UNSIGNED) as bucket from " + table +
+                " where " + cd.name + " between '" + minDate + "' and '" + maxDate + "'" +
+                ") tmp" +
+                " group by bucket";
     }
 }

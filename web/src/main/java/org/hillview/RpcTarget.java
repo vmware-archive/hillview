@@ -457,18 +457,6 @@ public abstract class RpcTarget implements IJson {
         }
     }
 
-    private void sendCompleteReply(RpcRequest request, RpcRequestContext context, JsonObject result) {
-        Session session = context.getSessionIfOpen();
-        if (session == null)
-            return;
-        result.addProperty("done", 1);
-        RpcReply reply = request.createReply(result);
-        RpcServer.sendReply(reply, Converters.checkNull(context.session));
-        HillviewLogger.instance.info("Computation completed", "for {0}", request.toString());
-        RpcServer.requestCompleted(request, Converters.checkNull(context.session));
-        request.syncCloseSession(context.session);
-    }
-
     /**
      * Run a computation that creates a target immediately and return the result right away.
      * This does not involve any streaming.
@@ -486,15 +474,15 @@ public abstract class RpcTarget implements IJson {
         RpcTarget target = factory.apply(computation);
         JsonObject json = new JsonObject();
         json.addProperty("data", target.getId().toString());
-        this.sendCompleteReply(request, context, json);
-    }
-
-    protected <S extends IJson> void returnResultDirect(
-            RpcRequest request, RpcRequestContext context, S result) {
-        JsonObject json = new JsonObject();
+        Session session = context.getSessionIfOpen();
+        if (session == null)
+            return;
         json.addProperty("done", 1);
-        json.add("data", result.toJsonTree());
-        this.sendCompleteReply(request, context, json);
+        RpcReply reply = request.createReply(json);
+        RpcServer.sendReply(reply, Converters.checkNull(context.session));
+        HillviewLogger.instance.info("Computation completed", "for {0}", request.toString());
+        RpcServer.requestCompleted(request, Converters.checkNull(context.session));
+        request.syncCloseSession(context.session);
     }
 
     @Override

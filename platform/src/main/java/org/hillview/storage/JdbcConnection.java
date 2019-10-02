@@ -166,4 +166,6 @@ abstract class JdbcConnection {
     public String getQueryForDistinct(String table, String column) {
         return "SELECT DISTINCT " + column + " FROM " + table + " ORDER BY " + column;
     }
+
+    public abstract String getQueryForDateHistogram(String table, ColumnDescription cd, DoubleHistogramBuckets buckets);
 }

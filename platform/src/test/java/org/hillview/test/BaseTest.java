@@ -17,10 +17,13 @@
 
 package org.hillview.test;
 
+import org.hillview.utils.DateParsing;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Randomness;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
+
+import java.time.Instant;
 import java.util.logging.Level;
 
 /**
@@ -34,6 +37,15 @@ import java.util.logging.Level;
 public class BaseTest {
     private static boolean initialized = false;
     protected static boolean toPrint = false;
+
+    /**
+     * Parses one string as a date.
+     * @param s  String to parse.
+     */
+    public static Instant parseOneDate(String s) {
+        DateParsing parser = new DateParsing(s);
+        return parser.parse(s);
+    }
 
     @BeforeClass
     public static void setup() {
