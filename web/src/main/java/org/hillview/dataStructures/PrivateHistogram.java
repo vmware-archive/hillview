@@ -36,10 +36,13 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
         }
     }
 
-    // Compute noise to add to this bucket using the dyadic decomposition as the PRG seed.
-    // If cdfBuckets is true, computes the noise based on the dyadic decomposition of the interval [0, bucket right leaf]
-    // rather than [bucket left leaf, bucket right leaf].
-    // Returns the noise and the total variance of the variables used to compute the noise.
+    /**
+     * Compute noise to add to this bucket using the dyadic decomposition as the PRG seed.
+     * @param bucketIdx: index of the bucket to compute noise for.
+     * @param cdf: If true, computes the noise based on the dyadic decomposition of the interval [0, bucket right leaf]
+     *             rather than [bucket left leaf, bucket right leaf].
+     * Returns the noise and the total variance of the variables used to compute the noise.
+     */
     public Pair<Double, Double> noiseForBucket(int bucketIdx, boolean cdf) {
         ArrayList<Pair<Integer, Integer>> intervals = bucketDescription.bucketDecomposition(bucketIdx, cdf);
 
@@ -58,11 +61,13 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
     }
 
 
-    /* Adds noise to CDF and then recomputes.
+    /**
+     * Adds noise to CDF and then recomputes.
      * Note that this is more complicated than simply integrating the noisy buckets,
      * since we would like to take advantage of the dyadic tree to add noise more efficiently.
      * This function uses the dyadic decomposition of each prefix to add the smallest amount of
-     * noise for that prefix. */
+     * noise for that prefix.
+     */
     private void recomputeCDF() {
         for (int i = 0; i < this.cdfBuckets.length; i++) {
             Pair<Double, Double> p = this.noiseForBucket(i, true);

@@ -112,13 +112,6 @@ public class PrivateTableTarget extends RpcTarget {
         }
     }
 
-    // compute CDF on the second histogram (at finer CDF granularity)
-    private static BiFunction<Pair<Histogram, Histogram>,
-            HillviewComputation,
-            Pair<PrivateHistogram, PrivateHistogram>> makePrivateFunction(double epsilon) {
-        return (e, c) -> new Pair(new PrivateHistogram(e.first, epsilon, false), new PrivateHistogram(e.second, epsilon, true));
-    }
-
     // Returns both the histogram and the precomputed CDF of the data.
     // Each histogram data structure will also contain the corresponding precomputed CDF,
     // but we still compute two of them for one request because the histogram buckets and CDF
@@ -128,13 +121,16 @@ public class PrivateTableTarget extends RpcTarget {
         PrivateHistogramArgs[] info = request.parseArgs(PrivateHistogramArgs[].class);
         info[0].initMetadata(privacySchema);
         info[1].initMetadata(privacySchema);
+        double epsilon = info[0].metadata.epsilon;
 
         HistogramSketch sk = info[0].getSketch(); // Histogram
         HistogramSketch cdf = info[1].getSketch(); // CDF
         ConcurrentSketch<ITable, Histogram, Histogram> csk =
                 new ConcurrentSketch<>(sk, cdf);
         this.runCompleteSketch(this.table, csk,
-                makePrivateFunction(info[0].metadata.epsilon), request, context);
+                (e, c) -> new Pair(new PrivateHistogram(e.first, epsilon, false),
+                        new PrivateHistogram(e.second, epsilon, true)),
+                request, context);
     }
 
     static class PrivateRangeArgs {

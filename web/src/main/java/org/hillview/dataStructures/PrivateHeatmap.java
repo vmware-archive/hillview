@@ -28,10 +28,12 @@ public class PrivateHeatmap implements Serializable, IJson {
         this.addDyadicLaplaceNoise();
     }
 
-    // Compute noise to add to this bucket using the dyadic decomposition as the PRG seed.
-    // If cdfBuckets is true, computes the noise based on the dyadic decomposition of the interval [0, bucket right leaf]
-    // rather than [bucket left leaf, bucket right leaf].
-    // Returns the noise and the total variance of the variables used to compute the noise.
+    /**
+     * Compute noise to add to this bucket using the dyadic decomposition as the PRG seed.
+     * If cdfBuckets is true, computes the noise based on the dyadic decomposition of the interval [0, bucket right leaf]
+     * rather than [bucket left leaf, bucket right leaf].
+     * Returns the noise and the total variance of the variables used to compute the noise.
+     */
     public Pair<Double, Double> noiseForBucket(int bucketXIdx, int bucketYIdx) {
         ArrayList<Pair<Integer, Integer>> xIntervals = bucketDescriptionX.bucketDecomposition(bucketXIdx, false);
         ArrayList<Pair<Integer, Integer>> yIntervals = bucketDescriptionY.bucketDecomposition(bucketYIdx, false);

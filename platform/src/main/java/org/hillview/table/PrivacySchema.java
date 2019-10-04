@@ -13,7 +13,8 @@ import java.util.HashMap;
  * PrivacySchema contains additional metadata for columns that are visualized using the binary mechanism for
  * differential privacy, as per Chan, Song, Shi, TISSEC '11 (https://eprint.iacr.org/2010/076.pdf).
  * Epsilon budgets can be specified for both single-column (1-d) queries as well as for multi-column queries.
- * Multi-column metadata are specified with the key
+ * Metadata for a multi-column histogram is indexed by the key corresponding to the concatenation of the column names,
+ * in alphabetical order, with "+" as the delimiter.
  * */
 public class PrivacySchema implements IJson {
     HashMap<String, PrivacyMetadata> metadata;
