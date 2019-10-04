@@ -17,8 +17,8 @@
 
 package org.hillview.test.dataStructures;
 
-
 import org.hillview.test.BaseTest;
+
 import org.hillview.test.dataStructures.ComputeTrellisShape;
 import org.junit.Test;
 

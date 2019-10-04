@@ -81,7 +81,7 @@ public class FileSetDescription implements Serializable, IJson {
     public boolean privacyMetadataExists() {
         String basename = Utilities.getFolder(this.fileNamePattern);
         File metadataFile = new File(basename, PRIVACY_METADATA_NAME);
-        return metadataFile.exists();
+        return metadataFile.getAbsoluteFile().exists();
     }
 
     public String getBasename() {

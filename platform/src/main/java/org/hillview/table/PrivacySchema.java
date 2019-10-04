@@ -6,11 +6,15 @@ import org.hillview.table.rows.PrivacyMetadata;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashMap;
 
 /**
  * PrivacySchema contains additional metadata for columns that are visualized using the binary mechanism for
  * differential privacy, as per Chan, Song, Shi, TISSEC '11 (https://eprint.iacr.org/2010/076.pdf).
+ * Epsilon budgets can be specified for both single-column (1-d) queries as well as for multi-column queries.
+ * Metadata for a multi-column histogram is indexed by the key corresponding to the concatenation of the column names,
+ * in alphabetical order, with "+" as the delimiter.
  * */
 public class PrivacySchema implements IJson {
     HashMap<String, PrivacyMetadata> metadata;
@@ -21,6 +25,17 @@ public class PrivacySchema implements IJson {
 
     public PrivacyMetadata get(String colName) {
         return metadata.get(colName);
+    }
+
+    public PrivacyMetadata get(String[] colNames) {
+        Arrays.sort(colNames);
+        String key = "";
+        for (int i = 0; i < colNames.length - 1; i++) {
+            key += colNames[i];
+            key += "+";
+        }
+        key += colNames[colNames.length - 1];
+        return metadata.get(key);
     }
 
     public static PrivacySchema loadFromString(String jsonString) {

@@ -39,20 +39,20 @@ public class DyadicHistogramBuckets implements IHistogramBuckets {
     private double maxValue;
 
     // Range for the unfiltered histogram. Used to compute appropriate amount of noise to add.
-    private double globalMin;
-    private double globalMax;
+    public double globalMin;
+    public double globalMax;
 
     private int numOfBuckets;
 
-    private final double granularity; // The quantization interval (leaf size).
-    private final double epsilon; // The privacy budget parameter for the histogram.
-    private long numLeaves; // Total number of leaves.
+    public final double granularity; // The quantization interval (leaf size).
+    private int numLeaves; // Total number of leaves.
+    private int globalNumLeaves; // Number of leaves in base histogram.
 
-    // Covers leaves in [minLeafIdx, maxLeafIdx)
+    // Covers leaves in [minLeafIdx, maxLeafIdx).
     private long maxLeafIdx;
     private long minLeafIdx;
 
-    private long[] bucketLeftLeaves; // boundaries in terms of relative leaf indices
+    private int[] bucketLeftLeaves; // boundaries in terms of relative leaf indices
 
     // Boundaries in terms of leaf boundary values (for faster search).
     // Note that this is only used for computing bucket membership. The UI will render buckets as if they were
@@ -77,7 +77,7 @@ public class DyadicHistogramBuckets implements IHistogramBuckets {
         int defaultLeaves = (int)Math.floor(leavesPerBucket);
         int overflow = (int)Math.ceil(1.0/(leavesPerBucket - defaultLeaves)); // interval at which to add extra leaf
 
-        long prevLeafIdx = 0;
+        int prevLeafIdx = 0;
         this.bucketLeftLeaves[0] = prevLeafIdx;
         for (int i = 1; i < this.numOfBuckets; i++) {
             if (overflow > 0 && i % overflow == 0) {
@@ -144,11 +144,11 @@ public class DyadicHistogramBuckets implements IHistogramBuckets {
             this.numOfBuckets = numOfBuckets;
 
         this.granularity = metadata.granularity;
-        this.epsilon = metadata.epsilon;
         this.globalMin = metadata.globalMin;
         this.globalMax = metadata.globalMax;
 
         this.numLeaves = (int)((maxValue - minValue) / this.granularity);
+        this.globalNumLeaves = (int)((this.globalMax - this.globalMin) / this.granularity);
 
         // Preserves semantics, will make noise computation easier
         if (this.numLeaves < this.numOfBuckets) {
@@ -164,9 +164,9 @@ public class DyadicHistogramBuckets implements IHistogramBuckets {
         this.minLeafIdx = this.computeMinLeafIdx(minValue);
         this.maxLeafIdx = this.computeMaxLeafIdx(maxValue);
 
-        this.numLeaves = this.maxLeafIdx - this.minLeafIdx;
+        this.numLeaves = (int)(this.maxLeafIdx - this.minLeafIdx);
 
-        this.bucketLeftLeaves = new long[this.numOfBuckets];
+        this.bucketLeftLeaves = new int[this.numOfBuckets];
         this.bucketLeftBoundaries = new double[this.numOfBuckets];
         this.populateBucketBoundaries();
 
@@ -210,23 +210,23 @@ public class DyadicHistogramBuckets implements IHistogramBuckets {
     // Return the dyadic decomposition of this interval, as a list of <left boundary, right boundary> pairs
     // for each interval in the decomposition. The decomposition assumes that the first leaf of the dyadic tree
     // is at index 0.
-    public static ArrayList<Pair<Long, Long>> dyadicDecomposition(long left, long right) {
+    public static ArrayList<Pair<Integer, Integer>> dyadicDecomposition(int left, int right) {
         if (left < 0 || right < left) {
             throw new IllegalArgumentException("Invalid interval bounds");
         }
 
-        ArrayList<Pair<Long, Long>> nodes = new ArrayList<>();
+        ArrayList<Pair<Integer, Integer>> nodes = new ArrayList<>();
         while (left < right) {
             // get largest valid interval starting at left and not extending past right
-            long lob = Long.lowestOneBit(left);
-            long lsb = lob > 0 ? Utilities.longLog2(lob) : -1; // smallest power of 2 that divides left
+            int lob = Integer.lowestOneBit(left);
+            int lsb = lob > 0 ? Utilities.intLog2(lob) : -1; // smallest power of 2 that divides left
 
-            long rem = Utilities.longLog2(right - left); // smallest power of 2 contained in remaining interval
+            int rem = Utilities.intLog2(right - left); // smallest power of 2 contained in remaining interval
 
-            long pow = lsb < 0 ? rem : Math.min(lsb, rem); // largest valid covering interval
-            long nodeEnd = (long)Math.pow(2, pow);
+            int pow = lsb < 0 ? rem : Math.min(lsb, rem); // largest valid covering interval
+            int nodeEnd = (int)Math.pow(2, pow);
 
-            nodes.add(new Pair<Long, Long>(left, nodeEnd));
+            nodes.add(new Pair<Integer, Integer>(left, nodeEnd));
 
             left += nodeEnd;
         }
@@ -237,19 +237,19 @@ public class DyadicHistogramBuckets implements IHistogramBuckets {
     }
 
     // Compute the intervals in the dyadic tree that correspond to this bucket.
-    private ArrayList<Pair<Long, Long>> bucketDecomposition(int bucketIdx, boolean cdf) {
+    public ArrayList<Pair<Integer, Integer>> bucketDecomposition(int bucketIdx, boolean cdf) {
         if (bucketIdx >= this.numOfBuckets || bucketIdx < 0) {
             throw new IllegalArgumentException("Invalid bucket index");
         }
 
-        long leftLeaf;
+        int leftLeaf;
         if (cdf) {
-            leftLeaf = 0L;
+            leftLeaf = 0;
         } else {
             leftLeaf = this.bucketLeftLeaves[bucketIdx];
         }
 
-        long rightLeaf;
+        int rightLeaf;
         if (bucketIdx == this.numOfBuckets - 1) {
             rightLeaf = this.numLeaves;
         } else {
@@ -257,26 +257,6 @@ public class DyadicHistogramBuckets implements IHistogramBuckets {
         }
 
         return dyadicDecomposition(leftLeaf, rightLeaf);
-    }
-
-    // Compute noise to add to this bucket using the dyadic decomposition as the PRG seed.
-    // If cdfBuckets is true, computes the noise based on the dyadic decomposition of the interval [0, bucket right leaf]
-    // rather than [bucket left leaf, bucket right leaf].
-    // Returns the noise and the total variance of the variables used to compute the noise.
-    public Pair<Double, Double> noiseForBucket(int bucketIdx, boolean cdf) {
-        ArrayList<Pair<Long, Long>> intervals = bucketDecomposition(bucketIdx, cdf);
-
-        double noise = 0;
-        double variance = 0;
-        double scale = Math.log((this.globalMax - this.globalMin) / (this.epsilon * this.granularity)) / Math.log(2);
-        for (Pair<Long, Long> x : intervals) {
-            LaplaceDistribution dist = new LaplaceDistribution(0, scale); // TODO: (more) secure PRG
-            dist.reseedRandomGenerator(x.hashCode()); // Each node's noise should be deterministic, based on node's ID
-            noise += dist.sample();
-            variance += 2*(Math.pow(scale, 2));
-        }
-
-        return new Pair<Double, Double>(noise, variance);
     }
 
     public double getMin() { return this.minValue; }
@@ -290,6 +270,8 @@ public class DyadicHistogramBuckets implements IHistogramBuckets {
 
     @Override
     public int getNumOfBuckets() { return this.numOfBuckets; }
+
+    public int getGlobalNumLeaves() { return this.globalNumLeaves; }
 
     public double getGranularity() { return this.granularity; }
 }

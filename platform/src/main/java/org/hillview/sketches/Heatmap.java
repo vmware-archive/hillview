@@ -24,7 +24,7 @@ import java.io.Serializable;
  * A 2-dimensional histogram.
  */
 public class Heatmap implements Serializable, IJson {
-    private final long[][] buckets;
+    public final long[][] buckets;
     private long missingData; // number of items missing on both columns
     private final IHistogramBuckets bucketDescX;
     private final IHistogramBuckets bucketDescY;
@@ -41,6 +41,9 @@ public class Heatmap implements Serializable, IJson {
         this.histogramMissingX = new Histogram(this.bucketDescY);
         this.histogramMissingY = new Histogram(this.bucketDescX);
     }
+
+    public IHistogramBuckets getBucketDescX() { return bucketDescX; }
+    public IHistogramBuckets getBucketDescY() { return bucketDescY; }
 
     public void createHeatmap(final IColumn columnD1, final IColumn columnD2,
                               final IMembershipSet membershipSet, double samplingRate,
