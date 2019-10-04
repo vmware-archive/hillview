@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.hillview.targets;
+package org.hillview.dataStructures;
 
 import org.hillview.sketches.DoubleHistogramBuckets;
 import org.hillview.sketches.HistogramSketch;
@@ -28,8 +28,8 @@ import javax.annotation.Nullable;
 /**
  * Class used to deserialize JSON request from UI for a histogram.
  */
-class HistogramArgs {
-    ColumnDescription cd = new ColumnDescription();
+public class HistogramRequestInfo {
+    public ColumnDescription cd = new ColumnDescription();
     public double samplingRate;
     public long seed;
     // Only used when doing string histograms
@@ -40,7 +40,7 @@ class HistogramArgs {
     private double max;
     private int bucketCount;
 
-    IHistogramBuckets getBuckets() {
+    public IHistogramBuckets getBuckets() {
         if (cd.kind.isString()) {
             assert this.leftBoundaries != null;
             return new StringHistogramBuckets(this.leftBoundaries);
@@ -49,7 +49,7 @@ class HistogramArgs {
         }
     }
 
-    HistogramSketch getSketch() {
+    public HistogramSketch getSketch() {
         IHistogramBuckets buckets = this.getBuckets();
         return new HistogramSketch(buckets, this.cd.name, this.samplingRate, this.seed);
     }

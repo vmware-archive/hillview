@@ -181,7 +181,7 @@ public class JdbcDatabase {
         IColumn bucketNr = cols.get(0);
         IColumn bucketSize = cols.get(1);
         boolean isDouble = bucketNr.getDescription().kind == ContentsKind.Double;
-        int bucketCount = buckets.getNumOfBuckets();
+        int bucketCount = buckets.getBucketCount();
         long[] data = new long[bucketCount];
         long nonNulls = 0;
         for (int i = 0; i < bucketNr.sizeInRows(); i++) {
@@ -196,7 +196,7 @@ public class JdbcDatabase {
             nonNulls += count;
         }
         long nulls = this.getRowCount() - nonNulls;
-        return new Histogram(buckets, data, nulls);
+        return new Histogram(data, nulls);
     }
 
     /**

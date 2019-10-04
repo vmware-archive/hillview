@@ -218,7 +218,6 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
 
         const discrete = kindIsString(this.xAxisData.description.kind) ||
             this.xAxisData.description.kind === "Integer";
-        // CDF is precomputed separately, so don't integrate the points
         this.cdfPlot.setData(cdf.cdfBuckets, discrete);
         this.cdfPlot.draw();
         this.setupMouse();
@@ -283,11 +282,11 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
-            return new FilterReceiver(
-                title, [this.xAxisData.description], this.schema, [0],
-                page, operation, this.dataset, null, {
-                    exact: this.samplingRate >= 1, reusePage: false,
-                    relative: false, chartKind: "Histogram" });
+            return new FilterReceiver(title, [this.xAxisData.description], this.schema,
+                [0], page, operation, this.dataset, {
+                exact: this.samplingRate >= 1, reusePage: false,
+                relative: false, chartKind: "Histogram"
+            });
         };
     }
 
@@ -407,7 +406,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         const y = Math.round(this.plot.getYScale().invert(position[1]));
         const ys = significantDigits(y);
         const size = this.plot.get(mouseX);
-        const pointDesc = [xs, ys, significantDigits(size)];
+        const pointDesc = [xs, ys, size];
 
         if (this.cdfPlot != null) {
             const cdfPos = this.cdfPlot.getY(mouseX);
@@ -469,12 +468,12 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         const rr = this.createFilterRequest(filter);
         const title = new PageTitle("Filtered " + this.schema.displayName(this.xAxisData.description.name));
         const renderer = new FilterReceiver(title, [this.xAxisData.description], this.schema,
-            [0], this.page, rr, this.dataset, [filter], {
-                exact: this.samplingRate >= 1,
-                reusePage: false,
-                relative: false,
-                chartKind: "Histogram"
-            });
+            [0], this.page, rr, this.dataset, {
+            exact: this.samplingRate >= 1,
+            reusePage: false,
+            relative: false,
+            chartKind: "Histogram"
+        });
         rr.invoke(renderer);
     }
 }
@@ -513,7 +512,7 @@ export class HistogramReceiver extends Receiver<Pair<AugmentedHistogram, Augment
 
     public onNext(value: PartialResult<Pair<AugmentedHistogram, AugmentedHistogram>>): void {
         super.onNext(value);
-        if (value == null)
+        if (value == null || value.data == null || value.data.first == null)
             return;
         const histogram = value.data.first;
         const cdf = value.data.second;

@@ -19,8 +19,7 @@ package org.hillview.targets;
 
 import com.google.gson.JsonObject;
 import org.hillview.*;
-import org.hillview.dataStructures.AugmentedHistogram;
-import org.hillview.dataStructures.HistogramPrefixSum;
+import org.hillview.dataStructures.*;
 import org.hillview.dataset.ConcurrentSketch;
 import org.hillview.dataset.TripleSketch;
 import org.hillview.dataset.api.*;
@@ -252,7 +251,7 @@ public final class TableTarget extends RpcTarget {
 
     @HillviewRpc
     public void histogram(RpcRequest request, RpcRequestContext context) {
-        HistogramArgs[] info = request.parseArgs(HistogramArgs[].class);
+        HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
         assert info.length == 2;
         HistogramSketch sk = info[0].getSketch(); // Histogram
         HistogramSketch cdf = info[1].getSketch(); // CDF: also histogram but at finer granularity
@@ -266,7 +265,7 @@ public final class TableTarget extends RpcTarget {
 
     @HillviewRpc
     public void heatmap(RpcRequest request, RpcRequestContext context) {
-        HistogramArgs[] info = request.parseArgs(HistogramArgs[].class);
+        HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
         assert info.length == 2;
         HeatmapSketch sk = new HeatmapSketch(
                 info[0].getBuckets(),
@@ -278,7 +277,7 @@ public final class TableTarget extends RpcTarget {
 
     @HillviewRpc
     public void histogram2D(RpcRequest request, RpcRequestContext context) {
-        HistogramArgs[] info = request.parseArgs(HistogramArgs[].class);
+        HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
         assert info.length == 3;
         HeatmapSketch sk = new HeatmapSketch(
                 info[0].getBuckets(),
@@ -296,7 +295,7 @@ public final class TableTarget extends RpcTarget {
 
     @HillviewRpc
     public void heatmap3D(RpcRequest request, RpcRequestContext context) {
-        HistogramArgs[] info = request.parseArgs(HistogramArgs[].class);
+        HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
         assert info.length == 3;
         Heatmap3DSketch sk = new Heatmap3DSketch(
                 info[0].getBuckets(),
@@ -516,14 +515,6 @@ public final class TableTarget extends RpcTarget {
         this.runCompleteSketch(this.table, sk, getRow, request, context);
     }
 
-    static class HeavyHittersInfo {
-        @SuppressWarnings("NullableProblems")
-        Schema columns;
-        double amount;
-        long totalRows;
-        long seed;
-    }
-
     /**
      * Post-processing method applied to the result of a heavy hitters sketch before displaying the results. It will
      * discard elements that are too low in (estimated) frequency.
@@ -531,7 +522,7 @@ public final class TableTarget extends RpcTarget {
      * @param schema The schema of the heavy hitters computation.
      * @return A TopList
      */
-    private static TopList getTopList(FreqKList fkList, Schema schema, HillviewComputation computation) {
+    static TopList getTopList(FreqKList fkList, Schema schema, HillviewComputation computation) {
         return new TopList(fkList.getTop(schema),
                 new HeavyHittersTarget(fkList, computation).getId().toString());
     }
@@ -555,7 +546,7 @@ public final class TableTarget extends RpcTarget {
      */
     @HillviewRpc
     public void heavyHittersMG(RpcRequest request, RpcRequestContext context) {
-        HeavyHittersInfo info = request.parseArgs(HeavyHittersInfo.class);
+        HeavyHittersRequestInfo info = request.parseArgs(HeavyHittersRequestInfo.class);
         FreqKSketchMG sk = new FreqKSketchMG(info.columns, info.amount/100);
         this.runCompleteSketch(this.table, sk, (x, c) -> TableTarget.getTopList(x, info.columns, c),
                 request, context);
@@ -566,7 +557,7 @@ public final class TableTarget extends RpcTarget {
      */
     @HillviewRpc
     public void heavyHittersSampling(RpcRequest request, RpcRequestContext context) {
-        HeavyHittersInfo info = request.parseArgs(HeavyHittersInfo.class);
+        HeavyHittersRequestInfo info = request.parseArgs(HeavyHittersRequestInfo.class);
         SampleHeavyHittersSketch shh = new SampleHeavyHittersSketch(info.columns,
                 info.amount/100, info.totalRows, info.seed);
         this.runCompleteSketch(this.table, shh, (x, c) -> TableTarget.getTopList(x, info.columns, c),
@@ -640,14 +631,9 @@ public final class TableTarget extends RpcTarget {
         RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(hhi.hittersId), true, observer);
     }
 
-    static class HLogLogInfo {
-        String columnName = "";
-        long seed;
-    }
-
     @HillviewRpc
     public void hLogLog(RpcRequest request, RpcRequestContext context) {
-        HLogLogInfo col = request.parseArgs(HLogLogInfo.class);
+        DistinctCountRequestInfo col = request.parseArgs(DistinctCountRequestInfo.class);
         HLogLogSketch sketch = new HLogLogSketch(col.columnName, col.seed);
         this.runSketch(this.table, sketch, request, context);
     }

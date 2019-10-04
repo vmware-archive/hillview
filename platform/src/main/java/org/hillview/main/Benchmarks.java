@@ -27,6 +27,7 @@ import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.remoting.HillviewServer;
 import org.hillview.management.ClusterConfig;
 import org.hillview.management.SetMemoization;
+import org.hillview.maps.Parallelizer;
 import org.hillview.sketches.*;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Table;

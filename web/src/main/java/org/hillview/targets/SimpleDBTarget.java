@@ -19,8 +19,7 @@ package org.hillview.targets;
 
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import org.hillview.*;
-import org.hillview.dataStructures.AugmentedHistogram;
-import org.hillview.dataStructures.HistogramPrefixSum;
+import org.hillview.dataStructures.*;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IJson;
@@ -100,11 +99,6 @@ public final class SimpleDBTarget extends RpcTarget {
         this.runSketch(this.unused, this.makeSketch(summary, new SummarySketch()), request, context);
     }
 
-    static class HLogLogInfo {
-        String columnName = "";
-        long seed;
-    }
-
     static class DistinctCount implements IJson {
         public final int distinctItemCount;
 
@@ -115,7 +109,7 @@ public final class SimpleDBTarget extends RpcTarget {
 
     @HillviewRpc
     public void hLogLog(RpcRequest request, RpcRequestContext context) {
-        TableTarget.HLogLogInfo col = request.parseArgs(TableTarget.HLogLogInfo.class);
+        DistinctCountRequestInfo col = request.parseArgs(DistinctCountRequestInfo.class);
         try {
             this.database.connect();
             int result = this.database.distinctCount(col.columnName);
@@ -130,7 +124,7 @@ public final class SimpleDBTarget extends RpcTarget {
 
     @HillviewRpc
     public void heavyHitters(RpcRequest request, RpcRequestContext context) {
-        TableTarget.HeavyHittersInfo info = request.parseArgs(TableTarget.HeavyHittersInfo.class);
+        HeavyHittersRequestInfo info = request.parseArgs(HeavyHittersRequestInfo.class);
         try {
             this.database.connect();
             SmallTable tbl = this.database.topFreq(
@@ -196,7 +190,7 @@ public final class SimpleDBTarget extends RpcTarget {
 
     @HillviewRpc
     public void histogram(RpcRequest request, RpcRequestContext context) {
-        HistogramArgs[] info = request.parseArgs(HistogramArgs[].class);
+        HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
         assert info.length == 2;
         ColumnDescription cd = info[0].cd;  // both args should be on the same column
         try {

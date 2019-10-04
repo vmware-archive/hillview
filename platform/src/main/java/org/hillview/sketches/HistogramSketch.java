@@ -26,7 +26,7 @@ import javax.annotation.Nullable;
  * One-dimensional histogram
  */
 public class HistogramSketch implements ISketch<ITable, Histogram> {
-    private final IHistogramBuckets bucketDesc;
+    public final IHistogramBuckets bucketDesc;
     private final String columnName;
     private final double rate;
     private final long seed;
@@ -44,7 +44,7 @@ public class HistogramSketch implements ISketch<ITable, Histogram> {
         Histogram result = this.getZero();
         Converters.checkNull(data);
         Converters.checkNull(result).create(data.getLoadedColumn(this.columnName),
-                data.getMembershipSet(),
+                data.getMembershipSet(), this.bucketDesc,
                 this.rate, this.seed, false);
         return result;
     }
@@ -59,6 +59,6 @@ public class HistogramSketch implements ISketch<ITable, Histogram> {
 
     @Override
     public Histogram zero() {
-        return new Histogram(this.bucketDesc);
+        return new Histogram(this.bucketDesc.getBucketCount());
     }
 }

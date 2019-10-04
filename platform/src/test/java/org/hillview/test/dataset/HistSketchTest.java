@@ -43,7 +43,7 @@ public class HistSketchTest extends BaseTest {
         Histogram result = mySketch.create(myTable);
         int size = 0;
         Assert.assertNotNull(result);
-        int bucketNum = result.getNumOfBuckets();
+        int bucketNum = result.getBucketCount();
         for (int i = 0; i < bucketNum; i++)
             size += result.getCount(i);
     }
@@ -72,7 +72,7 @@ public class HistSketchTest extends BaseTest {
                 new HistogramSketch(buckets, colName, 0.5, 0));
         Assert.assertNotNull(hdl);
         int size = 0;
-        int bucketNum = hdl.getNumOfBuckets();
+        int bucketNum = hdl.getBucketCount();
         for (int i = 0; i < bucketNum; i++)
             size += hdl.getCount(i);
     }

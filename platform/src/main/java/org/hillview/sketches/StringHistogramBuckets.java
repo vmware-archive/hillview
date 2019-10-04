@@ -85,5 +85,5 @@ public class StringHistogramBuckets implements IHistogramBuckets {
     }
 
     @Override
-    public int getNumOfBuckets() { return this.numOfBuckets; }
+    public int getBucketCount() { return this.numOfBuckets; }
 }

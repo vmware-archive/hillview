@@ -357,12 +357,11 @@ export class Histogram2DView extends HistogramViewBase {
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
-            return new FilterReceiver(
-                title,
-                [this.xAxisData.description, this.yData.description],
-                this.schema, [0, 0], page, operation, this.dataset, null,
-                { exact: this.samplingRate >= 1, chartKind: "Histogram",
-                    relative: this.relative, reusePage: false });
+            return new FilterReceiver(title, [this.xAxisData.description, this.yData.description], 
+                this.schema, [0, 0], page, operation, this.dataset, {
+                exact: this.samplingRate >= 1, chartKind: "Histogram",
+                relative: this.relative, reusePage: false
+            });
         };
     }
 
@@ -538,10 +537,8 @@ export class Histogram2DView extends HistogramViewBase {
         const rr = this.createFilterRequest(filter);
         const renderer = new FilterReceiver(
             new PageTitle("Filtered on " + this.schema.displayName(selectedAxis.description.name)),
-            [this.xAxisData.description, this.yData.description],
-            this.schema,
-            [inLegend ? this.xPoints : 0, this.yPoints], this.page, rr,
-            this.dataset, [filter], {
+            [this.xAxisData.description, this.yData.description], this.schema,
+            [inLegend ? this.xPoints : 0, this.yPoints], this.page, rr, this.dataset, {
             exact: this.samplingRate >= 1.0,
             chartKind: "2DHistogram",
             reusePage: false,

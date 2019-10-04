@@ -4,13 +4,13 @@ import org.hillview.HillviewComputation;
 import org.hillview.HillviewRpc;
 import org.hillview.RpcRequest;
 import org.hillview.RpcRequestContext;
+import org.hillview.dataStructures.PrivacySchema;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IMap;
 import org.hillview.maps.LoadFilesMapper;
 import org.hillview.sketches.FileSizeSketch;
 import org.hillview.storage.FileSetDescription;
 import org.hillview.storage.IFileReference;
-import org.hillview.table.PrivacySchema;
 import org.hillview.table.api.ITable;
 
 import java.nio.file.Paths;
@@ -18,9 +18,8 @@ import java.nio.file.Paths;
 public class PrivateFileDescriptionTarget extends FileDescriptionTarget {
     private PrivacySchema metadata;
 
-    public PrivateFileDescriptionTarget(IDataSet<IFileReference> files, HillviewComputation computation, String basename) {
+    PrivateFileDescriptionTarget(IDataSet<IFileReference> files, HillviewComputation computation, String basename) {
         super(files, computation);
-
         this.metadata = PrivacySchema.loadFromFile(Paths.get(basename, FileSetDescription.PRIVACY_METADATA_NAME));
     }
 

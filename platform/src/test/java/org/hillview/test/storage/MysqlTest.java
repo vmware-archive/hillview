@@ -193,9 +193,9 @@ public class MysqlTest extends JdbcTest {
         Histogram histogram = db.histogram(
                 new ColumnDescription("birth_date", ContentsKind.Date), buckets);
         Assert.assertNotNull(histogram);
-        Assert.assertEquals(10, histogram.getNumOfBuckets());
+        Assert.assertEquals(10, histogram.getBucketCount());
         long total = 0;
-        for (int i = 0; i < histogram.getNumOfBuckets(); i++)
+        for (int i = 0; i < histogram.getBucketCount(); i++)
             total += histogram.getCount(i);
         Assert.assertEquals(300024, total);
         db.disconnect();
@@ -243,12 +243,12 @@ public class MysqlTest extends JdbcTest {
         Histogram histogram = db.histogram(
                 new ColumnDescription("salary", ContentsKind.Integer), buckets);
         Assert.assertNotNull(histogram);
-        Assert.assertEquals(8, histogram.getNumOfBuckets());
+        Assert.assertEquals(8, histogram.getBucketCount());
         Assert.assertEquals(0, histogram.getMissingData());
         Assert.assertEquals(0, histogram.getCount(0));
         Assert.assertEquals(0, histogram.getCount(7));
         long total = 0;
-        for (int i = 0; i < histogram.getNumOfBuckets(); i++)
+        for (int i = 0; i < histogram.getBucketCount(); i++)
             total += histogram.getCount(i);
         Assert.assertEquals(2844047, total);
         db.disconnect();
@@ -271,9 +271,9 @@ public class MysqlTest extends JdbcTest {
         Histogram histogram = db.histogram(
                 new ColumnDescription("first_name", ContentsKind.String), buckets);
         Assert.assertNotNull(histogram);
-        Assert.assertEquals(6, histogram.getNumOfBuckets());
+        Assert.assertEquals(6, histogram.getBucketCount());
         long total = 0;
-        for (int i = 0; i < histogram.getNumOfBuckets(); i++)
+        for (int i = 0; i < histogram.getBucketCount(); i++)
             total += histogram.getCount(i);
         Assert.assertEquals(300024, total);
         db.disconnect();

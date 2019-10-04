@@ -50,7 +50,7 @@ public class MySqlJdbcConnection extends JdbcConnection {
     @Override
     public String getQueryForNumericHistogram(
             String table, ColumnDescription cd, DoubleHistogramBuckets buckets) {
-        double scale = (double)buckets.numOfBuckets / buckets.range;
+        double scale = (double)buckets.bucketCount / buckets.range;
         return "select bucket, count(bucket) from (" +
                 "select CAST(FLOOR((" + cd.name + " - " + buckets.minValue + ") * " + scale + ") as UNSIGNED) as bucket" +
                 " from " + table +
@@ -74,7 +74,7 @@ public class MySqlJdbcConnection extends JdbcConnection {
         // We synthesize a binary search three
         return "select bucket, count(bucket) from (" +
                 "select (" +
-                searchInterval(0, buckets.getNumOfBuckets(), buckets.leftBoundaries, cd.name) +
+                searchInterval(0, buckets.getBucketCount(), buckets.leftBoundaries, cd.name) +
                 ") as bucket from " + table + ") tmp" +
                 " group by bucket";
     }
@@ -99,7 +99,7 @@ public class MySqlJdbcConnection extends JdbcConnection {
         String maxString = maxDate.toString();
         double min = minDate.toEpochMilli() * 1000.0;
         double max = maxDate.toEpochMilli() * 1000.0;
-        double scale = (double)buckets.numOfBuckets / (max - min);
+        double scale = (double)buckets.bucketCount / (max - min);
         return "select bucket, count(bucket) from (" +
                 "select CAST(FLOOR(TIMESTAMPDIFF(MICROSECOND, '" + minDate + "', " + cd.name + ") * " + scale + ") as UNSIGNED) as bucket from " + table +
                 " where " + cd.name + " between '" + minDate + "' and '" + maxDate + "'" +

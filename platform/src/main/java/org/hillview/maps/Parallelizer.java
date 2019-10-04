@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2019 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.hillview.utils;
+package org.hillview.maps;
 
 import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IMap;
@@ -39,7 +39,7 @@ public class Parallelizer implements IMap<Empty, List<Empty>> {
     public List<Empty> apply(@Nullable Empty data) {
         List<Empty> result = new ArrayList<Empty>();
         for (int i = 0; i < cores; i++)
-        result.add(new Empty());
+            result.add(new Empty());
         return result;
     }
 }

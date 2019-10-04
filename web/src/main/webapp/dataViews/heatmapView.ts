@@ -375,12 +375,11 @@ export class HeatmapView extends ChartView {
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
-            return new FilterReceiver(
-                title,
-                [this.xAxisData.description, this.yAxisData.description],
-                this.schema, [0, 0], page, operation, this.dataset, null,
-                { exact: true, chartKind: "Heatmap",
-                    reusePage: false, relative: false, });
+            return new FilterReceiver(title, [this.xAxisData.description, this.yAxisData.description], 
+                this.schema, [0, 0], page, operation, this.dataset, {
+                exact: true, chartKind: "Heatmap",
+                reusePage: false, relative: false,
+            });
         };
     }
 
@@ -500,12 +499,10 @@ export class HeatmapView extends ChartView {
             complement: d3event.sourceEvent.ctrlKey,
         };
         const rr = this.createFilter2DRequest(xRange, yRange);
-        const renderer = new FilterReceiver(
-            new PageTitle(
-                "Filtered on " + this.xAxisData.getDisplayNameString(this.schema) + " and " +
-                this.yAxisData.getDisplayNameString(this.schema)),
-            [this.xAxisData.description, this.yAxisData.description],
-            this.schema, [0, 0], this.page, rr, this.dataset, [xRange, yRange], {
+        const renderer = new FilterReceiver(new PageTitle(
+            "Filtered on " + this.xAxisData.getDisplayNameString(this.schema) + " and " +
+            this.yAxisData.getDisplayNameString(this.schema)), [this.xAxisData.description, this.yAxisData.description], 
+            this.schema, [0, 0], this.page, rr, this.dataset, {
             exact: this.samplingRate >= 1, chartKind: "Heatmap",
             relative: false, reusePage: false
         });

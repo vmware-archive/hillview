@@ -364,15 +364,14 @@ export class TrellisHeatmapView extends TrellisChartView {
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
-            return new FilterReceiver(
-                title,
+            return new FilterReceiver(title,
                 [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description],
-                this.schema, [0, 0, 0], page, operation, this.dataset, null, {
-                    chartKind: "TrellisHeatmap",
-                    relative: false,
-                    reusePage: false,
-                    exact: this.samplingRate >= 1
-                });
+                this.schema, [0, 0, 0], page, operation, this.dataset, {
+                chartKind: "TrellisHeatmap",
+                relative: false,
+                reusePage: false,
+                exact: this.samplingRate >= 1
+            });
         };
     }
 
@@ -411,9 +410,10 @@ export class TrellisHeatmapView extends TrellisChartView {
                 " and " + this.schema.displayName(this.yAxisData.description.name));
             const renderer = new FilterReceiver(title,
                 [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description],
-                this.schema, [0, 0, 0], this.page, rr, this.dataset, [xRange, yRange], {
+                this.schema, [0, 0, 0], this.page, rr, this.dataset, {
                 chartKind: "TrellisHeatmap", relative: false, reusePage: false,
-                    exact: this.samplingRate >= 1 });
+                exact: this.samplingRate >= 1
+            });
             rr.invoke(renderer);
         } else {
             const filter = this.getGroupBySelectionFilter();
@@ -424,9 +424,10 @@ export class TrellisHeatmapView extends TrellisChartView {
                 "Filtered on " + this.groupByAxisData.getDisplayNameString(this.schema));
             const renderer = new FilterReceiver(title,
                 [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description],
-                this.schema, [0, 0, 0], this.page, rr, this.dataset, [filter], {
+                this.schema, [0, 0, 0], this.page, rr, this.dataset, {
                 chartKind: "TrellisHeatmap", relative: false, reusePage: false,
-                    exact: this.samplingRate >= 1 });
+                exact: this.samplingRate >= 1
+            });
             rr.invoke(renderer);
         }
     }

@@ -200,7 +200,6 @@ export class Dialog extends DialogBase {
         this.dialogTitle = null;
         this.line = new Map<string, HTMLElement>();
         this.onConfirm = null;
-
         const nodrag = d3drag()
             .on("start", () => this.dragEnd());
 
@@ -663,10 +662,14 @@ export class NotifyDialog extends DialogBase {
     constructor(title: string, message: string | null, toolTip: string) {
         super(title, toolTip);
 
+        const nodrag = d3drag()
+            .on("start", () => this.dragEnd());
+
         const confirmButton = document.createElement("button");
         confirmButton.textContent = "Confirm";
         confirmButton.classList.add("confirm");
         confirmButton.onclick = () => this.hide();
+        d3select(confirmButton).call(nodrag);
         this.buttonsDiv.appendChild(confirmButton);
 
         if (message != null)

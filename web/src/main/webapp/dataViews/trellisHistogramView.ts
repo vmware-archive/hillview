@@ -33,7 +33,6 @@ import {
     PartialResult,
     percent, prefixSum,
     reorder,
-    significantDigits,
 } from "../util";
 import {AxisData, AxisKind} from "./axisData";
 import {IViewSerialization, TrellisHistogramSerialization} from "../datasetView";
@@ -403,7 +402,7 @@ export class TrellisHistogramView extends TrellisChartView {
         this.cdfDot.attr("cy", (1 - cdfPos) * cdfPlot.getChartHeight() + this.shape.headerHeight +
             mousePosition.plotYIndex * (this.shape.size.height + this.shape.headerHeight));
         const perc = percent(cdfPos);
-        this.pointDescription.update([xs, group, significantDigits(value), perc], position[0], position[1]);
+        this.pointDescription.update([xs, group, value, perc], position[0], position[1]);
     }
 
     public getAxisData(event: DragEventKind): AxisData | null {
@@ -434,13 +433,11 @@ export class TrellisHistogramView extends TrellisChartView {
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
-            return new FilterReceiver(
-                title,
-                [this.xAxisData.description, this.groupByAxisData.description], this.schema,
-                [0, 0], page, operation, this.dataset, null, {
-                    chartKind: "TrellisHistogram", relative: false,
-                    reusePage: false, exact: this.samplingRate >= 1
-                });
+            return new FilterReceiver(title, [this.xAxisData.description, this.groupByAxisData.description],
+                this.schema, [0, 0], page, operation, this.dataset, {
+                chartKind: "TrellisHistogram", relative: false,
+                reusePage: false, exact: this.samplingRate >= 1
+            });
         };
     }
 
@@ -473,11 +470,11 @@ export class TrellisHistogramView extends TrellisChartView {
             rr = this.createFilterRequest(filter);
             title = new PageTitle("Filtered on " + this.schema.displayName(this.groupByAxisData.description.name));
         }
-        const renderer = new FilterReceiver(title,
-            [this.xAxisData.description, this.groupByAxisData.description], this.schema,
-            [0, 0], this.page, rr, this.dataset, [filter], {
+        const renderer = new FilterReceiver(title, [this.xAxisData.description, this.groupByAxisData.description],
+            this.schema, [0, 0], this.page, rr, this.dataset, {
             chartKind: "TrellisHistogram", relative: false,
-                reusePage: false, exact: this.samplingRate >= 1 });
+            reusePage: false, exact: this.samplingRate >= 1
+        });
         rr.invoke(renderer);
     }
 }

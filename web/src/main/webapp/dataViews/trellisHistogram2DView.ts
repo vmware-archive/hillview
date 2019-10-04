@@ -447,14 +447,11 @@ export class TrellisHistogram2DView extends TrellisChartView {
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
-            return new FilterReceiver(
-                title,
-                [this.xAxisData.description, this.legendAxisData.description,
-                    this.groupByAxisData.description],
-                this.schema, [0, 0, 0], page, operation, this.dataset, null, {
-                    chartKind: "Trellis2DHistogram", relative: this.relative,
-                    reusePage: false, exact: this.samplingRate >= 1
-                });
+            return new FilterReceiver(title, [this.xAxisData.description, this.legendAxisData.description,
+                this.groupByAxisData.description], this.schema, [0, 0, 0], page, operation, this.dataset, {
+                chartKind: "Trellis2DHistogram", relative: this.relative,
+                reusePage: false, exact: this.samplingRate >= 1
+            });
         };
     }
 
@@ -463,13 +460,11 @@ export class TrellisHistogram2DView extends TrellisChartView {
             return;
         const rr = this.createFilterRequest(filter);
         const title = new PageTitle("Filtered on " + this.schema.displayName(filter.cd.name));
-        const renderer = new FilterReceiver(title,
-            [this.xAxisData.description, this.legendAxisData.description,
-                this.groupByAxisData.description],
-            this.schema, [0, 0, 0], this.page, rr, this.dataset, [filter], {
-                chartKind: "Trellis2DHistogram", relative: this.relative,
-                reusePage: false, exact: this.samplingRate >= 1
-            });
+        const renderer = new FilterReceiver(title, [this.xAxisData.description, this.legendAxisData.description,
+            this.groupByAxisData.description], this.schema, [0, 0, 0], this.page, rr, this.dataset, {
+            chartKind: "Trellis2DHistogram", relative: this.relative,
+            reusePage: false, exact: this.samplingRate >= 1
+        });
         rr.invoke(renderer);
     }
 

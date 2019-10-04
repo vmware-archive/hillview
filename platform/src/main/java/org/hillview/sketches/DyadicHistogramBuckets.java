@@ -20,7 +20,7 @@ package org.hillview.sketches;
 import org.apache.commons.math3.distribution.LaplaceDistribution;
 import org.hillview.dataset.api.Pair;
 import org.hillview.table.api.IColumn;
-import org.hillview.table.rows.PrivacyMetadata;
+import org.hillview.table.columns.ColumnPrivacyMetadata;
 import org.hillview.utils.Utilities;
 
 import java.util.ArrayList;
@@ -133,7 +133,7 @@ public class DyadicHistogramBuckets implements IHistogramBuckets {
     }
 
     public DyadicHistogramBuckets(final double minValue, final double maxValue,
-                                  final int numOfBuckets, PrivacyMetadata metadata) {
+                                  final int numOfBuckets, ColumnPrivacyMetadata metadata) {
         if (maxValue < minValue || numOfBuckets <= 0)
             throw new IllegalArgumentException("Negative range or number of buckets");
 
@@ -269,7 +269,7 @@ public class DyadicHistogramBuckets implements IHistogramBuckets {
     }
 
     @Override
-    public int getNumOfBuckets() { return this.numOfBuckets; }
+    public int getBucketCount() { return this.numOfBuckets; }
 
     public int getGlobalNumLeaves() { return this.globalNumLeaves; }
 

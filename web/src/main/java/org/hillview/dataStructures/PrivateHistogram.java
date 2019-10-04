@@ -7,7 +7,6 @@ import org.hillview.sketches.DyadicHistogramBuckets;
 import org.hillview.sketches.Histogram;
 import org.hillview.utils.Converters;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 
 /**
@@ -16,23 +15,18 @@ import java.util.ArrayList;
  */
 @SuppressWarnings("MismatchedReadAndWriteOfArray")
 public class PrivateHistogram extends HistogramPrefixSum implements IJson {
-    private DyadicHistogramBuckets bucketDescription; // Just an alias for the buckets in the histogram.
-
     private double[] confMins;
     private double[] confMaxes;
-
     private double epsilon;
 
     public PrivateHistogram(final Histogram histogram, double epsilon, boolean cdf) {
         super(histogram);
-        this.bucketDescription = (DyadicHistogramBuckets)histogram.getBucketDescription();
-        this.confMins  = new double[this.bucketDescription.getNumOfBuckets()];
-        this.confMaxes = new double[this.bucketDescription.getNumOfBuckets()];
         this.epsilon = epsilon;
-
-        this.addDyadicLaplaceNoise();
+        this.confMins  = new double[bucketDescription.getBucketCount()];
+        this.confMaxes = new double[bucketDescription.getBucketCount()];
+        this.addDyadicLaplaceNoise(bucketDescription);
         if (cdf) {
-            this.recomputeCDF();
+            this.recomputeCDF(bucketDescription);
         }
     }
 
@@ -68,9 +62,9 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
      * This function uses the dyadic decomposition of each prefix to add the smallest amount of
      * noise for that prefix.
      */
-    private void recomputeCDF() {
+    private void recomputeCDF(DyadicHistogramBuckets bucketDescription) {
         for (int i = 0; i < this.cdfBuckets.length; i++) {
-            Pair<Double, Double> p = this.noiseForBucket(i, true);
+            Pair<Double, Double> p = bucketDescription.noiseForBucket(i, true);
             Converters.checkNull(p.first);
             this.cdfBuckets[i] += p.first;
             if (i > 0) {
@@ -87,9 +81,9 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
      * Each node in the dyadic interval tree is perturbed by an independent noise variable distributed as Laplace(log T / epsilon).
      * The total noise is the sum of the noise variables in the intervals composing the desired interval or bucket.
      */
-    private void addDyadicLaplaceNoise() {
+    private void addDyadicLaplaceNoise(DyadicHistogramBuckets bucketDescription) {
         for (int i = 0; i < this.histogram.buckets.length; i++) {
-            Pair<Double, Double> noise = this.noiseForBucket(i, false);
+            Pair<Double, Double> noise = bucketDescription.noiseForBucket(i, false);
             this.histogram.buckets[i] += Converters.checkNull(noise.first);
 
             // Postprocess so that no buckets are negative

@@ -36,10 +36,10 @@ public class Heatmap implements Serializable, IJson {
                    final IHistogramBuckets yBuckets) {
         this.bucketDescX = xBuckets;
         this.bucketDescY = yBuckets;
-        this.buckets = new long[xBuckets.getNumOfBuckets()][yBuckets.getNumOfBuckets()];
+        this.buckets = new long[xBuckets.getBucketCount()][yBuckets.getBucketCount()];
         // Automatically initialized to 0
-        this.histogramMissingX = new Histogram(this.bucketDescY);
-        this.histogramMissingY = new Histogram(this.bucketDescX);
+        this.histogramMissingX = new Histogram(this.bucketDescY.getBucketCount());
+        this.histogramMissingY = new Histogram(this.bucketDescX.getBucketCount());
     }
 
     public IHistogramBuckets getBucketDescX() { return bucketDescX; }
@@ -57,10 +57,10 @@ public class Heatmap implements Serializable, IJson {
             if (isMissingD1 || isMissingD2) {
                 if (!isMissingD1) {
                     // only column 2 is missing
-                    this.histogramMissingY.add(columnD1, currRow);
+                    this.histogramMissingY.add(columnD1, currRow, this.bucketDescX);
                 } else if (!isMissingD2) {
                     // only column 1 is missing
-                    this.histogramMissingX.add(columnD2, currRow);
+                    this.histogramMissingX.add(columnD2, currRow, this.bucketDescY);
                 } else {
                     // both are missing
                     this.missingData++;
@@ -92,9 +92,9 @@ public class Heatmap implements Serializable, IJson {
 
     public Histogram getMissingHistogramD2() { return this.histogramMissingY; }
 
-    public int getNumOfBucketsD1() { return this.bucketDescX.getNumOfBuckets(); }
+    public int getNumOfBucketsD1() { return this.bucketDescX.getBucketCount(); }
 
-    public int getNumOfBucketsD2() { return this.bucketDescY.getNumOfBuckets(); }
+    public int getNumOfBucketsD2() { return this.bucketDescY.getBucketCount(); }
 
     public long getMissingData() { return this.missingData; }
 
@@ -109,8 +109,8 @@ public class Heatmap implements Serializable, IJson {
      */
     public Heatmap union(Heatmap otherHeatmap) {
         Heatmap unionH = new Heatmap(this.bucketDescX, this.bucketDescY);
-        for (int i = 0; i < unionH.bucketDescX.getNumOfBuckets(); i++)
-            for (int j = 0; j < unionH.bucketDescY.getNumOfBuckets(); j++)
+        for (int i = 0; i < unionH.bucketDescX.getBucketCount(); i++)
+            for (int j = 0; j < unionH.bucketDescY.getBucketCount(); j++)
                 unionH.buckets[i][j] = this.buckets[i][j] + otherHeatmap.buckets[i][j];
         unionH.missingData = this.missingData + otherHeatmap.missingData;
         unionH.totalSize = this.totalSize + otherHeatmap.totalSize;
