@@ -17,7 +17,10 @@
 
 package org.hillview.sketches;
 import org.hillview.dataset.api.ISketch;
+import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
+import org.hillview.table.columns.ColumnPrivacyMetadata;
+import org.hillview.table.columns.PrivateColumn;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
@@ -27,25 +30,30 @@ import javax.annotation.Nullable;
  */
 public class HistogramSketch implements ISketch<ITable, Histogram> {
     public final IHistogramBuckets bucketDesc;
-    private final String columnName;
-    private final double rate;
-    private final long seed;
+    protected final String columnName;
+    protected final double rate;
+    protected final long seed;
+    @Nullable
+    protected ColumnPrivacyMetadata cpm;
 
     public HistogramSketch(IHistogramBuckets bucketDesc, String columnName,
-                           double rate, long seed) {
+                           double rate, long seed, @Nullable ColumnPrivacyMetadata cpm) {
         this.bucketDesc = bucketDesc;
         this.columnName = columnName;
         this.rate = rate;
         this.seed = seed;
+        this.cpm = cpm;
     }
 
     @Override
     public Histogram create(@Nullable final ITable data) {
-        Histogram result = this.getZero();
         Converters.checkNull(data);
-        Converters.checkNull(result).create(data.getLoadedColumn(this.columnName),
-                data.getMembershipSet(), this.bucketDesc,
-                this.rate, this.seed, false);
+        Histogram result = this.getZero();
+        Converters.checkNull(result);
+        IColumn column = data.getLoadedColumn(this.columnName);
+        if (this.cpm != null)
+            column = new PrivateColumn(column, this.cpm);
+        result.create(column, data.getMembershipSet(), this.bucketDesc, this.rate, this.seed, false);
         return result;
     }
 

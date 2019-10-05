@@ -18,7 +18,7 @@
 package org.hillview;
 
 import org.hillview.dataset.api.Pair;
-import org.hillview.sketches.DyadicHistogramBuckets;
+import org.hillview.sketches.DyadicDoubleHistogramBuckets;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -30,8 +30,7 @@ public class DyadicDecompositionTest {
         int leftLeafIdx = 0;
         int rightLeafIdx = 10;
 
-        ArrayList<Pair<Integer, Integer>> ret = DyadicHistogramBuckets.dyadicDecomposition(leftLeafIdx, rightLeafIdx);
-
+        ArrayList<Pair<Integer, Integer>> ret = DyadicDoubleHistogramBuckets.dyadicDecomposition(leftLeafIdx, rightLeafIdx);
         Assert.assertNotNull(ret);
         Pair<Integer, Integer> e = ret.get(0);
         Assert.assertNotNull(e);

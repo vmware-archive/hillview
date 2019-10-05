@@ -54,7 +54,7 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
 
     @Override
     public double asDouble(final int rowIndex) {
-        switch (ObjectArrayColumn.this.description.kind) {
+        switch (this.description.kind) {
             case Json:
             case String:
                 String str = this.getString(rowIndex);

@@ -151,7 +151,7 @@ public class Benchmarks {
         IHistogramBuckets buckDes = new DoubleHistogramBuckets(0, 100, bucketNum);
         ITable table = createTable(colSize, col);
         ISketch<ITable, Histogram> sk = new HistogramSketch(
-                        buckDes, col.getName(), rateParameter, 0);
+                        buckDes, col.getName(), rateParameter, 0, null);
 
         System.out.println("Bench,Time (ms),Melems/s,Percent slower");
         if (args[0].equals("noseparatethread")) {

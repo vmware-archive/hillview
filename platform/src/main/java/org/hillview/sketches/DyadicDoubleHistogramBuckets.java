@@ -20,7 +20,7 @@ package org.hillview.sketches;
 import org.apache.commons.math3.distribution.LaplaceDistribution;
 import org.hillview.dataset.api.Pair;
 import org.hillview.table.api.IColumn;
-import org.hillview.table.columns.ColumnPrivacyMetadata;
+import org.hillview.table.columns.DoubleColumnPrivacyMetadata;
 import org.hillview.utils.Utilities;
 
 import java.util.ArrayList;
@@ -33,7 +33,7 @@ import java.util.Arrays;
  * in the private range query tree). Since bucket boundaries may not fall on the quantized leaf boundaries,
  * leaves are assigned to buckets based on their left boundary value.
  */
-public class DyadicHistogramBuckets implements IHistogramBuckets {
+public class DyadicDoubleHistogramBuckets implements IHistogramBuckets {
     // Range for this (possibly filtered) histogram.
     private double minValue;
     private double maxValue;
@@ -132,8 +132,8 @@ public class DyadicHistogramBuckets implements IHistogramBuckets {
         return maxIdx;
     }
 
-    public DyadicHistogramBuckets(final double minValue, final double maxValue,
-                                  final int numOfBuckets, ColumnPrivacyMetadata metadata) {
+    public DyadicDoubleHistogramBuckets(final double minValue, final double maxValue,
+                                        final int numOfBuckets, DoubleColumnPrivacyMetadata metadata) {
         if (maxValue < minValue || numOfBuckets <= 0)
             throw new IllegalArgumentException("Negative range or number of buckets");
 

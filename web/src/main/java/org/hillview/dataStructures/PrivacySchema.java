@@ -34,7 +34,7 @@ import java.util.HashMap;
  * in alphabetical order, with "+" as the delimiter.
  * */
 public class PrivacySchema implements IJson {
-    HashMap<String, ColumnPrivacyMetadata> metadata;
+    private HashMap<String, ColumnPrivacyMetadata> metadata;
 
     public PrivacySchema(HashMap<String, ColumnPrivacyMetadata> metadata) {
         this.metadata = metadata;

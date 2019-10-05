@@ -20,6 +20,7 @@ package org.hillview;
 import org.hillview.dataStructures.PrivacySchema;
 import org.hillview.table.columns.ColumnPrivacyMetadata;
 
+import org.hillview.table.columns.DoubleColumnPrivacyMetadata;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -30,12 +31,12 @@ public class PrivacySchemaTest {
     @Test
     public void parseMetadataTest() {
         String metadata = "{'metadata':{" +
-                "'col1':{" +
+                "'col1':{\"type\":\"DoubleColumnPrivacyMetadata\"," +
                 "'epsilon':0.1," +
                 "'granularity':10.5," +
                 "'globalMin':0.0," +
                 "'globalMax':123.45}," +
-                "'col2':{" +
+                "'col2':{\"type\":\"DoubleColumnPrivacyMetadata\"," +
                 "'epsilon':0.5," +
                 "'granularity':15.0," +
                 "'globalMin':-0.5," +
@@ -48,14 +49,14 @@ public class PrivacySchemaTest {
     @Test
     public void serializeMetadataTest() {
         HashMap<String, ColumnPrivacyMetadata> mdMap = new HashMap<String, ColumnPrivacyMetadata>();
-        ColumnPrivacyMetadata md1 = new ColumnPrivacyMetadata(0.1, 12.345, 0.0, 123.45);
-        ColumnPrivacyMetadata md2 = new ColumnPrivacyMetadata(0.5, 0.5, -0.5, 13.0);
+        ColumnPrivacyMetadata md1 = new DoubleColumnPrivacyMetadata(0.1, 12.345, 0.0, 123.45);
+        ColumnPrivacyMetadata md2 = new DoubleColumnPrivacyMetadata(0.5, 0.5, -0.5, 13.0);
         mdMap.put("col1", md1);
         mdMap.put("col2", md2);
         PrivacySchema mdSchema = new PrivacySchema(mdMap);
         String mdJson = mdSchema.toJson();
-        String expected = "{\"metadata\":{\"col2\":{\"epsilon\":0.5,\"granularity\":0.5,\"globalMin\":-0.5,\"globalMax\":13.0}" +
-                ",\"col1\":{\"epsilon\":0.1,\"granularity\":12.345,\"globalMin\":0.0,\"globalMax\":123.45}}}";
+        String expected = "{\"metadata\":{\"col2\":{\"type\":\"DoubleColumnPrivacyMetadata\",\"granularity\":0.5,\"globalMin\":-0.5,\"globalMax\":13.0,\"epsilon\":0.5}" +
+                ",\"col1\":{\"type\":\"DoubleColumnPrivacyMetadata\",\"granularity\":12.345,\"globalMin\":0.0,\"globalMax\":123.45,\"epsilon\":0.1}}}";
         assertEquals(expected, mdJson);
     }
 }

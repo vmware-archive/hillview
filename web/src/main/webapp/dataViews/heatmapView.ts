@@ -29,7 +29,6 @@ import {Receiver} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {IDataView} from "../ui/dataview";
-import {Dialog} from "../ui/dialog";
 import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
 import {HeatmapPlot} from "../ui/heatmapPlot";
 import {HistogramPlot} from "../ui/histogramPlot";
@@ -309,24 +308,9 @@ export class HeatmapView extends ChartView {
     }
 
     public groupBy(): void {
-        const columns: DisplayName[] = [];
-        for (let i = 0; i < this.schema.length; i++) {
-            const col = this.schema.get(i);
-            if (col.name !== this.xAxisData.description.name
-                && col.name !== this.yAxisData.description.name) {
-                columns.push(this.schema.displayName(col.name));
-            }
-        }
-        if (columns.length === 0) {
-            this.page.reportError("No acceptable columns found");
-            return;
-        }
-
-        const dialog = new Dialog("Choose column", "Select a column to group on.");
-        dialog.addColumnSelectField("column", "column", columns, null,
-            "The column that will be used to group on.");
-        dialog.setAction(() => this.showTrellis(dialog.getColumnName("column")));
-        dialog.show();
+        const columns: DisplayName[] = this.schema.displayNamesExcluding(
+            [this.xAxisData.description.name, this.yAxisData.description.name]);
+        this.chooseTrellis(columns);
     }
 
     public export(): void {
@@ -360,7 +344,7 @@ export class HeatmapView extends ChartView {
         return lines;
     }
 
-    private showTrellis(colName: DisplayName): void {
+    protected showTrellis(colName: DisplayName): void {
         const groupBy = this.schema.findByDisplayName(colName);
         const cds: IColumnDescription[] = [this.xAxisData.description,
                                            this.yAxisData.description, groupBy];
@@ -375,7 +359,7 @@ export class HeatmapView extends ChartView {
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
-            return new FilterReceiver(title, [this.xAxisData.description, this.yAxisData.description], 
+            return new FilterReceiver(title, [this.xAxisData.description, this.yAxisData.description],
                 this.schema, [0, 0], page, operation, this.dataset, {
                 exact: true, chartKind: "Heatmap",
                 reusePage: false, relative: false,
@@ -501,7 +485,8 @@ export class HeatmapView extends ChartView {
         const rr = this.createFilter2DRequest(xRange, yRange);
         const renderer = new FilterReceiver(new PageTitle(
             "Filtered on " + this.xAxisData.getDisplayNameString(this.schema) + " and " +
-            this.yAxisData.getDisplayNameString(this.schema)), [this.xAxisData.description, this.yAxisData.description], 
+            this.yAxisData.getDisplayNameString(this.schema)),
+            [this.xAxisData.description, this.yAxisData.description],
             this.schema, [0, 0], this.page, rr, this.dataset, {
             exact: this.samplingRate >= 1, chartKind: "Heatmap",
             relative: false, reusePage: false

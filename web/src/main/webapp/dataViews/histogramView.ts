@@ -36,7 +36,7 @@ import {HistogramPlot} from "../ui/histogramPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {HistogramOptions, HtmlString, Resolution} from "../ui/ui";
+import {HistogramOptions, HtmlString, Resolution, SpecialChars} from "../ui/ui";
 import {
     formatNumber,
     ICancellable,
@@ -205,6 +205,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
             return;
         }
         this.augmentedHistogram = augmentedHistogram;
+        this.rowCount = augmentedHistogram.histogram.buckets.reduce((a, b) => a + b, 0);
 
         const h = augmentedHistogram.histogram;
         this.histogram = h;
@@ -233,8 +234,13 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
             this.surface.getActualChartSize(), pointDesc, 40);
 
         let summary = new HtmlString("");
-        if (h.missingData !== 0)
+        if (h.missingData !== 0) {
+            if (this.isPrivate())
+                summary.appendSafeString(SpecialChars.approx);
             summary = summary.appendSafeString(formatNumber(h.missingData) + " missing, ");
+        }
+        if (this.isPrivate())
+            summary.appendSafeString(SpecialChars.approx);
         summary = summary.appendSafeString(formatNumber(this.rowCount) + " points");
         if (this.xAxisData != null &&
             this.xAxisData.range.leftBoundaries != null &&
@@ -250,25 +256,11 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
     }
 
     public trellis(): void {
-        const columns: DisplayName[] = [];
-        for (let i = 0; i < this.schema.length; i++) {
-            const col = this.schema.get(i);
-            if (col.name !== this.xAxisData.description.name)
-                columns.push(this.schema.displayName(col.name));
-        }
-        if (columns.length === 0) {
-            this.page.reportError("No acceptable columns found");
-            return;
-        }
-
-        const dialog = new Dialog("Choose column", "Select a column to group on.");
-        dialog.addColumnSelectField("column", "column", columns, null,
-            "The column that will be used to group on.");
-        dialog.setAction(() => this.showTrellis(dialog.getColumnName("column")));
-        dialog.show();
+        const columns: DisplayName[] = this.schema.displayNamesExcluding([this.xAxisData.description.name]);
+        this.chooseTrellis(columns);
     }
 
-    private showTrellis(colName: DisplayName): void {
+    protected showTrellis(colName: DisplayName): void {
         const groupBy = this.schema.findByDisplayName(colName);
         const cds: IColumnDescription[] = [this.xAxisData.description, groupBy];
         const rr = this.createDataRangesRequest(cds, this.page, "TrellisHistogram");

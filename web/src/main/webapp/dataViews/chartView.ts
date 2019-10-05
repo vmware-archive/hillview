@@ -17,7 +17,7 @@
 
 import {BigTableView} from "../tableTarget";
 import {DataRange, RemoteObjectId} from "../javaBridge";
-import {SchemaClass} from "../schemaClass";
+import {DisplayName, SchemaClass} from "../schemaClass";
 import {DragEventKind, FullPage} from "../ui/fullPage";
 import {D3SvgElement, Point, ViewKind} from "../ui/ui";
 import {TextOverlay} from "../ui/textOverlay";
@@ -26,6 +26,7 @@ import {TopMenu} from "../ui/menu";
 import {drag as d3drag} from "d3-drag";
 import {mouse as d3mouse} from "d3-selection";
 import {AxisData} from "./axisData";
+import {Dialog} from "../ui/dialog";
 
 /**
  * A ChartView is a common base class for many views that
@@ -78,6 +79,17 @@ export abstract class ChartView extends BigTableView {
         this.page.registerDropHandler("XAxis", (p) => this.replaceAxis(p, "XAxis"));
         this.page.registerDropHandler("YAxis", (p) => this.replaceAxis(p, "YAxis"));
         this.page.registerDropHandler("GAxis", (p) => this.replaceAxis(p, "GAxis"));
+    }
+
+    protected createChartDiv(): HTMLDivElement {
+        this.topLevel = document.createElement("div");
+        this.topLevel.className = "chart";
+
+        const chartDiv = document.createElement("div");
+        this.topLevel.appendChild(chartDiv);
+        chartDiv.style.display = "flex";
+        chartDiv.style.flexDirection = "column";
+        return chartDiv;
     }
 
     protected setupMouse(): void {
@@ -177,6 +189,21 @@ export abstract class ChartView extends BigTableView {
             return destination.indexOf("Histogram") >= 0;
         return false;
     }
+
+    protected chooseTrellis(columns: DisplayName[]): void {
+        if (columns.length === 0) {
+            this.page.reportError("No acceptable columns found");
+            return;
+        }
+
+        const dialog = new Dialog("Choose column", "Select a column to group on.");
+        dialog.addColumnSelectField("column", "column", columns, null,
+            "The column that will be used to group on.");
+        dialog.setAction(() => this.showTrellis(dialog.getColumnName("column")));
+        dialog.show();
+    }
+
+    protected abstract showTrellis(colName: DisplayName): void;
 
     public getSourceAxisRange(sourcePageId: string, dragEvent: DragEventKind): DataRange | null {
         const page = this.dataset.findPage(Number(sourcePageId));

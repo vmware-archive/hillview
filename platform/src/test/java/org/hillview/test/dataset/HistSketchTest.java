@@ -39,7 +39,7 @@ public class HistSketchTest extends BaseTest {
         final IHistogramBuckets buckets = new DoubleHistogramBuckets(1, 50, 10);
         final HistogramSketch mySketch = new HistogramSketch(buckets,
                 myTable.getSchema().getColumnNames().get(0),
-                1, 0);
+                1, 0, null);
         Histogram result = mySketch.create(myTable);
         int size = 0;
         Assert.assertNotNull(result);
@@ -69,7 +69,7 @@ public class HistSketchTest extends BaseTest {
         final IHistogramBuckets buckets = new DoubleHistogramBuckets(min, max, 10);
         final ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize / 10);
         final Histogram hdl = all.blockingSketch(
-                new HistogramSketch(buckets, colName, 0.5, 0));
+                new HistogramSketch(buckets, colName, 0.5, 0, null));
         Assert.assertNotNull(hdl);
         int size = 0;
         int bucketNum = hdl.getBucketCount();

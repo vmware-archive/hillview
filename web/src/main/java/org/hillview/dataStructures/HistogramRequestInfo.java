@@ -51,6 +51,6 @@ public class HistogramRequestInfo {
 
     public HistogramSketch getSketch() {
         IHistogramBuckets buckets = this.getBuckets();
-        return new HistogramSketch(buckets, this.cd.name, this.samplingRate, this.seed);
+        return new HistogramSketch(buckets, this.cd.name, this.samplingRate, this.seed, null);
     }
 }

@@ -23,18 +23,17 @@ import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
 import {D3SvgElement, Resolution, ViewKind} from "../ui/ui";
 import {ChartView} from "./chartView";
-import {IScrollTarget, ScrollBar} from "../ui/scroll";
 import {AxisData} from "./axisData";
 
 /**
  * This is a base class that contains code common to various histogram renderings.
  */
-export abstract class HistogramViewBase extends ChartView implements IScrollTarget {
+export abstract class HistogramViewBase extends ChartView {
     protected summary: HTMLElement;
     protected cdfDot: D3SvgElement;
     protected cdfPlot: CDFPlot;
     protected chartDiv: HTMLDivElement;
-    protected scrollBar: ScrollBar;
+    // protected scrollBar: ScrollBar;
     public xAxisData: AxisData;
 
     protected constructor(
@@ -43,15 +42,9 @@ export abstract class HistogramViewBase extends ChartView implements IScrollTarg
         schema: SchemaClass,
         page: FullPage, viewKind: ViewKind) {
         super(remoteObjectId, rowCount, schema, page, viewKind);
-        this.topLevel = document.createElement("div");
-        this.topLevel.className = "chart";
-
-        this.chartDiv = document.createElement("div");
-        this.topLevel.appendChild(this.chartDiv);
-        this.chartDiv.style.display = "flex";
-        this.chartDiv.style.flexDirection = "column";
-        this.scrollBar = new ScrollBar(this, true);
-        this.topLevel.appendChild(this.scrollBar.getHTMLRepresentation());
+        this.chartDiv = this.createChartDiv();
+        // this.scrollBar = new ScrollBar(this, true);
+        // this.topLevel.appendChild(this.scrollBar.getHTMLRepresentation());
 
         const summaryContainer = document.createElement("div");
         this.topLevel.appendChild(summaryContainer);
@@ -96,18 +89,6 @@ export abstract class HistogramViewBase extends ChartView implements IScrollTarg
             .attr("width", width)
             .attr("height", height);
         return true;
-    }
-
-    public pageDown(): void {
-        // TODO
-    }
-
-    public pageUp(): void {
-        // TODO
-    }
-
-    public scrolledTo(position: number): void {
-        // TODO
     }
 }
 

@@ -5,7 +5,8 @@ import json
 import numpy as np
 
 def get_metadata(e, g, gMin, gMax):
-    return {'epsilon': e,
+    return {'type': "DoubleColumnPrivacyMetadata",
+            'epsilon': e,
             'granularity': g,
             'globalMin': gMin,
             'globalMax': gMax}

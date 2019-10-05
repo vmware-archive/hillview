@@ -3,7 +3,7 @@ package org.hillview.dataStructures;
 import org.apache.commons.math3.distribution.LaplaceDistribution;
 import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.Pair;
-import org.hillview.sketches.DyadicHistogramBuckets;
+import org.hillview.sketches.DyadicDoubleHistogramBuckets;
 import org.hillview.sketches.Histogram;
 import org.hillview.utils.Converters;
 
@@ -22,6 +22,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
     public PrivateHistogram(final Histogram histogram, double epsilon, boolean cdf) {
         super(histogram);
         this.epsilon = epsilon;
+        DyadicDoubleHistogramBuckets bucketDescription = (DyadicDoubleHistogramBuckets)buckets;
         this.confMins  = new double[bucketDescription.getBucketCount()];
         this.confMaxes = new double[bucketDescription.getBucketCount()];
         this.addDyadicLaplaceNoise(bucketDescription);
@@ -62,7 +63,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
      * This function uses the dyadic decomposition of each prefix to add the smallest amount of
      * noise for that prefix.
      */
-    private void recomputeCDF(DyadicHistogramBuckets bucketDescription) {
+    private void recomputeCDF(DyadicDoubleHistogramBuckets bucketDescription) {
         for (int i = 0; i < this.cdfBuckets.length; i++) {
             Pair<Double, Double> p = bucketDescription.noiseForBucket(i, true);
             Converters.checkNull(p.first);
@@ -81,7 +82,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
      * Each node in the dyadic interval tree is perturbed by an independent noise variable distributed as Laplace(log T / epsilon).
      * The total noise is the sum of the noise variables in the intervals composing the desired interval or bucket.
      */
-    private void addDyadicLaplaceNoise(DyadicHistogramBuckets bucketDescription) {
+    private void addDyadicLaplaceNoise(DyadicDoubleHistogramBuckets bucketDescription) {
         for (int i = 0; i < this.histogram.buckets.length; i++) {
             Pair<Double, Double> noise = bucketDescription.noiseForBucket(i, false);
             this.histogram.buckets[i] += Converters.checkNull(noise.first);

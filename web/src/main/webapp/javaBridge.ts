@@ -233,6 +233,9 @@ export interface AugmentedHistogram {
     confMins?: number[];
     /// maximum confidence value for each histogram bucket
     confMaxes?: number[];
+    // Confidence values around the missing count
+    missingMin?: number;
+    missingMax?: number;
 }
 
 // This is actually a union of several java classes:

@@ -93,6 +93,8 @@ public interface IColumn extends Serializable {
 
     /**
      * Whatever the internal data type, return a double.
+     * For strings this will treat each character of the string as a digit in
+     * a high radix representation.
      */
     double asDouble(int rowIndex);
 

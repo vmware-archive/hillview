@@ -51,7 +51,6 @@ import {
 import {AxisData} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
-import {Dialog} from "../ui/dialog";
 import {FilterReceiver, DataRangesReceiver} from "./dataRangesCollectors";
 
 /**
@@ -263,27 +262,12 @@ export class Histogram2DView extends HistogramViewBase {
     }
 
     public trellis(): void {
-        const columns: DisplayName[] = [];
-        for (let i = 0; i < this.schema.length; i++) {
-            const col = this.schema.get(i);
-            if (col.name !== this.xAxisData.description.name
-                && col.name !== this.yData.description.name) {
-                columns.push(this.schema.displayName(col.name));
-            }
-        }
-        if (columns.length === 0) {
-            this.page.reportError("No acceptable columns found");
-            return;
-        }
-
-        const dialog = new Dialog("Choose column", "Select a column to group on.");
-        dialog.addColumnSelectField("column", "column", columns, null,
-            "The column that will be used to group on.");
-        dialog.setAction(() => this.showTrellis(dialog.getColumnName("column")));
-        dialog.show();
+        const columns: DisplayName[] = this.schema.displayNamesExcluding(
+            [this.xAxisData.description.name, this.yData.description.name]);
+        this.chooseTrellis(columns);
     }
 
-    private showTrellis(colName: DisplayName): void {
+    protected showTrellis(colName: DisplayName): void {
         const groupBy = this.schema.findByDisplayName(colName);
         const cds: IColumnDescription[] = [
             this.xAxisData.description,
@@ -357,7 +341,7 @@ export class Histogram2DView extends HistogramViewBase {
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
-            return new FilterReceiver(title, [this.xAxisData.description, this.yData.description], 
+            return new FilterReceiver(title, [this.xAxisData.description, this.yData.description],
                 this.schema, [0, 0], page, operation, this.dataset, {
                 exact: this.samplingRate >= 1, chartKind: "Histogram",
                 relative: this.relative, reusePage: false

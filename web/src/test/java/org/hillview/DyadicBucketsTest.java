@@ -17,11 +17,11 @@
 
 package org.hillview;
 
-import org.hillview.sketches.DyadicHistogramBuckets;
+import org.hillview.sketches.DyadicDoubleHistogramBuckets;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.columns.DoubleArrayColumn;
-import org.hillview.table.columns.ColumnPrivacyMetadata;
+import org.hillview.table.columns.DoubleColumnPrivacyMetadata;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -64,8 +64,8 @@ public class DyadicBucketsTest {
         final int numBuckets = 10;
         final int granularity = 20;
         final double epsilon = 0.01;
-        DyadicHistogramBuckets buckDes = new DyadicHistogramBuckets(min, max, numBuckets,
-                new ColumnPrivacyMetadata(epsilon, granularity, min, max));
+        DyadicDoubleHistogramBuckets buckDes = new DyadicDoubleHistogramBuckets(min, max, numBuckets,
+                new DoubleColumnPrivacyMetadata(epsilon, granularity, min, max));
 
         // should create only 100/20 = 5 buckets
         assert(buckDes.getBucketCount() == 5);
@@ -79,8 +79,8 @@ public class DyadicBucketsTest {
         final int numBuckets = 4; // creates buckets of size 25...
         final int granularity = 10; // but leaves of size 10
         final double epsilon = 0.01;
-        DyadicHistogramBuckets buckDes = new DyadicHistogramBuckets(min, max, numBuckets,
-                new ColumnPrivacyMetadata(epsilon, granularity, min, max));
+        DyadicDoubleHistogramBuckets buckDes = new DyadicDoubleHistogramBuckets(min, max, numBuckets,
+                new DoubleColumnPrivacyMetadata(epsilon, granularity, min, max));
 
         // Check that values fall in correct buckets based on leaves
         int expectedBucket;
@@ -97,7 +97,7 @@ public class DyadicBucketsTest {
                 expectedBucket = 3;
             }
 
-            assertEquals(expectedBucket, buckDes.indexOf((double)i));
+            assertEquals(expectedBucket, buckDes.indexOf(i));
         }
 
         // Also check computation of bucket size, which is done independently
@@ -119,8 +119,8 @@ public class DyadicBucketsTest {
         final int numBuckets = 4; // creates buckets of size 0.025...
         final double granularity = 0.01; // but leaves of size 0.01
         final double epsilon = 0.01;
-        DyadicHistogramBuckets buckDes = new DyadicHistogramBuckets(min, max, numBuckets,
-                new ColumnPrivacyMetadata(epsilon, granularity, min, max));
+        DyadicDoubleHistogramBuckets buckDes = new DyadicDoubleHistogramBuckets(min, max, numBuckets,
+                new DoubleColumnPrivacyMetadata(epsilon, granularity, min, max));
         // TODO
         /*
         for (int i = 0; i < buckDes.getNumOfBuckets(); i++) {
@@ -138,8 +138,8 @@ public class DyadicBucketsTest {
         final int numBuckets = 10;
         final double granularity = 25;
         final double epsilon = 0.01;
-        DyadicHistogramBuckets buckDes = new DyadicHistogramBuckets(min, max, numBuckets,
-                new ColumnPrivacyMetadata(epsilon, granularity, min, max));
+        DyadicDoubleHistogramBuckets buckDes = new DyadicDoubleHistogramBuckets(min, max, numBuckets,
+                new DoubleColumnPrivacyMetadata(epsilon, granularity, min, max));
         // TODO
         /*
         for (int i = 0; i < buckDes.getNumOfBuckets(); i++) {
@@ -157,8 +157,8 @@ public class DyadicBucketsTest {
         final int numBuckets = 4; // creates buckets of size 0.025...
         final double granularity = 0.01; // but leaves of size 0.01
         final double epsilon = 0.01;
-        DyadicHistogramBuckets buckDes = new DyadicHistogramBuckets(min, max, numBuckets,
-                new ColumnPrivacyMetadata(epsilon, granularity, min, max));
+        DyadicDoubleHistogramBuckets buckDes = new DyadicDoubleHistogramBuckets(min, max, numBuckets,
+                new DoubleColumnPrivacyMetadata(epsilon, granularity, min, max));
 
         // Check that values fall in correct buckets based on leaves
         int expectedBucket;

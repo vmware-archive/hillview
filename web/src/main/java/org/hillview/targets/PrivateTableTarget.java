@@ -10,6 +10,7 @@ import org.hillview.sketches.*;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.api.ITable;
+import org.hillview.table.columns.DoubleColumnPrivacyMetadata;
 import org.hillview.table.filters.RangeFilterDescription;
 import org.hillview.table.columns.ColumnPrivacyMetadata;
 import org.hillview.table.rows.PrivacyMetadata;
@@ -49,7 +50,7 @@ public class PrivateTableTarget extends RpcTarget {
     public static class PrivacySummary implements IJson {
         @Nullable
         public Schema schema;
-        public long rowCount = 0;
+        public long rowCount;
         @Nullable
         public PrivacySchema metadata;
     }
@@ -78,25 +79,14 @@ public class PrivateTableTarget extends RpcTarget {
         double max;
         int bucketCount;
 
-        @Nullable
-        PrivacyMetadata metadata;
-
-        void initMetadata(PrivacySchema privacySchema) {
-            this.metadata = privacySchema.get(this.cd.name);
-        }
-
-        DyadicHistogramBuckets getBuckets() {
+        DyadicDoubleHistogramBuckets getBuckets(PrivacySchema metadata) {
             if (!cd.kind.isNumeric())
                 throw new RuntimeException("Attempted to instantiate private buckets with non-numeric column");
 
             // This bucket class ensures that computed buckets fall on leaf boundaries.
-            return new DyadicHistogramBuckets(this.min, this.max,
-                    this.bucketCount, metadata);
-        }
-
-        HistogramSketch getSketch() {
-            DyadicHistogramBuckets buckets = this.getBuckets();
-            return new HistogramSketch(buckets, this.cd.name, this.samplingRate, this.seed);
+        HistogramSketch getSketch(PrivacySchema metadata) {
+            DyadicDoubleHistogramBuckets buckets = this.getBuckets(metadata);
+            return new HistogramSketch(buckets, this.cd.name, this.samplingRate, this.seed, null);
         }
 
         ColumnPrivacyMetadata getMetadata(PrivacySchema metadata) {
@@ -130,7 +120,7 @@ public class PrivateTableTarget extends RpcTarget {
         RangeArgs[] args = request.parseArgs(RangeArgs[].class);
         assert args.length == 1;
         double min, max;
-        ColumnPrivacyMetadata md = this.metadata.get(args[0].cd.name);
+        DoubleColumnPrivacyMetadata md = (DoubleColumnPrivacyMetadata)this.metadata.get(args[0].cd.name);
         RangeFilterDescription filter = this.columnLimits.get(args[0].cd.name);
         if (filter == null) {
             min = md.globalMin;
