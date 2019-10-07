@@ -17,7 +17,6 @@
 
 package org.hillview.sketches;
 
-import org.apache.commons.math3.distribution.LaplaceDistribution;
 import org.hillview.dataset.api.Pair;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.columns.DoubleColumnPrivacyMetadata;
@@ -152,7 +151,7 @@ public class DyadicDoubleHistogramBuckets implements IHistogramBuckets {
 
         // Preserves semantics, will make noise computation easier
         if (this.numLeaves < this.numOfBuckets) {
-            this.numOfBuckets = (int)this.numLeaves;
+            this.numOfBuckets = this.numLeaves;
         }
 
         // User-specified range may not fall on leaf boundaries.

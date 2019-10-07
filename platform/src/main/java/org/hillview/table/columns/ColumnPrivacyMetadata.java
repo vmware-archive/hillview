@@ -24,7 +24,7 @@ import javax.annotation.Nullable;
 /**
  * This class represents metadata used for computing differentially-private mechanisms.
  */
-public abstract class ColumnPrivacyMetadata implements IJson {
+public class ColumnPrivacyMetadata implements IJson {
     /**
      * Total privacy budget allotted to this column.
      */

@@ -500,49 +500,19 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
     }
 
     private createContextMenu(
-        thd: HTMLElement, colIndex: number, visible: boolean, isPrivate: boolean): void {
+        thd: HTMLElement, colIndex: number, visible: boolean): void {
         const cd = this.schema.get(colIndex);
         thd.oncontextmenu = (e) => {
-        this.columnClick(colIndex, e);
-        if (e.ctrlKey && (e.button === 1)) {
-            // Ctrl + click is interpreted as a right-click on macOS.
-            // This makes sure it's interpreted as a column click with Ctrl.
-            return;
-        }
+            this.columnClick(colIndex, e);
+            if (e.ctrlKey && (e.button === 1)) {
+                // Ctrl + click is interpreted as a right-click on macOS.
+                // This makes sure it's interpreted as a column click with Ctrl.
+                return;
+            }
 
-<<<<<<< a8ff67bf614fd0f7fcce16fe211ac70452174a46
             const selectedCount = this.selectedColumns.size();
             this.contextMenu.clear();
-            if (!isPrivate) {
-                if (visible) {
-                    this.contextMenu.addItem({
-                        text: "Hide",
-                        action: () => this.showColumns(0, true),
-                        help: "Hide the data in the selected columns",
-                    }, true);
-                } else {
-                    this.contextMenu.addItem({
-                        text: "Show",
-                        action: () => this.showColumns(1, false),
-                        help: "Show the data in the selected columns.",
-                    }, true);
-                }
-                
-                this.contextMenu.addItem({
-                    text: "Drop",
-                    action: () => this.dropColumns(),
-                    help: "Eliminate the selected columns from the view.",
-                }, selectedCount !== 0);
-                this.contextMenu.addItem({
-                    text: "Estimate distinct elements",
-                    action: () => this.hLogLog(),
-                    help: "Compute an estimate of the number of different values that appear in the selected column.",
-                }, selectedCount === 1);
-=======
-        const selectedCount = this.selectedColumns.size();
-        this.contextMenu.clear();
             if (visible) {
->>>>>>> Reorganized code; support for more private operations
                 this.contextMenu.addItem({
                     text: "Hide",
                     action: () => this.showColumns(0, true),
@@ -550,20 +520,6 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 }, true);
             } else {
                 this.contextMenu.addItem({
-<<<<<<< a8ff67bf614fd0f7fcce16fe211ac70452174a46
-                    text: "Private Histogram",
-                    action: () => this.privateHistSelected(),
-                    help: "Plot the data in the selected columns as a private histogram. " +
-                        "Applies to one numeric column only.",
-                }, selectedCount === 1 && this.getSelectedColNames().reduce((a, b) => a && this.isNumericColumn(b), true));
-                this.contextMenu.addItem({
-                    text: "Private Heatmap",
-                    action: () => this.heatmapSelected(),
-                    help: "Plot the data in the selected columns as a heatmap. " +
-                        "Applies to two numeric columns only.",
-                }, selectedCount === 2 && this.getSelectedColNames().reduce((a, b) => a && this.isNumericColumn(b), true));
-	    }
-=======
                     text: "Show",
                     action: () => this.showColumns(1, false),
                     help: "Show the data in the selected columns.",
@@ -673,7 +629,6 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 help: "Extract a value associated with a specific key.",
             }, selectedCount === 1 &&
                 this.isKVColumn(this.getSelectedColNames()[0]));
->>>>>>> Reorganized code; support for more private operations
             this.contextMenu.show(e);
         };
     }
@@ -757,7 +712,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                     o.addColumn({ columnDescription: cd, isAscending: true });
                 this.setOrder(o, true);
             };
-            this.createContextMenu(thd, i, visible, this.isPrivate());
+            this.createContextMenu(thd, i, visible);
         }
 
         this.cellsPerColumn = new Map<string, HTMLElement[]>();

@@ -59,4 +59,31 @@ public class PrivacySchemaTest {
                 ",\"col1\":{\"type\":\"DoubleColumnPrivacyMetadata\",\"granularity\":12.345,\"globalMin\":0.0,\"globalMax\":123.45,\"epsilon\":0.1}}}";
         assertEquals(expected, mdJson);
     }
+
+    @Test
+    public void serializeMultipleColumnsTest() {
+        HashMap<String, ColumnPrivacyMetadata> mdMap = new HashMap<String, ColumnPrivacyMetadata>();
+        ColumnPrivacyMetadata md1 = new DoubleColumnPrivacyMetadata(0.1, 12.345, 0.0, 123.45);
+        ColumnPrivacyMetadata md2 = new DoubleColumnPrivacyMetadata(0.5, 0.5, -0.5, 13.0);
+        ColumnPrivacyMetadata md12 = new ColumnPrivacyMetadata(0.25);
+        mdMap.put("col1", md1);
+        mdMap.put("col2", md2);
+        mdMap.put("col1+col2", md12);
+        PrivacySchema mdSchema = new PrivacySchema(mdMap);
+        String mdJson = mdSchema.toJson();
+        String expected = "{\"metadata\":{\"col1+col2\":{\"type\":\"ColumnPrivacyMetadata\",\"epsilon\":0.25}," +
+                "\"col2\":{\"type\":\"DoubleColumnPrivacyMetadata\",\"granularity\":0.5,\"globalMin\":-0.5,\"globalMax\":13.0,\"epsilon\":0.5}," +
+                "\"col1\":{\"type\":\"DoubleColumnPrivacyMetadata\",\"granularity\":12.345,\"globalMin\":0.0,\"globalMax\":123.45,\"epsilon\":0.1}}}";
+        assertEquals(expected, mdJson);
+    }
+
+    @Test
+    public void deserializeMultipleColumnsTest() {
+        String md = "{\"metadata\":{\"col1+col2\":{\"type\":\"ColumnPrivacyMetadata\",\"epsilon\":0.25}," +
+                "\"col2\":{\"type\":\"DoubleColumnPrivacyMetadata\",\"granularity\":0.5,\"globalMin\":-0.5,\"globalMax\":13.0,\"epsilon\":0.5}," +
+                "\"col1\":{\"type\":\"DoubleColumnPrivacyMetadata\",\"granularity\":12.345,\"globalMin\":0.0,\"globalMax\":123.45,\"epsilon\":0.1}}}";
+
+        PrivacySchema mdSchema = PrivacySchema.loadFromString(md);
+        assertEquals(mdSchema.get(new String[] {"col1", "col2"}).epsilon, 0.25, 0.001);
+    }
 }

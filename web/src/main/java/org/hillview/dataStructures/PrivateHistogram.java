@@ -19,12 +19,12 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
     private double[] confMaxes;
     private double epsilon;
 
-    public PrivateHistogram(final Histogram histogram, double epsilon, boolean cdf) {
+    public PrivateHistogram(DyadicDoubleHistogramBuckets bucketDescription,
+                            final Histogram histogram, double epsilon, boolean cdf) {
         super(histogram);
         this.epsilon = epsilon;
-        DyadicDoubleHistogramBuckets bucketDescription = (DyadicDoubleHistogramBuckets)buckets;
-        this.confMins  = new double[bucketDescription.getBucketCount()];
-        this.confMaxes = new double[bucketDescription.getBucketCount()];
+        this.confMins  = new double[histogram.getBucketCount()];
+        this.confMaxes = new double[histogram.getBucketCount()];
         this.addDyadicLaplaceNoise(bucketDescription);
         if (cdf) {
             this.recomputeCDF(bucketDescription);
@@ -38,7 +38,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
      *             rather than [bucket left leaf, bucket right leaf].
      * Returns the noise and the total variance of the variables used to compute the noise.
      */
-    public Pair<Double, Double> noiseForBucket(int bucketIdx, boolean cdf) {
+    private Pair<Double, Double> noiseForBucket(DyadicDoubleHistogramBuckets bucketDescription, int bucketIdx, boolean cdf) {
         ArrayList<Pair<Integer, Integer>> intervals = bucketDescription.bucketDecomposition(bucketIdx, cdf);
 
         double noise = 0;
@@ -51,8 +51,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
             noise += dist.sample();
             variance += 2*(Math.pow(scale, 2));
         }
-
-        return new Pair(noise, variance);
+        return new Pair<Double, Double>(noise, variance);
     }
 
 
@@ -65,7 +64,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
      */
     private void recomputeCDF(DyadicDoubleHistogramBuckets bucketDescription) {
         for (int i = 0; i < this.cdfBuckets.length; i++) {
-            Pair<Double, Double> p = bucketDescription.noiseForBucket(i, true);
+            Pair<Double, Double> p = this.noiseForBucket(bucketDescription, i, true);
             Converters.checkNull(p.first);
             this.cdfBuckets[i] += p.first;
             if (i > 0) {
@@ -84,7 +83,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
      */
     private void addDyadicLaplaceNoise(DyadicDoubleHistogramBuckets bucketDescription) {
         for (int i = 0; i < this.histogram.buckets.length; i++) {
-            Pair<Double, Double> noise = bucketDescription.noiseForBucket(i, false);
+            Pair<Double, Double> noise = this.noiseForBucket(bucketDescription, i, false);
             this.histogram.buckets[i] += Converters.checkNull(noise.first);
 
             // Postprocess so that no buckets are negative

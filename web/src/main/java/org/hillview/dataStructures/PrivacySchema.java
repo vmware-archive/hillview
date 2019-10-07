@@ -44,14 +44,15 @@ public class PrivacySchema implements IJson {
         return metadata.get(colName);
     }
 
-    public PrivacyMetadata get(String[] colNames) {
+    public ColumnPrivacyMetadata get(String[] colNames) {
         Arrays.sort(colNames);
-        String key = "";
+        StringBuilder keyBuilder = new StringBuilder();
         for (int i = 0; i < colNames.length - 1; i++) {
-            key += colNames[i];
-            key += "+";
+            keyBuilder.append(colNames[i]);
+            keyBuilder.append("+");
         }
-        key += colNames[colNames.length - 1];
+        keyBuilder.append(colNames[colNames.length - 1]);
+        String key = keyBuilder.toString();
         return metadata.get(key);
     }
 

@@ -70,6 +70,7 @@ public interface IJson extends Serializable {
             .registerTypeAdapter(HostAndPort.class, new HostList.HostAndPortDeserializer())
             .registerTypeAdapterFactory(
                     RuntimeTypeAdapterFactory.of(ColumnPrivacyMetadata.class)
+                            .registerSubtype(ColumnPrivacyMetadata.class)
                             .registerSubtype(DoubleColumnPrivacyMetadata.class)
                             .registerSubtype(IntColumnPrivacyMetadata.class)
                             .registerSubtype(StringColumnPrivacyMetadata.class))
