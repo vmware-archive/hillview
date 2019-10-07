@@ -18,7 +18,6 @@
 import {OnCompleteReceiver} from "../rpc";
 import {
     DataRange,
-    FilterDescription,
     HistogramArgs,
     IColumnDescription,
     kindIsString,
@@ -494,28 +493,14 @@ export class FilterReceiver extends BaseReceiver {
                 page: FullPage,
                 operation: ICancellable<RemoteObjectId>,
                 dataset: DatasetView,
-                private descs: FilterDescription[],
                 protected options: ChartOptions) {
         super(page, operation, "Filter", dataset);
     }
 
     public run(): void {
         super.run();
-        if (!this.page.dataset.isPrivate()) {
-            const rr = this.remoteObject.createDataRangesRequest(this.cds, this.page, this.options.chartKind);
-            rr.invoke(new DataRangesReceiver(this.remoteObject, this.page, rr, this.schema,
-                      this.bucketCounts, this.cds, this.title, this.options));
-        } else {
-            // We want to bypass the normal range collection since the min/max are fixed
-            const dummyRangesCollector = new DataRangesReceiver(this.remoteObject, this.page, null, this.schema,
-                                     this.bucketCounts, this.cds, this.title, this.options);
-            const ranges: DataRange[] = [];
-            for (const desc of this.descs) {
-                const dr: DataRange = { presentCount: -1, missingCount: -1,
-                        min: desc.min, max: desc.max };
-                ranges.push(dr);
-            }
-            dummyRangesCollector.run(ranges);
-        }
+        const rr = this.remoteObject.createDataRangesRequest(this.cds, this.page, this.options.chartKind);
+        rr.invoke(new DataRangesReceiver(this.remoteObject, this.page, rr, this.schema,
+                  this.bucketCounts, this.cds, this.title, this.options));
     }
 }

@@ -26,9 +26,7 @@ import org.hillview.table.*;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
-import org.hillview.table.columns.StringArrayColumn;
-import org.hillview.table.columns.DoubleArrayColumn;
-import org.hillview.table.columns.IntArrayColumn;
+import org.hillview.table.columns.*;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.test.BaseTest;
 import org.junit.Assert;
@@ -108,5 +106,13 @@ public class JsonTest extends BaseTest {
         JsonFileLoader reader = new JsonFileLoader(jsonFolder + "/" + jsonSample, null);
         ITable table = reader.load();
         Assert.assertEquals("Table[2x15]", table.toString());
+    }
+
+    @Test
+    public void testHierarchySerialization() {
+        DoubleColumnPrivacyMetadata md1 = new DoubleColumnPrivacyMetadata(0.1, 12.345, 0.0, 123.45);
+        String s = IJson.gsonInstance.toJson(md1);
+        ColumnPrivacyMetadata des = IJson.gsonInstance.fromJson(s, ColumnPrivacyMetadata.class);
+        Assert.assertTrue(des instanceof DoubleColumnPrivacyMetadata);
     }
 }

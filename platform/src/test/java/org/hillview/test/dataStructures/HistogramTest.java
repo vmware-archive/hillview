@@ -37,23 +37,23 @@ public class HistogramTest extends BaseTest {
         final int bucketNum = 110;
         final int colSize = 10000;
         DoubleHistogramBuckets buckDes = new DoubleHistogramBuckets(0, 100, bucketNum);
-        Histogram hist = new Histogram(buckDes);
+        Histogram hist = new Histogram(buckDes.getBucketCount());
         DoubleArrayColumn col = DoubleArrayTest.generateDoubleArray(colSize, 100);
         FullMembershipSet fMap = new FullMembershipSet(colSize);
-        hist.create(col, fMap, 1.0, 0, false);
+        hist.create(col, fMap, buckDes, 1.0, 0, false);
         int size = 0;
         for (int i = 0; i < bucketNum; i++)
             size += hist.getCount(i);
-        Histogram hist1 = new Histogram(buckDes);
+        Histogram hist1 = new Histogram(buckDes.getBucketCount());
         DoubleArrayColumn col1 = DoubleArrayTest.generateDoubleArray(2 * colSize, 100);
         FullMembershipSet fMap1 = new FullMembershipSet(2 * colSize);
-        hist1.create(col1, fMap1, 1.0, 0, false);
+        hist1.create(col1, fMap1, buckDes, 1.0, 0, false);
         Histogram hist2 = hist1.union(hist);
         size = 0;
         for (int i = 0; i < bucketNum; i++)
             size += hist2.getCount(i);
-        Histogram hist3 = new Histogram(buckDes);
-        hist3.create(col, fMap, 0.1, 0, false);
+        Histogram hist3 = new Histogram(buckDes.getBucketCount());
+        hist3.create(col, fMap, buckDes, 0.1, 0, false);
         size = 0;
         for (int i = 0; i < bucketNum; i++)
             size += hist3.getCount(i);
@@ -111,11 +111,11 @@ public class HistogramTest extends BaseTest {
         Assert.assertEquals(1, hm.getCount(1, 1));
         Assert.assertEquals(1, hm.getCount(2, 1));
         Assert.assertEquals(1, hm.getCount(2, 1));
-        Assert.assertEquals(3, h2.getNumOfBuckets());
+        Assert.assertEquals(3, h2.getBucketCount());
         Assert.assertEquals(1, h2.getCount(0));
         Assert.assertEquals(1, h2.getCount(1));
         Assert.assertEquals(1, h2.getCount(2));
-        Assert.assertEquals(2, h1.getNumOfBuckets());
+        Assert.assertEquals(2, h1.getBucketCount());
         Assert.assertEquals(1, h1.getCount(0));
         Assert.assertEquals(1, h1.getCount(1));
         Assert.assertEquals(1, hm.getMissingData());

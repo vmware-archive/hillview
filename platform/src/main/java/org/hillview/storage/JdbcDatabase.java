@@ -165,8 +165,12 @@ public class JdbcDatabase {
         assert this.conn.info.table != null;
         String query;
         if (buckets instanceof DoubleHistogramBuckets) {
-            query = this.conn.getQueryForNumericHistogram(
-                    this.conn.info.table, cd, (DoubleHistogramBuckets)buckets);
+            if (cd.kind == ContentsKind.Date)
+                query = this.conn.getQueryForDateHistogram(
+                        this.conn.info.table, cd, (DoubleHistogramBuckets)buckets);
+            else
+                query = this.conn.getQueryForNumericHistogram(
+                        this.conn.info.table, cd, (DoubleHistogramBuckets)buckets);
         } else {
             query = this.conn.getQueryForStringHistogram(
                     this.conn.info.table, cd, (StringHistogramBuckets)buckets);
@@ -177,7 +181,7 @@ public class JdbcDatabase {
         IColumn bucketNr = cols.get(0);
         IColumn bucketSize = cols.get(1);
         boolean isDouble = bucketNr.getDescription().kind == ContentsKind.Double;
-        int bucketCount = buckets.getNumOfBuckets();
+        int bucketCount = buckets.getBucketCount();
         long[] data = new long[bucketCount];
         long nonNulls = 0;
         for (int i = 0; i < bucketNr.sizeInRows(); i++) {
@@ -192,7 +196,7 @@ public class JdbcDatabase {
             nonNulls += count;
         }
         long nulls = this.getRowCount() - nonNulls;
-        return new Histogram(buckets, data, nulls);
+        return new Histogram(data, nulls);
     }
 
     /**
@@ -211,9 +215,16 @@ public class JdbcDatabase {
         if (cd.kind == ContentsKind.Double) {
             range.min = row.getDouble("min");
             range.max = row.getDouble("max");
-        } else {
+        } else if (cd.kind == ContentsKind.Integer) {
             range.min = row.getInt("min");
             range.max = row.getInt("max");
+        } else if (cd.kind == ContentsKind.Date) {
+            Instant min = row.getDate("min");
+            Instant max = row.getDate("max");
+            if (min != null)
+                range.min = Converters.toDouble(min);
+            if (max != null)
+                range.max = Converters.toDouble(max);
         }
         range.presentCount = (long)row.getDouble("nonnulls");
         range.missingCount = (long)(row.getDouble("total")) - range.presentCount;
@@ -484,3 +495,4 @@ public class JdbcDatabase {
         }
     }
 }
+

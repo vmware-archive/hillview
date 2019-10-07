@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2019 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,26 +15,26 @@
  * limitations under the License.
  */
 
-package org.hillview.sketches;
+package org.hillview.dataStructures;
 
-import org.hillview.table.api.IColumn;
-
-import java.io.Serializable;
+import org.hillview.dataset.api.IJson;
+import org.hillview.sketches.NextKList;
 
 /**
- * A description of the buckets used to compute a histogram.
+ * The result of heavyHitterSketch.
  */
-public interface IHistogramBuckets extends Serializable {
+public class TopList implements IJson {
     /**
-     * Number of buckets; must be greater than 0.
+     * The NextKList stores the fields to display and their counts.
      */
-    int getBucketCount();
+    public final NextKList top;
+    /**
+     * The id of the FreqKList object which might be used for further filtering.
+     */
+    public final String heavyHittersId;
 
-    /**
-     * @param column Column holding the data.
-     * @param rowIndex  Index of the row in the column.
-     * @return the index of the bucket in which the item should be placed.
-     * If the value is out of the range of buckets this returns -1.
-     */
-    int indexOf(IColumn column, int rowIndex);
+    public TopList(NextKList top, String heavyHittersId) {
+        this.top = top;
+        this.heavyHittersId = heavyHittersId;
+    }
 }

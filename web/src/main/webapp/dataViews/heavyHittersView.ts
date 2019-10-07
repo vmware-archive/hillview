@@ -124,6 +124,7 @@ export class HeavyHittersView extends BigTableView {
     protected table: TabularDisplay;
     protected restCount: number;
     protected restPos: number;
+    private nextKList: NextKList = null;
 
     constructor(public heavyHittersId: RemoteObjectId,
                 public page: FullPage,
@@ -189,6 +190,23 @@ export class HeavyHittersView extends BigTableView {
             columnsShown: this.columnsShown,
         };
         return result;
+    }
+
+    /**
+     * This method is called when all the data has been received.
+     */
+    public updateCompleted(timeInMs: number): void {
+        super.updateCompleted(timeInMs);
+        if (this.nextKList != null &&
+            this.nextKList.rows != null &&
+            this.nextKList.rows.length >= HeavyHittersView.maxDisplay) {
+                const longListDialog = new NotifyDialog("Too Many Frequent Elements",
+                    "Showing the top " + HeavyHittersView.maxDisplay.toString() +
+                    " elements out of " + this.nextKList.rows.length + "\n" +
+                    "Use the 'View as Table' menu option to see the entire list",
+                    "");
+                longListDialog.show();
+        }
     }
 
     public static reconstruct(ser: HeavyHittersSerialization, page: FullPage): IDataView {
@@ -279,6 +297,7 @@ export class HeavyHittersView extends BigTableView {
     }
 
     public updateView(nextKList: NextKList): void {
+        this.nextKList = nextKList;
         this.setRest(nextKList);
         if (nextKList.rows != null) {
             let k = 0;
@@ -311,17 +330,6 @@ export class HeavyHittersView extends BigTableView {
                 this.showRest(nextKList.rows.length, position, this.restCount, nextKList.rowsScanned, this.table);
         }
         this.table.addFooter();
-        if (nextKList.rows.length >= HeavyHittersView.maxDisplay)
-            HeavyHittersView.showLongDialog(nextKList.rows.length);
-    }
-
-    private static showLongDialog(total: number): void {
-        const longListDialog = new NotifyDialog("Too Many Frequent Elements",
-            "Showing the top " + HeavyHittersView.maxDisplay.toString() +
-            " elements out of " + total + "\n" +
-            "Use the 'View as Table' menu option to see the entire list",
-            "");
-        longListDialog.show();
     }
 
     private clickThenShowContextMenu(tRow: HTMLTableRowElement, e: MouseEvent): void {

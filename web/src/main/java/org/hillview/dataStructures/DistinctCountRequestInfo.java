@@ -15,26 +15,12 @@
  * limitations under the License.
  */
 
-package org.hillview.targets;
-
-import org.hillview.dataset.api.IJson;
-import org.hillview.sketches.NextKList;
+package org.hillview.dataStructures;
 
 /**
- * The result of heavyHitterSketch.
+ * Serialization of a request to compute the number of distinct items.
  */
-public class TopList implements IJson {
-    /**
-     * The NextKList stores the fields to display and their counts.
-     */
-    public final NextKList top;
-    /**
-     * The id of the FreqKList object which might be used for further filtering.
-     */
-    public final String heavyHittersId;
-
-    public TopList(NextKList top, String heavyHittersId) {
-        this.top = top;
-        this.heavyHittersId = heavyHittersId;
-    }
+public class DistinctCountRequestInfo {
+    public String columnName = "";
+    public long seed;
 }

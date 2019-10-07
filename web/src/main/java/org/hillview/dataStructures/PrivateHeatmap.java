@@ -3,15 +3,16 @@ package org.hillview.dataStructures;
 import org.apache.commons.math3.distribution.LaplaceDistribution;
 import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.Pair;
-import org.hillview.sketches.DyadicHistogramBuckets;
+import org.hillview.sketches.DyadicDoubleHistogramBuckets;
 import org.hillview.sketches.Heatmap;
+import org.hillview.utils.Converters;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 
 public class PrivateHeatmap implements Serializable, IJson {
-    private DyadicHistogramBuckets bucketDescriptionX;
-    private DyadicHistogramBuckets bucketDescriptionY;
+    private DyadicDoubleHistogramBuckets bucketDescriptionX;
+    private DyadicDoubleHistogramBuckets bucketDescriptionY;
 
     public Heatmap heatmap;
 
@@ -20,8 +21,8 @@ public class PrivateHeatmap implements Serializable, IJson {
     public PrivateHeatmap(Heatmap heatmap, double epsilon) {
         this.heatmap = heatmap;
 
-        this.bucketDescriptionX = (DyadicHistogramBuckets)heatmap.getBucketDescX();
-        this.bucketDescriptionY = (DyadicHistogramBuckets)heatmap.getBucketDescY();
+        this.bucketDescriptionX = (DyadicDoubleHistogramBuckets)heatmap.getBucketDescX();
+        this.bucketDescriptionY = (DyadicDoubleHistogramBuckets)heatmap.getBucketDescY();
 
         this.epsilon = epsilon;
 
@@ -34,7 +35,7 @@ public class PrivateHeatmap implements Serializable, IJson {
      * rather than [bucket left leaf, bucket right leaf].
      * Returns the noise and the total variance of the variables used to compute the noise.
      */
-    public Pair<Double, Double> noiseForBucket(int bucketXIdx, int bucketYIdx) {
+    private Pair<Double, Double> noiseForBucket(int bucketXIdx, int bucketYIdx) {
         ArrayList<Pair<Integer, Integer>> xIntervals = bucketDescriptionX.bucketDecomposition(bucketXIdx, false);
         ArrayList<Pair<Integer, Integer>> yIntervals = bucketDescriptionY.bucketDecomposition(bucketYIdx, false);
 
@@ -53,7 +54,7 @@ public class PrivateHeatmap implements Serializable, IJson {
             }
         }
 
-        return new Pair(noise, variance);
+        return new Pair<Double, Double>(noise, variance);
     }
 
     /**
@@ -67,6 +68,7 @@ public class PrivateHeatmap implements Serializable, IJson {
         for (int i = 0; i < this.heatmap.buckets.length; i++) {
             for (int j = 0; j < this.heatmap.buckets[i].length; j++) {
                 Pair<Double, Double> noise = this.noiseForBucket(i, j);
+                Converters.checkNull(noise.first);
                 this.heatmap.buckets[i][j] += noise.first;
                 // Postprocess so that no buckets are negative
                 this.heatmap.buckets[i][j] = Math.max(0, this.heatmap.buckets[i][j]);

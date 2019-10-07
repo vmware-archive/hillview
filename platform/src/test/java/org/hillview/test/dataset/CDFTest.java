@@ -56,7 +56,7 @@ public class CDFTest extends BaseTest {
         if ((rate > 0.1) || (!useSampling))
             rate = 1.0; // no performance gains in sampling
         HistogramSketch sk = new HistogramSketch(
-                bDec, this.colName, rate, 0);
+                bDec, this.colName, rate, 0, null);
         this.dataSet.blockingSketch(sk);
     }
 
@@ -70,7 +70,7 @@ public class CDFTest extends BaseTest {
         if ((rate > 0.1) || (!useSampling))
             rate = 1.0; // no use in sampling
         this.dataSet.blockingSketch(
-                new HistogramSketch(bDec, this.colName, rate, 0));
+                new HistogramSketch(bDec, this.colName, rate, 0, null));
     }
 
     @Test

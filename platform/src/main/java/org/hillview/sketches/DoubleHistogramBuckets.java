@@ -26,26 +26,26 @@ import org.hillview.table.api.IColumn;
 public class DoubleHistogramBuckets implements IHistogramBuckets {
     public final double minValue;
     public final double maxValue;
-    public final int numOfBuckets;
+    public final int bucketCount;
     public final double range;
 
-    public DoubleHistogramBuckets(final double minValue, final double maxValue, final int numOfBuckets) {
-        if (maxValue < minValue || numOfBuckets <= 0)
+    public DoubleHistogramBuckets(final double minValue, final double maxValue, final int bucketCount) {
+        if (maxValue < minValue || bucketCount <= 0)
             throw new IllegalArgumentException("Negative range or number of buckets");
         this.minValue = minValue;
         this.maxValue = maxValue;
         this.range = this.maxValue - this.minValue;
         if (this.range <= 0)
-            this.numOfBuckets = 1;  // ignore specified number of buckets
+            this.bucketCount = 1;  // ignore specified number of buckets
         else
-            this.numOfBuckets = numOfBuckets;
+            this.bucketCount = bucketCount;
     }
 
     public int indexOf(double value) {
         if ((value < this.minValue) || (value > this.maxValue))
             return -1;
         // As overflow can occur when 'item' is very close to 'this.maxValue', clamp the resulting index.
-        return Math.min((int) ((this.numOfBuckets * (value - this.minValue)) / this.range), this.numOfBuckets - 1);
+        return Math.min((int) ((this.bucketCount * (value - this.minValue)) / this.range), this.bucketCount - 1);
     }
 
     @Override
@@ -55,5 +55,5 @@ public class DoubleHistogramBuckets implements IHistogramBuckets {
     }
 
     @Override
-    public int getNumOfBuckets() { return this.numOfBuckets; }
+    public int getBucketCount() { return this.bucketCount; }
 }

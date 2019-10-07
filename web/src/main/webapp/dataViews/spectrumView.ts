@@ -26,7 +26,7 @@ import {
     RemoteObjectId
 } from "../javaBridge";
 import {OnCompleteReceiver} from "../rpc";
-import {SchemaClass} from "../schemaClass";
+import {DisplayName, SchemaClass} from "../schemaClass";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {IDataView} from "../ui/dataview";
 import {Dialog, FieldKind} from "../ui/dialog";
@@ -139,15 +139,12 @@ export class SpectrumView extends ChartView {
                 schema: SchemaClass, page: FullPage) {
         super(remoteObjectId, rowCount, schema, page, "SVD Spectrum");
 
-        this.topLevel = document.createElement("div");
-        this.topLevel.className = "chart";
-        this.chartDiv = document.createElement("div");
-        this.topLevel.appendChild(this.chartDiv);
-        this.chartDiv.style.display = "flex";
-        this.chartDiv.style.flexDirection = "column";
+        this.chartDiv = this.createChartDiv();
         this.summary = document.createElement("div");
         this.topLevel.appendChild(this.summary);
     }
+
+    protected showTrellis(colName: DisplayName): void { /* not used */ }
 
     protected createNewSurfaces(): void {
         if (this.surface != null)

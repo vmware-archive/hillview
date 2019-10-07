@@ -53,6 +53,11 @@ public class ImpalaJdbcConnection extends JdbcConnection {
     }
 
     @Override
+    public String getQueryForDateHistogram(String table, ColumnDescription cd, DoubleHistogramBuckets buckets) {
+        throw new RuntimeException("Not yet implemented");
+    }
+
+    @Override
     public String getURL() {
         this.addParameter("UseNativeQuery", "1");
 

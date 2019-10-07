@@ -27,6 +27,7 @@ import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.remoting.HillviewServer;
 import org.hillview.management.ClusterConfig;
 import org.hillview.management.SetMemoization;
+import org.hillview.maps.Parallelizer;
 import org.hillview.sketches.*;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Table;
@@ -150,7 +151,7 @@ public class Benchmarks {
         IHistogramBuckets buckDes = new DoubleHistogramBuckets(0, 100, bucketNum);
         ITable table = createTable(colSize, col);
         ISketch<ITable, Histogram> sk = new HistogramSketch(
-                        buckDes, col.getName(), rateParameter, 0);
+                        buckDes, col.getName(), rateParameter, 0, null);
 
         System.out.println("Bench,Time (ms),Melems/s,Percent slower");
         if (args[0].equals("noseparatethread")) {

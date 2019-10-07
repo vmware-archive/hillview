@@ -25,21 +25,13 @@ import org.hillview.table.api.ISampledRowIterator;
  * One dimensional histogram.
  */
 public class Histogram extends HistogramBase {
-    public final IHistogramBuckets bucketDescription;
-
-    public Histogram(final IHistogramBuckets bucketDescription) {
-        this.bucketDescription = bucketDescription;
-        this.buckets = new long[bucketDescription.getNumOfBuckets()];
+    public Histogram(int buckets) {
+        this.buckets = new long[buckets];
     }
 
-    public Histogram(IHistogramBuckets bucketDescription, long[] data, long missing) {
-        this.bucketDescription = bucketDescription;
+    public Histogram(long[] data, long missing) {
         this.buckets = data;
         this.missingData = missing;
-    }
-
-    public IHistogramBuckets getBucketDescription() {
-        return this.bucketDescription;
     }
 
     public void rescale(double sampleRate) {
@@ -51,17 +43,18 @@ public class Histogram extends HistogramBase {
         }
     }
 
-    public void add(IColumn column, int currRow) {
+    public void add(IColumn column, int currRow, IHistogramBuckets buckets) {
         if (column.isMissing(currRow))
             this.missingData++;
         else {
-            int index = this.bucketDescription.indexOf(column, currRow);
+            int index = buckets.indexOf(column, currRow);
             if (index >= 0)
                 this.buckets[index]++;
         }
     }
 
     public void create(final IColumn column, IMembershipSet membershipSet,
+                       IHistogramBuckets buckets,
                        double sampleRate, long seed, boolean enforceRate) {
         if (sampleRate <= 0)
             throw new RuntimeException("Negative sampling rate");
@@ -69,7 +62,7 @@ public class Histogram extends HistogramBase {
                 sampleRate, seed, enforceRate);
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
-            this.add(column, currRow);
+            this.add(column, currRow, buckets);
             currRow = myIter.getNextRow();
         }
         this.rescale(myIter.rate());
@@ -87,15 +80,15 @@ public class Histogram extends HistogramBase {
      * @return a new Histogram which is the union of this and otherHistogram
      */
     public Histogram union(Histogram otherHistogram) {
-        Histogram unionH = new Histogram(this.bucketDescription);
-        for (int i = 0; i < unionH.bucketDescription.getNumOfBuckets(); i++) {
+        Histogram unionH = new Histogram(this.getBucketCount());
+        for (int i = 0; i < unionH.getBucketCount(); i++) {
             unionH.buckets[i] = this.buckets[i] + otherHistogram.buckets[i];
         }
         unionH.missingData = this.missingData + otherHistogram.missingData;
         return unionH;
     }
 
-    public int getNumOfBuckets() { return this.bucketDescription.getNumOfBuckets(); }
+    public int getBucketCount() { return this.buckets.length; }
 
     @Override
     public String toString() {

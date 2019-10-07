@@ -18,6 +18,7 @@
 package org.hillview.sketches;
 
 import org.hillview.table.api.IColumn;
+import org.hillview.utils.Utilities;
 
 import java.util.Arrays;
 
@@ -36,21 +37,11 @@ public class StringHistogramBuckets implements IHistogramBuckets {
     public StringHistogramBuckets(final String[] leftBoundaries) {
         if (leftBoundaries.length == 0)
             throw new IllegalArgumentException("Boundaries of buckets can't be empty");
-        checkSorted(leftBoundaries);
+        Utilities.checkSorted(leftBoundaries);
         this.leftBoundaries = leftBoundaries;
         this.numOfBuckets = leftBoundaries.length;
         this.minValue = this.leftBoundaries[0];
         this.lastBoundary = this.leftBoundaries[this.leftBoundaries.length - 1];
-    }
-
-    /**
-     * Checks that an array is strongly sorted.
-     */
-    private static void checkSorted(final String[] a) {
-        for (int i = 0; i < (a.length - 1); i++)
-            if (a[i].compareTo(a[i + 1]) >= 0)
-                throw new IllegalArgumentException(a[i] + " and " + a[i+1] + " (index " + i +
-                        ") are not in sorted order.");
     }
 
     public int indexOf(String item) {
@@ -85,5 +76,5 @@ public class StringHistogramBuckets implements IHistogramBuckets {
     }
 
     @Override
-    public int getNumOfBuckets() { return this.numOfBuckets; }
+    public int getBucketCount() { return this.numOfBuckets; }
 }

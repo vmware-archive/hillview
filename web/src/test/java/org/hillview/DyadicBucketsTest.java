@@ -1,16 +1,32 @@
-package org.hillview.test.dataStructures;
+/*
+ * Copyright (c) 2019 VMware Inc. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-import org.hillview.sketches.DyadicHistogramBuckets;
+package org.hillview;
+
+import org.hillview.sketches.DyadicDoubleHistogramBuckets;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.columns.DoubleArrayColumn;
-import org.hillview.table.rows.PrivacyMetadata;
-import org.hillview.test.BaseTest;
+import org.hillview.table.columns.DoubleColumnPrivacyMetadata;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class DyadicBucketsTest extends BaseTest {
+public class DyadicBucketsTest {
     // Generate a column s.t. value i for i in [minVal, maxVal) is repeated nPerValue times.
     private static DoubleArrayColumn generateLinearColumn(final int minVal, final int maxVal, final int nPerValue) {
         final ColumnDescription desc = new
@@ -48,11 +64,11 @@ public class DyadicBucketsTest extends BaseTest {
         final int numBuckets = 10;
         final int granularity = 20;
         final double epsilon = 0.01;
-        DyadicHistogramBuckets buckDes = new DyadicHistogramBuckets(min, max, numBuckets,
-                new PrivacyMetadata(epsilon, granularity, min, max));
+        DyadicDoubleHistogramBuckets buckDes = new DyadicDoubleHistogramBuckets(min, max, numBuckets,
+                new DoubleColumnPrivacyMetadata(epsilon, granularity, min, max));
 
         // should create only 100/20 = 5 buckets
-        assert(buckDes.getNumOfBuckets() == 5);
+        assert(buckDes.getBucketCount() == 5);
     }
 
     // Test buckets that do not align on leaf boundaries
@@ -63,8 +79,8 @@ public class DyadicBucketsTest extends BaseTest {
         final int numBuckets = 4; // creates buckets of size 25...
         final int granularity = 10; // but leaves of size 10
         final double epsilon = 0.01;
-        DyadicHistogramBuckets buckDes = new DyadicHistogramBuckets(min, max, numBuckets,
-                new PrivacyMetadata(epsilon, granularity, min, max));
+        DyadicDoubleHistogramBuckets buckDes = new DyadicDoubleHistogramBuckets(min, max, numBuckets,
+                new DoubleColumnPrivacyMetadata(epsilon, granularity, min, max));
 
         // Check that values fall in correct buckets based on leaves
         int expectedBucket;
@@ -81,11 +97,11 @@ public class DyadicBucketsTest extends BaseTest {
                 expectedBucket = 3;
             }
 
-            assertEquals(expectedBucket, buckDes.indexOf((double)i));
+            assertEquals(expectedBucket, buckDes.indexOf(i));
         }
 
         // Also check computation of bucket size, which is done independently
-        for (int i = 0; i < buckDes.getNumOfBuckets(); i++) {
+        for (int i = 0; i < buckDes.getBucketCount(); i++) {
             long nLeaves = buckDes.numLeavesInBucket(i);
             if (i % 2 != 0) {
                 assertEquals(nLeaves, 3);
@@ -103,13 +119,15 @@ public class DyadicBucketsTest extends BaseTest {
         final int numBuckets = 4; // creates buckets of size 0.025...
         final double granularity = 0.01; // but leaves of size 0.01
         final double epsilon = 0.01;
-        DyadicHistogramBuckets buckDes = new DyadicHistogramBuckets(min, max, numBuckets,
-                new PrivacyMetadata(epsilon, granularity, min, max));
+        DyadicDoubleHistogramBuckets buckDes = new DyadicDoubleHistogramBuckets(min, max, numBuckets,
+                new DoubleColumnPrivacyMetadata(epsilon, granularity, min, max));
         // TODO
+        /*
         for (int i = 0; i < buckDes.getNumOfBuckets(); i++) {
             System.out.println("> " + i);
             System.out.println(buckDes.bucketLeafIdx(i));
         }
+         */
     }
 
     // Test negative range
@@ -120,13 +138,15 @@ public class DyadicBucketsTest extends BaseTest {
         final int numBuckets = 10;
         final double granularity = 25;
         final double epsilon = 0.01;
-        DyadicHistogramBuckets buckDes = new DyadicHistogramBuckets(min, max, numBuckets,
-                new PrivacyMetadata(epsilon, granularity, min, max));
+        DyadicDoubleHistogramBuckets buckDes = new DyadicDoubleHistogramBuckets(min, max, numBuckets,
+                new DoubleColumnPrivacyMetadata(epsilon, granularity, min, max));
         // TODO
+        /*
         for (int i = 0; i < buckDes.getNumOfBuckets(); i++) {
             System.out.println("> " + i);
             System.out.println(buckDes.bucketLeafIdx(i));
         }
+         */
     }
 
     // Test granularity < 1
@@ -137,8 +157,8 @@ public class DyadicBucketsTest extends BaseTest {
         final int numBuckets = 4; // creates buckets of size 0.025...
         final double granularity = 0.01; // but leaves of size 0.01
         final double epsilon = 0.01;
-        DyadicHistogramBuckets buckDes = new DyadicHistogramBuckets(min, max, numBuckets,
-                new PrivacyMetadata(epsilon, granularity, min, max));
+        DyadicDoubleHistogramBuckets buckDes = new DyadicDoubleHistogramBuckets(min, max, numBuckets,
+                new DoubleColumnPrivacyMetadata(epsilon, granularity, min, max));
 
         // Check that values fall in correct buckets based on leaves
         int expectedBucket;
@@ -159,7 +179,7 @@ public class DyadicBucketsTest extends BaseTest {
         }
 
         // Also check computation of bucket size, which is done independently
-        for (int i = 0; i < buckDes.getNumOfBuckets(); i++) {
+        for (int i = 0; i < buckDes.getBucketCount(); i++) {
             long nLeaves = buckDes.numLeavesInBucket(i);
             if (i % 2 != 0) {
                 assertEquals(nLeaves, 3);

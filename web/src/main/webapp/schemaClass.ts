@@ -122,6 +122,16 @@ export class SchemaClass implements Serializable<SchemaClass> {
     }
 
     /**
+     * All display names except the ones for the specified columns.
+     * @param names  Names to exclude.
+     */
+    public displayNamesExcluding(names: string[]): DisplayName[] {
+        return this.columnNames
+            .filter((n) => names.indexOf(n) < 0)
+            .map((c) => this.displayName(c));
+    }
+
+    /**
      * Get the display name of the specified column.
      */
     public displayName(name: string | null): DisplayName | null {

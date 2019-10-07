@@ -1,10 +1,12 @@
+#!/usr/bin/env python3
 import csv
 import json
 
 import numpy as np
 
 def get_metadata(e, g, gMin, gMax):
-    return {'epsilon': e,
+    return {'type': "DoubleColumnPrivacyMetadata",
+            'epsilon': e,
             'granularity': g,
             'globalMin': gMin,
             'globalMax': gMax}
@@ -21,7 +23,7 @@ def main():
         for v in values:
             f.write('%0.02f' % v + '\n')
 
-    schema = [{'name':colname, 'kind':'Integer'}]
+    schema = [{'name':colname, 'kind':'Double'}]
     with open('gaussian.schema', 'w') as f:
         f.write(json.dumps(schema))
 

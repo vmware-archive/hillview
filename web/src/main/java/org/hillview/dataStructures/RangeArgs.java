@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.hillview.targets;
+package org.hillview.dataStructures;
 
 import org.hillview.HillviewComputation;
 import org.hillview.dataset.api.ISketch;
@@ -34,7 +34,7 @@ public class RangeArgs {
     // This class has a bunch of unchecked casts, but the Java
     // type system is not good enough to express these operations
     // in a type-safe manner.
-    ISketch<ITable, BucketsInfo> getSketch() {
+    public ISketch<ITable, BucketsInfo> getSketch() {
         if (this.cd.kind.isString()) {
             int samples = Math.min(this.stringsToSample * this.stringsToSample, 100000);
             ISketch<ITable, MinKSet<String>> s = new SampleDistinctElementsSketch(
@@ -49,7 +49,7 @@ public class RangeArgs {
         }
     }
 
-    BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> getPostProcessing() {
+    public BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> getPostProcessing() {
         if (this.cd.kind.isString()) {
             int b = this.stringsToSample;
             return (e, c) -> {

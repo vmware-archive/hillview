@@ -32,12 +32,11 @@ import org.hillview.table.api.ITable;
  * This is an RpcTarget object which stores a file loader name in each leaf.
  */
 // All RpcTarget objects must be public
-@SuppressWarnings("WeakerAccess")
 public class FileDescriptionTarget extends RpcTarget {
     protected final IDataSet<IFileReference> files;
 
     /* Augmented info contains an additional bit to specify whether the dataset is private. */
-    protected static class PrivateFileSizeInfo extends FileSizeInfo implements IJson {
+     static class PrivateFileSizeInfo extends FileSizeInfo implements IJson {
         boolean isPrivate;
 
         PrivateFileSizeInfo(final int fileCount, final long totalSize, final boolean isPrivate) {

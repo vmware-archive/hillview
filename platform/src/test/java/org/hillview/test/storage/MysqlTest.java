@@ -27,10 +27,12 @@ import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.table.rows.RowSnapshot;
+import org.hillview.utils.Converters;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.sql.SQLException;
+import java.time.Instant;
 
 public class MysqlTest extends JdbcTest {
     /**
@@ -150,6 +152,56 @@ public class MysqlTest extends JdbcTest {
     }
 
     @Test
+    public void testMysqlDateRange() throws SQLException {
+        JdbcConnectionInformation conn = this.mySqlTestDbConnection();
+        conn.table = "employees";
+        JdbcDatabase db = new JdbcDatabase(conn);
+        try {
+            db.connect();
+        } catch (Exception e) {
+            // This will fail if a database is not deployed, but we don't want to fail the test.
+            this.ignoringException("Cannot connect to database", e);
+            return;
+        }
+        DataRange range = db.numericDataRange(new ColumnDescription("hire_date", ContentsKind.Date));
+        Assert.assertNotNull(range);
+        Instant first = parseOneDate("1985/01/01");
+        Instant last = parseOneDate("2000/01/28");
+        Assert.assertEquals(first, Converters.toDate(range.min));
+        Assert.assertEquals(last, Converters.toDate(range.max));
+        Assert.assertEquals(300024, range.presentCount);
+        Assert.assertEquals(0, range.missingCount);
+        db.disconnect();
+    }
+
+    @Test
+    public void testMysqlDateHistogram() throws SQLException {
+        JdbcConnectionInformation conn = this.mySqlTestDbConnection();
+        conn.table = "employees";
+        JdbcDatabase db = new JdbcDatabase(conn);
+        try {
+            db.connect();
+        } catch (Exception e) {
+            // This will fail if a database is not deployed, but we don't want to fail the test.
+            this.ignoringException("Cannot connect to database", e);
+            return;
+        }
+        Instant first = parseOneDate("1950/01/01");
+        Instant last = parseOneDate("2010/01/28");
+        DoubleHistogramBuckets buckets = new DoubleHistogramBuckets(
+                Converters.toDouble(first), Converters.toDouble(last), 10);
+        Histogram histogram = db.histogram(
+                new ColumnDescription("birth_date", ContentsKind.Date), buckets);
+        Assert.assertNotNull(histogram);
+        Assert.assertEquals(10, histogram.getBucketCount());
+        long total = 0;
+        for (int i = 0; i < histogram.getBucketCount(); i++)
+            total += histogram.getCount(i);
+        Assert.assertEquals(300024, total);
+        db.disconnect();
+    }
+
+    @Test
     public void testMysqlStringRange() throws SQLException {
         JdbcConnectionInformation conn = this.mySqlTestDbConnection();
         conn.table = "employees";
@@ -191,12 +243,12 @@ public class MysqlTest extends JdbcTest {
         Histogram histogram = db.histogram(
                 new ColumnDescription("salary", ContentsKind.Integer), buckets);
         Assert.assertNotNull(histogram);
-        Assert.assertEquals(8, histogram.getNumOfBuckets());
+        Assert.assertEquals(8, histogram.getBucketCount());
         Assert.assertEquals(0, histogram.getMissingData());
         Assert.assertEquals(0, histogram.getCount(0));
         Assert.assertEquals(0, histogram.getCount(7));
         long total = 0;
-        for (int i = 0; i < histogram.getNumOfBuckets(); i++)
+        for (int i = 0; i < histogram.getBucketCount(); i++)
             total += histogram.getCount(i);
         Assert.assertEquals(2844047, total);
         db.disconnect();
@@ -214,14 +266,14 @@ public class MysqlTest extends JdbcTest {
             this.ignoringException("Cannot connect to database", e);
             return;
         }
-        String[] boundaries = new String[] { "a", "f", "k", "p", "t", "x" };
+        String[] boundaries = new String[] { "A", "F", "K", "P", "T", "X" };
         StringHistogramBuckets buckets = new StringHistogramBuckets(boundaries);
         Histogram histogram = db.histogram(
                 new ColumnDescription("first_name", ContentsKind.String), buckets);
         Assert.assertNotNull(histogram);
-        Assert.assertEquals(6, histogram.getNumOfBuckets());
+        Assert.assertEquals(6, histogram.getBucketCount());
         long total = 0;
-        for (int i = 0; i < histogram.getNumOfBuckets(); i++)
+        for (int i = 0; i < histogram.getBucketCount(); i++)
             total += histogram.getCount(i);
         Assert.assertEquals(300024, total);
         db.disconnect();

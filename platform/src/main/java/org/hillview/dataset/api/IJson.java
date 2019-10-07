@@ -18,11 +18,16 @@
 package org.hillview.dataset.api;
 
 import com.google.gson.*;
+import org.hillview.table.columns.ColumnPrivacyMetadata;
+import org.hillview.table.columns.DoubleColumnPrivacyMetadata;
+import org.hillview.table.columns.IntColumnPrivacyMetadata;
+import org.hillview.table.columns.StringColumnPrivacyMetadata;
 import org.hillview.utils.HostList;
 import org.hillview.sketches.NextKList;
 import org.hillview.table.Schema;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HostAndPort;
+import org.hillview.utils.RuntimeTypeAdapterFactory;
 
 import java.io.Serializable;
 import java.lang.reflect.Type;
@@ -62,7 +67,15 @@ public interface IJson extends Serializable {
             .registerTypeAdapter(NextKList.class, new NextKSerializer())
             .registerTypeAdapter(Instant.class, new DateSerializer())
             .registerTypeAdapter(HostAndPort.class, new HostList.HostAndPortSerializer())
-            .registerTypeAdapter(HostAndPort.class, new HostList.HostAndPortDeserializer());
+            .registerTypeAdapter(HostAndPort.class, new HostList.HostAndPortDeserializer())
+            .registerTypeAdapterFactory(
+                    RuntimeTypeAdapterFactory.of(ColumnPrivacyMetadata.class)
+                            .registerSubtype(ColumnPrivacyMetadata.class)
+                            .registerSubtype(DoubleColumnPrivacyMetadata.class)
+                            .registerSubtype(IntColumnPrivacyMetadata.class)
+                            .registerSubtype(StringColumnPrivacyMetadata.class))
+            ;
+
     Gson gsonInstance = builder.serializeNulls().create();
 
     /**

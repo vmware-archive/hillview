@@ -24,11 +24,11 @@ import org.hillview.table.api.*;
 public class RangeFilterDescription implements ITableFilterDescription {
     // Instances of this class are created by deserialization from JSON,
     // so these initializers are not useful.
-    private ColumnDescription cd = new ColumnDescription();
-    private double min = 0;
-    private double max = 0;
-    private String minString = "";
-    private String maxString = "";
+    public ColumnDescription cd = new ColumnDescription();
+    public double min = 0;
+    public double max = 0;
+    public String minString = "";
+    public String maxString = "";
     public boolean complement = false;
 
     @Override

@@ -17,7 +17,7 @@
 
 import {AxisData, AxisDescription} from "./axisData";
 import {FilterDescription, RemoteObjectId} from "../javaBridge";
-import {SchemaClass} from "../schemaClass";
+import {DisplayName, SchemaClass} from "../schemaClass";
 import {FullPage} from "../ui/fullPage";
 import {Point, Resolution, ViewKind} from "../ui/ui";
 import {ChartView} from "./chartView";
@@ -79,6 +79,8 @@ export abstract class TrellisChartView extends ChartView {
         this.selectionEnd = null;
         this.surfaces = null;
     }
+
+    protected showTrellis(colName: DisplayName): void {}
 
     /**
      * Create the surfaces to display the data on.

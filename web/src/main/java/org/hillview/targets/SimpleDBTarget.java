@@ -19,9 +19,11 @@ package org.hillview.targets;
 
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import org.hillview.*;
-import org.hillview.dataStructures.AugmentedHistogram;
-import org.hillview.dataStructures.HistogramPrefixSum;
+import org.hillview.dataStructures.*;
+import org.hillview.dataset.LocalDataSet;
+import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IJson;
+import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.Pair;
 import org.hillview.sketches.*;
 import org.hillview.storage.JdbcConnectionInformation;
@@ -30,6 +32,7 @@ import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.SmallTable;
 import org.hillview.table.api.ContentsKind;
+import org.hillview.table.api.ITable;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.JsonList;
 
@@ -49,6 +52,7 @@ public final class SimpleDBTarget extends RpcTarget {
     private final int rowCount;
     @Nullable
     private Schema schema;
+    private final IDataSet<ITable> unused;
 
     static {
         try {
@@ -69,9 +73,19 @@ public final class SimpleDBTarget extends RpcTarget {
             this.rowCount = this.database.getRowCount();
             this.schema = this.database.getSchema();
             this.database.disconnect();
+            SmallTable empty = new SmallTable(this.schema);
+            this.unused = new LocalDataSet<ITable>(empty);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private <T> ISketch<ITable, T> makeSketch(T data, @Nullable ISketch<ITable, T> sk) {
+        return new PrecomputedSketch<ITable, T>(data, sk);
+    }
+
+    private <T> ISketch<ITable, T> makeSketch(T data) {
+        return new PrecomputedSketch<ITable, T>(data, null);
     }
 
     @Override
@@ -82,12 +96,7 @@ public final class SimpleDBTarget extends RpcTarget {
     @HillviewRpc
     public void getSummary(RpcRequest request, RpcRequestContext context) {
         TableSummary summary = new TableSummary(this.schema, this.rowCount);
-        this.returnResultDirect(request, context, summary);
-    }
-
-    static class HLogLogInfo {
-        String columnName = "";
-        long seed;
+        this.runSketch(this.unused, this.makeSketch(summary, new SummarySketch()), request, context);
     }
 
     static class DistinctCount implements IJson {
@@ -100,13 +109,14 @@ public final class SimpleDBTarget extends RpcTarget {
 
     @HillviewRpc
     public void hLogLog(RpcRequest request, RpcRequestContext context) {
-        TableTarget.HLogLogInfo col = request.parseArgs(TableTarget.HLogLogInfo.class);
+        DistinctCountRequestInfo col = request.parseArgs(DistinctCountRequestInfo.class);
         try {
             this.database.connect();
             int result = this.database.distinctCount(col.columnName);
             this.database.disconnect();
             DistinctCount dc = new DistinctCount(result);
-            this.returnResultDirect(request, context, dc);
+            ISketch<ITable, DistinctCount> sk = this.makeSketch(dc);
+            this.runSketch(this.unused, sk, request, context);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -114,7 +124,7 @@ public final class SimpleDBTarget extends RpcTarget {
 
     @HillviewRpc
     public void heavyHitters(RpcRequest request, RpcRequestContext context) {
-        TableTarget.HeavyHittersInfo info = request.parseArgs(TableTarget.HeavyHittersInfo.class);
+        HeavyHittersRequestInfo info = request.parseArgs(HeavyHittersRequestInfo.class);
         try {
             this.database.connect();
             SmallTable tbl = this.database.topFreq(
@@ -137,7 +147,8 @@ public final class SimpleDBTarget extends RpcTarget {
                 computation = new HillviewComputation(null, request);
             HeavyHittersTarget hht = new HeavyHittersTarget(fkList, computation);
             TopList result = new TopList(fkList.sortTopK(info.columns), hht.getId().toString());
-            this.returnResultDirect(request, context, result);
+            ISketch<ITable, TopList> sk = this.makeSketch(result);
+            this.runSketch(this.unused, sk, request, context);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -160,7 +171,9 @@ public final class SimpleDBTarget extends RpcTarget {
         try {
             BucketsInfo range;
             this.database.connect();
-            if (info[0].cd.kind == ContentsKind.Integer || info[0].cd.kind == ContentsKind.Double) {
+            if (info[0].cd.kind == ContentsKind.Integer ||
+                    info[0].cd.kind == ContentsKind.Double ||
+                    info[0].cd.kind == ContentsKind.Date) {
                 range = this.database.numericDataRange(info[0].cd);
             } else {
                 range = this.database.stringBuckets(info[0].cd, info[0].stringsToSample);
@@ -168,7 +181,8 @@ public final class SimpleDBTarget extends RpcTarget {
             this.database.disconnect();
             JsonList<BucketsInfo> result = new JsonList<BucketsInfo>(1);
             result.add(range);
-            this.returnResultDirect(request, context, result);
+            ISketch<ITable, JsonList<BucketsInfo>> sk = this.makeSketch(result);
+            this.runSketch(this.unused, sk, request, context);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -176,7 +190,7 @@ public final class SimpleDBTarget extends RpcTarget {
 
     @HillviewRpc
     public void histogram(RpcRequest request, RpcRequestContext context) {
-        HistogramArgs[] info = request.parseArgs(HistogramArgs[].class);
+        HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
         assert info.length == 2;
         ColumnDescription cd = info[0].cd;  // both args should be on the same column
         try {
@@ -187,7 +201,8 @@ public final class SimpleDBTarget extends RpcTarget {
                     Pair<AugmentedHistogram, HistogramPrefixSum>(
                             new AugmentedHistogram(histo), new HistogramPrefixSum(cdf));
             this.database.disconnect();
-            this.returnResultDirect(request, context, result);
+            ISketch<ITable, Pair<AugmentedHistogram, HistogramPrefixSum>> sk = this.makeSketch(result);
+            this.runSketch(this.unused, sk, request, context);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

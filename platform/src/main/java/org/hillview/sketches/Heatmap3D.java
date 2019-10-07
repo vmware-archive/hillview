@@ -38,7 +38,7 @@ public class Heatmap3D implements Serializable, IJson {
         this.bucketDescDim1 = buckets1;
         this.bucketDescDim2 = buckets2;
         this.bucketDescDim3 = buckets3;
-        this.buckets = new long[buckets1.getNumOfBuckets()][buckets2.getNumOfBuckets()][buckets3.getNumOfBuckets()];
+        this.buckets = new long[buckets1.getBucketCount()][buckets2.getBucketCount()][buckets3.getBucketCount()];
     }
 
     void createHeatmap(
@@ -81,9 +81,9 @@ public class Heatmap3D implements Serializable, IJson {
      */
     public Heatmap3D union(Heatmap3D otherHeatmap3D) {
         Heatmap3D unionH = new Heatmap3D(this.bucketDescDim1, this.bucketDescDim2, this.bucketDescDim3);
-        for (int i = 0; i < unionH.bucketDescDim1.getNumOfBuckets(); i++)
-            for (int j = 0; j < unionH.bucketDescDim2.getNumOfBuckets(); j++)
-                for (int k = 0; k < unionH.bucketDescDim3.getNumOfBuckets(); k++)
+        for (int i = 0; i < unionH.bucketDescDim1.getBucketCount(); i++)
+            for (int j = 0; j < unionH.bucketDescDim2.getBucketCount(); j++)
+                for (int k = 0; k < unionH.bucketDescDim3.getBucketCount(); k++)
                     unionH.buckets[i][j][k] = this.buckets[i][j][k] + otherHeatmap3D.buckets[i][j][k];
         unionH.eitherMissing = this.eitherMissing + otherHeatmap3D.eitherMissing;
         unionH.totalPresent = this.totalPresent + otherHeatmap3D.totalPresent;

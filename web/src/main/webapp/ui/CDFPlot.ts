@@ -37,7 +37,7 @@ export class CDFPlot extends Plot {
         super(plottingSurface);
     }
 
-    public setData(cdf: number[], adjust): void {
+    public setData(cdf: number[], adjust: boolean): void {
         this.cdf = cdf;
         this.adjust = adjust;
         this.cdfData = [];

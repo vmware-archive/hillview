@@ -17,10 +17,9 @@
 
 package org.hillview.sketches;
 
-import org.apache.commons.math3.distribution.LaplaceDistribution;
 import org.hillview.dataset.api.Pair;
 import org.hillview.table.api.IColumn;
-import org.hillview.table.rows.PrivacyMetadata;
+import org.hillview.table.columns.DoubleColumnPrivacyMetadata;
 import org.hillview.utils.Utilities;
 
 import java.util.ArrayList;
@@ -33,7 +32,7 @@ import java.util.Arrays;
  * in the private range query tree). Since bucket boundaries may not fall on the quantized leaf boundaries,
  * leaves are assigned to buckets based on their left boundary value.
  */
-public class DyadicHistogramBuckets implements IHistogramBuckets {
+public class DyadicDoubleHistogramBuckets implements IHistogramBuckets {
     // Range for this (possibly filtered) histogram.
     private double minValue;
     private double maxValue;
@@ -132,8 +131,8 @@ public class DyadicHistogramBuckets implements IHistogramBuckets {
         return maxIdx;
     }
 
-    public DyadicHistogramBuckets(final double minValue, final double maxValue,
-                                  final int numOfBuckets, PrivacyMetadata metadata) {
+    public DyadicDoubleHistogramBuckets(final double minValue, final double maxValue,
+                                        final int numOfBuckets, DoubleColumnPrivacyMetadata metadata) {
         if (maxValue < minValue || numOfBuckets <= 0)
             throw new IllegalArgumentException("Negative range or number of buckets");
 
@@ -152,7 +151,7 @@ public class DyadicHistogramBuckets implements IHistogramBuckets {
 
         // Preserves semantics, will make noise computation easier
         if (this.numLeaves < this.numOfBuckets) {
-            this.numOfBuckets = (int)this.numLeaves;
+            this.numOfBuckets = this.numLeaves;
         }
 
         // User-specified range may not fall on leaf boundaries.
@@ -269,7 +268,7 @@ public class DyadicHistogramBuckets implements IHistogramBuckets {
     }
 
     @Override
-    public int getNumOfBuckets() { return this.numOfBuckets; }
+    public int getBucketCount() { return this.numOfBuckets; }
 
     public int getGlobalNumLeaves() { return this.globalNumLeaves; }
 
