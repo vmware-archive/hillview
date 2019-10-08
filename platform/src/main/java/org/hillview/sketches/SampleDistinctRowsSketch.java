@@ -20,6 +20,8 @@ package org.hillview.sketches;
 import it.unimi.dsi.fastutil.longs.Long2ObjectRBTreeMap;
 import net.openhft.hashing.LongHashFunction;
 import org.hillview.dataset.api.ISketch;
+import org.hillview.sketches.results.MinKRows;
+import org.hillview.sketches.results.MinKSet;
 import org.hillview.table.RecordOrder;
 import org.hillview.table.Schema;
 import org.hillview.table.api.IRowIterator;

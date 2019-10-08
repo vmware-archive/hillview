@@ -19,7 +19,7 @@ package org.hillview.test.dataset;
 
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.sketches.CategoryCentroidsSketch;
-import org.hillview.sketches.Centroids;
+import org.hillview.sketches.results.Centroids;
 import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;
 import org.hillview.utils.TestTables;

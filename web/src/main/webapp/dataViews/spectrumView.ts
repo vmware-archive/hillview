@@ -21,7 +21,7 @@ import {
     CombineOperators,
     DataRange,
     EigenVal,
-    HistogramBase,
+    Histogram,
     IColumnDescription, RecordOrder,
     RemoteObjectId
 } from "../javaBridge";
@@ -76,7 +76,7 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
         this.newPage.setDataView(this.specView);
 
         const ev: number [] = eVals.eigenValues;
-        const histogram: HistogramBase = { buckets: ev, missingData: 0 };
+        const histogram: Histogram = { buckets: ev, missingData: 0 };
         const icd: IColumnDescription = { kind: "Integer", name: "Singular Values" };
         const range: DataRange = { min: -.5, max: ev.length - .5,
             presentCount: 0, missingCount: 0 };
@@ -127,7 +127,7 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
  * A SpectrumView plots a one-dimensional bar-chart showing the top singular values.
  */
 export class SpectrumView extends ChartView {
-    protected histogram: HistogramBase;
+    protected histogram: Histogram;
     protected axisData: AxisData;
     protected title: string;
     protected plot: HistogramPlot;
@@ -153,7 +153,7 @@ export class SpectrumView extends ChartView {
         this.plot = new HistogramPlot(this.surface);
     }
 
-    public updateView(title: string, h: HistogramBase, axisData: AxisData): void {
+    public updateView(title: string, h: Histogram, axisData: AxisData): void {
         this.createNewSurfaces();
         if (h == null) {
             this.page.reportError("No data to display");

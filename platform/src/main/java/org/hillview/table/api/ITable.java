@@ -17,7 +17,7 @@
 
 package org.hillview.table.api;
 
-import org.hillview.sketches.ColumnSortOrientation;
+import org.hillview.sketches.results.ColumnSortOrientation;
 import org.hillview.table.RecordOrder;
 import org.hillview.table.Schema;
 import org.hillview.table.SmallTable;

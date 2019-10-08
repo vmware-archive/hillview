@@ -29,6 +29,7 @@ import org.hillview.management.ClusterConfig;
 import org.hillview.management.SetMemoization;
 import org.hillview.maps.Parallelizer;
 import org.hillview.sketches.*;
+import org.hillview.sketches.results.*;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Table;
 import org.hillview.table.api.ContentsKind;

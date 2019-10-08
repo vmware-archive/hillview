@@ -18,6 +18,9 @@
 package org.hillview.test.dataset;
 
 import org.hillview.sketches.*;
+import org.hillview.sketches.results.FreqKListExact;
+import org.hillview.sketches.results.FreqKListMG;
+import org.hillview.sketches.results.NextKList;
 import org.hillview.table.SmallTable;
 import org.hillview.table.Table;
 import org.hillview.table.api.ITable;
@@ -32,7 +35,7 @@ public class ExactFreqSketchTest extends BaseTest {
     // Idea is complaining about the hMap.get calls below,
     // but it also complains if I add explicit casts.
     private void getFrequencies(ITable table, int maxSize) {
-        FreqKSketchMG fk = new FreqKSketchMG(table.getSchema(), maxSize);
+        MGFreqKSketch fk = new MGFreqKSketch(table.getSchema(), maxSize);
         FreqKListMG fkList = fk.create(table);
         Assert.assertNotNull(fkList);
         ExactFreqSketch ef = new ExactFreqSketch(table.getSchema(), fkList);

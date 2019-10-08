@@ -19,6 +19,8 @@ package org.hillview.test.table;
 
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.sketches.*;
+import org.hillview.sketches.results.CorrMatrix;
+import org.hillview.sketches.results.ICorrelation;
 import org.hillview.table.SmallTable;
 import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;

@@ -21,7 +21,7 @@ import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.Pair;
-import org.hillview.sketches.MinKSet;
+import org.hillview.sketches.results.MinKSet;
 import org.hillview.sketches.SampleDistinctElementsSketch;
 import org.hillview.sketches.SampleDistinctRowsSketch;
 import org.hillview.table.Table;

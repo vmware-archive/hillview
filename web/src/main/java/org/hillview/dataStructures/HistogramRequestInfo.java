@@ -17,10 +17,10 @@
 
 package org.hillview.dataStructures;
 
-import org.hillview.sketches.DoubleHistogramBuckets;
+import org.hillview.sketches.results.DoubleHistogramBuckets;
 import org.hillview.sketches.HistogramSketch;
-import org.hillview.sketches.IHistogramBuckets;
-import org.hillview.sketches.StringHistogramBuckets;
+import org.hillview.sketches.results.IHistogramBuckets;
+import org.hillview.sketches.results.StringHistogramBuckets;
 import org.hillview.table.ColumnDescription;
 
 import javax.annotation.Nullable;

@@ -19,7 +19,7 @@ package org.hillview.test.dataset;
 
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.sketches.NIThresholdSketch;
-import org.hillview.sketches.NumItemsThreshold;
+import org.hillview.sketches.results.NumItemsThreshold;
 import org.hillview.table.SmallTable;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.IntArrayColumn;

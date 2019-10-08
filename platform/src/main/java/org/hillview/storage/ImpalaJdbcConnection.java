@@ -17,8 +17,8 @@
 
 package org.hillview.storage;
 
-import org.hillview.sketches.DoubleHistogramBuckets;
-import org.hillview.sketches.StringHistogramBuckets;
+import org.hillview.sketches.results.DoubleHistogramBuckets;
+import org.hillview.sketches.results.StringHistogramBuckets;
 import org.hillview.table.ColumnDescription;
 import org.hillview.utils.Utilities;
 

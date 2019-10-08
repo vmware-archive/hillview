@@ -18,6 +18,7 @@
 package org.hillview.sketches;
 
 import org.hillview.dataset.api.ISketch;
+import org.hillview.sketches.results.CorrMatrix;
 import org.hillview.table.api.*;
 import org.hillview.utils.BlasConversions;
 import org.hillview.utils.Converters;

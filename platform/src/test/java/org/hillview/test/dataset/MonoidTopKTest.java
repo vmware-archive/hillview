@@ -17,8 +17,8 @@
 
 package org.hillview.test.dataset;
 
-import org.hillview.sketches.MonoidTopK;
-import org.hillview.sketches.IntTreeTopK;
+import org.hillview.sketches.results.MonoidTopK;
+import org.hillview.sketches.results.IntTreeTopK;
 import org.hillview.test.BaseTest;
 import org.hillview.test.TestUtil;
 import org.hillview.utils.Converters;

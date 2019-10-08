@@ -20,7 +20,7 @@ package org.hillview.table;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntArrays;
 import it.unimi.dsi.fastutil.ints.IntList;
-import org.hillview.sketches.ColumnSortOrientation;
+import org.hillview.sketches.results.ColumnSortOrientation;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ITable;

@@ -17,9 +17,9 @@
 
 package org.hillview.test.dataStructures;
 
-import org.hillview.sketches.DoubleHistogramBuckets;
-import org.hillview.sketches.Heatmap;
-import org.hillview.sketches.Histogram;
+import org.hillview.sketches.results.DoubleHistogramBuckets;
+import org.hillview.sketches.results.Heatmap;
+import org.hillview.sketches.results.Histogram;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IAppendableColumn;

@@ -3,30 +3,22 @@ package org.hillview.dataStructures;
 import org.apache.commons.math3.distribution.LaplaceDistribution;
 import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.Pair;
-import org.hillview.sketches.DyadicDoubleHistogramBuckets;
-import org.hillview.sketches.Heatmap;
+import org.hillview.sketches.results.DyadicDecomposition;
+import org.hillview.sketches.results.Heatmap;
+import org.hillview.sketches.results.IHistogramBuckets;
 import org.hillview.utils.Converters;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 
 public class PrivateHeatmap implements Serializable, IJson {
-    private DyadicDoubleHistogramBuckets bucketDescriptionX;
-    private DyadicDoubleHistogramBuckets bucketDescriptionY;
-
     public Heatmap heatmap;
-
     private double epsilon;
 
-    public PrivateHeatmap(Heatmap heatmap, double epsilon) {
+    public PrivateHeatmap(IHistogramBuckets xb, IHistogramBuckets yb, Heatmap heatmap, double epsilon) {
         this.heatmap = heatmap;
-
-        this.bucketDescriptionX = (DyadicDoubleHistogramBuckets)heatmap.getBucketDescX();
-        this.bucketDescriptionY = (DyadicDoubleHistogramBuckets)heatmap.getBucketDescY();
-
         this.epsilon = epsilon;
-
-        this.addDyadicLaplaceNoise();
+        this.addDyadicLaplaceNoise(xb, yb);
     }
 
     /**
@@ -35,13 +27,15 @@ public class PrivateHeatmap implements Serializable, IJson {
      * rather than [bucket left leaf, bucket right leaf].
      * Returns the noise and the total variance of the variables used to compute the noise.
      */
-    private Pair<Double, Double> noiseForBucket(int bucketXIdx, int bucketYIdx) {
-        ArrayList<Pair<Integer, Integer>> xIntervals = bucketDescriptionX.bucketDecomposition(bucketXIdx, false);
-        ArrayList<Pair<Integer, Integer>> yIntervals = bucketDescriptionY.bucketDecomposition(bucketYIdx, false);
+    private Pair<Double, Double> noiseForBucket(DyadicDecomposition xb,
+                                                DyadicDecomposition yb,
+                                                int bucketXIdx, int bucketYIdx) {
+        ArrayList<Pair<Integer, Integer>> xIntervals = xb.bucketDecomposition(bucketXIdx, false);
+        ArrayList<Pair<Integer, Integer>> yIntervals = yb.bucketDecomposition(bucketYIdx, false);
 
         double noise = 0;
         double variance = 0;
-        long totalLeaves = bucketDescriptionX.getGlobalNumLeaves() * bucketDescriptionY.getGlobalNumLeaves();
+        long totalLeaves = xb.getGlobalNumLeaves() * yb.getGlobalNumLeaves();
         double scale = Math.log(totalLeaves / this.epsilon) / Math.log(2);
 
         for (Pair<Integer, Integer> x : xIntervals) {
@@ -64,10 +58,12 @@ public class PrivateHeatmap implements Serializable, IJson {
      * Each node in the dyadic interval tree is perturbed by an independent noise variable distributed as Laplace(log T / epsilon).
      * The total noise is the sum of the noise variables in the intervals composing the desired interval or bucket.
      */
-    private void addDyadicLaplaceNoise() {
+    private void addDyadicLaplaceNoise(IHistogramBuckets xb, IHistogramBuckets yb) {
         for (int i = 0; i < this.heatmap.buckets.length; i++) {
             for (int j = 0; j < this.heatmap.buckets[i].length; j++) {
-                Pair<Double, Double> noise = this.noiseForBucket(i, j);
+                Pair<Double, Double> noise = this.noiseForBucket(
+                        (DyadicDecomposition)xb,
+                        (DyadicDecomposition)yb, i, j);
                 Converters.checkNull(noise.first);
                 this.heatmap.buckets[i][j] += noise.first;
                 // Postprocess so that no buckets are negative

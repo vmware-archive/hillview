@@ -19,6 +19,7 @@ package org.hillview.test.dataset;
 
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.sketches.*;
+import org.hillview.sketches.results.HLogLog;
 import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.table.columns.IntArrayColumn;
 import org.hillview.table.SmallTable;

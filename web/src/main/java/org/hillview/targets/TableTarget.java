@@ -25,6 +25,7 @@ import org.hillview.dataset.TripleSketch;
 import org.hillview.dataset.api.*;
 import org.hillview.maps.*;
 import org.hillview.sketches.*;
+import org.hillview.sketches.results.*;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.RecordOrder;
 import org.hillview.table.Schema;
@@ -547,7 +548,7 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     public void heavyHittersMG(RpcRequest request, RpcRequestContext context) {
         HeavyHittersRequestInfo info = request.parseArgs(HeavyHittersRequestInfo.class);
-        FreqKSketchMG sk = new FreqKSketchMG(info.columns, info.amount/100);
+        MGFreqKSketch sk = new MGFreqKSketch(info.columns, info.amount/100);
         this.runCompleteSketch(this.table, sk, (x, c) -> TableTarget.getTopList(x, info.columns, c),
                 request, context);
     }

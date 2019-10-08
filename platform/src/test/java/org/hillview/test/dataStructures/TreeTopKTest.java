@@ -16,7 +16,7 @@
  */
 
 package org.hillview.test.dataStructures;
-import org.hillview.sketches.IntTreeTopK;
+import org.hillview.sketches.results.IntTreeTopK;
 import org.hillview.test.BaseTest;
 import org.hillview.test.TestUtil;
 import org.hillview.utils.Randomness;

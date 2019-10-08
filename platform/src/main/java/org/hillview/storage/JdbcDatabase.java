@@ -17,7 +17,7 @@
 
 package org.hillview.storage;
 
-import org.hillview.sketches.*;
+import org.hillview.sketches.results.*;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.SmallTable;

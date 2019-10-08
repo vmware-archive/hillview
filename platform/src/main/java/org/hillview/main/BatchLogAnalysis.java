@@ -9,6 +9,7 @@ import org.hillview.maps.FindFilesMapper;
 import org.hillview.maps.LoadFilesMapper;
 import org.hillview.maps.ProjectMap;
 import org.hillview.sketches.*;
+import org.hillview.sketches.results.*;
 import org.hillview.storage.FileSetDescription;
 import org.hillview.storage.IFileReference;
 import org.hillview.table.ColumnDescription;

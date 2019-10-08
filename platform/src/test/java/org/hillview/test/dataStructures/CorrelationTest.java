@@ -18,7 +18,7 @@
 package org.hillview.test.dataStructures;
 
 import org.hillview.dataset.api.IDataSet;
-import org.hillview.sketches.CorrMatrix;
+import org.hillview.sketches.results.CorrMatrix;
 import org.hillview.sketches.PCACorrelationSketch;
 import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;

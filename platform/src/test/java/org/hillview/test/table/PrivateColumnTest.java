@@ -18,10 +18,10 @@
 package org.hillview.test.table;
 
 import org.hillview.dataset.LocalDataSet;
-import org.hillview.sketches.DoubleHistogramBuckets;
-import org.hillview.sketches.Histogram;
+import org.hillview.sketches.results.DoubleHistogramBuckets;
+import org.hillview.sketches.results.Histogram;
 import org.hillview.sketches.HistogramSketch;
-import org.hillview.sketches.StringHistogramBuckets;
+import org.hillview.sketches.results.StringHistogramBuckets;
 import org.hillview.table.Table;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;

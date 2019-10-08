@@ -1,7 +1,7 @@
 package org.hillview.dataStructures;
 
 import org.hillview.dataset.api.IJson;
-import org.hillview.sketches.Histogram;
+import org.hillview.sketches.results.Histogram;
 
 /**
  * Base class for data structure for histogram with additional metadata, e.g. the CDF.

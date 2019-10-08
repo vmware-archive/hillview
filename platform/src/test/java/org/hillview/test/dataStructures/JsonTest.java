@@ -20,7 +20,7 @@ package org.hillview.test.dataStructures;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import org.hillview.dataset.api.IJson;
-import org.hillview.sketches.NextKList;
+import org.hillview.sketches.results.NextKList;
 import org.hillview.storage.JsonFileLoader;
 import org.hillview.table.*;
 import org.hillview.table.api.ContentsKind;

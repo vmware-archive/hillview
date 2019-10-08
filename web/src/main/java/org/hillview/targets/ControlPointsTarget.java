@@ -19,7 +19,7 @@ package org.hillview.targets;
 
 import org.hillview.HillviewComputation;
 import org.hillview.RpcTarget;
-import org.hillview.sketches.Centroids;
+import org.hillview.sketches.results.Centroids;
 import org.hillview.table.SmallTable;
 import org.hillview.utils.Converters;
 import org.hillview.utils.Point2D;

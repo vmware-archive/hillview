@@ -19,6 +19,9 @@ package org.hillview.test.dataset;
 
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.sketches.*;
+import org.hillview.sketches.results.BasicColStats;
+import org.hillview.sketches.results.DoubleHistogramBuckets;
+import org.hillview.sketches.results.IHistogramBuckets;
 import org.hillview.table.SmallTable;
 import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;
