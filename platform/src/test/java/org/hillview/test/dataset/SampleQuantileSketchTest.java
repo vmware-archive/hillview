@@ -19,6 +19,8 @@ package org.hillview.test.dataset;
 
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.sketches.*;
+import org.hillview.sketches.results.ColumnSortOrientation;
+import org.hillview.sketches.results.SampleList;
 import org.hillview.table.RecordOrder;
 import org.hillview.table.SmallTable;
 import org.hillview.table.api.ITable;

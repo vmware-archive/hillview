@@ -20,7 +20,7 @@ package org.hillview.targets;
 import org.hillview.HillviewComputation;
 import org.hillview.RpcTarget;
 import org.hillview.dataset.api.IJson;
-import org.hillview.sketches.CorrMatrix;
+import org.hillview.sketches.results.CorrMatrix;
 import org.jblas.DoubleMatrix;
 
 import java.util.Arrays;

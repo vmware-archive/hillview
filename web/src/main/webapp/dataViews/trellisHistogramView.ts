@@ -20,7 +20,7 @@ import {
     AugmentedHistogram,
     FilterDescription,
     Heatmap,
-    HistogramBase,
+    Histogram,
     kindIsString,
     RecordOrder,
     RemoteObjectId
@@ -271,7 +271,7 @@ export class TrellisHistogramView extends TrellisChartView {
         return view;
     }
 
-    private static coarsen(cdf: HistogramBase, bucketCount: number): HistogramBase {
+    private static coarsen(cdf: Histogram, bucketCount: number): Histogram {
         const cdfBucketCount = cdf.buckets.length;
         if (bucketCount === cdfBucketCount)
             return cdf;
@@ -310,7 +310,7 @@ export class TrellisHistogramView extends TrellisChartView {
             buckets.push(sum);
         }
 
-        const hist: HistogramBase = { buckets: buckets,
+        const hist: Histogram = { buckets: buckets,
             missingData: cdf.missingData };
         return hist;
     }
@@ -322,14 +322,14 @@ export class TrellisHistogramView extends TrellisChartView {
         else
             this.bucketCount = Math.round(this.shape.size.width / Resolution.minBarWidth);
         this.data = data;
-        const coarsened: HistogramBase[] = [];
+        const coarsened: Histogram[] = [];
         let max = 0;
         const discrete = kindIsString(this.xAxisData.description.kind) ||
             this.xAxisData.description.kind === "Integer";
 
         for (let i = 0; i < data.buckets.length; i++) {
             const bucketData = data.buckets[i];
-            const histo: HistogramBase = {
+            const histo: Histogram = {
                 buckets: bucketData,
                 missingData: data.missingData,
             };

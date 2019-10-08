@@ -20,7 +20,7 @@ package org.hillview.test.dataset;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.maps.LinearProjectionMap;
 import org.hillview.sketches.BasicColStatSketch;
-import org.hillview.sketches.BasicColStats;
+import org.hillview.sketches.results.BasicColStats;
 import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;
 import org.hillview.utils.BlasConversions;

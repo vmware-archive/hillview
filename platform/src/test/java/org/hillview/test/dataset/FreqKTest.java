@@ -22,6 +22,10 @@ import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.sketches.*;
+import org.hillview.sketches.results.FreqKList;
+import org.hillview.sketches.results.FreqKListMG;
+import org.hillview.sketches.results.FreqKListSample;
+import org.hillview.sketches.results.NextKList;
 import org.hillview.table.Schema;
 import org.hillview.table.SmallTable;
 import org.hillview.table.Table;
@@ -67,7 +71,7 @@ public class FreqKTest extends BaseTest {
     }
 
     private void fkAdd(ITable left, ITable right, double epsilon) {
-        FreqKSketchMG fk = new FreqKSketchMG(left.getSchema(), epsilon);
+        MGFreqKSketch fk = new MGFreqKSketch(left.getSchema(), epsilon);
         FreqKListMG leftList = fk.create(left);
         FreqKListMG rightList = fk.create(right);
         FreqKListMG fkList = fk.add(leftList, rightList);
@@ -87,7 +91,7 @@ public class FreqKTest extends BaseTest {
     }
 
     private void fkCreate(ITable table, double epsilon) {
-        FreqKSketchMG fk = new FreqKSketchMG(table.getSchema(), epsilon);
+        MGFreqKSketch fk = new MGFreqKSketch(table.getSchema(), epsilon);
         FreqKListMG fkList= fk.create(table);
         Assert.assertNotNull(fkList);
         fkList.filter();
@@ -164,7 +168,7 @@ public class FreqKTest extends BaseTest {
         ArrayList<IDataSet<ITable>> a = new ArrayList<IDataSet<ITable>>();
         tabList.forEach(t -> a.add(new LocalDataSet<ITable>(t)));
         ParallelDataSet<ITable> all = new ParallelDataSet<ITable>(a);
-        FreqKSketchMG fk = new FreqKSketchMG(bigTable.getSchema(), epsilon);
+        MGFreqKSketch fk = new MGFreqKSketch(bigTable.getSchema(), epsilon);
         //Assert.assertNotNull(all.blockingSketch(fk).toString());
         FreqKListMG fkList = all.blockingSketch(fk);
         Assert.assertNotNull(fkList);
@@ -183,7 +187,7 @@ public class FreqKTest extends BaseTest {
     @Test
     public void testTopK6() {
         Table t = TestTables.testRepTable();
-        FreqKSketchMG fk = new FreqKSketchMG(t.getSchema().project(s -> s.equals("Age")), 5);
+        MGFreqKSketch fk = new MGFreqKSketch(t.getSchema().project(s -> s.equals("Age")), 5);
         String s = "10: 4\n20: 4\n30: 3\n40: 2\n60: 1\n50: 1\n";
         Assert.assertEquals(Converters.checkNull(fk.create(t)).toString(), s);
     }

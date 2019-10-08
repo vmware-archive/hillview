@@ -18,15 +18,18 @@ source ${mydir}/lib.sh
 # Bail out on first error; verbose
 set -e
 
-SKIP="1"
-TOOLS="0"
+TESTARGS="-DskipTests"
+TOOLSARGS=""
 while getopts shta FLAG; do
    case ${FLAG} in
-      s) SKIP="1"
+      s) TESTARGS="-DskipTests"
+         echo "Skipping tests"
          ;;
-      a) TOOLS="1"
+      a) TOOLSARGS="-P tools"
+         echo "Building extra tools"
          ;;
-      t) SKIP="0"
+      t) TESTARGS=""
+         echo "Running tests"
          ;;
       *) usage
          ;;
@@ -35,20 +38,9 @@ done
 
 
 export MAVEN_OPTS="-Xmx2048M"
-EXTRAARGS=""
-if [ ${SKIP} -eq "1" ]; then
-    EXTRAARGS="-DskipTests "${EXTRAARGS}
-    echo "Skipping tests"
-else
-    echo "Running tests"
-fi
-if [ ${TOOLS} -eq "1" ]; then
-    echo "Building extra tools"
-    EXTRAARGS="-P tools "${EXTRAARGS}
-fi
 pushd ${mydir}/../platform
-mvn ${EXTRAARGS} clean install
+mvn ${TOOLSARGS} ${TESTARGS} clean install
 popd
 pushd ${mydir}/../web
-mvn clean package
+mvn ${TESTARGS} clean package
 popd

@@ -18,6 +18,7 @@
 package org.hillview.sketches;
 
 import org.hillview.dataset.api.ISketch;
+import org.hillview.sketches.results.SampleList;
 import org.hillview.table.ArrayRowOrder;
 import org.hillview.table.RecordOrder;
 import org.hillview.table.SmallTable;

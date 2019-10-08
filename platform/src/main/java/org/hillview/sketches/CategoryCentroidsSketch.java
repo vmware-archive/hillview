@@ -18,6 +18,7 @@
 package org.hillview.sketches;
 
 import org.hillview.dataset.api.ISketch;
+import org.hillview.sketches.results.Centroids;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
@@ -32,7 +33,7 @@ import java.util.List;
  * rows belonging to that category. The centroids are defined in the nD space that is defined by
  * the columns that the given list of column names specifies.
  */
-public class CategoryCentroidsSketch implements ISketch<ITable,Centroids<String>> {
+public class CategoryCentroidsSketch implements ISketch<ITable, Centroids<String>> {
     private final String catColName;
     private final String[] columns;
 

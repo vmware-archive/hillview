@@ -20,7 +20,7 @@ import {HistogramSerialization, IViewSerialization} from "../datasetView";
 import {
     AugmentedHistogram,
     FilterDescription,
-    HistogramBase,
+    Histogram,
     IColumnDescription,
     kindIsString,
     RecordOrder,
@@ -59,7 +59,7 @@ import {BaseReceiver} from "../tableTarget";
 export class HistogramView extends HistogramViewBase /*implements IScrollTarget*/ {
     protected cdf: AugmentedHistogram;
     protected augmentedHistogram: AugmentedHistogram;
-    protected histogram: HistogramBase;
+    protected histogram: Histogram;
     protected plot: HistogramPlot;
     protected bucketCount: number;
 

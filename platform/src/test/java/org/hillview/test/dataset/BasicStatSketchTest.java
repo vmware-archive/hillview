@@ -19,6 +19,7 @@ package org.hillview.test.dataset;
 
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.sketches.*;
+import org.hillview.sketches.results.BasicColStats;
 import org.hillview.test.BaseTest;
 import org.hillview.utils.JsonList;
 import org.hillview.utils.TestTables;

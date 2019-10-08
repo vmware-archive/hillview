@@ -18,6 +18,7 @@
 package org.hillview.sketches;
 
 import org.hillview.dataset.api.ISketch;
+import org.hillview.sketches.results.TableSummary;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 

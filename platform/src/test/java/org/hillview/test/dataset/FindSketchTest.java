@@ -17,7 +17,7 @@
 
 package org.hillview.test.dataset;
 
-import org.hillview.sketches.ColumnSortOrientation;
+import org.hillview.sketches.results.ColumnSortOrientation;
 import org.hillview.sketches.FindSketch;
 import org.hillview.table.RecordOrder;
 import org.hillview.table.Table;

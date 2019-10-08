@@ -18,7 +18,7 @@
 package org.hillview.dataStructures;
 
 import org.hillview.dataset.api.IJson;
-import org.hillview.sketches.NextKList;
+import org.hillview.sketches.results.NextKList;
 
 /**
  * The result of heavyHitterSketch.

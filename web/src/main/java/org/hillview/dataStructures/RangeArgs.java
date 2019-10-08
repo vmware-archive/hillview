@@ -20,6 +20,10 @@ package org.hillview.dataStructures;
 import org.hillview.HillviewComputation;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.sketches.*;
+import org.hillview.sketches.results.BucketsInfo;
+import org.hillview.sketches.results.DataRange;
+import org.hillview.sketches.results.MinKSet;
+import org.hillview.sketches.results.StringBucketLeftBoundaries;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.ITable;
 

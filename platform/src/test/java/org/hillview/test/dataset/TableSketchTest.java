@@ -19,7 +19,7 @@ package org.hillview.test.dataset;
 
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.sketches.SummarySketch;
-import org.hillview.sketches.TableSummary;
+import org.hillview.sketches.results.TableSummary;
 import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;
 import org.hillview.utils.TestTables;

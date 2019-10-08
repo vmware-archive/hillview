@@ -18,6 +18,9 @@
 package org.hillview.test.dataset;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.sketches.*;
+import org.hillview.sketches.results.DoubleHistogramBuckets;
+import org.hillview.sketches.results.Histogram;
+import org.hillview.sketches.results.IHistogramBuckets;
 import org.hillview.table.api.IColumn;
 import org.hillview.test.BaseTest;
 import org.hillview.utils.TestTables;

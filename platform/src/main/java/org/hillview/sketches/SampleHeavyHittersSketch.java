@@ -3,6 +3,8 @@ package org.hillview.sketches;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenCustomHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import org.hillview.dataset.api.ISketch;
+import org.hillview.sketches.results.FreqKList;
+import org.hillview.sketches.results.FreqKListSample;
 import org.hillview.table.Schema;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.IRowIterator;

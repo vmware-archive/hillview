@@ -22,6 +22,8 @@ import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenCustomHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import org.hillview.dataset.api.ISketch;
+import org.hillview.sketches.results.FreqKList;
+import org.hillview.sketches.results.FreqKListExact;
 import org.hillview.table.Schema;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;

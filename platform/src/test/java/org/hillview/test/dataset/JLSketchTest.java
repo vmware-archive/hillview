@@ -17,8 +17,8 @@
 
 package org.hillview.test.dataset;
 
-import org.hillview.sketches.CorrMatrix;
-import org.hillview.sketches.JLProjection;
+import org.hillview.sketches.results.CorrMatrix;
+import org.hillview.sketches.results.JLProjection;
 import org.hillview.sketches.JLSketch;
 import org.hillview.sketches.SampleCorrelationSketch;
 import org.hillview.table.SmallTable;

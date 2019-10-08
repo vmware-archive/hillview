@@ -17,7 +17,7 @@
 
 package org.hillview.test.storage;
 
-import org.hillview.sketches.*;
+import org.hillview.sketches.results.*;
 import org.hillview.storage.JdbcConnectionInformation;
 import org.hillview.storage.JdbcDatabase;
 import org.hillview.table.ColumnDescription;

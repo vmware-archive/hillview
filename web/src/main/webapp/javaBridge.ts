@@ -162,8 +162,8 @@ export interface KVCreateColumnInfo {
 export interface Heatmap {
     buckets: number[][];
     missingData: number;
-    histogramMissingX: HistogramBase;
-    histogramMissingY: HistogramBase;
+    histogramMissingX: Histogram;
+    histogramMissingY: Histogram;
     totalSize: number;
 }
 
@@ -217,7 +217,7 @@ export interface ColumnSortOrientation {
     isAscending: boolean;
 }
 
-export interface HistogramBase {
+export interface Histogram {
     buckets: number[];
     missingData: number;
 }
@@ -226,7 +226,7 @@ export interface HistogramBase {
 // classes that extend AugmentedHistogram, so that any of those classes
 // can be passed into plots that take AugmentedHistograms.
 export interface AugmentedHistogram {
-    histogram: HistogramBase;
+    histogram: Histogram;
     /// values of the cdf
     cdfBuckets?: number[];
     /// minimum confidence value for each histogram bucket

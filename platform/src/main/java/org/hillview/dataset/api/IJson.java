@@ -23,7 +23,7 @@ import org.hillview.table.columns.DoubleColumnPrivacyMetadata;
 import org.hillview.table.columns.IntColumnPrivacyMetadata;
 import org.hillview.table.columns.StringColumnPrivacyMetadata;
 import org.hillview.utils.HostList;
-import org.hillview.sketches.NextKList;
+import org.hillview.sketches.results.NextKList;
 import org.hillview.table.Schema;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HostAndPort;

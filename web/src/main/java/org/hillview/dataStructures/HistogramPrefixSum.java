@@ -1,6 +1,6 @@
 package org.hillview.dataStructures;
 
-import org.hillview.sketches.Histogram;
+import org.hillview.sketches.results.Histogram;
 
 /**
  * Integrates histogram buckets to compute CDF.
