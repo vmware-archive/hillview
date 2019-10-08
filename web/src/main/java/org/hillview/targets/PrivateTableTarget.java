@@ -14,6 +14,7 @@ import org.hillview.table.api.ITable;
 import org.hillview.table.columns.DoubleColumnPrivacyMetadata;
 import org.hillview.table.filters.RangeFilterDescription;
 import org.hillview.table.columns.ColumnPrivacyMetadata;
+import org.hillview.utils.Converters;
 import org.hillview.utils.JsonList;
 
 import javax.annotation.Nullable;
@@ -80,10 +81,9 @@ public class PrivateTableTarget extends RpcTarget {
         double max;
         int bucketCount;
 
-        DyadicDecomposition getBuckets(ColumnPrivacyMetadata metadata) {
+        IDyadicDecomposition getDecomposition(ColumnPrivacyMetadata metadata) {
             if (!cd.kind.isNumeric())
                 throw new RuntimeException("Attempted to instantiate private buckets with non-numeric column");
-
             // This bucket class ensures that computed buckets fall on leaf boundaries.
             return new NumericDyadicDecomposition(this.min, this.max,
                     this.bucketCount, (DoubleColumnPrivacyMetadata)metadata);
@@ -91,8 +91,9 @@ public class PrivateTableTarget extends RpcTarget {
 
             // This bucket class ensures that computed buckets fall on leaf boundaries.
         HistogramSketch getSketch(ColumnPrivacyMetadata metadata) {
-            DyadicDecomposition buckets = this.getBuckets(metadata);
-            return new HistogramSketch(buckets, this.cd.name, this.samplingRate, this.seed, null);
+            IDyadicDecomposition dd = this.getDecomposition(metadata);
+            return new HistogramSketch(dd.getHistogramBuckets(), this.cd.name,
+                    this.samplingRate, this.seed, null);
         }
     }
 
@@ -108,12 +109,14 @@ public class PrivateTableTarget extends RpcTarget {
 
         HistogramSketch sk = info[0].getSketch(metadata);
         HistogramSketch cdf = info[1].getSketch(metadata);
+        IDyadicDecomposition dd = info[0].getDecomposition(metadata);
+        IDyadicDecomposition cdd = info[1].getDecomposition(metadata);
         ConcurrentSketch<ITable, Histogram, Histogram> csk =
                 new ConcurrentSketch<ITable, Histogram, Histogram>(sk, cdf);
         this.runCompleteSketch(this.table, csk, (e, c) ->
                 new Pair<PrivateHistogram, PrivateHistogram>(
-                        new PrivateHistogram((DyadicDecomposition)sk.bucketDesc, e.first, epsilon, false),
-                        new PrivateHistogram((DyadicDecomposition)cdf.bucketDesc, e.second, epsilon, true)), request, context);
+                        new PrivateHistogram(dd, Converters.checkNull(e.first), epsilon, false),
+                        new PrivateHistogram(cdd, Converters.checkNull(e.second), epsilon, true)), request, context);
     }
 
     @HillviewRpc
@@ -232,14 +235,12 @@ public class PrivateTableTarget extends RpcTarget {
         // Epsilon value has to be specified on the pair, separately from each column.
         double epsilon = privacySchema.get(new String[] {info[0].cd.name, info[1].cd.name}).epsilon;
 
-        IHistogramBuckets b0 = info[0].getBuckets(col0);
-        IHistogramBuckets b1 = info[1].getBuckets(col1);
-        HeatmapSketch sk = new HeatmapSketch(
-                b0,
-                b1,
-                info[0].cd.name,
-                info[1].cd.name, 1.0, 0);
+        IDyadicDecomposition d0 = info[0].getDecomposition(col0);
+        IDyadicDecomposition d1 = info[1].getDecomposition(col1);
+        IHistogramBuckets b0 = d0.getHistogramBuckets();
+        IHistogramBuckets b1 = d1.getHistogramBuckets();
+        HeatmapSketch sk = new HeatmapSketch(b0, b1, info[0].cd.name, info[1].cd.name, 1.0, 0);
         this.runCompleteSketch(this.table, sk, (e, c) ->
-                new PrivateHeatmap(b0, b1, e, epsilon).heatmap, request, context);
+                new PrivateHeatmap(d0, d1, e, epsilon).heatmap, request, context);
     }
 }

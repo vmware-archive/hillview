@@ -22,21 +22,14 @@ import org.hillview.table.api.IColumn;
 /**
  * Left endpoints for string buckets.
  */
-public class StringHistogramBuckets extends ExplicitHistogramBuckets<String> {
-    public StringHistogramBuckets(final String[] leftBoundaries, final String max) {
+public class ExplicitDoubleHistogramBuckets extends ExplicitHistogramBuckets<Double> {
+    public ExplicitDoubleHistogramBuckets(final Double[] leftBoundaries, Double max) {
         super(leftBoundaries, max);
-    }
-
-    public StringHistogramBuckets(final String[] leftBoundaries) {
-        super(leftBoundaries);
     }
 
     @Override
     public int indexOf(IColumn column, int rowIndex) {
-        String item = column.getString(rowIndex);
-        if (item == null)
-            // This should not really happen.
-            return -1;
+        Double item = column.getDouble(rowIndex);
         return this.indexOf(item);
     }
 }

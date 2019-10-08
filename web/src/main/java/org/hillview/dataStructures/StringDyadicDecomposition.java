@@ -15,11 +15,13 @@
  * limitations under the License.
  */
 
-package org.hillview.sketches.results;
+package org.hillview.dataStructures;
 
 import org.hillview.dataset.api.Pair;
-import org.hillview.table.api.IColumn;
+import org.hillview.sketches.results.IHistogramBuckets;
+import org.hillview.sketches.results.StringHistogramBuckets;
 import org.hillview.table.columns.StringColumnPrivacyMetadata;
+import org.hillview.utils.Converters;
 
 import java.util.ArrayList;
 
@@ -69,8 +71,9 @@ public class StringDyadicDecomposition extends DyadicDecomposition<String> {
     }
 
     @Override
-    public int indexOf(IColumn column, int rowIndex) {
-        String item = column.asString(rowIndex);
-        return this.indexOf(item);
+    public IHistogramBuckets getHistogramBuckets() {
+        return new StringHistogramBuckets(
+                Converters.checkNull(this.bucketLeftBoundaries),
+                this.maxValue);
     }
 }

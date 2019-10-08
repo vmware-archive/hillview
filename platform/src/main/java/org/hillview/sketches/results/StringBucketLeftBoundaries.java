@@ -21,7 +21,7 @@ import org.hillview.utils.JsonList;
 import javax.annotation.Nullable;
 
 /**
- * Represents a string destined to be used as the left bucket boundaries
+ * Represents a set of strings destined to be used as the left bucket boundaries
  * for a string histogram.
  */
 public class StringBucketLeftBoundaries extends BucketsInfo {

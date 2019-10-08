@@ -15,11 +15,13 @@
  * limitations under the License.
  */
 
-package org.hillview.sketches.results;
+package org.hillview.dataStructures;
 
 import org.hillview.dataset.api.Pair;
-import org.hillview.table.api.IColumn;
+import org.hillview.sketches.results.ExplicitDoubleHistogramBuckets;
+import org.hillview.sketches.results.IHistogramBuckets;
 import org.hillview.table.columns.DoubleColumnPrivacyMetadata;
+import org.hillview.utils.Converters;
 import org.hillview.utils.Utilities;
 
 import java.util.ArrayList;
@@ -120,8 +122,8 @@ public class NumericDyadicDecomposition extends DyadicDecomposition<Double> {
     public double getGranularity() { return this.granularity; }
 
     @Override
-    public int indexOf(IColumn column, int rowIndex) {
-        double item = column.asDouble(rowIndex);
-        return this.indexOf(item);
+    public IHistogramBuckets getHistogramBuckets() {
+        return new ExplicitDoubleHistogramBuckets(
+                Converters.checkNull(this.bucketLeftBoundaries), this.maxValue);
     }
 }

@@ -40,7 +40,7 @@ public class Utilities {
     /**
      * Checks that an array is sorted.
      */
-    public static void checkSorted(final String[] a) {
+    public static <T extends Comparable<T>> void checkSorted(final T[] a) {
         for (int i = 0; i < (a.length - 1); i++)
             if (a[i].compareTo(a[i + 1]) >= 0)
                 throw new IllegalArgumentException(a[i] + " and " + a[i+1] + " (index " + i +

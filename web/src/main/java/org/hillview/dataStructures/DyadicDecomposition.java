@@ -15,14 +15,10 @@
  * limitations under the License.
  */
 
-package org.hillview.sketches.results;
+package org.hillview.dataStructures;
 
-import org.hillview.dataset.api.Pair;
 import org.hillview.utils.Converters;
-
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.Arrays;
 
 /**
  * This class is intended for use with the binary mechanism for differential privacy
@@ -31,7 +27,8 @@ import java.util.Arrays;
  * in the private range query tree). Since bucket boundaries may not fall on the quantized leaf boundaries,
  * leaves are assigned to buckets based on their left boundary value.
  */
-public abstract class DyadicDecomposition<T extends Comparable<T>> implements IHistogramBuckets {
+public abstract class DyadicDecomposition<T extends Comparable<T>>
+        implements IDyadicDecomposition {
     // Range for this (possibly filtered) histogram.
     protected T minValue;
     protected T maxValue;
@@ -152,32 +149,6 @@ public abstract class DyadicDecomposition<T extends Comparable<T>> implements IH
     }
 
     /**
-     * Return the index of the leaf that contains value.
-     */
-    public int indexOf(@Nullable T value) {
-        if (value == null)
-            return -1;
-        if ((value.compareTo(this.minValue) < 0) || (value.compareTo(this.maxValue) > 0))
-            return -1;
-
-        Converters.checkNull(this.bucketLeftBoundaries);
-        int index = Arrays.binarySearch(this.bucketLeftBoundaries, value);
-        // This method returns index of the search key, if it is contained in the array,
-        // else it returns (-(insertion point) - 1). The insertion point is the point
-        // at which the key would be inserted into the array: the index of the first
-        // element greater than the key, or a.length if all elements in the array
-        // are less than the specified key.
-        if (index < 0) {
-            index = -index - 1;
-            if (index == 0)
-                // before first element
-                return -1;
-            return index - 1;
-        }
-        return index;
-    }
-
-    /**
      * Get the number of leaves that would correspond to this bucket.
      * If bucket boundaries and leaf boundaries don't align,
      * we assign leaves to the bucket that their left boundary falls in.
@@ -192,19 +163,8 @@ public abstract class DyadicDecomposition<T extends Comparable<T>> implements IH
                 this.bucketLeftLeaves[bucketIdx]);
     }
 
-    /**
-     * Return a list of leaf intervals that correspond to this bucket.
-     * For numeric data, this could correspond to the dyadic decomposition of the bucket.
-     * For categorical data (one-level tree), this can return a list of leaves that make up the bucket.
-     * Leaves are zero-indexed. The returned intervals are right-exclusive.
-     */
-    public abstract ArrayList<Pair<Integer, Integer>> bucketDecomposition(int bucketIdx, boolean cdf);
-
     public T getMin() { return this.minValue; }
     public T getMax() { return this.maxValue; }
-
-    @Override
-    public int getBucketCount() { return this.bucketCount; }
 
     public int getGlobalNumLeaves() { return this.globalNumLeaves; }
 }

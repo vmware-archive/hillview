@@ -3,11 +3,10 @@ package org.hillview.dataStructures;
 import org.apache.commons.math3.distribution.LaplaceDistribution;
 import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.Pair;
-import org.hillview.sketches.results.DyadicDecomposition;
 import org.hillview.sketches.results.Histogram;
 import org.hillview.utils.Converters;
 
-import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Contains methods for adding privacy to a non-private histogram computed over dyadic buckets,
@@ -19,7 +18,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
     private double[] confMaxes;
     private double epsilon;
 
-    public PrivateHistogram(DyadicDecomposition bucketDescription,
+    public PrivateHistogram(IDyadicDecomposition bucketDescription,
                             final Histogram histogram, double epsilon, boolean cdf) {
         super(histogram);
         this.epsilon = epsilon;
@@ -38,8 +37,8 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
      *             rather than [bucket left leaf, bucket right leaf].
      * Returns the noise and the total variance of the variables used to compute the noise.
      */
-    private Pair<Double, Double> noiseForBucket(DyadicDecomposition bucketDescription, int bucketIdx, boolean cdf) {
-        ArrayList<Pair<Integer, Integer>> intervals = bucketDescription.bucketDecomposition(bucketIdx, cdf);
+    private Pair<Double, Double> noiseForBucket(IDyadicDecomposition bucketDescription, int bucketIdx, boolean cdf) {
+        List<Pair<Integer, Integer>> intervals = bucketDescription.bucketDecomposition(bucketIdx, cdf);
 
         double noise = 0;
         double variance = 0;
@@ -62,7 +61,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
      * This function uses the dyadic decomposition of each prefix to add the smallest amount of
      * noise for that prefix.
      */
-    private void recomputeCDF(DyadicDecomposition bucketDescription) {
+    private void recomputeCDF(IDyadicDecomposition bucketDescription) {
         for (int i = 0; i < this.cdfBuckets.length; i++) {
             Pair<Double, Double> p = this.noiseForBucket(bucketDescription, i, true);
             Converters.checkNull(p.first);
@@ -81,7 +80,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
      * Each node in the dyadic interval tree is perturbed by an independent noise variable distributed as Laplace(log T / epsilon).
      * The total noise is the sum of the noise variables in the intervals composing the desired interval or bucket.
      */
-    private void addDyadicLaplaceNoise(DyadicDecomposition bucketDescription) {
+    private void addDyadicLaplaceNoise(IDyadicDecomposition bucketDescription) {
         for (int i = 0; i < this.histogram.buckets.length; i++) {
             Pair<Double, Double> noise = this.noiseForBucket(bucketDescription, i, false);
             this.histogram.buckets[i] += Converters.checkNull(noise.first);
