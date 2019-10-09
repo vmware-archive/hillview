@@ -18,18 +18,21 @@
 package org.hillview.targets;
 
 import org.hillview.*;
+import org.hillview.dataStructures.PrivacySchema;
 import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.*;
 import org.hillview.dataset.remoting.HillviewServer;
 import org.hillview.management.*;
-import org.hillview.maps.FindFilesMapper;
-import org.hillview.maps.LoadDatabaseTableMapper;
+import org.hillview.maps.FindFilesMap;
+import org.hillview.maps.IdMap;
+import org.hillview.maps.LoadDatabaseTableMap;
 import org.hillview.storage.*;
 import org.hillview.utils.*;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 
@@ -77,13 +80,24 @@ public class InitialObjectTarget extends RpcTarget {
     @HillviewRpc
     public void loadSimpleDBTable(RpcRequest request, RpcRequestContext context) {
         JdbcConnectionInformation conn = request.parseArgs(JdbcConnectionInformation.class);
-        this.createTargetDirect(request, context, (c) -> new SimpleDBTarget(conn, c));
+        IMap<Empty, Empty> map = new IdMap<Empty>();
+        assert this.emptyDataset != null;
+        String dir = Paths.get(Converters.checkNull(conn.database), conn.table).toString();
+
+        String privacyMetadataFile = DPWrapper.privacyMetadataFile(dir);
+        if (privacyMetadataFile != null) {
+            PrivacySchema privacySchema = PrivacySchema.loadFromFile(privacyMetadataFile);
+            this.runMap(this.emptyDataset, map,
+                    (e, c) -> new PrivateSimpleDBTarget(conn, c, privacySchema), request, context);
+        } else {
+            this.runMap(this.emptyDataset, map, (e, c) -> new SimpleDBTarget(conn, c), request, context);
+        }
     }
 
     @HillviewRpc
     public void loadDBTable(RpcRequest request, RpcRequestContext context) {
         JdbcConnectionInformation conn = request.parseArgs(JdbcConnectionInformation.class);
-        LoadDatabaseTableMapper mapper = new LoadDatabaseTableMapper(conn);
+        LoadDatabaseTableMap mapper = new LoadDatabaseTableMap(conn);
         assert this.emptyDataset != null;
         this.runMap(this.emptyDataset, mapper, TableTarget::new, request, context);
     }
@@ -92,13 +106,13 @@ public class InitialObjectTarget extends RpcTarget {
     public void findFiles(RpcRequest request, RpcRequestContext context) {
         FileSetDescription desc = request.parseArgs(FileSetDescription.class);
         HillviewLogger.instance.info("Finding files", "{0}", desc);
-        IMap<Empty, List<IFileReference>> finder = new FindFilesMapper(desc);
+        IMap<Empty, List<IFileReference>> finder = new FindFilesMap(desc);
         assert this.emptyDataset != null;
 
-        /* Create private target if privacy metadata file exists on root. */
-        if (desc.privacyMetadataExists()) {
+        String privacyMetadataFile = DPWrapper.privacyMetadataFile(Utilities.getFolder(desc.fileNamePattern));
+        if (privacyMetadataFile != null) {
             this.runFlatMap(this.emptyDataset, finder,
-                    (d, c) -> new PrivateFileDescriptionTarget(d, c, desc.getBasename()), request, context);
+                    (d, c) -> new PrivateFileDescriptionTarget(d, c, privacyMetadataFile), request, context);
         } else {
             this.runFlatMap(this.emptyDataset, finder, FileDescriptionTarget::new, request, context);
         }
@@ -112,7 +126,7 @@ public class InitialObjectTarget extends RpcTarget {
         desc.fileKind = "hillviewlog";
         desc.fileNamePattern = "./hillview*.log";
         desc.repeat = 1;
-        IMap<Empty, List<IFileReference>> finder = new FindFilesMapper(desc);
+        IMap<Empty, List<IFileReference>> finder = new FindFilesMap(desc);
         HillviewLogger.instance.info("Finding log files");
         assert this.emptyDataset != null;
         this.runFlatMap(this.emptyDataset, finder, FileDescriptionTarget::new, request, context);

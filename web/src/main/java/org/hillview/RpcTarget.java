@@ -35,7 +35,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 /**
  * An RPC target is an object that has methods that are invoked from the UI
@@ -455,34 +454,6 @@ public abstract class RpcTarget implements IJson {
             RpcReply reply = this.request.createReply(json);
             this.sendReply(reply);
         }
-    }
-
-    /**
-     * Run a computation that creates a target immediately and return the result right away.
-     * This does not involve any streaming.
-     * @param request  Request that is being replied.
-     * @param context  Computation context.
-     * @param factory  Function that allocates the resulting Target.
-     */
-    protected void createTargetDirect(RpcRequest request, RpcRequestContext context,
-                                      Function<HillviewComputation, RpcTarget> factory) {
-        HillviewComputation computation;
-        if (context.computation != null)
-            computation = context.computation;
-        else
-            computation = new HillviewComputation(null, request);
-        RpcTarget target = factory.apply(computation);
-        JsonObject json = new JsonObject();
-        json.addProperty("data", target.getId().toString());
-        Session session = context.getSessionIfOpen();
-        if (session == null)
-            return;
-        json.addProperty("done", 1);
-        RpcReply reply = request.createReply(json);
-        RpcServer.sendReply(reply, Converters.checkNull(context.session));
-        HillviewLogger.instance.info("Computation completed", "for {0}", request.toString());
-        RpcServer.requestCompleted(request, Converters.checkNull(context.session));
-        request.syncCloseSession(context.session);
     }
 
     @Override

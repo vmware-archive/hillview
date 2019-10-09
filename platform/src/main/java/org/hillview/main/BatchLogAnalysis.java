@@ -5,8 +5,8 @@ import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IMap;
 import org.hillview.maps.ExtractValueFromKeyMap;
-import org.hillview.maps.FindFilesMapper;
-import org.hillview.maps.LoadFilesMapper;
+import org.hillview.maps.FindFilesMap;
+import org.hillview.maps.LoadFilesMap;
 import org.hillview.maps.ProjectMap;
 import org.hillview.sketches.*;
 import org.hillview.sketches.results.*;
@@ -57,9 +57,9 @@ public class BatchLogAnalysis {
         /* Load data through file desc */
         Empty e = new Empty();
         LocalDataSet<Empty> local = new LocalDataSet<Empty>(e);
-        IMap<Empty, List<IFileReference>> finder = new FindFilesMapper(desc);
+        IMap<Empty, List<IFileReference>> finder = new FindFilesMap(desc);
         IDataSet<IFileReference> found = local.blockingFlatMap(finder);
-        IMap<IFileReference, ITable> loader = new LoadFilesMapper();
+        IMap<IFileReference, ITable> loader = new LoadFilesMap();
         IDataSet<ITable> table = found.blockingMap(loader);
 
         /* Restrict table columns of Schema "Timestamp" and "StructuredData" */

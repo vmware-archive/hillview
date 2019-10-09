@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2019 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,30 +19,27 @@ package org.hillview.maps;
 
 import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IMap;
-import org.hillview.storage.JdbcConnectionInformation;
-import org.hillview.table.api.ITable;
-import org.hillview.storage.JdbcDatabase;
 
 import javax.annotation.Nullable;
-import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
-public class LoadDatabaseTableMapper implements IMap<Empty, ITable> {
-    private final JdbcConnectionInformation conn;
+/**
+ * This class can be used to create a dataset that has 'cores' times more
+ * parallelism than an initial one.
+ */
+public class ParallelizerMap implements IMap<Empty, List<Empty>> {
+    private final int cores;
 
-    public LoadDatabaseTableMapper(JdbcConnectionInformation conn) {
-        this.conn = conn;
+    public ParallelizerMap(int cores) {
+        this.cores = cores;
     }
 
     @Override
-    public ITable apply(@Nullable Empty data) {
-        try {
-            JdbcDatabase db = new JdbcDatabase(this.conn);
-            db.connect();
-            ITable result = db.readTable();
-            db.disconnect();
-            return result;
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+    public List<Empty> apply(@Nullable Empty data) {
+        List<Empty> result = new ArrayList<Empty>();
+        for (int i = 0; i < cores; i++)
+            result.add(new Empty());
+        return result;
     }
 }

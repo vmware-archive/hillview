@@ -22,7 +22,7 @@ import org.hillview.table.columns.ColumnPrivacyMetadata;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 
@@ -61,10 +61,10 @@ public class PrivacySchema implements IJson {
     }
 
     /* One metadata object per column. */
-    public static PrivacySchema loadFromFile(Path metadataFname) {
+    public static PrivacySchema loadFromFile(String metadataFname) {
         String contents = "";
         try {
-            byte[] encoded = Files.readAllBytes(metadataFname);
+            byte[] encoded = Files.readAllBytes(Paths.get(metadataFname));
             contents = new String(encoded, StandardCharsets.US_ASCII);
         } catch ( java.io.IOException e ) {
             throw new RuntimeException(e);

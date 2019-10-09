@@ -27,7 +27,7 @@ import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.remoting.HillviewServer;
 import org.hillview.management.ClusterConfig;
 import org.hillview.management.SetMemoization;
-import org.hillview.maps.Parallelizer;
+import org.hillview.maps.ParallelizerMap;
 import org.hillview.sketches.*;
 import org.hillview.sketches.results.*;
 import org.hillview.table.ColumnDescription;
@@ -258,7 +258,7 @@ public class Benchmarks {
             ClusterConfig config = ClusterConfig.parse(args[0]);
             HostList workers = config.getWorkers();
             original = RemoteDataSet.createCluster(workers, RemoteDataSet.defaultDatasetIndex);
-            original = original.blockingFlatMap(new Parallelizer(cores));
+            original = original.blockingFlatMap(new ParallelizerMap(cores));
         }
         original.blockingManage(new SetMemoization(false));
         return original;

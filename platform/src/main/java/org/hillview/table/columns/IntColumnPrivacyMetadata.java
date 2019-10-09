@@ -70,4 +70,13 @@ public class IntColumnPrivacyMetadata extends ColumnPrivacyMetadata {
         int intervals = (value - this.globalMin) / this.granularity;
         return this.globalMin + intervals * this.granularity;
     }
+
+    public int roundUp(int value) {
+        if (value <= this.globalMin)
+            return this.globalMin;
+        if (value >= this.globalMax)
+            throw new RuntimeException("Value greater than max: " + value + ">" + this.globalMax);
+        int intervals = (value - this.globalMin) / this.granularity;
+        return this.globalMin + (intervals + 1) * this.granularity;
+    }
 }

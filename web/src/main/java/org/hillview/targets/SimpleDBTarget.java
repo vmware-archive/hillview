@@ -50,13 +50,15 @@ import java.util.List;
  * the front-end.  Note that all operations on the local database are not scalable -
  * they are not expected to scale to billions of rows.
  */
-public final class SimpleDBTarget extends RpcTarget {
-    private final JdbcConnectionInformation jdbc;
-    private final JdbcDatabase database;
-    private final int rowCount;
+public class SimpleDBTarget extends RpcTarget {
+    final JdbcConnectionInformation jdbc;
+    protected final JdbcDatabase database;
+    protected final int rowCount;
     @Nullable
-    private Schema schema;
-    private final IDataSet<ITable> unused;
+    protected Schema schema;
+    // This table is actually not used for anything; the only purpose
+    // is for some APIs to be similar to the TableTarget class.
+    protected final IDataSet<ITable> table;
 
     static {
         try {
@@ -78,17 +80,17 @@ public final class SimpleDBTarget extends RpcTarget {
             this.schema = this.database.getSchema();
             this.database.disconnect();
             SmallTable empty = new SmallTable(this.schema);
-            this.unused = new LocalDataSet<ITable>(empty);
+            this.table = new LocalDataSet<ITable>(empty);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private <T> ISketch<ITable, T> makeSketch(T data, @Nullable ISketch<ITable, T> sk) {
+    <T> ISketch<ITable, T> makeSketch(T data, @Nullable ISketch<ITable, T> sk) {
         return new PrecomputedSketch<ITable, T>(data, sk);
     }
 
-    private <T> ISketch<ITable, T> makeSketch(T data) {
+    <T> ISketch<ITable, T> makeSketch(T data) {
         return new PrecomputedSketch<ITable, T>(data, null);
     }
 
@@ -100,7 +102,7 @@ public final class SimpleDBTarget extends RpcTarget {
     @HillviewRpc
     public void getSummary(RpcRequest request, RpcRequestContext context) {
         TableSummary summary = new TableSummary(this.schema, this.rowCount);
-        this.runSketch(this.unused, this.makeSketch(summary, new SummarySketch()), request, context);
+        this.runSketch(this.table, this.makeSketch(summary, new SummarySketch()), request, context);
     }
 
     static class DistinctCount implements IJson {
@@ -120,7 +122,7 @@ public final class SimpleDBTarget extends RpcTarget {
             this.database.disconnect();
             DistinctCount dc = new DistinctCount(result);
             ISketch<ITable, DistinctCount> sk = this.makeSketch(dc);
-            this.runSketch(this.unused, sk, request, context);
+            this.runSketch(this.table, sk, request, context);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -152,7 +154,7 @@ public final class SimpleDBTarget extends RpcTarget {
             HeavyHittersTarget hht = new HeavyHittersTarget(fkList, computation);
             TopList result = new TopList(fkList.sortTopK(info.columns), hht.getId().toString());
             ISketch<ITable, TopList> sk = this.makeSketch(result);
-            this.runSketch(this.unused, sk, request, context);
+            this.runSketch(this.table, sk, request, context);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -186,7 +188,7 @@ public final class SimpleDBTarget extends RpcTarget {
             JsonList<BucketsInfo> result = new JsonList<BucketsInfo>(1);
             result.add(range);
             ISketch<ITable, JsonList<BucketsInfo>> sk = this.makeSketch(result);
-            this.runSketch(this.unused, sk, request, context);
+            this.runSketch(this.table, sk, request, context);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -206,7 +208,7 @@ public final class SimpleDBTarget extends RpcTarget {
                             new AugmentedHistogram(histo), new HistogramPrefixSum(cdf));
             this.database.disconnect();
             ISketch<ITable, Pair<AugmentedHistogram, HistogramPrefixSum>> sk = this.makeSketch(result);
-            this.runSketch(this.unused, sk, request, context);
+            this.runSketch(this.table, sk, request, context);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

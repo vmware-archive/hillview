@@ -17,29 +17,18 @@
 
 package org.hillview.maps;
 
-import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IMap;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
- * This class can be used to create a dataset that has 'cores' times more
- * parallelism than an initial one.
+ * The identity map.
+ * @param <T>  Type of data processed.
  */
-public class Parallelizer implements IMap<Empty, List<Empty>> {
-    private final int cores;
-
-    public Parallelizer(int cores) {
-        this.cores = cores;
-    }
-
+public class IdMap<T> implements IMap<T, T> {
+    @Nullable
     @Override
-    public List<Empty> apply(@Nullable Empty data) {
-        List<Empty> result = new ArrayList<Empty>();
-        for (int i = 0; i < cores; i++)
-            result.add(new Empty());
-        return result;
+    public T apply(@Nullable T data) {
+        return data;
     }
 }
