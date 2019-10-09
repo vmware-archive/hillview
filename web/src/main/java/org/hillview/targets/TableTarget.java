@@ -260,7 +260,8 @@ public final class TableTarget extends RpcTarget {
                 new ConcurrentSketch<ITable, Histogram, Histogram>(sk, cdf);
         this.runSketchPostprocessing(
                 this.table, csk, (e, c) -> new Pair<AugmentedHistogram, HistogramPrefixSum>(
-                        new AugmentedHistogram(e.first), new HistogramPrefixSum(e.second)),
+                        new AugmentedHistogram(Converters.checkNull(e.first)),
+                        new HistogramPrefixSum(Converters.checkNull(e.second))),
                 request, context);
     }
 
@@ -290,7 +291,8 @@ public final class TableTarget extends RpcTarget {
         ConcurrentSketch<ITable, Heatmap, Histogram> csk =
                 new ConcurrentSketch<ITable, Heatmap, Histogram>(sk, cdf);
         this.runSketchPostprocessing(this.table, csk,
-                (e, c) -> new Pair<Heatmap, AugmentedHistogram>(e.first, new HistogramPrefixSum(e.second)),
+                (e, c) -> new Pair<Heatmap, AugmentedHistogram>(
+                        e.first, new HistogramPrefixSum(Converters.checkNull(e.second))),
                 request, context);
     }
 

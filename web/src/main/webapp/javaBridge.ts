@@ -76,11 +76,16 @@ export class GenericLogs {
     ];
 }
 
+// Describes the configuration of the UI for a specific installation of Hillview
+export interface UIConfig {
+    disableSaveAs: boolean;
+}
+
 export interface PrivacyMetadata {
     epsilon: number;
-    granularity: number;
-    globalMin: number;
-    globalMax: number;
+    granularity: number | null;
+    globalMin: number | string;
+    globalMax: number | string;
 }
 
 export interface PrivacySchema {
@@ -209,7 +214,6 @@ export interface RowData {
 export interface FileSizeSketchInfo {
     fileCount: number;
     totalSize: number;
-    isPrivate: boolean;
 }
 
 export interface ColumnSortOrientation {

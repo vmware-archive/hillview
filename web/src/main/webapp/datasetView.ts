@@ -123,6 +123,7 @@ export class DatasetView implements IHtmlElement {
     private readonly pageContainer: HTMLElement;
     private pageCounter: number;
     public readonly allPages: FullPage[];
+    protected differentialyPrivate: boolean = false;
 
     /**
      * Build a dataset object.
@@ -153,8 +154,12 @@ export class DatasetView implements IHtmlElement {
                 this.loaded.description.fileKind === "genericlog");
     }
 
+    public setPrivate(): void {
+        this.differentialyPrivate = true;
+    }
+
     public isPrivate(): boolean {
-        return this.loaded.kind === "Private files";
+        return this.differentialyPrivate;
     }
 
     public getHTMLRepresentation(): HTMLElement {

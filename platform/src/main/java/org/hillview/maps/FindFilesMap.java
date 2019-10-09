@@ -41,10 +41,10 @@ import java.util.List;
  * Scans a folder and finds files matching a pattern. Creates a list of file
  * loaders that can be invoked to load the actual file data as tables.
  */
-public class FindFilesMapper implements IMap<Empty, List<IFileReference>> {
+public class FindFilesMap implements IMap<Empty, List<IFileReference>> {
     private final FileSetDescription description;
 
-    public FindFilesMapper(FileSetDescription description) {
+    public FindFilesMap(FileSetDescription description) {
         this.description = description;
     }
 

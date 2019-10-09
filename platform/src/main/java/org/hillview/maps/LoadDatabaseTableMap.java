@@ -17,23 +17,32 @@
 
 package org.hillview.maps;
 
+import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IMap;
-import org.hillview.storage.IFileReference;
+import org.hillview.storage.JdbcConnectionInformation;
 import org.hillview.table.api.ITable;
-import org.hillview.utils.Converters;
+import org.hillview.storage.JdbcDatabase;
 
 import javax.annotation.Nullable;
+import java.sql.SQLException;
 
-public class LoadFilesMapper implements IMap<IFileReference, ITable> {
-    public LoadFilesMapper() {}
+public class LoadDatabaseTableMap implements IMap<Empty, ITable> {
+    private final JdbcConnectionInformation conn;
 
-    @Override
-    public ITable apply(@Nullable IFileReference data) {
-        return Converters.checkNull(data).load();
+    public LoadDatabaseTableMap(JdbcConnectionInformation conn) {
+        this.conn = conn;
     }
 
     @Override
-    public String toString() {
-        return "LoadFilesMapper";
+    public ITable apply(@Nullable Empty data) {
+        try {
+            JdbcDatabase db = new JdbcDatabase(this.conn);
+            db.connect();
+            ITable result = db.readTable();
+            db.disconnect();
+            return result;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

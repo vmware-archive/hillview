@@ -67,7 +67,7 @@ public class DoubleColumnPrivacyMetadata extends ColumnPrivacyMetadata {
             throw new RuntimeException("Value smaller than min: " + value + "<" + this.globalMin);
         if (value >= this.globalMax)
             return this.globalMax;
-        double intervals = Math.floor(value - this.globalMin) / this.granularity;
+        double intervals = Math.floor((value - this.globalMin) / this.granularity);
         return this.globalMin + intervals * this.granularity;
     }
 
@@ -76,7 +76,7 @@ public class DoubleColumnPrivacyMetadata extends ColumnPrivacyMetadata {
             return this.globalMin;
         if (value >= this.globalMax)
             throw new RuntimeException("Value greater than max: " + value + ">" + this.globalMax);
-        double intervals = Math.floor(value - this.globalMin) / this.granularity;
+        double intervals = Math.floor((value - this.globalMin) / this.granularity);
         return this.globalMin + (intervals + 1) * this.granularity;
     }
 }

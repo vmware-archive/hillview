@@ -684,21 +684,20 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
 
             const kindString = cd.kind;
             const name = this.schema.displayName(cd.name);
-            let title;
+            let title = null;
             if (this.isPrivate()) {
-                const epsilonString = this.privacySchema.metadata[cd.name].epsilon;
-                const granString = this.privacySchema.metadata[cd.name].granularity;
-                const minString = this.privacySchema.metadata[cd.name].globalMin;
-                const maxString = this.privacySchema.metadata[cd.name].globalMax;
-                title = name + ".\nType is " + kindString +
-                    ".\nBudgeted epsilon value is " + epsilonString +
-                    ".\nLeaf granularity is " + granString +
-                    ".\nRange is [" + minString + ", " + maxString + "]" +
-                            ".\nRight mouse click opens a menu.";
-            } else {
-                title = name + ".\nType is " + kindString +
-                            ".\nRight mouse click opens a menu.";
+                const pm = this.privacySchema.metadata[cd.name];
+                if (pm != null) {
+                    title = name + ".\nType is " + kindString +
+                        ".\nEpsilon=" + pm.epsilon +
+                        ".\nGranularity is " + pm.granularity +
+                        ".\nRange is [" + pm.globalMin + ", " + pm.globalMax + "]" +
+                        ".\nRight mouse click opens a menu.";
+                }
             }
+            if (title == null)
+                title = name + ".\nType is " + kindString +
+                            ".\nRight mouse click opens a menu.";
             const visible = this.order.find(cd.name) >= 0;
             const thd = this.addHeaderCell(cd, name, title, 0);
             thd.classList.add("col" + i.toString());
@@ -1237,6 +1236,9 @@ export class SchemaReceiver extends OnCompleteReceiver<TableSummary> {
         if (summary.schema == null) {
             this.page.reportError("No schema received; empty dataset?");
             return;
+        }
+        if (summary.metadata != null) {
+            this.dataset.setPrivate();
         }
         const schemaClass = this.schema == null ? new SchemaClass(summary.schema) : this.schema;
         const useSchema = this.viewKind === "Schema" ||

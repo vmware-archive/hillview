@@ -171,7 +171,14 @@ public class JdbcDatabase {
             else
                 query = this.conn.getQueryForNumericHistogram(
                         this.conn.info.table, cd, (DoubleHistogramBuckets)buckets);
-        } else {
+        } else if (buckets instanceof ExplicitDoubleHistogramBuckets) {
+            if (cd.kind == ContentsKind.Date)
+                query = this.conn.getQueryForExplicitDateHistogram(
+                        this.conn.info.table, cd, (ExplicitDoubleHistogramBuckets)buckets);
+            else
+                query = this.conn.getQueryForExplicitNumericHistogram(
+                        this.conn.info.table, cd, (ExplicitDoubleHistogramBuckets)buckets);
+        }  else {
             query = this.conn.getQueryForStringHistogram(
                     this.conn.info.table, cd, (StringHistogramBuckets)buckets);
         }

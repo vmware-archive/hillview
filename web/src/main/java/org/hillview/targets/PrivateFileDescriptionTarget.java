@@ -7,32 +7,28 @@ import org.hillview.RpcRequestContext;
 import org.hillview.dataStructures.PrivacySchema;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IMap;
-import org.hillview.maps.LoadFilesMapper;
+import org.hillview.maps.LoadFilesMap;
 import org.hillview.sketches.FileSizeSketch;
-import org.hillview.storage.FileSetDescription;
 import org.hillview.storage.IFileReference;
 import org.hillview.table.api.ITable;
-
-import java.nio.file.Paths;
 
 public class PrivateFileDescriptionTarget extends FileDescriptionTarget {
     private PrivacySchema metadata;
 
-    PrivateFileDescriptionTarget(IDataSet<IFileReference> files, HillviewComputation computation, String basename) {
+    PrivateFileDescriptionTarget(IDataSet<IFileReference> files, HillviewComputation computation, String file) {
         super(files, computation);
-        this.metadata = PrivacySchema.loadFromFile(Paths.get(basename, FileSetDescription.PRIVACY_METADATA_NAME));
+        this.metadata = PrivacySchema.loadFromFile(file);
     }
 
     @HillviewRpc
     public void getFileSize(RpcRequest request, RpcRequestContext context) {
         FileSizeSketch sk = new FileSizeSketch();
-        this.runCompleteSketch(this.files, sk, (e, c) -> new PrivateFileSizeInfo(e.fileCount, e.totalSize, true),
-                request, context);
+        this.runSketch(this.files, sk, request, context);
     }
 
     @HillviewRpc
     public void loadTable(RpcRequest request, RpcRequestContext context) {
-        IMap<IFileReference, ITable> loader = new LoadFilesMapper();
+        IMap<IFileReference, ITable> loader = new LoadFilesMap();
         this.runMap(this.files, loader, (d, c) -> new PrivateTableTarget(d, c, metadata), request, context);
     }
 }

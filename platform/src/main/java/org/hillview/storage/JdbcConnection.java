@@ -18,6 +18,7 @@
 package org.hillview.storage;
 
 import org.hillview.sketches.results.DoubleHistogramBuckets;
+import org.hillview.sketches.results.ExplicitDoubleHistogramBuckets;
 import org.hillview.sketches.results.StringHistogramBuckets;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
@@ -143,11 +144,25 @@ abstract class JdbcConnection {
         return builder.toString();
     }
 
-    public abstract String getQueryForNumericHistogram(
-            String table, ColumnDescription cd, DoubleHistogramBuckets buckets);
+    public String getQueryForExplicitNumericHistogram(
+            String table, ColumnDescription cd, ExplicitDoubleHistogramBuckets buckets) {
+        throw new UnsupportedOperationException();
+    }
 
-    public abstract String getQueryForStringHistogram(
-            String table, ColumnDescription cd, StringHistogramBuckets buckets);
+    public String getQueryForExplicitDateHistogram(
+            String table, ColumnDescription cd, ExplicitDoubleHistogramBuckets buckets) {
+        throw new UnsupportedOperationException();
+    }
+
+    public String getQueryForNumericHistogram(
+            String table, ColumnDescription cd, DoubleHistogramBuckets buckets) {
+        throw new UnsupportedOperationException();
+    }
+
+    public String getQueryForStringHistogram(
+            String table, ColumnDescription cd, StringHistogramBuckets buckets) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Returns a query that computes 4 values for a given numeric column.
@@ -156,7 +171,9 @@ abstract class JdbcConnection {
      * @return       A query that computes the min, max, total rows, and non-nulls in the specified column.
      *               These are returned in columns min, max, total and nonnulls respectively.
      */
-    public abstract String getQueryForNumericRange(String table, String column);
+    public String getQueryForNumericRange(String table, String column) {
+        throw new UnsupportedOperationException();
+    }
 
     @SuppressWarnings("WeakerAccess")
     public String getQueryForCounts(String table, String column) {
@@ -167,5 +184,7 @@ abstract class JdbcConnection {
         return "SELECT DISTINCT " + column + " FROM " + table + " ORDER BY " + column;
     }
 
-    public abstract String getQueryForDateHistogram(String table, ColumnDescription cd, DoubleHistogramBuckets buckets);
+    public String getQueryForDateHistogram(String table, ColumnDescription cd, DoubleHistogramBuckets buckets) {
+        throw new UnsupportedOperationException();
+    }
 }

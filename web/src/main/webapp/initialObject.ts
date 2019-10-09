@@ -38,28 +38,17 @@ export interface TablesLoaded {
     description: JdbcConnectionInformation;
 }
 
-export interface PrivateFilesLoaded {
-    kind: "Private files";
-    description: FileSetDescription;
-}
-
 export interface HillviewLogs {
     kind: "Hillview logs";
 }
 
-export type DataLoaded = FilesLoaded | TablesLoaded | PrivateFilesLoaded
-    | HillviewLogs | IDatasetSerialization;
+export type DataLoaded = FilesLoaded | TablesLoaded | HillviewLogs | IDatasetSerialization;
 
 export function getDescription(data: DataLoaded): string {
     switch (data.kind) {
         case "Saved dataset":
             return "saved";
         case "Files":
-            if (data.description.name != null)
-                return data.description.name;
-            else
-                return data.description.fileNamePattern;
-        case "Private files":
             if (data.description.name != null)
                 return data.description.name;
             else
@@ -119,16 +108,8 @@ class FileSizeReceiver extends OnCompleteReceiver<FileSizeSketchInfo> {
             const fn = new RemoteObject(this.remoteObj.remoteObjectId);
             const rr = fn.createStreamingRpcRequest<RemoteObjectId>("loadTable", null);
             rr.chain(this.operation);
-
-            if (size.isPrivate) {
-                const observer = new RemoteTableReceiver(this.page, rr,
-                                     {kind: "Private files",
-                                      description: (this.data as FilesLoaded).description}, fileSize);
-                rr.invoke(observer);
-            } else {
-                const observer = new RemoteTableReceiver(this.page, rr, this.data, fileSize);
-                rr.invoke(observer);
-            }
+            const observer = new RemoteTableReceiver(this.page, rr, this.data, fileSize);
+            rr.invoke(observer);
         }
     }
 }

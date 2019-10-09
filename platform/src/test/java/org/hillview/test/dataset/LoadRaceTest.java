@@ -22,8 +22,8 @@ import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IMap;
 import org.hillview.dataset.api.PartialResult;
-import org.hillview.maps.FindFilesMapper;
-import org.hillview.maps.LoadFilesMapper;
+import org.hillview.maps.FindFilesMap;
+import org.hillview.maps.LoadFilesMap;
 import org.hillview.storage.FileSetDescription;
 import org.hillview.storage.IFileReference;
 import org.hillview.table.api.ITable;
@@ -44,10 +44,10 @@ public class LoadRaceTest extends BaseTest {
         desc.fileKind = "csv";
         desc.fileNamePattern = "../data/ontime/*_1.csv";
         desc.headerRow = true;
-        IMap<Empty, List<IFileReference>> finder = new FindFilesMapper(desc);
+        IMap<Empty, List<IFileReference>> finder = new FindFilesMap(desc);
         IDataSet<IFileReference> found = local.blockingFlatMap(finder);
 
-        IMap<IFileReference, ITable> loader = new LoadFilesMapper();
+        IMap<IFileReference, ITable> loader = new LoadFilesMap();
         Thread t0 = runInBackground(found, loader);
         Thread.sleep(1000);
         Thread t1 = runInBackground(found, loader);

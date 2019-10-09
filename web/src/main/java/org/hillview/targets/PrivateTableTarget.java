@@ -4,12 +4,10 @@ import org.hillview.*;
 import org.hillview.dataStructures.*;
 import org.hillview.dataset.ConcurrentSketch;
 import org.hillview.dataset.api.IDataSet;
-import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.Pair;
+import org.hillview.maps.IdMap;
 import org.hillview.sketches.*;
 import org.hillview.sketches.results.*;
-import org.hillview.table.ColumnDescription;
-import org.hillview.table.Schema;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.DoubleColumnPrivacyMetadata;
 import org.hillview.table.filters.RangeFilterDescription;
@@ -17,84 +15,31 @@ import org.hillview.table.columns.ColumnPrivacyMetadata;
 import org.hillview.utils.Converters;
 import org.hillview.utils.JsonList;
 
-import javax.annotation.Nullable;
-import java.util.HashMap;
 import java.util.function.BiFunction;
 
-/**
- * This class represents a remote dataset that can only be accessed using differentially-private operations.
- */
 public class PrivateTableTarget extends RpcTarget {
     private final IDataSet<ITable> table;
-    // For each column the range allowed after filtering
-    private final HashMap<String, RangeFilterDescription> columnLimits;
-    public long seed; // Global seed for PRNG
-    /* Global parameters for differentially-private histograms using the binary mechanism. */
-    private PrivacySchema privacySchema;
+    private final DPWrapper wrapper;
 
     PrivateTableTarget(IDataSet<ITable> table, HillviewComputation computation,
                        PrivacySchema privacySchema) {
         super(computation);
+        this.wrapper = new DPWrapper(privacySchema);
         this.table = table;
-        this.columnLimits = new HashMap<String, RangeFilterDescription>();
         this.registerObject();
-        this.privacySchema = privacySchema;
     }
 
     private PrivateTableTarget(PrivateTableTarget other, HillviewComputation computation) {
         super(computation);
         this.table = other.table;
-        this.privacySchema = other.privacySchema;
+        this.wrapper = new DPWrapper(other.wrapper);
         this.registerObject();
-        this.columnLimits = new HashMap<String, RangeFilterDescription>(other.columnLimits);
-    }
-
-    public static class PrivacySummary implements IJson {
-        @Nullable
-        public Schema schema;
-        public long rowCount;
-        @Nullable
-        public PrivacySchema metadata;
-    }
-
-    private PrivacySummary addPrivateMetadata(TableSummary summary) {
-        PrivacySummary pSumm = new PrivacySummary();
-        pSumm.schema = summary.schema;
-        pSumm.metadata = this.privacySchema;
-        // TODO: add noise to the row count too.
-        pSumm.rowCount = summary.rowCount;
-        return pSumm;
     }
 
     @HillviewRpc
     public void getSummary(RpcRequest request, RpcRequestContext context) {
         SummarySketch ss = new SummarySketch();
-        this.runCompleteSketch(this.table, ss, (d, c) -> addPrivateMetadata(d), request, context);
-    }
-
-    static class PrivateHistogramArgs {
-        ColumnDescription cd = new ColumnDescription();
-        double samplingRate = 1.0; // Fix to exact count
-        long seed;
-
-        double min;
-        double max;
-        int bucketCount;
-
-        IDyadicDecomposition getDecomposition(ColumnPrivacyMetadata metadata) {
-            if (!cd.kind.isNumeric())
-                throw new RuntimeException("Attempted to instantiate private buckets with non-numeric column");
-            // This bucket class ensures that computed buckets fall on leaf boundaries.
-            return new NumericDyadicDecomposition(this.min, this.max,
-                    this.bucketCount, (DoubleColumnPrivacyMetadata)metadata);
-        }
-
-            // This bucket class ensures that computed buckets fall on leaf boundaries.
-        HistogramSketch getSketch(ColumnPrivacyMetadata metadata) {
-            IDyadicDecomposition dd = this.getDecomposition(metadata);
-            return new HistogramSketch(dd.getHistogramBuckets(), this.cd.name,
-                    this.samplingRate, this.seed, null);
-        }
+        this.runCompleteSketch(this.table, ss, (d, c) -> this.wrapper.addPrivateMetadata(d), request, context);
     }
 
     // Returns both the histogram and the precomputed CDF of the data.
@@ -103,8 +48,8 @@ public class PrivateTableTarget extends RpcTarget {
     // are computed at different bucket granularities.
     @HillviewRpc
     public void histogram(RpcRequest request, RpcRequestContext context) {
-        PrivateHistogramArgs[] info = request.parseArgs(PrivateHistogramArgs[].class);
-        ColumnPrivacyMetadata metadata = this.privacySchema.get(info[0].cd.name);
+        DPWrapper.PrivateHistogramArgs[] info = request.parseArgs(DPWrapper.PrivateHistogramArgs[].class);
+        ColumnPrivacyMetadata metadata = this.wrapper.privacySchema.get(info[0].cd.name);
         double epsilon = metadata.epsilon;
 
         HistogramSketch sk = info[0].getSketch(metadata);
@@ -116,7 +61,8 @@ public class PrivateTableTarget extends RpcTarget {
         this.runCompleteSketch(this.table, csk, (e, c) ->
                 new Pair<PrivateHistogram, PrivateHistogram>(
                         new PrivateHistogram(dd, Converters.checkNull(e.first), epsilon, false),
-                        new PrivateHistogram(cdd, Converters.checkNull(e.second), epsilon, true)), request, context);
+                        new PrivateHistogram(cdd, Converters.checkNull(e.second), epsilon, true)),
+                request, context);
     }
 
     @HillviewRpc
@@ -124,8 +70,9 @@ public class PrivateTableTarget extends RpcTarget {
         RangeArgs[] args = request.parseArgs(RangeArgs[].class);
         assert args.length == 1;
         double min, max;
-        DoubleColumnPrivacyMetadata md = (DoubleColumnPrivacyMetadata)this.privacySchema.get(args[0].cd.name);
-        RangeFilterDescription filter = this.columnLimits.get(args[0].cd.name);
+        DoubleColumnPrivacyMetadata md = (DoubleColumnPrivacyMetadata)this.wrapper.privacySchema.get(
+                args[0].cd.name);
+        RangeFilterDescription filter = this.wrapper.columnLimits.get(args[0].cd.name);
         if (filter == null) {
             min = md.globalMin;
             max = md.globalMax;
@@ -150,11 +97,12 @@ public class PrivateTableTarget extends RpcTarget {
     @HillviewRpc
     public void filterRange(RpcRequest request, RpcRequestContext context) {
         RangeFilterDescription filter = request.parseArgs(RangeFilterDescription.class);
-        this.createTargetDirect(request, context, (c) -> {
-            PrivateTableTarget result = new PrivateTableTarget(this, c);
-            result.columnLimits.put(filter.cd.name, filter);
+        IdMap<ITable> map = new IdMap<ITable>();
+        this.runMap(this.table, map, (e, c) -> {
+            PrivateTableTarget result = new PrivateTableTarget(PrivateTableTarget.this, c);
+            result.wrapper.columnLimits.put(filter.cd.name, filter);
             return result;
-        });
+        }, request, context);
     }
 
     @HillviewRpc
@@ -196,8 +144,9 @@ public class PrivateTableTarget extends RpcTarget {
         DataRange[] precomputed = new DataRange[2];
         for (int i = 0; i < 2; i++) {
             double min, max;
-            DoubleColumnPrivacyMetadata md = (DoubleColumnPrivacyMetadata)this.privacySchema.get(args[i].cd.name);
-            RangeFilterDescription filter = this.columnLimits.get(args[0].cd.name);
+            DoubleColumnPrivacyMetadata md = (DoubleColumnPrivacyMetadata)this.wrapper.privacySchema.get(
+                    args[i].cd.name);
+            RangeFilterDescription filter = this.wrapper.columnLimits.get(args[0].cd.name);
             if (filter == null) {
                 min = md.globalMin;
                 max = md.globalMax;
@@ -228,12 +177,13 @@ public class PrivateTableTarget extends RpcTarget {
 
     @HillviewRpc
     public void heatmap(RpcRequest request, RpcRequestContext context) {
-        PrivateTableTarget.PrivateHistogramArgs[] info = request.parseArgs(PrivateTableTarget.PrivateHistogramArgs[].class);
+        DPWrapper.PrivateHistogramArgs[] info = request.parseArgs(DPWrapper.PrivateHistogramArgs[].class);
         assert info.length == 2;
-        ColumnPrivacyMetadata col0 = this.privacySchema.get(info[0].cd.name);
-        ColumnPrivacyMetadata col1 = this.privacySchema.get(info[1].cd.name);
+        ColumnPrivacyMetadata col0 = this.wrapper.privacySchema.get(info[0].cd.name);
+        ColumnPrivacyMetadata col1 = this.wrapper.privacySchema.get(info[1].cd.name);
         // Epsilon value has to be specified on the pair, separately from each column.
-        double epsilon = privacySchema.get(new String[] {info[0].cd.name, info[1].cd.name}).epsilon;
+        double epsilon =this.wrapper.privacySchema.get(new String[] {
+                info[0].cd.name, info[1].cd.name}).epsilon;
 
         IDyadicDecomposition d0 = info[0].getDecomposition(col0);
         IDyadicDecomposition d1 = info[1].getDecomposition(col1);
