@@ -76,6 +76,11 @@ export class GenericLogs {
     ];
 }
 
+// Describes the configuration of the UI for a specific installation of Hillview
+export interface UIConfig {
+    disableSaveAs: boolean;
+}
+
 export interface PrivacyMetadata {
     epsilon: number;
     granularity: number | null;

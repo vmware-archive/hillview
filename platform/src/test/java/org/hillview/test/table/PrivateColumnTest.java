@@ -26,7 +26,7 @@ import org.hillview.table.Table;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.ColumnPrivacyMetadata;
-import org.hillview.table.columns.IntColumnPrivacyMetadata;
+import org.hillview.table.columns.DoubleColumnPrivacyMetadata;
 import org.hillview.table.columns.PrivateColumn;
 import org.hillview.table.columns.StringColumnPrivacyMetadata;
 import org.hillview.test.BaseTest;
@@ -39,7 +39,7 @@ public class PrivateColumnTest extends BaseTest {
     public void testPrivateColumn() {
         Table table = TestTables.testTable();
         IColumn age = table.getLoadedColumn("Age");
-        ColumnPrivacyMetadata cpm = new IntColumnPrivacyMetadata(.1, 5, 0, 100);
+        ColumnPrivacyMetadata cpm = new DoubleColumnPrivacyMetadata(.1, 5, 0, 100);
         PrivateColumn pc = new PrivateColumn(age, cpm);
         for (int i = 0; i < pc.sizeInRows(); i++) {
             int v = pc.getInt(i);
@@ -71,7 +71,7 @@ public class PrivateColumnTest extends BaseTest {
     public void testPrivateHistogram() {
         Table table = TestTables.testTable();
         IColumn age = table.getLoadedColumn("Age");
-        ColumnPrivacyMetadata cpm = new IntColumnPrivacyMetadata(.1, 5, 0, 100);
+        ColumnPrivacyMetadata cpm = new DoubleColumnPrivacyMetadata(.1, 5, 0, 100);
         PrivateColumn pcage = new PrivateColumn(age, cpm);
         IColumn name = table.getLoadedColumn("Name");
         String[] boundaries = new String[26];
@@ -103,7 +103,7 @@ public class PrivateColumnTest extends BaseTest {
         LocalDataSet<ITable> pub = new LocalDataSet<ITable>(table);
 
         IColumn age = table.getLoadedColumn("Age");
-        ColumnPrivacyMetadata cpmage = new IntColumnPrivacyMetadata(.1, 5, 0, 100);
+        ColumnPrivacyMetadata cpmage = new DoubleColumnPrivacyMetadata(.1, 5, 0, 100);
         PrivateColumn pcage = new PrivateColumn(age, cpmage);
         IColumn name = table.getLoadedColumn("Name");
         String[] boundaries = new String[26];

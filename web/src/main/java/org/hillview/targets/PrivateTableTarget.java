@@ -61,7 +61,8 @@ public class PrivateTableTarget extends RpcTarget {
         this.runCompleteSketch(this.table, csk, (e, c) ->
                 new Pair<PrivateHistogram, PrivateHistogram>(
                         new PrivateHistogram(dd, Converters.checkNull(e.first), epsilon, false),
-                        new PrivateHistogram(cdd, Converters.checkNull(e.second), epsilon, true)), request, context);
+                        new PrivateHistogram(cdd, Converters.checkNull(e.second), epsilon, true)),
+                request, context);
     }
 
     @HillviewRpc

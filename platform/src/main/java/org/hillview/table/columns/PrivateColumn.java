@@ -40,9 +40,6 @@ public class PrivateColumn extends BaseColumn {
         if (data.getKind().isString()) {
             if (!(metadata instanceof StringColumnPrivacyMetadata))
                 throw new IllegalArgumentException("Privacy metadata should be String, but it's " + metadata.getClass().toString());
-        } else if (data.getKind() == ContentsKind.Integer) {
-            if (!(metadata instanceof IntColumnPrivacyMetadata))
-                throw new IllegalArgumentException("Privacy metadata should be Int, but it's " + metadata.getClass().toString());
         } else {
             if (!(metadata instanceof DoubleColumnPrivacyMetadata)) {
                 throw new IllegalArgumentException("Privacy metadata should be Double, but it's " + metadata.getClass().toString());
@@ -94,7 +91,7 @@ public class PrivateColumn extends BaseColumn {
     @Override
     public int getInt(final int rowIndex) {
         int v = this.data.getInt(rowIndex);
-        return this.metadata.roundDown(v);
+        return (int)this.metadata.roundDown(v);
     }
 
     @Override

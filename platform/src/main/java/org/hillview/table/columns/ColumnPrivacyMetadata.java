@@ -44,7 +44,4 @@ public class ColumnPrivacyMetadata implements IJson {
     public String roundDown(@Nullable String value) {
         throw new UnsupportedOperationException();
     }
-    public int roundDown(int value) {
-        throw new UnsupportedOperationException();
-    }
 }

@@ -255,6 +255,33 @@ public class MysqlTest extends JdbcTest {
     }
 
     @Test
+    public void testMysqlExplicitNumericHistogram() throws SQLException {
+        JdbcConnectionInformation conn = this.mySqlTestDbConnection();
+        JdbcDatabase db = new JdbcDatabase(conn);
+        try {
+            db.connect();
+        } catch (Exception e) {
+            // This will fail if a database is not deployed, but we don't want to fail the test.
+            this.ignoringException("Cannot connect to database", e);
+            return;
+        }
+        IHistogramBuckets buckets = new ExplicitDoubleHistogramBuckets(
+                new Double[] { 0.0, 10000.0, 50000.0, 100000.0, 200000.0 }, null);
+        Histogram histogram = db.histogram(
+                new ColumnDescription("salary", ContentsKind.Integer), buckets);
+        Assert.assertNotNull(histogram);
+        Assert.assertEquals(buckets.getBucketCount(), histogram.getBucketCount());
+        Assert.assertEquals(0, histogram.getMissingData());
+        Assert.assertEquals(0, histogram.getCount(0));
+        Assert.assertEquals(0, histogram.getCount(4));
+        long total = 0;
+        for (int i = 0; i < histogram.getBucketCount(); i++)
+            total += histogram.getCount(i);
+        Assert.assertEquals(2844047, total);
+        db.disconnect();
+    }
+
+    @Test
     public void testMysqlStringHistogram() throws SQLException {
         JdbcConnectionInformation conn = this.mySqlTestDbConnection();
         conn.table = "employees";

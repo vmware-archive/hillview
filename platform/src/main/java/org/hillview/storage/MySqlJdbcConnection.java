@@ -18,11 +18,13 @@
 package org.hillview.storage;
 
 import org.hillview.sketches.results.DoubleHistogramBuckets;
+import org.hillview.sketches.results.ExplicitDoubleHistogramBuckets;
 import org.hillview.sketches.results.StringHistogramBuckets;
 import org.hillview.table.ColumnDescription;
 import org.hillview.utils.Converters;
 
 import java.time.Instant;
+import java.util.function.Function;
 
 public class MySqlJdbcConnection extends JdbcConnection {
     MySqlJdbcConnection(JdbcConnectionInformation conn) {
@@ -58,23 +60,26 @@ public class MySqlJdbcConnection extends JdbcConnection {
                 ") tmp group by bucket";
     }
 
-    private static String searchInterval(int left, int right, String[] boundaries, String column) {
-        if (left == right - 1)
-            return Integer.toString(left);
-        int mid = left + (right - left) / 2;
-        String result = "if(" + column + " < BINARY '" + boundaries[mid] + "', ";
-        String recLeft = searchInterval(left, mid, boundaries, column);
-        String recRight = searchInterval(mid, right, boundaries, column);
+    private static <T> String searchInterval(int leftIndex, int rightIndex,
+                                             T[] boundaries, String column,
+                                             Function<T, String> convert) {
+        // We synthesize a binary search three
+        if (leftIndex == rightIndex - 1)
+            return Integer.toString(leftIndex);
+        int mid = leftIndex + (rightIndex - leftIndex) / 2;
+        String result = "if(" + column + " < " + convert.apply(boundaries[mid]) + ", ";
+        String recLeft = searchInterval(leftIndex, mid, boundaries, column, convert);
+        String recRight = searchInterval(mid, rightIndex, boundaries, column, convert);
         return result + recLeft + ", " + recRight + ")";
     }
 
     @Override
     public String getQueryForStringHistogram(
             String table, ColumnDescription cd, StringHistogramBuckets buckets) {
-        // We synthesize a binary search three
         return "select bucket, count(bucket) from (" +
                 "select (" +
-                searchInterval(0, buckets.getBucketCount(), buckets.leftBoundaries, cd.name) +
+                searchInterval(0, buckets.getBucketCount(), buckets.leftBoundaries, cd.name,
+                        s -> "BINARY '" + s + "'") +
                 ") as bucket from " + table + ") tmp" +
                 " group by bucket";
     }
@@ -105,5 +110,20 @@ public class MySqlJdbcConnection extends JdbcConnection {
                 " where " + cd.name + " between '" + minDate + "' and '" + maxDate + "'" +
                 ") tmp" +
                 " group by bucket";
+    }
+
+    public String getQueryForExplicitNumericHistogram(
+            String table, ColumnDescription cd, ExplicitDoubleHistogramBuckets buckets) {
+        return "select bucket, count(bucket) from (" +
+                "select (" +
+                searchInterval(0, buckets.getBucketCount(), buckets.leftBoundaries, cd.name,
+                        s -> Double.toString(s)) +
+                ") as bucket from " + table + ") tmp" +
+                " group by bucket";
+    }
+
+    public String getQueryForExplicitDateHistogram(
+            String table, ColumnDescription cd, ExplicitDoubleHistogramBuckets buckets) {
+        throw new UnsupportedOperationException();
     }
 }

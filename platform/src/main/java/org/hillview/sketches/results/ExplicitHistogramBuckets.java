@@ -29,7 +29,7 @@ public abstract class ExplicitHistogramBuckets<T extends Comparable<T>>
         implements IHistogramBuckets {
     private final T minValue;
     private final T lastBoundary;
-    private final int numOfBuckets;
+    private final int bucketCount;
     @Nullable
     private final T maxValue;
     /**
@@ -43,7 +43,7 @@ public abstract class ExplicitHistogramBuckets<T extends Comparable<T>>
             throw new IllegalArgumentException("Boundaries of buckets can't be empty");
         Utilities.checkSorted(leftBoundaries);
         this.leftBoundaries = leftBoundaries;
-        this.numOfBuckets = leftBoundaries.length;
+        this.bucketCount = leftBoundaries.length;
         this.minValue = this.leftBoundaries[0];
         this.maxValue = null;
         this.lastBoundary = this.leftBoundaries[this.leftBoundaries.length - 1];
@@ -54,7 +54,7 @@ public abstract class ExplicitHistogramBuckets<T extends Comparable<T>>
             throw new IllegalArgumentException("Boundaries of buckets can't be empty");
         Utilities.checkSorted(leftBoundaries);
         this.leftBoundaries = leftBoundaries;
-        this.numOfBuckets = leftBoundaries.length;
+        this.bucketCount = leftBoundaries.length;
         this.minValue = this.leftBoundaries[0];
         this.maxValue = maxValue;
         this.lastBoundary = this.leftBoundaries[this.leftBoundaries.length - 1];
@@ -67,7 +67,7 @@ public abstract class ExplicitHistogramBuckets<T extends Comparable<T>>
             return -1;
         if (item.compareTo(this.lastBoundary) >= 0)
             // Anything bigger than the lastBoundary is in the last bucket
-            return this.numOfBuckets - 1;
+            return this.bucketCount - 1;
         int index = Arrays.binarySearch(this.leftBoundaries, item);
         // This method returns index of the search key, if it is contained in the array,
         // else it returns (-(insertion point) - 1). The insertion point is the point
@@ -85,5 +85,5 @@ public abstract class ExplicitHistogramBuckets<T extends Comparable<T>>
     }
 
     @Override
-    public int getBucketCount() { return this.numOfBuckets; }
+    public int getBucketCount() { return this.bucketCount; }
 }

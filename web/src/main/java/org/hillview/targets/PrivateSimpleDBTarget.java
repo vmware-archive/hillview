@@ -36,8 +36,8 @@ import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.ColumnPrivacyMetadata;
 import org.hillview.table.columns.DoubleColumnPrivacyMetadata;
-import org.hillview.table.columns.IntColumnPrivacyMetadata;
 import org.hillview.table.filters.RangeFilterDescription;
+import org.hillview.utils.Converters;
 import org.hillview.utils.JsonList;
 
 import java.sql.SQLException;
@@ -82,20 +82,12 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget {
                 min = dmd.roundDown(filter.min);
                 max = dmd.roundUp(filter.max);
             }
-        } else if (md instanceof IntColumnPrivacyMetadata) {
-            IntColumnPrivacyMetadata imd = (IntColumnPrivacyMetadata)md;
-            if (filter == null) {
-                min = imd.globalMin;
-                max = imd.globalMax;
-            } else {
-                min = imd.roundDown((int)filter.min);
-                max = imd.roundUp((int)filter.max);
-            }
         } else {
             throw new RuntimeException("Not yet implemented");
         }
 
         DataRange retRange = new DataRange(min, max);
+        // TODO: compute these too
         retRange.presentCount = -1;
         retRange.missingCount = -1;
         PrecomputedSketch<ITable, DataRange> sk =
@@ -122,12 +114,14 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget {
             this.database.connect();
             Histogram histo = this.database.histogram(cd, dd.getHistogramBuckets());
             Histogram cdf = this.database.histogram(cd, cdd.getHistogramBuckets());
-            Pair<AugmentedHistogram, HistogramPrefixSum> result = new
-                    Pair<AugmentedHistogram, HistogramPrefixSum>(
-                    new AugmentedHistogram(histo), new HistogramPrefixSum(cdf));
+            Pair<Histogram, Histogram> result = new Pair<Histogram, Histogram>(histo, cdf);
             this.database.disconnect();
-            ISketch<ITable, Pair<AugmentedHistogram, HistogramPrefixSum>> sk = this.makeSketch(result);
-            this.runSketch(this.table, sk, request, context);
+            ISketch<ITable, Pair<Histogram, Histogram>> sk = this.makeSketch(result);
+            this.runCompleteSketch(this.table, sk, (e, c) ->
+                    new Pair<PrivateHistogram, PrivateHistogram>(
+                            new PrivateHistogram(dd, Converters.checkNull(e.first), epsilon, false),
+                            new PrivateHistogram(cdd, Converters.checkNull(e.second), epsilon, true)),
+                    request, context);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

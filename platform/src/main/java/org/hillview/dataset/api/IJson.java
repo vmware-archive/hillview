@@ -20,7 +20,6 @@ package org.hillview.dataset.api;
 import com.google.gson.*;
 import org.hillview.table.columns.ColumnPrivacyMetadata;
 import org.hillview.table.columns.DoubleColumnPrivacyMetadata;
-import org.hillview.table.columns.IntColumnPrivacyMetadata;
 import org.hillview.table.columns.StringColumnPrivacyMetadata;
 import org.hillview.utils.HostList;
 import org.hillview.sketches.results.NextKList;
@@ -72,7 +71,6 @@ public interface IJson extends Serializable {
                     RuntimeTypeAdapterFactory.of(ColumnPrivacyMetadata.class)
                             .registerSubtype(ColumnPrivacyMetadata.class)
                             .registerSubtype(DoubleColumnPrivacyMetadata.class)
-                            .registerSubtype(IntColumnPrivacyMetadata.class)
                             .registerSubtype(StringColumnPrivacyMetadata.class))
             ;
 

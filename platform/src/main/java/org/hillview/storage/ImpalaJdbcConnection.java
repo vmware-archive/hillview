@@ -17,9 +17,6 @@
 
 package org.hillview.storage;
 
-import org.hillview.sketches.results.DoubleHistogramBuckets;
-import org.hillview.sketches.results.StringHistogramBuckets;
-import org.hillview.table.ColumnDescription;
 import org.hillview.utils.Utilities;
 
 public class ImpalaJdbcConnection extends JdbcConnection {
@@ -33,28 +30,6 @@ public class ImpalaJdbcConnection extends JdbcConnection {
         if (rowCount >= 0)
             result += " LIMIT " + rowCount;
         return result;
-    }
-
-    @Override
-    public String getQueryForNumericHistogram(
-            String table, ColumnDescription cd, DoubleHistogramBuckets buckets) {
-        throw new RuntimeException("Not yet implemented");
-    }
-
-    @Override
-    public String getQueryForStringHistogram(
-            String table, ColumnDescription cd, StringHistogramBuckets buckets) {
-        throw new RuntimeException("Not yet implemented");
-    }
-
-    @Override
-    public String getQueryForNumericRange(String table, String column) {
-        throw new RuntimeException("Not yet implemented");
-    }
-
-    @Override
-    public String getQueryForDateHistogram(String table, ColumnDescription cd, DoubleHistogramBuckets buckets) {
-        throw new RuntimeException("Not yet implemented");
     }
 
     @Override
