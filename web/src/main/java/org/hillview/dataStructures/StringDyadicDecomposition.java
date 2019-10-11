@@ -20,7 +20,7 @@ package org.hillview.dataStructures;
 import org.hillview.dataset.api.Pair;
 import org.hillview.sketches.results.IHistogramBuckets;
 import org.hillview.sketches.results.StringHistogramBuckets;
-import org.hillview.table.columns.StringColumnPrivacyMetadata;
+import org.hillview.table.columns.StringColumnQuantization;
 import org.hillview.utils.Converters;
 
 import java.util.ArrayList;
@@ -29,7 +29,7 @@ public class StringDyadicDecomposition extends DyadicDecomposition<String> {
     private String[] leafLeftBoundaries;
 
     public StringDyadicDecomposition(final String minValue, final String maxValue,
-                                     final int bucketCount, StringColumnPrivacyMetadata metadata) {
+                                     final int bucketCount, StringColumnQuantization metadata) {
         super(minValue, maxValue, metadata.leftBoundaries[0], metadata.globalMax, "a", bucketCount);
         this.leafLeftBoundaries = metadata.leftBoundaries;
         this.numLeaves = this.leafLeftBoundaries.length;

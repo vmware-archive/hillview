@@ -4,9 +4,8 @@ import json
 
 import numpy as np
 
-def get_metadata(e, g, gMin, gMax):
-    return {'type': "DoubleColumnPrivacyMetadata",
-            'epsilon': e,
+def get_quantization(g, gMin, gMax):
+    return {'type': "DoubleColumnQuantization",
             'granularity': g,
             'globalMin': gMin,
             'globalMax': gMax}
@@ -27,7 +26,8 @@ def main():
     with open('gaussian.schema', 'w') as f:
         f.write(json.dumps(schema))
 
-    metadata = {'metadata': {colname:get_metadata(0.01, 1.0, -100.0, 100.0)}}
+    quantization = {'quantization': {colname: get_quantization(1.0, -100.0, 100.0)}}
+    metadata = {'quantization': quantization, 'epsilons': { colname: .1 } }
     with open('privacy_metadata.json', 'w') as f:
         f.write(json.dumps(metadata))
 

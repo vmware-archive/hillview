@@ -20,7 +20,7 @@ package org.hillview.dataStructures;
 import org.hillview.dataset.api.Pair;
 import org.hillview.sketches.results.ExplicitDoubleHistogramBuckets;
 import org.hillview.sketches.results.IHistogramBuckets;
-import org.hillview.table.columns.DoubleColumnPrivacyMetadata;
+import org.hillview.table.columns.DoubleColumnQuantization;
 import org.hillview.utils.Converters;
 import org.hillview.utils.Utilities;
 
@@ -38,7 +38,7 @@ public class NumericDyadicDecomposition extends DyadicDecomposition<Double> {
     }
 
     public NumericDyadicDecomposition(final double minValue, final double maxValue,
-                                      final int bucketCount, DoubleColumnPrivacyMetadata metadata) {
+                                      final int bucketCount, DoubleColumnQuantization metadata) {
         super(minValue, maxValue, metadata.globalMin, metadata.globalMax, 0.0, bucketCount);
         this.granularity = metadata.granularity;
 

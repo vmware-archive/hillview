@@ -684,20 +684,24 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
 
             const kindString = cd.kind;
             const name = this.schema.displayName(cd.name);
-            let title = null;
+            let title = name + "\nType is " + kindString + "\n";
             if (this.isPrivate()) {
-                const pm = this.privacySchema.metadata[cd.name];
+                const pm = this.privacySchema.quantization.quantization[cd.name];
                 if (pm != null) {
-                    title = name + ".\nType is " + kindString +
-                        ".\nEpsilon=" + pm.epsilon +
-                        ".\nGranularity is " + pm.granularity +
-                        ".\nRange is [" + pm.globalMin + ", " + pm.globalMax + "]" +
-                        ".\nRight mouse click opens a menu.";
+                    let eps = this.privacySchema.epsilons[cd.name];
+                    if (eps == null)
+                        eps = 0;
+                    title += "Epsilon=" + eps + "\n";
+                    if (kindIsString(cd.kind)) {
+                        title += "Range is [" + pm.leftBoundaries[0] + ", " + pm.globalMax + "]\n";
+                        title += "Divided in " + pm.leftBoundaries.length + " intervals\n";
+                    } else {
+                        title += "Range is [" + pm.globalMin + ", " + pm.globalMax + "]\n";
+                        title += "Bucket size is " + pm.granularity + "\n";
+                    }
                 }
             }
-            if (title == null)
-                title = name + ".\nType is " + kindString +
-                            ".\nRight mouse click opens a menu.";
+            title += "Right mouse click opens a menu\n";
             const visible = this.order.find(cd.name) >= 0;
             const thd = this.addHeaderCell(cd, name, title, 0);
             thd.classList.add("col" + i.toString());

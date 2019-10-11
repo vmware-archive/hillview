@@ -21,14 +21,12 @@ import it.unimi.dsi.fastutil.ints.Int2IntRBTreeMap;
 import it.unimi.dsi.fastutil.ints.Int2IntSortedMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectRBTreeMap;
 import it.unimi.dsi.fastutil.ints.IntComparator;
-import org.hillview.sketches.results.IntTopK;
 import org.hillview.utils.MutableInteger;
 
 /**
  * Implements the IntTopK interface using Red-Black trees. While membership should O(log k) as
  * opposed to using a hashMap, it seems to be faster, especially for small k.
  */
-
 public class IntTreeTopK implements IntTopK {
     private final int maxSize;
     private int size;
@@ -37,6 +35,8 @@ public class IntTreeTopK implements IntTopK {
     private final IntComparator greater;
 
     public IntTreeTopK(final int maxSize, final IntComparator greater) {
+        if (maxSize <= 0)
+            throw new IllegalArgumentException("maxSize must be greater than 0");
         this.maxSize = maxSize;
         this.size = 0;
         this.greater = greater;
@@ -59,7 +59,7 @@ public class IntTreeTopK implements IntTopK {
         final int gt = this.greater.compare(intVal, this.cutoff);
         if (gt <= 0) {
             final MutableInteger counter = this.data.get(intVal);
-            if (counter != null) { //Already in Top K, increase count. Size, cutoff do not change
+            if (counter != null) { // Already in Top K, increase count. Size, cutoff do not change
                 final int count = counter.get() + 1;
                 counter.set(count);
             } else { // Add a new key to Top K

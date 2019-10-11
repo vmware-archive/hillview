@@ -19,14 +19,14 @@ package org.hillview.targets;
 
 import org.hillview.dataStructures.IDyadicDecomposition;
 import org.hillview.dataStructures.NumericDyadicDecomposition;
-import org.hillview.dataStructures.PrivacySchema;
+import org.hillview.table.PrivacySchema;
 import org.hillview.dataset.api.IJson;
 import org.hillview.sketches.HistogramSketch;
 import org.hillview.sketches.results.TableSummary;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
-import org.hillview.table.columns.ColumnPrivacyMetadata;
-import org.hillview.table.columns.DoubleColumnPrivacyMetadata;
+import org.hillview.table.columns.ColumnQuantization;
+import org.hillview.table.columns.DoubleColumnQuantization;
 import org.hillview.table.filters.RangeFilterDescription;
 
 import javax.annotation.Nullable;
@@ -97,16 +97,16 @@ class DPWrapper {
         double max;
         int bucketCount;
 
-        IDyadicDecomposition getDecomposition(ColumnPrivacyMetadata metadata) {
+        IDyadicDecomposition getDecomposition(ColumnQuantization metadata) {
             if (!cd.kind.isNumeric())
                 throw new RuntimeException("Attempted to instantiate private buckets with non-numeric column");
             // This bucket class ensures that computed buckets fall on leaf boundaries.
             return new NumericDyadicDecomposition(this.min, this.max,
-                    this.bucketCount, (DoubleColumnPrivacyMetadata)metadata);
+                    this.bucketCount, (DoubleColumnQuantization)metadata);
         }
 
         // This bucket class ensures that computed buckets fall on leaf boundaries.
-        HistogramSketch getSketch(ColumnPrivacyMetadata metadata) {
+        HistogramSketch getSketch(ColumnQuantization metadata) {
             IDyadicDecomposition dd = this.getDecomposition(metadata);
             return new HistogramSketch(dd.getHistogramBuckets(), this.cd.name,
                     this.samplingRate, this.seed, null);

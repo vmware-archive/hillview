@@ -22,11 +22,7 @@ import org.hillview.utils.Utilities;
 import javax.annotation.Nullable;
 import java.util.Arrays;
 
-/**
- * This class represents metadata used for computing differentially-private mechanisms
- * for columns storing strings.
- */
-public class StringColumnPrivacyMetadata extends ColumnPrivacyMetadata {
+public class StringColumnQuantization extends ColumnQuantization {
     /**
      * Fixed global maximum value. Should be computable from
      * public information or otherwise uncorrelated with the data.
@@ -36,12 +32,10 @@ public class StringColumnPrivacyMetadata extends ColumnPrivacyMetadata {
 
     /**
      * Create a privacy metadata for a string-type column.
-     * @param epsilon      Differential privacy parameter.
      * @param leftBoundaries  Left boundaries of the string buckets.
      * @param globalMax    Maximum value expected in column.
      */
-    public StringColumnPrivacyMetadata(double epsilon, String[] leftBoundaries, String globalMax) {
-        super(epsilon);
+    public StringColumnQuantization(String[] leftBoundaries, String globalMax) {
         this.globalMax = globalMax;
         this.leftBoundaries = leftBoundaries;
         if (leftBoundaries.length == 0)
@@ -57,16 +51,24 @@ public class StringColumnPrivacyMetadata extends ColumnPrivacyMetadata {
         if (value.compareTo(this.globalMax) > 0)
             return this.globalMax;
         if (value.compareTo(this.leftBoundaries[0]) < 0)
-            throw new RuntimeException("Value below the minimum");
+            throw new RuntimeException("Value smaller than the range min: " +
+                value + " < " + this.leftBoundaries[0]);
         // This method returns index of the search key, if it is contained in the array,
         // else it returns (-(insertion point) - 1). The insertion point is the point
         // at which the key would be inserted into the array: the index of the first
         // element greater than the key, or a.length if all elements in the array
         // are less than the specified key.
         int index = Arrays.binarySearch(leftBoundaries, value);
-        if (index < 0) {
+        if (index < 0)
             index = -index - 2;
-        }
         return this.leftBoundaries[index];
+    }
+
+    public boolean outOfRange(@Nullable String s) {
+        if (s == null)
+            return true;
+        if (s.compareTo(this.globalMax) > 0)
+            return true;
+        return s.compareTo(this.leftBoundaries[0]) < 0;
     }
 }

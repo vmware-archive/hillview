@@ -15,33 +15,32 @@
  * limitations under the License.
  */
 
-package org.hillview.table.columns;
+package org.hillview.table;
 
 import org.hillview.dataset.api.IJson;
+import org.hillview.table.columns.ColumnQuantization;
 
 import javax.annotation.Nullable;
+import java.io.Serializable;
+import java.util.LinkedHashMap;
 
 /**
- * This class represents metadata used for computing differentially-private mechanisms.
+ * A quantization schema has quantization information for each column.
  */
-public class ColumnPrivacyMetadata implements IJson {
-    /**
-     * Total privacy budget allotted to this column.
-     */
-    public double epsilon;
+public class QuantizationSchema implements IJson, Serializable {
+    // We use a LinkedHashMap for deterministic serialization
+    private LinkedHashMap<String, ColumnQuantization> quantization;
 
-    public ColumnPrivacyMetadata(double epsilon) {
-        this.epsilon = epsilon;
-        if (epsilon < 0)
-            throw new IllegalArgumentException("Epsilon must be positive:" + epsilon);
+    public QuantizationSchema() {
+        this.quantization = new LinkedHashMap<String, ColumnQuantization>();
     }
 
-    // We expect only one of the following to be implemented
-    public double roundDown(double value) {
-        throw new UnsupportedOperationException();
-    }
     @Nullable
-    public String roundDown(@Nullable String value) {
-        throw new UnsupportedOperationException();
+    public ColumnQuantization get(String colName) {
+        return quantization.get(colName);
+    }
+
+    public void set(String col, ColumnQuantization quantization) {
+        this.quantization.put(col, quantization);
     }
 }

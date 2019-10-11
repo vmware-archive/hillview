@@ -22,8 +22,8 @@ import org.hillview.dataStructures.NumericDyadicDecomposition;
 import org.hillview.dataStructures.StringDyadicDecomposition;
 import org.hillview.dataset.api.Pair;
 import org.hillview.sketches.results.*;
-import org.hillview.table.columns.DoubleColumnPrivacyMetadata;
-import org.hillview.table.columns.StringColumnPrivacyMetadata;
+import org.hillview.table.columns.DoubleColumnQuantization;
+import org.hillview.table.columns.StringColumnQuantization;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -60,9 +60,8 @@ public class DyadicDecompositionTest {
         final int max = 100;
         final int numBuckets = 10;
         final int granularity = 20;
-        final double epsilon = 0.01;
         IDyadicDecomposition buckDes = new NumericDyadicDecomposition(min, max, numBuckets,
-                new DoubleColumnPrivacyMetadata(epsilon, granularity, min, max));
+                new DoubleColumnQuantization(granularity, min, max));
 
         // should create only 100/20 = 5 buckets
         Assert.assertEquals(5, buckDes.getHistogramBuckets().getBucketCount());
@@ -75,9 +74,8 @@ public class DyadicDecompositionTest {
         final int max = 100;
         final int numBuckets = 4; // creates buckets of size 25...
         final int granularity = 10; // but leaves of size 10
-        final double epsilon = 0.01;
         NumericDyadicDecomposition dd = new NumericDyadicDecomposition(min, max, numBuckets,
-                new DoubleColumnPrivacyMetadata(epsilon, granularity, min, max));
+                new DoubleColumnQuantization(granularity, min, max));
         @SuppressWarnings("unchecked")
         ExplicitHistogramBuckets<Double> buckets =
                 (ExplicitHistogramBuckets<Double>)dd.getHistogramBuckets();
@@ -118,10 +116,9 @@ public class DyadicDecompositionTest {
         final double max = 0.1;
         final int numBuckets = 4; // creates buckets of size 0.025...
         final double granularity = 0.01; // but leaves of size 0.01
-        final double epsilon = 0.01;
         NumericDyadicDecomposition buckDes = new NumericDyadicDecomposition(
                 min, max, numBuckets,
-                new DoubleColumnPrivacyMetadata(epsilon, granularity, min, max));
+                new DoubleColumnQuantization(granularity, min, max));
         // TODO
         /*
         for (int i = 0; i < buckDes.getNumOfBuckets(); i++) {
@@ -138,10 +135,9 @@ public class DyadicDecompositionTest {
         final double max = 100;
         final int numBuckets = 10;
         final double granularity = 25;
-        final double epsilon = 0.01;
         NumericDyadicDecomposition buckDes = new NumericDyadicDecomposition(
                 min, max, numBuckets,
-                new DoubleColumnPrivacyMetadata(epsilon, granularity, min, max));
+                new DoubleColumnQuantization(granularity, min, max));
         // TODO
         /*
         for (int i = 0; i < buckDes.getNumOfBuckets(); i++) {
@@ -161,7 +157,7 @@ public class DyadicDecompositionTest {
         final double epsilon = 0.01;
         NumericDyadicDecomposition dd = new NumericDyadicDecomposition(
                 min, max, numBuckets,
-                new DoubleColumnPrivacyMetadata(epsilon, granularity, min, max));
+                new DoubleColumnQuantization(granularity, min, max));
         @SuppressWarnings("unchecked")
         ExplicitHistogramBuckets<Double> buckets =
                 (ExplicitHistogramBuckets<Double>) dd.getHistogramBuckets();
@@ -214,7 +210,7 @@ public class DyadicDecompositionTest {
         String max = "k";
 
         StringDyadicDecomposition buckDes = new StringDyadicDecomposition("a", "k",
-                numBuckets, new StringColumnPrivacyMetadata(epsilon, leafLeftBoundaries, max));
+                numBuckets, new StringColumnQuantization(leafLeftBoundaries, max));
 
         @SuppressWarnings("unchecked")
         ExplicitHistogramBuckets<String> buckets =

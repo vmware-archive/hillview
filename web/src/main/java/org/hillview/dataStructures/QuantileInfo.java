@@ -15,21 +15,14 @@
  * limitations under the License.
  */
 
-package org.hillview.sketches.results;
+package org.hillview.dataStructures;
 
-import org.hillview.table.api.IColumn;
+import org.hillview.table.RecordOrder;
 
-/**
- * Left endpoints for string buckets.
- */
-public class ExplicitDoubleHistogramBuckets extends ExplicitHistogramBuckets<Double> {
-    public ExplicitDoubleHistogramBuckets(final Double[] leftBoundaries, Double max) {
-        super(leftBoundaries, max);
-    }
-
-    @Override
-    public int indexOf(IColumn column, int rowIndex) {
-        Double item = column.asDouble(rowIndex);
-        return this.indexOf(item);
-    }
+public class QuantileInfo {
+    public int precision;
+    public double position;
+    public long tableSize;
+    public long seed;
+    public RecordOrder order = new RecordOrder();
 }

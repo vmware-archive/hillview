@@ -8,10 +8,12 @@ import org.hillview.dataset.api.Pair;
 import org.hillview.maps.IdMap;
 import org.hillview.sketches.*;
 import org.hillview.sketches.results.*;
+import org.hillview.table.PrivacySchema;
 import org.hillview.table.api.ITable;
-import org.hillview.table.columns.DoubleColumnPrivacyMetadata;
+import org.hillview.table.columns.DoubleColumnQuantization;
 import org.hillview.table.filters.RangeFilterDescription;
-import org.hillview.table.columns.ColumnPrivacyMetadata;
+import org.hillview.table.columns.ColumnQuantization;
+import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.Converters;
 import org.hillview.utils.JsonList;
 
@@ -49,8 +51,10 @@ public class PrivateTableTarget extends RpcTarget {
     @HillviewRpc
     public void histogram(RpcRequest request, RpcRequestContext context) {
         DPWrapper.PrivateHistogramArgs[] info = request.parseArgs(DPWrapper.PrivateHistogramArgs[].class);
-        ColumnPrivacyMetadata metadata = this.wrapper.privacySchema.get(info[0].cd.name);
-        double epsilon = metadata.epsilon;
+        ColumnQuantization metadata = this.wrapper.privacySchema.quantization(info[0].cd.name);
+        double epsilon = this.wrapper.privacySchema.epsilon(info[0].cd.name);
+        if (metadata == null)
+            throw new RuntimeException("No quantization information for column " + info[0].cd.name);
 
         HistogramSketch sk = info[0].getSketch(metadata);
         HistogramSketch cdf = info[1].getSketch(metadata);
@@ -70,7 +74,7 @@ public class PrivateTableTarget extends RpcTarget {
         RangeArgs[] args = request.parseArgs(RangeArgs[].class);
         assert args.length == 1;
         double min, max;
-        DoubleColumnPrivacyMetadata md = (DoubleColumnPrivacyMetadata)this.wrapper.privacySchema.get(
+        DoubleColumnQuantization md = (DoubleColumnQuantization)this.wrapper.privacySchema.quantization(
                 args[0].cd.name);
         RangeFilterDescription filter = this.wrapper.columnLimits.get(args[0].cd.name);
         if (filter == null) {
@@ -78,7 +82,7 @@ public class PrivateTableTarget extends RpcTarget {
             max = md.globalMax;
         } else {
             min = md.roundDown(filter.min);
-            max = md.roundUp(filter.max);
+            max = md.roundDown(filter.max);
         }
 
         DataRange retRange = new DataRange(min, max);
@@ -109,16 +113,16 @@ public class PrivateTableTarget extends RpcTarget {
     public void hLogLog(RpcRequest request, RpcRequestContext context) {
         DistinctCountRequestInfo col = request.parseArgs(DistinctCountRequestInfo.class);
         HLogLogSketch sketch = new HLogLogSketch(col.columnName, col.seed);
-        // TODO: add noise to this count
+        // TODO(pratiksha): add noise to this count
         this.runSketch(this.table, sketch, request, context);
     }
 
     @HillviewRpc
     public void heavyHitters(RpcRequest request, RpcRequestContext context) {
         HeavyHittersRequestInfo info = request.parseArgs(HeavyHittersRequestInfo.class);
-        // TODO: process data to round to bucket boundaries
-        MGFreqKSketch sk = new MGFreqKSketch(info.columns, info.amount/100);
-        // TODO: add noise to the counts
+        MGFreqKSketch sk = new MGFreqKSketch(info.columns, info.amount/100,
+                this.wrapper.privacySchema.quantization);
+        // TODO(pratiksha): add noise to the counts
         this.runCompleteSketch(this.table, sk, (x, c) -> TableTarget.getTopList(x, info.columns, c),
                 request, context);
     }
@@ -144,7 +148,7 @@ public class PrivateTableTarget extends RpcTarget {
         DataRange[] precomputed = new DataRange[2];
         for (int i = 0; i < 2; i++) {
             double min, max;
-            DoubleColumnPrivacyMetadata md = (DoubleColumnPrivacyMetadata)this.wrapper.privacySchema.get(
+            DoubleColumnQuantization md = (DoubleColumnQuantization)this.wrapper.privacySchema.quantization(
                     args[i].cd.name);
             RangeFilterDescription filter = this.wrapper.columnLimits.get(args[0].cd.name);
             if (filter == null) {
@@ -152,7 +156,7 @@ public class PrivateTableTarget extends RpcTarget {
                 max = md.globalMax;
             } else {
                 min = md.roundDown(filter.min);
-                max = md.roundUp(filter.max);
+                max = md.roundDown(filter.max);
             }
 
             DataRange retRange = new DataRange(min, max);
@@ -179,11 +183,15 @@ public class PrivateTableTarget extends RpcTarget {
     public void heatmap(RpcRequest request, RpcRequestContext context) {
         DPWrapper.PrivateHistogramArgs[] info = request.parseArgs(DPWrapper.PrivateHistogramArgs[].class);
         assert info.length == 2;
-        ColumnPrivacyMetadata col0 = this.wrapper.privacySchema.get(info[0].cd.name);
-        ColumnPrivacyMetadata col1 = this.wrapper.privacySchema.get(info[1].cd.name);
+        ColumnQuantization col0 = this.wrapper.privacySchema.quantization(info[0].cd.name);
+        ColumnQuantization col1 = this.wrapper.privacySchema.quantization(info[1].cd.name);
         // Epsilon value has to be specified on the pair, separately from each column.
-        double epsilon =this.wrapper.privacySchema.get(new String[] {
-                info[0].cd.name, info[1].cd.name}).epsilon;
+        double epsilon = this.wrapper.privacySchema.epsilon(new String[] {
+                info[0].cd.name, info[1].cd.name});
+        if (col0 == null)
+            throw new RuntimeException("No quantization information for column " + info[0].cd.name);
+        if (col1 == null)
+            throw new RuntimeException("No quantization information for column " + info[1].cd.name);
 
         IDyadicDecomposition d0 = info[0].getDecomposition(col0);
         IDyadicDecomposition d1 = info[1].getDecomposition(col1);
@@ -192,5 +200,26 @@ public class PrivateTableTarget extends RpcTarget {
         HeatmapSketch sk = new HeatmapSketch(b0, b1, info[0].cd.name, info[1].cd.name, 1.0, 0);
         this.runCompleteSketch(this.table, sk, (e, c) ->
                 new PrivateHeatmap(d0, d1, e, epsilon).heatmap, request, context);
+    }
+
+    @HillviewRpc
+    public void getNextK(RpcRequest request, RpcRequestContext context) {
+        TableTarget.NextKArgs nextKArgs = request.parseArgs(TableTarget.NextKArgs.class);
+        RowSnapshot rs = TableTarget.asRowSnapshot(
+                nextKArgs.firstRow, nextKArgs.order, nextKArgs.columnsNoValue);
+        NextKSketch nk = new NextKSketch(nextKArgs.order, null, rs, nextKArgs.rowsOnScreen,
+                this.wrapper.privacySchema.quantization);
+        // TODO(pratiksha): add noise to the counts on the NextKList
+        this.runSketch(this.table, nk, request, context);
+    }
+
+    @HillviewRpc
+    public void quantile(RpcRequest request, RpcRequestContext context) {
+        QuantileInfo info = request.parseArgs(QuantileInfo.class);
+        SampleQuantileSketch sk = new SampleQuantileSketch(
+                info.order, info.precision, info.tableSize, info.seed,
+                this.wrapper.privacySchema.quantization);
+        BiFunction<SampleList, HillviewComputation, RowSnapshot> getRow = (ql, c) -> ql.getRow(info.position);
+        this.runCompleteSketch(this.table, sk, getRow, request, context);
     }
 }

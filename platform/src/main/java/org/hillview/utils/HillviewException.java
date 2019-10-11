@@ -15,23 +15,14 @@
  * limitations under the License.
  */
 
-package org.hillview.sketches.results;
-import it.unimi.dsi.fastutil.ints.Int2IntSortedMap;
+package org.hillview.utils;
 
 /**
- * Interface for computing the topK elements of a data set, ordered by a comparator, with
- * counts for how often each of them occurs. This requires
- * - Membership: is it already present?
- * - Maximum: If not present, compare to the Maximum value currently in the Top K
- * - Insertion: for adding a new element.
+ * A wrapper for RuntimeException.  This makes it easy for the front-end to display some
+ * exceptions in a nicer way, by looking for this exception.
  */
-public interface IntTopK {
-    /**
-     * @return a SortedMap of the top K elements, giving elements and their counts.
-     */
-    Int2IntSortedMap getTopK();
-    /**
-     * tries to add a new value newVal to the data structure.
-     */
-    void push(int newVal);
+public class HillviewException extends RuntimeException {
+    public HillviewException(String message) {
+        super(message);
+    }
 }

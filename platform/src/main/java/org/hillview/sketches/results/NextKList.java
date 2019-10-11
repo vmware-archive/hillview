@@ -23,12 +23,14 @@ import com.google.gson.JsonObject;
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.ints.IntLists;
 import org.hillview.dataset.api.IJson;
+import org.hillview.table.AggregateDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.SmallTable;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.VirtualRowSnapshot;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.List;
 
@@ -37,7 +39,17 @@ import java.util.List;
  * according to a RecordSortOrder.
  */
 public class NextKList implements Serializable, IJson {
-    public final SmallTable table;
+    /**
+     * This table has one row for each row displayed.  Only the visible columns
+     * are contained.
+     */
+    public final SmallTable rows;
+    /**
+     * This table has one row for each row displayed and one column for each
+     * aggregated column.  It may be missing if no columns are aggregated.
+     */
+    @Nullable
+    public final SmallTable aggregates;
     /**
      * The number of times each row in the above table occurs in the original DataSet.
      */
@@ -53,13 +65,15 @@ public class NextKList implements Serializable, IJson {
      */
     public final long rowsScanned;
 
-    public NextKList(SmallTable table, IntList count, long position, long rowsScanned) {
-        this.table = table;
+    public NextKList(SmallTable rows, @Nullable SmallTable aggregates,
+                     IntList count, long position, long rowsScanned) {
+        this.rows = rows;
+        this.aggregates = aggregates;
         this.count = count;
         this.startPosition = position;
         this.rowsScanned = rowsScanned;
         /* If the table is empty, discard the counts. Else check we have counts for each row.*/
-        if ((table.getNumOfRows() !=0) && (count.size() != table.getNumOfRows()))
+        if ((rows.getNumOfRows() != 0) && (count.size() != rows.getNumOfRows()))
             throw new IllegalArgumentException("Mismatched table and count length");
     }
 
@@ -72,21 +86,31 @@ public class NextKList implements Serializable, IJson {
      * @param rowsScanned The number of rows the statistics are computed over.
      */
     public NextKList(List<RowSnapshot> listRows, IntList listCounts, Schema schema, long rowsScanned) {
-        this.table = new SmallTable(schema, listRows);
+        this.rows = new SmallTable(schema, listRows);
+        this.aggregates = null;
         this.count = listCounts;
         this.startPosition = 0;
         this.rowsScanned = rowsScanned;
     }
 
     public boolean isEmpty() {
-        return this.table.getNumOfRows() == 0;
+        return this.rows.getNumOfRows() == 0;
     }
 
     /**
      * A NextK list containing an empty table with the specified schema.
      */
-    public NextKList(Schema schema) {
-        this.table = new SmallTable(schema);
+    public NextKList(Schema schema, @Nullable AggregateDescription[] aggregates) {
+        this.rows = new SmallTable(schema);
+        if (aggregates != null) {
+            Schema aggSchema = new Schema();
+            for (AggregateDescription a : aggregates) {
+                aggSchema.append(a.cd);
+            }
+            this.aggregates = new SmallTable(aggSchema);
+        } else {
+            this.aggregates = null;
+        }
         this.count = IntLists.EMPTY_LIST;
         this.startPosition = 0;
         this.rowsScanned = 0;
@@ -94,12 +118,12 @@ public class NextKList implements Serializable, IJson {
 
     public String toLongString(int rowsToDisplay) {
         final StringBuilder builder = new StringBuilder();
-        builder.append(this.table.toString());
+        builder.append(this.rows.toString());
         builder.append(System.getProperty("line.separator"));
-        final IRowIterator rowIt = this.table.getRowIterator();
+        final IRowIterator rowIt = this.rows.getRowIterator();
         int nextRow = rowIt.getNextRow();
         int i = 0;
-        VirtualRowSnapshot vrs = new VirtualRowSnapshot(this.table);
+        VirtualRowSnapshot vrs = new VirtualRowSnapshot(this.rows);
         while ((nextRow >= 0) && (i < rowsToDisplay)) {
             vrs.setRow(nextRow);
             builder.append(vrs.toString()).append(": ").append(this.count.getInt(i));
@@ -128,7 +152,7 @@ public class NextKList implements Serializable, IJson {
         for (int i = 0; i < this.count.size(); i++) {
             JsonObject row = new JsonObject();
             row.addProperty("count", this.count.getInt(i));
-            row.add("values", new RowSnapshot(this.table, i).toJsonTree());
+            row.add("values", new RowSnapshot(this.rows, i).toJsonTree());
             rows.add(row);
         }
         return result;

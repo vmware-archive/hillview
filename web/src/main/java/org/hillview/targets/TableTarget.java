@@ -74,7 +74,7 @@ public final class TableTarget extends RpcTarget {
     }
 
     @Nullable
-    private static RowSnapshot asRowSnapshot(
+    static RowSnapshot asRowSnapshot(
             @Nullable Object[] data, RecordOrder order, @Nullable String[] columnsNoValue) {
         if (data == null) return null;
         Schema schema = order.toSchema();
@@ -86,7 +86,7 @@ public final class TableTarget extends RpcTarget {
         NextKArgs nextKArgs = request.parseArgs(NextKArgs.class);
         RowSnapshot rs = TableTarget.asRowSnapshot(
                 nextKArgs.firstRow, nextKArgs.order, nextKArgs.columnsNoValue);
-        NextKSketch nk = new NextKSketch(nextKArgs.order, rs, nextKArgs.rowsOnScreen);
+        NextKSketch nk = new NextKSketch(nextKArgs.order, null, rs, nextKArgs.rowsOnScreen);
         this.runSketch(this.table, nk, request, context);
     }
 
@@ -500,14 +500,6 @@ public final class TableTarget extends RpcTarget {
             }
         };
         RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(info.controlPointsId), true, observer);
-    }
-
-    static class QuantileInfo {
-        int precision;
-        double position;
-        long tableSize;
-        long seed;
-        RecordOrder order = new RecordOrder();
     }
 
     @HillviewRpc

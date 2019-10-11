@@ -19,9 +19,7 @@ package org.hillview.sketches;
 
 import org.hillview.dataset.api.ISketch;
 import org.hillview.sketches.results.SampleList;
-import org.hillview.table.ArrayRowOrder;
-import org.hillview.table.RecordOrder;
-import org.hillview.table.SmallTable;
+import org.hillview.table.*;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.IRowOrder;
@@ -48,6 +46,25 @@ public class SampleQuantileSketch  implements ISketch<ITable, SampleList> {
      */
     private final double samplingRate;
     private final long seed;
+    @Nullable
+    private final QuantizationSchema quantization;
+
+    /**
+     * @param sortOrder The sorting order on the columns.
+     * @param resolution Number of buckets: percentiles correspond to 100 buckets etc.
+     * @param dataSize The size of the input table on which we want to run the quantile computation.
+     * @param quantization quantization policy for the data.
+     */
+    public SampleQuantileSketch(final RecordOrder sortOrder, final int resolution,
+                                final long dataSize, final long seed,
+                                @Nullable
+                                QuantizationSchema quantization) {
+        this.colSortOrder = sortOrder;
+        double n = Math.max(resolution, 100);
+        this.samplingRate = (n * n)/dataSize;
+        this.seed = seed;
+        this.quantization = quantization;
+    }
 
     /**
      * @param sortOrder The sorting order on the columns.
@@ -56,10 +73,7 @@ public class SampleQuantileSketch  implements ISketch<ITable, SampleList> {
      */
     public SampleQuantileSketch(final RecordOrder sortOrder, final int resolution,
                                 final long dataSize, final long seed) {
-        this.colSortOrder = sortOrder;
-        double n = Math.max(resolution, 100);
-        this.samplingRate = (n * n)/dataSize;
-        this.seed = seed;
+        this(sortOrder, resolution, dataSize, seed, null);
     }
 
     @Nullable
@@ -75,7 +89,10 @@ public class SampleQuantileSketch  implements ISketch<ITable, SampleList> {
      */
     @Override
     public SampleList create(@Nullable ITable data) {
-        final IMembershipSet sampleSet = Converters.checkNull(data).getMembershipSet().sample(
+        Converters.checkNull(data);
+        if (this.quantization != null)
+            data = new QuantizedTable(data, this.quantization);
+        final IMembershipSet sampleSet = data.getMembershipSet().sample(
                 this.samplingRate, this.seed);
         final IRowOrder rowOrder = new ArrayRowOrder(this.
                 colSortOrder.getSortedRowOrder(data, sampleSet));

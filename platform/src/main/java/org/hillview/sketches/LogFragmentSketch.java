@@ -68,7 +68,7 @@ public class LogFragmentSketch implements ISketch<ITable, NextKList> {
         }
         if (index < 0)
             // Empty list.
-            return new NextKList(data.getSchema());
+            return new NextKList(data.getSchema(), null);
         int maxCount = Math.min(this.count, data.getNumOfRows() - index);
         if (maxCount < 0)
             maxCount = 0;
@@ -77,13 +77,13 @@ public class LogFragmentSketch implements ISketch<ITable, NextKList> {
         IntList ones = new IntArrayList();
         for (int i = index; i < index + maxCount; i++)
             ones.add(1);
-        return new NextKList(rows, ones, index, data.getNumOfRows());
+        return new NextKList(rows, null, ones, index, data.getNumOfRows());
     }
 
     @Nullable
     @Override
     public NextKList zero() {
-        return new NextKList(this.schema);
+        return new NextKList(this.schema, null);
     }
 
     @Nullable

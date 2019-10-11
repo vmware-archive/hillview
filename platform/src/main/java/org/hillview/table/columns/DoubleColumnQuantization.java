@@ -17,11 +17,7 @@
 
 package org.hillview.table.columns;
 
-/**
- * This class represents metadata used for computing differentially-private mechanisms
- * for columns storing doubles.
- */
-public class DoubleColumnPrivacyMetadata extends ColumnPrivacyMetadata {
+public class DoubleColumnQuantization extends ColumnQuantization {
     /**
      * Minimum quantization interval: users will only be able to
      * query ranges that are a multiple of this size.
@@ -42,14 +38,11 @@ public class DoubleColumnPrivacyMetadata extends ColumnPrivacyMetadata {
 
     /**
      * Create a privacy metadata for a numeric-type column.
-     * @param epsilon      Differential privacy parameter.
      * @param granularity  Size of a bucket for quantized data.
      * @param globalMin    Minimum value expected in the column.
      * @param globalMax    Maximum value expected in column.
      */
-    public DoubleColumnPrivacyMetadata(double epsilon, double granularity,
-                                       double globalMin, double globalMax) {
-        super(epsilon);
+    public DoubleColumnQuantization(double granularity, double globalMin, double globalMax) {
         this.granularity = granularity;
         this.globalMin = globalMin;
         this.globalMax = globalMax;
@@ -71,12 +64,7 @@ public class DoubleColumnPrivacyMetadata extends ColumnPrivacyMetadata {
         return this.globalMin + intervals * this.granularity;
     }
 
-    public double roundUp(double value) {
-        if (value <= this.globalMin)
-            return this.globalMin;
-        if (value >= this.globalMax)
-            throw new RuntimeException("Value greater than max: " + value + ">" + this.globalMax);
-        double intervals = Math.floor((value - this.globalMin) / this.granularity);
-        return this.globalMin + (intervals + 1) * this.granularity;
+    public boolean outOfRange(double value) {
+        return value <= this.globalMin || value > this.globalMax;
     }
 }

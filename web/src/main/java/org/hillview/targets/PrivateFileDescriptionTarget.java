@@ -4,7 +4,7 @@ import org.hillview.HillviewComputation;
 import org.hillview.HillviewRpc;
 import org.hillview.RpcRequest;
 import org.hillview.RpcRequestContext;
-import org.hillview.dataStructures.PrivacySchema;
+import org.hillview.table.PrivacySchema;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IMap;
 import org.hillview.maps.LoadFilesMap;

@@ -25,22 +25,22 @@ import org.hillview.sketches.results.StringHistogramBuckets;
 import org.hillview.table.Table;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
-import org.hillview.table.columns.ColumnPrivacyMetadata;
-import org.hillview.table.columns.DoubleColumnPrivacyMetadata;
-import org.hillview.table.columns.PrivateColumn;
-import org.hillview.table.columns.StringColumnPrivacyMetadata;
+import org.hillview.table.columns.ColumnQuantization;
+import org.hillview.table.columns.DoubleColumnQuantization;
+import org.hillview.table.columns.QuantizedColumn;
+import org.hillview.table.columns.StringColumnQuantization;
 import org.hillview.test.BaseTest;
 import org.hillview.utils.TestTables;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class PrivateColumnTest extends BaseTest {
+public class QuantizationTest extends BaseTest {
     @Test
     public void testPrivateColumn() {
         Table table = TestTables.testTable();
         IColumn age = table.getLoadedColumn("Age");
-        ColumnPrivacyMetadata cpm = new DoubleColumnPrivacyMetadata(.1, 5, 0, 100);
-        PrivateColumn pc = new PrivateColumn(age, cpm);
+        ColumnQuantization cpm = new DoubleColumnQuantization(5, 0, 100);
+        QuantizedColumn pc = new QuantizedColumn(age, cpm);
         for (int i = 0; i < pc.sizeInRows(); i++) {
             int v = pc.getInt(i);
             int orig = age.getInt(i);
@@ -55,8 +55,8 @@ public class PrivateColumnTest extends BaseTest {
             boundaries[index] = Character.toString(c);
             index++;
         }
-        cpm = new StringColumnPrivacyMetadata(.1, boundaries, "a");
-        pc = new PrivateColumn(name, cpm);
+        cpm = new StringColumnQuantization(boundaries, "a");
+        pc = new QuantizedColumn(name, cpm);
         for (int i = 0; i < pc.sizeInRows(); i++) {
             String s = pc.getString(i);
             String orig = name.getString(i);
@@ -71,8 +71,8 @@ public class PrivateColumnTest extends BaseTest {
     public void testPrivateHistogram() {
         Table table = TestTables.testTable();
         IColumn age = table.getLoadedColumn("Age");
-        ColumnPrivacyMetadata cpm = new DoubleColumnPrivacyMetadata(.1, 5, 0, 100);
-        PrivateColumn pcage = new PrivateColumn(age, cpm);
+        ColumnQuantization cpm = new DoubleColumnQuantization(5, 0, 100);
+        QuantizedColumn pcage = new QuantizedColumn(age, cpm);
         IColumn name = table.getLoadedColumn("Name");
         String[] boundaries = new String[26];
         int index = 0;
@@ -80,8 +80,8 @@ public class PrivateColumnTest extends BaseTest {
             boundaries[index] = Character.toString(c);
             index++;
         }
-        cpm = new StringColumnPrivacyMetadata(.1, boundaries, "a");
-        PrivateColumn pcname = new PrivateColumn(name, cpm);
+        cpm = new StringColumnQuantization(boundaries, "a");
+        QuantizedColumn pcname = new QuantizedColumn(name, cpm);
         IColumn[] cols = new IColumn[] { pcage, pcname };
         Table privateTable = new Table(cols, null, null);
         DoubleHistogramBuckets hb = new DoubleHistogramBuckets(0, 100, 4);
@@ -103,8 +103,8 @@ public class PrivateColumnTest extends BaseTest {
         LocalDataSet<ITable> pub = new LocalDataSet<ITable>(table);
 
         IColumn age = table.getLoadedColumn("Age");
-        ColumnPrivacyMetadata cpmage = new DoubleColumnPrivacyMetadata(.1, 5, 0, 100);
-        PrivateColumn pcage = new PrivateColumn(age, cpmage);
+        ColumnQuantization cpmage = new DoubleColumnQuantization(5, 0, 100);
+        QuantizedColumn pcage = new QuantizedColumn(age, cpmage);
         IColumn name = table.getLoadedColumn("Name");
         String[] boundaries = new String[26];
         int index = 0;
@@ -112,8 +112,8 @@ public class PrivateColumnTest extends BaseTest {
             boundaries[index] = Character.toString(c);
             index++;
         }
-        ColumnPrivacyMetadata cpmname = new StringColumnPrivacyMetadata(.1, boundaries, "a");
-        PrivateColumn pcname = new PrivateColumn(name, cpmname);
+        ColumnQuantization cpmname = new StringColumnQuantization(boundaries, "a");
+        QuantizedColumn pcname = new QuantizedColumn(name, cpmname);
         IColumn[] cols = new IColumn[] { pcage, pcname };
         Table privateTable = new Table(cols, null, null);
         LocalDataSet<ITable> local = new LocalDataSet<ITable>(privateTable);

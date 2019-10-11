@@ -33,9 +33,10 @@ import org.hillview.sketches.results.Histogram;
 import org.hillview.sketches.results.TableSummary;
 import org.hillview.storage.JdbcConnectionInformation;
 import org.hillview.table.ColumnDescription;
+import org.hillview.table.PrivacySchema;
 import org.hillview.table.api.ITable;
-import org.hillview.table.columns.ColumnPrivacyMetadata;
-import org.hillview.table.columns.DoubleColumnPrivacyMetadata;
+import org.hillview.table.columns.ColumnQuantization;
+import org.hillview.table.columns.DoubleColumnQuantization;
 import org.hillview.table.filters.RangeFilterDescription;
 import org.hillview.utils.Converters;
 import org.hillview.utils.JsonList;
@@ -71,16 +72,16 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget {
         assert args.length == 1;
         double min, max;
 
-        ColumnPrivacyMetadata md = this.wrapper.privacySchema.get(args[0].cd.name);
+        ColumnQuantization md = this.wrapper.privacySchema.quantization(args[0].cd.name);
         RangeFilterDescription filter = this.wrapper.columnLimits.get(args[0].cd.name);
-        if (md instanceof DoubleColumnPrivacyMetadata) {
-            DoubleColumnPrivacyMetadata dmd = (DoubleColumnPrivacyMetadata)md;
+        if (md instanceof DoubleColumnQuantization) {
+            DoubleColumnQuantization dmd = (DoubleColumnQuantization)md;
             if (filter == null) {
                 min = dmd.globalMin;
                 max = dmd.globalMax;
             } else {
                 min = dmd.roundDown(filter.min);
-                max = dmd.roundUp(filter.max);
+                max = dmd.roundDown(filter.max);
             }
         } else {
             throw new RuntimeException("Not yet implemented");
@@ -88,6 +89,7 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget {
 
         DataRange retRange = new DataRange(min, max);
         // TODO: compute these too
+        // TODO(pratiksha): add noise to these counts
         retRange.presentCount = -1;
         retRange.missingCount = -1;
         PrecomputedSketch<ITable, DataRange> sk =
@@ -103,9 +105,12 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget {
     @HillviewRpc
     public void histogram(RpcRequest request, RpcRequestContext context) {
         DPWrapper.PrivateHistogramArgs[] info = request.parseArgs(DPWrapper.PrivateHistogramArgs[].class);
-        ColumnPrivacyMetadata metadata = this.wrapper.privacySchema.get(info[0].cd.name);
-        double epsilon = metadata.epsilon;
         assert info.length == 2;
+
+        ColumnQuantization metadata = this.wrapper.privacySchema.quantization(info[0].cd.name);
+        double epsilon = this.wrapper.privacySchema.epsilon(info[0].cd.name);
+        if (metadata == null)
+            throw new RuntimeException("No quantization information for column " + info[0].cd.name);
 
         ColumnDescription cd = info[0].cd;  // both args should be on the same column
         IDyadicDecomposition dd = info[0].getDecomposition(metadata);

@@ -81,15 +81,18 @@ export interface UIConfig {
     disableSaveAs: boolean;
 }
 
-export interface PrivacyMetadata {
-    epsilon: number;
-    granularity: number | null;
-    globalMin: number | string;
+export interface ColumnQuantization {
     globalMax: number | string;
+    // Only used for numeric columns
+    globalMin: number | string;
+    granularity: number | null;
+    // Only used for string columns
+    leftBoundaries: string[] | null;
 }
 
 export interface PrivacySchema {
-    metadata: { [colName: string]: PrivacyMetadata};
+    quantization: { quantization: { [colName: string]: ColumnQuantization } };
+    epsilons: { [colName: string]: number };
 }
 
 export interface TableSummary {

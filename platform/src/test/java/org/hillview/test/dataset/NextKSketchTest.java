@@ -53,11 +53,11 @@ public class NextKSketchTest extends BaseTest {
         final RowSnapshot topRow = new RowSnapshot(leftTable, 10);
         Assert.assertEquals(topRow.toString(), "14,4");
 
-        final NextKSketch nk = new NextKSketch(cso, topRow, maxSize);
+        final NextKSketch nk = new NextKSketch(cso, null, topRow, maxSize);
         final NextKList leftK = nk.create(leftTable);
         Assert.assertNotNull(leftK);
-        IndexComparator leftComp = cso.getIndexComparator(leftK.table);
-        for (int i = 0; i < (leftK.table.getNumOfRows() - 1); i++)
+        IndexComparator leftComp = cso.getIndexComparator(leftK.rows);
+        for (int i = 0; i < (leftK.rows.getNumOfRows() - 1); i++)
             Assert.assertTrue(leftComp.compare(i, i + 1) <= 0);
         Assert.assertEquals(leftK.toLongString(maxSize), "Table[2x5]\n" +
                 "14,4: 6\n" +
@@ -69,11 +69,11 @@ public class NextKSketchTest extends BaseTest {
         final RowSnapshot topRow2 = new RowSnapshot(leftTable, 100);
         Assert.assertEquals(topRow2.toString(), "4,4");
 
-        final NextKSketch nk2 = new NextKSketch(cso, topRow2, maxSize);
+        final NextKSketch nk2 = new NextKSketch(cso, null, topRow2, maxSize);
         final NextKList leftK2 = nk2.create(leftTable);
         Assert.assertNotNull(leftK2);
-        IndexComparator leftComp2 = cso.getIndexComparator(leftK2.table);
-        for (int i = 0; i < (leftK2.table.getNumOfRows() - 1); i++)
+        IndexComparator leftComp2 = cso.getIndexComparator(leftK2.rows);
+        for (int i = 0; i < (leftK2.rows.getNumOfRows() - 1); i++)
             Assert.assertTrue(leftComp2.compare(i, i + 1) <= 0);
         Assert.assertEquals(leftK2.toLongString(maxSize), "Table[2x5]\n" +
                 "4,4: 12\n" +
@@ -84,8 +84,8 @@ public class NextKSketchTest extends BaseTest {
         final Table rightTable = TestTables.getRepIntTable(rightSize, numCols);
         final NextKList rightK = nk.create(rightTable);
         Assert.assertNotNull(rightK);
-        IndexComparator rightComp = cso.getIndexComparator(rightK.table);
-        for (int i = 0; i < (rightK.table.getNumOfRows() - 1); i++)
+        IndexComparator rightComp = cso.getIndexComparator(rightK.rows);
+        for (int i = 0; i < (rightK.rows.getNumOfRows() - 1); i++)
             Assert.assertTrue(rightComp.compare(i, i + 1) <= 0);
 
         Assert.assertEquals(rightK.toLongString(maxSize), "Table[2x5]\n" +
@@ -97,8 +97,8 @@ public class NextKSketchTest extends BaseTest {
 
         NextKList tK = nk.add(leftK, rightK);
         Assert.assertNotNull(tK);
-        IndexComparator tComp = cso.getIndexComparator(tK.table);
-        for (int i = 0; i < (tK.table.getNumOfRows() - 1); i++)
+        IndexComparator tComp = cso.getIndexComparator(tK.rows);
+        for (int i = 0; i < (tK.rows.getNumOfRows() - 1); i++)
             Assert.assertTrue(tComp.compare(i, i + 1) <= 0);
         Assert.assertEquals(tK.toLongString(maxSize), "Table[2x5]\n" +
                 "14,4: 12\n" +
@@ -122,10 +122,10 @@ public class NextKSketchTest extends BaseTest {
                 "0,3\n" +
                 "7,8\n");
         RecordOrder cso = new RecordOrder();
-        final NextKSketch nk= new NextKSketch(cso, topRow, maxSize);
+        final NextKSketch nk= new NextKSketch(cso, null, topRow, maxSize);
         final NextKList leftK = nk.create(leftTable);
         Assert.assertNotNull(leftK);
-        Assert.assertEquals(leftK.table.getNumOfRows(), 0);
+        Assert.assertEquals(leftK.rows.getNumOfRows(), 0);
     }
 
     @Test
@@ -141,10 +141,10 @@ public class NextKSketchTest extends BaseTest {
                     true));
         ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, 500000);
 
-        NextKList nk = all.blockingSketch(new NextKSketch(cso, topRow, maxSize, false));
+        NextKList nk = all.blockingSketch(new NextKSketch(cso, null, topRow, maxSize));
         assert nk != null;
-        IndexComparator mComp = cso.getIndexComparator(nk.table);
-        for (int i = 0; i < (nk.table.getNumOfRows() - 1); i++)
+        IndexComparator mComp = cso.getIndexComparator(nk.rows);
+        for (int i = 0; i < (nk.rows.getNumOfRows() - 1); i++)
             Assert.assertTrue(mComp.compare(i, i + 1) <= 0);
         Assert.assertEquals(nk.toLongString(maxSize), "Table[5x5]\n" +
                 "39,32,67,53,10: 1\n" +
@@ -160,7 +160,7 @@ public class NextKSketchTest extends BaseTest {
         ColumnDescription cd = new ColumnDescription("X", ContentsKind.Integer);
         Schema schema = new Schema();
         schema.append(cd);
-        NextKList nkl = new NextKList(schema);
+        NextKList nkl = new NextKList(schema, null);
         String s = nkl.toLongString(Integer.MAX_VALUE);
         Assert.assertEquals(s, "Table[1x0]" + System.lineSeparator());
     }
@@ -177,10 +177,10 @@ public class NextKSketchTest extends BaseTest {
         IDataSet<ITable> big = new ParallelDataSet<ITable>(fragments);
         RecordOrder ro = new RecordOrder();
         ro.append(new ColumnSortOrientation(t.getSchema().getDescription("Name"), true));
-        NextKSketch nk = new NextKSketch(ro, null, 10);
+        NextKSketch nk = new NextKSketch(ro, null, null, 10);
         NextKList nkl = big.blockingSketch(nk);
         Assert.assertNotNull(nkl);
-        Assert.assertEquals(nkl.table.toString(), "Table[1x10]");
+        Assert.assertEquals(nkl.rows.toString(), "Table[1x10]");
     }
 
     @Test
@@ -191,7 +191,7 @@ public class NextKSketchTest extends BaseTest {
         ro.append(new ColumnSortOrientation(t.getSchema().getDescription("Name"), true));
         String sb = "Table[2x13]\n1,Bill: 1\n2,Bill: 1\n" +
                     "3,Smith: 1\n4,Donald: 1\n5,Bruce: 1\n...";
-        NextKSketch nks = new NextKSketch(ro, null, 20);
+        NextKSketch nks = new NextKSketch(ro, null, null, 20);
         Assert.assertEquals(sb, Converters.checkNull(nks.create(t)).toLongString(5));
     }
 
@@ -208,7 +208,7 @@ public class NextKSketchTest extends BaseTest {
         for (String colName : leftTable.getSchema().getColumnNames())
             cso.append(new ColumnSortOrientation(leftTable.getSchema().getDescription(colName), true));
         final RowSnapshot topRow = new RowSnapshot(leftTable, 80);
-        final NextKSketch nk = new NextKSketch(cso, topRow, maxSize);
+        final NextKSketch nk = new NextKSketch(cso, null, topRow, maxSize);
         final NextKList leftK = nk.create(leftTable);
         String exp = "Table[2x10]\n" +
                 "80,80: 1\n" +
@@ -240,10 +240,10 @@ public class NextKSketchTest extends BaseTest {
         IDataSet<ITable> big = new ParallelDataSet<ITable>(fragments);
         RecordOrder ro = new RecordOrder();
         ro.append(new ColumnSortOrientation(t.getSchema().getDescription("Name"), true));
-        NextKSketch nk = new NextKSketch(ro, null, 10);
+        NextKSketch nk = new NextKSketch(ro, null, null, 10);
         NextKList nkl = big.blockingSketch(nk);
         Assert.assertNotNull(nkl);
-        Assert.assertEquals(nkl.table.toString(), "Table[1x10]");
+        Assert.assertEquals(nkl.rows.toString(), "Table[1x10]");
     }
 
     @Test
@@ -253,9 +253,9 @@ public class NextKSketchTest extends BaseTest {
         IDataSet<ITable> big = new ParallelDataSet<ITable>(fragments); // empty dataset
         RecordOrder ro = new RecordOrder();
         ro.append(new ColumnSortOrientation(t.getSchema().getDescription("Name"), true));
-        NextKSketch nk = new NextKSketch(ro, null, 10);
+        NextKSketch nk = new NextKSketch(ro, null, null, 10);
         NextKList nkl = big.blockingSketch(nk);
         Assert.assertNotNull(nkl);
-        Assert.assertEquals(nkl.table.toString(), "Table[1x0]");
+        Assert.assertEquals(nkl.rows.toString(), "Table[1x0]");
     }
 }
