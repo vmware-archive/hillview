@@ -32,9 +32,10 @@ public class StringDyadicDecomposition extends DyadicDecomposition<String> {
                                      final int bucketCount, StringColumnQuantization metadata) {
         super(minValue, maxValue, metadata.leftBoundaries[0], metadata.globalMax, "a", bucketCount);
         this.leafLeftBoundaries = metadata.leftBoundaries;
-        this.numLeaves = this.leafLeftBoundaries.length;
+        this.globalNumLeaves = this.leafLeftBoundaries.length;
+        int numLeaves = this.computeLeafIdx(maxValue) - this.computeLeafIdx(minValue);
         this.bucketLeftBoundaries = new String[this.bucketCount];
-        this.init();
+        this.init(numLeaves);
     }
 
     @Override
@@ -52,7 +53,7 @@ public class StringDyadicDecomposition extends DyadicDecomposition<String> {
     public ArrayList<Pair<Integer, Integer>> bucketDecomposition(int bucketIdx, boolean cdf) {
         int startLeaf = this.bucketLeftLeaves[bucketIdx];
         int endLeaf;
-        if (bucketIdx == this.bucketCount) { // last bucket
+        if (bucketIdx == (this.bucketCount - 1)) { // last bucket
             endLeaf = this.numLeaves;
         } else {
             endLeaf = this.bucketLeftLeaves[bucketIdx+1];

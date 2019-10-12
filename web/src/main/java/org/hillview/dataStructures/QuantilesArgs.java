@@ -23,13 +23,13 @@ import org.hillview.sketches.*;
 import org.hillview.sketches.results.BucketsInfo;
 import org.hillview.sketches.results.DataRange;
 import org.hillview.sketches.results.MinKSet;
-import org.hillview.sketches.results.StringBucketLeftBoundaries;
+import org.hillview.sketches.results.StringQuantiles;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.ITable;
 
 import java.util.function.BiFunction;
 
-public class RangeArgs {
+public class QuantilesArgs {
     // if this is String, or Json we are sampling strings
     public ColumnDescription cd = new ColumnDescription();
     public long seed;       // only used if sampling strings
@@ -59,7 +59,7 @@ public class RangeArgs {
             return (e, c) -> {
                 //noinspection unchecked
                 MinKSet<String> mks = (MinKSet<String>)e;
-                return new StringBucketLeftBoundaries(
+                return new StringQuantiles(
                         mks.getLeftBoundaries(b), mks.max, mks.allStringsKnown(b),
                         mks.presentCount, mks.missingCount);
             };

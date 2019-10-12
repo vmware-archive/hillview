@@ -68,7 +68,7 @@ public class QuantizationTest extends BaseTest {
     }
 
     @Test
-    public void testPrivateHistogram() {
+    public void testQuantizedHistogram() {
         Table table = TestTables.testTable();
         IColumn age = table.getLoadedColumn("Age");
         ColumnQuantization cpm = new DoubleColumnQuantization(5, 0, 100);
@@ -83,10 +83,10 @@ public class QuantizationTest extends BaseTest {
         cpm = new StringColumnQuantization(boundaries, "a");
         QuantizedColumn pcname = new QuantizedColumn(name, cpm);
         IColumn[] cols = new IColumn[] { pcage, pcname };
-        Table privateTable = new Table(cols, null, null);
+        Table quantizedTable = new Table(cols, null, null);
         DoubleHistogramBuckets hb = new DoubleHistogramBuckets(0, 100, 4);
         HistogramSketch sk = new HistogramSketch(hb, "Age", 1.0, 0, null);
-        LocalDataSet<ITable> local = new LocalDataSet<ITable>(privateTable);
+        LocalDataSet<ITable> local = new LocalDataSet<ITable>(quantizedTable);
         Histogram histo = local.blockingSketch(sk);
         Assert.assertNotNull(histo);
         Assert.assertEquals(4, histo.getBucketCount());
@@ -98,7 +98,7 @@ public class QuantizationTest extends BaseTest {
     }
 
     @Test
-    public void testPrivateHistogram1() {
+    public void testQuantizedHistogram1() {
         Table table = TestTables.testTable();
         LocalDataSet<ITable> pub = new LocalDataSet<ITable>(table);
 
@@ -115,8 +115,8 @@ public class QuantizationTest extends BaseTest {
         ColumnQuantization cpmname = new StringColumnQuantization(boundaries, "a");
         QuantizedColumn pcname = new QuantizedColumn(name, cpmname);
         IColumn[] cols = new IColumn[] { pcage, pcname };
-        Table privateTable = new Table(cols, null, null);
-        LocalDataSet<ITable> local = new LocalDataSet<ITable>(privateTable);
+        Table quantizedTable = new Table(cols, null, null);
+        LocalDataSet<ITable> local = new LocalDataSet<ITable>(quantizedTable);
 
         DoubleHistogramBuckets hb = new DoubleHistogramBuckets(0, 100, 4);
         HistogramSketch sk = new HistogramSketch(hb, "Age", 1.0, 0, null);

@@ -37,22 +37,26 @@ public class QuantizedColumn extends BaseColumn {
      * Quantization policy.  If this is null the data is not really quantized.
      */
     @Nullable
-    private final ColumnQuantization metadata;
+    private final ColumnQuantization quantization;
 
-    public QuantizedColumn(IColumn data, @Nullable ColumnQuantization metadata) {
+    public QuantizedColumn(IColumn data, @Nullable ColumnQuantization quantization) {
         super(data.getDescription());
-        if (metadata != null) {
+        if (quantization != null) {
             if (data.getKind().isString()) {
-                if (!(metadata instanceof StringColumnQuantization))
-                    throw new IllegalArgumentException("Privacy metadata should be String, but it's " + metadata.getClass().toString());
+                if (!(quantization instanceof StringColumnQuantization))
+                    throw new IllegalArgumentException(
+                            "Quantization should be String, but it's " +
+                                    quantization.getClass().toString());
             } else {
-                if (!(metadata instanceof DoubleColumnQuantization)) {
-                    throw new IllegalArgumentException("Privacy metadata should be Double, but it's " + metadata.getClass().toString());
+                if (!(quantization instanceof DoubleColumnQuantization)) {
+                    throw new IllegalArgumentException(
+                            "Quantization should be Double, but it's " +
+                                    quantization.getClass().toString());
                 }
             }
         }
         this.data = data;
-        this.metadata = metadata;
+        this.quantization = quantization;
     }
 
     @Override
@@ -68,14 +72,14 @@ public class QuantizedColumn extends BaseColumn {
 
     @Override
     public double asDouble(int rowIndex) {
-        if (this.metadata == null)
+        if (this.quantization == null)
             return this.data.asDouble(rowIndex);
         switch (this.description.kind) {
             case Json:
             case String:
                 throw new RuntimeException("Not supported for private string columns");
             case Integer:
-                return this.metadata.roundDown(this.data.getInt(rowIndex));
+                return this.quantization.roundDown(this.data.getInt(rowIndex));
             case Date:
             case Double:
             case Duration:
@@ -87,9 +91,9 @@ public class QuantizedColumn extends BaseColumn {
 
     @Override
     public double getDouble(final int rowIndex) {
-        if (this.metadata == null)
+        if (this.quantization == null)
             return this.data.getDouble(rowIndex);
-        return this.metadata.roundDown(this.data.getDouble(rowIndex));
+        return this.quantization.roundDown(this.data.getDouble(rowIndex));
     }
 
     @Override
@@ -101,9 +105,9 @@ public class QuantizedColumn extends BaseColumn {
     @Override
     public int getInt(final int rowIndex) {
         int v = this.data.getInt(rowIndex);
-        if (this.metadata == null)
+        if (this.quantization == null)
             return v;
-        return (int)this.metadata.roundDown(v);
+        return (int)this.quantization.roundDown(v);
     }
 
     @Override
@@ -114,9 +118,9 @@ public class QuantizedColumn extends BaseColumn {
 
     @Override
     public String getString(final int rowIndex) {
-        if (this.metadata == null)
+        if (this.quantization == null)
             return this.data.getString(rowIndex);
-        return this.metadata.roundDown(this.data.getString(rowIndex));
+        return this.quantization.roundDown(this.data.getString(rowIndex));
     }
 
     /**
@@ -127,17 +131,17 @@ public class QuantizedColumn extends BaseColumn {
     public boolean isMissing(final int rowIndex) {
         if (this.data.isMissing(rowIndex))
             return true;
-        if (this.metadata == null)
+        if (this.quantization == null)
             return false;
         switch (QuantizedColumn.this.description.kind) {
             case Json:
             case String:
-                return this.metadata.outOfRange(this.getString(rowIndex));
+                return this.quantization.outOfRange(this.getString(rowIndex));
             case Integer:
             case Duration:
             case Double:
             case Date:
-                return this.metadata.outOfRange(this.asDouble(rowIndex));
+                return this.quantization.outOfRange(this.asDouble(rowIndex));
             default:
                 throw new RuntimeException("Unexpected data type");
         }
@@ -189,7 +193,7 @@ public class QuantizedColumn extends BaseColumn {
 
     @Override
     public IColumn rename(String newName) {
-        return new QuantizedColumn(this.data.rename(newName), this.metadata);
+        return new QuantizedColumn(this.data.rename(newName), this.quantization);
     }
 
     @Override

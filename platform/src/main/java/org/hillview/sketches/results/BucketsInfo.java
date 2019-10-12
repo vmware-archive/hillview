@@ -23,7 +23,7 @@ import java.io.Serializable;
 
 /**
  * This interface is a base class for all sketch results that are
- * used to compute the buckets of a histogram.
+ * used to compute the buckets of a histogram, i.e., various forms of quantiles.
  */
 public abstract class BucketsInfo implements Serializable, IJson {
     public long presentCount;

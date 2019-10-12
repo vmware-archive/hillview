@@ -16,7 +16,7 @@
  */
 
 import {BigTableView} from "../tableTarget";
-import {DataRange, RemoteObjectId} from "../javaBridge";
+import {BucketsInfo, RemoteObjectId} from "../javaBridge";
 import {DisplayName, SchemaClass} from "../schemaClass";
 import {DragEventKind, FullPage} from "../ui/fullPage";
 import {D3SvgElement, Point, ViewKind} from "../ui/ui";
@@ -205,7 +205,7 @@ export abstract class ChartView extends BigTableView {
 
     protected abstract showTrellis(colName: DisplayName): void;
 
-    public getSourceAxisRange(sourcePageId: string, dragEvent: DragEventKind): DataRange | null {
+    public getSourceAxisRange(sourcePageId: string, dragEvent: DragEventKind): BucketsInfo | null {
         const page = this.dataset.findPage(Number(sourcePageId));
         if (page == null)
             return;

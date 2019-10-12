@@ -234,28 +234,30 @@ export abstract class TSViewBase extends BigTableView {
     }
 
     protected histogram1D(cd: IColumnDescription): void {
-        const rr = this.createDataRangesRequest([cd], this.page, "Histogram");
-        const exact = this.isPrivate(); // If private, do not subsample
+        const rr = this.createDataQuantilesRequest([cd], this.page, "Histogram");
+        const exact = this.isPrivate(); // If private, do not sample
         rr.invoke(new DataRangesReceiver(
             this, this.page, rr, this.schema, [0], [cd], null,
             { chartKind: "Histogram", relative: false, exact: exact, reusePage: false }));
     }
 
     protected histogram2D(cds: IColumnDescription[]): void {
-        const rr = this.createDataRangesRequest(cds, this.page, "2DHistogram");
+        const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
+        const exact = this.isPrivate(); // If private, do not sample
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
             reusePage: false, relative: false,
-            chartKind: "2DHistogram", exact: false
+            chartKind: "2DHistogram", exact: exact
         }));
     }
 
     protected trellis2D(cds: IColumnDescription[]): void {
-        const rr = this.createDataRangesRequest(cds, this.page, "TrellisHistogram");
+        const exact = this.isPrivate(); // If private, do not sample
+        const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
             reusePage: false, relative: false,
-            chartKind: "TrellisHistogram", exact: false
+            chartKind: "TrellisHistogram", exact: exact
         }));
     }
 
@@ -266,11 +268,12 @@ export abstract class TSViewBase extends BigTableView {
         else {
             chartKind = "Trellis2DHistogram";
         }
-        const rr = this.createDataRangesRequest(cds, this.page, chartKind);
+        const exact = this.isPrivate(); // If private, do not sample
+        const rr = this.createDataQuantilesRequest(cds, this.page, chartKind);
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0, 0], cds, null, {
             reusePage: false, relative: false,
-            chartKind: chartKind, exact: false
+            chartKind: chartKind, exact: exact
         }));
     }
 
@@ -295,7 +298,7 @@ export abstract class TSViewBase extends BigTableView {
 
     protected heatmap(columns: string[]): void {
         const cds = this.schema.getDescriptions(columns);
-        const rr = this.createDataRangesRequest(cds, this.page, "Heatmap");
+        const rr = this.createDataQuantilesRequest(cds, this.page, "Heatmap");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
             reusePage: false,

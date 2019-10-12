@@ -18,6 +18,7 @@
 package org.hillview.table.columns;
 
 import org.hillview.dataset.api.IJson;
+import org.hillview.sketches.results.BucketsInfo;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;
@@ -28,7 +29,7 @@ import java.io.Serializable;
  * differentially-private views over data synopses.  Quantization involves
  * placing the value into one of a finite number of sorted buckets.
  */
-public class ColumnQuantization implements IJson, Serializable {
+public abstract class ColumnQuantization implements IJson, Serializable {
     /**
      * Quantize a numeric value by rounding down.
      * @param value  Value to quantize.
@@ -69,4 +70,11 @@ public class ColumnQuantization implements IJson, Serializable {
     public boolean outOfRange(@Nullable String value)  {
         throw new UnsupportedOperationException();
     }
+
+    /**
+     * Assuming we want to compute a histogram on bucketCount buckets, what are the
+     * bucket boundaries we should use?
+     * @param bucketCount  Number of buckets desired.
+     */
+    public abstract BucketsInfo getQuantiles(int bucketCount);
 }

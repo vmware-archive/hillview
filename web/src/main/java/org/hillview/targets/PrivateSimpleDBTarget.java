@@ -24,9 +24,7 @@ import org.hillview.RpcRequestContext;
 import org.hillview.dataStructures.*;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.Pair;
-import org.hillview.sketches.DoubleDataRangeSketch;
 import org.hillview.sketches.PrecomputedSketch;
-import org.hillview.sketches.SummarySketch;
 import org.hillview.sketches.results.BucketsInfo;
 import org.hillview.sketches.results.DataRange;
 import org.hillview.sketches.results.Histogram;
@@ -42,7 +40,6 @@ import org.hillview.utils.Converters;
 import org.hillview.utils.JsonList;
 
 import java.sql.SQLException;
-import java.util.function.BiFunction;
 
 public class PrivateSimpleDBTarget extends SimpleDBTarget {
     private final DPWrapper wrapper;
@@ -57,7 +54,7 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget {
     public void getSummary(RpcRequest request, RpcRequestContext context) {
         TableSummary summary = new TableSummary(this.schema, this.rowCount);
         this.runCompleteSketch(
-                this.table, this.makeSketch(summary, new SummarySketch()),
+                this.table, new PrecomputedSketch<ITable, TableSummary>(summary),
                 (d, c) -> this.wrapper.addPrivateMetadata(d), request, context);
     }
 
@@ -67,8 +64,8 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget {
     }
 
     @HillviewRpc
-    public void getDataRanges1D(RpcRequest request, RpcRequestContext context) {
-        RangeArgs[] args = request.parseArgs(RangeArgs[].class);
+    public void getDataQuantiles1D(RpcRequest request, RpcRequestContext context) {
+        QuantilesArgs[] args = request.parseArgs(QuantilesArgs[].class);
         assert args.length == 1;
         double min, max;
 
@@ -92,14 +89,8 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget {
         // TODO(pratiksha): add noise to these counts
         retRange.presentCount = -1;
         retRange.missingCount = -1;
-        PrecomputedSketch<ITable, DataRange> sk =
-                new PrecomputedSketch<ITable, DataRange>(retRange, new DoubleDataRangeSketch(args[0].cd.name));
-        BiFunction<DataRange, HillviewComputation, JsonList<BucketsInfo>> post = (e, c) -> {
-            JsonList<BucketsInfo> result = new JsonList<BucketsInfo>(1);
-            result.add(e);
-            return result;
-        };
-        this.runCompleteSketch(this.table, sk, post, request, context);
+        PrecomputedSketch<ITable, DataRange> sk = new PrecomputedSketch<ITable, DataRange>(retRange);
+        this.runCompleteSketch(this.table, sk, (e, c) -> new JsonList<BucketsInfo>(e), request, context);
     }
 
     @HillviewRpc
@@ -121,7 +112,7 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget {
             Histogram cdf = this.database.histogram(cd, cdd.getHistogramBuckets());
             Pair<Histogram, Histogram> result = new Pair<Histogram, Histogram>(histo, cdf);
             this.database.disconnect();
-            ISketch<ITable, Pair<Histogram, Histogram>> sk = this.makeSketch(result);
+            ISketch<ITable, Pair<Histogram, Histogram>> sk = new PrecomputedSketch<ITable, Pair<Histogram, Histogram>>(result);
             this.runCompleteSketch(this.table, sk, (e, c) ->
                     new Pair<PrivateHistogram, PrivateHistogram>(
                             new PrivateHistogram(dd, Converters.checkNull(e.first), epsilon, false),

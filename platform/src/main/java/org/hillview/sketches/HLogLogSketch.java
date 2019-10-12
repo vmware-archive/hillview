@@ -19,8 +19,11 @@ package org.hillview.sketches;
 
 import org.hillview.dataset.api.ISketch;
 import org.hillview.sketches.results.HLogLog;
+import org.hillview.table.QuantizedTable;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
+import org.hillview.table.columns.ColumnQuantization;
+import org.hillview.table.columns.QuantizedColumn;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
@@ -33,22 +36,32 @@ public class HLogLogSketch implements ISketch<ITable, HLogLog> {
      * More space means more accuracy. A space of 10-14 is recommended.
      **/
     private final int logSpaceSize;
+    @Nullable
+    private final ColumnQuantization quantization;
 
-    public HLogLogSketch(String colName, long seed) {
-        this(colName, 12, seed);
+    public HLogLogSketch(String colName, long seed, @Nullable ColumnQuantization quantization) {
+        this(colName, 12, seed, quantization);
     }
 
-    public HLogLogSketch(String colName, int logSpaceSize, long seed) {
+    public HLogLogSketch(String colName, long seed) {
+        this(colName, 12, seed, null);
+    }
+
+    public HLogLogSketch(String colName, int logSpaceSize, long seed,
+                  @Nullable ColumnQuantization quantization) {
         this.colName = colName;
         this.seed = seed;
         HLogLog.checkSpaceValid(logSpaceSize);
         this.logSpaceSize = logSpaceSize;
+        this.quantization = quantization;
     }
 
     @Override
     public HLogLog create(@Nullable final ITable data) {
         HLogLog result = this.getZero();
         IColumn col = Converters.checkNull(data).getLoadedColumn(this.colName);
+        if (this.quantization != null)
+            col = new QuantizedColumn(col, this.quantization);
         Converters.checkNull(result).createHLL(col, data.getMembershipSet());
         return result;
     }

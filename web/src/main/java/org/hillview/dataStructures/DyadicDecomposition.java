@@ -122,29 +122,30 @@ public abstract class DyadicDecomposition<T extends Comparable<T>>
     }
 
     /**
-     * Compute the largest leaf whose left boundary is <= min
+     * Compute the largest leaf whose left boundary is <= value
      */
-    private int computeMinLeafIdx(T min) {
-        int minIdx = 0;
-        if (min.compareTo(zeroValue) < 0) { // Should never be true for categorical values.
-            while (this.leafLeftBoundary(minIdx).compareTo(min) > 0) {
-                minIdx--;
+    int computeLeafIdx(T value) {
+        int leafIdx = 0;
+        if (value.compareTo(zeroValue) < 0) { // Should never be true for categorical values.
+            while (this.leafLeftBoundary(leafIdx).compareTo(value) > 0) {
+                leafIdx--;
             }
         } else {
-            while (this.leafLeftBoundary(minIdx).compareTo(min) < 0) {
-                minIdx++;
+            while (this.leafLeftBoundary(leafIdx).compareTo(value) < 0) {
+                leafIdx++;
             }
-            if (this.leafLeftBoundary(minIdx).compareTo(min) > 0) minIdx--;
+            if (this.leafLeftBoundary(leafIdx).compareTo(value) > 0) leafIdx--;
         }
 
-        return minIdx;
+        return leafIdx;
     }
 
     /**
      * Additional initialization that calls abstract methods, so may depend on subclass variables.
      */
-    protected void init() {
-        this.minLeafIdx = computeMinLeafIdx(this.minValue);
+    protected void init(int numLeaves) {
+        this.minLeafIdx = computeLeafIdx(this.minValue);
+        this.numLeaves = numLeaves;
         this.populateBucketBoundaries();
     }
 

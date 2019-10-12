@@ -10,11 +10,12 @@ import org.hillview.sketches.*;
 import org.hillview.sketches.results.*;
 import org.hillview.table.PrivacySchema;
 import org.hillview.table.api.ITable;
-import org.hillview.table.columns.DoubleColumnQuantization;
 import org.hillview.table.filters.RangeFilterDescription;
 import org.hillview.table.columns.ColumnQuantization;
+import org.hillview.table.filters.RangeFilterPair;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.Converters;
+import org.hillview.utils.HillviewException;
 import org.hillview.utils.JsonList;
 
 import java.util.function.BiFunction;
@@ -70,41 +71,37 @@ public class PrivateTableTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    public void getDataRanges1D(RpcRequest request, RpcRequestContext context) {
-        RangeArgs[] args = request.parseArgs(RangeArgs[].class);
+    public void getDataQuantiles1D(RpcRequest request, RpcRequestContext context) {
+        QuantilesArgs[] args = request.parseArgs(QuantilesArgs[].class);
         assert args.length == 1;
-        double min, max;
-        DoubleColumnQuantization md = (DoubleColumnQuantization)this.wrapper.privacySchema.quantization(
-                args[0].cd.name);
-        RangeFilterDescription filter = this.wrapper.columnLimits.get(args[0].cd.name);
-        if (filter == null) {
-            min = md.globalMin;
-            max = md.globalMax;
-        } else {
-            min = md.roundDown(filter.min);
-            max = md.roundDown(filter.max);
-        }
-
-        DataRange retRange = new DataRange(min, max);
-        retRange.presentCount = -1;
-        retRange.missingCount = -1;
-        PrecomputedSketch<ITable, DataRange> sk =
-                new PrecomputedSketch<ITable, DataRange>(retRange, new DoubleDataRangeSketch(args[0].cd.name));
-        BiFunction<DataRange, HillviewComputation, JsonList<BucketsInfo>> post = (e, c) -> {
-            JsonList<BucketsInfo> result = new JsonList<BucketsInfo>(1);
-            result.add(e);
-            return result;
-        };
-        this.runCompleteSketch(this.table, sk, post, request, context);
+        BucketsInfo retRange = this.wrapper.getRange(args[0]);
+        PrecomputedSketch<ITable, BucketsInfo> sk = new PrecomputedSketch<ITable, BucketsInfo>(retRange);
+        this.runCompleteSketch(this.table, sk, (e, c) -> new JsonList<BucketsInfo>(e), request, context);
     }
 
     @HillviewRpc
     public void filterRange(RpcRequest request, RpcRequestContext context) {
         RangeFilterDescription filter = request.parseArgs(RangeFilterDescription.class);
+        if (filter.complement)
+            throw new HillviewException("Only filters on contiguous range are supported");
         IdMap<ITable> map = new IdMap<ITable>();
         this.runMap(this.table, map, (e, c) -> {
             PrivateTableTarget result = new PrivateTableTarget(PrivateTableTarget.this, c);
             result.wrapper.columnLimits.put(filter.cd.name, filter);
+            return result;
+        }, request, context);
+    }
+
+    @HillviewRpc
+    public void filter2DRange(RpcRequest request, RpcRequestContext context) {
+        RangeFilterPair filter = request.parseArgs(RangeFilterPair.class);
+        if (filter.first.complement || filter.second.complement)
+            throw new HillviewException("Only filters on contiguous range are supported");
+        IdMap<ITable> map = new IdMap<ITable>();
+        this.runMap(this.table, map, (e, c) -> {
+            PrivateTableTarget result = new PrivateTableTarget(PrivateTableTarget.this, c);
+            result.wrapper.columnLimits.put(filter.first.cd.name, filter.first);
+            result.wrapper.columnLimits.put(filter.second.cd.name, filter.second);
             return result;
         }, request, context);
     }
@@ -137,45 +134,17 @@ public class PrivateTableTarget extends RpcTarget {
         this.heavyHitters(request, context);
     }
 
-    // For numeric-valued private histograms, this function returns the global min/max
-    // specified by the curator if no range is provided, and otherwise just returns
-    // the user-provided range.
     @HillviewRpc
-    public void getDataRanges2D(RpcRequest request, RpcRequestContext context) {
-        RangeArgs[] args = request.parseArgs(RangeArgs[].class);
+    public void getDataQuantiles2D(RpcRequest request, RpcRequestContext context) {
+        QuantilesArgs[] args = request.parseArgs(QuantilesArgs[].class);
         assert args.length == 2;
-
-        DataRange[] precomputed = new DataRange[2];
-        for (int i = 0; i < 2; i++) {
-            double min, max;
-            DoubleColumnQuantization md = (DoubleColumnQuantization)this.wrapper.privacySchema.quantization(
-                    args[i].cd.name);
-            RangeFilterDescription filter = this.wrapper.columnLimits.get(args[0].cd.name);
-            if (filter == null) {
-                min = md.globalMin;
-                max = md.globalMax;
-            } else {
-                min = md.roundDown(filter.min);
-                max = md.roundDown(filter.max);
-            }
-
-            DataRange retRange = new DataRange(min, max);
-            retRange.presentCount = -1;
-            retRange.missingCount = -1;
-            precomputed[i] = retRange;
-        }
-        PrecomputedSketch<ITable, Pair<DataRange, DataRange>> sk =
-                new PrecomputedSketch<ITable, Pair<DataRange, DataRange>>(
-                        new Pair<DataRange, DataRange>(precomputed[0], precomputed[1]),
-                        new ConcurrentSketch<ITable, DataRange, DataRange>(
-                            new DoubleDataRangeSketch(args[0].cd.name),
-                            new DoubleDataRangeSketch(args[1].cd.name)));
-        BiFunction<Pair<DataRange, DataRange>, HillviewComputation, JsonList<BucketsInfo>> post = (e, c) -> {
-            JsonList<BucketsInfo> result = new JsonList<BucketsInfo>(1);
-            result.add(e.first);
-            result.add(e.second);
-            return result;
-        };
+        BucketsInfo retRange0 = this.wrapper.getRange(args[0]);
+        BucketsInfo retRange1 = this.wrapper.getRange(args[1]);
+        PrecomputedSketch<ITable, Pair<BucketsInfo, BucketsInfo>> sk =
+                new PrecomputedSketch<ITable, Pair<BucketsInfo, BucketsInfo>>(
+                        new Pair<BucketsInfo, BucketsInfo>(retRange0, retRange1));
+        BiFunction<Pair<BucketsInfo, BucketsInfo>, HillviewComputation, JsonList<BucketsInfo>> post =
+                (e, c) -> new JsonList<BucketsInfo>(e.first, e.second);
         this.runCompleteSketch(this.table, sk, post, request, context);
     }
 
@@ -185,7 +154,6 @@ public class PrivateTableTarget extends RpcTarget {
         assert info.length == 2;
         ColumnQuantization col0 = this.wrapper.privacySchema.quantization(info[0].cd.name);
         ColumnQuantization col1 = this.wrapper.privacySchema.quantization(info[1].cd.name);
-        // Epsilon value has to be specified on the pair, separately from each column.
         double epsilon = this.wrapper.privacySchema.epsilon(new String[] {
                 info[0].cd.name, info[1].cd.name});
         if (col0 == null)

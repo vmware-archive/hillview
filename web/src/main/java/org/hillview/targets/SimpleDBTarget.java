@@ -86,14 +86,6 @@ public class SimpleDBTarget extends RpcTarget {
         }
     }
 
-    <T> ISketch<ITable, T> makeSketch(T data, @Nullable ISketch<ITable, T> sk) {
-        return new PrecomputedSketch<ITable, T>(data, sk);
-    }
-
-    <T> ISketch<ITable, T> makeSketch(T data) {
-        return new PrecomputedSketch<ITable, T>(data, null);
-    }
-
     @Override
     public String toString() {
         return "Local database: " + this.jdbc.toString();
@@ -102,7 +94,7 @@ public class SimpleDBTarget extends RpcTarget {
     @HillviewRpc
     public void getSummary(RpcRequest request, RpcRequestContext context) {
         TableSummary summary = new TableSummary(this.schema, this.rowCount);
-        this.runSketch(this.table, this.makeSketch(summary, new SummarySketch()), request, context);
+        this.runSketch(this.table, new PrecomputedSketch<ITable, TableSummary>(summary), request, context);
     }
 
     static class DistinctCount implements IJson {
@@ -121,7 +113,7 @@ public class SimpleDBTarget extends RpcTarget {
             int result = this.database.distinctCount(col.columnName);
             this.database.disconnect();
             DistinctCount dc = new DistinctCount(result);
-            ISketch<ITable, DistinctCount> sk = this.makeSketch(dc);
+            ISketch<ITable, DistinctCount> sk = new PrecomputedSketch<ITable, DistinctCount>(dc);
             this.runSketch(this.table, sk, request, context);
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -153,7 +145,7 @@ public class SimpleDBTarget extends RpcTarget {
                 computation = new HillviewComputation(null, request);
             HeavyHittersTarget hht = new HeavyHittersTarget(fkList, computation);
             TopList result = new TopList(fkList.sortTopK(info.columns), hht.getId().toString());
-            ISketch<ITable, TopList> sk = this.makeSketch(result);
+            ISketch<ITable, TopList> sk = new PrecomputedSketch<ITable, TopList>(result);
             this.runSketch(this.table, sk, request, context);
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -171,8 +163,8 @@ public class SimpleDBTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    public void getDataRanges1D(RpcRequest request, RpcRequestContext context) {
-        RangeArgs[] info = request.parseArgs(RangeArgs[].class);
+    public void getDataQuantiles1D(RpcRequest request, RpcRequestContext context) {
+        QuantilesArgs[] info = request.parseArgs(QuantilesArgs[].class);
         assert info.length == 1;
         try {
             BucketsInfo range;
@@ -187,7 +179,7 @@ public class SimpleDBTarget extends RpcTarget {
             this.database.disconnect();
             JsonList<BucketsInfo> result = new JsonList<BucketsInfo>(1);
             result.add(range);
-            ISketch<ITable, JsonList<BucketsInfo>> sk = this.makeSketch(result);
+            ISketch<ITable, JsonList<BucketsInfo>> sk = new PrecomputedSketch<ITable, JsonList<BucketsInfo>>(result);
             this.runSketch(this.table, sk, request, context);
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -207,7 +199,7 @@ public class SimpleDBTarget extends RpcTarget {
                     Pair<AugmentedHistogram, HistogramPrefixSum>(
                             new AugmentedHistogram(histo), new HistogramPrefixSum(cdf));
             this.database.disconnect();
-            ISketch<ITable, Pair<AugmentedHistogram, HistogramPrefixSum>> sk = this.makeSketch(result);
+            ISketch<ITable, Pair<AugmentedHistogram, HistogramPrefixSum>> sk = new PrecomputedSketch<ITable, Pair<AugmentedHistogram, HistogramPrefixSum>>(result);
             this.runSketch(this.table, sk, request, context);
         } catch (SQLException e) {
             throw new RuntimeException(e);

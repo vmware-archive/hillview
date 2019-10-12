@@ -17,6 +17,9 @@
 
 package org.hillview.table.columns;
 
+import org.hillview.sketches.results.BucketsInfo;
+import org.hillview.sketches.results.DataRange;
+
 public class DoubleColumnQuantization extends ColumnQuantization {
     /**
      * Minimum quantization interval: users will only be able to
@@ -65,6 +68,15 @@ public class DoubleColumnQuantization extends ColumnQuantization {
     }
 
     public boolean outOfRange(double value) {
-        return value <= this.globalMin || value > this.globalMax;
+        return value < this.globalMin || value > this.globalMax;
+    }
+
+    @Override
+    public BucketsInfo getQuantiles(int bucketCount) {
+        DataRange result = new DataRange(this.globalMin, this.globalMax);
+        // We don't know these
+        result.missingCount = -1;
+        result.presentCount = -1;
+        return result;
     }
 }

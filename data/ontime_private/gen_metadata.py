@@ -5,6 +5,10 @@ import itertools
 import string
 
 infile = 'short.schema'
+states = [ "AK", "AL", "AR", "AZ", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "IA", "ID", "IL", "IN", "KS",
+           "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MO", "MS", "MT", "NC", "ND", "NE", "NH", "NJ", "NM",
+           "NV", "NY", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VA", "VT", "WA", "WI",
+           "WV", "WY" ]
 
 def get_metadata(g, gMin, gMax):
     return {'type': "DoubleColumnQuantization",
@@ -12,8 +16,10 @@ def get_metadata(g, gMin, gMax):
             'globalMin': gMin,
             'globalMax': gMax}
 
-def get_string_metadata():
-    letters = list(string.ascii_lowercase) + list(string.ascii_uppercase)
+def get_string_metadata(col):
+    letters = list(string.ascii_uppercase) + list(string.ascii_lowercase)
+    if col == "OriginState" or col == "DestState":
+        letters = states
     return {'type': "StringColumnQuantization",
             'globalMax': 'z',
             'leftBoundaries': letters }
@@ -37,7 +43,7 @@ def main():
         for col in schema:
             cn = col["name"]
             if col["kind"] == "String":
-                quantization[cn] = get_string_metadata()
+                quantization[cn] = get_string_metadata(cn)
             else:
                 quantization[cn] = get_metadata(5.0, -100.0, 100.0)
             epsilons[cn] = 1

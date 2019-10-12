@@ -45,16 +45,16 @@ public class NumericDyadicDecomposition extends DyadicDecomposition<Double> {
         this.globalMin = metadata.globalMin;
         this.globalMax = metadata.globalMax;
 
-        this.numLeaves = (int)((maxValue - minValue) / this.granularity);
+        int numLeaves = (int)((maxValue - minValue) / this.granularity);
         this.globalNumLeaves = (int)((this.globalMax - this.globalMin) / this.granularity);
 
         // Preserves semantics, will make noise computation easier
-        if (this.numLeaves < this.bucketCount) {
-            this.bucketCount = this.numLeaves;
+        if (numLeaves < this.bucketCount) {
+            this.bucketCount = numLeaves;
         }
 
         this.bucketLeftBoundaries = new Double[this.bucketCount];
-        this.init();
+        this.init(numLeaves);
 
         // adjust min/max to reflect snapping to leaf boundaries
         this.minValue = this.bucketLeftBoundaries[0];

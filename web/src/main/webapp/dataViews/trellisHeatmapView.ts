@@ -199,7 +199,7 @@ export class TrellisHeatmapView extends TrellisChartView {
 
     public refresh(): void {
         const cds = [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description];
-        const rr = this.createDataRangesRequest(cds, this.page, "TrellisHeatmap");
+        const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisHeatmap");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [this.xAxisData.bucketCount, this.yAxisData.bucketCount, this.shape.bucketCount], cds, null, {
                 reusePage: true, relative: false,
@@ -220,7 +220,7 @@ export class TrellisHeatmapView extends TrellisChartView {
         }
         if (groupCount === 1) {
             const cds = [this.xAxisData.description, this.yAxisData.description];
-            const rr = this.createDataRangesRequest(cds, this.page, "Heatmap");
+            const rr = this.createDataQuantilesRequest(cds, this.page, "Heatmap");
             rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
                 [0], cds, null, {
                     reusePage: true, relative: false,
@@ -228,7 +228,7 @@ export class TrellisHeatmapView extends TrellisChartView {
                 }));
         } else {
             const cds = [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description];
-            const rr = this.createDataRangesRequest(cds, this.page, "TrellisHeatmap");
+            const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisHeatmap");
             rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
                 [0, 0, groupCount], cds, null, {
                     reusePage: true, relative: false,
@@ -240,7 +240,7 @@ export class TrellisHeatmapView extends TrellisChartView {
     public histogram(): void {
         const cds: IColumnDescription[] = [
             this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description];
-        const rr = this.createDataRangesRequest(cds, this.page, "Trellis2DHistogram");
+        const rr = this.createDataQuantilesRequest(cds, this.page, "Trellis2DHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0, 0], cds, null, {
                 chartKind: "Trellis2DHistogram",
@@ -253,7 +253,7 @@ export class TrellisHeatmapView extends TrellisChartView {
     public swapAxes(): void {
         const cds: IColumnDescription[] = [
             this.yAxisData.description, this.xAxisData.description, this.groupByAxisData.description];
-        const rr = this.createDataRangesRequest(cds, this.page, "TrellisHeatmap");
+        const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisHeatmap");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
                 chartKind: "TrellisHeatmap",

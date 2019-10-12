@@ -19,6 +19,10 @@ package org.hillview.targets;
 
 import org.hillview.dataStructures.IDyadicDecomposition;
 import org.hillview.dataStructures.NumericDyadicDecomposition;
+import org.hillview.dataStructures.QuantilesArgs;
+import org.hillview.dataStructures.StringDyadicDecomposition;
+import org.hillview.sketches.results.BucketsInfo;
+import org.hillview.sketches.results.DataRange;
 import org.hillview.table.PrivacySchema;
 import org.hillview.dataset.api.IJson;
 import org.hillview.sketches.HistogramSketch;
@@ -27,7 +31,9 @@ import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.columns.ColumnQuantization;
 import org.hillview.table.columns.DoubleColumnQuantization;
+import org.hillview.table.columns.StringColumnQuantization;
 import org.hillview.table.filters.RangeFilterDescription;
+import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -83,7 +89,7 @@ class DPWrapper {
         PrivacySummary pSumm = new PrivacySummary();
         pSumm.schema = summary.schema;
         pSumm.metadata = this.privacySchema;
-        // TODO: add noise to the row count too.
+        // TODO(pratiksha): add noise to the row count too.
         pSumm.rowCount = summary.rowCount;
         return pSumm;
     }
@@ -92,24 +98,50 @@ class DPWrapper {
         ColumnDescription cd = new ColumnDescription();
         double samplingRate = 1.0; // Fix to exact count
         long seed;
-
         double min;
         double max;
         int bucketCount;
+        @Nullable
+        String[] leftBoundaries;
 
-        IDyadicDecomposition getDecomposition(ColumnQuantization metadata) {
-            if (!cd.kind.isNumeric())
-                throw new RuntimeException("Attempted to instantiate private buckets with non-numeric column");
-            // This bucket class ensures that computed buckets fall on leaf boundaries.
-            return new NumericDyadicDecomposition(this.min, this.max,
-                    this.bucketCount, (DoubleColumnQuantization)metadata);
+        IDyadicDecomposition getDecomposition(ColumnQuantization quantization) {
+            if (cd.kind.isNumeric()) {
+                return new NumericDyadicDecomposition(this.min, this.max,
+                        this.bucketCount, (DoubleColumnQuantization)quantization);
+            } else {
+                Converters.checkNull(this.leftBoundaries);
+                return new StringDyadicDecomposition(
+                        this.leftBoundaries[0],
+                        this.leftBoundaries[this.leftBoundaries.length - 1],
+                        this.bucketCount, (StringColumnQuantization)quantization);
+            }
         }
 
-        // This bucket class ensures that computed buckets fall on leaf boundaries.
         HistogramSketch getSketch(ColumnQuantization metadata) {
             IDyadicDecomposition dd = this.getDecomposition(metadata);
             return new HistogramSketch(dd.getHistogramBuckets(), this.cd.name,
                     this.samplingRate, this.seed, null);
         }
+    }
+
+    BucketsInfo getRange(QuantilesArgs qa) {
+        ColumnDescription cd = qa.cd;
+        ColumnQuantization quantization = this.privacySchema.quantization(cd.name);
+        RangeFilterDescription filter = this.columnLimits.get(cd.name);
+        BucketsInfo quantiles = Converters.checkNull(quantization).getQuantiles(qa.stringsToSample);
+        if (filter == null)
+            return quantiles;
+
+        BucketsInfo result;
+        if (cd.kind.isString()) {
+            quantization = ((StringColumnQuantization)quantization).restrict(filter.minString, filter.maxString);
+            result = quantization.getQuantiles(qa.stringsToSample);
+        } else {
+            result = new DataRange(quantization.roundDown(filter.min),
+                    quantization.roundDown(filter.max));
+        }
+        result.missingCount = -1;
+        result.presentCount = -1;
+        return result;
     }
 }

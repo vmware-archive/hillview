@@ -23,7 +23,7 @@ import {DatasetView, IViewSerialization} from "./datasetView";
 import {
     CombineOperators,
     JSCreateColumnInfo,
-    DataRange,
+    BucketsInfo,
     FilterDescription,
     Heatmap,
     HistogramArgs,
@@ -141,12 +141,18 @@ export class TableTargetAPI extends RemoteObject {
         }
     }
 
-    public createDataRangesRequest(cds: IColumnDescription[], page: FullPage, viewKind: ViewKind):
-        RpcRequest<PartialResult<DataRange[]>> {
+    /**
+     * Create a request to find quantiles of a set of columns for a specific screen resolution.
+     * @param cds        Columns whose quantiles are computed.
+     * @param page       Current page.
+     * @param viewKind   How data will be displayed.
+     */
+    public createDataQuantilesRequest(cds: IColumnDescription[], page: FullPage, viewKind: ViewKind):
+        RpcRequest<PartialResult<BucketsInfo[]>> {
 
         // Determine the resolution of the ranges request based on the plot kind.
-        const buckets: number[] = TableTargetAPI.rangesResolution(page, viewKind);
-        assert(buckets.length === cds.length);
+        const bucketCounts: number[] = TableTargetAPI.rangesResolution(page, viewKind);
+        assert(bucketCounts.length === cds.length);
         const args: RangeArgs[] = [];
         for (let i = 0; i < cds.length; i++) {
             const cd = cds[i];
@@ -154,12 +160,12 @@ export class TableTargetAPI extends RemoteObject {
             const arg: RangeArgs = {
                 cd: cd,
                 seed: seed,
-                stringsToSample: buckets[i]
+                stringsToSample: bucketCounts[i]
             };
             args.push(arg);
         }
-        const method = "getDataRanges" + cds.length + "D";
-        return this.createStreamingRpcRequest<DataRange>(method, args);
+        const method = "getDataQuantiles" + cds.length + "D";
+        return this.createStreamingRpcRequest<BucketsInfo>(method, args);
     }
 
     public createContainsRequest(order: RecordOrder, row: any[]): RpcRequest<RemoteObjectId> {
