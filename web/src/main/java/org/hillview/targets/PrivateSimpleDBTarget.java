@@ -95,7 +95,7 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget {
 
     @HillviewRpc
     public void histogram(RpcRequest request, RpcRequestContext context) {
-        DPWrapper.PrivateHistogramArgs[] info = request.parseArgs(DPWrapper.PrivateHistogramArgs[].class);
+        HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
         assert info.length == 2;
 
         ColumnQuantization metadata = this.wrapper.privacySchema.quantization(info[0].cd.name);
@@ -103,6 +103,7 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget {
         if (metadata == null)
             throw new RuntimeException("No quantization information for column " + info[0].cd.name);
 
+        /*
         ColumnDescription cd = info[0].cd;  // both args should be on the same column
         IDyadicDecomposition dd = info[0].getDecomposition(metadata);
         IDyadicDecomposition cdd = info[1].getDecomposition(metadata);
@@ -121,5 +122,7 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+        TODO
+         */
     }
 }

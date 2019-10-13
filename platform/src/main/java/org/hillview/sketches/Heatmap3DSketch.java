@@ -63,13 +63,16 @@ public class Heatmap3DSketch implements ISketch<ITable, Heatmap3D> {
         List<IColumn> cols = Converters.checkNull(data).getLoadedColumns(colNames);
         Heatmap3D result = this.getZero();
         Converters.checkNull(result).createHeatmap(cols.get(0), cols.get(1), cols.get(2),
+                this.bucketDescD1, this.bucketDescD2, this.bucketDescD3,
                 data.getMembershipSet(), this.rate, this.seed, true);
         return result;
     }
 
     @Override
     public Heatmap3D zero() {
-        return new Heatmap3D(this.bucketDescD1, this.bucketDescD2, this.bucketDescD3);
+        return new Heatmap3D(this.bucketDescD1.getBucketCount(),
+                this.bucketDescD2.getBucketCount(),
+                this.bucketDescD3.getBucketCount());
     }
 
     @Override

@@ -5,6 +5,7 @@ import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.Pair;
 import org.hillview.sketches.results.Heatmap;
 import org.hillview.utils.Converters;
+
 import java.io.Serializable;
 import java.util.List;
 
@@ -12,10 +13,11 @@ public class PrivateHeatmap implements Serializable, IJson {
     public Heatmap heatmap;
     private double epsilon;
 
-    public PrivateHeatmap(IDyadicDecomposition xb, IDyadicDecomposition yb, Heatmap heatmap, double epsilon) {
+    public PrivateHeatmap(IDyadicDecomposition d0, IDyadicDecomposition d1,
+                          Heatmap heatmap, double epsilon) {
         this.heatmap = heatmap;
         this.epsilon = epsilon;
-        this.addDyadicLaplaceNoise(xb, yb);
+        this.addDyadicLaplaceNoise(d0, d1);
     }
 
     /**

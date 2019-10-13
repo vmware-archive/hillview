@@ -18,6 +18,7 @@
 package org.hillview.dataStructures;
 
 import org.hillview.dataset.api.Pair;
+import org.hillview.sketches.results.DoubleHistogramBuckets;
 import org.hillview.sketches.results.ExplicitDoubleHistogramBuckets;
 import org.hillview.sketches.results.IHistogramBuckets;
 import org.hillview.table.columns.DoubleColumnQuantization;
@@ -37,9 +38,9 @@ public class NumericDyadicDecomposition extends DyadicDecomposition<Double> {
         return leafIdx * granularity;
     }
 
-    public NumericDyadicDecomposition(final double minValue, final double maxValue,
-                                      final int bucketCount, DoubleColumnQuantization metadata) {
-        super(minValue, maxValue, metadata.globalMin, metadata.globalMax, 0.0, bucketCount);
+    NumericDyadicDecomposition(DoubleColumnQuantization metadata, DoubleHistogramBuckets buckets) {
+        super(buckets.minValue, buckets.maxValue, metadata.globalMin,
+                metadata.globalMax, buckets.bucketCount);
         this.granularity = metadata.granularity;
 
         this.globalMin = metadata.globalMin;
@@ -98,9 +99,8 @@ public class NumericDyadicDecomposition extends DyadicDecomposition<Double> {
      */
     @Override
     public ArrayList<Pair<Integer, Integer>> bucketDecomposition(int bucketIdx, boolean cdf) {
-        if (bucketIdx >= this.bucketCount || bucketIdx < 0) {
-            throw new IllegalArgumentException("Invalid bucket index");
-        }
+        if (bucketIdx >= this.bucketCount || bucketIdx < 0)
+            throw new IllegalArgumentException("Invalid bucket index: " + bucketIdx);
 
         int leftLeaf;
         if (cdf) {
@@ -116,7 +116,7 @@ public class NumericDyadicDecomposition extends DyadicDecomposition<Double> {
             rightLeaf = this.bucketLeftLeaves[bucketIdx + 1];
         }
 
-        return dyadicDecomposition(leftLeaf, rightLeaf);
+        return NumericDyadicDecomposition.dyadicDecomposition(leftLeaf, rightLeaf);
     }
 
     public double getGranularity() { return this.granularity; }

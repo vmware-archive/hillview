@@ -17,20 +17,15 @@
 
 package org.hillview.targets;
 
-import org.hillview.dataStructures.IDyadicDecomposition;
-import org.hillview.dataStructures.NumericDyadicDecomposition;
 import org.hillview.dataStructures.QuantilesArgs;
-import org.hillview.dataStructures.StringDyadicDecomposition;
 import org.hillview.sketches.results.BucketsInfo;
 import org.hillview.sketches.results.DataRange;
 import org.hillview.table.PrivacySchema;
 import org.hillview.dataset.api.IJson;
-import org.hillview.sketches.HistogramSketch;
 import org.hillview.sketches.results.TableSummary;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.columns.ColumnQuantization;
-import org.hillview.table.columns.DoubleColumnQuantization;
 import org.hillview.table.columns.StringColumnQuantization;
 import org.hillview.table.filters.RangeFilterDescription;
 import org.hillview.utils.Converters;
@@ -92,36 +87,6 @@ class DPWrapper {
         // TODO(pratiksha): add noise to the row count too.
         pSumm.rowCount = summary.rowCount;
         return pSumm;
-    }
-
-    static class PrivateHistogramArgs {
-        ColumnDescription cd = new ColumnDescription();
-        double samplingRate = 1.0; // Fix to exact count
-        long seed;
-        double min;
-        double max;
-        int bucketCount;
-        @Nullable
-        String[] leftBoundaries;
-
-        IDyadicDecomposition getDecomposition(ColumnQuantization quantization) {
-            if (cd.kind.isNumeric()) {
-                return new NumericDyadicDecomposition(this.min, this.max,
-                        this.bucketCount, (DoubleColumnQuantization)quantization);
-            } else {
-                Converters.checkNull(this.leftBoundaries);
-                return new StringDyadicDecomposition(
-                        this.leftBoundaries[0],
-                        this.leftBoundaries[this.leftBoundaries.length - 1],
-                        this.bucketCount, (StringColumnQuantization)quantization);
-            }
-        }
-
-        HistogramSketch getSketch(ColumnQuantization metadata) {
-            IDyadicDecomposition dd = this.getDecomposition(metadata);
-            return new HistogramSketch(dd.getHistogramBuckets(), this.cd.name,
-                    this.samplingRate, this.seed, null);
-        }
     }
 
     BucketsInfo getRange(QuantilesArgs qa) {

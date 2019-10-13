@@ -243,8 +243,8 @@ public final class TableTarget extends RpcTarget {
     public void histogram(RpcRequest request, RpcRequestContext context) {
         HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
         assert info.length == 2;
-        HistogramSketch sk = info[0].getSketch(); // Histogram
-        HistogramSketch cdf = info[1].getSketch(); // CDF: also histogram but at finer granularity
+        HistogramSketch sk = info[0].getSketch(null); // Histogram
+        HistogramSketch cdf = info[1].getSketch(null); // CDF: also histogram but at finer granularity
         ConcurrentSketch<ITable, Histogram, Histogram> csk =
                 new ConcurrentSketch<ITable, Histogram, Histogram>(sk, cdf);
         this.runSketchPostprocessing(
@@ -276,7 +276,7 @@ public final class TableTarget extends RpcTarget {
                 info[0].cd.name,
                 info[1].cd.name,
                 info[0].samplingRate, info[0].seed);
-        HistogramSketch cdf = info[2].getSketch();
+        HistogramSketch cdf = info[2].getSketch(null);
         ConcurrentSketch<ITable, Heatmap, Histogram> csk =
                 new ConcurrentSketch<ITable, Heatmap, Histogram>(sk, cdf);
         this.runSketchPostprocessing(this.table, csk,

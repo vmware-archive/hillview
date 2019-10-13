@@ -17,7 +17,6 @@
 
 package org.hillview;
 
-import org.checkerframework.checker.nullness.qual.AssertNonNullIfNonNull;
 import org.hillview.table.PrivacySchema;
 import org.hillview.table.QuantizationSchema;
 import org.hillview.table.columns.ColumnQuantization;

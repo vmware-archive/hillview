@@ -51,22 +51,21 @@ public class PrivateTableTarget extends RpcTarget {
     // are computed at different bucket granularities.
     @HillviewRpc
     public void histogram(RpcRequest request, RpcRequestContext context) {
-        DPWrapper.PrivateHistogramArgs[] info = request.parseArgs(DPWrapper.PrivateHistogramArgs[].class);
-        ColumnQuantization metadata = this.wrapper.privacySchema.quantization(info[0].cd.name);
+        HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
+        assert info.length == 2;
+        ColumnQuantization quantization = this.wrapper.privacySchema.quantization(info[0].cd.name);
+        Converters.checkNull(quantization);
+        HistogramSketch sk = info[0].getSketch(quantization); // Histogram
+        HistogramSketch cdf = info[1].getSketch(quantization);
+        IDyadicDecomposition d0 = info[0].getDecomposition(quantization);
+        IDyadicDecomposition d1 = info[1].getDecomposition(quantization);
         double epsilon = this.wrapper.privacySchema.epsilon(info[0].cd.name);
-        if (metadata == null)
-            throw new RuntimeException("No quantization information for column " + info[0].cd.name);
-
-        HistogramSketch sk = info[0].getSketch(metadata);
-        HistogramSketch cdf = info[1].getSketch(metadata);
-        IDyadicDecomposition dd = info[0].getDecomposition(metadata);
-        IDyadicDecomposition cdd = info[1].getDecomposition(metadata);
         ConcurrentSketch<ITable, Histogram, Histogram> csk =
                 new ConcurrentSketch<ITable, Histogram, Histogram>(sk, cdf);
         this.runCompleteSketch(this.table, csk, (e, c) ->
                 new Pair<PrivateHistogram, PrivateHistogram>(
-                        new PrivateHistogram(dd, Converters.checkNull(e.first), epsilon, false),
-                        new PrivateHistogram(cdd, Converters.checkNull(e.second), epsilon, true)),
+                        new PrivateHistogram(d0, Converters.checkNull(e.first), epsilon, false),
+                        new PrivateHistogram(d1, Converters.checkNull(e.second), epsilon, true)),
                 request, context);
     }
 
@@ -150,22 +149,20 @@ public class PrivateTableTarget extends RpcTarget {
 
     @HillviewRpc
     public void heatmap(RpcRequest request, RpcRequestContext context) {
-        DPWrapper.PrivateHistogramArgs[] info = request.parseArgs(DPWrapper.PrivateHistogramArgs[].class);
+        HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
         assert info.length == 2;
-        ColumnQuantization col0 = this.wrapper.privacySchema.quantization(info[0].cd.name);
-        ColumnQuantization col1 = this.wrapper.privacySchema.quantization(info[1].cd.name);
+        ColumnQuantization q0 = this.wrapper.privacySchema.quantization(info[0].cd.name);
+        ColumnQuantization q1 = this.wrapper.privacySchema.quantization(info[1].cd.name);
+        Converters.checkNull(q0);
+        Converters.checkNull(q1);
         double epsilon = this.wrapper.privacySchema.epsilon(new String[] {
                 info[0].cd.name, info[1].cd.name});
-        if (col0 == null)
-            throw new RuntimeException("No quantization information for column " + info[0].cd.name);
-        if (col1 == null)
-            throw new RuntimeException("No quantization information for column " + info[1].cd.name);
-
-        IDyadicDecomposition d0 = info[0].getDecomposition(col0);
-        IDyadicDecomposition d1 = info[1].getDecomposition(col1);
-        IHistogramBuckets b0 = d0.getHistogramBuckets();
-        IHistogramBuckets b1 = d1.getHistogramBuckets();
-        HeatmapSketch sk = new HeatmapSketch(b0, b1, info[0].cd.name, info[1].cd.name, 1.0, 0);
+        IHistogramBuckets b0 = info[0].getBuckets(q0);
+        IHistogramBuckets b1 = info[1].getBuckets(q1);
+        IDyadicDecomposition d0 = info[0].getDecomposition(q0);
+        IDyadicDecomposition d1 = info[1].getDecomposition(q1);
+        HeatmapSketch sk = new HeatmapSketch(
+                b0, b1, info[0].cd.name, info[1].cd.name, 1.0, 0, q0, q1);
         this.runCompleteSketch(this.table, sk, (e, c) ->
                 new PrivateHeatmap(d0, d1, e, epsilon).heatmap, request, context);
     }

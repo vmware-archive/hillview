@@ -76,6 +76,11 @@ public class StringColumnQuantization extends ColumnQuantization {
     }
 
     @Override
+    public int getGlobalNumLeaves() {
+        return this.leftBoundaries.length;
+    }
+
+    @Override
     public BucketsInfo getQuantiles(int bucketCount) {
         return new StringQuantiles(
                 new JsonList<String>(this.leftBoundaries), this.globalMax, true, -1, -1);

@@ -28,9 +28,9 @@ import java.util.ArrayList;
 public class StringDyadicDecomposition extends DyadicDecomposition<String> {
     private String[] leafLeftBoundaries;
 
-    public StringDyadicDecomposition(final String minValue, final String maxValue,
-                                     final int bucketCount, StringColumnQuantization metadata) {
-        super(minValue, maxValue, metadata.leftBoundaries[0], metadata.globalMax, "a", bucketCount);
+    StringDyadicDecomposition(StringColumnQuantization metadata, StringHistogramBuckets buckets) {
+        super(buckets.minValue, Converters.checkNull(buckets.maxValue), metadata.leftBoundaries[0],
+                metadata.globalMax, buckets.getBucketCount());
         this.leafLeftBoundaries = metadata.leftBoundaries;
         this.globalNumLeaves = this.leafLeftBoundaries.length;
         int numLeaves = this.computeLeafIdx(maxValue) - this.computeLeafIdx(minValue);
@@ -59,15 +59,13 @@ public class StringDyadicDecomposition extends DyadicDecomposition<String> {
             endLeaf = this.bucketLeftLeaves[bucketIdx+1];
         }
 
-        if (startLeaf >= endLeaf) {
-            throw new RuntimeException("Tried to initialize bucket with invalid number of leaves");
-        }
-
+        if (startLeaf > endLeaf)
+            throw new RuntimeException("Tried to initialize bucket with invalid number of leaves: " +
+                    startLeaf + " >= " + endLeaf);
         ArrayList<Pair<Integer, Integer>> ret = new ArrayList<Pair<Integer, Integer>>();
-        for (int i = startLeaf; i < endLeaf; i++) {
+        // This can be an empty loop if a bucket is empty
+        for (int i = startLeaf; i < endLeaf; i++)
             ret.add(new Pair<Integer, Integer>(i, i+1));
-        }
-
         return ret;
     }
 

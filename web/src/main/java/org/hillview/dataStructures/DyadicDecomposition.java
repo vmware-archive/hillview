@@ -35,7 +35,6 @@ public abstract class DyadicDecomposition<T extends Comparable<T>>
     // Range for the unfiltered histogram. Used to compute appropriate amount of noise to add.
     public T globalMin;
     public T globalMax;
-    private T zeroValue;
 
     protected int bucketCount;
     int numLeaves; // Total number of leaves.
@@ -69,27 +68,21 @@ public abstract class DyadicDecomposition<T extends Comparable<T>>
      * @param maxValue the maximum value in the filtered histogram.
      * @param globalMin the minimum value for the unfiltered histogram.
      * @param globalMax the maximum value for the unfiltered histogram.
-     * @param zeroValue the value corresponding to zero for the domain T.
      * @param bucketCount the number of histogram buckets.
      */
     DyadicDecomposition(final T minValue, final T maxValue,
                         final T globalMin, final T globalMax,
-                        final T zeroValue,
                         final int bucketCount) {
-        if (maxValue.compareTo(minValue) < 0 || bucketCount <= 0)
+        if ((maxValue.compareTo(minValue) < 0) || bucketCount <= 0)
             throw new IllegalArgumentException("Negative range or number of buckets");
 
         if (maxValue.compareTo(minValue) <= 0)
             this.bucketCount = 1;  // ignore specified number of buckets
         else
             this.bucketCount = bucketCount;
-
         this.bucketLeftLeaves = new int[this.bucketCount];
-        this.zeroValue = zeroValue;
-
         this.globalMax = globalMax;
         this.globalMin = globalMin;
-
         this.minValue = minValue;
         this.maxValue = maxValue;
     }
@@ -126,17 +119,10 @@ public abstract class DyadicDecomposition<T extends Comparable<T>>
      */
     int computeLeafIdx(T value) {
         int leafIdx = 0;
-        if (value.compareTo(zeroValue) < 0) { // Should never be true for categorical values.
-            while (this.leafLeftBoundary(leafIdx).compareTo(value) > 0) {
-                leafIdx--;
-            }
-        } else {
-            while (this.leafLeftBoundary(leafIdx).compareTo(value) < 0) {
-                leafIdx++;
-            }
-            if (this.leafLeftBoundary(leafIdx).compareTo(value) > 0) leafIdx--;
+        while (this.leafLeftBoundary(leafIdx).compareTo(value) < 0) {
+            leafIdx++;
         }
-
+        if (this.leafLeftBoundary(leafIdx).compareTo(value) > 0) leafIdx--;
         return leafIdx;
     }
 

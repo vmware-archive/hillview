@@ -54,12 +54,12 @@ public class DoubleColumnQuantization extends ColumnQuantization {
         if (this.granularity <= 0)
             throw new IllegalArgumentException("Granularity must be positive: " + this.granularity);
         double intervals = (this.globalMax - this.globalMin) / this.granularity;
-        if (Math.abs(intervals - Math.round(intervals)) > .001)
+        if (Math.abs(intervals - (int)intervals) > .001)
             throw new IllegalArgumentException("Granularity does not divide range into an integer number of intervals");
     }
 
     public double roundDown(double value) {
-        if (value <= this.globalMin)
+        if (value < this.globalMin)
             throw new RuntimeException("Value smaller than min: " + value + "<" + this.globalMin);
         if (value >= this.globalMax)
             return this.globalMax;
@@ -69,6 +69,11 @@ public class DoubleColumnQuantization extends ColumnQuantization {
 
     public boolean outOfRange(double value) {
         return value < this.globalMin || value > this.globalMax;
+    }
+
+    @Override
+    public int getGlobalNumLeaves() {
+        return (int)((this.globalMax - this.globalMin) / this.granularity);
     }
 
     @Override

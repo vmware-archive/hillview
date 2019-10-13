@@ -18,31 +18,31 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
     private double[] confMaxes;
     private double epsilon;
 
-    public PrivateHistogram(IDyadicDecomposition bucketDescription,
-                            final Histogram histogram, double epsilon, boolean cdf) {
+    public PrivateHistogram(IDyadicDecomposition decomposition,
+                            final Histogram histogram, double epsilon, boolean isCdf) {
         super(histogram);
         this.epsilon = epsilon;
         this.confMins  = new double[histogram.getBucketCount()];
         this.confMaxes = new double[histogram.getBucketCount()];
-        this.addDyadicLaplaceNoise(bucketDescription);
-        if (cdf) {
-            this.recomputeCDF(bucketDescription);
+        this.addDyadicLaplaceNoise(decomposition);
+        if (isCdf) {
+            this.recomputeCDF(decomposition);
         }
     }
 
     /**
      * Compute noise to add to this bucket using the dyadic decomposition as the PRG seed.
      * @param bucketIdx: index of the bucket to compute noise for.
-     * @param cdf: If true, computes the noise based on the dyadic decomposition of the interval [0, bucket right leaf]
+     * @param isCdf: If true, computes the noise based on the dyadic decomposition of the interval [0, bucket right leaf]
      *             rather than [bucket left leaf, bucket right leaf].
      * Returns the noise and the total variance of the variables used to compute the noise.
      */
-    private Pair<Double, Double> noiseForBucket(IDyadicDecomposition bucketDescription, int bucketIdx, boolean cdf) {
-        List<Pair<Integer, Integer>> intervals = bucketDescription.bucketDecomposition(bucketIdx, cdf);
-
+    private Pair<Double, Double> noiseForBucket(IDyadicDecomposition decomposition,
+                                                int bucketIdx, boolean isCdf) {
+        List<Pair<Integer, Integer>> intervals = decomposition.bucketDecomposition(bucketIdx, isCdf);
         double noise = 0;
         double variance = 0;
-        int totalLeaves = bucketDescription.getGlobalNumLeaves();
+        int totalLeaves = decomposition.getGlobalNumLeaves();
         double scale = Math.log(totalLeaves / this.epsilon) / Math.log(2);
         for (Pair<Integer, Integer> x : intervals) {
             LaplaceDistribution dist = new LaplaceDistribution(0, scale); // TODO: (more) secure PRG
@@ -52,7 +52,6 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
         }
         return new Pair<Double, Double>(noise, variance);
     }
-
 
     /**
      * Adds noise to CDF and then recomputes.
@@ -80,14 +79,12 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
      * Each node in the dyadic interval tree is perturbed by an independent noise variable distributed as Laplace(log T / epsilon).
      * The total noise is the sum of the noise variables in the intervals composing the desired interval or bucket.
      */
-    private void addDyadicLaplaceNoise(IDyadicDecomposition bucketDescription) {
+    private void addDyadicLaplaceNoise(IDyadicDecomposition decomposition) {
         for (int i = 0; i < this.histogram.buckets.length; i++) {
-            Pair<Double, Double> noise = this.noiseForBucket(bucketDescription, i, false);
+            Pair<Double, Double> noise = this.noiseForBucket(decomposition, i, false);
             this.histogram.buckets[i] += Converters.checkNull(noise.first);
-
             // Postprocess so that no buckets are negative
             this.histogram.buckets[i] = Math.max(0, this.histogram.buckets[i]);
-
             // also set confidence intervals for this noise level
             Converters.checkNull(noise.second);
             this.confMins[i] = 2 * Math.sqrt(noise.second);

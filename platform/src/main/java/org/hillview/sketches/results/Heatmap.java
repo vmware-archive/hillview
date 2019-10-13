@@ -26,26 +26,24 @@ import java.io.Serializable;
 public class Heatmap implements Serializable, IJson {
     public final long[][] buckets;
     private long missingData; // number of items missing on both columns
-    private final IHistogramBuckets bucketDescX;
-    private final IHistogramBuckets bucketDescY;
     private Histogram histogramMissingX; // dim1 is missing, dim2 exists
     private Histogram histogramMissingY; // dim2 is missing, dim1 exists
     private long totalSize;
+    public final int xBucketCount;
+    public final int yBucketCount;
 
-    public Heatmap(final IHistogramBuckets xBuckets,
-                   final IHistogramBuckets yBuckets) {
-        this.bucketDescX = xBuckets;
-        this.bucketDescY = yBuckets;
-        this.buckets = new long[xBuckets.getBucketCount()][yBuckets.getBucketCount()];
+    public Heatmap(final int xBucketCount,
+                   final int yBucketCount) {
+        this.xBucketCount = xBucketCount;
+        this.yBucketCount = yBucketCount;
+        this.buckets = new long[xBucketCount][yBucketCount];
         // Automatically initialized to 0
-        this.histogramMissingX = new Histogram(this.bucketDescY.getBucketCount());
-        this.histogramMissingY = new Histogram(this.bucketDescX.getBucketCount());
+        this.histogramMissingX = new Histogram(yBucketCount);
+        this.histogramMissingY = new Histogram(xBucketCount);
     }
 
-    public IHistogramBuckets getBucketDescX() { return bucketDescX; }
-    public IHistogramBuckets getBucketDescY() { return bucketDescY; }
-
     public void createHeatmap(final IColumn columnD1, final IColumn columnD2,
+                              IHistogramBuckets xBuckets, IHistogramBuckets yBuckets,
                               final IMembershipSet membershipSet, double samplingRate,
                               final long seed, final boolean enforceRate) {
         final ISampledRowIterator myIter = membershipSet.getIteratorOverSample(
@@ -57,17 +55,17 @@ public class Heatmap implements Serializable, IJson {
             if (isMissingD1 || isMissingD2) {
                 if (!isMissingD1) {
                     // only column 2 is missing
-                    this.histogramMissingY.add(columnD1, currRow, this.bucketDescX);
+                    this.histogramMissingY.add(columnD1, currRow, xBuckets);
                 } else if (!isMissingD2) {
                     // only column 1 is missing
-                    this.histogramMissingX.add(columnD2, currRow, this.bucketDescY);
+                    this.histogramMissingX.add(columnD2, currRow, yBuckets);
                 } else {
                     // both are missing
                     this.missingData++;
                 }
             } else {
-                int index1 = this.bucketDescX.indexOf(columnD1, currRow);
-                int index2 = this.bucketDescY.indexOf(columnD2, currRow);
+                int index1 = xBuckets.indexOf(columnD1, currRow);
+                int index2 = yBuckets.indexOf(columnD2, currRow);
                 if ((index1 >= 0) && (index2 >= 0)) {
                     this.buckets[index1][index2]++;
                     this.totalSize++;
@@ -92,10 +90,6 @@ public class Heatmap implements Serializable, IJson {
 
     public Histogram getMissingHistogramD2() { return this.histogramMissingY; }
 
-    public int getNumOfBucketsD1() { return this.bucketDescX.getBucketCount(); }
-
-    public int getNumOfBucketsD2() { return this.bucketDescY.getBucketCount(); }
-
     public long getMissingData() { return this.missingData; }
 
     /**
@@ -108,9 +102,9 @@ public class Heatmap implements Serializable, IJson {
      * @return a new HeatMap which is the union of this and otherHeatmap
      */
     public Heatmap union(Heatmap otherHeatmap) {
-        Heatmap unionH = new Heatmap(this.bucketDescX, this.bucketDescY);
-        for (int i = 0; i < unionH.bucketDescX.getBucketCount(); i++)
-            for (int j = 0; j < unionH.bucketDescY.getBucketCount(); j++)
+        Heatmap unionH = new Heatmap(this.xBucketCount, this.yBucketCount);
+        for (int i = 0; i < xBucketCount; i++)
+            for (int j = 0; j < this.yBucketCount; j++)
                 unionH.buckets[i][j] = this.buckets[i][j] + otherHeatmap.buckets[i][j];
         unionH.missingData = this.missingData + otherHeatmap.missingData;
         unionH.totalSize = this.totalSize + otherHeatmap.totalSize;

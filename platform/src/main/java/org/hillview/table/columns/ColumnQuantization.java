@@ -72,6 +72,11 @@ public abstract class ColumnQuantization implements IJson, Serializable {
     }
 
     /**
+     * Total number of leaves in the quantization.
+     */
+    public abstract int getGlobalNumLeaves();
+
+    /**
      * Assuming we want to compute a histogram on bucketCount buckets, what are the
      * bucket boundaries we should use?
      * @param bucketCount  Number of buckets desired.
