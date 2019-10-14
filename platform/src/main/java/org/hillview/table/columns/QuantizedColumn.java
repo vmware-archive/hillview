@@ -26,27 +26,37 @@ import java.time.Duration;
 import java.time.Instant;
 
 /**
- * A private column has an attached privacy policy and another (real) column.
- * The private column mediates access to the column data; when queried it
+ * A quantized column has an attached quantization policy and another (real) column.
+ * The quantized column mediates access to the column data; when queried it
  * does not return the real values; each value is fit within a bucket of
- * the privacy policy and treated as if it is the lower bound of the bucket.
+ * the quantization policy and treated as if it is the lower bound of the bucket.
  */
-public class PrivateColumn extends BaseColumn {
+public class QuantizedColumn extends BaseColumn {
     private final IColumn data;
-    private final ColumnPrivacyMetadata metadata;
+    /**
+     * Quantization policy.  If this is null the data is not really quantized.
+     */
+    @Nullable
+    private final ColumnQuantization quantization;
 
-    public PrivateColumn(IColumn data, ColumnPrivacyMetadata metadata) {
+    public QuantizedColumn(IColumn data, @Nullable ColumnQuantization quantization) {
         super(data.getDescription());
-        if (data.getKind().isString()) {
-            if (!(metadata instanceof StringColumnPrivacyMetadata))
-                throw new IllegalArgumentException("Privacy metadata should be String, but it's " + metadata.getClass().toString());
-        } else {
-            if (!(metadata instanceof DoubleColumnPrivacyMetadata)) {
-                throw new IllegalArgumentException("Privacy metadata should be Double, but it's " + metadata.getClass().toString());
+        if (quantization != null) {
+            if (data.getKind().isString()) {
+                if (!(quantization instanceof StringColumnQuantization))
+                    throw new IllegalArgumentException(
+                            "Quantization should be String, but it's " +
+                                    quantization.getClass().toString());
+            } else {
+                if (!(quantization instanceof DoubleColumnQuantization)) {
+                    throw new IllegalArgumentException(
+                            "Quantization should be Double, but it's " +
+                                    quantization.getClass().toString());
+                }
             }
         }
         this.data = data;
-        this.metadata = metadata;
+        this.quantization = quantization;
     }
 
     @Override
@@ -62,12 +72,14 @@ public class PrivateColumn extends BaseColumn {
 
     @Override
     public double asDouble(int rowIndex) {
+        if (this.quantization == null)
+            return this.data.asDouble(rowIndex);
         switch (this.description.kind) {
             case Json:
             case String:
                 throw new RuntimeException("Not supported for private string columns");
             case Integer:
-                return this.metadata.roundDown(this.data.getInt(rowIndex));
+                return this.quantization.roundDown(this.data.getInt(rowIndex));
             case Date:
             case Double:
             case Duration:
@@ -79,7 +91,9 @@ public class PrivateColumn extends BaseColumn {
 
     @Override
     public double getDouble(final int rowIndex) {
-        return this.metadata.roundDown(this.data.getDouble(rowIndex));
+        if (this.quantization == null)
+            return this.data.getDouble(rowIndex);
+        return this.quantization.roundDown(this.data.getDouble(rowIndex));
     }
 
     @Override
@@ -91,7 +105,9 @@ public class PrivateColumn extends BaseColumn {
     @Override
     public int getInt(final int rowIndex) {
         int v = this.data.getInt(rowIndex);
-        return (int)this.metadata.roundDown(v);
+        if (this.quantization == null)
+            return v;
+        return (int)this.quantization.roundDown(v);
     }
 
     @Override
@@ -102,11 +118,34 @@ public class PrivateColumn extends BaseColumn {
 
     @Override
     public String getString(final int rowIndex) {
-        return this.metadata.roundDown(this.data.getString(rowIndex));
+        if (this.quantization == null)
+            return this.data.getString(rowIndex);
+        return this.quantization.roundDown(this.data.getString(rowIndex));
     }
 
+    /**
+     * Returns 'true' for missing value, but also
+     * returns 'true' for values out of the min-max range.
+     */
     @Override
-    public boolean isMissing(final int rowIndex) { return this.data.isMissing(rowIndex); }
+    public boolean isMissing(final int rowIndex) {
+        if (this.data.isMissing(rowIndex))
+            return true;
+        if (this.quantization == null)
+            return false;
+        switch (QuantizedColumn.this.description.kind) {
+            case Json:
+            case String:
+                return this.quantization.outOfRange(this.getString(rowIndex));
+            case Integer:
+            case Duration:
+            case Double:
+            case Date:
+                return this.quantization.outOfRange(this.asDouble(rowIndex));
+            default:
+                throw new RuntimeException("Unexpected data type");
+        }
+    }
 
     @Nullable
     @Override
@@ -119,8 +158,8 @@ public class PrivateColumn extends BaseColumn {
         return new IndexComparator() {
             @Override
             public int compare(final int i, final int j) {
-                final boolean iMissing = PrivateColumn.this.isMissing(i);
-                final boolean jMissing = PrivateColumn.this.isMissing(j);
+                final boolean iMissing = QuantizedColumn.this.isMissing(i);
+                final boolean jMissing = QuantizedColumn.this.isMissing(j);
                 if (iMissing && jMissing) {
                     return 0;
                 } else if (iMissing) {
@@ -128,22 +167,22 @@ public class PrivateColumn extends BaseColumn {
                 } else if (jMissing) {
                     return -1;
                 } else {
-                    switch (PrivateColumn.this.description.kind) {
+                    switch (QuantizedColumn.this.description.kind) {
                         case Json:
                         case String:
-                            String si = PrivateColumn.this.getString(i);
-                            String sj = PrivateColumn.this.getString(j);
+                            String si = QuantizedColumn.this.getString(i);
+                            String sj = QuantizedColumn.this.getString(j);
                             assert si != null;
                             assert sj != null;
                             return si.compareTo(sj);
                         case Integer:
-                            return Integer.compare(PrivateColumn.this.getInt(i),
-                                    PrivateColumn.this.getInt(j));
+                            return Integer.compare(QuantizedColumn.this.getInt(i),
+                                    QuantizedColumn.this.getInt(j));
                         case Duration:
                         case Double:
                         case Date:
-                            return Double.compare(PrivateColumn.this.getDouble(i),
-                                    PrivateColumn.this.getDouble(j));
+                            return Double.compare(QuantizedColumn.this.getDouble(i),
+                                    QuantizedColumn.this.getDouble(j));
                         default:
                             throw new RuntimeException("Unexpected data type");
                     }
@@ -154,7 +193,7 @@ public class PrivateColumn extends BaseColumn {
 
     @Override
     public IColumn rename(String newName) {
-        return new PrivateColumn(this.data.rename(newName), this.metadata);
+        return new QuantizedColumn(this.data.rename(newName), this.quantization);
     }
 
     @Override
@@ -180,5 +219,10 @@ public class PrivateColumn extends BaseColumn {
             default:
                 throw new RuntimeException("Unexpected data type");
         }
+    }
+
+    @Override
+    public String toString() {
+        return "Quantized:" + this.data.toString();
     }
 }

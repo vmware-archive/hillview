@@ -25,7 +25,7 @@ import {
 } from "d3-scale";
 import {
     ContentsKind,
-    DataRange,
+    BucketsInfo,
     IColumnDescription,
     kindIsString
 } from "../javaBridge";
@@ -177,11 +177,11 @@ export class AxisData {
     public scale: AnyScale;
     public axis: AxisDescription;
     public bucketCount: number;
-    public range: DataRange; // the range used to draw the data; may be adjusted from dataRange
+    public range: BucketsInfo; // the range used to draw the data; may be adjusted from BucketsInfo
 
     public constructor(public description: IColumnDescription | null, // may be null for e.g., the Y col in a histogram
                        // dataRange is the original range of the data
-                       public dataRange: DataRange | null) {
+                       public dataRange: BucketsInfo | null) {
         this.bucketCount = 0;
         this.range = dataRange;
         const kind = description == null ? null : description.kind;
@@ -189,11 +189,11 @@ export class AxisData {
             if (kindIsString(kind)) {
                 this.range = {
                     min: -.5,
-                    max: dataRange.leftBoundaries.length - .5,
+                    max: dataRange.stringQuantiles.length - .5,
                     presentCount: dataRange.presentCount,
                     missingCount: dataRange.missingCount,
                     allStringsKnown: dataRange.allStringsKnown,
-                    leftBoundaries: dataRange.leftBoundaries,
+                    stringQuantiles: dataRange.stringQuantiles,
                     maxBoundary: dataRange.maxBoundary
                 };
             } else if (kind === "Integer") {
@@ -205,7 +205,7 @@ export class AxisData {
                 };
             }
         }
-        const strings = this.range !== null ? this.range.leftBoundaries : null;
+        const strings = this.range !== null ? this.range.stringQuantiles : null;
         this.leftBucketBoundaries = strings;
         // These are set when we know the screen size.
         this.scale = null;

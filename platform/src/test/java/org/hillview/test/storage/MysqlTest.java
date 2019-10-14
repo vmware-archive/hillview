@@ -213,15 +213,15 @@ public class MysqlTest extends JdbcTest {
             this.ignoringException("Cannot connect to database", e);
             return;
         }
-        StringBucketLeftBoundaries range = db.stringBuckets(new ColumnDescription("first_name", ContentsKind.String), 10);
+        StringQuantiles range = db.stringBuckets(new ColumnDescription("first_name", ContentsKind.String), 10);
         Assert.assertNotNull(range);
-        Assert.assertEquals(10, range.leftBoundaries.size());
+        Assert.assertEquals(10, range.stringQuantiles.size());
         Assert.assertFalse(range.allStringsKnown);
         Assert.assertEquals(300024, range.presentCount);
         Assert.assertEquals(0, range.missingCount);
-        String previous = range.leftBoundaries.get(0);
-        for (int i = 1; i < range.leftBoundaries.size(); i++) {
-            String current = range.leftBoundaries.get(i);
+        String previous = range.stringQuantiles.get(0);
+        for (int i = 1; i < range.stringQuantiles.size(); i++) {
+            String current = range.stringQuantiles.get(i);
             Assert.assertTrue(previous.compareTo(current) < 0);
             previous = current;
         }

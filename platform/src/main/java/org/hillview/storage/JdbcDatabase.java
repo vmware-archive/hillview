@@ -238,7 +238,7 @@ public class JdbcDatabase {
         return range;
     }
 
-    public StringBucketLeftBoundaries stringBuckets(ColumnDescription cd, int stringsToSample) {
+    public StringQuantiles stringBuckets(ColumnDescription cd, int stringsToSample) {
         assert this.conn.info.table != null;
         @Nullable String max = null;
         JsonList<String> boundaries = new JsonList<String>();
@@ -275,7 +275,7 @@ public class JdbcDatabase {
             missingCount = (long) (row.getDouble("total")) - presentCount;
         }
 
-        return new StringBucketLeftBoundaries(
+        return new StringQuantiles(
                 boundaries, max, rows <= stringsToSample, presentCount, missingCount);
     }
 

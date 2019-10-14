@@ -90,11 +90,11 @@ public class BatchLogAnalysis {
         Heatmap heatmap = table1.blockingSketch(heatmapSketch);
         assert heatmap != null;
         HeatmapData heatmapData = new HeatmapData();
-        int numOfBucketsD1 = heatmap.getNumOfBucketsD1();
-        int numOfBucketsD2 = heatmap.getNumOfBucketsD2();
+        int numOfBucketsD1 = heatmap.xBucketCount;
+        int numOfBucketsD2 = heatmap.yBucketCount;
         heatmapData.matrix = new long[numOfBucketsD1][numOfBucketsD2];
-        for (int i = 0; i<numOfBucketsD1; i++){
-            for (int j = 0; j<numOfBucketsD2; j++){
+        for (int i = 0; i < numOfBucketsD1; i++){
+            for (int j = 0; j < numOfBucketsD2; j++){
                 heatmapData.matrix[i][j] = heatmap.getCount(i, j);
             }
         }

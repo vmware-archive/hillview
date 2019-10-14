@@ -18,25 +18,20 @@
 package org.hillview.sketches;
 
 import org.hillview.dataset.api.ISketch;
-import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 
 /**
  * A precomputed sketch looks like a sketch, but does not really run the 'create' method;
- * it just returns a precomputed value directly.  For 'zero' and 'add' it delegates to
- * another sketch.
+ * it just returns a precomputed value directly in all methods.
  * @param <T>  Type of the data sketched.
  * @param <R>  Type of result produced.
  */
 public class PrecomputedSketch<T, R> implements ISketch<T, R> {
     private final R result;
-    @Nullable
-    private final ISketch<T, R> delegate;
 
-    public PrecomputedSketch(R result, @Nullable ISketch<T, R> delegate) {
+    public PrecomputedSketch(R result) {
         this.result = result;
-        this.delegate = delegate;
     }
 
     @Nullable
@@ -48,12 +43,12 @@ public class PrecomputedSketch<T, R> implements ISketch<T, R> {
     @Nullable
     @Override
     public R zero() {
-        return Converters.checkNull(this.delegate).zero();
+        return this.result;
     }
 
     @Nullable
     @Override
     public R add(@Nullable R left, @Nullable R right) {
-        return Converters.checkNull(this.delegate).add(left, right);
+        return this.result;
     }
 }

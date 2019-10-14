@@ -132,7 +132,7 @@ public abstract class BaseTable implements ITable, Serializable {
     @Override public SmallTable compress(final String[] colNames,
                                          final IRowOrder rowOrder) {
         IColumn[] compressedCols =
-                Linq.map(colNames, s -> this.columns.get(s).compress(rowOrder), IColumn.class);
+                Linq.map(colNames, s -> this.getColumn(s).compress(rowOrder), IColumn.class);
         return new SmallTable(compressedCols);
     }
 
@@ -145,7 +145,7 @@ public abstract class BaseTable implements ITable, Serializable {
                                          final IRowOrder rowOrder) {
         List<String> colNames = newSchema.getColumnNames();
         List<IColumn> compressedCols =
-                Linq.map(colNames, s -> this.columns.get(s).compress(rowOrder));
+                Linq.map(colNames, s -> this.getColumn(s).compress(rowOrder));
         return new SmallTable(compressedCols, newSchema);
     }
 

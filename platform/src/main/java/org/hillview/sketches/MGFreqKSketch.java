@@ -24,6 +24,8 @@ import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.sketches.results.FreqKList;
 import org.hillview.sketches.results.FreqKListMG;
+import org.hillview.table.QuantizationSchema;
+import org.hillview.table.QuantizedTable;
 import org.hillview.table.Schema;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;
@@ -67,17 +69,26 @@ public class MGFreqKSketch implements ISketch<ITable, FreqKListMG> {
      * The parameter K which controls how many indices we store in MG. We set it to alpha/epsilon.
      */
     private final int maxSize;
+    @Nullable
+    private final QuantizationSchema quantization;
 
     public MGFreqKSketch(Schema schema, double epsilon) {
+        this(schema, epsilon, null);
+    }
+
+    public MGFreqKSketch(Schema schema, double epsilon,
+                         @Nullable QuantizationSchema quantization) {
         this.schema = schema;
         this.epsilon = epsilon;
         this.maxSize = ((int) Math.ceil(alpha/epsilon));
+        this.quantization = quantization;
     }
 
     public MGFreqKSketch(Schema schema, int maxSize) {
         this.schema = schema;
         this.epsilon = 1.0/maxSize;
         this.maxSize = ((int) Math.ceil(alpha/epsilon));
+        this.quantization = null;
     }
 
     @Nullable
@@ -114,7 +125,10 @@ public class MGFreqKSketch implements ISketch<ITable, FreqKListMG> {
      */
     @Override
     public FreqKListMG create(@Nullable ITable data) {
-        VirtualRowHashStrategy hashStrategy = new VirtualRowHashStrategy(Converters.checkNull(data), this.schema);
+        Converters.checkNull(data);
+        if (this.quantization != null)
+            data = new QuantizedTable(data, this.quantization);
+        VirtualRowHashStrategy hashStrategy = new VirtualRowHashStrategy(data, this.schema);
         Int2ObjectOpenCustomHashMap<MutableInteger> hMap = new Int2ObjectOpenCustomHashMap<MutableInteger>(hashStrategy);
         IntSet toRemove = new IntOpenHashSet(this.maxSize);
         IRowIterator rowIt = data.getRowIterator();

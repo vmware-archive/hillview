@@ -56,4 +56,8 @@ public class DoubleHistogramBuckets implements IHistogramBuckets {
 
     @Override
     public int getBucketCount() { return this.bucketCount; }
+
+    public double leftMargin(int bucketIndex) {
+        return this.minValue + (bucketIndex * this.range / this.bucketCount);
+    }
 }

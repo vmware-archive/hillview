@@ -15,26 +15,29 @@
  * limitations under the License.
  */
 
-package org.hillview.sketches.results;
+package org.hillview.table;
 
-import org.hillview.dataset.api.IJson;
+import org.hillview.sketches.results.ColumnSortOrientation;
 
 import java.io.Serializable;
 
 /**
- * This interface is a base class for all sketch results that are
- * used to compute the buckets of a histogram, i.e., various forms of quantiles.
+ * Describes an aggregation operation to be performed.
  */
-public abstract class BucketsInfo implements Serializable, IJson {
-    public long presentCount;
-    public long missingCount;
-
-    protected BucketsInfo() {
-        this.presentCount = 0;
-        this.missingCount = 0;
+public class AggregateDescription implements Serializable {
+   public enum AggregateKind {
+        Sum,
+        CountNonNull,
     }
 
-    public void addMissing() {
-        this.missingCount++;
+    /**
+     * Column which is aggregated.
+     */
+    public final ColumnDescription cd;
+    public final AggregateKind agkind;
+
+    public AggregateDescription(ColumnDescription cd, AggregateKind agkind) {
+        this.cd = cd;
+        this.agkind = agkind;
     }
 }

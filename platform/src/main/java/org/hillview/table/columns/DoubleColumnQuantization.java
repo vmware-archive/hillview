@@ -17,39 +17,31 @@
 
 package org.hillview.table.columns;
 
-/**
- * This class represents metadata used for computing differentially-private mechanisms
- * for columns storing doubles.
- */
-public class DoubleColumnPrivacyMetadata extends ColumnPrivacyMetadata {
+import org.hillview.sketches.results.BucketsInfo;
+import org.hillview.sketches.results.DataRange;
+
+public class DoubleColumnQuantization extends ColumnQuantization {
     /**
      * Minimum quantization interval: users will only be able to
      * query ranges that are a multiple of this size.
-     * This field is particularly useful for implementing the dyadic interval tree
-     * in the binary mechanism of Chan, Song, Shi '11 (https://eprint.iacr.org/2010/076.pdf).
      */
     public final double granularity;
     /**
-     * Fixed global minimum value for the column. Should be computable from
-     * public information or otherwise uncorrelated with the data.
+     * Fixed global minimum value for the column.  Values less that this are out of range.
      */
     public final double globalMin;
     /**
-     * Fixed global maximum value. Should be computable from
-     * public information or otherwise uncorrelated with the data.
+     * Fixed global maximum value.  Values larger or equal to this value are out of range.
      */
     public final double globalMax;
 
     /**
      * Create a privacy metadata for a numeric-type column.
-     * @param epsilon      Differential privacy parameter.
      * @param granularity  Size of a bucket for quantized data.
-     * @param globalMin    Minimum value expected in the column.
-     * @param globalMax    Maximum value expected in column.
+     * @param globalMin    Minimum value expected in the column.  The minimum is inclusive.
+     * @param globalMax    Maximum value expected in column.  The maximum is exclusive.
      */
-    public DoubleColumnPrivacyMetadata(double epsilon, double granularity,
-                                       double globalMin, double globalMax) {
-        super(epsilon);
+    public DoubleColumnQuantization(double granularity, double globalMin, double globalMax) {
         this.granularity = granularity;
         this.globalMin = globalMin;
         this.globalMax = globalMax;
@@ -58,12 +50,12 @@ public class DoubleColumnPrivacyMetadata extends ColumnPrivacyMetadata {
         if (this.granularity <= 0)
             throw new IllegalArgumentException("Granularity must be positive: " + this.granularity);
         double intervals = (this.globalMax - this.globalMin) / this.granularity;
-        if (Math.abs(intervals - Math.round(intervals)) > .001)
+        if (Math.abs(intervals - (int)intervals) > .001)
             throw new IllegalArgumentException("Granularity does not divide range into an integer number of intervals");
     }
 
     public double roundDown(double value) {
-        if (value <= this.globalMin)
+        if (value < this.globalMin)
             throw new RuntimeException("Value smaller than min: " + value + "<" + this.globalMin);
         if (value >= this.globalMax)
             return this.globalMax;
@@ -71,12 +63,27 @@ public class DoubleColumnPrivacyMetadata extends ColumnPrivacyMetadata {
         return this.globalMin + intervals * this.granularity;
     }
 
-    public double roundUp(double value) {
-        if (value <= this.globalMin)
-            return this.globalMin;
-        if (value >= this.globalMax)
-            throw new RuntimeException("Value greater than max: " + value + ">" + this.globalMax);
-        double intervals = Math.floor((value - this.globalMin) / this.granularity);
-        return this.globalMin + (intervals + 1) * this.granularity;
+    public boolean outOfRange(double value) {
+        return value < this.globalMin || value >= this.globalMax;
+    }
+
+    public int bucketIndex(double value) {
+        if (this.outOfRange(value))
+            return -1;
+        return (int)Math.floor((value - this.globalMin) / this.granularity);
+    }
+
+    @Override
+    public int getIntervalCount() {
+        return (int)((this.globalMax - this.globalMin) / this.granularity);
+    }
+
+    @Override
+    public BucketsInfo getQuantiles(int bucketCount) {
+        DataRange result = new DataRange(this.globalMin, this.globalMax);
+        // We don't know these
+        result.missingCount = -1;
+        result.presentCount = -1;
+        return result;
     }
 }

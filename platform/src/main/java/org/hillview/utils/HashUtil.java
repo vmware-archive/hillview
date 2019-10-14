@@ -32,7 +32,7 @@ public class HashUtil {
 
     protected HashUtil() {}
 
-    public static int murmurHash3(int x) {
+    static int murmurHash3(int x) {
         x ^= x >>> 16;
         x *= -2048144789;
         x ^= x >>> 13;
@@ -111,7 +111,7 @@ public class HashUtil {
         }
     }
 
-    public static int maxFill(final int n, final float f) {
+    static int maxFill(final int n, final float f) {
         return Math.min((int)Math.ceil((double)((float)n * f)), n - 1);
     }
 
@@ -119,7 +119,7 @@ public class HashUtil {
         return Math.min((long)Math.ceil((double)((float)n * f)), n - 1L);
     }
 
-    public static int arraySize(final int expected, final float f) {
+    static int arraySize(final int expected, final float f) {
         final long s = Math.max(2L, nextPowerOfTwo((long)Math.ceil((double)((float)expected / f))));
         if(s > 1073741824L) {
             throw new IllegalArgumentException("Too large (" + expected

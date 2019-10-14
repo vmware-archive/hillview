@@ -22,10 +22,9 @@ import org.hillview.table.api.ITableFilter;
 import org.hillview.table.api.ITableFilterDescription;
 import java.io.Serializable;
 
-@SuppressWarnings("CanBeFinal")
 public final class RangeFilterPair implements ITableFilterDescription, Serializable {
-    private final RangeFilterDescription first;
-    private final RangeFilterDescription second;
+    public final RangeFilterDescription first;
+    public final RangeFilterDescription second;
 
     public RangeFilterPair(RangeFilterDescription first, RangeFilterDescription second) {
         this.first = first;

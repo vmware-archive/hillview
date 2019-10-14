@@ -22,6 +22,10 @@ import org.hillview.sketches.HistogramSketch;
 import org.hillview.sketches.results.IHistogramBuckets;
 import org.hillview.sketches.results.StringHistogramBuckets;
 import org.hillview.table.ColumnDescription;
+import org.hillview.table.columns.ColumnQuantization;
+import org.hillview.table.columns.DoubleColumnQuantization;
+import org.hillview.table.columns.StringColumnQuantization;
+import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 
@@ -40,17 +44,38 @@ public class HistogramRequestInfo {
     private double max;
     private int bucketCount;
 
-    public IHistogramBuckets getBuckets() {
+    public IHistogramBuckets getBuckets(@Nullable ColumnQuantization quantization) {
         if (cd.kind.isString()) {
-            assert this.leftBoundaries != null;
-            return new StringHistogramBuckets(this.leftBoundaries);
+            Converters.checkNull(this.leftBoundaries);
+            if (quantization != null)
+                return new StringHistogramBuckets(this.leftBoundaries,
+                        ((StringColumnQuantization)quantization).globalMax);
+            else
+                return new StringHistogramBuckets(this.leftBoundaries);
         } else {
             return new DoubleHistogramBuckets(this.min, this.max, this.bucketCount);
         }
     }
 
-    public HistogramSketch getSketch() {
-        IHistogramBuckets buckets = this.getBuckets();
-        return new HistogramSketch(buckets, this.cd.name, this.samplingRate, this.seed, null);
+    public IHistogramBuckets getBuckets() {
+        return this.getBuckets(null);
+    }
+
+    public HistogramSketch getSketch(@Nullable ColumnQuantization quantization) {
+        IHistogramBuckets buckets = this.getBuckets(quantization);
+        return new HistogramSketch(buckets, this.cd.name, this.samplingRate, this.seed, quantization);
+    }
+
+    public DyadicDecomposition getDecomposition(ColumnQuantization quantization) {
+        IHistogramBuckets buckets = this.getBuckets(quantization);
+        if (cd.kind.isString()) {
+            return new StringDyadicDecomposition(
+                    (StringColumnQuantization)quantization,
+                    (StringHistogramBuckets)buckets);
+        } else {
+            return new NumericDyadicDecomposition(
+                    (DoubleColumnQuantization)quantization,
+                    (DoubleHistogramBuckets)buckets);
+        }
     }
 }

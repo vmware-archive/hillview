@@ -29,7 +29,7 @@ public class ExplicitDoubleHistogramBuckets extends ExplicitHistogramBuckets<Dou
 
     @Override
     public int indexOf(IColumn column, int rowIndex) {
-        Double item = column.getDouble(rowIndex);
+        Double item = column.asDouble(rowIndex);
         return this.indexOf(item);
     }
 }

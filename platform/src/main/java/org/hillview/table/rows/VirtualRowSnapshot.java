@@ -58,7 +58,7 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
      */
     private int rowIndex = -1;
     private final Schema schema;
-    private final HashMap<String, IColumn> columns;
+    protected final HashMap<String, IColumn> columns;
 
     public VirtualRowSnapshot(final ITable table, final Schema schema,
             @Nullable final HashMap<String, String> columnRenameMap) {

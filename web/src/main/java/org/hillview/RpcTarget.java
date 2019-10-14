@@ -412,6 +412,7 @@ public abstract class RpcTarget implements IJson {
             } catch (Exception e) {
                 HillviewLogger.instance.error("Exception during onCompleted", e);
                 super.onError(e);
+                return; // no not send any other replies
             }
 
             RpcReply reply = this.request.createReply(json);

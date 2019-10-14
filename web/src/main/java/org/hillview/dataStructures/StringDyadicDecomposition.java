@@ -17,63 +17,21 @@
 
 package org.hillview.dataStructures;
 
-import org.hillview.dataset.api.Pair;
-import org.hillview.sketches.results.IHistogramBuckets;
 import org.hillview.sketches.results.StringHistogramBuckets;
-import org.hillview.table.columns.StringColumnPrivacyMetadata;
-import org.hillview.utils.Converters;
+import org.hillview.table.columns.StringColumnQuantization;
 
-import java.util.ArrayList;
+class StringDyadicDecomposition extends DyadicDecomposition {
+    StringDyadicDecomposition(StringColumnQuantization quantization, StringHistogramBuckets buckets) {
+        super(quantization, new StringHistogramBuckets(buckets.leftBoundaries, quantization.globalMax));
 
-public class StringDyadicDecomposition extends DyadicDecomposition<String> {
-    private String[] leafLeftBoundaries;
-
-    public StringDyadicDecomposition(final String minValue, final String maxValue,
-                                     final int bucketCount, StringColumnPrivacyMetadata metadata) {
-        super(minValue, maxValue, metadata.leftBoundaries[0], metadata.globalMax, "a", bucketCount);
-        this.leafLeftBoundaries = metadata.leftBoundaries;
-        this.numLeaves = this.leafLeftBoundaries.length;
-        this.bucketLeftBoundaries = new String[this.bucketCount];
-        this.init();
-    }
-
-    @Override
-    protected String leafLeftBoundary(final int leafIdx) {
-        if (leafIdx < this.leafLeftBoundaries.length) {
-            return this.leafLeftBoundaries[leafIdx];
-        } else if (leafIdx == this.leafLeftBoundaries.length) {
-            return this.globalMax;
-        } else {
-            throw new ArrayIndexOutOfBoundsException();
+        int previous = 0;
+        for (int i = 0; i < buckets.getBucketCount(); i++) {
+            String s = buckets.leftMargin(i);
+            int si = this.quantization.bucketIndex(s);
+            if (si >= 0 && previous >= 0 && si < previous)
+                throw new RuntimeException("Indexed out of order: " + si + " < " + previous);
+            previous = si;
+            this.bucketQuantizationIndexes[i] = si;
         }
-    }
-
-    @Override
-    public ArrayList<Pair<Integer, Integer>> bucketDecomposition(int bucketIdx, boolean cdf) {
-        int startLeaf = this.bucketLeftLeaves[bucketIdx];
-        int endLeaf;
-        if (bucketIdx == this.bucketCount) { // last bucket
-            endLeaf = this.numLeaves;
-        } else {
-            endLeaf = this.bucketLeftLeaves[bucketIdx+1];
-        }
-
-        if (startLeaf >= endLeaf) {
-            throw new RuntimeException("Tried to initialize bucket with invalid number of leaves");
-        }
-
-        ArrayList<Pair<Integer, Integer>> ret = new ArrayList<Pair<Integer, Integer>>();
-        for (int i = startLeaf; i < endLeaf; i++) {
-            ret.add(new Pair<Integer, Integer>(i, i+1));
-        }
-
-        return ret;
-    }
-
-    @Override
-    public IHistogramBuckets getHistogramBuckets() {
-        return new StringHistogramBuckets(
-                Converters.checkNull(this.bucketLeftBoundaries),
-                this.maxValue);
     }
 }

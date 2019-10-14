@@ -88,7 +88,7 @@ public class JsonTest extends BaseTest {
         IntList li = new IntArrayList();
         li.add(2);
         li.add(3);
-        NextKList list = new NextKList(t, li, 0, 100);
+        NextKList list = new NextKList(t, null, li, 0, 100);
         s = list.toJson();
         Assert.assertEquals(s, "{" +
                 "\"rowsScanned\":100," +
@@ -110,9 +110,9 @@ public class JsonTest extends BaseTest {
 
     @Test
     public void testHierarchySerialization() {
-        DoubleColumnPrivacyMetadata md1 = new DoubleColumnPrivacyMetadata(0.1, 12.345, 0.0, 123.45);
+        DoubleColumnQuantization md1 = new DoubleColumnQuantization(12.345, 0.0, 123.45);
         String s = IJson.gsonInstance.toJson(md1);
-        ColumnPrivacyMetadata des = IJson.gsonInstance.fromJson(s, ColumnPrivacyMetadata.class);
-        Assert.assertTrue(des instanceof DoubleColumnPrivacyMetadata);
+        ColumnQuantization des = IJson.gsonInstance.fromJson(s, ColumnQuantization.class);
+        Assert.assertTrue(des instanceof DoubleColumnQuantization);
     }
 }

@@ -36,7 +36,7 @@ import static org.junit.Assert.*;
 /**
  * Tests the hyper-log-log algorithm.
  */
-public class HLLTest extends BaseTest {
+public class HyperLogLogTest extends BaseTest {
     @Test
     public void testHLL() {
         final int size = 2000000;
@@ -61,7 +61,7 @@ public class HLLTest extends BaseTest {
         final SmallTable bigTable = TestTables.getIntTable(bigSize, numCols); // range is 5 * bigSize
         final String colName = bigTable.getSchema().getColumnNames().get(0);
         final ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize / 10);
-        final HLogLog hll = all.blockingSketch(new HLogLogSketch(colName,16,12345678));
+        final HLogLog hll = all.blockingSketch(new HLogLogSketch(colName, 16, 12345678, null));
         Assert.assertNotNull(hll);
         assertTrue(hll.distinctItemsEstimator() > 85000);
     }

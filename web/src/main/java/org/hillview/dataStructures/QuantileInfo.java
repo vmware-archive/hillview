@@ -17,22 +17,12 @@
 
 package org.hillview.dataStructures;
 
-import org.hillview.dataset.api.Pair;
-import org.hillview.sketches.results.IHistogramBuckets;
+import org.hillview.table.RecordOrder;
 
-import java.util.List;
-
-public interface IDyadicDecomposition {
-    IHistogramBuckets getHistogramBuckets();
-
-    /**
-     * Return a list of leaf intervals that correspond to this bucket.
-     * For numeric data, this could correspond to the dyadic decomposition of the bucket.
-     * For categorical data (one-level tree), this can return a list of leaves that make
-     * up the bucket.
-     * Leaves are zero-indexed. The returned intervals are right-exclusive.
-     */
-    List<Pair<Integer, Integer>> bucketDecomposition(int bucketIdx, boolean cdf);
-
-    int getGlobalNumLeaves();
+public class QuantileInfo {
+    public int precision;
+    public double position;
+    public long tableSize;
+    public long seed;
+    public RecordOrder order = new RecordOrder();
 }

@@ -19,7 +19,7 @@ import {IViewSerialization, SpectrumSerialization} from "../datasetView";
 import {
     AugmentedHistogram,
     CombineOperators,
-    DataRange,
+    BucketsInfo,
     EigenVal,
     Histogram,
     IColumnDescription, RecordOrder,
@@ -78,7 +78,7 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
         const ev: number [] = eVals.eigenValues;
         const histogram: Histogram = { buckets: ev, missingData: 0 };
         const icd: IColumnDescription = { kind: "Integer", name: "Singular Values" };
-        const range: DataRange = { min: -.5, max: ev.length - .5,
+        const range: BucketsInfo = { min: -.5, max: ev.length - .5,
             presentCount: 0, missingCount: 0 };
         const axisData = new AxisData(icd, range);
         this.specView.updateView("Spectrum", histogram, axisData);

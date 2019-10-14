@@ -90,6 +90,14 @@ public interface ITable {
     List<IColumn> getColumns(Schema schema);
 
     /**
+     * Get the specified column.
+     * @param name  Column name.
+     * @return      The column with the specified name.
+     * If no such column exists this will throw.
+     */
+    IColumn getColumn(String name);
+
+    /**
      * Creates a new table which has the same data with this one except the
      * provided membership set.  Note that the result can have more rows
      * than the original table - the original membership set is ignored.

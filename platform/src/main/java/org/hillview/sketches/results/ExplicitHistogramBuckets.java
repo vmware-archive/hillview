@@ -27,11 +27,11 @@ import java.util.Arrays;
  */
 public abstract class ExplicitHistogramBuckets<T extends Comparable<T>>
         implements IHistogramBuckets {
-    private final T minValue;
+    public final T minValue;
     private final T lastBoundary;
     private final int bucketCount;
     @Nullable
-    private final T maxValue;
+    public final T maxValue;
     /**
      * These are the *left endpoints* of the buckets.
      */
@@ -86,4 +86,8 @@ public abstract class ExplicitHistogramBuckets<T extends Comparable<T>>
 
     @Override
     public int getBucketCount() { return this.bucketCount; }
+
+    public T leftMargin(int bucketIndex) {
+        return this.leftBoundaries[bucketIndex];
+    }
 }

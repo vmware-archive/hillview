@@ -149,7 +149,7 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
             else switch (cso.columnDescription.kind) {
                 case String:
                 case Json:
-                    c = this.asString(cn).compareTo(other.asString(cn));
+                    c = this.getString(cn).compareTo(other.getString(cn));
                     break;
                 case Integer:
                     c = Integer.compare(this.getInt(cn), other.getInt(cn));

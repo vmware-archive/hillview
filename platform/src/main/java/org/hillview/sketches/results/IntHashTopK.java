@@ -18,7 +18,6 @@
 package org.hillview.sketches.results;
 
 import it.unimi.dsi.fastutil.ints.*;
-import org.hillview.sketches.results.IntTopK;
 import org.hillview.table.api.IndexComparator;
 import org.hillview.table.rows.VirtualRowHashStrategy;
 import org.hillview.utils.MutableInteger;
@@ -27,9 +26,9 @@ import org.hillview.utils.MutableInteger;
  * Implementation of IntTopK that uses
  * 1) A hashMap for membership queries (should be O(1)).
  * 2) A priority queue to maintain the current largest element in the top K.
- * It does not seem to be much faster than IntTreeTopK, especially for small values of K.
+ * It does not seem to be much faster than IntTreeTopK, especially for small values of K,
+ * so currently this class is not used.
  */
-
 public class IntHashTopK implements IntTopK {
     private final int maxSize;
     private int size;

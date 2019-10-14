@@ -21,8 +21,8 @@ import org.hillview.sketches.results.Histogram;
 import org.hillview.sketches.results.IHistogramBuckets;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
-import org.hillview.table.columns.ColumnPrivacyMetadata;
-import org.hillview.table.columns.PrivateColumn;
+import org.hillview.table.columns.ColumnQuantization;
+import org.hillview.table.columns.QuantizedColumn;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
@@ -36,10 +36,10 @@ public class HistogramSketch implements ISketch<ITable, Histogram> {
     protected final double rate;
     protected final long seed;
     @Nullable
-    protected ColumnPrivacyMetadata cpm;
+    protected ColumnQuantization cpm;
 
     public HistogramSketch(IHistogramBuckets bucketDesc, String columnName,
-                           double rate, long seed, @Nullable ColumnPrivacyMetadata cpm) {
+                           double rate, long seed, @Nullable ColumnQuantization cpm) {
         this.bucketDesc = bucketDesc;
         this.columnName = columnName;
         this.rate = rate;
@@ -54,7 +54,7 @@ public class HistogramSketch implements ISketch<ITable, Histogram> {
         Converters.checkNull(result);
         IColumn column = data.getLoadedColumn(this.columnName);
         if (this.cpm != null)
-            column = new PrivateColumn(column, this.cpm);
+            column = new QuantizedColumn(column, this.cpm);
         result.create(column, data.getMembershipSet(), this.bucketDesc, this.rate, this.seed, false);
         return result;
     }

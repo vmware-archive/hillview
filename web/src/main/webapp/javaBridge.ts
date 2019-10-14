@@ -81,15 +81,18 @@ export interface UIConfig {
     disableSaveAs: boolean;
 }
 
-export interface PrivacyMetadata {
-    epsilon: number;
-    granularity: number | null;
-    globalMin: number | string;
+export interface ColumnQuantization {
     globalMax: number | string;
+    // Only used for numeric columns
+    globalMin: number | string;
+    granularity: number | null;
+    // Only used for string columns
+    leftBoundaries: string[] | null;
 }
 
 export interface PrivacySchema {
-    metadata: { [colName: string]: PrivacyMetadata};
+    quantization: { quantization: { [colName: string]: ColumnQuantization } };
+    epsilons: { [colName: string]: number };
 }
 
 export interface TableSummary {
@@ -242,26 +245,31 @@ export interface AugmentedHistogram {
     missingMax?: number;
 }
 
-// This is actually a union of several java classes:
-// StringBucketLeftBoundaries and DataRange, both sub-classes
+// This is actually a union of two java classes
+// StringQuantiles and DataRange, both sub-classes
 // of BucketsInfo in Java.
-export interface DataRange {
+export interface BucketsInfo {
     presentCount: number;
     missingCount: number;
     // Only used for numeric data
     min?: number;
     max?: number;
     // Only used for string data
-    leftBoundaries?: string[];
+    stringQuantiles?: string[];
     maxBoundary?: string;
     allStringsKnown?: boolean;
 }
 
-export interface BasicColStats extends DataRange {
-    momentCount: number;
+export interface BasicColStats {
+    presentCount: number;
+    missingCount: number;
+    // Only used for numeric data
+    min?: number;
+    max?: number;
     moments: number[];
-    minString: string;
-    maxString: string;
+    // Only used for string data
+    minString?: string;
+    maxString?: string;
 }
 
 export interface RangeArgs {
@@ -296,28 +304,13 @@ export interface HistogramArgs {
 // Data returned by private histogram call
 export interface PrivateHistogramData {
     buckets: number[];
-
     // Backend may adjust min/max to render
     minValue: number;
     maxValue: number;
-
     // Confidence intervals
     confMins: number[];
     confMaxes: number[];
-
     missingData: number;
-}
-
-export interface PrivateHistogramArgs {
-    cd: IColumnDescription;
-    seed: number;
-    samplingRate: number;
-    bucketCount: number;
-    epsilon: number;
-    granularity: number;
-
-    min?: number;
-    max?: number;
 }
 
 export interface HeavyHittersFilterInfo {

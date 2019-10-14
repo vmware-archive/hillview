@@ -139,7 +139,7 @@ export class TrellisHistogramView extends TrellisChartView {
         }
         if (groupCount === 1) {
             const cds = [this.xAxisData.description];
-            const rr = this.createDataRangesRequest(cds, this.page, "Histogram");
+            const rr = this.createDataQuantilesRequest(cds, this.page, "Histogram");
             rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
                 [0], cds, null, {
                     reusePage: true, relative: false,
@@ -147,7 +147,7 @@ export class TrellisHistogramView extends TrellisChartView {
                 }));
         } else {
             const cds = [this.xAxisData.description, this.groupByAxisData.description];
-            const rr = this.createDataRangesRequest(cds, this.page, "TrellisHistogram");
+            const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisHistogram");
             rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
                 [0, groupCount], cds, null, {
                     reusePage: true, relative: false,
@@ -175,7 +175,7 @@ export class TrellisHistogramView extends TrellisChartView {
 
     protected exactHistogram(): void {
         const cds = [this.xAxisData.description, this.groupByAxisData.description];
-        const rr = this.createDataRangesRequest(cds, this.page, "TrellisHistogram");
+        const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [this.bucketCount, this.shape.bucketCount], cds, null, {
                 reusePage: true, relative: false,
@@ -215,7 +215,7 @@ export class TrellisHistogramView extends TrellisChartView {
     protected showSecondColumn(colName: DisplayName): void {
         const col = this.schema.findByDisplayName(colName);
         const cds = [this.xAxisData.description, col, this.groupByAxisData.description];
-        const rr = this.createDataRangesRequest(cds, this.page, "Trellis2DHistogram");
+        const rr = this.createDataQuantilesRequest(cds, this.page, "Trellis2DHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [this.bucketCount, 0, this.shape.bucketCount], cds, null, {
                 reusePage: true, relative: false,
@@ -235,7 +235,7 @@ export class TrellisHistogramView extends TrellisChartView {
 
     public refresh(): void {
         const cds = [this.xAxisData.description, this.groupByAxisData.description];
-        const rr = this.createDataRangesRequest(cds, this.page, "TrellisHistogram");
+        const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [this.bucketCount, this.shape.bucketCount], cds, null, {
                 reusePage: true, relative: false,

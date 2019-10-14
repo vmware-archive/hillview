@@ -1,12 +1,9 @@
 package org.hillview.dataStructures;
 
-import org.apache.commons.math3.distribution.LaplaceDistribution;
 import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.Pair;
 import org.hillview.sketches.results.Histogram;
 import org.hillview.utils.Converters;
-
-import java.util.List;
 
 /**
  * Contains methods for adding privacy to a non-private histogram computed over dyadic buckets,
@@ -16,43 +13,19 @@ import java.util.List;
 public class PrivateHistogram extends HistogramPrefixSum implements IJson {
     private double[] confMins;
     private double[] confMaxes;
-    private double epsilon;
+    private final double epsilon;
 
-    public PrivateHistogram(IDyadicDecomposition bucketDescription,
-                            final Histogram histogram, double epsilon, boolean cdf) {
+    public PrivateHistogram(DyadicDecomposition decomposition, final Histogram histogram,
+                            double epsilon, boolean isCdf) {
         super(histogram);
         this.epsilon = epsilon;
         this.confMins  = new double[histogram.getBucketCount()];
         this.confMaxes = new double[histogram.getBucketCount()];
-        this.addDyadicLaplaceNoise(bucketDescription);
-        if (cdf) {
-            this.recomputeCDF(bucketDescription);
+        this.addDyadicLaplaceNoise(decomposition);
+        if (isCdf) {
+            this.recomputeCDF(decomposition);
         }
     }
-
-    /**
-     * Compute noise to add to this bucket using the dyadic decomposition as the PRG seed.
-     * @param bucketIdx: index of the bucket to compute noise for.
-     * @param cdf: If true, computes the noise based on the dyadic decomposition of the interval [0, bucket right leaf]
-     *             rather than [bucket left leaf, bucket right leaf].
-     * Returns the noise and the total variance of the variables used to compute the noise.
-     */
-    private Pair<Double, Double> noiseForBucket(IDyadicDecomposition bucketDescription, int bucketIdx, boolean cdf) {
-        List<Pair<Integer, Integer>> intervals = bucketDescription.bucketDecomposition(bucketIdx, cdf);
-
-        double noise = 0;
-        double variance = 0;
-        int totalLeaves = bucketDescription.getGlobalNumLeaves();
-        double scale = Math.log(totalLeaves / this.epsilon) / Math.log(2);
-        for (Pair<Integer, Integer> x : intervals) {
-            LaplaceDistribution dist = new LaplaceDistribution(0, scale); // TODO: (more) secure PRG
-            dist.reseedRandomGenerator(x.hashCode()); // Each node's noise should be deterministic, based on node's ID
-            noise += dist.sample();
-            variance += 2*(Math.pow(scale, 2));
-        }
-        return new Pair<Double, Double>(noise, variance);
-    }
-
 
     /**
      * Adds noise to CDF and then recomputes.
@@ -61,9 +34,9 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
      * This function uses the dyadic decomposition of each prefix to add the smallest amount of
      * noise for that prefix.
      */
-    private void recomputeCDF(IDyadicDecomposition bucketDescription) {
+    private void recomputeCDF(DyadicDecomposition decomposition) {
         for (int i = 0; i < this.cdfBuckets.length; i++) {
-            Pair<Double, Double> p = this.noiseForBucket(bucketDescription, i, true);
+            Pair<Double, Double> p = decomposition.noiseForBucket(i, this.epsilon, true);
             Converters.checkNull(p.first);
             this.cdfBuckets[i] += p.first;
             if (i > 0) {
@@ -80,14 +53,12 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
      * Each node in the dyadic interval tree is perturbed by an independent noise variable distributed as Laplace(log T / epsilon).
      * The total noise is the sum of the noise variables in the intervals composing the desired interval or bucket.
      */
-    private void addDyadicLaplaceNoise(IDyadicDecomposition bucketDescription) {
+    private void addDyadicLaplaceNoise(DyadicDecomposition decomposition) {
         for (int i = 0; i < this.histogram.buckets.length; i++) {
-            Pair<Double, Double> noise = this.noiseForBucket(bucketDescription, i, false);
+            Pair<Double, Double> noise = decomposition.noiseForBucket(i, this.epsilon, false);
             this.histogram.buckets[i] += Converters.checkNull(noise.first);
-
             // Postprocess so that no buckets are negative
             this.histogram.buckets[i] = Math.max(0, this.histogram.buckets[i]);
-
             // also set confidence intervals for this noise level
             Converters.checkNull(noise.second);
             this.confMins[i] = 2 * Math.sqrt(noise.second);

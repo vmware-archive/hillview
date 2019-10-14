@@ -15,26 +15,14 @@
  * limitations under the License.
  */
 
-package org.hillview.sketches.results;
-
-import org.hillview.dataset.api.IJson;
-
-import java.io.Serializable;
+package org.hillview.utils;
 
 /**
- * This interface is a base class for all sketch results that are
- * used to compute the buckets of a histogram, i.e., various forms of quantiles.
+ * A wrapper for RuntimeException.  This makes it easy for the front-end to display some
+ * exceptions in a nicer way, by looking for this exception.
  */
-public abstract class BucketsInfo implements Serializable, IJson {
-    public long presentCount;
-    public long missingCount;
-
-    protected BucketsInfo() {
-        this.presentCount = 0;
-        this.missingCount = 0;
-    }
-
-    public void addMissing() {
-        this.missingCount++;
+public class HillviewException extends RuntimeException {
+    public HillviewException(String message) {
+        super(message);
     }
 }

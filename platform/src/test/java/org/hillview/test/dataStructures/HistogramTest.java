@@ -65,16 +65,16 @@ public class HistogramTest extends BaseTest {
         final int colSize = 10000;
         DoubleHistogramBuckets buckDes1 = new DoubleHistogramBuckets(0, 100, bucketNum);
         DoubleHistogramBuckets buckDes2 = new DoubleHistogramBuckets(0, 100, bucketNum);
-        Heatmap hm = new Heatmap(buckDes1, buckDes2);
+        Heatmap hm = new Heatmap(bucketNum, bucketNum);
         DoubleArrayColumn col1 = DoubleArrayTest.generateDoubleArray(colSize, 5);
         DoubleArrayColumn col2 = DoubleArrayTest.generateDoubleArray(colSize, 3);
         FullMembershipSet fMap = new FullMembershipSet(colSize);
-        hm.createHeatmap(col1, col2, fMap, 1.0, 0, false);
-        Heatmap hm1 = new Heatmap(buckDes1, buckDes2);
+        hm.createHeatmap(col1, col2, buckDes1, buckDes2, fMap, 1.0, 0, false);
+        Heatmap hm1 = new Heatmap(bucketNum, bucketNum);
         DoubleArrayColumn col3 = DoubleArrayTest.generateDoubleArray(2 * colSize, 100);
         DoubleArrayColumn col4 = DoubleArrayTest.generateDoubleArray(2 * colSize, 100);
         FullMembershipSet fMap1 = new FullMembershipSet(2 * colSize);
-        hm1.createHeatmap(col3, col4, fMap1, 0.1, 0, false);
+        hm1.createHeatmap(col3, col4, buckDes1, buckDes2, fMap1, 0.1, 0, false);
         hm.union(hm1);
     }
 
@@ -100,8 +100,8 @@ public class HistogramTest extends BaseTest {
 
         DoubleHistogramBuckets buckDes1 = new DoubleHistogramBuckets(0, 2, 3);
         DoubleHistogramBuckets buckDes2 = new DoubleHistogramBuckets(0, 1, 2);
-        Heatmap hm = new Heatmap(buckDes1, buckDes2);
-        hm.createHeatmap(col0, col1, new
+        Heatmap hm = new Heatmap(buckDes1.bucketCount, buckDes2.bucketCount);
+        hm.createHeatmap(col0, col1, buckDes1, buckDes2, new
                 FullMembershipSet(col0.sizeInRows()), 1.0, 0, false);
         Histogram h1 = hm.getMissingHistogramD1();
         Histogram h2 = hm.getMissingHistogramD2();

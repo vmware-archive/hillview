@@ -297,7 +297,7 @@ export class HeatmapView extends ChartView {
     // Draw this as a 2-D histogram
     public histogram(): void {
         const cds = [this.xAxisData.description, this.yAxisData.description];
-        const rr = this.createDataRangesRequest(cds, this.page, "2DHistogram");
+        const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
             reusePage: false,
@@ -348,7 +348,7 @@ export class HeatmapView extends ChartView {
         const groupBy = this.schema.findByDisplayName(colName);
         const cds: IColumnDescription[] = [this.xAxisData.description,
                                            this.yAxisData.description, groupBy];
-        const rr = this.createDataRangesRequest(cds, this.page, "TrellisHeatmap");
+        const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisHeatmap");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0, 0], cds, null, {
             reusePage: false, relative: false,
@@ -387,7 +387,7 @@ export class HeatmapView extends ChartView {
     public swapAxes(): void {
         const cds: IColumnDescription[] = [
             this.yAxisData.description, this.xAxisData.description];
-        const rr = this.createDataRangesRequest(cds, this.page, "Heatmap");
+        const rr = this.createDataQuantilesRequest(cds, this.page, "Heatmap");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
             chartKind: "Heatmap",
@@ -399,7 +399,7 @@ export class HeatmapView extends ChartView {
 
     public refresh(): void {
         const cds = [this.xAxisData.description, this.yAxisData.description];
-        const rr = this.createDataRangesRequest(cds, this.page, "Heatmap");
+        const rr = this.createDataQuantilesRequest(cds, this.page, "Heatmap");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [this.xAxisData.bucketCount, this.yAxisData.bucketCount],
             cds, this.page.title, {

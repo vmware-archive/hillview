@@ -20,6 +20,7 @@ package org.hillview.utils;
 import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.Pair;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -41,6 +42,30 @@ public class JsonList<T> implements IJson, List<T> {
 
     protected JsonList(List<T> data) {
         this.data = data;
+    }
+
+    public JsonList(@Nullable T value) {
+        this(1);
+        this.add(value);
+    }
+
+    public JsonList(@Nullable T v1, @Nullable T v2) {
+        this(2);
+        this.add(v1);
+        this.add(v2);
+    }
+
+    public JsonList(@Nullable T v1, @Nullable T v2, @Nullable T v3) {
+        this(3);
+        this.add(v1);
+        this.add(v2);
+        this.add(v3);
+    }
+
+    public JsonList(T[] data) {
+        this(data.length);
+        for (T t : data)
+            this.add(t);
     }
 
     @Override

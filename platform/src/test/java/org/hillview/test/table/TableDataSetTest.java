@@ -125,10 +125,10 @@ public class TableDataSetTest extends BaseTest {
         HillviewServer server1 = new HillviewServer(h1, small);
         try {
             RemoteDataSet<ITable> rds1 = new RemoteDataSet<ITable>(h1);
-            NextKSketch sketch = new NextKSketch(cso, null, 10);
+            NextKSketch sketch = new NextKSketch(cso, null, null, 10);
             NextKList sl = rds1.blockingSketch(sketch);
             Assert.assertNotNull(sl);
-            Assert.assertEquals("Table[1x10]", sl.table.toString());
+            Assert.assertEquals("Table[1x10]", sl.rows.toString());
         } finally {
             server1.shutdown();
         }
@@ -144,10 +144,10 @@ public class TableDataSetTest extends BaseTest {
         HillviewServer server1 = new HillviewServer(h1, small);
         try {
             RemoteDataSet<ITable> rds1 = new RemoteDataSet<ITable>(h1);
-            NextKSketch sketch = new NextKSketch(cso, null, 10);
+            NextKSketch sketch = new NextKSketch(cso, null, null, 10);
             NextKList sl = rds1.blockingSketch(sketch);
             Assert.assertNotNull(sl);
-            Assert.assertEquals("Table[1x0]", sl.table.toString());
+            Assert.assertEquals("Table[1x0]", sl.rows.toString());
         } finally {
             server1.shutdown();
         }
@@ -176,10 +176,10 @@ public class TableDataSetTest extends BaseTest {
             two.add(rds1);
             two.add(rds2);
             ParallelDataSet<ITable> top = new ParallelDataSet<ITable>(two);
-            NextKSketch sketch = new NextKSketch(cso, null, 10);
+            NextKSketch sketch = new NextKSketch(cso, null, null, 10);
             NextKList sl = top.blockingSketch(sketch);
             Assert.assertNotNull(sl);
-            Assert.assertEquals("Table[1x10]", sl.table.toString());
+            Assert.assertEquals("Table[1x10]", sl.rows.toString());
         } finally {
             server1.shutdown();
             server2.shutdown();

@@ -74,7 +74,7 @@ public final class TableTarget extends RpcTarget {
     }
 
     @Nullable
-    private static RowSnapshot asRowSnapshot(
+    static RowSnapshot asRowSnapshot(
             @Nullable Object[] data, RecordOrder order, @Nullable String[] columnsNoValue) {
         if (data == null) return null;
         Schema schema = order.toSchema();
@@ -86,7 +86,7 @@ public final class TableTarget extends RpcTarget {
         NextKArgs nextKArgs = request.parseArgs(NextKArgs.class);
         RowSnapshot rs = TableTarget.asRowSnapshot(
                 nextKArgs.firstRow, nextKArgs.order, nextKArgs.columnsNoValue);
-        NextKSketch nk = new NextKSketch(nextKArgs.order, rs, nextKArgs.rowsOnScreen);
+        NextKSketch nk = new NextKSketch(nextKArgs.order, null, rs, nextKArgs.rowsOnScreen);
         this.runSketch(this.table, nk, request, context);
     }
 
@@ -191,23 +191,20 @@ public final class TableTarget extends RpcTarget {
 
     // This function manipulates arrays to make it more homogeneous with the other two.
     @HillviewRpc
-    public void getDataRanges1D(RpcRequest request, RpcRequestContext context) {
-        RangeArgs[] args = request.parseArgs(RangeArgs[].class);
+    public void getDataQuantiles1D(RpcRequest request, RpcRequestContext context) {
+        QuantilesArgs[] args = request.parseArgs(QuantilesArgs[].class);
         assert args.length == 1;
         ISketch<ITable, BucketsInfo> sk = args[0].getSketch();
         BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> post0 = args[0].getPostProcessing();
-        BiFunction<BucketsInfo, HillviewComputation, JsonList<BucketsInfo>> post = (e, c) -> {
-            JsonList<BucketsInfo> result = new JsonList<BucketsInfo>(1);
-            result.add(post0.apply(e, c));
-            return result;
-        };
+        BiFunction<BucketsInfo, HillviewComputation, JsonList<BucketsInfo>> post =
+                (e, c) -> new JsonList<BucketsInfo>(post0.apply(e, c));
         this.runCompleteSketch(this.table, sk, post, request, context);
     }
 
     @SuppressWarnings("Duplicates")
     @HillviewRpc
-    public void getDataRanges2D(RpcRequest request, RpcRequestContext context) {
-        RangeArgs[] args = request.parseArgs(RangeArgs[].class);
+    public void getDataQuantiles2D(RpcRequest request, RpcRequestContext context) {
+        QuantilesArgs[] args = request.parseArgs(QuantilesArgs[].class);
         assert args.length == 2;
         ISketch<ITable, BucketsInfo> sk0 = args[0].getSketch();
         ISketch<ITable, BucketsInfo> sk1 = args[1].getSketch();
@@ -216,19 +213,14 @@ public final class TableTarget extends RpcTarget {
         ConcurrentSketch<ITable, BucketsInfo, BucketsInfo> csk =
                 new ConcurrentSketch<ITable, BucketsInfo, BucketsInfo>(sk0, sk1);
         BiFunction<Pair<BucketsInfo, BucketsInfo>, HillviewComputation, JsonList<BucketsInfo>> post =
-                (e, c) -> {
-            JsonList<BucketsInfo> result = new JsonList<BucketsInfo>(2);
-            result.add(post0.apply(e.first, c));
-            result.add(post1.apply(e.second, c));
-            return result;
-        };
+                (e, c) -> new JsonList<BucketsInfo>(post0.apply(e.first, c), post1.apply(e.second, c));
         this.runCompleteSketch(this.table, csk, post, request, context);
     }
 
     @SuppressWarnings("Duplicates")
     @HillviewRpc
-    public void getDataRanges3D(RpcRequest request, RpcRequestContext context) {
-        RangeArgs[] args = request.parseArgs(RangeArgs[].class);
+    public void getDataQuantiles3D(RpcRequest request, RpcRequestContext context) {
+        QuantilesArgs[] args = request.parseArgs(QuantilesArgs[].class);
         assert args.length == 3;
         ISketch<ITable, BucketsInfo> sk0 = args[0].getSketch();
         ISketch<ITable, BucketsInfo> sk1 = args[1].getSketch();
@@ -240,13 +232,10 @@ public final class TableTarget extends RpcTarget {
                 new TripleSketch<ITable, BucketsInfo, BucketsInfo, BucketsInfo>(sk0, sk1, sk2);
         BiFunction<Triple<BucketsInfo, BucketsInfo, BucketsInfo>, HillviewComputation,
                 JsonList<BucketsInfo>> post =
-                (e, c) -> {
-                    JsonList<BucketsInfo> result = new JsonList<BucketsInfo>(3);
-                    result.add(post0.apply(e.first, c));
-                    result.add(post1.apply(e.second, c));
-                    result.add(post2.apply(e.third, c));
-                    return result;
-                };
+                (e, c) -> new JsonList<BucketsInfo>(
+                            post0.apply(e.first, c),
+                            post1.apply(e.second, c),
+                            post2.apply(e.third, c));
         this.runCompleteSketch(this.table, csk, post, request, context);
     }
 
@@ -254,8 +243,8 @@ public final class TableTarget extends RpcTarget {
     public void histogram(RpcRequest request, RpcRequestContext context) {
         HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
         assert info.length == 2;
-        HistogramSketch sk = info[0].getSketch(); // Histogram
-        HistogramSketch cdf = info[1].getSketch(); // CDF: also histogram but at finer granularity
+        HistogramSketch sk = info[0].getSketch(null); // Histogram
+        HistogramSketch cdf = info[1].getSketch(null); // CDF: also histogram but at finer granularity
         ConcurrentSketch<ITable, Histogram, Histogram> csk =
                 new ConcurrentSketch<ITable, Histogram, Histogram>(sk, cdf);
         this.runSketchPostprocessing(
@@ -287,7 +276,7 @@ public final class TableTarget extends RpcTarget {
                 info[0].cd.name,
                 info[1].cd.name,
                 info[0].samplingRate, info[0].seed);
-        HistogramSketch cdf = info[2].getSketch();
+        HistogramSketch cdf = info[2].getSketch(null);
         ConcurrentSketch<ITable, Heatmap, Histogram> csk =
                 new ConcurrentSketch<ITable, Heatmap, Histogram>(sk, cdf);
         this.runSketchPostprocessing(this.table, csk,
@@ -500,14 +489,6 @@ public final class TableTarget extends RpcTarget {
             }
         };
         RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(info.controlPointsId), true, observer);
-    }
-
-    static class QuantileInfo {
-        int precision;
-        double position;
-        long tableSize;
-        long seed;
-        RecordOrder order = new RecordOrder();
     }
 
     @HillviewRpc

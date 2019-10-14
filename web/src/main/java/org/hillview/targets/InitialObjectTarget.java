@@ -18,7 +18,7 @@
 package org.hillview.targets;
 
 import org.hillview.*;
-import org.hillview.dataStructures.PrivacySchema;
+import org.hillview.table.PrivacySchema;
 import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.*;
 import org.hillview.dataset.remoting.HillviewServer;

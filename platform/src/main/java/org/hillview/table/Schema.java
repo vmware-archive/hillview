@@ -100,6 +100,8 @@ public final class Schema implements Serializable, IJson {
         }
     }
 
+    public static Schema empty = new Schema();
+
     public Schema() {
         this.columns = new LinkedHashMap<String, ColumnDescription>();
         this.cachedColumnNames = null;
@@ -107,6 +109,14 @@ public final class Schema implements Serializable, IJson {
         this.cachedDescriptions = null;
     }
 
+    /**
+     * This method mutates the schema.  It should only be used
+     * when there is a single reference to the schema - since schemas
+     * are supposed to be immutable.  This should be essentially
+     * only used during schema construction, before any other
+     * references are available.
+     * @param desc  Column to append to the schema.
+     */
     public void append(final ColumnDescription desc) {
         if (this.cachedColumnNames != null)
             throw new RuntimeException("Mutating sealed schema");
@@ -138,7 +148,7 @@ public final class Schema implements Serializable, IJson {
     /**
      * This method is tricky: schemas are supposed to be immutable,
      * but this method mutates the schema.  This must be thread-safe.
-     * We rely on the users of the cached data in properly calling seal().
+     * We rely on the users of the cached data to properly call seal().
      */
     private synchronized void seal() {
         if (this.cachedColumnNames != null)

@@ -273,7 +273,7 @@ export class Histogram2DView extends HistogramViewBase {
             this.xAxisData.description,
             this.yData.description,
             groupBy];
-        const rr = this.createDataRangesRequest(cds, this.page, "Trellis2DHistogram");
+        const rr = this.createDataQuantilesRequest(cds, this.page, "Trellis2DHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0, 0], cds, null, {
             reusePage: false, relative: this.relative,
@@ -293,7 +293,7 @@ export class Histogram2DView extends HistogramViewBase {
 
     public doHeatmap(): void {
         const cds = [this.xAxisData.description, this.yData.description];
-        const rr = this.createDataRangesRequest(cds, this.page, "Heatmap");
+        const rr = this.createDataQuantilesRequest(cds, this.page, "Heatmap");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
             reusePage: false,
@@ -353,7 +353,7 @@ export class Histogram2DView extends HistogramViewBase {
         if (this == null)
             return;
         const cds = [this.yData.description, this.xAxisData.description];
-        const rr = this.createDataRangesRequest(cds, this.page, "2DHistogram");
+        const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
             reusePage: true, relative: this.relative,
@@ -365,7 +365,7 @@ export class Histogram2DView extends HistogramViewBase {
         if (this == null)
             return;
         const cds = [this.xAxisData.description, this.yData.description];
-        const rr = this.createDataRangesRequest(cds, this.page, "2DHistogram");
+        const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [this.xPoints, this.yPoints], cds, this.page.title, {
             reusePage: true,
@@ -377,7 +377,7 @@ export class Histogram2DView extends HistogramViewBase {
 
     public changeBuckets(bucketCount: number): void {
         const cds = [this.xAxisData.description, this.yData.description];
-        const rr = this.createDataRangesRequest(cds, this.page, "2DHistogram");
+        const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [bucketCount, this.yPoints], cds, null, {
             reusePage: true,
@@ -427,7 +427,7 @@ export class Histogram2DView extends HistogramViewBase {
 
     public refresh(): void {
         const cds = [this.xAxisData.description, this.yData.description];
-        const rr = this.createDataRangesRequest(cds, this.page, "2DHistogram");
+        const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [this.xPoints, this.yPoints], cds, null, {
             reusePage: true, relative: this.relative,

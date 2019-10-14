@@ -15,16 +15,18 @@
  * limitations under the License.
  */
 
-package org.hillview.dataStructures;
+package org.hillview.table;
 
 import org.hillview.dataset.api.IJson;
-import org.hillview.table.columns.ColumnPrivacyMetadata;
+import org.hillview.table.columns.ColumnQuantization;
 
+import javax.annotation.Nullable;
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 /**
  * PrivacySchema contains additional metadata for columns that are visualized using the binary mechanism for
@@ -33,43 +35,62 @@ import java.util.HashMap;
  * Metadata for a multi-column histogram is indexed by the key corresponding to the concatenation of the column names,
  * in alphabetical order, with "+" as the delimiter.
  * */
-public class PrivacySchema implements IJson {
-    private HashMap<String, ColumnPrivacyMetadata> metadata;
+public class PrivacySchema implements IJson, Serializable {
+    final public QuantizationSchema quantization;
+    // We use a LinkedHashMap for deterministic serialization
+    final private LinkedHashMap<String, Double> epsilons;
 
-    public PrivacySchema(HashMap<String, ColumnPrivacyMetadata> metadata) {
-        this.metadata = metadata;
+    public PrivacySchema(QuantizationSchema quantization) {
+        this.quantization = quantization;
+        this.epsilons = new LinkedHashMap<String, Double>();
     }
 
-    public ColumnPrivacyMetadata get(String colName) {
-        return metadata.get(colName);
+    @Nullable
+    public ColumnQuantization quantization(String colName) {
+        return this.quantization.get(colName);
     }
 
-    public ColumnPrivacyMetadata get(String[] colNames) {
+    /**
+     * Get the epsilon corresponding to a set of columns.
+     * @param colNames  Columns that we need the epsilon for.
+     * @return          epsilon exploring the joint columns.
+     *                  0 if there is no epsilon for this group of columns.
+     */
+    public double epsilon(String[] colNames) {
         Arrays.sort(colNames);
-        StringBuilder keyBuilder = new StringBuilder();
-        for (int i = 0; i < colNames.length - 1; i++) {
-            keyBuilder.append(colNames[i]);
-            keyBuilder.append("+");
-        }
-        keyBuilder.append(colNames[colNames.length - 1]);
-        String key = keyBuilder.toString();
-        return metadata.get(key);
+        String key = String.join("+", colNames);
+        return this.epsilon(key);
+    }
+
+    public double epsilon(String colName) {
+        Double epsilon = this.epsilons.get(colName);
+        if (epsilon == null)
+            return 0.0;
+        return epsilon;
+    }
+
+    public void setEpsilon(String colName, double epsilon) {
+        this.epsilons.put(colName, epsilon);
+    }
+
+    public void setEpsilon(String[] colNames, double epsilon) {
+        Arrays.sort(colNames);
+        String key = String.join("+", colNames);
+        this.setEpsilon(key, epsilon);
     }
 
     public static PrivacySchema loadFromString(String jsonString) {
         return IJson.gsonInstance.fromJson(jsonString, PrivacySchema.class);
     }
 
-    /* One metadata object per column. */
     public static PrivacySchema loadFromFile(String metadataFname) {
         String contents = "";
         try {
             byte[] encoded = Files.readAllBytes(Paths.get(metadataFname));
             contents = new String(encoded, StandardCharsets.US_ASCII);
-        } catch ( java.io.IOException e ) {
+        } catch (java.io.IOException e) {
             throw new RuntimeException(e);
         }
-
         return loadFromString(contents);
     }
 }

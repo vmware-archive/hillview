@@ -21,43 +21,63 @@ import org.hillview.sketches.results.Heatmap;
 import org.hillview.sketches.results.IHistogramBuckets;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
+import org.hillview.table.columns.ColumnQuantization;
+import org.hillview.table.columns.QuantizedColumn;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 
 public class HeatmapSketch implements ISketch<ITable, Heatmap> {
-    private final IHistogramBuckets bucketDescD1;
-    private final IHistogramBuckets bucketDescD2;
+    private final IHistogramBuckets bucketsD0;
+    private final IHistogramBuckets bucketsD1;
     private final String col0;
     private final String col1;
-    private final double rate;
+    private final double samplingRate;
     private final long seed;
+    @Nullable
+    private final ColumnQuantization q0;
+    @Nullable
+    private final ColumnQuantization q1;
+
+    public HeatmapSketch(IHistogramBuckets buckets0, IHistogramBuckets buckets1,
+                         String col0, String col1,
+                         double samplingRate, long seed,
+                         @Nullable ColumnQuantization q0, @Nullable ColumnQuantization q1) {
+        this.bucketsD0 = buckets0;
+        this.bucketsD1 = buckets1;
+        this.col0 = col0;
+        this.col1 = col1;
+        this.samplingRate = samplingRate;
+        this.seed = seed;
+        this.q0 = q0;
+        this.q1 = q1;
+    }
 
     public HeatmapSketch(IHistogramBuckets bucketDesc1, IHistogramBuckets bucketDesc2,
                          String col0, String col1,
-                         double rate, long seed) {
-        this.bucketDescD1 = bucketDesc1;
-        this.bucketDescD2 = bucketDesc2;
-        this.col0 = col0;
-        this.col1 = col1;
-        this.rate = rate;
-        this.seed = seed;
+                         double samplingRate, long seed) {
+        this(bucketDesc1, bucketDesc2, col0, col1, samplingRate, seed, null, null);
     }
 
     @Override
     public Heatmap create(@Nullable final ITable data) {
         Heatmap result = this.getZero();
         Converters.checkNull(data);
+        Converters.checkNull(result);
         IColumn c0  = data.getLoadedColumn(this.col0);
         IColumn c1  = data.getLoadedColumn(this.col1);
-        Converters.checkNull(result).createHeatmap(
-                c0, c1, data.getMembershipSet(), this.rate, this.seed, false);
+        if (this.q0 != null)
+            c0 = new QuantizedColumn(c0, this.q0);
+        if (this.q1 != null)
+            c1 = new QuantizedColumn(c1, this.q1);
+        result.createHeatmap(c0, c1, this.bucketsD0, this.bucketsD1,
+                data.getMembershipSet(), this.samplingRate, this.seed, false);
         return result;
     }
 
     @Override
     public Heatmap zero() {
-        return new Heatmap(this.bucketDescD1, this.bucketDescD2);
+        return new Heatmap(this.bucketsD0.getBucketCount(), this.bucketsD1.getBucketCount());
     }
 
     @Override

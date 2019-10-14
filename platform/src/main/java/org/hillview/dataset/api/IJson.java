@@ -18,9 +18,9 @@
 package org.hillview.dataset.api;
 
 import com.google.gson.*;
-import org.hillview.table.columns.ColumnPrivacyMetadata;
-import org.hillview.table.columns.DoubleColumnPrivacyMetadata;
-import org.hillview.table.columns.StringColumnPrivacyMetadata;
+import org.hillview.table.columns.ColumnQuantization;
+import org.hillview.table.columns.DoubleColumnQuantization;
+import org.hillview.table.columns.StringColumnQuantization;
 import org.hillview.utils.HostList;
 import org.hillview.sketches.results.NextKList;
 import org.hillview.table.Schema;
@@ -68,10 +68,10 @@ public interface IJson extends Serializable {
             .registerTypeAdapter(HostAndPort.class, new HostList.HostAndPortSerializer())
             .registerTypeAdapter(HostAndPort.class, new HostList.HostAndPortDeserializer())
             .registerTypeAdapterFactory(
-                    RuntimeTypeAdapterFactory.of(ColumnPrivacyMetadata.class)
-                            .registerSubtype(ColumnPrivacyMetadata.class)
-                            .registerSubtype(DoubleColumnPrivacyMetadata.class)
-                            .registerSubtype(StringColumnPrivacyMetadata.class))
+                    RuntimeTypeAdapterFactory.of(ColumnQuantization.class)
+                            .registerSubtype(ColumnQuantization.class)
+                            .registerSubtype(DoubleColumnQuantization.class)
+                            .registerSubtype(StringColumnQuantization.class))
             ;
 
     Gson gsonInstance = builder.serializeNulls().create();

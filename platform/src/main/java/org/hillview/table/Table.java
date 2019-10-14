@@ -43,7 +43,7 @@ public class Table extends BaseTable {
      * A loader that can be invoked to load columns that are lazily loaded.
      */
     @Nullable
-    private final IColumnLoader columnLoader;
+    protected final IColumnLoader columnLoader;
     /**
      * Path to the local (worker-resident) file that was used to load this table.
      */

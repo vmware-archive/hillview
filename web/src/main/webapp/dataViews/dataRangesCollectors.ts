@@ -17,7 +17,7 @@
 
 import {OnCompleteReceiver} from "../rpc";
 import {
-    DataRange,
+    BucketsInfo,
     HistogramArgs,
     IColumnDescription,
     kindIsString,
@@ -141,11 +141,11 @@ export class TrellisLayoutComputation {
  * Waits for 2 or 3 column stats to be received and then
  * initiates a 2D histogram, heatmap, or Trellis plot rendering.
  */
-export class DataRangesReceiver extends OnCompleteReceiver<DataRange[]> {
+export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
     constructor(
         protected originator: TableTargetAPI,
         page: FullPage,
-        operation: ICancellable<DataRange[]>,
+        operation: ICancellable<BucketsInfo[]>,
         protected schema: SchemaClass,
         protected bucketCounts: number[], // if 0 we get to choose
         protected cds: IColumnDescription[],
@@ -172,25 +172,25 @@ export class DataRangesReceiver extends OnCompleteReceiver<DataRange[]> {
      */
     public static computeHistogramArgs(
         cd: IColumnDescription,
-        range: DataRange,
+        range: BucketsInfo,
         bucketCount: number,
         exact: boolean,
         chartSize: Size): HistogramArgs {
         if (kindIsString(cd.kind)) {
-            const cdfBucketCount = range.leftBoundaries.length;
+            const cdfBucketCount = range.stringQuantiles.length;
             let samplingRate = DataRangesReceiver.samplingRate(
                 cdfBucketCount, range.presentCount, chartSize);
             if (exact)
                 samplingRate = 1.0;
-            let bounds = range.leftBoundaries;
+            let bounds = range.stringQuantiles;
             if (bucketCount !== 0)
-                bounds = periodicSamples(range.leftBoundaries, bucketCount);
+                bounds = periodicSamples(range.stringQuantiles, bucketCount);
             const args: HistogramArgs = {
                 cd: cd,
                 seed: Seed.instance.getSampled(samplingRate),
                 samplingRate: samplingRate,
                 leftBoundaries: bounds,
-                bucketCount: bounds.length
+                bucketCount: bounds.length,
             };
             return args;
         } else {
@@ -215,7 +215,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<DataRange[]> {
                 max: range.max + adjust,
                 samplingRate: samplingRate,
                 seed: Seed.instance.getSampled(samplingRate),
-                bucketCount: cdfCount
+                bucketCount: cdfCount,
             };
             return args;
         }
@@ -230,7 +230,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<DataRange[]> {
         return tlc.getShape(windows);
     }
 
-    public run(ranges: DataRange[]): void {
+    public run(ranges: BucketsInfo[]): void {
         for (const range of ranges) {
             if (range == null) {
                 console.log("Null range received");
@@ -258,7 +258,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<DataRange[]> {
                     Math.floor(chartSize.width / Resolution.minTrellisWindowSize) *
                     Math.floor(chartSize.height / Resolution.minTrellisWindowSize);
                 if (kindIsString(this.cds[groupByIndex].kind))
-                    windows = Math.min(maxWindows, ranges[groupByIndex].leftBoundaries.length);
+                    windows = Math.min(maxWindows, ranges[groupByIndex].stringQuantiles.length);
                 else if (this.cds[groupByIndex].kind === "Integer")
                     windows = Math.min(maxWindows,
                         ranges[groupByIndex].max - ranges[groupByIndex].min + 1);
@@ -499,7 +499,7 @@ export class FilterReceiver extends BaseReceiver {
 
     public run(): void {
         super.run();
-        const rr = this.remoteObject.createDataRangesRequest(this.cds, this.page, this.options.chartKind);
+        const rr = this.remoteObject.createDataQuantilesRequest(this.cds, this.page, this.options.chartKind);
         rr.invoke(new DataRangesReceiver(this.remoteObject, this.page, rr, this.schema,
                   this.bucketCounts, this.cds, this.title, this.options));
     }

@@ -243,10 +243,10 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
             summary.appendSafeString(SpecialChars.approx);
         summary = summary.appendSafeString(formatNumber(this.rowCount) + " points");
         if (this.xAxisData != null &&
-            this.xAxisData.range.leftBoundaries != null &&
+            this.xAxisData.range.stringQuantiles != null &&
             this.xAxisData.range.allStringsKnown)
             summary = summary.appendSafeString(
-                ", " + this.xAxisData.range.leftBoundaries.length + " distinct values");
+                ", " + this.xAxisData.range.stringQuantiles.length + " distinct values");
         summary = summary.appendSafeString(
             ", " + String(this.bucketCount) + " buckets");
         if (this.samplingRate < 1.0)
@@ -263,7 +263,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
     protected showTrellis(colName: DisplayName): void {
         const groupBy = this.schema.findByDisplayName(colName);
         const cds: IColumnDescription[] = [this.xAxisData.description, groupBy];
-        const rr = this.createDataRangesRequest(cds, this.page, "TrellisHistogram");
+        const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
             reusePage: false, relative: false,
@@ -330,7 +330,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
     private showSecondColumn(colName: DisplayName): void {
         const oc = this.schema.findByDisplayName(colName);
         const cds: IColumnDescription[] = [this.xAxisData.description, oc];
-        const rr = this.createDataRangesRequest(cds, this.page, "2DHistogram");
+        const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [this.histogram.buckets.length, 0], cds, null, {
             reusePage: false,
@@ -341,7 +341,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
     }
 
     public changeBuckets(bucketCount: number): void {
-        const rr = this.createDataRangesRequest([this.xAxisData.description],
+        const rr = this.createDataQuantilesRequest([this.xAxisData.description],
             this.page, "Histogram");
         const exact = this.isPrivate() || this.samplingRate >= 1;
         rr.invoke(new DataRangesReceiver(
@@ -371,7 +371,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
 
     public histogram1D(title: PageTitle, cd: IColumnDescription,
                        bucketCount: number, options: HistogramOptions): void {
-        const rr = this.createDataRangesRequest([cd], this.page, "Histogram");
+        const rr = this.createDataQuantilesRequest([cd], this.page, "Histogram");
         rr.invoke(new DataRangesReceiver(
             this, this.page, rr, this.schema, [bucketCount], [cd], title,
             { chartKind: "Histogram", relative: false, reusePage: options.reusePage, exact: options.exact }));

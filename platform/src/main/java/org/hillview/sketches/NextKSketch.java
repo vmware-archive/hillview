@@ -24,10 +24,7 @@ import org.hillview.dataset.api.ISketch;
 import org.hillview.sketches.results.IntTopK;
 import org.hillview.sketches.results.IntTreeTopK;
 import org.hillview.sketches.results.NextKList;
-import org.hillview.table.ArrayRowOrder;
-import org.hillview.table.RecordOrder;
-import org.hillview.table.Schema;
-import org.hillview.table.SmallTable;
+import org.hillview.table.*;
 import org.hillview.table.api.*;
 import org.hillview.table.columns.ObjectArrayColumn;
 import org.hillview.table.rows.RowSnapshot;
@@ -46,23 +43,35 @@ import java.util.List;
 public class NextKSketch implements ISketch<ITable, NextKList> {
     private final RecordOrder recordOrder;
     @Nullable
+    private final AggregateDescription[] aggregates;
+    @Nullable
     private final RowSnapshot topRow;
+    @Nullable
+    private final QuantizationSchema quantizationSchema;
     private final int maxSize;
 
     /**
      * @param recordOrder The ordering on rows of the table
      * @param topRow The row to start from, set to null if we want to start from the top row.
      * @param maxSize The parameter K in NextK.
+     * @param aggregates The columns to compute aggregates on.
+     * @param quantizationSchema If not null used to access the data in a differentially-private manner.
      */
-    public NextKSketch(RecordOrder recordOrder, @Nullable RowSnapshot topRow, int maxSize,
-                       boolean toHash) {
+    public NextKSketch(RecordOrder recordOrder,
+                       @Nullable AggregateDescription[] aggregates,
+                       @Nullable RowSnapshot topRow, int maxSize,
+                       @Nullable QuantizationSchema quantizationSchema) {
         this.recordOrder = recordOrder;
+        this.aggregates = aggregates;
         this.topRow = topRow;
         this.maxSize = maxSize;
+        this.quantizationSchema = quantizationSchema;
     }
 
-    public NextKSketch(RecordOrder recordOrder, @Nullable RowSnapshot topRow, int maxSize) {
-        this(recordOrder, topRow, maxSize, true);
+    public NextKSketch(RecordOrder recordOrder,
+                       @Nullable AggregateDescription[] aggregates,
+                       @Nullable RowSnapshot topRow, int maxSize) {
+        this(recordOrder, aggregates, topRow, maxSize, null);
     }
 
     /**
@@ -72,7 +81,10 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
      * @return A NextKList.
      */
     public NextKList create(@Nullable ITable data) {
-        IndexComparator comp = this.recordOrder.getIndexComparator(Converters.checkNull(data));
+        Converters.checkNull(data);
+        if (this.quantizationSchema != null)
+            data = new QuantizedTable(data, this.quantizationSchema);
+        IndexComparator comp = this.recordOrder.getIndexComparator(data);
         IntTopK topK = new IntTreeTopK(this.maxSize, comp);
         IRowIterator rowIt = data.getRowIterator();
         int position = 0;
@@ -91,7 +103,7 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
         SmallTable topKRows = data.compress(this.recordOrder.toSchema(), rowOrder);
         IntList count = new IntArrayList(topKList.size());
         count.addAll(topKList.values());
-        return new NextKList(topKRows, count, position, data.getNumOfRows());
+        return new NextKList(topKRows, null, count, position, data.getNumOfRows());
     }
 
     /**
@@ -135,26 +147,26 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
     public NextKList add(@Nullable NextKList left, @Nullable NextKList right) {
         Converters.checkNull(left);
         Converters.checkNull(right);
-        if (!left.table.getSchema().equals(right.table.getSchema()))
+        if (!left.rows.getSchema().equals(right.rows.getSchema()))
             throw new RuntimeException("The schemas do not match.");
-        int width = left.table.getSchema().getColumnCount();
+        int width = left.rows.getSchema().getColumnCount();
         List<IColumn> mergedCol = new ArrayList<IColumn>(width);
-        IntList mergeOrder = this.recordOrder.getIntMergeOrder(left.table, right.table);
-        for (String colName : left.table.getSchema().getColumnNames()) {
-            IColumn newCol = ObjectArrayColumn.mergeColumns(left.table.getColumn(colName),
-                    right.table.getColumn(colName), mergeOrder, this.maxSize);
+        IntList mergeOrder = this.recordOrder.getIntMergeOrder(left.rows, right.rows);
+        for (String colName : left.rows.getSchema().getColumnNames()) {
+            IColumn newCol = ObjectArrayColumn.mergeColumns(left.rows.getColumn(colName),
+                    right.rows.getColumn(colName), mergeOrder, this.maxSize);
             mergedCol.add(newCol);
         }
         IntList mergedCounts = this.mergeCounts(left.count, right.count, mergeOrder);
         final SmallTable mergedTable = new SmallTable(mergedCol);
-        return new NextKList(mergedTable, mergedCounts,
+        return new NextKList(mergedTable, null, mergedCounts,
                 left.startPosition + right.startPosition,
                 left.rowsScanned + right.rowsScanned);
     }
 
     @Override
     public NextKList zero() {
-        return new NextKList(this.recordOrder.toSchema());
+        return new NextKList(this.recordOrder.toSchema(), this.aggregates);
     }
 
     @Override

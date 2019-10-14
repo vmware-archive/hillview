@@ -21,19 +21,21 @@ import org.hillview.utils.JsonList;
 import javax.annotation.Nullable;
 
 /**
- * Represents a set of strings destined to be used as the left bucket boundaries
- * for a string histogram.
+ * Represents a set of strings that are quantiles from a sorted set of distinct strings.
  */
-public class StringBucketLeftBoundaries extends BucketsInfo {
-    public final JsonList<String> leftBoundaries;
+public class StringQuantiles extends BucketsInfo {
+    public final JsonList<String> stringQuantiles;
     @Nullable
     public final String           maxBoundary;
+    /**
+     * True if the leftBoundaries contains all the strings in the underlying data set.
+     */
     public final boolean          allStringsKnown;
 
-    public StringBucketLeftBoundaries(
-            JsonList<String> boundaries, @Nullable String max, boolean allStringsKnown,
+    public StringQuantiles(
+            JsonList<String> quantiles, @Nullable String max, boolean allStringsKnown,
             long presentCount, long missingCount) {
-        this.leftBoundaries = boundaries;
+        this.stringQuantiles = quantiles;
         this.maxBoundary = max;
         this.allStringsKnown = allStringsKnown;
         this.presentCount = presentCount;
