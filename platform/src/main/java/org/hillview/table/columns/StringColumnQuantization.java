@@ -51,7 +51,7 @@ public class StringColumnQuantization extends ColumnQuantization {
     @Nullable
     public String roundDown(@Nullable String value) {
         if (value == null) return null;
-        if (value.compareTo(this.globalMax) > 0)
+        if (value.compareTo(this.globalMax) >= 0)
             return this.globalMax;
         if (value.compareTo(this.leftBoundaries[0]) < 0)
             throw new RuntimeException("Value smaller than the range min: " +
@@ -76,7 +76,7 @@ public class StringColumnQuantization extends ColumnQuantization {
     }
 
     @Override
-    public int getGlobalNumLeaves() {
+    public int getIntervalCount() {
         return this.leftBoundaries.length;
     }
 
@@ -84,6 +84,15 @@ public class StringColumnQuantization extends ColumnQuantization {
     public BucketsInfo getQuantiles(int bucketCount) {
         return new StringQuantiles(
                 new JsonList<String>(this.leftBoundaries), this.globalMax, true, -1, -1);
+    }
+
+    public int bucketIndex(String value) {
+        if (this.outOfRange(value))
+            return -1;
+        int index = Arrays.binarySearch(leftBoundaries, value);
+        if (index < 0)
+            index = -index - 2;
+        return index;
     }
 
     public StringColumnQuantization restrict(String min, String max) {

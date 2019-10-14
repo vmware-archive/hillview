@@ -86,4 +86,8 @@ public abstract class ExplicitHistogramBuckets<T extends Comparable<T>>
 
     @Override
     public int getBucketCount() { return this.bucketCount; }
+
+    public T leftMargin(int bucketIndex) {
+        return this.leftBoundaries[bucketIndex];
+    }
 }

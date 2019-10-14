@@ -66,7 +66,7 @@ public class HistogramRequestInfo {
         return new HistogramSketch(buckets, this.cd.name, this.samplingRate, this.seed, quantization);
     }
 
-    public IDyadicDecomposition getDecomposition(ColumnQuantization quantization) {
+    public DyadicDecomposition getDecomposition(ColumnQuantization quantization) {
         IHistogramBuckets buckets = this.getBuckets(quantization);
         if (cd.kind.isString()) {
             return new StringDyadicDecomposition(

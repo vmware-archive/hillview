@@ -25,7 +25,12 @@ import java.io.Serializable;
 
 /**
  * This class is used to describe how values used in a column are quantized
- * when performing computations.  The quantization is used when computing
+ * when performing computations.  A quantized column has a data range, a sorting order
+ * (we assume string comparison order for strings), and
+ * a finite number of disjoint buckets that cover the range.  Each actual value belongs to one
+ * bucket.
+ *
+ * The quantization is used when computing
  * differentially-private views over data synopses.  Quantization involves
  * placing the value into one of a finite number of sorted buckets.
  */
@@ -62,6 +67,20 @@ public abstract class ColumnQuantization implements IJson, Serializable {
     }
 
     /**
+     * Index of the bucket that contains this value.
+     * @param value  A numeric value.
+     * @return       The bucket index, or -1 if the value is out of range.
+     */
+    public int bucketIndex(double value) { throw new UnsupportedOperationException(); }
+
+    /**
+     * Index of the bucket that contains this value.
+     * @param value  A string value.
+     * @return       The bucket index or -1 if the value is out of range.
+     */
+    public int bucketIndex(String value) { throw new UnsupportedOperationException(); }
+
+    /**
      * Check if a value is too large or too small.
      * @param value  Value to check
      * @return       True if the value is bigger than the range maximum or smaller than
@@ -71,10 +90,7 @@ public abstract class ColumnQuantization implements IJson, Serializable {
         throw new UnsupportedOperationException();
     }
 
-    /**
-     * Total number of leaves in the quantization.
-     */
-    public abstract int getGlobalNumLeaves();
+    public abstract int getIntervalCount();
 
     /**
      * Assuming we want to compute a histogram on bucketCount buckets, what are the

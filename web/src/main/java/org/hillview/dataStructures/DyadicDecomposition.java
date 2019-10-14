@@ -17,8 +17,14 @@
 
 package org.hillview.dataStructures;
 
-import org.hillview.utils.Converters;
-import javax.annotation.Nullable;
+import org.apache.commons.math3.distribution.LaplaceDistribution;
+import org.hillview.dataset.api.Pair;
+import org.hillview.sketches.results.IHistogramBuckets;
+import org.hillview.table.columns.ColumnQuantization;
+import org.hillview.utils.Utilities;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * This class is intended for use with the binary mechanism for differential privacy
@@ -27,131 +33,100 @@ import javax.annotation.Nullable;
  * in the private range query tree). Since bucket boundaries may not fall on the quantized leaf boundaries,
  * leaves are assigned to buckets based on their left boundary value.
  */
-public abstract class DyadicDecomposition<T extends Comparable<T>>
-        implements IDyadicDecomposition {
-    // Range for this (possibly filtered) histogram.
-    protected T minValue;
-    protected T maxValue;
-    // Range for the unfiltered histogram. Used to compute appropriate amount of noise to add.
-    public T globalMin;
-    public T globalMax;
-
-    protected int bucketCount;
-    int numLeaves; // Total number of leaves.
-    int globalNumLeaves; // Number of leaves in base histogram.
+public abstract class DyadicDecomposition {
     /**
-     * Covers leaves in [minLeafIdx, minLeafIdx + numLeaves). F
-     * or infinite ranges, these values are absolute and centered
-     * at zeroValue (i.e. minLeafIdx can be negative).
+     * For each bucket boundary the quantization interval it belongs to.
      */
-    int minLeafIdx;
-    int[] bucketLeftLeaves; // boundaries in terms of relative leaf indices
-    /**
-     * Boundaries in terms of leaf boundary values (for faster search).
-     * Note that this is only used for computing bucket membership.
-     * The UI will render buckets as if they were
-     * evenly spaced within the specified interval, as usual.
-     */
-    @Nullable
-    T[] bucketLeftBoundaries;
+    final int[] bucketQuantizationIndexes;
+    final ColumnQuantization quantization;
+    private final IHistogramBuckets buckets;
 
-    // For testing
-    public long bucketLeafIdx(final int bucketIdx) {
-        if (bucketIdx < 0 || bucketIdx > this.bucketCount - 1) return -1;
-        return this.bucketLeftLeaves[bucketIdx] + this.minLeafIdx;
-    }
-
-    protected abstract T leafLeftBoundary(final int leafIdx);
-
-    /**
-     * @param minValue the minimum value in the filtered histogram.
-     * @param maxValue the maximum value in the filtered histogram.
-     * @param globalMin the minimum value for the unfiltered histogram.
-     * @param globalMax the maximum value for the unfiltered histogram.
-     * @param bucketCount the number of histogram buckets.
-     */
-    DyadicDecomposition(final T minValue, final T maxValue,
-                        final T globalMin, final T globalMax,
-                        final int bucketCount) {
-        if ((maxValue.compareTo(minValue) < 0) || bucketCount <= 0)
-            throw new IllegalArgumentException("Negative range or number of buckets");
-
-        if (maxValue.compareTo(minValue) <= 0)
-            this.bucketCount = 1;  // ignore specified number of buckets
-        else
-            this.bucketCount = bucketCount;
-        this.bucketLeftLeaves = new int[this.bucketCount];
-        this.globalMax = globalMax;
-        this.globalMin = globalMin;
-        this.minValue = minValue;
-        this.maxValue = maxValue;
+    DyadicDecomposition(ColumnQuantization quantization, IHistogramBuckets buckets) {
+        this.bucketQuantizationIndexes = new int[buckets.getBucketCount()];
+        this.buckets = buckets;
+        this.quantization = quantization;
     }
 
     /**
-     * Assign leaves appropriately to this.numOfBuckets buckets such that each bucket
-     * contains approximately the same number of leaves.
+     * Return the dyadic decomposition of this interval, as a list of <left boundary, right boundary> pairs
+     * for each interval in the decomposition. The decomposition assumes that the first leaf of the dyadic tree
+     * is at index 0.
      */
-    private void populateBucketBoundaries() {
-        double leavesPerBucket = (double)(this.numLeaves) / this.bucketCount; // approximate leaves per bucket
-        int defaultLeaves = (int)Math.floor(leavesPerBucket);
-        int overflow = (int)Math.ceil(1.0/(leavesPerBucket - defaultLeaves)); // interval at which to add extra leaf
+    public static ArrayList<Pair<Integer, Integer>> dyadicDecomposition(int left, int right) {
+        ArrayList<Pair<Integer, Integer>> nodes = new ArrayList<Pair<Integer, Integer>>();
+        if (left == right)
+            // handles the case -1,-1
+            return nodes;
 
-        int prevLeafIdx = 0;
-        this.bucketLeftLeaves[0] = prevLeafIdx;
-        for (int i = 1; i < this.bucketCount; i++) {
-            if (overflow > 0 && i % overflow == 0) {
-                this.bucketLeftLeaves[i] = prevLeafIdx + defaultLeaves + 1;
-            } else {
-                this.bucketLeftLeaves[i] = prevLeafIdx + defaultLeaves;
-            }
-
-            prevLeafIdx = this.bucketLeftLeaves[i];
+        if (left < 0 || right < left) {
+            throw new IllegalArgumentException("Invalid interval bounds");
+        }
+        while (left < right) {
+            // get largest valid interval starting at left and not extending past right
+            int lob = Integer.lowestOneBit(left);
+            int lsb = lob > 0 ? Utilities.intLog2(lob) : -1; // smallest power of 2 that divides left
+            int rem = Utilities.intLog2(right - left); // smallest power of 2 contained in remaining interval
+            int pow = lsb < 0 ? rem : Math.min(lsb, rem); // largest valid covering interval
+            int nodeEnd = (int)Math.pow(2, pow);
+            nodes.add(new Pair<Integer, Integer>(left, nodeEnd));
+            left += nodeEnd;
         }
 
-        Converters.checkNull(this.bucketLeftBoundaries);
-        for (int i = 0; i < this.bucketLeftBoundaries.length; i++) {
-            this.bucketLeftBoundaries[i] = this.leafLeftBoundary(this.minLeafIdx + this.bucketLeftLeaves[i]);
-        }
+        assert(right == left);
+        return nodes;
+    }
+
+    public IHistogramBuckets getHistogramBuckets() {
+        return this.buckets;
+    }
+
+    int getQuantizationIntervalCount() {
+        return this.quantization.getIntervalCount();
     }
 
     /**
-     * Compute the largest leaf whose left boundary is <= value
+     * Return a list of leaf intervals that correspond to this bucket.
+     * For numeric data, this could correspond to the dyadic decomposition of the bucket.
+     * For categorical data (one-level tree), this can return a list of leaves that make
+     * up the bucket.
+     * Leaves are zero-indexed. The returned intervals are right-exclusive.
      */
-    int computeLeafIdx(T value) {
-        int leafIdx = 0;
-        while (this.leafLeftBoundary(leafIdx).compareTo(value) < 0) {
-            leafIdx++;
-        }
-        if (this.leafLeftBoundary(leafIdx).compareTo(value) > 0) leafIdx--;
-        return leafIdx;
+    List<Pair<Integer, Integer>> bucketDecomposition(int bucketIdx, boolean cdf) {
+        int left = 0;
+        if (!cdf)
+            left = this.bucketQuantizationIndexes[bucketIdx];
+        int right = -1;
+        if (bucketIdx < this.bucketQuantizationIndexes.length - 1)
+            right = this.bucketQuantizationIndexes[bucketIdx + 1];
+        if (left < 0 && right >= 0)
+            // left endpoint ot of bounds
+            left = 0;
+        if (left >= 0 && right < 0)
+            // right endpoint out of bounds
+            right = left + 1;
+        return DyadicDecomposition.dyadicDecomposition(left, right);
     }
 
     /**
-     * Additional initialization that calls abstract methods, so may depend on subclass variables.
+     * Compute noise to add to this bucket using the dyadic decomposition as the PRG seed.
+     * @param bucketIdx: index of the bucket to compute noise for.
+     * @param epsilon    Amount of privacy allocated for this computation.
+     * @param isCdf: If true, computes the noise based on the dyadic decomposition of the interval [0, bucket right leaf]
+     *             rather than [bucket left leaf, bucket right leaf].
+     * Returns the noise and the total variance of the variables used to compute the noise.
      */
-    protected void init(int numLeaves) {
-        this.minLeafIdx = computeLeafIdx(this.minValue);
-        this.numLeaves = numLeaves;
-        this.populateBucketBoundaries();
-    }
-
-    /**
-     * Get the number of leaves that would correspond to this bucket.
-     * If bucket boundaries and leaf boundaries don't align,
-     * we assign leaves to the bucket that their left boundary falls in.
-     */
-    public long numLeavesInBucket(int bucketIdx) {
-        if (bucketIdx >= this.bucketCount || bucketIdx < 0) throw new IllegalArgumentException("Invalid bucket index");
-        if (bucketIdx == this.bucketCount - 1) {
-            return this.numLeaves - this.bucketLeftLeaves[bucketIdx];
+    Pair<Double, Double> noiseForBucket(int bucketIdx, double epsilon, boolean isCdf) {
+        List<Pair<Integer, Integer>> intervals = this.bucketDecomposition(bucketIdx, isCdf);
+        double noise = 0;
+        double variance = 0;
+        int totalLeaves = this.getQuantizationIntervalCount();
+        double scale = Math.log(totalLeaves / epsilon) / Math.log(2);
+        for (Pair<Integer, Integer> x : intervals) {
+            LaplaceDistribution dist = new LaplaceDistribution(0, scale); // TODO: (more) secure PRG
+            dist.reseedRandomGenerator(x.hashCode()); // Each node's noise should be deterministic, based on node's ID
+            noise += dist.sample();
+            variance += 2*(Math.pow(scale, 2));
         }
-
-        return (this.bucketLeftLeaves[bucketIdx + 1] -
-                this.bucketLeftLeaves[bucketIdx]);
+        return new Pair<Double, Double>(noise, variance);
     }
-
-    public T getMin() { return this.minValue; }
-    public T getMax() { return this.maxValue; }
-
-    public int getGlobalNumLeaves() { return this.globalNumLeaves; }
 }

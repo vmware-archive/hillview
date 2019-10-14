@@ -24,26 +24,22 @@ public class DoubleColumnQuantization extends ColumnQuantization {
     /**
      * Minimum quantization interval: users will only be able to
      * query ranges that are a multiple of this size.
-     * This field is particularly useful for implementing the dyadic interval tree
-     * in the binary mechanism of Chan, Song, Shi '11 (https://eprint.iacr.org/2010/076.pdf).
      */
     public final double granularity;
     /**
-     * Fixed global minimum value for the column. Should be computable from
-     * public information or otherwise uncorrelated with the data.
+     * Fixed global minimum value for the column.  Values less that this are out of range.
      */
     public final double globalMin;
     /**
-     * Fixed global maximum value. Should be computable from
-     * public information or otherwise uncorrelated with the data.
+     * Fixed global maximum value.  Values larger or equal to this value are out of range.
      */
     public final double globalMax;
 
     /**
      * Create a privacy metadata for a numeric-type column.
      * @param granularity  Size of a bucket for quantized data.
-     * @param globalMin    Minimum value expected in the column.
-     * @param globalMax    Maximum value expected in column.
+     * @param globalMin    Minimum value expected in the column.  The minimum is inclusive.
+     * @param globalMax    Maximum value expected in column.  The maximum is exclusive.
      */
     public DoubleColumnQuantization(double granularity, double globalMin, double globalMax) {
         this.granularity = granularity;
@@ -68,11 +64,17 @@ public class DoubleColumnQuantization extends ColumnQuantization {
     }
 
     public boolean outOfRange(double value) {
-        return value < this.globalMin || value > this.globalMax;
+        return value < this.globalMin || value >= this.globalMax;
+    }
+
+    public int bucketIndex(double value) {
+        if (this.outOfRange(value))
+            return -1;
+        return (int)Math.floor((value - this.globalMin) / this.granularity);
     }
 
     @Override
-    public int getGlobalNumLeaves() {
+    public int getIntervalCount() {
         return (int)((this.globalMax - this.globalMin) / this.granularity);
     }
 
