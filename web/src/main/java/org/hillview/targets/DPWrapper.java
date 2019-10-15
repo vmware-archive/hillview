@@ -89,6 +89,15 @@ class DPWrapper {
         return pSumm;
     }
 
+    public void filter(RangeFilterDescription filter) {
+        RangeFilterDescription rf = this.columnLimits.get(filter.cd.name);
+        ColumnQuantization q = this.privacySchema.quantization(filter.cd.name);
+        filter = filter.intersect(q);
+        if (rf != null)
+            filter = filter.intersect(rf);
+        this.columnLimits.put(filter.cd.name, filter);
+    }
+
     BucketsInfo getRange(QuantilesArgs qa) {
         ColumnDescription cd = qa.cd;
         ColumnQuantization quantization = this.privacySchema.quantization(cd.name);

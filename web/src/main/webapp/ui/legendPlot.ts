@@ -295,6 +295,12 @@ class HeatmapColormap {
     }
 }
 
+export enum ColorMapKind {
+    Cool,
+    Warm,
+    Grayscale
+}
+
 /**
  * Displays a color map suitable for heatmaps.
  */
@@ -326,6 +332,21 @@ export class HeatmapLegendPlot extends Plot {
         this.onColorMapChange = listener;
     }
 
+    public setColorMapKind(kind: ColorMapKind): void {
+        switch (kind) {
+            case ColorMapKind.Cool:
+                this.colorMap.setMap(d3interpolateCool);
+                break;
+            case ColorMapKind.Warm:
+                this.colorMap.setMap(d3interpolateWarm);
+                break;
+            case ColorMapKind.Grayscale:
+                this.colorMap.setMap((x: number) => `rgb(${Math.round(255 * (1 - x))},
+                    ${Math.round(255 * (1 - x))}, ${Math.round(255 * (1 - x))})`);
+                break;
+        }
+    }
+
     /**
      * The context menu is added only when a colormap change event listener is set.
      */
@@ -337,22 +358,21 @@ export class HeatmapLegendPlot extends Plot {
                 text: "Cool",
                 help: "Use a color palette with cool colors.",
                 action: () => {
-                    this.colorMap.setMap(d3interpolateCool);
+                    this.setColorMapKind(ColorMapKind.Cool);
                     this.mapUpdated();
                 },
             }, {
                 text: "Warm",
                 help: "Use a color palette with warm colors.",
                 action: () => {
-                    this.colorMap.setMap(d3interpolateWarm);
+                    this.setColorMapKind(ColorMapKind.Warm);
                     this.mapUpdated();
                 },
             }, {
                 text: "Gray",
                 help: "Use a grayscale color palette.",
                 action: () => {
-                    this.colorMap.setMap((x: number) => `rgb(${Math.round(255 * (1 - x))},
-                    ${Math.round(255 * (1 - x))}, ${Math.round(255 * (1 - x))})`);
+                    this.setColorMapKind(ColorMapKind.Grayscale);
                     this.mapUpdated();
                 },
             }, {

@@ -19,6 +19,10 @@ package org.hillview.table.filters;
 
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.*;
+import org.hillview.table.columns.ColumnQuantization;
+import org.hillview.table.columns.DoubleColumnQuantization;
+import org.hillview.table.columns.StringColumnQuantization;
+import org.hillview.utils.Converters;
 
 @SuppressWarnings("CanBeFinal")
 public class RangeFilterDescription implements ITableFilterDescription {
@@ -65,6 +69,36 @@ public class RangeFilterDescription implements ITableFilterDescription {
             return "Rangefilter[" + RangeFilterDescription.this.min + "," +
                     RangeFilterDescription.this.max + "]";
         }
+    }
+
+    public RangeFilterDescription intersect(RangeFilterDescription with) {
+        RangeFilterDescription result = new RangeFilterDescription();
+        result.cd = this.cd;
+        if (this.cd.kind.isString()) {
+            result.minString = Converters.checkNull(Converters.max(this.minString, with.minString));
+            result.maxString = Converters.checkNull(Converters.min(this.maxString, with.maxString));
+        } else {
+            result.min = Math.max(this.min, with.min);
+            result.max = Math.min(this.max, with.max);
+        }
+        result.complement = this.complement;
+        return result;
+    }
+
+    public RangeFilterDescription intersect(ColumnQuantization with) {
+        RangeFilterDescription result = new RangeFilterDescription();
+        result.cd = this.cd;
+        if (this.cd.kind.isString()) {
+            StringColumnQuantization s = (StringColumnQuantization)with;
+            result.minString = Converters.checkNull(Converters.max(this.minString, s.getMin()));
+            result.maxString = Converters.checkNull(Converters.min(this.maxString, s.getMax()));
+        } else {
+            DoubleColumnQuantization q = (DoubleColumnQuantization)with;
+            result.min = Math.max(this.min, q.globalMin);
+            result.max = Math.min(this.max, q.globalMax);
+        }
+        result.complement = this.complement;
+        return result;
     }
 
     public class StringRangeFilter implements ITableFilter {

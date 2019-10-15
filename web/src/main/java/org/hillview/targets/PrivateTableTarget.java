@@ -86,7 +86,7 @@ public class PrivateTableTarget extends RpcTarget {
         IdMap<ITable> map = new IdMap<ITable>();
         this.runMap(this.table, map, (e, c) -> {
             PrivateTableTarget result = new PrivateTableTarget(PrivateTableTarget.this, c);
-            result.wrapper.columnLimits.put(filter.cd.name, filter);
+            result.wrapper.filter(filter);
             return result;
         }, request, context);
     }
@@ -99,8 +99,8 @@ public class PrivateTableTarget extends RpcTarget {
         IdMap<ITable> map = new IdMap<ITable>();
         this.runMap(this.table, map, (e, c) -> {
             PrivateTableTarget result = new PrivateTableTarget(PrivateTableTarget.this, c);
-            result.wrapper.columnLimits.put(filter.first.cd.name, filter.first);
-            result.wrapper.columnLimits.put(filter.second.cd.name, filter.second);
+            result.wrapper.filter(filter.first);
+            result.wrapper.filter(filter.second);
             return result;
         }, request, context);
     }
