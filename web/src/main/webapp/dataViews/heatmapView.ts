@@ -32,7 +32,7 @@ import {IDataView} from "../ui/dataview";
 import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
 import {HeatmapPlot} from "../ui/heatmapPlot";
 import {HistogramPlot} from "../ui/histogramPlot";
-import {HeatmapLegendPlot} from "../ui/legendPlot";
+import {ColorMapKind, HeatmapLegendPlot} from "../ui/legendPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
@@ -223,6 +223,8 @@ export class HeatmapView extends ChartView {
         if (!keepColorMap) {
             this.colorLegend.setData(1, this.plot.getMaxCount());
         }
+        if (this.isPrivate())
+            this.colorLegend.setColorMapKind(ColorMapKind.Grayscale);
         this.colorLegend.draw();
         this.plot.draw();
         /*

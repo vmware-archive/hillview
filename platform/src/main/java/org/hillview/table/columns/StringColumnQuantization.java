@@ -75,6 +75,14 @@ public class StringColumnQuantization extends ColumnQuantization {
         return s.compareTo(this.leftBoundaries[0]) < 0;
     }
 
+    public String getMin() {
+        return this.leftBoundaries[0];
+    }
+
+    public String getMax() {
+        return this.globalMax;
+    }
+
     @Override
     public int getIntervalCount() {
         return this.leftBoundaries.length;

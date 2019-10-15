@@ -10,7 +10,23 @@ states = [ "AK", "AL", "AR", "AZ", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "IA
            "NV", "NY", "OH", "OK", "OR", "PA", "PR", "RI", "SC", "SD", "TN", "TT", "TX", "UT", "VA", "VT",
            "WA", "WI", "WV", "WY" ]
 
-def get_metadata(g, gMin, gMax):
+def get_metadata(cn):
+    if cn == "DayOfWeek":
+        (g, gMin, gMax) = (1, 1, 7)
+    elif cn == "DepTime" or cn == "ArrTime":
+        (g, gMin, gMax) = (5, 0, 2400)
+    elif cn == "DepDelay" or cn == "ArrDelay":
+        (g, gMin, gMax) = (1, -100, 1000)
+    elif cn == "Cancelled":
+        (g, gMin, gMax) = (1, 0, 1)
+    elif cn == "ActualElapsedTime":
+        (g, gMin, gMax) = (1, 15, 700)
+    elif cn == "Distance":
+        (g, gMin, gMax) = (10, 0, 5000)
+    elif cn == "FlightDate":
+        (g, gMin, gMax) = (86400, 1451635200000, 1456732800000)
+    else:
+        raise Exception("Unexpected column " + cn)
     return {'type': "DoubleColumnQuantization",
             'granularity': g,
             'globalMin': gMin,
@@ -45,7 +61,7 @@ def main():
             if col["kind"] == "String":
                 quantization[cn] = get_string_metadata(cn)
             else:
-                quantization[cn] = get_metadata(5.0, -100.0, 100.0)
+                quantization[cn] = get_metadata(cn)
             epsilons[cn] = 1
         for cn in length2:
             concat_cn = concat_colnames(cn)
