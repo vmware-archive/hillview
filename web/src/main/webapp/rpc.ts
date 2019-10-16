@@ -175,7 +175,8 @@ export class RpcRequest<T> implements ICancellable<T> {
 
         lines = lines
             .filter((v) => !v.match(
-                /^\s+at ((rx\.)|(io\.grpc)|(java\.lang\.Thread\.run)|(java\.util\.concurrent\.ThreadPoolExecutor))/))
+                // tslint:disable-next-line:max-line-length
+                /^\s+at ((rx\.)|(io\.grpc)|(org\.apache\.(tomcat|coyote))|(java\.lang\.Thread\.run)|(java\.util\.concurrent\.ThreadPoolExecutor))/))
             .map((v) => v.replace("io.grpc.StatusRuntimeException: INTERNAL: ", ""));
         return lines.join("\n");
     }
