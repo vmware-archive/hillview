@@ -29,11 +29,10 @@ import org.hillview.table.api.ITable;
 /**
  * This is an RpcTarget object which stores a file loader name in each leaf.
  */
-// All RpcTarget objects must be public
 public class FileDescriptionTarget extends RpcTarget {
     protected final IDataSet<IFileReference> files;
 
-    public FileDescriptionTarget(IDataSet<IFileReference> files, HillviewComputation computation) {
+    FileDescriptionTarget(IDataSet<IFileReference> files, HillviewComputation computation) {
         super(computation);
         this.files = files;
         this.registerObject();

@@ -33,7 +33,6 @@ import javax.websocket.Session;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.function.BiFunction;
 
 /**
@@ -41,54 +40,11 @@ import java.util.function.BiFunction;
  * through the web server.  All these methods are tagged with @HillviewRpc.
  * When these objects are serialized as JSON only their String id is sent; the
  * objects always reside on the web server.  They are managed by the RpcObjectManager.
+ * Note: all classes subclassing RpcTarget that have @HillviewRpc methods
+ * must be public for reflection to work properly.
  */
-public abstract class RpcTarget implements IJson {
-    /**
-     * This class represents the ID of an RPC Target.
-     * It is used by other classes that refer to RpcTargets by their ids.
-     */
-    public static class Id {
-        private final String objectId;
-        public Id(String objectId) {
-            this.objectId = objectId;
-        }
-
-        /**
-         * Allocate a fresh identifier.
-         */
-        static Id freshId() {
-            return new RpcTarget.Id(UUID.randomUUID().toString());
-        }
-
-        static Id initialId() {
-            return new RpcTarget.Id(Integer.toString(RemoteDataSet.defaultDatasetIndex));
-        }
-
-        @Override
-        public String toString() {
-            return this.objectId;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || this.getClass() != o.getClass()) return false;
-
-            Id id = (Id) o;
-            return this.objectId.equals(id.objectId);
-        }
-
-        @Override
-        public int hashCode() {
-            return this.objectId.hashCode();
-        }
-
-        boolean isInitial() {
-            return this.objectId.equals(Id.initialId().objectId);
-        }
-    }
-
-    private final Id objectId;
+public abstract class RpcTarget implements IJson, IRpcTarget {
+    private final IRpcTarget.Id objectId;
     /**
      * Computation that has generated this object.  Can only
      * be null for the initial object.
@@ -96,7 +52,8 @@ public abstract class RpcTarget implements IJson {
     @Nullable
     public final HillviewComputation computation;
 
-    public Id getId() {
+    @Override
+    public IRpcTarget.Id getId() {
         return this.objectId;
     }
 
@@ -169,7 +126,7 @@ public abstract class RpcTarget implements IJson {
         try {
             Method method = this.getMethod(request.method);
             if (method == null)
-                throw new RuntimeException(this.toString() + ": No such method " + request.method);
+                throw new HillviewException(this.toString() + ": No such method " + request.method);
             HillviewLogger.instance.info("Executing", "request={0}, context={1}",
                     request.toString(), context.toString());
             method.invoke(this, request, context);
@@ -424,11 +381,11 @@ public abstract class RpcTarget implements IJson {
     static class MapResultObserver<T> extends ResultObserver<IDataSet<T>> {
         @Nullable
         IDataSet<T> result;
-        final BiFunction<IDataSet<T>, HillviewComputation, RpcTarget> factory;
+        final BiFunction<IDataSet<T>, HillviewComputation, IRpcTarget> factory;
 
         MapResultObserver(String name, RpcTarget target, RpcRequest request,
                           RpcRequestContext context,
-                          BiFunction<IDataSet<T>, HillviewComputation, RpcTarget> factory) {
+                          BiFunction<IDataSet<T>, HillviewComputation, IRpcTarget> factory) {
             super(name, request, target, context);
             this.factory = factory;
         }
@@ -443,7 +400,7 @@ public abstract class RpcTarget implements IJson {
             // Replace the "data" with the remote object ID
             if (dataSet != null) {
                 this.result = dataSet;
-                RpcTarget target = this.factory.apply(this.result, this.getComputation());
+                IRpcTarget target = this.factory.apply(this.result, this.getComputation());
                 json.addProperty("data", target.getId().toString());
             } else {
                 json.add("data", null);
@@ -479,7 +436,8 @@ public abstract class RpcTarget implements IJson {
      * @param request Web socket request, where replies are sent.
      * @param context Context for the computation.
      */
-    protected <T, R, S extends IJson> void
+    @Override
+    public <T, R, S extends IJson> void
     runSketchPostprocessing(IDataSet<T> data, ISketch<T, R> sketch,
                             BiFunction<R, HillviewComputation, S> postprocessing,
                             RpcRequest request, RpcRequestContext context) {
@@ -506,7 +464,8 @@ public abstract class RpcTarget implements IJson {
      * @param request Web socket request, where replies are sent.
      * @param context Context for the computation.
      */
-    protected <T, R extends IJson> void
+    @Override
+    public <T, R extends IJson> void
     runSketch(IDataSet<T> data, ISketch<T, R> sketch,
               RpcRequest request, RpcRequestContext context) {
         // Run the sketch
@@ -533,7 +492,8 @@ public abstract class RpcTarget implements IJson {
      * @param request Web socket request, where replies are sent.
      * @param context Context for the computation.
      */
-    protected <T, R, S extends IJson> void
+    @Override
+    public <T, R, S extends IJson> void
     runCompleteSketch(IDataSet<T> data, ISketch<T, R> sketch,
                       BiFunction<R, HillviewComputation, S> postprocessing,
                       RpcRequest request, RpcRequestContext context) {
@@ -564,7 +524,7 @@ public abstract class RpcTarget implements IJson {
     private <S> void collectDataset(Observable<PartialResult<IDataSet<S>>> stream,
                                     String description,
                                     RpcRequest request, RpcRequestContext context,
-                                    BiFunction<IDataSet<S>, HillviewComputation, RpcTarget> factory) {
+                                    BiFunction<IDataSet<S>, HillviewComputation, IRpcTarget> factory) {
         PRDataSetMonoid<S> monoid = new PRDataSetMonoid<S>();
         // Prefix sum of the partial results
         Observable<PartialResult<IDataSet<S>>> add = stream.scan(monoid::add);
@@ -587,9 +547,10 @@ public abstract class RpcTarget implements IJson {
      * @param request Web socket request, used to send the reply.
      * @param context Context for the computation.
      */
-    protected <T, S> void
+    @Override
+    public <T, S> void
     runMap(IDataSet<T> data, IMap<T, S> map,
-           BiFunction<IDataSet<S>, HillviewComputation, RpcTarget> factory,
+           BiFunction<IDataSet<S>, HillviewComputation, IRpcTarget> factory,
            RpcRequest request, RpcRequestContext context) {
         Observable<PartialResult<IDataSet<S>>> stream = data.map(map);
         this.collectDataset(stream, map.asString(), request, context, factory);
@@ -605,9 +566,10 @@ public abstract class RpcTarget implements IJson {
      * @param request Web socket request, used to send the reply.
      * @param context Context for the computation.
      */
-    protected <T> void
+    @Override
+    public <T> void
     runPrune(IDataSet<T> data, IMap<T, Boolean> map,
-             BiFunction<IDataSet<T>, HillviewComputation, RpcTarget> factory,
+             BiFunction<IDataSet<T>, HillviewComputation, IRpcTarget> factory,
              RpcRequest request, RpcRequestContext context) {
         Observable<PartialResult<IDataSet<T>>> stream = data.prune(map);
         this.collectDataset(stream, map.asString(), request, context, factory);
@@ -623,9 +585,10 @@ public abstract class RpcTarget implements IJson {
      * @param request Web socket request, used to send the reply.
      * @param context Context for the computation.
      */
-    protected <T, S> void
+    @Override
+    public <T, S> void
     runFlatMap(IDataSet<T> data, IMap<T, List<S>> map,
-               BiFunction<IDataSet<S>, HillviewComputation, RpcTarget> factory,
+               BiFunction<IDataSet<S>, HillviewComputation, IRpcTarget> factory,
                RpcRequest request, RpcRequestContext context) {
         Observable<PartialResult<IDataSet<S>>> stream = data.flatMap(map);
         this.collectDataset(stream, map.asString(), request, context, factory);
@@ -641,9 +604,10 @@ public abstract class RpcTarget implements IJson {
      * @param request Web socket request, used to send the reply.
      * @param context Context for the computation.
      */
-    protected <T, S> void
+    @Override
+    public <T, S> void
     runZip(IDataSet<T> data, IDataSet<S> other,
-           BiFunction<IDataSet<Pair<T, S>>, HillviewComputation, RpcTarget> factory,
+           BiFunction<IDataSet<Pair<T, S>>, HillviewComputation, IRpcTarget> factory,
            RpcRequest request, RpcRequestContext context) {
         Observable<PartialResult<IDataSet<Pair<T, S>>>> stream = data.zip(other);
         this.collectDataset(stream, "zip", request, context, factory);
@@ -656,7 +620,8 @@ public abstract class RpcTarget implements IJson {
      * @param request Web socket request, where replies are sent.
      * @param context Context for the computation.
      */
-    protected <T> void
+    @Override
+    public <T> void
     runManage(IDataSet<T> data, ControlMessage command,
               RpcRequest request, RpcRequestContext context) {
         // Run the sketch

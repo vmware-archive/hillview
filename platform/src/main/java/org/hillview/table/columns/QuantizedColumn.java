@@ -136,12 +136,12 @@ public class QuantizedColumn extends BaseColumn {
         switch (QuantizedColumn.this.description.kind) {
             case Json:
             case String:
-                return this.quantization.outOfRange(this.getString(rowIndex));
+                return this.quantization.outOfRange(this.data.getString(rowIndex));
             case Integer:
             case Duration:
             case Double:
             case Date:
-                return this.quantization.outOfRange(this.asDouble(rowIndex));
+                return this.quantization.outOfRange(this.data.asDouble(rowIndex));
             default:
                 throw new RuntimeException("Unexpected data type");
         }

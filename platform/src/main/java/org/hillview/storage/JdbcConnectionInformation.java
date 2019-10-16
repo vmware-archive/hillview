@@ -41,4 +41,9 @@ public class JdbcConnectionInformation implements Serializable {
      * If true data is loaded lazily - on demand.
      */
     public boolean lazyLoading;
+
+    @Override
+    public String toString() {
+        return this.database + "/" + this.table;
+    }
 }

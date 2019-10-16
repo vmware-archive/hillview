@@ -17,16 +17,12 @@
 
 package org.hillview.targets;
 
-import org.hillview.HillviewComputation;
-import org.hillview.HillviewRpc;
-import org.hillview.RpcRequest;
-import org.hillview.RpcRequestContext;
+import org.hillview.*;
 import org.hillview.dataStructures.*;
+import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.Pair;
 import org.hillview.sketches.PrecomputedSketch;
-import org.hillview.sketches.results.BucketsInfo;
-import org.hillview.sketches.results.DataRange;
 import org.hillview.sketches.results.Histogram;
 import org.hillview.sketches.results.TableSummary;
 import org.hillview.storage.JdbcConnectionInformation;
@@ -34,20 +30,22 @@ import org.hillview.table.ColumnDescription;
 import org.hillview.table.PrivacySchema;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.ColumnQuantization;
-import org.hillview.table.columns.DoubleColumnQuantization;
-import org.hillview.table.filters.RangeFilterDescription;
 import org.hillview.utils.Converters;
-import org.hillview.utils.JsonList;
 
 import java.sql.SQLException;
 
-public class PrivateSimpleDBTarget extends SimpleDBTarget {
+public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDataset {
     private final DPWrapper wrapper;
 
     PrivateSimpleDBTarget(JdbcConnectionInformation conn, HillviewComputation c,
                                  PrivacySchema privacySchema) {
         super(conn, c);
         this.wrapper = new DPWrapper(privacySchema);
+    }
+
+    private PrivateSimpleDBTarget(PrivateSimpleDBTarget other, HillviewComputation computation) {
+        super(other.jdbc, computation);
+        this.wrapper = new DPWrapper(other.wrapper);
     }
 
     @HillviewRpc
@@ -65,32 +63,12 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget {
 
     @HillviewRpc
     public void getDataQuantiles1D(RpcRequest request, RpcRequestContext context) {
-        QuantilesArgs[] args = request.parseArgs(QuantilesArgs[].class);
-        assert args.length == 1;
-        double min, max;
+        this.wrapper.getDataQuantiles1D(request, context, this);
+    }
 
-        ColumnQuantization md = this.wrapper.privacySchema.quantization(args[0].cd.name);
-        RangeFilterDescription filter = this.wrapper.columnLimits.get(args[0].cd.name);
-        if (md instanceof DoubleColumnQuantization) {
-            DoubleColumnQuantization dmd = (DoubleColumnQuantization)md;
-            if (filter == null) {
-                min = dmd.globalMin;
-                max = dmd.globalMax;
-            } else {
-                min = dmd.roundDown(filter.min);
-                max = dmd.roundDown(filter.max);
-            }
-        } else {
-            throw new RuntimeException("Not yet implemented");
-        }
-
-        DataRange retRange = new DataRange(min, max);
-        // TODO: compute these too
-        // TODO(pratiksha): add noise to these counts
-        retRange.presentCount = -1;
-        retRange.missingCount = -1;
-        PrecomputedSketch<ITable, DataRange> sk = new PrecomputedSketch<ITable, DataRange>(retRange);
-        this.runCompleteSketch(this.table, sk, (e, c) -> new JsonList<BucketsInfo>(e), request, context);
+    @HillviewRpc
+    public void getDataQuantiles2D(RpcRequest request, RpcRequestContext context) {
+        this.wrapper.getDataQuantiles2D(request, context, this);
     }
 
     @HillviewRpc
@@ -98,31 +76,66 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget {
         HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
         assert info.length == 2;
 
-        ColumnQuantization metadata = this.wrapper.privacySchema.quantization(info[0].cd.name);
-        double epsilon = this.wrapper.privacySchema.epsilon(info[0].cd.name);
-        if (metadata == null)
-            throw new RuntimeException("No quantization information for column " + info[0].cd.name);
-
-        /*
         ColumnDescription cd = info[0].cd;  // both args should be on the same column
-        IDyadicDecomposition dd = info[0].getDecomposition(metadata);
-        IDyadicDecomposition cdd = info[1].getDecomposition(metadata);
+        ColumnQuantization quantization = this.wrapper.privacySchema.quantization(cd.name);
+        double epsilon = this.wrapper.privacySchema.epsilon(cd.name);
+        if (quantization == null)
+            throw new RuntimeException("No quantization information for column " + cd.name);
+
+        DyadicDecomposition d0 = info[0].getDecomposition(quantization);
+        DyadicDecomposition d1 = info[1].getDecomposition(quantization);
         try {
             this.database.connect();
-            Histogram histo = this.database.histogram(cd, dd.getHistogramBuckets());
-            Histogram cdf = this.database.histogram(cd, cdd.getHistogramBuckets());
+            Histogram histo = this.database.histogram(cd, info[0].getBuckets(quantization));
+            Histogram cdf = this.database.histogram(cd, info[1].getBuckets(quantization));
             Pair<Histogram, Histogram> result = new Pair<Histogram, Histogram>(histo, cdf);
             this.database.disconnect();
             ISketch<ITable, Pair<Histogram, Histogram>> sk = new PrecomputedSketch<ITable, Pair<Histogram, Histogram>>(result);
             this.runCompleteSketch(this.table, sk, (e, c) ->
                     new Pair<PrivateHistogram, PrivateHistogram>(
-                            new PrivateHistogram(dd, Converters.checkNull(e.first), epsilon, false),
-                            new PrivateHistogram(cdd, Converters.checkNull(e.second), epsilon, true)),
+                            new PrivateHistogram(d0, Converters.checkNull(e.first), epsilon, false),
+                            new PrivateHistogram(d1, Converters.checkNull(e.second), epsilon, true)),
                     request, context);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        TODO
-         */
+    }
+
+    @HillviewRpc
+    public void filterRange(RpcRequest request, RpcRequestContext context) {
+        this.wrapper.filterRange(request, context, this,
+                (d, c) -> new PrivateSimpleDBTarget((PrivateSimpleDBTarget)d, c));
+    }
+
+    @HillviewRpc
+    public void filter2DRange(RpcRequest request, RpcRequestContext context) {
+        this.wrapper.filter2DRange(request, context, this,
+                (d, c) -> new PrivateSimpleDBTarget((PrivateSimpleDBTarget)d, c));
+    }
+
+    @HillviewRpc
+    public void hLogLog(RpcRequest request, RpcRequestContext context) {
+        DistinctCountRequestInfo col = request.parseArgs(DistinctCountRequestInfo.class);
+        try {
+            this.database.connect();
+            int result = this.database.distinctCount(col.columnName);
+            this.database.disconnect();
+            DistinctCount dc = new DistinctCount(result);
+            ISketch<ITable, DistinctCount> sk = new PrecomputedSketch<ITable, DistinctCount>(dc);
+            // TODO(pratiksha): add noise to this count
+            this.runSketch(this.table, sk, request, context);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public IDataSet<ITable> getDataset() {
+        return this.table;
+    }
+
+    @Override
+    public DPWrapper getWrapper() {
+        return this.wrapper;
     }
 }

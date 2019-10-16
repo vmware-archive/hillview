@@ -15,17 +15,12 @@
  * limitations under the License.
  */
 
-import {HtmlString, IHtmlElement} from "./ui";
+import {IHtmlElement} from "./ui";
 
 /**
  * Core interface for reporting errors.
  */
 export interface ErrorReporter {
-    /**
-     * Report an error.
-     * @param {string} htmlMessage   Error message as a HTML string.
-     */
-    reportFormattedError(htmlMessage: HtmlString): void;
     /**
      * Report an error
      * @param message  Text message.
@@ -44,10 +39,6 @@ export interface ErrorReporter {
 export class ConsoleErrorReporter implements ErrorReporter {
     public static instance: ConsoleErrorReporter = new ConsoleErrorReporter();
 
-    public reportFormattedError(message: HtmlString): void {
-        console.log(message.getSafeEncoding());  // this may be a html string, but that's all we can do
-    }
-
     public reportError(message: string): void {
         console.log(message);
     }
@@ -59,31 +50,41 @@ export class ConsoleErrorReporter implements ErrorReporter {
 
 /**
  * This class is used to display error messages in the browser window.
- * TODO: rename it, since "console" is not appropriate.
  */
-export class ConsoleDisplay implements IHtmlElement, ErrorReporter {
+export class ErrorDisplay implements IHtmlElement, ErrorReporter {
     protected topLevel: HTMLElement;
+    protected console: HTMLDivElement;
+    protected clearButton: HTMLElement;
 
     constructor() {
         this.topLevel = document.createElement("div");
-        this.topLevel.className = "console";
+        this.console = document.createElement("div");
+        this.console.className = "console";
+        const container = document.createElement("span");
+        this.topLevel.appendChild(container);
+        this.clearButton = document.createElement("span");
+        this.clearButton.className = "close";
+        this.clearButton.innerHTML = "&times;";
+        this.clearButton.title = "clear message";
+        this.clearButton.style.display = "none";
+        this.clearButton.onclick = () => this.clear();
+        this.clearButton.style.cssFloat = "right";
+        this.clearButton.style.zIndex = "10";
+        container.appendChild(this.clearButton);
+        container.appendChild(this.console);
     }
 
     public getHTMLRepresentation(): HTMLElement {
         return this.topLevel;
     }
 
-    public reportFormattedError(htmlMessage: HtmlString): void {
-        htmlMessage.setInnerHtml(this.topLevel);
-        this.topLevel.innerHTML += "<br>";
-    }
-
     public reportError(message: string): void {
-        this.topLevel.textContent = message;
+        this.console.innerText = message;
+        this.clearButton.style.display = "block";
     }
 
     public clear(): void {
-        this.topLevel.innerHTML = "";
-        this.topLevel.textContent = "";
+        this.console.textContent = "";
+        this.clearButton.style.display = "none";
     }
 }

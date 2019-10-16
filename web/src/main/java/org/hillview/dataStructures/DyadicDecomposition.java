@@ -59,7 +59,7 @@ public abstract class DyadicDecomposition {
             return nodes;
 
         if (left < 0 || right < left) {
-            throw new IllegalArgumentException("Invalid interval bounds");
+            throw new IllegalArgumentException("Invalid interval bounds: " + left + ":" + right);
         }
         while (left < right) {
             // get largest valid interval starting at left and not extending past right

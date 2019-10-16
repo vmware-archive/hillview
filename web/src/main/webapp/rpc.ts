@@ -166,9 +166,17 @@ export class RpcRequest<T> implements ICancellable<T> {
 
     public static simplifyExceptions(errorMessage: string): string {
         let lines = errorMessage.split(/\r?\n/);
+        // First look for a HillviewException if there is one
+        for (const line of lines) {
+            const index = line.indexOf("org.hillview.utils.HillviewException:");
+            if (index >= 0)
+                return line.substr(index + "org.hillview.utils.HillviewException:".length);
+        }
+
         lines = lines
             .filter((v) => !v.match(
-                /^\s+at ((rx\.)|(io\.grpc)|(java\.lang\.Thread\.run)|(java\.util\.concurrent\.ThreadPoolExecutor))/))
+                // tslint:disable-next-line:max-line-length
+                /^\s+at ((rx\.)|(io\.grpc)|(org\.apache\.(tomcat|coyote))|(java\.lang\.Thread\.run)|(java\.util\.concurrent\.ThreadPoolExecutor))/))
             .map((v) => v.replace("io.grpc.StatusRuntimeException: INTERNAL: ", ""));
         return lines.join("\n");
     }
