@@ -16,12 +16,17 @@
  */
 
 import {DatasetView} from "../datasetView";
-import {makeMissing, makeSpan, openInNewTab, significantDigitsHtml} from "../util";
+import {
+    makeMissing,
+    makeSpan,
+    openInNewTab,
+    significantDigits,
+} from "../util";
 import {IDataView} from "./dataview";
-import {ConsoleDisplay, ErrorReporter} from "./errReporter";
+import {ErrorDisplay, ErrorReporter} from "./errReporter";
 import {TopMenu} from "./menu";
 import {ProgressManager} from "./progress";
-import {HtmlString, IHtmlElement, removeAllChildren, SpecialChars, ViewKind} from "./ui";
+import {IHtmlElement, removeAllChildren, SpecialChars, ViewKind} from "./ui";
 import {helpUrl} from "./helpUrl";
 import {BigTableView} from "../tableTarget";
 import {CombineOperators} from "../javaBridge";
@@ -95,7 +100,7 @@ export class FullPage implements IHtmlElement {
     public dataView: IDataView | null;
     public bottomContainer: HTMLElement;
     public progressManager: ProgressManager;
-    protected console: ConsoleDisplay;
+    protected console: ErrorDisplay;
     public pageTopLevel: HTMLElement;
     private readonly menuSlot: HTMLElement;
     private readonly h2: HTMLElement;
@@ -124,7 +129,7 @@ export class FullPage implements IHtmlElement {
                        public readonly sourcePageId: number | null,
                        public readonly dataset: DatasetView) {
         this.dataView = null;
-        this.console = new ConsoleDisplay();
+        this.console = new ErrorDisplay();
         this.progressManager = new ProgressManager();
         this.minimized = false;
         this.dropHandler = new Map<string, (s: string) => void>();
@@ -401,10 +406,8 @@ export class FullPage implements IHtmlElement {
     }
 
     public reportTime(timeInMs: number): void {
-        this.getErrorReporter().reportFormattedError(
-            new HtmlString("Operation took ")
-                .append(significantDigitsHtml(timeInMs / 1000))
-                .appendSafeString(" seconds"));
+        this.getErrorReporter().reportError(
+            "Operation took " + significantDigits(timeInMs / 1000) + " seconds");
     }
 
     public getWidthInPixels(): number {

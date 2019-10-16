@@ -25,10 +25,8 @@ import org.hillview.table.api.ITable;
 
 /**
  * This is an RpcTarget that has a reference to an IDataSet[Pair[ITable,ITable]]
- * This class must be public.
  */
 // All RpcTarget objects must be public
-@SuppressWarnings("WeakerAccess")
 public final class TablePairTarget extends RpcTarget {
     private final IDataSet<Pair<ITable, ITable>> tables;
 

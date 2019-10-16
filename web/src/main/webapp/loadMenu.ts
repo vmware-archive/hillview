@@ -22,7 +22,7 @@ import {OnCompleteReceiver, RemoteObject} from "./rpc";
 import {Test} from "./test";
 import {IDataView} from "./ui/dataview";
 import {Dialog, FieldKind} from "./ui/dialog";
-import {ConsoleDisplay} from "./ui/errReporter";
+import {ErrorDisplay} from "./ui/errReporter";
 import {FullPage} from "./ui/fullPage";
 import {SubMenu, TopMenu, TopMenuItem} from "./ui/menu";
 import {ViewKind} from "./ui/ui";
@@ -36,7 +36,7 @@ import {Converters, ICancellable, loadFile, getUUID} from "./util";
 export class LoadMenu extends RemoteObject implements IDataView {
     private readonly top: HTMLElement;
     private readonly menu: TopMenu;
-    private readonly console: ConsoleDisplay;
+    private readonly console: ErrorDisplay;
     private readonly testDatasetsMenu: SubMenu;
     private readonly loadMenu: SubMenu;
     private advanced: boolean;
@@ -99,7 +99,7 @@ export class LoadMenu extends RemoteObject implements IDataView {
                     this.init.loadFiles(files, this.page);
                 },
                 help: "The US flights dataset.",
-            }, 
+            },
             { text: "Flights (15 columns, ORC)",
                 action: () => {
                     const files: FileSetDescription = {
@@ -267,7 +267,7 @@ export class LoadMenu extends RemoteObject implements IDataView {
 
         this.menu = new TopMenu(items);
         this.showAdvanced(false);
-        this.console = new ConsoleDisplay();
+        this.console = new ErrorDisplay();
         this.page.setMenu(this.menu);
         this.top.appendChild(this.console.getHTMLRepresentation());
     }

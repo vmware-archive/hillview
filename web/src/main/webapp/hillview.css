@@ -61,6 +61,7 @@ h2 {
 .console {
     font-family: monospace;
     white-space: pre-wrap;
+    background: #f0f0f0;
 }
 
 th {
@@ -221,7 +222,6 @@ div.truncated {
 
 /* close, minimize, help page elements */
 .close {
-    font-size: 20px;
     font-weight: bold;
     color: red;
     cursor: pointer;

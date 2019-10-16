@@ -17,7 +17,12 @@
 
 package org.hillview.targets;
 
+import org.hillview.*;
 import org.hillview.dataStructures.QuantilesArgs;
+import org.hillview.dataset.api.ISketch;
+import org.hillview.dataset.api.Pair;
+import org.hillview.maps.IdMap;
+import org.hillview.sketches.PrecomputedSketch;
 import org.hillview.sketches.results.BucketsInfo;
 import org.hillview.sketches.results.DataRange;
 import org.hillview.table.PrivacySchema;
@@ -25,21 +30,26 @@ import org.hillview.dataset.api.IJson;
 import org.hillview.sketches.results.TableSummary;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
+import org.hillview.table.api.ITable;
 import org.hillview.table.columns.ColumnQuantization;
 import org.hillview.table.columns.StringColumnQuantization;
 import org.hillview.table.filters.RangeFilterDescription;
+import org.hillview.table.filters.RangeFilterPair;
 import org.hillview.utils.Converters;
+import org.hillview.utils.HillviewException;
+import org.hillview.utils.JsonList;
 
 import javax.annotation.Nullable;
 import java.io.File;
 import java.util.HashMap;
+import java.util.function.BiFunction;
 
 /**
  * This class offers support for differentially-private queries on a data source.
  */
-class DPWrapper {
+public class DPWrapper {
     // For each column the range allowed after filtering
-    final HashMap<String, RangeFilterDescription> columnLimits;
+    private final HashMap<String, RangeFilterDescription> columnLimits;
     /* Global parameters for differentially-private histograms using the binary mechanism. */
     protected PrivacySchema privacySchema;
 
@@ -92,13 +102,13 @@ class DPWrapper {
     public void filter(RangeFilterDescription filter) {
         RangeFilterDescription rf = this.columnLimits.get(filter.cd.name);
         ColumnQuantization q = this.privacySchema.quantization(filter.cd.name);
-        filter = filter.intersect(q);
+        filter = filter.intersect(Converters.checkNull(q));
         if (rf != null)
             filter = filter.intersect(rf);
         this.columnLimits.put(filter.cd.name, filter);
     }
 
-    BucketsInfo getRange(QuantilesArgs qa) {
+    private BucketsInfo getRange(QuantilesArgs qa) {
         ColumnDescription cd = qa.cd;
         ColumnQuantization quantization = this.privacySchema.quantization(cd.name);
         RangeFilterDescription filter = this.columnLimits.get(cd.name);
@@ -117,5 +127,62 @@ class DPWrapper {
         result.missingCount = -1;
         result.presentCount = -1;
         return result;
+    }
+
+    // The following are methods used in common by various Private targets;
+    // technically we should use multiple inheritance to inherit these methods
+    // but in Java this is not possible, so we put them here.
+
+    void getDataQuantiles1D(RpcRequest request, RpcRequestContext context,
+                            IPrivateDataset target) {
+        QuantilesArgs[] args = request.parseArgs(QuantilesArgs[].class);
+        assert args.length == 1;
+        BucketsInfo retRange = this.getRange(args[0]);
+        ISketch<ITable, BucketsInfo> sk = new PrecomputedSketch<ITable, BucketsInfo>(retRange);
+        target.runCompleteSketch(
+                target.getDataset(), sk, (e, c) -> new JsonList<BucketsInfo>(e), request, context);
+    }
+
+    void getDataQuantiles2D(RpcRequest request, RpcRequestContext context,
+                            IPrivateDataset target) {
+        QuantilesArgs[] args = request.parseArgs(QuantilesArgs[].class);
+        assert args.length == 2;
+        BucketsInfo retRange0 = this.getRange(args[0]);
+        BucketsInfo retRange1 = this.getRange(args[1]);
+        ISketch<ITable, Pair<BucketsInfo, BucketsInfo>> sk =
+                new PrecomputedSketch<ITable, Pair<BucketsInfo, BucketsInfo>>(
+                        new Pair<BucketsInfo, BucketsInfo>(retRange0, retRange1));
+        BiFunction<Pair<BucketsInfo, BucketsInfo>, HillviewComputation, JsonList<BucketsInfo>> post =
+                (e, c) -> new JsonList<BucketsInfo>(e.first, e.second);
+        target.runCompleteSketch(target.getDataset(), sk, post, request, context);
+    }
+
+    public void filterRange(RpcRequest request, RpcRequestContext context,
+                            IPrivateDataset target,
+                            BiFunction<IPrivateDataset, HillviewComputation, IPrivateDataset> constructor) {
+        RangeFilterDescription filter = request.parseArgs(RangeFilterDescription.class);
+        if (filter.complement)
+            throw new HillviewException("Only filters on contiguous range are supported");
+        IdMap<ITable> map = new IdMap<ITable>();
+        target.runMap(target.getDataset(), map, (e, c) -> {
+            IPrivateDataset result = constructor.apply(target, c);
+            result.getWrapper().filter(filter);
+            return result;
+        }, request, context);
+    }
+
+    public void filter2DRange(RpcRequest request, RpcRequestContext context,
+                              IPrivateDataset target,
+                              BiFunction<IPrivateDataset, HillviewComputation, IPrivateDataset> constructor) {
+        RangeFilterPair filter = request.parseArgs(RangeFilterPair.class);
+        if (filter.first.complement || filter.second.complement)
+            throw new HillviewException("Only filters on contiguous range are supported");
+        IdMap<ITable> map = new IdMap<ITable>();
+        target.runMap(target.getDataset(), map, (e, c) -> {
+            IPrivateDataset result = constructor.apply(target, c);
+            result.getWrapper().filter(filter.first);
+            result.getWrapper().filter(filter.second);
+            return result;
+        }, request, context);
     }
 }

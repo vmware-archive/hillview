@@ -5,24 +5,19 @@ import org.hillview.dataStructures.*;
 import org.hillview.dataset.ConcurrentSketch;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.Pair;
-import org.hillview.maps.IdMap;
 import org.hillview.sketches.*;
 import org.hillview.sketches.results.*;
 import org.hillview.table.PrivacySchema;
 import org.hillview.table.api.ITable;
-import org.hillview.table.filters.RangeFilterDescription;
 import org.hillview.table.columns.ColumnQuantization;
-import org.hillview.table.filters.RangeFilterPair;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.Converters;
-import org.hillview.utils.HillviewException;
-import org.hillview.utils.JsonList;
 
 import java.util.function.BiFunction;
 
-public class PrivateTableTarget extends RpcTarget {
-    private final IDataSet<ITable> table;
-    private final DPWrapper wrapper;
+public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
+    public final IDataSet<ITable> table;
+    public final DPWrapper wrapper;
 
     PrivateTableTarget(IDataSet<ITable> table, HillviewComputation computation,
                        PrivacySchema privacySchema) {
@@ -32,17 +27,18 @@ public class PrivateTableTarget extends RpcTarget {
         this.registerObject();
     }
 
-    private PrivateTableTarget(PrivateTableTarget other, HillviewComputation computation) {
+    private PrivateTableTarget(IPrivateDataset other, HillviewComputation computation) {
         super(computation);
-        this.table = other.table;
-        this.wrapper = new DPWrapper(other.wrapper);
+        this.table = other.getDataset();
+        this.wrapper = new DPWrapper(other.getWrapper());
         this.registerObject();
     }
 
     @HillviewRpc
     public void getSummary(RpcRequest request, RpcRequestContext context) {
         SummarySketch ss = new SummarySketch();
-        this.runCompleteSketch(this.table, ss, (d, c) -> this.wrapper.addPrivateMetadata(d), request, context);
+        this.runCompleteSketch(this.table, ss,
+                (d, c) -> this.wrapper.addPrivateMetadata(d), request, context);
     }
 
     // Returns both the histogram and the precomputed CDF of the data.
@@ -71,38 +67,17 @@ public class PrivateTableTarget extends RpcTarget {
 
     @HillviewRpc
     public void getDataQuantiles1D(RpcRequest request, RpcRequestContext context) {
-        QuantilesArgs[] args = request.parseArgs(QuantilesArgs[].class);
-        assert args.length == 1;
-        BucketsInfo retRange = this.wrapper.getRange(args[0]);
-        PrecomputedSketch<ITable, BucketsInfo> sk = new PrecomputedSketch<ITable, BucketsInfo>(retRange);
-        this.runCompleteSketch(this.table, sk, (e, c) -> new JsonList<BucketsInfo>(e), request, context);
+        this.wrapper.getDataQuantiles1D(request, context, this);
     }
 
     @HillviewRpc
     public void filterRange(RpcRequest request, RpcRequestContext context) {
-        RangeFilterDescription filter = request.parseArgs(RangeFilterDescription.class);
-        if (filter.complement)
-            throw new HillviewException("Only filters on contiguous range are supported");
-        IdMap<ITable> map = new IdMap<ITable>();
-        this.runMap(this.table, map, (e, c) -> {
-            PrivateTableTarget result = new PrivateTableTarget(PrivateTableTarget.this, c);
-            result.wrapper.filter(filter);
-            return result;
-        }, request, context);
+        this.wrapper.filterRange(request, context, this, PrivateTableTarget::new);
     }
 
     @HillviewRpc
     public void filter2DRange(RpcRequest request, RpcRequestContext context) {
-        RangeFilterPair filter = request.parseArgs(RangeFilterPair.class);
-        if (filter.first.complement || filter.second.complement)
-            throw new HillviewException("Only filters on contiguous range are supported");
-        IdMap<ITable> map = new IdMap<ITable>();
-        this.runMap(this.table, map, (e, c) -> {
-            PrivateTableTarget result = new PrivateTableTarget(PrivateTableTarget.this, c);
-            result.wrapper.filter(filter.first);
-            result.wrapper.filter(filter.second);
-            return result;
-        }, request, context);
+        this.wrapper.filter2DRange(request, context, this, PrivateTableTarget::new);
     }
 
     @HillviewRpc
@@ -135,16 +110,7 @@ public class PrivateTableTarget extends RpcTarget {
 
     @HillviewRpc
     public void getDataQuantiles2D(RpcRequest request, RpcRequestContext context) {
-        QuantilesArgs[] args = request.parseArgs(QuantilesArgs[].class);
-        assert args.length == 2;
-        BucketsInfo retRange0 = this.wrapper.getRange(args[0]);
-        BucketsInfo retRange1 = this.wrapper.getRange(args[1]);
-        PrecomputedSketch<ITable, Pair<BucketsInfo, BucketsInfo>> sk =
-                new PrecomputedSketch<ITable, Pair<BucketsInfo, BucketsInfo>>(
-                        new Pair<BucketsInfo, BucketsInfo>(retRange0, retRange1));
-        BiFunction<Pair<BucketsInfo, BucketsInfo>, HillviewComputation, JsonList<BucketsInfo>> post =
-                (e, c) -> new JsonList<BucketsInfo>(e.first, e.second);
-        this.runCompleteSketch(this.table, sk, post, request, context);
+        this.wrapper.getDataQuantiles2D(request, context, this);
     }
 
     @HillviewRpc
@@ -186,5 +152,15 @@ public class PrivateTableTarget extends RpcTarget {
                 this.wrapper.privacySchema.quantization);
         BiFunction<SampleList, HillviewComputation, RowSnapshot> getRow = (ql, c) -> ql.getRow(info.position);
         this.runCompleteSketch(this.table, sk, getRow, request, context);
+    }
+
+    @Override
+    public IDataSet<ITable> getDataset() {
+        return this.table;
+    }
+
+    @Override
+    public DPWrapper getWrapper() {
+        return this.wrapper;
     }
 }
