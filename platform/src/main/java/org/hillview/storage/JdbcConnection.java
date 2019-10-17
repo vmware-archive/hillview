@@ -22,8 +22,12 @@ import org.hillview.sketches.results.ExplicitDoubleHistogramBuckets;
 import org.hillview.sketches.results.StringHistogramBuckets;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
+import org.hillview.table.columns.ColumnQuantization;
+import org.hillview.table.columns.DoubleColumnQuantization;
+import org.hillview.table.columns.StringColumnQuantization;
 import org.hillview.utils.Utilities;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 
 /**
@@ -145,22 +149,26 @@ abstract class JdbcConnection {
     }
 
     public String getQueryForExplicitNumericHistogram(
-            String table, ColumnDescription cd, ExplicitDoubleHistogramBuckets buckets) {
+            String table, ColumnDescription cd, ExplicitDoubleHistogramBuckets buckets,
+            @Nullable DoubleColumnQuantization quantization) {
         throw new UnsupportedOperationException();
     }
 
     public String getQueryForExplicitDateHistogram(
-            String table, ColumnDescription cd, ExplicitDoubleHistogramBuckets buckets) {
+            String table, ColumnDescription cd, ExplicitDoubleHistogramBuckets buckets,
+            @Nullable DoubleColumnQuantization quantization) {
         throw new UnsupportedOperationException();
     }
 
     public String getQueryForNumericHistogram(
-            String table, ColumnDescription cd, DoubleHistogramBuckets buckets) {
+            String table, ColumnDescription cd, DoubleHistogramBuckets buckets,
+            @Nullable DoubleColumnQuantization quantization) {
         throw new UnsupportedOperationException();
     }
 
     public String getQueryForStringHistogram(
-            String table, ColumnDescription cd, StringHistogramBuckets buckets) {
+            String table, ColumnDescription cd, StringHistogramBuckets buckets,
+            @Nullable StringColumnQuantization quantization) {
         throw new UnsupportedOperationException();
     }
 
@@ -168,23 +176,27 @@ abstract class JdbcConnection {
      * Returns a query that computes 4 values for a given numeric column.
      * @param table  Table used.
      * @param column Column name.
+     * @param quantization  Optional quantization information for this column.
      * @return       A query that computes the min, max, total rows, and non-nulls in the specified column.
      *               These are returned in columns min, max, total and nonnulls respectively.
      */
-    public String getQueryForNumericRange(String table, String column) {
+    public String getQueryForNumericRange(String table, String column,
+                                          @Nullable DoubleColumnQuantization quantization) {
         throw new UnsupportedOperationException();
     }
 
-    @SuppressWarnings("WeakerAccess")
-    public String getQueryForCounts(String table, String column) {
-        return "select COUNT(*) as total, COUNT(" + column + ") as nonnulls from " + table;
+    public String getQueryForCounts(String table, String column,
+                                    @Nullable ColumnQuantization quantization) {
+        throw new UnsupportedOperationException();
     }
 
     public String getQueryForDistinct(String table, String column) {
         return "SELECT DISTINCT " + column + " FROM " + table + " ORDER BY " + column;
     }
 
-    public String getQueryForDateHistogram(String table, ColumnDescription cd, DoubleHistogramBuckets buckets) {
+    public String getQueryForDateHistogram(String table, ColumnDescription cd,
+                                           DoubleHistogramBuckets buckets,
+                                           @Nullable DoubleColumnQuantization quantization) {
         throw new UnsupportedOperationException();
     }
 }

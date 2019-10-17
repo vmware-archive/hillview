@@ -117,4 +117,14 @@ public class StringColumnQuantization extends ColumnQuantization {
         System.arraycopy(this.leftBoundaries, li, b, 0, ri - li);
         return new StringColumnQuantization(b, this.globalMax);
     }
+
+    @Override
+    public String maxAsString() {
+        return this.leftBoundaries[0];
+    }
+
+    @Override
+    public String minAsString() {
+        return this.globalMax;
+    }
 }

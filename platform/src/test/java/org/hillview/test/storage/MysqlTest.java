@@ -26,6 +26,7 @@ import org.hillview.table.SmallTable;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
+import org.hillview.table.columns.DoubleColumnQuantization;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.Converters;
 import org.junit.Assert;
@@ -191,7 +192,36 @@ public class MysqlTest extends JdbcTest {
         DoubleHistogramBuckets buckets = new DoubleHistogramBuckets(
                 Converters.toDouble(first), Converters.toDouble(last), 10);
         Histogram histogram = db.histogram(
-                new ColumnDescription("birth_date", ContentsKind.Date), buckets);
+                new ColumnDescription("birth_date", ContentsKind.Date), buckets, null);
+        Assert.assertNotNull(histogram);
+        Assert.assertEquals(10, histogram.getBucketCount());
+        long total = 0;
+        for (int i = 0; i < histogram.getBucketCount(); i++)
+            total += histogram.getCount(i);
+        Assert.assertEquals(300024, total);
+        db.disconnect();
+    }
+
+    @Test
+    public void testMysqlQuantizedDateHistogram() throws SQLException {
+        JdbcConnectionInformation conn = this.mySqlTestDbConnection();
+        conn.table = "employees";
+        JdbcDatabase db = new JdbcDatabase(conn);
+        try {
+            db.connect();
+        } catch (Exception e) {
+            // This will fail if a database is not deployed, but we don't want to fail the test.
+            this.ignoringException("Cannot connect to database", e);
+            return;
+        }
+        Instant first = parseOneDate("1950/01/01");
+        Instant last = parseOneDate("2010/01/28");
+        DoubleHistogramBuckets buckets = new DoubleHistogramBuckets(
+                Converters.toDouble(first), Converters.toDouble(last), 10);
+        DoubleColumnQuantization quantization = new DoubleColumnQuantization(
+                86400, Converters.toDouble(first), Converters.toDouble(last));
+        Histogram histogram = db.histogram(
+                new ColumnDescription("birth_date", ContentsKind.Date), buckets, quantization);
         Assert.assertNotNull(histogram);
         Assert.assertEquals(10, histogram.getBucketCount());
         long total = 0;
@@ -241,7 +271,34 @@ public class MysqlTest extends JdbcTest {
         }
         DoubleHistogramBuckets buckets = new DoubleHistogramBuckets(0, 200000, 8);
         Histogram histogram = db.histogram(
-                new ColumnDescription("salary", ContentsKind.Integer), buckets);
+                new ColumnDescription("salary", ContentsKind.Integer), buckets, null);
+        Assert.assertNotNull(histogram);
+        Assert.assertEquals(8, histogram.getBucketCount());
+        Assert.assertEquals(0, histogram.getMissingData());
+        Assert.assertEquals(0, histogram.getCount(0));
+        Assert.assertEquals(0, histogram.getCount(7));
+        long total = 0;
+        for (int i = 0; i < histogram.getBucketCount(); i++)
+            total += histogram.getCount(i);
+        Assert.assertEquals(2844047, total);
+        db.disconnect();
+    }
+
+    @Test
+    public void testMysqlNumericQuantizedHistogram() throws SQLException {
+        JdbcConnectionInformation conn = this.mySqlTestDbConnection();
+        JdbcDatabase db = new JdbcDatabase(conn);
+        try {
+            db.connect();
+        } catch (Exception e) {
+            // This will fail if a database is not deployed, but we don't want to fail the test.
+            this.ignoringException("Cannot connect to database", e);
+            return;
+        }
+        DoubleHistogramBuckets buckets = new DoubleHistogramBuckets(0, 200000, 8);
+        DoubleColumnQuantization quantization = new DoubleColumnQuantization(5, 0, 200000);
+        Histogram histogram = db.histogram(
+                new ColumnDescription("salary", ContentsKind.Integer), buckets, quantization);
         Assert.assertNotNull(histogram);
         Assert.assertEquals(8, histogram.getBucketCount());
         Assert.assertEquals(0, histogram.getMissingData());
@@ -266,9 +323,9 @@ public class MysqlTest extends JdbcTest {
             return;
         }
         IHistogramBuckets buckets = new ExplicitDoubleHistogramBuckets(
-                new Double[] { 0.0, 10000.0, 50000.0, 100000.0, 200000.0 }, null);
+                new Double[] { 0.0, 10000.0, 50000.0, 100000.0, 200000.0 }, 300000.0);
         Histogram histogram = db.histogram(
-                new ColumnDescription("salary", ContentsKind.Integer), buckets);
+                new ColumnDescription("salary", ContentsKind.Integer), buckets, null);
         Assert.assertNotNull(histogram);
         Assert.assertEquals(buckets.getBucketCount(), histogram.getBucketCount());
         Assert.assertEquals(0, histogram.getMissingData());
@@ -296,7 +353,7 @@ public class MysqlTest extends JdbcTest {
         String[] boundaries = new String[] { "A", "F", "K", "P", "T", "X" };
         StringHistogramBuckets buckets = new StringHistogramBuckets(boundaries);
         Histogram histogram = db.histogram(
-                new ColumnDescription("first_name", ContentsKind.String), buckets);
+                new ColumnDescription("first_name", ContentsKind.String), buckets, null);
         Assert.assertNotNull(histogram);
         Assert.assertEquals(6, histogram.getBucketCount());
         long total = 0;

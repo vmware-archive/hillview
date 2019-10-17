@@ -98,4 +98,7 @@ public abstract class ColumnQuantization implements IJson, Serializable {
      * @param bucketCount  Number of buckets desired.
      */
     public abstract BucketsInfo getQuantiles(int bucketCount);
+
+    public abstract String maxAsString();
+    public abstract String minAsString();
 }

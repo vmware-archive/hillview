@@ -86,8 +86,8 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
         DyadicDecomposition d1 = info[1].getDecomposition(quantization);
         try {
             this.database.connect();
-            Histogram histo = this.database.histogram(cd, info[0].getBuckets(quantization));
-            Histogram cdf = this.database.histogram(cd, info[1].getBuckets(quantization));
+            Histogram histo = this.database.histogram(cd, info[0].getBuckets(quantization), quantization);
+            Histogram cdf = this.database.histogram(cd, info[1].getBuckets(quantization), quantization);
             Pair<Histogram, Histogram> result = new Pair<Histogram, Histogram>(histo, cdf);
             this.database.disconnect();
             ISketch<ITable, Pair<Histogram, Histogram>> sk = new PrecomputedSketch<ITable, Pair<Histogram, Histogram>>(result);

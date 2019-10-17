@@ -24,6 +24,9 @@ import org.hillview.table.SmallTable;
 import org.hillview.table.Table;
 import org.hillview.table.api.*;
 import org.hillview.table.columns.BaseListColumn;
+import org.hillview.table.columns.ColumnQuantization;
+import org.hillview.table.columns.DoubleColumnQuantization;
+import org.hillview.table.columns.StringColumnQuantization;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.*;
 
@@ -161,26 +164,36 @@ public class JdbcDatabase {
      * @param buckets  Bucket description
      * @return         The histogram of the data.
      */
-    public Histogram histogram(ColumnDescription cd, IHistogramBuckets buckets) {
+    public Histogram histogram(ColumnDescription cd, IHistogramBuckets buckets,
+                               @Nullable ColumnQuantization quantization) {
         assert this.conn.info.table != null;
         String query;
         if (buckets instanceof DoubleHistogramBuckets) {
             if (cd.kind == ContentsKind.Date)
                 query = this.conn.getQueryForDateHistogram(
-                        this.conn.info.table, cd, (DoubleHistogramBuckets)buckets);
+                        this.conn.info.table, cd,
+                        (DoubleHistogramBuckets)buckets,
+                        (DoubleColumnQuantization)quantization);
             else
                 query = this.conn.getQueryForNumericHistogram(
-                        this.conn.info.table, cd, (DoubleHistogramBuckets)buckets);
+                        this.conn.info.table, cd, (DoubleHistogramBuckets)buckets,
+                        (DoubleColumnQuantization)quantization);
         } else if (buckets instanceof ExplicitDoubleHistogramBuckets) {
             if (cd.kind == ContentsKind.Date)
                 query = this.conn.getQueryForExplicitDateHistogram(
-                        this.conn.info.table, cd, (ExplicitDoubleHistogramBuckets)buckets);
+                        this.conn.info.table, cd,
+                        (ExplicitDoubleHistogramBuckets)buckets,
+                        (DoubleColumnQuantization)quantization);
             else
                 query = this.conn.getQueryForExplicitNumericHistogram(
-                        this.conn.info.table, cd, (ExplicitDoubleHistogramBuckets)buckets);
+                        this.conn.info.table, cd,
+                        (ExplicitDoubleHistogramBuckets)buckets,
+                        (DoubleColumnQuantization)quantization);
         }  else {
             query = this.conn.getQueryForStringHistogram(
-                    this.conn.info.table, cd, (StringHistogramBuckets)buckets);
+                    this.conn.info.table, cd,
+                    (StringHistogramBuckets)buckets,
+                    (StringColumnQuantization)quantization);
         }
         ResultSet rs = this.getQueryResult(query);
         List<IAppendableColumn> cols = JdbcDatabase.convertResultSet(rs);
@@ -212,7 +225,7 @@ public class JdbcDatabase {
      */
     public DataRange numericDataRange(ColumnDescription cd) {
         assert this.conn.info.table != null;
-        String query = this.conn.getQueryForNumericRange(this.conn.info.table, cd.name);
+        String query = this.conn.getQueryForNumericRange(this.conn.info.table, cd.name, null);
         ResultSet rs = this.getQueryResult(query);
         List<IAppendableColumn> cols = JdbcDatabase.convertResultSet(rs);
         SmallTable table = new SmallTable(cols);
@@ -265,7 +278,7 @@ public class JdbcDatabase {
         }
         {
             // Compute presentCount and missingCount
-            String query = this.conn.getQueryForCounts(this.conn.info.table, cd.name);
+            String query = this.conn.getQueryForCounts(this.conn.info.table, cd.name, null);
             ResultSet rs = this.getQueryResult(query);
             List<IAppendableColumn> cols = JdbcDatabase.convertResultSet(rs);
             SmallTable table = new SmallTable(cols);
@@ -318,6 +331,7 @@ public class JdbcDatabase {
 
     private ResultSet getQueryResult(String query) {
         try {
+            System.out.println(query);
             HillviewLogger.instance.info("Executing SQL query", "{0}", query);
             Statement st = Converters.checkNull(this.connection).createStatement();
             return st.executeQuery(query);

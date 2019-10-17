@@ -193,8 +193,8 @@ public class SimpleDBTarget extends RpcTarget {
         ColumnDescription cd = info[0].cd;  // both args should be on the same column
         try {
             this.database.connect();
-            Histogram histo = this.database.histogram(cd, info[0].getBuckets());
-            Histogram cdf = this.database.histogram(cd, info[1].getBuckets());
+            Histogram histo = this.database.histogram(cd, info[0].getBuckets(), null);
+            Histogram cdf = this.database.histogram(cd, info[1].getBuckets(), null);
             Pair<AugmentedHistogram, HistogramPrefixSum> result = new
                     Pair<AugmentedHistogram, HistogramPrefixSum>(
                             new AugmentedHistogram(histo), new HistogramPrefixSum(cdf));
