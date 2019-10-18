@@ -23,6 +23,7 @@ import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.Pair;
 import org.hillview.sketches.PrecomputedSketch;
+import org.hillview.sketches.results.Heatmap;
 import org.hillview.sketches.results.Histogram;
 import org.hillview.sketches.results.TableSummary;
 import org.hillview.storage.JdbcConnectionInformation;
@@ -124,6 +125,33 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
             ISketch<ITable, DistinctCount> sk = new PrecomputedSketch<ITable, DistinctCount>(dc);
             // TODO(pratiksha): add noise to this count
             this.runSketch(this.table, sk, request, context);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @HillviewRpc
+    public void heatmap(RpcRequest request, RpcRequestContext context) {
+        HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
+        assert info.length == 2;
+        try {
+            this.database.connect();
+            Heatmap heatmap = this.database.heatmap(
+                    info[0].cd, info[1].cd,
+                    info[0].getBuckets(), info[1].getBuckets(),
+                    null, null);
+            this.database.disconnect();
+            double epsilon = this.wrapper.privacySchema.epsilon(new String[] {
+                    info[0].cd.name, info[1].cd.name});
+            ColumnQuantization q0 = this.wrapper.privacySchema.quantization(info[0].cd.name);
+            ColumnQuantization q1 = this.wrapper.privacySchema.quantization(info[1].cd.name);
+            Converters.checkNull(q0);
+            Converters.checkNull(q1);
+            DyadicDecomposition d0 = info[0].getDecomposition(q0);
+            DyadicDecomposition d1 = info[1].getDecomposition(q1);
+            PrivateHeatmap result = new PrivateHeatmap(d0, d1, heatmap, epsilon);
+            ISketch<ITable, Heatmap> sk = new PrecomputedSketch<ITable, Heatmap>(result.heatmap);
+            this.runCompleteSketch(this.table, sk, (e, c) -> e, request, context);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

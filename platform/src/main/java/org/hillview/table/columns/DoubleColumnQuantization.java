@@ -89,12 +89,12 @@ public class DoubleColumnQuantization extends ColumnQuantization {
     }
 
     @Override
-    public String maxAsString() {
+    public String minAsString() {
         return Double.toString(this.globalMin);
     }
 
     @Override
-    public String minAsString() {
+    public String maxAsString() {
         return Double.toString(this.globalMax);
     }
 }

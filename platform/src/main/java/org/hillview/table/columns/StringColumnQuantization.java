@@ -119,12 +119,12 @@ public class StringColumnQuantization extends ColumnQuantization {
     }
 
     @Override
-    public String maxAsString() {
+    public String minAsString() {
         return this.leftBoundaries[0];
     }
 
     @Override
-    public String minAsString() {
+    public String maxAsString() {
         return this.globalMax;
     }
 }

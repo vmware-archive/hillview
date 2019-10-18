@@ -17,14 +17,12 @@
 
 package org.hillview.storage;
 
-import org.hillview.sketches.results.DoubleHistogramBuckets;
-import org.hillview.sketches.results.ExplicitDoubleHistogramBuckets;
-import org.hillview.sketches.results.StringHistogramBuckets;
+import org.hillview.sketches.results.IHistogramBuckets;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.columns.ColumnQuantization;
 import org.hillview.table.columns.DoubleColumnQuantization;
-import org.hillview.table.columns.StringColumnQuantization;
+import org.hillview.utils.Converters;
 import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
@@ -64,12 +62,11 @@ abstract class JdbcConnection {
     public abstract String getURL();
 
     /**
-     * Construct the query string to read the specified table.
-     * @param table     Table to read.
+     * Construct the query string to read the connection table.
      * @param rowCount  Number of rows to read.
      * @return          A SQL query string that reads the specified number of rows.
      */
-    public abstract String getQueryToReadTable(String table, int rowCount);
+    public abstract String getQueryToReadTable(int rowCount);
 
     String getQueryToReadSize(String table) {
         return "SELECT COUNT(*) FROM " + table;
@@ -121,7 +118,8 @@ abstract class JdbcConnection {
         this.info = info;
     }
 
-    String getQueryToComputeFreqValues(String table, Schema schema, int minCt) {
+    String getQueryToComputeFreqValues(Schema schema, int minCt) {
+        Converters.checkNull(this.info.table);
         StringBuilder builder = new StringBuilder();
         String ctcol = schema.newColumnName("countcol");
         /*
@@ -140,7 +138,7 @@ abstract class JdbcConnection {
             cols.append(col);
         }
         builder.append("select ").append(cols.toString()).append(", count(*) AS ").append(ctcol)
-                .append(" from ").append(table)
+                .append(" from ").append(this.info.table)
                 .append(" group by ").append(cols.toString())
                 .append(" having ").append(ctcol).append(" > " ).append(minCt)
                 .append(" order by ").append(ctcol).append(" desc")
@@ -148,55 +146,36 @@ abstract class JdbcConnection {
         return builder.toString();
     }
 
-    public String getQueryForExplicitNumericHistogram(
-            String table, ColumnDescription cd, ExplicitDoubleHistogramBuckets buckets,
-            @Nullable DoubleColumnQuantization quantization) {
-        throw new UnsupportedOperationException();
-    }
-
-    public String getQueryForExplicitDateHistogram(
-            String table, ColumnDescription cd, ExplicitDoubleHistogramBuckets buckets,
-            @Nullable DoubleColumnQuantization quantization) {
-        throw new UnsupportedOperationException();
-    }
-
-    public String getQueryForNumericHistogram(
-            String table, ColumnDescription cd, DoubleHistogramBuckets buckets,
-            @Nullable DoubleColumnQuantization quantization) {
-        throw new UnsupportedOperationException();
-    }
-
-    public String getQueryForStringHistogram(
-            String table, ColumnDescription cd, StringHistogramBuckets buckets,
-            @Nullable StringColumnQuantization quantization) {
-        throw new UnsupportedOperationException();
-    }
-
     /**
      * Returns a query that computes 4 values for a given numeric column.
-     * @param table  Table used.
-     * @param column Column name.
+     * @param cd Column description.
      * @param quantization  Optional quantization information for this column.
      * @return       A query that computes the min, max, total rows, and non-nulls in the specified column.
      *               These are returned in columns min, max, total and nonnulls respectively.
      */
-    public String getQueryForNumericRange(String table, String column,
-                                          @Nullable DoubleColumnQuantization quantization) {
+    public String getQueryForNumericRange(ColumnDescription cd, @Nullable DoubleColumnQuantization quantization) {
         throw new UnsupportedOperationException();
     }
 
-    public String getQueryForCounts(String table, String column,
-                                    @Nullable ColumnQuantization quantization) {
+    public String getQueryForCounts(ColumnDescription cd, @Nullable ColumnQuantization quantization) {
         throw new UnsupportedOperationException();
     }
 
-    public String getQueryForDistinct(String table, String column) {
-        return "SELECT DISTINCT " + column + " FROM " + table + " ORDER BY " + column;
+    public String getQueryForDistinct(String column) {
+        Converters.checkNull(this.info.table);
+        return "SELECT DISTINCT " + column + " FROM " + this.info.table + " ORDER BY " + column;
     }
 
-    public String getQueryForDateHistogram(String table, ColumnDescription cd,
-                                           DoubleHistogramBuckets buckets,
-                                           @Nullable DoubleColumnQuantization quantization) {
+    public String getQueryForHistogram(ColumnDescription cd,
+                                IHistogramBuckets buckets,
+                                @Nullable ColumnQuantization quantization) {
+        throw new UnsupportedOperationException();
+    }
+
+    public String getQueryForHeatmap(ColumnDescription cd0, ColumnDescription cd1,
+                                     IHistogramBuckets buckets0, IHistogramBuckets buckets1,
+                                     @Nullable ColumnQuantization quantization0,
+                                     @Nullable ColumnQuantization quantization1) {
         throw new UnsupportedOperationException();
     }
 }

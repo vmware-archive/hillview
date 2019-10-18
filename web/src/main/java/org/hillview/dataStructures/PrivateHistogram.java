@@ -1,5 +1,6 @@
 package org.hillview.dataStructures;
 
+import org.apache.commons.math3.distribution.LaplaceDistribution;
 import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.Pair;
 import org.hillview.sketches.results.Histogram;
@@ -35,8 +36,14 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
      * noise for that prefix.
      */
     private void recomputeCDF(DyadicDecomposition decomposition) {
+        int totalLeaves = decomposition.getQuantizationIntervalCount();
+        double scale = Math.log(totalLeaves / epsilon) / Math.log(2);
+        double baseVariance = 2 * Math.pow(scale, 2);
+        LaplaceDistribution dist = new LaplaceDistribution(0, scale); // TODO: (more) secure PRG
+
         for (int i = 0; i < this.cdfBuckets.length; i++) {
-            Pair<Double, Double> p = decomposition.noiseForBucket(i, this.epsilon, true);
+            Pair<Double, Double> p = decomposition.noiseForBucket(
+                    i, this.epsilon, dist, baseVariance, true);
             Converters.checkNull(p.first);
             this.cdfBuckets[i] += p.first;
             if (i > 0) {
@@ -54,8 +61,14 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
      * The total noise is the sum of the noise variables in the intervals composing the desired interval or bucket.
      */
     private void addDyadicLaplaceNoise(DyadicDecomposition decomposition) {
+        int totalLeaves = decomposition.getQuantizationIntervalCount();
+        double scale = Math.log(totalLeaves / epsilon) / Math.log(2);
+        double baseVariance = 2 * Math.pow(scale, 2);
+        LaplaceDistribution dist = new LaplaceDistribution(0, scale); // TODO: (more) secure PRG
+
         for (int i = 0; i < this.histogram.buckets.length; i++) {
-            Pair<Double, Double> noise = decomposition.noiseForBucket(i, this.epsilon, false);
+            Pair<Double, Double> noise = decomposition.noiseForBucket(
+                    i, this.epsilon, dist, baseVariance, false);
             this.histogram.buckets[i] += Converters.checkNull(noise.first);
             // Postprocess so that no buckets are negative
             this.histogram.buckets[i] = Math.max(0, this.histogram.buckets[i]);

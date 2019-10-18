@@ -27,6 +27,7 @@ import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.DoubleColumnQuantization;
+import org.hillview.table.columns.StringColumnQuantization;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.Converters;
 import org.junit.Assert;
@@ -35,6 +36,11 @@ import org.junit.Test;
 import java.sql.SQLException;
 import java.time.Instant;
 
+/**
+ * Most of theses tests assume that the MySQL test database from
+ * https://github.com/datacharmer/test_db has been installed and
+ * a user exists with name "user" and password "password".
+ */
 public class MysqlTest extends JdbcTest {
     /**
      * Returns a connection information suitable for accessing
@@ -187,8 +193,8 @@ public class MysqlTest extends JdbcTest {
             this.ignoringException("Cannot connect to database", e);
             return;
         }
-        Instant first = parseOneDate("1950/01/01");
-        Instant last = parseOneDate("2010/01/28");
+        Instant first = parseOneDate("1952/02/01");
+        Instant last = parseOneDate("1965/02/01");
         DoubleHistogramBuckets buckets = new DoubleHistogramBuckets(
                 Converters.toDouble(first), Converters.toDouble(last), 10);
         Histogram histogram = db.histogram(
@@ -214,8 +220,8 @@ public class MysqlTest extends JdbcTest {
             this.ignoringException("Cannot connect to database", e);
             return;
         }
-        Instant first = parseOneDate("1950/01/01");
-        Instant last = parseOneDate("2010/01/28");
+        Instant first = parseOneDate("1952/02/01");
+        Instant last = parseOneDate("1965/02/01");
         DoubleHistogramBuckets buckets = new DoubleHistogramBuckets(
                 Converters.toDouble(first), Converters.toDouble(last), 10);
         DoubleColumnQuantization quantization = new DoubleColumnQuantization(
@@ -228,6 +234,37 @@ public class MysqlTest extends JdbcTest {
         for (int i = 0; i < histogram.getBucketCount(); i++)
             total += histogram.getCount(i);
         Assert.assertEquals(300024, total);
+        db.disconnect();
+    }
+
+    @Test
+    public void testMysqlQuantizedFilteredDateHistogram() throws SQLException {
+        JdbcConnectionInformation conn = this.mySqlTestDbConnection();
+        conn.table = "employees";
+        JdbcDatabase db = new JdbcDatabase(conn);
+        try {
+            db.connect();
+        } catch (Exception e) {
+            // This will fail if a database is not deployed, but we don't want to fail the test.
+            this.ignoringException("Cannot connect to database", e);
+            return;
+        }
+        Instant first = parseOneDate("1955/01/01");
+        Instant last = parseOneDate("1965/02/01");
+        DoubleHistogramBuckets buckets = new DoubleHistogramBuckets(
+                Converters.toDouble(first), Converters.toDouble(last), 10);
+        Instant firstQ = parseOneDate("1952/02/01");
+        Instant lastQ = parseOneDate("1965/02/01");
+        DoubleColumnQuantization quantization = new DoubleColumnQuantization(
+                86400, Converters.toDouble(firstQ), Converters.toDouble(lastQ));
+        Histogram histogram = db.histogram(
+                new ColumnDescription("birth_date", ContentsKind.Date), buckets, quantization);
+        Assert.assertNotNull(histogram);
+        Assert.assertEquals(10, histogram.getBucketCount());
+        long total = 0;
+        for (int i = 0; i < histogram.getBucketCount(); i++)
+            total += histogram.getCount(i);
+        Assert.assertEquals(232730, total);
         db.disconnect();
     }
 
@@ -285,6 +322,92 @@ public class MysqlTest extends JdbcTest {
     }
 
     @Test
+    public void testMysqlHeatmap() throws SQLException {
+        JdbcConnectionInformation conn = this.mySqlTestDbConnection();
+        JdbcDatabase db = new JdbcDatabase(conn);
+        try {
+            db.connect();
+        } catch (Exception e) {
+            // This will fail if a database is not deployed, but we don't want to fail the test.
+            this.ignoringException("Cannot connect to database", e);
+            return;
+        }
+        DoubleHistogramBuckets buckets0 = new DoubleHistogramBuckets(0, 200000, 8);
+        DoubleHistogramBuckets buckets1 = new DoubleHistogramBuckets(0, 500000, 4);
+        Heatmap heatmap = db.heatmap(
+                new ColumnDescription("salary", ContentsKind.Integer),
+                new ColumnDescription("emp_no", ContentsKind.Integer),
+                buckets0, buckets1, null, null);
+        Assert.assertNotNull(heatmap);
+        Assert.assertEquals(8, heatmap.xBucketCount);
+        Assert.assertEquals(4, heatmap.yBucketCount);
+        long total = 0;
+        for (int i = 0; i < heatmap.xBucketCount; i++)
+            for (int j = 0; j < heatmap.yBucketCount; j++)
+                total += heatmap.buckets[i][j];
+        Assert.assertEquals(2844047, total);
+        db.disconnect();
+    }
+
+    @Test
+    public void testMysqlHeatmapSelection() throws SQLException {
+        JdbcConnectionInformation conn = this.mySqlTestDbConnection();
+        JdbcDatabase db = new JdbcDatabase(conn);
+        try {
+            db.connect();
+        } catch (Exception e) {
+            // This will fail if a database is not deployed, but we don't want to fail the test.
+            this.ignoringException("Cannot connect to database", e);
+            return;
+        }
+        DoubleHistogramBuckets buckets0 = new DoubleHistogramBuckets(0, 200000, 8);
+        DoubleHistogramBuckets buckets1 = new DoubleHistogramBuckets(0, 150000, 4);
+        Heatmap heatmap = db.heatmap(
+                new ColumnDescription("salary", ContentsKind.Integer),
+                new ColumnDescription("emp_no", ContentsKind.Integer),
+                buckets0, buckets1, null, null);
+        Assert.assertNotNull(heatmap);
+        Assert.assertEquals(8, heatmap.xBucketCount);
+        Assert.assertEquals(4, heatmap.yBucketCount);
+        long total = 0;
+        for (int i = 0; i < heatmap.xBucketCount; i++)
+            for (int j = 0; j < heatmap.yBucketCount; j++)
+                total += heatmap.buckets[i][j];
+        Assert.assertEquals(950571, total);
+        db.disconnect();
+    }
+
+    @Test
+    public void testMysqlQuantizedHeatmapSelection() throws SQLException {
+        JdbcConnectionInformation conn = this.mySqlTestDbConnection();
+        JdbcDatabase db = new JdbcDatabase(conn);
+        try {
+            db.connect();
+        } catch (Exception e) {
+            // This will fail if a database is not deployed, but we don't want to fail the test.
+            this.ignoringException("Cannot connect to database", e);
+            return;
+        }
+        DoubleColumnQuantization q0 = new DoubleColumnQuantization(100, 0, 200000);
+        DoubleColumnQuantization q1 = new DoubleColumnQuantization(100, 0, 500000);
+        DoubleHistogramBuckets buckets0 = new DoubleHistogramBuckets(0, 200000, 8);
+        DoubleHistogramBuckets buckets1 = new DoubleHistogramBuckets(0, 150000, 4);
+        Heatmap heatmap = db.heatmap(
+                new ColumnDescription("salary", ContentsKind.Integer),
+                new ColumnDescription("emp_no", ContentsKind.Integer),
+                buckets0, buckets1, q0, q1);
+        Assert.assertNotNull(heatmap);
+        Assert.assertEquals(8, heatmap.xBucketCount);
+        Assert.assertEquals(4, heatmap.yBucketCount);
+        long total = 0;
+        for (int i = 0; i < heatmap.xBucketCount; i++)
+            for (int j = 0; j < heatmap.yBucketCount; j++)
+                total += heatmap.buckets[i][j];
+        Assert.assertEquals(950571, total);
+        db.disconnect();
+    }
+
+    @Test
     public void testMysqlNumericQuantizedHistogram() throws SQLException {
         JdbcConnectionInformation conn = this.mySqlTestDbConnection();
         JdbcDatabase db = new JdbcDatabase(conn);
@@ -312,33 +435,6 @@ public class MysqlTest extends JdbcTest {
     }
 
     @Test
-    public void testMysqlExplicitNumericHistogram() throws SQLException {
-        JdbcConnectionInformation conn = this.mySqlTestDbConnection();
-        JdbcDatabase db = new JdbcDatabase(conn);
-        try {
-            db.connect();
-        } catch (Exception e) {
-            // This will fail if a database is not deployed, but we don't want to fail the test.
-            this.ignoringException("Cannot connect to database", e);
-            return;
-        }
-        IHistogramBuckets buckets = new ExplicitDoubleHistogramBuckets(
-                new Double[] { 0.0, 10000.0, 50000.0, 100000.0, 200000.0 }, 300000.0);
-        Histogram histogram = db.histogram(
-                new ColumnDescription("salary", ContentsKind.Integer), buckets, null);
-        Assert.assertNotNull(histogram);
-        Assert.assertEquals(buckets.getBucketCount(), histogram.getBucketCount());
-        Assert.assertEquals(0, histogram.getMissingData());
-        Assert.assertEquals(0, histogram.getCount(0));
-        Assert.assertEquals(0, histogram.getCount(4));
-        long total = 0;
-        for (int i = 0; i < histogram.getBucketCount(); i++)
-            total += histogram.getCount(i);
-        Assert.assertEquals(2844047, total);
-        db.disconnect();
-    }
-
-    @Test
     public void testMysqlStringHistogram() throws SQLException {
         JdbcConnectionInformation conn = this.mySqlTestDbConnection();
         conn.table = "employees";
@@ -354,6 +450,36 @@ public class MysqlTest extends JdbcTest {
         StringHistogramBuckets buckets = new StringHistogramBuckets(boundaries);
         Histogram histogram = db.histogram(
                 new ColumnDescription("first_name", ContentsKind.String), buckets, null);
+        Assert.assertNotNull(histogram);
+        Assert.assertEquals(6, histogram.getBucketCount());
+        long total = 0;
+        for (int i = 0; i < histogram.getBucketCount(); i++)
+            total += histogram.getCount(i);
+        Assert.assertEquals(300024, total);
+        db.disconnect();
+    }
+
+
+    @Test
+    public void testMysqlQuantizedStringHistogram() throws SQLException {
+        JdbcConnectionInformation conn = this.mySqlTestDbConnection();
+        conn.table = "employees";
+        JdbcDatabase db = new JdbcDatabase(conn);
+        try {
+            db.connect();
+        } catch (Exception e) {
+            // This will fail if a database is not deployed, but we don't want to fail the test.
+            this.ignoringException("Cannot connect to database", e);
+            return;
+        }
+        String[] boundaries = new String[] { "A", "F", "K", "P", "T", "X" };
+        StringHistogramBuckets buckets = new StringHistogramBuckets(boundaries);
+        String[] letters = new String[26];
+        for (char c = 'A'; c <= 'Z'; c++)
+            letters[c - 'A'] = Character.toString(c);
+        StringColumnQuantization quantization = new StringColumnQuantization(letters, "z");
+        Histogram histogram = db.histogram(
+                new ColumnDescription("first_name", ContentsKind.String), buckets, quantization);
         Assert.assertNotNull(histogram);
         Assert.assertEquals(6, histogram.getBucketCount());
         long total = 0;

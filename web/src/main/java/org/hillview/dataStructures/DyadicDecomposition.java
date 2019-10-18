@@ -21,6 +21,7 @@ import org.apache.commons.math3.distribution.LaplaceDistribution;
 import org.hillview.dataset.api.Pair;
 import org.hillview.sketches.results.IHistogramBuckets;
 import org.hillview.table.columns.ColumnQuantization;
+import org.hillview.utils.HashUtil;
 import org.hillview.utils.Utilities;
 
 import java.util.ArrayList;
@@ -110,22 +111,26 @@ public abstract class DyadicDecomposition {
     /**
      * Compute noise to add to this bucket using the dyadic decomposition as the PRG seed.
      * @param bucketIdx: index of the bucket to compute noise for.
+     * @param dist:      laplace distribution used to sample data
+     * @param baseVariance:  factor added to variance for each bucket
      * @param epsilon    Amount of privacy allocated for this computation.
      * @param isCdf: If true, computes the noise based on the dyadic decomposition of the interval [0, bucket right leaf]
      *             rather than [bucket left leaf, bucket right leaf].
      * Returns the noise and the total variance of the variables used to compute the noise.
      */
-    Pair<Double, Double> noiseForBucket(int bucketIdx, double epsilon, boolean isCdf) {
+    Pair<Double, Double> noiseForBucket(int bucketIdx, double epsilon,
+                                        LaplaceDistribution dist, double baseVariance, boolean isCdf) {
         List<Pair<Integer, Integer>> intervals = this.bucketDecomposition(bucketIdx, isCdf);
         double noise = 0;
         double variance = 0;
-        int totalLeaves = this.getQuantizationIntervalCount();
-        double scale = Math.log(totalLeaves / epsilon) / Math.log(2);
+
+        int hashCode = 31;
         for (Pair<Integer, Integer> x : intervals) {
-            LaplaceDistribution dist = new LaplaceDistribution(0, scale); // TODO: (more) secure PRG
-            dist.reseedRandomGenerator(x.hashCode()); // Each node's noise should be deterministic, based on node's ID
+            hashCode = HashUtil.murmurHash3(hashCode, x.first);
+            hashCode = HashUtil.murmurHash3(hashCode, x.second);
+            dist.reseedRandomGenerator(hashCode);
             noise += dist.sample();
-            variance += 2*(Math.pow(scale, 2));
+            variance += baseVariance;
         }
         return new Pair<Double, Double>(noise, variance);
     }

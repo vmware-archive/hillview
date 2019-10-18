@@ -26,10 +26,7 @@ import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.Pair;
 import org.hillview.sketches.*;
-import org.hillview.sketches.results.BucketsInfo;
-import org.hillview.sketches.results.FreqKList;
-import org.hillview.sketches.results.Histogram;
-import org.hillview.sketches.results.TableSummary;
+import org.hillview.sketches.results.*;
 import org.hillview.storage.JdbcConnectionInformation;
 import org.hillview.storage.JdbcDatabase;
 import org.hillview.table.ColumnDescription;
@@ -187,6 +184,32 @@ public class SimpleDBTarget extends RpcTarget {
     }
 
     @HillviewRpc
+    public void getDataQuantiles2D(RpcRequest request, RpcRequestContext context) {
+        QuantilesArgs[] info = request.parseArgs(QuantilesArgs[].class);
+        assert info.length == 2;
+        try {
+            this.database.connect();
+            JsonList<BucketsInfo> result = new JsonList<BucketsInfo>(2);
+            for (int i = 0; i < 2; i++) {
+                BucketsInfo range;
+                if (info[i].cd.kind == ContentsKind.Integer ||
+                        info[i].cd.kind == ContentsKind.Double ||
+                        info[i].cd.kind == ContentsKind.Date) {
+                    range = this.database.numericDataRange(info[i].cd);
+                } else {
+                    range = this.database.stringBuckets(info[i].cd, info[i].stringsToSample);
+                }
+                result.add(range);
+            }
+            this.database.disconnect();
+            ISketch<ITable, JsonList<BucketsInfo>> sk = new PrecomputedSketch<ITable, JsonList<BucketsInfo>>(result);
+            this.runSketch(this.table, sk, request, context);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @HillviewRpc
     public void histogram(RpcRequest request, RpcRequestContext context) {
         HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
         assert info.length == 2;
@@ -200,6 +223,24 @@ public class SimpleDBTarget extends RpcTarget {
                             new AugmentedHistogram(histo), new HistogramPrefixSum(cdf));
             this.database.disconnect();
             ISketch<ITable, Pair<AugmentedHistogram, HistogramPrefixSum>> sk = new PrecomputedSketch<ITable, Pair<AugmentedHistogram, HistogramPrefixSum>>(result);
+            this.runSketch(this.table, sk, request, context);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @HillviewRpc
+    public void heatmap(RpcRequest request, RpcRequestContext context) {
+        HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
+        assert info.length == 2;
+        try {
+            this.database.connect();
+            Heatmap heatmap = this.database.heatmap(
+                    info[0].cd, info[1].cd,
+                    info[0].getBuckets(), info[1].getBuckets(),
+                    null, null);
+            this.database.disconnect();
+            ISketch<ITable, Heatmap> sk = new PrecomputedSketch<ITable, Heatmap>(heatmap);
             this.runSketch(this.table, sk, request, context);
         } catch (SQLException e) {
             throw new RuntimeException(e);

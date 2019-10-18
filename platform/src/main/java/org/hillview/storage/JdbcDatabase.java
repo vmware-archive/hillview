@@ -25,8 +25,6 @@ import org.hillview.table.Table;
 import org.hillview.table.api.*;
 import org.hillview.table.columns.BaseListColumn;
 import org.hillview.table.columns.ColumnQuantization;
-import org.hillview.table.columns.DoubleColumnQuantization;
-import org.hillview.table.columns.StringColumnQuantization;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.*;
 
@@ -151,8 +149,7 @@ public class JdbcDatabase {
      */
     public SmallTable topFreq(Schema schema, int maxRows) {
         assert this.conn.info.table != null;
-        String query = this.conn.getQueryToComputeFreqValues(
-                this.conn.info.table, schema, maxRows);
+        String query = this.conn.getQueryToComputeFreqValues(schema, maxRows);
         ResultSet rs = this.getQueryResult(query);
         List<IAppendableColumn> columns = JdbcDatabase.convertResultSet(rs);
         return new SmallTable(columns);
@@ -166,35 +163,7 @@ public class JdbcDatabase {
      */
     public Histogram histogram(ColumnDescription cd, IHistogramBuckets buckets,
                                @Nullable ColumnQuantization quantization) {
-        assert this.conn.info.table != null;
-        String query;
-        if (buckets instanceof DoubleHistogramBuckets) {
-            if (cd.kind == ContentsKind.Date)
-                query = this.conn.getQueryForDateHistogram(
-                        this.conn.info.table, cd,
-                        (DoubleHistogramBuckets)buckets,
-                        (DoubleColumnQuantization)quantization);
-            else
-                query = this.conn.getQueryForNumericHistogram(
-                        this.conn.info.table, cd, (DoubleHistogramBuckets)buckets,
-                        (DoubleColumnQuantization)quantization);
-        } else if (buckets instanceof ExplicitDoubleHistogramBuckets) {
-            if (cd.kind == ContentsKind.Date)
-                query = this.conn.getQueryForExplicitDateHistogram(
-                        this.conn.info.table, cd,
-                        (ExplicitDoubleHistogramBuckets)buckets,
-                        (DoubleColumnQuantization)quantization);
-            else
-                query = this.conn.getQueryForExplicitNumericHistogram(
-                        this.conn.info.table, cd,
-                        (ExplicitDoubleHistogramBuckets)buckets,
-                        (DoubleColumnQuantization)quantization);
-        }  else {
-            query = this.conn.getQueryForStringHistogram(
-                    this.conn.info.table, cd,
-                    (StringHistogramBuckets)buckets,
-                    (StringColumnQuantization)quantization);
-        }
+        String query = this.conn.getQueryForHistogram(cd, buckets, quantization);
         ResultSet rs = this.getQueryResult(query);
         List<IAppendableColumn> cols = JdbcDatabase.convertResultSet(rs);
         assert cols.size() == 2;
@@ -210,13 +179,45 @@ public class JdbcDatabase {
             // we may get an extra bucket.  The semantics in Hillview is to fold
             // that into the penultimate bucket.
             if (index == bucketCount)
-                index = bucketCount - 1;
+                index--;
             long count = (long)bucketSize.getDouble(i);
-            data[index] = count;
+            data[index] += count;
             nonNulls += count;
         }
         long nulls = this.getRowCount() - nonNulls;
         return new Histogram(data, nulls);
+    }
+
+    public Heatmap heatmap(ColumnDescription cd0, ColumnDescription cd1,
+                           IHistogramBuckets buckets0, IHistogramBuckets buckets1,
+                           @Nullable ColumnQuantization quantization0,
+                           @Nullable ColumnQuantization quantization1) {
+        String query = this.conn.getQueryForHeatmap(cd0, cd1, buckets0, buckets1,
+                quantization0, quantization1);
+        ResultSet rs = this.getQueryResult(query);
+        List<IAppendableColumn> cols = JdbcDatabase.convertResultSet(rs);
+        assert cols.size() == 2;
+        IColumn bucketNr = cols.get(0);
+        IColumn bucketSize = cols.get(1);
+        boolean isDouble = bucketNr.getDescription().kind == ContentsKind.Double;
+        int b0 = buckets0.getBucketCount();
+        int b1 = buckets1.getBucketCount();
+        Heatmap result = new Heatmap(b0, b1);
+        for (int i = 0; i < bucketNr.sizeInRows(); i++) {
+            int index = isDouble ? (int)bucketNr.getDouble(i) : bucketNr.getInt(i);
+            long count = (long)bucketSize.getDouble(i);
+            int x0 = index >> 16;
+            // In SQL the last bucket boundary is not inclusive, so sometimes
+            // we may get an extra bucket.  The semantics in Hillview is to fold
+            // that into the penultimate bucket.
+            if (x0 == b0)
+                x0--;
+            int y0 = index & 0xFFFF;
+            if (y0 == b1)
+                y0--;
+            result.buckets[x0][y0] += count;
+        }
+        return result;
     }
 
     /**
@@ -225,7 +226,7 @@ public class JdbcDatabase {
      */
     public DataRange numericDataRange(ColumnDescription cd) {
         assert this.conn.info.table != null;
-        String query = this.conn.getQueryForNumericRange(this.conn.info.table, cd.name, null);
+        String query = this.conn.getQueryForNumericRange(cd, null);
         ResultSet rs = this.getQueryResult(query);
         List<IAppendableColumn> cols = JdbcDatabase.convertResultSet(rs);
         SmallTable table = new SmallTable(cols);
@@ -259,7 +260,7 @@ public class JdbcDatabase {
         int rows;
         {
             // Compute boundaries
-            String query = this.conn.getQueryForDistinct(this.conn.info.table, cd.name);
+            String query = this.conn.getQueryForDistinct(cd.name);
             ResultSet rs = this.getQueryResult(query);
             List<IAppendableColumn> cols = JdbcDatabase.convertResultSet(rs);
             assert cols.size() == 1;
@@ -278,7 +279,7 @@ public class JdbcDatabase {
         }
         {
             // Compute presentCount and missingCount
-            String query = this.conn.getQueryForCounts(this.conn.info.table, cd.name, null);
+            String query = this.conn.getQueryForCounts(cd, null);
             ResultSet rs = this.getQueryResult(query);
             List<IAppendableColumn> cols = JdbcDatabase.convertResultSet(rs);
             SmallTable table = new SmallTable(cols);
@@ -325,7 +326,7 @@ public class JdbcDatabase {
      */
     private ResultSet getDataInTable(int rowCount) {
         assert this.conn.info.table != null;
-        String query = this.conn.getQueryToReadTable(this.conn.info.table, rowCount);
+        String query = this.conn.getQueryToReadTable(rowCount);
         return this.getQueryResult(query);
     }
 

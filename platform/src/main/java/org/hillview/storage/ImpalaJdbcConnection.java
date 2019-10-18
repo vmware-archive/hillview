@@ -17,6 +17,7 @@
 
 package org.hillview.storage;
 
+import org.hillview.utils.Converters;
 import org.hillview.utils.Utilities;
 
 public class ImpalaJdbcConnection extends JdbcConnection {
@@ -25,8 +26,8 @@ public class ImpalaJdbcConnection extends JdbcConnection {
     }
 
     @Override
-    public String getQueryToReadTable(String table, int rowCount) {
-        String result = "SELECT * FROM " + table;
+    public String getQueryToReadTable(int rowCount) {
+        String result = "SELECT * FROM " + Converters.checkNull(this.info.table);
         if (rowCount >= 0)
             result += " LIMIT " + rowCount;
         return result;
