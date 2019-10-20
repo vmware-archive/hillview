@@ -18,11 +18,13 @@
 package org.hillview.maps;
 
 import org.hillview.dataset.api.IMap;
-import org.hillview.table.filters.FalseTableFilter;
+import org.hillview.table.QuantizationSchema;
+import org.hillview.table.QuantizedTable;
 import org.hillview.table.api.ITableFilterDescription;
 import org.hillview.table.api.ITableFilter;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ITable;
+import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
 
 import javax.annotation.Nullable;
@@ -36,31 +38,32 @@ public class FilterMap implements IMap<ITable, ITable> {
      * Argument to the rowFilterPredicate.test method is a row index.
      * Returns true if a row has to be preserved
      */
-    @Nullable
     private final ITableFilterDescription rowFilterPredicate;
+    @Nullable
+    private final QuantizationSchema quantization;
 
-    public FilterMap() {
-        this.rowFilterPredicate = null;
+    public FilterMap(ITableFilterDescription rowFilterPredicate,
+                     @Nullable QuantizationSchema quantiation) {
+        this.rowFilterPredicate = rowFilterPredicate;
+        this.quantization = quantiation;
     }
 
     public FilterMap(ITableFilterDescription rowFilterPredicate) {
-        this.rowFilterPredicate = rowFilterPredicate;
+        this(rowFilterPredicate, null);
     }
 
     @Override
     public ITable apply(@Nullable ITable data) {
-        assert data != null;
-        ITableFilter filter;
-        if (this.rowFilterPredicate == null)
-            filter = new FalseTableFilter();
-        else
-            filter = this.rowFilterPredicate.getFilter(data);
+        Converters.checkNull(data);
+        if (this.quantization != null)
+            data = new QuantizedTable(data, this.quantization);
+        ITableFilter filter = this.rowFilterPredicate.getFilter(data);
         HillviewLogger.instance.info("Filtering", "{0}", filter);
         IMembershipSet result = data.getMembershipSet().filter(filter::test);
         return data.selectRowsFromFullTable(result);
     }
 
     public String asString() {
-        return (this.rowFilterPredicate == null) ? "<null>" : this.rowFilterPredicate.toString();
+        return this.rowFilterPredicate.toString();
     }
 }

@@ -94,7 +94,7 @@ public class MysqlTest extends JdbcTest {
             this.ignoringException("Cannot connect to database", e);
             return;
         }
-        int rows = db.getRowCount();
+        int rows = db.getRowCount(null);
         db.disconnect();
         Assert.assertEquals(2844047, rows);
     }
@@ -110,7 +110,7 @@ public class MysqlTest extends JdbcTest {
             this.ignoringException("Cannot connect to database", e);
             return;
         }
-        int distinct = db.distinctCount("salary");
+        int distinct = db.distinctCount("salary", null);
         db.disconnect();
         Assert.assertEquals(85814, distinct);
     }
@@ -128,7 +128,7 @@ public class MysqlTest extends JdbcTest {
         }
         Schema schema = new Schema();
         schema.append(new ColumnDescription("salary", ContentsKind.Double));
-        SmallTable tbl = db.topFreq(schema, 10000);
+        SmallTable tbl = db.topFreq(schema, 10000, null);
         db.disconnect();
         Assert.assertEquals(1, tbl.getNumOfRows());
         //noinspection MismatchedQueryAndUpdateOfCollection
@@ -149,7 +149,8 @@ public class MysqlTest extends JdbcTest {
             this.ignoringException("Cannot connect to database", e);
             return;
         }
-        DataRange range = db.numericDataRange(new ColumnDescription("salary", ContentsKind.Integer));
+        DataRange range = db.numericDataRange(
+                new ColumnDescription("salary", ContentsKind.Integer), null);
         Assert.assertNotNull(range);
         Assert.assertEquals(38623.0, range.min, .1);
         Assert.assertEquals(158220.0, range.max, .1);
@@ -170,7 +171,8 @@ public class MysqlTest extends JdbcTest {
             this.ignoringException("Cannot connect to database", e);
             return;
         }
-        DataRange range = db.numericDataRange(new ColumnDescription("hire_date", ContentsKind.Date));
+        DataRange range = db.numericDataRange(
+                new ColumnDescription("hire_date", ContentsKind.Date), null);
         Assert.assertNotNull(range);
         Instant first = parseOneDate("1985/01/01");
         Instant last = parseOneDate("2000/01/28");
@@ -198,7 +200,8 @@ public class MysqlTest extends JdbcTest {
         DoubleHistogramBuckets buckets = new DoubleHistogramBuckets(
                 Converters.toDouble(first), Converters.toDouble(last), 10);
         Histogram histogram = db.histogram(
-                new ColumnDescription("birth_date", ContentsKind.Date), buckets, null);
+                new ColumnDescription("birth_date", ContentsKind.Date), buckets,
+                null, null, 300024);
         Assert.assertNotNull(histogram);
         Assert.assertEquals(10, histogram.getBucketCount());
         long total = 0;
@@ -227,7 +230,8 @@ public class MysqlTest extends JdbcTest {
         DoubleColumnQuantization quantization = new DoubleColumnQuantization(
                 86400, Converters.toDouble(first), Converters.toDouble(last));
         Histogram histogram = db.histogram(
-                new ColumnDescription("birth_date", ContentsKind.Date), buckets, quantization);
+                new ColumnDescription("birth_date", ContentsKind.Date),
+                buckets, null, quantization, 300024);
         Assert.assertNotNull(histogram);
         Assert.assertEquals(10, histogram.getBucketCount());
         long total = 0;
@@ -258,7 +262,8 @@ public class MysqlTest extends JdbcTest {
         DoubleColumnQuantization quantization = new DoubleColumnQuantization(
                 86400, Converters.toDouble(firstQ), Converters.toDouble(lastQ));
         Histogram histogram = db.histogram(
-                new ColumnDescription("birth_date", ContentsKind.Date), buckets, quantization);
+                new ColumnDescription("birth_date", ContentsKind.Date),
+                buckets, null, quantization, 232730);
         Assert.assertNotNull(histogram);
         Assert.assertEquals(10, histogram.getBucketCount());
         long total = 0;
@@ -280,7 +285,8 @@ public class MysqlTest extends JdbcTest {
             this.ignoringException("Cannot connect to database", e);
             return;
         }
-        StringQuantiles range = db.stringBuckets(new ColumnDescription("first_name", ContentsKind.String), 10);
+        StringQuantiles range = db.stringBuckets(
+                new ColumnDescription("first_name", ContentsKind.String), 10, null);
         Assert.assertNotNull(range);
         Assert.assertEquals(10, range.stringQuantiles.size());
         Assert.assertFalse(range.allStringsKnown);
@@ -308,7 +314,7 @@ public class MysqlTest extends JdbcTest {
         }
         DoubleHistogramBuckets buckets = new DoubleHistogramBuckets(0, 200000, 8);
         Histogram histogram = db.histogram(
-                new ColumnDescription("salary", ContentsKind.Integer), buckets, null);
+                new ColumnDescription("salary", ContentsKind.Integer), buckets, null, null, 2844047);
         Assert.assertNotNull(histogram);
         Assert.assertEquals(8, histogram.getBucketCount());
         Assert.assertEquals(0, histogram.getMissingData());
@@ -337,7 +343,7 @@ public class MysqlTest extends JdbcTest {
         Heatmap heatmap = db.heatmap(
                 new ColumnDescription("salary", ContentsKind.Integer),
                 new ColumnDescription("emp_no", ContentsKind.Integer),
-                buckets0, buckets1, null, null);
+                buckets0, buckets1, null, null, null);
         Assert.assertNotNull(heatmap);
         Assert.assertEquals(8, heatmap.xBucketCount);
         Assert.assertEquals(4, heatmap.yBucketCount);
@@ -365,7 +371,7 @@ public class MysqlTest extends JdbcTest {
         Heatmap heatmap = db.heatmap(
                 new ColumnDescription("salary", ContentsKind.Integer),
                 new ColumnDescription("emp_no", ContentsKind.Integer),
-                buckets0, buckets1, null, null);
+                buckets0, buckets1, null, null, null);
         Assert.assertNotNull(heatmap);
         Assert.assertEquals(8, heatmap.xBucketCount);
         Assert.assertEquals(4, heatmap.yBucketCount);
@@ -395,7 +401,7 @@ public class MysqlTest extends JdbcTest {
         Heatmap heatmap = db.heatmap(
                 new ColumnDescription("salary", ContentsKind.Integer),
                 new ColumnDescription("emp_no", ContentsKind.Integer),
-                buckets0, buckets1, q0, q1);
+                buckets0, buckets1, null, q0, q1);
         Assert.assertNotNull(heatmap);
         Assert.assertEquals(8, heatmap.xBucketCount);
         Assert.assertEquals(4, heatmap.yBucketCount);
@@ -421,7 +427,8 @@ public class MysqlTest extends JdbcTest {
         DoubleHistogramBuckets buckets = new DoubleHistogramBuckets(0, 200000, 8);
         DoubleColumnQuantization quantization = new DoubleColumnQuantization(5, 0, 200000);
         Histogram histogram = db.histogram(
-                new ColumnDescription("salary", ContentsKind.Integer), buckets, quantization);
+                new ColumnDescription("salary", ContentsKind.Integer), buckets,
+                null, quantization, 2844047);
         Assert.assertNotNull(histogram);
         Assert.assertEquals(8, histogram.getBucketCount());
         Assert.assertEquals(0, histogram.getMissingData());
@@ -449,7 +456,7 @@ public class MysqlTest extends JdbcTest {
         String[] boundaries = new String[] { "A", "F", "K", "P", "T", "X" };
         StringHistogramBuckets buckets = new StringHistogramBuckets(boundaries);
         Histogram histogram = db.histogram(
-                new ColumnDescription("first_name", ContentsKind.String), buckets, null);
+                new ColumnDescription("first_name", ContentsKind.String), buckets, null, null, 300024);
         Assert.assertNotNull(histogram);
         Assert.assertEquals(6, histogram.getBucketCount());
         long total = 0;
@@ -479,7 +486,7 @@ public class MysqlTest extends JdbcTest {
             letters[c - 'A'] = Character.toString(c);
         StringColumnQuantization quantization = new StringColumnQuantization(letters, "z");
         Histogram histogram = db.histogram(
-                new ColumnDescription("first_name", ContentsKind.String), buckets, quantization);
+                new ColumnDescription("first_name", ContentsKind.String), buckets, null, quantization, 300024);
         Assert.assertNotNull(histogram);
         Assert.assertEquals(6, histogram.getBucketCount());
         long total = 0;

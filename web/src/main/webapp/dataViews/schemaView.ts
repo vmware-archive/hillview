@@ -33,11 +33,11 @@ import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
 import {TabularDisplay} from "../ui/tabularDisplay";
 import {
     cloneToSet,
-    convertToStringFormat, formatNumber,
+    formatNumber,
     ICancellable,
     PartialResult,
     significantDigits,
-    convertToInterval
+    Converters
 } from "../util";
 import {TableView} from "./tableView";
 import {TSViewBase} from "./tsViewBase";
@@ -206,15 +206,15 @@ export class SchemaView extends TSViewBase {
                             let avg;
                             let stddev;
                             if (cd.kind === "Date") {
-                                avg = convertToStringFormat(cs.moments[0], "Date");
-                                stddev = convertToInterval(cs.moments[1]);
+                                avg = Converters.valueToString(cs.moments[0], "Date");
+                                stddev = Converters.intervalFromDouble(cs.moments[1]);
                             } else {
                                 avg = significantDigits(cs.moments[0]);
                                 stddev = significantDigits(cs.moments[1]);
                             }
                             data.push(
-                                convertToStringFormat(cs.min, cd.kind),
-                                convertToStringFormat(cs.max, cd.kind),
+                                Converters.valueToString(cs.min, cd.kind),
+                                Converters.valueToString(cs.max, cd.kind),
                                 avg, stddev);
                         }
                     }

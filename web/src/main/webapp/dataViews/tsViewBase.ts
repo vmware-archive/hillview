@@ -42,7 +42,6 @@ import {SpecialChars, ViewKind} from "../ui/ui";
 import {
     cloneToSet,
     Converters,
-    convertToStringFormat,
     ICancellable,
     significantDigits,
 } from "../util";
@@ -545,7 +544,7 @@ export abstract class TSViewBase extends BigTableView {
 
         const rr = this.createFilterComparisonRequest(filter);
         const value = kindIsString(kind) ? filter.stringValue : filter.doubleValue;
-        const title = "Filtered: " + convertToStringFormat(value, kind) +
+        const title = "Filtered: " + Converters.valueToString(value, kind) +
                     " " + filter.comparison + " " + this.schema.displayName(filter.column.name);
         const newPage = this.dataset.newPage(new PageTitle(title), this.page);
         rr.invoke(new TableOperationCompleted(newPage, rr, this.rowCount, this.schema, o, tableRowsDesired));

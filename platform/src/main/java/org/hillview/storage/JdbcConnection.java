@@ -68,11 +68,13 @@ abstract class JdbcConnection {
      */
     public abstract String getQueryToReadTable(int rowCount);
 
-    String getQueryToReadSize(String table) {
+    String getQueryToReadSize(String table, @Nullable ColumnnFilters columnLimits) {
+        // TODO: use column limits
         return "SELECT COUNT(*) FROM " + table;
     }
 
-    String getQueryForDistinctCount(String table, String column) {
+    String getQueryForDistinctCount(String table, String column, @Nullable ColumnnFilters columnLimits) {
+        // TODO: use column limits
         return "SELECT COUNT(DISTINCT " + column + ") FROM " + table;
     }
 
@@ -118,7 +120,8 @@ abstract class JdbcConnection {
         this.info = info;
     }
 
-    String getQueryToComputeFreqValues(Schema schema, int minCt) {
+    String getQueryToComputeFreqValues(Schema schema, int minCt, @Nullable ColumnnFilters columnLimits) {
+        // TODO: use column limits
         Converters.checkNull(this.info.table);
         StringBuilder builder = new StringBuilder();
         String ctcol = schema.newColumnName("countcol");
@@ -167,12 +170,14 @@ abstract class JdbcConnection {
     }
 
     public String getQueryForHistogram(ColumnDescription cd,
+                                @Nullable ColumnnFilters columnLimits,
                                 IHistogramBuckets buckets,
                                 @Nullable ColumnQuantization quantization) {
         throw new UnsupportedOperationException();
     }
 
     public String getQueryForHeatmap(ColumnDescription cd0, ColumnDescription cd1,
+                                     @Nullable ColumnnFilters columnLimits,
                                      IHistogramBuckets buckets0, IHistogramBuckets buckets1,
                                      @Nullable ColumnQuantization quantization0,
                                      @Nullable ColumnQuantization quantization1) {

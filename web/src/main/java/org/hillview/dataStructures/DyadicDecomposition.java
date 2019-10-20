@@ -118,6 +118,7 @@ public abstract class DyadicDecomposition {
      *             rather than [bucket left leaf, bucket right leaf].
      * Returns the noise and the total variance of the variables used to compute the noise.
      */
+    @SuppressWarnings("ConstantConditions")
     Pair<Double, Double> noiseForBucket(int bucketIdx, double epsilon,
                                         LaplaceDistribution dist, double baseVariance, boolean isCdf) {
         List<Pair<Integer, Integer>> intervals = this.bucketDecomposition(bucketIdx, isCdf);

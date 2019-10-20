@@ -21,10 +21,11 @@ import org.hillview.*;
 import org.hillview.dataStructures.QuantilesArgs;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.Pair;
-import org.hillview.maps.IdMap;
 import org.hillview.sketches.PrecomputedSketch;
 import org.hillview.sketches.results.BucketsInfo;
 import org.hillview.sketches.results.DataRange;
+import org.hillview.sketches.results.StringQuantiles;
+import org.hillview.storage.ColumnnFilters;
 import org.hillview.table.PrivacySchema;
 import org.hillview.dataset.api.IJson;
 import org.hillview.sketches.results.TableSummary;
@@ -34,14 +35,12 @@ import org.hillview.table.api.ITable;
 import org.hillview.table.columns.ColumnQuantization;
 import org.hillview.table.columns.StringColumnQuantization;
 import org.hillview.table.filters.RangeFilterDescription;
-import org.hillview.table.filters.RangeFilterPair;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewException;
 import org.hillview.utils.JsonList;
 
 import javax.annotation.Nullable;
 import java.io.File;
-import java.util.HashMap;
 import java.util.function.BiFunction;
 
 /**
@@ -49,18 +48,18 @@ import java.util.function.BiFunction;
  */
 public class DPWrapper {
     // For each column the range allowed after filtering
-    private final HashMap<String, RangeFilterDescription> columnLimits;
+    public final ColumnnFilters columnLimits;
     /* Global parameters for differentially-private histograms using the binary mechanism. */
     protected PrivacySchema privacySchema;
 
     DPWrapper(PrivacySchema privacySchema) {
-        this.columnLimits = new HashMap<String, RangeFilterDescription>();
+        this.columnLimits = new ColumnnFilters();
         this.privacySchema = privacySchema;
     }
 
     DPWrapper(DPWrapper other) {
         this.privacySchema = other.privacySchema;
-        this.columnLimits = new HashMap<String, RangeFilterDescription>(other.columnLimits);
+        this.columnLimits = new ColumnnFilters(other.columnLimits);
     }
 
     /**
@@ -100,12 +99,18 @@ public class DPWrapper {
     }
 
     public void filter(RangeFilterDescription filter) {
+        if (filter.complement)
+            throw new HillviewException("Only filters on contiguous range are supported");
         RangeFilterDescription rf = this.columnLimits.get(filter.cd.name);
         ColumnQuantization q = this.privacySchema.quantization(filter.cd.name);
-        filter = filter.intersect(Converters.checkNull(q));
-        if (rf != null)
-            filter = filter.intersect(rf);
-        this.columnLimits.put(filter.cd.name, filter);
+        filter = filter.intersect(q);
+        filter = filter.intersect(rf);
+        this.columnLimits.put(filter);
+    }
+
+    @Nullable
+    public RangeFilterDescription getRange(String column) {
+        return this.columnLimits.get(column);
     }
 
     private BucketsInfo getRange(QuantilesArgs qa) {
@@ -118,8 +123,22 @@ public class DPWrapper {
 
         BucketsInfo result;
         if (cd.kind.isString()) {
-            quantization = ((StringColumnQuantization)quantization).restrict(filter.minString, filter.maxString);
-            result = quantization.getQuantiles(qa.stringsToSample);
+            StringColumnQuantization q = (StringColumnQuantization) quantization;
+            String left = q.roundDown(filter.minString);
+            String right = q.roundDown(filter.maxString);
+            JsonList<String> included = new JsonList<String>();
+            boolean before = true;
+            for (int i = 0; i < q.leftBoundaries.length; i++) {
+                if (before) {
+                    if (q.leftBoundaries[i].equals(left))
+                        before = false;
+                }
+                if (!before)
+                    included.add(q.leftBoundaries[i]);
+                if (q.leftBoundaries[i].equals(right))
+                    break;
+            }
+            return new StringQuantiles(included, q.globalMax, true, -1, -1);
         } else {
             result = new DataRange(quantization.roundDown(filter.min),
                     quantization.roundDown(filter.max));
@@ -155,34 +174,5 @@ public class DPWrapper {
         BiFunction<Pair<BucketsInfo, BucketsInfo>, HillviewComputation, JsonList<BucketsInfo>> post =
                 (e, c) -> new JsonList<BucketsInfo>(e.first, e.second);
         target.runCompleteSketch(target.getDataset(), sk, post, request, context);
-    }
-
-    public void filterRange(RpcRequest request, RpcRequestContext context,
-                            IPrivateDataset target,
-                            BiFunction<IPrivateDataset, HillviewComputation, IPrivateDataset> constructor) {
-        RangeFilterDescription filter = request.parseArgs(RangeFilterDescription.class);
-        if (filter.complement)
-            throw new HillviewException("Only filters on contiguous range are supported");
-        IdMap<ITable> map = new IdMap<ITable>();
-        target.runMap(target.getDataset(), map, (e, c) -> {
-            IPrivateDataset result = constructor.apply(target, c);
-            result.getWrapper().filter(filter);
-            return result;
-        }, request, context);
-    }
-
-    public void filter2DRange(RpcRequest request, RpcRequestContext context,
-                              IPrivateDataset target,
-                              BiFunction<IPrivateDataset, HillviewComputation, IPrivateDataset> constructor) {
-        RangeFilterPair filter = request.parseArgs(RangeFilterPair.class);
-        if (filter.first.complement || filter.second.complement)
-            throw new HillviewException("Only filters on contiguous range are supported");
-        IdMap<ITable> map = new IdMap<ITable>();
-        target.runMap(target.getDataset(), map, (e, c) -> {
-            IPrivateDataset result = constructor.apply(target, c);
-            result.getWrapper().filter(filter.first);
-            result.getWrapper().filter(filter.second);
-            return result;
-        }, request, context);
     }
 }

@@ -32,6 +32,7 @@ public class PrivateHeatmap implements Serializable, IJson {
      * rather than [bucket left leaf, bucket right leaf].
      * Returns the noise and the total variance of the variables used to compute the noise.
      */
+    @SuppressWarnings("ConstantConditions")
     private void noiseForBucket(
             List<Pair<Integer, Integer>> xIntervals,
             List<Pair<Integer, Integer>> yIntervals,
@@ -48,7 +49,6 @@ public class PrivateHeatmap implements Serializable, IJson {
                 hashCode = HashUtil.murmurHash3(hashCode, x.second);
                 hashCode = HashUtil.murmurHash3(hashCode, y.first);
                 hashCode = HashUtil.murmurHash3(hashCode, y.second);
-                // TODO: this is wrong, should be a hash of the coordinates
                 dist.reseedRandomGenerator(hashCode);
                 result.noise += dist.sample();
                 result.variance += baseVariance;

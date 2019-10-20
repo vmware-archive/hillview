@@ -60,10 +60,11 @@ public class JdbcDatabase {
         }
     }
 
-    public int getRowCount() {
+    public int getRowCount(@Nullable ColumnnFilters columnLimits) {
         try {
+            // TODO: use column limits
             assert this.conn.info.table != null;
-            String query = this.conn.getQueryToReadSize(this.conn.info.table);
+            String query = this.conn.getQueryToReadSize(this.conn.info.table, columnLimits);
             ResultSet rs = this.getQueryResult(query);
             if (!rs.next())
                 throw new RuntimeException("Could not retrieve table size for " + this.conn.info.table);
@@ -84,7 +85,7 @@ public class JdbcDatabase {
         try {
             assert this.conn.info.table != null;
             if (this.conn.info.lazyLoading) {
-                int rowCount = this.getRowCount();
+                int rowCount = this.getRowCount(null);
                 IColumnLoader loader = new JdbcLoader(this.conn.info);
                 ResultSetMetaData meta = this.getTableSchema();
                 List<ColumnDescription> cds = new ArrayList<ColumnDescription>(
@@ -127,10 +128,10 @@ public class JdbcDatabase {
         }
     }
 
-    public int distinctCount(String columnName) {
+    public int distinctCount(String columnName, @Nullable ColumnnFilters columnLimits) {
         try {
             assert this.conn.info.table != null;
-            String query = this.conn.getQueryForDistinctCount(this.conn.info.table, columnName);
+            String query = this.conn.getQueryForDistinctCount(this.conn.info.table, columnName, columnLimits);
             ResultSet rs = this.getQueryResult(query);
             if (!rs.next())
                 throw new RuntimeException("Could not retrieve column for " + this.conn.info.table);
@@ -144,12 +145,14 @@ public class JdbcDatabase {
      * Find rows with top frequencies in the specified columns.
      * @param schema  Columns to look at.
      * @param maxRows Maximum number of rows expected.
+     * @param columnLimits  Filtering rules for database.
      * @return        A SmallTable that contains the frequent elements.  The
      *                last column has the count of each row.
      */
-    public SmallTable topFreq(Schema schema, int maxRows) {
+    public SmallTable topFreq(Schema schema, int maxRows,
+                              @Nullable ColumnnFilters columnLimits) {
         assert this.conn.info.table != null;
-        String query = this.conn.getQueryToComputeFreqValues(schema, maxRows);
+        String query = this.conn.getQueryToComputeFreqValues(schema, maxRows, columnLimits);
         ResultSet rs = this.getQueryResult(query);
         List<IAppendableColumn> columns = JdbcDatabase.convertResultSet(rs);
         return new SmallTable(columns);
@@ -158,12 +161,16 @@ public class JdbcDatabase {
     /**
      * Computes a histogram on the specified column with the specified buckets.
      * @param cd       Description of column to histogram.
+     * @param columnLimits   Limits on column values.
      * @param buckets  Bucket description
+     * @param rowCount Number of rows in the database.
      * @return         The histogram of the data.
      */
     public Histogram histogram(ColumnDescription cd, IHistogramBuckets buckets,
-                               @Nullable ColumnQuantization quantization) {
-        String query = this.conn.getQueryForHistogram(cd, buckets, quantization);
+                               @Nullable ColumnnFilters columnLimits,
+                               @Nullable ColumnQuantization quantization,
+                               int rowCount) {
+        String query = this.conn.getQueryForHistogram(cd, columnLimits, buckets, quantization);
         ResultSet rs = this.getQueryResult(query);
         List<IAppendableColumn> cols = JdbcDatabase.convertResultSet(rs);
         assert cols.size() == 2;
@@ -184,15 +191,19 @@ public class JdbcDatabase {
             data[index] += count;
             nonNulls += count;
         }
-        long nulls = this.getRowCount() - nonNulls;
+        long nulls = rowCount - nonNulls;
         return new Histogram(data, nulls);
     }
 
     public Heatmap heatmap(ColumnDescription cd0, ColumnDescription cd1,
                            IHistogramBuckets buckets0, IHistogramBuckets buckets1,
+                           @Nullable ColumnnFilters columnLimits,
                            @Nullable ColumnQuantization quantization0,
                            @Nullable ColumnQuantization quantization1) {
-        String query = this.conn.getQueryForHeatmap(cd0, cd1, buckets0, buckets1,
+        // TODO: this does not currently compute nulls
+        String query = this.conn.getQueryForHeatmap(cd0, cd1,
+                columnLimits,
+                buckets0, buckets1,
                 quantization0, quantization1);
         ResultSet rs = this.getQueryResult(query);
         List<IAppendableColumn> cols = JdbcDatabase.convertResultSet(rs);
@@ -223,8 +234,9 @@ public class JdbcDatabase {
     /**
      * Computes the range of the data in a column.
      * @param cd  Description of the column.
+     * @param limits  Limits on the data to read.
      */
-    public DataRange numericDataRange(ColumnDescription cd) {
+    public DataRange numericDataRange(ColumnDescription cd, @Nullable ColumnnFilters limits) {
         assert this.conn.info.table != null;
         String query = this.conn.getQueryForNumericRange(cd, null);
         ResultSet rs = this.getQueryResult(query);
@@ -252,7 +264,8 @@ public class JdbcDatabase {
         return range;
     }
 
-    public StringQuantiles stringBuckets(ColumnDescription cd, int stringsToSample) {
+    public StringQuantiles stringBuckets(ColumnDescription cd, int stringsToSample,
+                                         @Nullable ColumnnFilters columnLimits) {
         assert this.conn.info.table != null;
         @Nullable String max = null;
         JsonList<String> boundaries = new JsonList<String>();

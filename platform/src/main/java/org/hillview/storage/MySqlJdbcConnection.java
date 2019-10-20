@@ -25,6 +25,7 @@ import org.hillview.table.api.ContentsKind;
 import org.hillview.table.columns.ColumnQuantization;
 import org.hillview.table.columns.DoubleColumnQuantization;
 import org.hillview.table.columns.StringColumnQuantization;
+import org.hillview.table.filters.RangeFilterDescription;
 import org.hillview.utils.Converters;
 import org.hillview.utils.Linq;
 
@@ -43,21 +44,24 @@ public class MySqlJdbcConnection extends JdbcConnection {
         public final ColumnDescription cd;
         @Nullable final ColumnQuantization quantization;
         @Nullable final IHistogramBuckets buckets;
+        @Nullable final ColumnnFilters columnLimits;
         final DateTimeFormatter dateFormatter =
                 DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-                        .withZone(ZoneId.systemDefault());;
+                        .withZone(ZoneId.systemDefault());
 
         MySqlCodeGenerator(ColumnDescription cd,
+                           @Nullable ColumnnFilters columnLimits,
                            @Nullable ColumnQuantization quantization,
                            @Nullable IHistogramBuckets buckets) {
             this.cd = cd;
             this.quantization = quantization;
             this.buckets = buckets;
+            this.columnLimits = columnLimits;
         }
 
         MySqlCodeGenerator(ColumnDescription cd,
                            @Nullable ColumnQuantization quantization) {
-            this(cd, quantization, null);
+            this(cd, null, quantization, null);
         }
 
         private StringColumnQuantization getStringQuantization() {
@@ -86,6 +90,37 @@ public class MySqlJdbcConnection extends JdbcConnection {
             if (!(this.buckets instanceof DoubleHistogramBuckets))
                 throw new RuntimeException("Buckets are not Double");
             return (DoubleHistogramBuckets)this.buckets;
+        }
+
+        String getLimit(RangeFilterDescription filter) {
+            String result = "";
+            if (filter.complement)
+                result += "not ";
+            String minString = "";
+            String maxString = "";
+            if (filter.cd.kind.isString()) {
+                minString = filter.minString;
+                maxString = filter.maxString;
+            } else if (filter.cd.kind == ContentsKind.Date) {
+                Instant minDate = Converters.toDate(filter.min);
+                Instant maxDate = Converters.toDate(filter.max);
+                minString = this.dateFormatter.format(minDate);
+                 maxString = this.dateFormatter.format(maxDate);
+            } else {
+                minString = Double.toString(filter.min);
+                maxString = Double.toString(filter.max);
+            }
+            return "(" + filter.cd.name + " >= " +
+                    this.quote(filter.cd, minString) + " and " +
+                    filter.cd.name + " <= " + this.quote(filter.cd, maxString) + ")";
+        }
+
+        public String getLimits() {
+            if (this.columnLimits == null)
+                return "";
+            return " where " + String.join(" and ",
+                    Linq.map(this.columnLimits.allFilters(),
+                            this::getLimit));
         }
 
         /**
@@ -139,14 +174,18 @@ public class MySqlJdbcConnection extends JdbcConnection {
             return result + recLeft + ", " + recRight + ")";
         }
 
-        String quote(String value) {
-            if (this.cd.kind.isString()) {
+        String quote(ColumnDescription cd, String value) {
+            if (cd.kind.isString()) {
                 return "BINARY '" + value + "'";
-            } else if (this.cd.kind == ContentsKind.Date) {
+            } else if (cd.kind == ContentsKind.Date) {
                 return "'" + value + "'";
             } else {
                 return value;
             }
+        }
+
+        String quote(String value) {
+            return quote(this.cd, value);
         }
 
         String quoteDate(double value) {
@@ -313,9 +352,11 @@ public class MySqlJdbcConnection extends JdbcConnection {
     }
 
     @Override
-    public String getQueryForHistogram(ColumnDescription cd, IHistogramBuckets buckets,
+    public String getQueryForHistogram(ColumnDescription cd,
+                                       @Nullable ColumnnFilters limits,
+                                       IHistogramBuckets buckets,
                                        @Nullable ColumnQuantization quantization) {
-        MySqlCodeGenerator generator = new MySqlCodeGenerator(cd, quantization, buckets);
+        MySqlCodeGenerator generator = new MySqlCodeGenerator(cd, limits, quantization, buckets);
         return generator.getHistogramQuery();
     }
 
@@ -335,12 +376,14 @@ public class MySqlJdbcConnection extends JdbcConnection {
                 ")";
     }
 
+    @Override
     public String getQueryForHeatmap(ColumnDescription cd0, ColumnDescription cd1,
+                                     @Nullable ColumnnFilters filters,
                                      IHistogramBuckets buckets0, IHistogramBuckets buckets1,
                                      @Nullable ColumnQuantization quantization0,
                                      @Nullable ColumnQuantization quantization1) {
-        MySqlCodeGenerator g0 = new MySqlCodeGenerator(cd0, quantization0, buckets0);
-        MySqlCodeGenerator g1 = new MySqlCodeGenerator(cd1, quantization1, buckets1);
+        MySqlCodeGenerator g0 = new MySqlCodeGenerator(cd0, filters, quantization0, buckets0);
+        MySqlCodeGenerator g1 = new MySqlCodeGenerator(cd1, filters, quantization1, buckets1);
         String b0 = g0.getBucket();
         String b1 = g1.getBucket();
         String bb0 = g0.bucketBounds(false);

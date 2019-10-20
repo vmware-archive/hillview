@@ -45,7 +45,6 @@ import {SelectionStateMachine} from "../ui/selectionStateMachine";
 import {HtmlString, Resolution, SpecialChars, ViewKind} from "../ui/ui";
 import {
     cloneToSet,
-    convertToStringFormat,
     formatNumber,
     ICancellable,
     makeMissing,
@@ -55,6 +54,7 @@ import {
     saveAs,
     significantDigitsHtml,
     truncate,
+    Converters,
 } from "../util";
 import {SchemaView} from "./schemaView";
 import {SpectrumReceiver} from "./spectrumView";
@@ -695,6 +695,11 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                     if (kindIsString(cd.kind)) {
                         title += "Range is [" + pm.leftBoundaries[0] + ", " + pm.globalMax + "]\n";
                         title += "Divided in " + pm.leftBoundaries.length + " intervals\n";
+                    } else if (cd.kind === "Date") {
+                        title += "Range is [" + Converters.dateFromDouble(pm.globalMin as number) +
+                            ", " + Converters.dateFromDouble(pm.globalMax as number) + "]\n";
+                        title += "Bucket size is "
+                            + Converters.intervalFromDouble(pm.granularity * 1000) + "\n";
                     } else {
                         title += "Range is [" + pm.globalMin + ", " + pm.globalMax + "]\n";
                         title += "Bucket size is " + pm.granularity + "\n";
@@ -1072,7 +1077,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                     cell.appendChild(makeMissing());
                     shownValue = "missing";
                 } else {
-                    shownValue = convertToStringFormat(row.values[dataIndex], cd.kind);
+                    shownValue = Converters.valueToString(row.values[dataIndex], cd.kind);
                     const high = this.findBar.highlight(shownValue, this.strFilter);
                     cell.appendChild(high);
                 }
