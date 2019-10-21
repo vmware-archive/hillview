@@ -53,6 +53,8 @@ public class DoubleColumnQuantization extends ColumnQuantization {
         double intervals = (this.globalMax - this.globalMin) / this.granularity;
         if (Math.abs(intervals - (int) intervals) > .001)
             throw new IllegalArgumentException("Granularity does not divide range into an integer number of intervals");
+        if (intervals >= Integer.MAX_VALUE)
+            throw new IllegalArgumentException("Number of intervals is too large: " + intervals);
     }
 
     public double roundDown(double value) {
@@ -65,18 +67,24 @@ public class DoubleColumnQuantization extends ColumnQuantization {
     }
 
     public boolean outOfRange(double value) {
-        return value < this.globalMin || value >= this.globalMax;
+        return value < this.globalMin || value > this.globalMax;
     }
 
     public int bucketIndex(double value) {
         if (this.outOfRange(value))
             return -1;
-        return (int) Math.floor((value - this.globalMin) / this.granularity);
+        double index = Math.floor((value - this.globalMin) / this.granularity);
+        if (index >= Integer.MAX_VALUE)
+            throw new IllegalArgumentException("Interval index is too large: " + index);
+        return (int)index;
     }
 
     @Override
     public int getIntervalCount() {
-        return (int) ((this.globalMax - this.globalMin) / this.granularity);
+        double count = ((this.globalMax - this.globalMin) / this.granularity);
+        if (count >= Integer.MAX_VALUE)
+            throw new IllegalArgumentException("Interval count is too large: " + count);
+        return (int)count;
     }
 
     @Override

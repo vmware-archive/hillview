@@ -24,7 +24,7 @@ def get_metadata(cn):
     elif cn == "Distance":
         (g, gMin, gMax) = (10, 0, 5000)
     elif cn == "FlightDate":
-        (g, gMin, gMax) = (86400, 1451635200000, 1456732800000)
+        (g, gMin, gMax) = (86400000, 1451635200000, 1456732800000)
     else:
         raise Exception("Unexpected column " + cn)
     return {'type': "DoubleColumnQuantization",

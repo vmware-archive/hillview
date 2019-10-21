@@ -33,6 +33,7 @@ import javax.annotation.Nullable;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Collection;
 import java.util.function.Function;
 
 public class MySqlJdbcConnection extends JdbcConnection {
@@ -44,13 +45,13 @@ public class MySqlJdbcConnection extends JdbcConnection {
         public final ColumnDescription cd;
         @Nullable final ColumnQuantization quantization;
         @Nullable final IHistogramBuckets buckets;
-        @Nullable final ColumnnFilters columnLimits;
+        @Nullable final ColumnLimits columnLimits;
         final DateTimeFormatter dateFormatter =
                 DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
                         .withZone(ZoneId.systemDefault());
 
         MySqlCodeGenerator(ColumnDescription cd,
-                           @Nullable ColumnnFilters columnLimits,
+                           @Nullable ColumnLimits columnLimits,
                            @Nullable ColumnQuantization quantization,
                            @Nullable IHistogramBuckets buckets) {
             this.cd = cd;
@@ -60,8 +61,9 @@ public class MySqlJdbcConnection extends JdbcConnection {
         }
 
         MySqlCodeGenerator(ColumnDescription cd,
+                           @Nullable ColumnLimits columnLimits,
                            @Nullable ColumnQuantization quantization) {
-            this(cd, null, quantization, null);
+            this(cd, columnLimits, quantization, null);
         }
 
         private StringColumnQuantization getStringQuantization() {
@@ -118,6 +120,9 @@ public class MySqlJdbcConnection extends JdbcConnection {
         public String getLimits() {
             if (this.columnLimits == null)
                 return "";
+            Collection<RangeFilterDescription> c = this.columnLimits.allFilters();
+            if (c.isEmpty())
+                return "";
             return " where " + String.join(" and ",
                     Linq.map(this.columnLimits.allFilters(),
                             this::getLimit));
@@ -154,9 +159,23 @@ public class MySqlJdbcConnection extends JdbcConnection {
         }
 
         String table() {
-            return Converters.checkNull(MySqlJdbcConnection.this.info.table);
+            String tbl = Converters.checkNull(MySqlJdbcConnection.this.info.table);
+            if (this.columnLimits == null)
+                return tbl;
+            return "(SELECT * FROM " + tbl + this.getLimits() + ") tmpl";
         }
 
+        /**
+         * A SQL expression that does binary search in a slice of an array of values.
+         * @param leftIndex   Start index in array.
+         * @param rightIndex  End index in array.
+         * @param boundaries  Array of values.
+         * @param column      Name of column where binary search is done.
+         * @param convert     Function that converts a value to a string suitable for insertion in a SQL query.
+         * @param toIndex     If true the expression returns the bucket index, else it returns the
+         *                    left-most bucket value.
+         * @param <T>         Type of data in the array: String or Double.
+         */
         private <T> String searchInterval(int leftIndex, int rightIndex,
                                           T[] boundaries, String column,
                                           Function<T, String> convert,
@@ -174,6 +193,11 @@ public class MySqlJdbcConnection extends JdbcConnection {
             return result + recLeft + ", " + recRight + ")";
         }
 
+        /**
+         * A Literal SQL expression containing the value from the specified column.
+         * @param cd     Column kind.
+         * @param value  String representation of value to convert to an expression.
+         */
         String quote(ColumnDescription cd, String value) {
             if (cd.kind.isString()) {
                 return "BINARY '" + value + "'";
@@ -328,8 +352,9 @@ public class MySqlJdbcConnection extends JdbcConnection {
 
     @Override
     public String getQueryForNumericRange(ColumnDescription cd,
-                                          @Nullable DoubleColumnQuantization quantization) {
-        MySqlCodeGenerator generator = new MySqlCodeGenerator(cd, quantization);
+                                          @Nullable DoubleColumnQuantization quantization,
+                                          @Nullable ColumnLimits columnLimits) {
+        MySqlCodeGenerator generator = new MySqlCodeGenerator(cd, columnLimits, quantization);
         return "select MIN(" + cd.name + ") as min, MAX(" + cd.name +
                 ") as max, COUNT(*) as total, COUNT(" + cd.name + ") as nonnulls from " +
                 generator.filterQuantizeBounds();
@@ -345,15 +370,16 @@ public class MySqlJdbcConnection extends JdbcConnection {
     }
 
     @Override
-    public String getQueryForCounts(ColumnDescription cd, @Nullable ColumnQuantization quantization) {
-        MySqlCodeGenerator generator = new MySqlCodeGenerator(cd, quantization);
+    public String getQueryForCounts(ColumnDescription cd, @Nullable ColumnQuantization quantization,
+                                    @Nullable ColumnLimits columnLimits) {
+        MySqlCodeGenerator generator = new MySqlCodeGenerator(cd, columnLimits, quantization);
         return "select COUNT(*) as total, COUNT(" + cd.name + ") as nonnulls from " +
                 generator.filterQuantizeBounds();
     }
 
     @Override
     public String getQueryForHistogram(ColumnDescription cd,
-                                       @Nullable ColumnnFilters limits,
+                                       @Nullable ColumnLimits limits,
                                        IHistogramBuckets buckets,
                                        @Nullable ColumnQuantization quantization) {
         MySqlCodeGenerator generator = new MySqlCodeGenerator(cd, limits, quantization, buckets);
@@ -378,18 +404,22 @@ public class MySqlJdbcConnection extends JdbcConnection {
 
     @Override
     public String getQueryForHeatmap(ColumnDescription cd0, ColumnDescription cd1,
-                                     @Nullable ColumnnFilters filters,
+                                     @Nullable ColumnLimits limits,
                                      IHistogramBuckets buckets0, IHistogramBuckets buckets1,
                                      @Nullable ColumnQuantization quantization0,
                                      @Nullable ColumnQuantization quantization1) {
-        MySqlCodeGenerator g0 = new MySqlCodeGenerator(cd0, filters, quantization0, buckets0);
-        MySqlCodeGenerator g1 = new MySqlCodeGenerator(cd1, filters, quantization1, buckets1);
+        MySqlCodeGenerator g0 = new MySqlCodeGenerator(cd0, limits, quantization0, buckets0);
+        MySqlCodeGenerator g1 = new MySqlCodeGenerator(cd1, limits, quantization1, buckets1);
         String b0 = g0.getBucket();
         String b1 = g1.getBucket();
         String bb0 = g0.bucketBounds(false);
         String bb1 = g1.bucketBounds(false);
         String bounds = makeWhere(bb0, bb1);
         String quantization = makeQuantizedTable(new MySqlCodeGenerator[] { g0, g1 });
+        if (buckets0.getBucketCount() > 65535 ||
+                buckets1.getBucketCount() > 65535)
+            throw new RuntimeException("Unexpectedly large bucket count: " +
+                    buckets0.getBucketCount() + " and " + buckets1.getBucketCount());
         return "select (bucket0 << 16) | bucket1, count(bucket0 << 16 | bucket1) from (" +
                 "select " + b0 + " as bucket0, " + b1 + " as bucket1 from " +
                 "(" + quantization + ") tmph1" +

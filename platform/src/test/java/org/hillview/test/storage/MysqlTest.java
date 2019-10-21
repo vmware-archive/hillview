@@ -18,6 +18,7 @@
 package org.hillview.test.storage;
 
 import org.hillview.sketches.results.*;
+import org.hillview.storage.ColumnLimits;
 import org.hillview.storage.JdbcConnectionInformation;
 import org.hillview.storage.JdbcDatabase;
 import org.hillview.table.ColumnDescription;
@@ -28,6 +29,7 @@ import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.DoubleColumnQuantization;
 import org.hillview.table.columns.StringColumnQuantization;
+import org.hillview.table.filters.RangeFilterDescription;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.Converters;
 import org.junit.Assert;
@@ -155,6 +157,42 @@ public class MysqlTest extends JdbcTest {
         Assert.assertEquals(38623.0, range.min, .1);
         Assert.assertEquals(158220.0, range.max, .1);
         Assert.assertEquals(2844047, range.presentCount);
+        Assert.assertEquals(0, range.missingCount);
+        db.disconnect();
+    }
+
+    @Test
+    public void testMysqlRangeLimits() throws SQLException {
+        JdbcConnectionInformation conn = this.mySqlTestDbConnection();
+        JdbcDatabase db = new JdbcDatabase(conn);
+        try {
+            db.connect();
+        } catch (Exception e) {
+            // This will fail if a database is not deployed, but we don't want to fail the test.
+            this.ignoringException("Cannot connect to database", e);
+            return;
+        }
+        ColumnDescription cd = new ColumnDescription("salary", ContentsKind.Integer);
+        ColumnLimits limits = new ColumnLimits();
+        RangeFilterDescription filter = new RangeFilterDescription();
+        filter.cd = cd;
+        filter.min = 0;
+        filter.max = 300000;
+        limits.put(filter);
+        DataRange range = db.numericDataRange(cd, limits);
+        Assert.assertNotNull(range);
+        Assert.assertEquals(38623.0, range.min, .1);
+        Assert.assertEquals(158220.0, range.max, .1);
+        Assert.assertEquals(2844047, range.presentCount);
+        Assert.assertEquals(0, range.missingCount);
+
+        filter.max = 100000;
+        limits.intersect(filter);
+        range = db.numericDataRange(cd, limits);
+        Assert.assertNotNull(range);
+        Assert.assertEquals(38623.0, range.min, .1);
+        Assert.assertEquals(100000.0, range.max, .1);
+        Assert.assertEquals(2749351, range.presentCount);
         Assert.assertEquals(0, range.missingCount);
         db.disconnect();
     }

@@ -25,7 +25,7 @@ import org.hillview.sketches.PrecomputedSketch;
 import org.hillview.sketches.results.BucketsInfo;
 import org.hillview.sketches.results.DataRange;
 import org.hillview.sketches.results.StringQuantiles;
-import org.hillview.storage.ColumnnFilters;
+import org.hillview.storage.ColumnLimits;
 import org.hillview.table.PrivacySchema;
 import org.hillview.dataset.api.IJson;
 import org.hillview.sketches.results.TableSummary;
@@ -48,18 +48,18 @@ import java.util.function.BiFunction;
  */
 public class DPWrapper {
     // For each column the range allowed after filtering
-    public final ColumnnFilters columnLimits;
+    final ColumnLimits columnLimits;
     /* Global parameters for differentially-private histograms using the binary mechanism. */
     protected PrivacySchema privacySchema;
 
     DPWrapper(PrivacySchema privacySchema) {
-        this.columnLimits = new ColumnnFilters();
+        this.columnLimits = new ColumnLimits();
         this.privacySchema = privacySchema;
     }
 
     DPWrapper(DPWrapper other) {
         this.privacySchema = other.privacySchema;
-        this.columnLimits = new ColumnnFilters(other.columnLimits);
+        this.columnLimits = new ColumnLimits(other.columnLimits);
     }
 
     /**

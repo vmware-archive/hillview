@@ -135,4 +135,15 @@ public abstract class DyadicDecomposition {
         }
         return new Pair<Double, Double>(noise, variance);
     }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < this.bucketQuantizationIndexes.length; i++) {
+            if (i > 0)
+                builder.append(",");
+            builder.append(this.bucketQuantizationIndexes[i]);
+        }
+        return builder.toString();
+    }
 }

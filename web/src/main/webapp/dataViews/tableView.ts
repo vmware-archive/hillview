@@ -699,9 +699,10 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                         title += "Range is [" + Converters.dateFromDouble(pm.globalMin as number) +
                             ", " + Converters.dateFromDouble(pm.globalMax as number) + "]\n";
                         title += "Bucket size is "
-                            + Converters.intervalFromDouble(pm.granularity * 1000) + "\n";
+                            + Converters.intervalFromDouble(pm.granularity) + "\n";
                     } else {
-                        title += "Range is [" + pm.globalMin + ", " + pm.globalMax + "]\n";
+                        title += "Range is [" + formatNumber(pm.globalMin as number) + ", " +
+                            formatNumber(pm.globalMax as number) + "]\n";
                         title += "Bucket size is " + pm.granularity + "\n";
                     }
                 }

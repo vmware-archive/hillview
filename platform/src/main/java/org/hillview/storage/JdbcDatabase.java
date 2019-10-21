@@ -60,7 +60,7 @@ public class JdbcDatabase {
         }
     }
 
-    public int getRowCount(@Nullable ColumnnFilters columnLimits) {
+    public int getRowCount(@Nullable ColumnLimits columnLimits) {
         try {
             // TODO: use column limits
             assert this.conn.info.table != null;
@@ -128,7 +128,7 @@ public class JdbcDatabase {
         }
     }
 
-    public int distinctCount(String columnName, @Nullable ColumnnFilters columnLimits) {
+    public int distinctCount(String columnName, @Nullable ColumnLimits columnLimits) {
         try {
             assert this.conn.info.table != null;
             String query = this.conn.getQueryForDistinctCount(this.conn.info.table, columnName, columnLimits);
@@ -150,7 +150,7 @@ public class JdbcDatabase {
      *                last column has the count of each row.
      */
     public SmallTable topFreq(Schema schema, int maxRows,
-                              @Nullable ColumnnFilters columnLimits) {
+                              @Nullable ColumnLimits columnLimits) {
         assert this.conn.info.table != null;
         String query = this.conn.getQueryToComputeFreqValues(schema, maxRows, columnLimits);
         ResultSet rs = this.getQueryResult(query);
@@ -167,7 +167,7 @@ public class JdbcDatabase {
      * @return         The histogram of the data.
      */
     public Histogram histogram(ColumnDescription cd, IHistogramBuckets buckets,
-                               @Nullable ColumnnFilters columnLimits,
+                               @Nullable ColumnLimits columnLimits,
                                @Nullable ColumnQuantization quantization,
                                int rowCount) {
         String query = this.conn.getQueryForHistogram(cd, columnLimits, buckets, quantization);
@@ -197,7 +197,7 @@ public class JdbcDatabase {
 
     public Heatmap heatmap(ColumnDescription cd0, ColumnDescription cd1,
                            IHistogramBuckets buckets0, IHistogramBuckets buckets1,
-                           @Nullable ColumnnFilters columnLimits,
+                           @Nullable ColumnLimits columnLimits,
                            @Nullable ColumnQuantization quantization0,
                            @Nullable ColumnQuantization quantization1) {
         // TODO: this does not currently compute nulls
@@ -236,9 +236,9 @@ public class JdbcDatabase {
      * @param cd  Description of the column.
      * @param limits  Limits on the data to read.
      */
-    public DataRange numericDataRange(ColumnDescription cd, @Nullable ColumnnFilters limits) {
+    public DataRange numericDataRange(ColumnDescription cd, @Nullable ColumnLimits limits) {
         assert this.conn.info.table != null;
-        String query = this.conn.getQueryForNumericRange(cd, null);
+        String query = this.conn.getQueryForNumericRange(cd, null, limits);
         ResultSet rs = this.getQueryResult(query);
         List<IAppendableColumn> cols = JdbcDatabase.convertResultSet(rs);
         SmallTable table = new SmallTable(cols);
@@ -265,7 +265,7 @@ public class JdbcDatabase {
     }
 
     public StringQuantiles stringBuckets(ColumnDescription cd, int stringsToSample,
-                                         @Nullable ColumnnFilters columnLimits) {
+                                         @Nullable ColumnLimits columnLimits) {
         assert this.conn.info.table != null;
         @Nullable String max = null;
         JsonList<String> boundaries = new JsonList<String>();
@@ -292,7 +292,7 @@ public class JdbcDatabase {
         }
         {
             // Compute presentCount and missingCount
-            String query = this.conn.getQueryForCounts(cd, null);
+            String query = this.conn.getQueryForCounts(cd, null, columnLimits);
             ResultSet rs = this.getQueryResult(query);
             List<IAppendableColumn> cols = JdbcDatabase.convertResultSet(rs);
             SmallTable table = new SmallTable(cols);

@@ -20,21 +20,22 @@ package org.hillview.storage;
 import org.hillview.table.filters.RangeFilterDescription;
 
 import javax.annotation.Nullable;
+import java.util.Collection;
 import java.util.HashMap;
 
 /**
  * Stores for each column a pair of bounds represented as a RangeFilter.
  * This is used for doing filtering in SQL databases without materializing views.
  */
-public class ColumnnFilters {
+public class ColumnLimits {
     // For each column the range allowed after filtering
     private final HashMap<String, RangeFilterDescription> columnLimits;
 
-    public ColumnnFilters() {
+    public ColumnLimits() {
         this.columnLimits = new HashMap<String, RangeFilterDescription>();
     }
 
-    public ColumnnFilters(ColumnnFilters other) {
+    public ColumnLimits(ColumnLimits other) {
         this.columnLimits = new HashMap<String, RangeFilterDescription>(other.columnLimits);
     }
 
@@ -47,7 +48,7 @@ public class ColumnnFilters {
         this.columnLimits.put(filter.cd.name, filter);
     }
 
-    public Iterable<RangeFilterDescription> allFilters() {
+    public Collection<RangeFilterDescription> allFilters() {
         return this.columnLimits.values();
     }
 

@@ -68,12 +68,12 @@ abstract class JdbcConnection {
      */
     public abstract String getQueryToReadTable(int rowCount);
 
-    String getQueryToReadSize(String table, @Nullable ColumnnFilters columnLimits) {
+    String getQueryToReadSize(String table, @Nullable ColumnLimits columnLimits) {
         // TODO: use column limits
         return "SELECT COUNT(*) FROM " + table;
     }
 
-    String getQueryForDistinctCount(String table, String column, @Nullable ColumnnFilters columnLimits) {
+    String getQueryForDistinctCount(String table, String column, @Nullable ColumnLimits columnLimits) {
         // TODO: use column limits
         return "SELECT COUNT(DISTINCT " + column + ") FROM " + table;
     }
@@ -120,7 +120,7 @@ abstract class JdbcConnection {
         this.info = info;
     }
 
-    String getQueryToComputeFreqValues(Schema schema, int minCt, @Nullable ColumnnFilters columnLimits) {
+    String getQueryToComputeFreqValues(Schema schema, int minCt, @Nullable ColumnLimits columnLimits) {
         // TODO: use column limits
         Converters.checkNull(this.info.table);
         StringBuilder builder = new StringBuilder();
@@ -153,14 +153,18 @@ abstract class JdbcConnection {
      * Returns a query that computes 4 values for a given numeric column.
      * @param cd Column description.
      * @param quantization  Optional quantization information for this column.
+     * @param columnLimits  Limits for each column.
      * @return       A query that computes the min, max, total rows, and non-nulls in the specified column.
      *               These are returned in columns min, max, total and nonnulls respectively.
      */
-    public String getQueryForNumericRange(ColumnDescription cd, @Nullable DoubleColumnQuantization quantization) {
+    public String getQueryForNumericRange(ColumnDescription cd,
+                                          @Nullable DoubleColumnQuantization quantization,
+                                          @Nullable ColumnLimits columnLimits) {
         throw new UnsupportedOperationException();
     }
 
-    public String getQueryForCounts(ColumnDescription cd, @Nullable ColumnQuantization quantization) {
+    public String getQueryForCounts(ColumnDescription cd, @Nullable ColumnQuantization quantization,
+                                    @Nullable ColumnLimits columnLimits) {
         throw new UnsupportedOperationException();
     }
 
@@ -170,14 +174,14 @@ abstract class JdbcConnection {
     }
 
     public String getQueryForHistogram(ColumnDescription cd,
-                                @Nullable ColumnnFilters columnLimits,
+                                @Nullable ColumnLimits columnLimits,
                                 IHistogramBuckets buckets,
                                 @Nullable ColumnQuantization quantization) {
         throw new UnsupportedOperationException();
     }
 
     public String getQueryForHeatmap(ColumnDescription cd0, ColumnDescription cd1,
-                                     @Nullable ColumnnFilters columnLimits,
+                                     @Nullable ColumnLimits columnLimits,
                                      IHistogramBuckets buckets0, IHistogramBuckets buckets1,
                                      @Nullable ColumnQuantization quantization0,
                                      @Nullable ColumnQuantization quantization1) {
