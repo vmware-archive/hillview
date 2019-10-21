@@ -15,21 +15,24 @@
  * limitations under the License.
  */
 
-package org.hillview.sketches.results;
+package org.hillview.test.storage;
 
-import org.hillview.table.api.IColumn;
+import org.hillview.storage.JdbcConnectionInformation;
+import org.junit.Test;
 
-/**
- * Left endpoints for string buckets.
- */
-public class ExplicitDoubleHistogramBuckets extends ExplicitHistogramBuckets<Double> {
-    public ExplicitDoubleHistogramBuckets(final Double[] leftBoundaries, Double max) {
-        super(leftBoundaries, max);
-    }
+import java.sql.SQLException;
 
-    @Override
-    public int indexOf(IColumn column, int rowIndex) {
-        Double item = column.asDouble(rowIndex);
-        return this.indexOf(item);
+public class ImpalaTest extends JdbcTest {
+    @Test
+    public void testImpalaConnection() throws SQLException {
+        JdbcConnectionInformation conn = new JdbcConnectionInformation();
+        conn.databaseKind = "impala";
+        conn.host = "localhost";
+        conn.port = 21050;
+        conn.database = "employees";
+        conn.table = "salaries";
+        conn.user = "user";
+        conn.password = "password";
+        this.getTable(conn);
     }
 }

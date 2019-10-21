@@ -323,7 +323,7 @@ public final class TableTarget extends RpcTarget {
 
     @HillviewRpc
     public void filter2DRange(RpcRequest request, RpcRequestContext context) {
-        RangeFilterPair filter = request.parseArgs(RangeFilterPair.class);
+        RangeFilterPairDescription filter = request.parseArgs(RangeFilterPairDescription.class);
         FilterMap fm = new FilterMap(filter);
         this.runMap(this.table, fm, TableTarget::new, request, context);
     }

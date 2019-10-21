@@ -20,7 +20,7 @@ import {SubMenu, TopMenu} from "../ui/menu";
 import {FindBar} from "../ui/findBar";
 import {BaseReceiver, OnNextK, TableTargetAPI} from "../tableTarget";
 import {FullPage} from "../ui/fullPage";
-import {convertToStringFormat, ICancellable, makeMissing, significantDigits, makeSpan} from "../util";
+import {ICancellable, makeMissing, significantDigits, makeSpan, Converters} from "../util";
 import {
     FindResult, GenericLogs,
     NextKList,
@@ -205,7 +205,7 @@ export class LogFileView extends TableTargetAPI implements IHtmlElement, OnNextK
                     if (value == null) {
                         rowSpan.appendChild(makeMissing());
                     } else {
-                        let shownValue = convertToStringFormat(value, col.kind);
+                        let shownValue = Converters.valueToString(value, col.kind);
                         if (col.name === GenericLogs.lineNumberColumn) {
                             // left pad the line number
                             shownValue = ("00000" + shownValue).slice(-5);

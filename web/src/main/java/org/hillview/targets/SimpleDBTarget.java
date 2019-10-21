@@ -25,11 +25,10 @@ import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.Pair;
+import org.hillview.maps.IdMap;
 import org.hillview.sketches.*;
-import org.hillview.sketches.results.BucketsInfo;
-import org.hillview.sketches.results.FreqKList;
-import org.hillview.sketches.results.Histogram;
-import org.hillview.sketches.results.TableSummary;
+import org.hillview.sketches.results.*;
+import org.hillview.storage.ColumnLimits;
 import org.hillview.storage.JdbcConnectionInformation;
 import org.hillview.storage.JdbcDatabase;
 import org.hillview.table.ColumnDescription;
@@ -37,7 +36,10 @@ import org.hillview.table.Schema;
 import org.hillview.table.SmallTable;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.ITable;
+import org.hillview.table.filters.RangeFilterDescription;
+import org.hillview.table.filters.RangeFilterPairDescription;
 import org.hillview.table.rows.RowSnapshot;
+import org.hillview.utils.HillviewException;
 import org.hillview.utils.JsonList;
 
 import javax.annotation.Nullable;
@@ -59,6 +61,7 @@ public class SimpleDBTarget extends RpcTarget {
     // This table is actually not used for anything; the only purpose
     // is for some APIs to be similar to the TableTarget class.
     protected final IDataSet<ITable> table;
+    private final ColumnLimits columnLimits;
 
     static {
         try {
@@ -74,13 +77,31 @@ public class SimpleDBTarget extends RpcTarget {
         this.schema = null;
         this.registerObject();
         this.database = new JdbcDatabase(this.jdbc);
+        this.columnLimits = new ColumnLimits();
         try {
             this.database.connect();
-            this.rowCount = this.database.getRowCount();
+            this.rowCount = this.database.getRowCount(this.columnLimits);
             this.schema = this.database.getSchema();
             this.database.disconnect();
             SmallTable empty = new SmallTable(this.schema);
             this.table = new LocalDataSet<ITable>(empty);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    SimpleDBTarget(SimpleDBTarget other, HillviewComputation computation) {
+        super(computation);
+        this.jdbc = other.jdbc;
+        this.schema = other.schema;
+        this.registerObject();
+        this.database = new JdbcDatabase(this.jdbc);
+        this.columnLimits = new ColumnLimits(other.columnLimits);
+        this.table = other.table;
+        try {
+            this.database.connect();
+            this.rowCount = this.database.getRowCount(this.columnLimits);
+            this.database.disconnect();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -98,8 +119,7 @@ public class SimpleDBTarget extends RpcTarget {
     }
 
     static class DistinctCount implements IJson {
-        public final int distinctItemCount;
-
+        final int distinctItemCount;
         DistinctCount(int dc) {
             this.distinctItemCount = dc;
         }
@@ -110,7 +130,8 @@ public class SimpleDBTarget extends RpcTarget {
         DistinctCountRequestInfo col = request.parseArgs(DistinctCountRequestInfo.class);
         try {
             this.database.connect();
-            int result = this.database.distinctCount(col.columnName);
+            int result = this.database.distinctCount(col.columnName, this.columnLimits);
+            // TODO(pratiksha): add noise to this count
             this.database.disconnect();
             DistinctCount dc = new DistinctCount(result);
             ISketch<ITable, DistinctCount> sk = new PrecomputedSketch<ITable, DistinctCount>(dc);
@@ -120,13 +141,13 @@ public class SimpleDBTarget extends RpcTarget {
         }
     }
 
-    @HillviewRpc
-    public void heavyHitters(RpcRequest request, RpcRequestContext context) {
+    private void heavyHitters(RpcRequest request, RpcRequestContext context) {
         HeavyHittersRequestInfo info = request.parseArgs(HeavyHittersRequestInfo.class);
         try {
             this.database.connect();
             SmallTable tbl = this.database.topFreq(
-                    info.columns, (int)Math.ceil(info.amount * info.totalRows / 100));
+                    info.columns, (int)Math.ceil(info.amount * info.totalRows / 100),
+                    this.columnLimits);
             List<String> cols = tbl.getSchema().getColumnNames();
             String lastCol = cols.get(cols.size() - 1);
             Object2IntOpenHashMap<RowSnapshot> map = new Object2IntOpenHashMap<RowSnapshot>();
@@ -152,12 +173,12 @@ public class SimpleDBTarget extends RpcTarget {
         }
     }
 
-    @HillviewRpc
+    //@HillviewRpc // TODO: we don't know how to do this privately
     public void heavyHittersMG(RpcRequest request, RpcRequestContext context) {
         this.heavyHitters(request, context);
     }
 
-    @HillviewRpc
+    //@HillviewRpc // TODO: we don't know how to do this privately
     public void heavyHittersSampling(RpcRequest request, RpcRequestContext context) {
         this.heavyHitters(request, context);
     }
@@ -166,19 +187,48 @@ public class SimpleDBTarget extends RpcTarget {
     public void getDataQuantiles1D(RpcRequest request, RpcRequestContext context) {
         QuantilesArgs[] info = request.parseArgs(QuantilesArgs[].class);
         assert info.length == 1;
+        ColumnDescription cd = info[0].cd;
         try {
             BucketsInfo range;
             this.database.connect();
-            if (info[0].cd.kind == ContentsKind.Integer ||
-                    info[0].cd.kind == ContentsKind.Double ||
-                    info[0].cd.kind == ContentsKind.Date) {
-                range = this.database.numericDataRange(info[0].cd);
+            if (cd.kind == ContentsKind.Integer ||
+                    cd.kind == ContentsKind.Double ||
+                    cd.kind == ContentsKind.Date) {
+                range = this.database.numericDataRange(cd, this.columnLimits);
             } else {
-                range = this.database.stringBuckets(info[0].cd, info[0].stringsToSample);
+                range = this.database.stringBuckets(
+                        cd, info[0].stringsToSample, this.columnLimits);
             }
             this.database.disconnect();
             JsonList<BucketsInfo> result = new JsonList<BucketsInfo>(1);
             result.add(range);
+            ISketch<ITable, JsonList<BucketsInfo>> sk = new PrecomputedSketch<ITable, JsonList<BucketsInfo>>(result);
+            this.runSketch(this.table, sk, request, context);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @HillviewRpc
+    public void getDataQuantiles2D(RpcRequest request, RpcRequestContext context) {
+        QuantilesArgs[] info = request.parseArgs(QuantilesArgs[].class);
+        assert info.length == 2;
+        try {
+            this.database.connect();
+            JsonList<BucketsInfo> result = new JsonList<BucketsInfo>(2);
+            for (int i = 0; i < 2; i++) {
+                BucketsInfo range;
+                if (info[i].cd.kind == ContentsKind.Integer ||
+                        info[i].cd.kind == ContentsKind.Double ||
+                        info[i].cd.kind == ContentsKind.Date) {
+                    range = this.database.numericDataRange(info[i].cd, this.columnLimits);
+                } else {
+                    range = this.database.stringBuckets(
+                            info[i].cd, info[i].stringsToSample, this.columnLimits);
+                }
+                result.add(range);
+            }
+            this.database.disconnect();
             ISketch<ITable, JsonList<BucketsInfo>> sk = new PrecomputedSketch<ITable, JsonList<BucketsInfo>>(result);
             this.runSketch(this.table, sk, request, context);
         } catch (SQLException e) {
@@ -193,8 +243,11 @@ public class SimpleDBTarget extends RpcTarget {
         ColumnDescription cd = info[0].cd;  // both args should be on the same column
         try {
             this.database.connect();
-            Histogram histo = this.database.histogram(cd, info[0].getBuckets());
-            Histogram cdf = this.database.histogram(cd, info[1].getBuckets());
+            @Nullable
+            Histogram histo = this.database.histogram(
+                    cd, info[0].getBuckets(), this.columnLimits, null, this.rowCount);
+            Histogram cdf = this.database.histogram(
+                    cd, info[1].getBuckets(), this.columnLimits, null, this.rowCount);
             Pair<AugmentedHistogram, HistogramPrefixSum> result = new
                     Pair<AugmentedHistogram, HistogramPrefixSum>(
                             new AugmentedHistogram(histo), new HistogramPrefixSum(cdf));
@@ -205,4 +258,51 @@ public class SimpleDBTarget extends RpcTarget {
             throw new RuntimeException(e);
         }
     }
+
+    @HillviewRpc
+    public void heatmap(RpcRequest request, RpcRequestContext context) {
+        HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
+        assert info.length == 2;
+        try {
+            this.database.connect();
+            Heatmap heatmap = this.database.heatmap(
+                    info[0].cd, info[1].cd,
+                    info[0].getBuckets(), info[1].getBuckets(),
+                    this.columnLimits,
+                    null, null);
+            this.database.disconnect();
+            ISketch<ITable, Heatmap> sk = new PrecomputedSketch<ITable, Heatmap>(heatmap);
+            this.runSketch(this.table, sk, request, context);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @HillviewRpc
+    public void filterRange(RpcRequest request, RpcRequestContext context) {
+        RangeFilterDescription filter = request.parseArgs(RangeFilterDescription.class);
+        if (filter.complement)
+            throw new HillviewException("Only filters on contiguous range are supported");
+        IdMap<ITable> map = new IdMap<ITable>();
+        this.runMap(this.table, map, (e, c1) -> {
+            SimpleDBTarget result = new SimpleDBTarget(this.jdbc, c1);
+            result.columnLimits.intersect(filter);
+            return result;
+        }, request, context);
+    }
+
+    @HillviewRpc
+    public void filter2DRange(RpcRequest request, RpcRequestContext context) {
+        RangeFilterPairDescription filter = request.parseArgs(RangeFilterPairDescription.class);
+        if (filter.first.complement || filter.second.complement)
+            throw new HillviewException("Only filters on contiguous range are supported");
+        IdMap<ITable> map = new IdMap<ITable>();
+        this.runMap(this.table, map, (e, c1) -> {
+            SimpleDBTarget result = new SimpleDBTarget(this.jdbc, c1);
+            result.columnLimits.intersect(filter.first);
+            result.columnLimits.intersect(filter.second);
+            return result;
+        }, request, context);
+    }
+
 }

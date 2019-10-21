@@ -50,6 +50,71 @@ export class Converters {
             return null;
         return value.getTime();
     }
+
+    /**
+     * Convert a value expressed in milliseconds to a time interval.
+     */
+    public static intervalFromDouble(val: number): string {
+        if (val === 0)
+            return "0";
+        const ms = val % 1000;
+        val = Math.floor(val / 1000);
+        const sec = val % 60;
+        val = Math.floor(val / 60);
+        const min = val % 60;
+        val = Math.floor(val / 60);
+        const hours = val % 24;
+        const days = Math.floor(val / 24);
+        let result: string = "";
+        if (days > 0)
+            result = significantDigits(days) + "days";
+        if (days > 1000)
+            return result;
+        if (hours > 0) {
+            if (result.length !== 0)
+                result += " ";
+            result += hours.toString() + "H";
+        }
+        if (min > 0) {
+            if (result.length !== 0)
+                result += " ";
+            result += " " + min.toString() + "M";
+        }
+        let addedSec = false;
+        if (sec > 0) {
+            if (result.length !== 0)
+                result += " ";
+            addedSec = true;
+            result += sec.toString();
+        }
+        if (ms > 0 && days === 0) {
+            if (!addedSec)
+                result += " 0";
+            addedSec = true;
+            result += "." + ms.toString();
+        }
+        if (addedSec)
+            result += "s";
+        return result;
+    }
+
+    /**
+     * Convert a value in a table cell to a string representation.
+     * @param val                  Value to convert.
+     * @param {ContentsKind} kind  Type of value.
+     */
+    public static valueToString(val: any, kind: ContentsKind): string {
+        if (val == null)
+            return PageTitle.missingFormat;
+        if (kindIsNumeric(kind))
+            return String(val);
+        else if (kind === "Date")
+            return formatDate(Converters.dateFromDouble(val as number));
+        else if (kindIsString(kind))
+            return val as string;
+        else
+            return val.toString();  // TODO
+    }
 }
 
 /**
@@ -559,73 +624,9 @@ export interface IRawCancellable {
 // strong typing.
 export interface ICancellable<T> extends IRawCancellable {}
 
-/**
- * Convert a value in the table to a string representation.
- * @param val                  Value to convert.
- * @param {ContentsKind} kind  Type of value.
- */
-export function convertToStringFormat(val: any, kind: ContentsKind): string {
-    if (val == null)
-        return PageTitle.missingFormat;
-    if (kindIsNumeric(kind))
-        return String(val);
-    else if (kind === "Date")
-        return formatDate(Converters.dateFromDouble(val as number));
-    else if (kindIsString(kind))
-        return val as string;
-    else
-        return val.toString();  // TODO
-}
-
 export function px(dim: number): string {
     if (dim === 0)
         return dim.toString();
     return dim.toString() + "px";
 }
 
-/**
- * Convert a value expressed in milliseconds to a time interval.
- */
-export function convertToInterval(val: number): string {
-    if (val === 0)
-        return "0";
-    const ms = val % 1000;
-    val = Math.floor(val / 1000);
-    const sec = val % 60;
-    val = Math.floor(val / 60);
-    const min = val % 60;
-    val = Math.floor(val / 60);
-    const hours = val % 24;
-    const days = Math.floor(val / 24);
-    let result: string = "";
-    if (days > 0)
-        result = significantDigits(days) + "days";
-    if (days > 1000)
-        return result;
-    if (hours > 0) {
-        if (result.length !== 0)
-            result += " ";
-        result += hours.toString() + "H";
-    }
-    if (min > 0) {
-        if (result.length !== 0)
-            result += " ";
-        result += " " + min.toString() + "M";
-    }
-    let addedSec = false;
-    if (sec > 0) {
-        if (result.length !== 0)
-            result += " ";
-        addedSec = true;
-        result += sec.toString();
-    }
-    if (ms > 0 && days === 0) {
-        if (!addedSec)
-            result += " 0";
-        addedSec = true;
-        result += "." + ms.toString();
-    }
-    if (addedSec)
-        result += "s";
-    return result;
-}

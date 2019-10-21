@@ -103,18 +103,13 @@ public class StringColumnQuantization extends ColumnQuantization {
         return index;
     }
 
-    public StringColumnQuantization restrict(String min, String max) {
-        String left = this.roundDown(min);
-        String right = this.roundDown(max);
-        int li, ri;
-        for (li = 0; li < this.leftBoundaries.length; li++)
-            if (this.leftBoundaries[li].equals(left))
-                break;
-        for (ri = li; ri < this.leftBoundaries.length; ri++)
-            if (this.leftBoundaries[ri].equals(right))
-                break;
-        String[] b = new String[ri - li];
-        System.arraycopy(this.leftBoundaries, li, b, 0, ri - li);
-        return new StringColumnQuantization(b, this.globalMax);
+    @Override
+    public String minAsString() {
+        return this.leftBoundaries[0];
+    }
+
+    @Override
+    public String maxAsString() {
+        return this.globalMax;
     }
 }

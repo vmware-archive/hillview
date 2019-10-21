@@ -17,13 +17,15 @@
 
 package org.hillview.storage;
 
-import org.hillview.sketches.results.DoubleHistogramBuckets;
-import org.hillview.sketches.results.ExplicitDoubleHistogramBuckets;
-import org.hillview.sketches.results.StringHistogramBuckets;
+import org.hillview.sketches.results.IHistogramBuckets;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
+import org.hillview.table.columns.ColumnQuantization;
+import org.hillview.table.columns.DoubleColumnQuantization;
+import org.hillview.utils.Converters;
 import org.hillview.utils.Utilities;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 
 /**
@@ -60,19 +62,18 @@ abstract class JdbcConnection {
     public abstract String getURL();
 
     /**
-     * Construct the query string to read the specified table.
-     * @param table     Table to read.
+     * Construct the query string to read the connection table.
      * @param rowCount  Number of rows to read.
      * @return          A SQL query string that reads the specified number of rows.
      */
-    public abstract String getQueryToReadTable(String table, int rowCount);
+    public abstract String getQueryToReadTable(int rowCount);
 
-    String getQueryToReadSize(String table) {
-        return "SELECT COUNT(*) FROM " + table;
+    String getQueryToReadSize(@Nullable ColumnLimits columnLimits) {
+        throw new UnsupportedOperationException();
     }
 
-    String getQueryForDistinctCount(String table, String column) {
-        return "SELECT COUNT(DISTINCT " + column + ") FROM " + table;
+    String getQueryForDistinctCount(String column, @Nullable ColumnLimits columnLimits) {
+        throw new UnsupportedOperationException();
     }
 
     void addBaseUrl(StringBuilder urlBuilder) {
@@ -117,74 +118,46 @@ abstract class JdbcConnection {
         this.info = info;
     }
 
-    String getQueryToComputeFreqValues(String table, Schema schema, int minCt) {
-        StringBuilder builder = new StringBuilder();
-        String ctcol = schema.newColumnName("countcol");
-        /*
-        e.g., select gender, first_name, count(*) as ct
-              from employees
-              group by gender, first_name
-              order by count desc
-              having ct > minCt
-         */
-        boolean first = true;
-        StringBuilder cols = new StringBuilder();
-        for (String col : schema.getColumnNames()) {
-            if (!first)
-                cols.append(", ");
-            first = false;
-            cols.append(col);
-        }
-        builder.append("select ").append(cols.toString()).append(", count(*) AS ").append(ctcol)
-                .append(" from ").append(table)
-                .append(" group by ").append(cols.toString())
-                .append(" having ").append(ctcol).append(" > " ).append(minCt)
-                .append(" order by ").append(ctcol).append(" desc")
-                ;
-        return builder.toString();
-    }
-
-    public String getQueryForExplicitNumericHistogram(
-            String table, ColumnDescription cd, ExplicitDoubleHistogramBuckets buckets) {
-        throw new UnsupportedOperationException();
-    }
-
-    public String getQueryForExplicitDateHistogram(
-            String table, ColumnDescription cd, ExplicitDoubleHistogramBuckets buckets) {
-        throw new UnsupportedOperationException();
-    }
-
-    public String getQueryForNumericHistogram(
-            String table, ColumnDescription cd, DoubleHistogramBuckets buckets) {
-        throw new UnsupportedOperationException();
-    }
-
-    public String getQueryForStringHistogram(
-            String table, ColumnDescription cd, StringHistogramBuckets buckets) {
+    String getQueryToComputeFreqValues(Schema schema, int minCt, @Nullable ColumnLimits columnLimits) {
         throw new UnsupportedOperationException();
     }
 
     /**
      * Returns a query that computes 4 values for a given numeric column.
-     * @param table  Table used.
-     * @param column Column name.
+     * @param cd Column description.
+     * @param quantization  Optional quantization information for this column.
+     * @param columnLimits  Limits for each column.
      * @return       A query that computes the min, max, total rows, and non-nulls in the specified column.
      *               These are returned in columns min, max, total and nonnulls respectively.
      */
-    public String getQueryForNumericRange(String table, String column) {
+    public String getQueryForNumericRange(ColumnDescription cd,
+                                          @Nullable DoubleColumnQuantization quantization,
+                                          @Nullable ColumnLimits columnLimits) {
         throw new UnsupportedOperationException();
     }
 
-    @SuppressWarnings("WeakerAccess")
-    public String getQueryForCounts(String table, String column) {
-        return "select COUNT(*) as total, COUNT(" + column + ") as nonnulls from " + table;
+    public String getQueryForCounts(ColumnDescription cd, @Nullable ColumnQuantization quantization,
+                                    @Nullable ColumnLimits columnLimits) {
+        throw new UnsupportedOperationException();
     }
 
-    public String getQueryForDistinct(String table, String column) {
-        return "SELECT DISTINCT " + column + " FROM " + table + " ORDER BY " + column;
+    public String getQueryForDistinct(String column) {
+        Converters.checkNull(this.info.table);
+        return "SELECT DISTINCT " + column + " FROM " + this.info.table + " ORDER BY " + column;
     }
 
-    public String getQueryForDateHistogram(String table, ColumnDescription cd, DoubleHistogramBuckets buckets) {
+    public String getQueryForHistogram(ColumnDescription cd,
+                                @Nullable ColumnLimits columnLimits,
+                                IHistogramBuckets buckets,
+                                @Nullable ColumnQuantization quantization) {
+        throw new UnsupportedOperationException();
+    }
+
+    public String getQueryForHeatmap(ColumnDescription cd0, ColumnDescription cd1,
+                                     @Nullable ColumnLimits columnLimits,
+                                     IHistogramBuckets buckets0, IHistogramBuckets buckets1,
+                                     @Nullable ColumnQuantization quantization0,
+                                     @Nullable ColumnQuantization quantization1) {
         throw new UnsupportedOperationException();
     }
 }

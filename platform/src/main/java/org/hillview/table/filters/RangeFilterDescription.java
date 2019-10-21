@@ -24,6 +24,8 @@ import org.hillview.table.columns.DoubleColumnQuantization;
 import org.hillview.table.columns.StringColumnQuantization;
 import org.hillview.utils.Converters;
 
+import javax.annotation.Nullable;
+
 @SuppressWarnings("CanBeFinal")
 public class RangeFilterDescription implements ITableFilterDescription {
     // Instances of this class are created by deserialization from JSON,
@@ -71,7 +73,11 @@ public class RangeFilterDescription implements ITableFilterDescription {
         }
     }
 
-    public RangeFilterDescription intersect(RangeFilterDescription with) {
+    public RangeFilterDescription intersect(@Nullable RangeFilterDescription with) {
+        if (with == null)
+            return this;
+        if (this.complement || with.complement)
+            throw new RuntimeException("Intersection only supported for contiguous filters");
         RangeFilterDescription result = new RangeFilterDescription();
         result.cd = this.cd;
         if (this.cd.kind.isString()) {
@@ -85,7 +91,9 @@ public class RangeFilterDescription implements ITableFilterDescription {
         return result;
     }
 
-    public RangeFilterDescription intersect(ColumnQuantization with) {
+    public RangeFilterDescription intersect(@Nullable ColumnQuantization with) {
+        if (with == null)
+            return this;
         RangeFilterDescription result = new RangeFilterDescription();
         result.cd = this.cd;
         if (this.cd.kind.isString()) {

@@ -36,11 +36,11 @@ import {TabularDisplay} from "../ui/tabularDisplay";
 import {Resolution, SpecialChars} from "../ui/ui";
 import {
     cloneSet,
-    convertToStringFormat,
     ICancellable,
     makeMissing,
     makeSpan,
-    significantDigitsHtml
+    significantDigitsHtml,
+    Converters
 } from "../util";
 import {TableOperationCompleted} from "./tableView";
 
@@ -316,7 +316,8 @@ export class HeavyHittersView extends BigTableView {
                     if (value == null)
                         row.push(makeMissing());
                     else
-                        row.push(makeSpan(convertToStringFormat(value, this.columnsShown[j].kind), false));
+                        row.push(makeSpan(Converters.valueToString(
+                            value, this.columnsShown[j].kind), false));
                 }
                 row.push(this.valueToHtml(nextKList.rows[i].count));
                 row.push(this.valueToHtml((nextKList.rows[i].count / nextKList.rowsScanned) * 100));

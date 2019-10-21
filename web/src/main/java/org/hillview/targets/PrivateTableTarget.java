@@ -5,11 +5,14 @@ import org.hillview.dataStructures.*;
 import org.hillview.dataset.ConcurrentSketch;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.Pair;
+import org.hillview.maps.FilterMap;
 import org.hillview.sketches.*;
 import org.hillview.sketches.results.*;
 import org.hillview.table.PrivacySchema;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.ColumnQuantization;
+import org.hillview.table.filters.RangeFilterDescription;
+import org.hillview.table.filters.RangeFilterPairDescription;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.Converters;
 
@@ -27,10 +30,12 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
         this.registerObject();
     }
 
-    private PrivateTableTarget(IPrivateDataset other, HillviewComputation computation) {
+    private PrivateTableTarget(IDataSet<ITable> table,
+                               HillviewComputation computation,
+                               DPWrapper wrapper) {
         super(computation);
-        this.table = other.getDataset();
-        this.wrapper = new DPWrapper(other.getWrapper());
+        this.table = table;
+        this.wrapper = new DPWrapper(wrapper);
         this.registerObject();
     }
 
@@ -72,12 +77,27 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
 
     @HillviewRpc
     public void filterRange(RpcRequest request, RpcRequestContext context) {
-        this.wrapper.filterRange(request, context, this, PrivateTableTarget::new);
+        RangeFilterDescription filter = request.parseArgs(RangeFilterDescription.class);
+        FilterMap map = new FilterMap(filter, this.wrapper.privacySchema.quantization);
+        BiFunction<IDataSet<ITable>, HillviewComputation, IRpcTarget> constructor = (e, c) -> {
+            PrivateTableTarget result = new PrivateTableTarget(e, c, this.wrapper);
+            result.getWrapper().filter(filter);
+            return result;
+        };
+        this.runMap(this.table, map, constructor, request, context);
     }
 
     @HillviewRpc
     public void filter2DRange(RpcRequest request, RpcRequestContext context) {
-        this.wrapper.filter2DRange(request, context, this, PrivateTableTarget::new);
+        RangeFilterPairDescription filter = request.parseArgs(RangeFilterPairDescription.class);
+        FilterMap map = new FilterMap(filter, this.wrapper.privacySchema.quantization);
+        BiFunction<IDataSet<ITable>, HillviewComputation, IRpcTarget> constructor = (e, c) -> {
+            PrivateTableTarget result = new PrivateTableTarget(e, c, this.wrapper);
+            result.getWrapper().filter(filter.first);
+            result.getWrapper().filter(filter.second);
+            return result;
+        };
+        this.runMap(this.table, map, constructor, request, context);
     }
 
     @HillviewRpc
@@ -88,8 +108,7 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
         this.runSketch(this.table, sketch, request, context);
     }
 
-    @HillviewRpc
-    public void heavyHitters(RpcRequest request, RpcRequestContext context) {
+    private void heavyHitters(RpcRequest request, RpcRequestContext context) {
         HeavyHittersRequestInfo info = request.parseArgs(HeavyHittersRequestInfo.class);
         MGFreqKSketch sk = new MGFreqKSketch(info.columns, info.amount/100,
                 this.wrapper.privacySchema.quantization);
@@ -98,12 +117,12 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
                 request, context);
     }
 
-    @HillviewRpc
+    //@HillviewRpc // TODO: we don't know how to do this privately
     public void heavyHittersMG(RpcRequest request, RpcRequestContext context) {
         this.heavyHitters(request, context);
     }
 
-    @HillviewRpc
+    //@HillviewRpc // TODO: we don't know how to do this privately
     public void heavyHittersSampling(RpcRequest request, RpcRequestContext context) {
         this.heavyHitters(request, context);
     }
@@ -133,7 +152,7 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
                 new PrivateHeatmap(d0, d1, e, epsilon).heatmap, request, context);
     }
 
-    @HillviewRpc
+    //@HillviewRpc
     public void getNextK(RpcRequest request, RpcRequestContext context) {
         TableTarget.NextKArgs nextKArgs = request.parseArgs(TableTarget.NextKArgs.class);
         RowSnapshot rs = TableTarget.asRowSnapshot(

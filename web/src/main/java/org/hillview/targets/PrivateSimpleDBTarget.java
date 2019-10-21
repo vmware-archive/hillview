@@ -22,7 +22,9 @@ import org.hillview.dataStructures.*;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.Pair;
+import org.hillview.maps.IdMap;
 import org.hillview.sketches.PrecomputedSketch;
+import org.hillview.sketches.results.Heatmap;
 import org.hillview.sketches.results.Histogram;
 import org.hillview.sketches.results.TableSummary;
 import org.hillview.storage.JdbcConnectionInformation;
@@ -30,11 +32,16 @@ import org.hillview.table.ColumnDescription;
 import org.hillview.table.PrivacySchema;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.ColumnQuantization;
+import org.hillview.table.filters.RangeFilterDescription;
+import org.hillview.table.filters.RangeFilterPairDescription;
 import org.hillview.utils.Converters;
+import org.hillview.utils.HillviewException;
 
 import java.sql.SQLException;
 
 public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDataset {
+    // This class inherits columnLimits from SimpleDBTarget and it has another one
+    // in the wrapper.  We only use the one in the wrapper.
     private final DPWrapper wrapper;
 
     PrivateSimpleDBTarget(JdbcConnectionInformation conn, HillviewComputation c,
@@ -86,8 +93,10 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
         DyadicDecomposition d1 = info[1].getDecomposition(quantization);
         try {
             this.database.connect();
-            Histogram histo = this.database.histogram(cd, info[0].getBuckets(quantization));
-            Histogram cdf = this.database.histogram(cd, info[1].getBuckets(quantization));
+            Histogram histo = this.database.histogram(
+                    cd, info[0].getBuckets(quantization), this.wrapper.columnLimits, quantization, this.rowCount);
+            Histogram cdf = this.database.histogram(
+                    cd, info[1].getBuckets(quantization), this.wrapper.columnLimits, quantization, this.rowCount);
             Pair<Histogram, Histogram> result = new Pair<Histogram, Histogram>(histo, cdf);
             this.database.disconnect();
             ISketch<ITable, Pair<Histogram, Histogram>> sk = new PrecomputedSketch<ITable, Pair<Histogram, Histogram>>(result);
@@ -103,27 +112,54 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
 
     @HillviewRpc
     public void filterRange(RpcRequest request, RpcRequestContext context) {
-        this.wrapper.filterRange(request, context, this,
-                (d, c) -> new PrivateSimpleDBTarget((PrivateSimpleDBTarget)d, c));
+        RangeFilterDescription filter = request.parseArgs(RangeFilterDescription.class);
+        if (filter.complement)
+            throw new HillviewException("Only filters on contiguous range are supported");
+        IdMap<ITable> map = new IdMap<ITable>();
+        this.runMap(this.table, map, (e, c) -> {
+            IPrivateDataset result = new PrivateSimpleDBTarget(this, c);
+            result.getWrapper().filter(filter);
+            return result;
+        }, request, context);
     }
 
     @HillviewRpc
     public void filter2DRange(RpcRequest request, RpcRequestContext context) {
-        this.wrapper.filter2DRange(request, context, this,
-                (d, c) -> new PrivateSimpleDBTarget((PrivateSimpleDBTarget)d, c));
+        RangeFilterPairDescription filter = request.parseArgs(RangeFilterPairDescription.class);
+        if (filter.first.complement || filter.second.complement)
+            throw new HillviewException("Only filters on contiguous range are supported");
+        IdMap<ITable> map = new IdMap<ITable>();
+        this.runMap(this.table, map, (e, c) -> {
+            IPrivateDataset result = new PrivateSimpleDBTarget(this, c);
+            result.getWrapper().filter(filter.first);
+            result.getWrapper().filter(filter.second);
+            return result;
+        }, request, context);
     }
 
     @HillviewRpc
-    public void hLogLog(RpcRequest request, RpcRequestContext context) {
-        DistinctCountRequestInfo col = request.parseArgs(DistinctCountRequestInfo.class);
+    public void heatmap(RpcRequest request, RpcRequestContext context) {
+        HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
+        assert info.length == 2;
         try {
             this.database.connect();
-            int result = this.database.distinctCount(col.columnName);
+            Heatmap heatmap = this.database.heatmap(
+                    info[0].cd, info[1].cd,
+                    info[0].getBuckets(), info[1].getBuckets(),
+                    this.wrapper.columnLimits,
+                    null, null);
             this.database.disconnect();
-            DistinctCount dc = new DistinctCount(result);
-            ISketch<ITable, DistinctCount> sk = new PrecomputedSketch<ITable, DistinctCount>(dc);
-            // TODO(pratiksha): add noise to this count
-            this.runSketch(this.table, sk, request, context);
+            double epsilon = this.wrapper.privacySchema.epsilon(new String[] {
+                    info[0].cd.name, info[1].cd.name});
+            ColumnQuantization q0 = this.wrapper.privacySchema.quantization(info[0].cd.name);
+            ColumnQuantization q1 = this.wrapper.privacySchema.quantization(info[1].cd.name);
+            Converters.checkNull(q0);
+            Converters.checkNull(q1);
+            DyadicDecomposition d0 = info[0].getDecomposition(q0);
+            DyadicDecomposition d1 = info[1].getDecomposition(q1);
+            PrivateHeatmap result = new PrivateHeatmap(d0, d1, heatmap, epsilon);
+            ISketch<ITable, Heatmap> sk = new PrecomputedSketch<ITable, Heatmap>(result.heatmap);
+            this.runCompleteSketch(this.table, sk, (e, c) -> e, request, context);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

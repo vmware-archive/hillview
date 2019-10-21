@@ -65,7 +65,9 @@ public class PrivacySchema implements IJson, Serializable {
     public double epsilon(String colName) {
         Double epsilon = this.epsilons.get(colName);
         if (epsilon == null)
-            return 0.0;
+            return 1;
+        if (epsilon == 0)
+            throw new RuntimeException("Eplsilon of 0 for " + colName);
         return epsilon;
     }
 

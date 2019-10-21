@@ -27,13 +27,7 @@ import org.junit.Test;
 import javax.annotation.Nullable;
 import java.sql.SQLException;
 
-/**
- * Various tests for reading data from databases through JDBC.
- * The MySQL tests assume that the MySQL test_db from
- * https://github.com/datacharmer/test_db has
- * been loaded into MySQL.
- */
-public class JdbcTest extends BaseTest {
+class JdbcTest extends BaseTest {
     @Nullable
     ITable getTable(JdbcConnectionInformation conn) throws SQLException {
         Assert.assertNotNull(conn.table);
@@ -48,18 +42,5 @@ public class JdbcTest extends BaseTest {
         ITable table = db.readTable();
         db.disconnect();
         return table;
-    }
-
-    @Test
-    public void testImpalaConnection() throws SQLException {
-        JdbcConnectionInformation conn = new JdbcConnectionInformation();
-        conn.databaseKind = "impala";
-        conn.host = "localhost";
-        conn.port = 21050;
-        conn.database = "employees";
-        conn.table = "salaries";
-        conn.user = "user";
-        conn.password = "password";
-        this.getTable(conn);
     }
 }
