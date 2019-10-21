@@ -68,14 +68,12 @@ abstract class JdbcConnection {
      */
     public abstract String getQueryToReadTable(int rowCount);
 
-    String getQueryToReadSize(String table, @Nullable ColumnLimits columnLimits) {
-        // TODO: use column limits
-        return "SELECT COUNT(*) FROM " + table;
+    String getQueryToReadSize(@Nullable ColumnLimits columnLimits) {
+        throw new UnsupportedOperationException();
     }
 
-    String getQueryForDistinctCount(String table, String column, @Nullable ColumnLimits columnLimits) {
-        // TODO: use column limits
-        return "SELECT COUNT(DISTINCT " + column + ") FROM " + table;
+    String getQueryForDistinctCount(String column, @Nullable ColumnLimits columnLimits) {
+        throw new UnsupportedOperationException();
     }
 
     void addBaseUrl(StringBuilder urlBuilder) {
@@ -121,32 +119,7 @@ abstract class JdbcConnection {
     }
 
     String getQueryToComputeFreqValues(Schema schema, int minCt, @Nullable ColumnLimits columnLimits) {
-        // TODO: use column limits
-        Converters.checkNull(this.info.table);
-        StringBuilder builder = new StringBuilder();
-        String ctcol = schema.newColumnName("countcol");
-        /*
-        e.g., select gender, first_name, count(*) as ct
-              from employees
-              group by gender, first_name
-              order by count desc
-              having ct > minCt
-         */
-        boolean first = true;
-        StringBuilder cols = new StringBuilder();
-        for (String col : schema.getColumnNames()) {
-            if (!first)
-                cols.append(", ");
-            first = false;
-            cols.append(col);
-        }
-        builder.append("select ").append(cols.toString()).append(", count(*) AS ").append(ctcol)
-                .append(" from ").append(this.info.table)
-                .append(" group by ").append(cols.toString())
-                .append(" having ").append(ctcol).append(" > " ).append(minCt)
-                .append(" order by ").append(ctcol).append(" desc")
-                ;
-        return builder.toString();
+        throw new UnsupportedOperationException();
     }
 
     /**

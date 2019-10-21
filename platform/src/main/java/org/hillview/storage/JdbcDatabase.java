@@ -62,9 +62,8 @@ public class JdbcDatabase {
 
     public int getRowCount(@Nullable ColumnLimits columnLimits) {
         try {
-            // TODO: use column limits
             assert this.conn.info.table != null;
-            String query = this.conn.getQueryToReadSize(this.conn.info.table, columnLimits);
+            String query = this.conn.getQueryToReadSize(columnLimits);
             ResultSet rs = this.getQueryResult(query);
             if (!rs.next())
                 throw new RuntimeException("Could not retrieve table size for " + this.conn.info.table);
@@ -131,7 +130,7 @@ public class JdbcDatabase {
     public int distinctCount(String columnName, @Nullable ColumnLimits columnLimits) {
         try {
             assert this.conn.info.table != null;
-            String query = this.conn.getQueryForDistinctCount(this.conn.info.table, columnName, columnLimits);
+            String query = this.conn.getQueryForDistinctCount(columnName, columnLimits);
             ResultSet rs = this.getQueryResult(query);
             if (!rs.next())
                 throw new RuntimeException("Could not retrieve column for " + this.conn.info.table);

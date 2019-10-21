@@ -21,6 +21,7 @@ import org.hillview.sketches.results.DoubleHistogramBuckets;
 import org.hillview.sketches.results.IHistogramBuckets;
 import org.hillview.sketches.results.StringHistogramBuckets;
 import org.hillview.table.ColumnDescription;
+import org.hillview.table.Schema;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.columns.ColumnQuantization;
 import org.hillview.table.columns.DoubleColumnQuantization;
@@ -42,7 +43,7 @@ public class MySqlJdbcConnection extends JdbcConnection {
     }
 
     class MySqlCodeGenerator {
-        public final ColumnDescription cd;
+        @Nullable public final ColumnDescription cd;
         @Nullable final ColumnQuantization quantization;
         @Nullable final IHistogramBuckets buckets;
         @Nullable final ColumnLimits columnLimits;
@@ -50,7 +51,7 @@ public class MySqlJdbcConnection extends JdbcConnection {
                 DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
                         .withZone(ZoneId.systemDefault());
 
-        MySqlCodeGenerator(ColumnDescription cd,
+        MySqlCodeGenerator(@Nullable ColumnDescription cd,
                            @Nullable ColumnLimits columnLimits,
                            @Nullable ColumnQuantization quantization,
                            @Nullable IHistogramBuckets buckets) {
@@ -60,7 +61,7 @@ public class MySqlJdbcConnection extends JdbcConnection {
             this.columnLimits = columnLimits;
         }
 
-        MySqlCodeGenerator(ColumnDescription cd,
+        MySqlCodeGenerator(@Nullable ColumnDescription cd,
                            @Nullable ColumnLimits columnLimits,
                            @Nullable ColumnQuantization quantization) {
             this(cd, columnLimits, quantization, null);
@@ -132,8 +133,9 @@ public class MySqlJdbcConnection extends JdbcConnection {
          * A SQL expression that quantizes the value in the column.
          */
         String quantizedValue() {
+            Converters.checkNull(this.cd);
             if (quantization == null)
-                return cd.name;
+                return this.cd.name;
             if (this.cd.kind.isString()) {
                 StringColumnQuantization q = this.getStringQuantization();
                 return searchInterval(0, q.leftBoundaries.length,
@@ -209,6 +211,7 @@ public class MySqlJdbcConnection extends JdbcConnection {
         }
 
         String quote(String value) {
+            Converters.checkNull(this.cd);
             return quote(this.cd, value);
         }
 
@@ -220,6 +223,7 @@ public class MySqlJdbcConnection extends JdbcConnection {
         String min() {
             if (quantization == null)
                 return "";
+            Converters.checkNull(this.cd);
             if (this.cd.kind == ContentsKind.Date) {
                 DoubleColumnQuantization q = this.getDoubleQuantization();
                 return this.quoteDate(q.globalMin);
@@ -232,6 +236,7 @@ public class MySqlJdbcConnection extends JdbcConnection {
         String max() {
             if (quantization == null)
                 return "";
+            Converters.checkNull(this.cd);
             if (this.cd.kind == ContentsKind.Date) {
                 DoubleColumnQuantization q = this.getDoubleQuantization();
                 return this.quoteDate(q.globalMax);
@@ -244,18 +249,21 @@ public class MySqlJdbcConnection extends JdbcConnection {
         String quantizeBounds() {
             if (quantization == null)
                 return "true";
-            return cd.name + " between " + this.min() + " and " + this.max();
+            Converters.checkNull(this.cd);
+            return this.cd.name + " between " + this.min() + " and " + this.max();
         }
 
         String quantizeTable() {
             if (quantization == null)
                 return this.table();
-            return "(select " + this.quantizedValue() + " AS " + cd.name + " from " + this.table() +
+            Converters.checkNull(this.cd);
+            return "(select " + this.quantizedValue() + " AS " + this.cd.name + " from " + this.table() +
                         " where " + this.quantizeBounds() + ") tmpq";
         }
 
         private String filterQuantizeBounds() {
             if (this.quantization != null) {
+                Converters.checkNull(this.cd);
                 return "(select " + this.cd.name +
                         " from " + this.table() + " where " +
                         this.quantizeBounds() + ") tmpf";
@@ -268,6 +276,7 @@ public class MySqlJdbcConnection extends JdbcConnection {
          * using this.buckets.
          */
         public String getBucket() {
+            Converters.checkNull(this.cd);
             if (this.cd.kind.isString()) {
                 StringHistogramBuckets s = this.getStringBuckets();
                 return searchInterval(0, s.getBucketCount(), s.leftBoundaries, cd.name,
@@ -293,6 +302,7 @@ public class MySqlJdbcConnection extends JdbcConnection {
         }
 
         String minBucket() {
+            Converters.checkNull(this.cd);
             if (this.cd.kind == ContentsKind.Date) {
                 return this.quoteDate(this.getDoubleBuckets().minValue);
             } else if (this.cd.kind.isString()) {
@@ -303,6 +313,7 @@ public class MySqlJdbcConnection extends JdbcConnection {
         }
 
         String maxBucket() {
+            Converters.checkNull(this.cd);
             if (this.cd.kind == ContentsKind.Date) {
                 return this.quoteDate(this.getDoubleBuckets().maxValue);
             } else if (this.cd.kind.isString()) {
@@ -314,6 +325,7 @@ public class MySqlJdbcConnection extends JdbcConnection {
 
         String bucketBounds(boolean withWhere) {
             String result = "";
+            Converters.checkNull(this.cd);
             if (this.cd.kind.isString() && this.getStringBuckets().maxValue == null)
                 return result;
             if (withWhere)
@@ -396,7 +408,7 @@ public class MySqlJdbcConnection extends JdbcConnection {
 
     private String makeQuantizedTable(MySqlCodeGenerator[] gens) {
         return "(select " +
-                String.join(",", Linq.map(gens, g -> g.cd.name, String.class)) +
+                String.join(",", Linq.map(gens, g -> Converters.checkNull(g.cd).name, String.class)) +
                 " from " + this.info.table + " where " +
                 String.join(" and ", Linq.map(gens, MySqlCodeGenerator::quantizeBounds, String.class)) +
                 ")";
@@ -424,5 +436,40 @@ public class MySqlJdbcConnection extends JdbcConnection {
                 "select " + b0 + " as bucket0, " + b1 + " as bucket1 from " +
                 "(" + quantization + ") tmph1" +
                 bounds + ") tmph2 group by (bucket0 << 16) | bucket1";
+    }
+
+    @Override
+    String getQueryToReadSize(@Nullable ColumnLimits limits) {
+        MySqlCodeGenerator gen = new MySqlCodeGenerator(null, limits, null, null);
+        return "SELECT COUNT(*) FROM " + gen.table();
+    }
+
+    @Override
+    String getQueryForDistinctCount(String column, @Nullable ColumnLimits limits) {
+        MySqlCodeGenerator gen = new MySqlCodeGenerator(null, limits, null, null);
+        return "SELECT COUNT(DISTINCT " + column + ") FROM " + gen.table();
+    }
+
+    @Override
+    String getQueryToComputeFreqValues(Schema schema, int minCt, @Nullable ColumnLimits limits) {
+        MySqlCodeGenerator gen = new MySqlCodeGenerator(null, limits, null, null);
+        StringBuilder builder = new StringBuilder();
+        String ctcol = schema.newColumnName("countcol");
+        /*
+        e.g., select gender, first_name, count(*) as ct
+              from employees
+              group by gender, first_name
+              order by count desc
+              having ct > minCt
+         */
+        boolean first = true;
+        String cols = String.join(", ", schema.getColumnNames());
+        builder.append("select ").append(cols)
+                .append(", count(*) AS ").append(ctcol)
+                .append(" from ").append(gen.table())
+                .append(" group by ").append(cols)
+                .append(" having ").append(ctcol).append(" > " ).append(minCt)
+                .append(" order by ").append(ctcol).append(" desc");
+        return builder.toString();
     }
 }
