@@ -22,7 +22,6 @@ import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.columns.ColumnQuantization;
 import org.hillview.table.columns.DoubleColumnQuantization;
-import org.hillview.utils.Converters;
 import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
@@ -141,9 +140,8 @@ abstract class JdbcConnection {
         throw new UnsupportedOperationException();
     }
 
-    public String getQueryForDistinct(String column) {
-        Converters.checkNull(this.info.table);
-        return "SELECT DISTINCT " + column + " FROM " + this.info.table + " ORDER BY " + column;
+    public String getQueryForDistinct(ColumnDescription cd, @Nullable ColumnLimits columnLimits) {
+        throw new UnsupportedOperationException();
     }
 
     public String getQueryForHistogram(ColumnDescription cd,
