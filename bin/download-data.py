@@ -24,7 +24,7 @@ def copy_from_remote_host(rh, pattern):
         u = ""
     else:
         u = rh.user + "@"
-    command = "scp -r " + u + rh.host + ":" + pattern + " " + rh.host
+    command = "scp -r " + u + rh.host + ":" + pattern + " " + rh.host + " || true"
     message = "Copying the files from the remote machine " + str(rh.host)
     logger.info(message)
     execute_command(command)

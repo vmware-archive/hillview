@@ -1,1 +1,62 @@
-[{"name":"DayOfWeek","kind":"Integer"},{"name":"FlightDate","kind":"Date"},{"name":"UniqueCarrier","kind":"String"},{"name":"Origin","kind":"String"},{"name":"OriginCityName","kind":"String"},{"name":"OriginState","kind":"String"},{"name":"Dest","kind":"String"},{"name":"DestState","kind":"String"},{"name":"DepTime","kind":"Integer"},{"name":"DepDelay","kind":"Integer"},{"name":"ArrTime","kind":"Integer"},{"name":"ArrDelay","kind":"Integer"},{"name":"Cancelled","kind":"Integer"},{"name":"ActualElapsedTime","kind":"Integer"},{"name":"Distance","kind":"Integer"}]
+[
+  {
+    "kind": "Integer",
+    "name": "DayOfWeek"
+  },
+  {
+    "kind": "Date",
+    "name": "FlightDate"
+  },
+  {
+    "kind": "String",
+    "name": "UniqueCarrier"
+  },
+  {
+    "kind": "String",
+    "name": "Origin"
+  },
+  {
+    "kind": "String",
+    "name": "OriginCityName"
+  },
+  {
+    "kind": "String",
+    "name": "OriginState"
+  },
+  {
+    "kind": "String",
+    "name": "Dest"
+  },
+  {
+    "kind": "String",
+    "name": "DestState"
+  },
+  {
+    "kind": "Integer",
+    "name": "DepTime"
+  },
+  {
+    "kind": "Integer",
+    "name": "DepDelay"
+  },
+  {
+    "kind": "Integer",
+    "name": "ArrTime"
+  },
+  {
+    "kind": "Integer",
+    "name": "ArrDelay"
+  },
+  {
+    "kind": "Integer",
+    "name": "Cancelled"
+  },
+  {
+    "kind": "Integer",
+    "name": "ActualElapsedTime"
+  },
+  {
+    "kind": "Integer",
+    "name": "Distance"
+  }
+]

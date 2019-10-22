@@ -373,12 +373,11 @@ public class MySqlJdbcConnection extends JdbcConnection {
     }
 
     @Override
-    public String getQueryForDistinct(String column) {
-        Converters.checkNull(this.info.table);
-        // BINARY is needed to force mysql to do a case-sensitive comparison
-        return "SELECT CAST(" + column + " AS CHAR) FROM " +
-                "(SELECT DISTINCT BINARY " + column + " AS " + column + " FROM " +
-                this.info.table + " ORDER BY BINARY " + column + ") tmpd";
+    public String getQueryForDistinct(ColumnDescription cd, @Nullable ColumnLimits limits) {
+        MySqlCodeGenerator g = new MySqlCodeGenerator(cd, limits, null, null);
+        return "SELECT CAST(" + cd.name + " AS CHAR) FROM " +
+                "(SELECT DISTINCT BINARY " + cd.name + " AS " + cd.name + " FROM " +
+                g.table() + " ORDER BY BINARY " + cd.name + ") tmpd";
     }
 
     @Override

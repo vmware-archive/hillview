@@ -272,7 +272,7 @@ public class JdbcDatabase {
         int rows;
         {
             // Compute boundaries
-            String query = this.conn.getQueryForDistinct(cd.name);
+            String query = this.conn.getQueryForDistinct(cd, columnLimits);
             ResultSet rs = this.getQueryResult(query);
             List<IAppendableColumn> cols = JdbcDatabase.convertResultSet(rs);
             assert cols.size() == 1;
