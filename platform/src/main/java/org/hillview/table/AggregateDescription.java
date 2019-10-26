@@ -21,11 +21,14 @@ import java.io.Serializable;
 
 /**
  * Describes an aggregation operation to be performed.
+ * All aggregates ignore null values.
  */
 public class AggregateDescription implements Serializable {
    public enum AggregateKind implements Serializable {
-        Sum,
-        CountNonNull,
+       Sum,
+       Count,
+       Min,
+       Max
     }
 
     /**

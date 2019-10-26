@@ -174,8 +174,8 @@ export interface Heatmap3D {
     totalPresent: number;
 }
 
-export type AggregateKind = "Sum" | "CountNonNull";
-export const allAggregateKind: AggregateKind[] = ["Sum", "CountNonNull"];
+export type AggregateKind = "Sum" | "Count" | "Min" | "Max";
+export const allAggregateKind: AggregateKind[] = ["Sum", "Count", "Min", "Max"];
 
 export interface AggregateDescription {
     agkind: AggregateKind;

@@ -110,11 +110,11 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
         SmallTable aggTable = null;
         if (this.aggregates != null) {
             // Create a map with the indexes of the rows that need to be aggregated
-            Int2ObjectRBTreeMap<double[]> aggregates =
-                    new Int2ObjectRBTreeMap<double[]>(comp);
+            Int2ObjectRBTreeMap<Double[]> aggregates =
+                    new Int2ObjectRBTreeMap<Double[]>(comp);
             IRowIterator it = rowOrder.getIterator();
             for (int row = it.getNextRow(); row >= 0; row = it.getNextRow())
-                aggregates.put(row, new double[this.aggregates.length]);
+                aggregates.put(row, new Double[this.aggregates.length]);
 
             // Do a second pass over the data to compute the aggregates
             Schema aggSchema = new Schema();
@@ -126,20 +126,38 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
             rowIt = data.getRowIterator();
             for (int i = rowIt.getNextRow(); i >= 0; i = rowIt.getNextRow()) {
                 vw.setRow(i);
-                double[] agg = aggregates.get(i);
+                Double[] agg = aggregates.get(i);
                 if (agg == null)
                     continue;
                 for (int a = 0; a < this.aggregates.length; a++) {
                     AggregateDescription cad = this.aggregates[a];
                     if (vw.isMissing(cad.cd.name))
                         continue;
+                    double d = vw.asDouble(cad.cd.name);
                     switch (cad.agkind) {
                         case Sum:
-                            double d = vw.asDouble(cad.cd.name);
-                            agg[a] += d;
+                            if (agg[a] == null)
+                                agg[a] = d;
+                            else
+                                agg[a] += d;
                             break;
-                        case CountNonNull:
-                            agg[a]++;
+                        case Count:
+                            if (agg[a] == null)
+                                agg[a] = 1.0;
+                            else
+                                agg[a]++;
+                            break;
+                        case Min:
+                            if (agg[a] == null)
+                                agg[a] = d;
+                            else
+                                agg[a] = Math.min(agg[a], d);
+                            break;
+                        case Max:
+                            if (agg[a] == null)
+                                agg[a] = d;
+                            else
+                                agg[a] = Math.max(agg[a], d);
                             break;
                     }
                 }
@@ -156,8 +174,8 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
                 aggCols.add(col);
             }
 
-            ObjectCollection<double[]> values = aggregates.values();
-            for (double[] agg: values) {
+            ObjectCollection<Double[]> values = aggregates.values();
+            for (Double[] agg: values) {
                 for (int a = 0; a < this.aggregates.length; a++) {
                     AggregateDescription cad = this.aggregates[a];
                     DoubleListColumn col = aggCols.get(a);
@@ -202,7 +220,8 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
     }
 
     private static ObjectArrayColumn mergeAggregates(
-            IColumn left, IColumn right, final List<Integer> mergeOrder, int maxSize) {
+            IColumn left, IColumn right, final List<Integer> mergeOrder, int maxSize,
+            AggregateDescription.AggregateKind agkind) {
         final int size = Math.min(maxSize, mergeOrder.size());
         final ObjectArrayColumn merged = new ObjectArrayColumn(left.getDescription(), size);
         int i = 0, j = 0, k = 0;
@@ -214,7 +233,18 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
                 merged.set(k, right.getDouble(j));
                 j++;
             } else {
-                merged.set(k, right.getDouble(j) + left.getDouble(i));
+                switch (agkind) {
+                    case Sum:
+                    case Count:
+                        merged.set(k, right.getDouble(j) + left.getDouble(i));
+                        break;
+                    case Min:
+                        merged.set(k, Math.min(right.getDouble(j), left.getDouble(i)));
+                        break;
+                    case Max:
+                        merged.set(k, Math.max(right.getDouble(j), left.getDouble(i)));
+                        break;
+                }
                 i++;
                 j++;
             }
@@ -249,11 +279,15 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
         SmallTable aggTable = null;
         if (left.aggregates != null) {
             Converters.checkNull(right.aggregates);
+            Converters.checkNull(this.aggregates);
             List<IColumn> aggCols = new ArrayList<IColumn>(width);
+            int index = 0;
             for (String colName : left.aggregates.getSchema().getColumnNames()) {
                 IColumn newCol = mergeAggregates(left.aggregates.getColumn(colName),
-                        right.aggregates.getColumn(colName), mergeOrder, this.maxSize);
+                        right.aggregates.getColumn(colName), mergeOrder, this.maxSize,
+                        this.aggregates[index].agkind);
                 aggCols.add(newCol);
+                index++;
             }
             aggTable = new SmallTable(aggCols);
         }

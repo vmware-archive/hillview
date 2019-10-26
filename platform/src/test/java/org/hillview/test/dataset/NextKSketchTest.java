@@ -204,7 +204,7 @@ public class NextKSketchTest extends BaseTest {
         ro.append(new ColumnSortOrientation(nameCol, true));
         AggregateDescription[] agg = new AggregateDescription[2];
         agg[0] = new AggregateDescription(ageCol, AggregateDescription.AggregateKind.Sum);
-        agg[1] = new AggregateDescription(ageCol, AggregateDescription.AggregateKind.CountNonNull);
+        agg[1] = new AggregateDescription(ageCol, AggregateDescription.AggregateKind.Count);
         NextKSketch nks = new NextKSketch(ro, agg, null, 20);
 
         String sb = "Table[1x12]\n" +

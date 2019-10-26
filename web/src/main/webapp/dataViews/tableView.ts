@@ -445,14 +445,15 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
     private addHeaderCell(cd: IColumnDescription,
                           displayName: DisplayName,
                           help: string,
-                          width: number): HTMLElement {
-        const isVisible = this.isVisible(cd.name);
+                          width: number,
+                          isVisible: boolean,
+                          isSortable: boolean): HTMLElement {
         const th = this.grid.addHeader(width, cd.name, !isVisible);
         th.classList.add("noselect");
         th.title = help;
         if (!isVisible) {
             th.style.fontWeight = "normal";
-        } else {
+        } else if (isSortable) {
             const span = makeSpan("", false);
             span.innerHTML = this.getSortIndex(cd.name) + this.getSortArrow(cd.name);
             span.style.cursor = "pointer";
@@ -707,12 +708,12 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         {
             // Create column headers
             let thd = this.addHeaderCell(posCd, new DisplayName(posCd.name),
-                "Position within sorted order.", DataRangeUI.width);
+                "Position within sorted order.", DataRangeUI.width, true, false);
             thd.oncontextmenu = () => {};
             thd.classList.add("meta");
 
             thd = this.addHeaderCell(ctCd, new DisplayName(ctCd.name),
-                "Number of occurrences.", 75);
+                "Number of occurrences.", 75, true, false);
             thd.oncontextmenu = () => {};
             thd.classList.add("meta");
             if (this.schema == null)
@@ -750,7 +751,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             }
             title += "Right mouse click opens a menu\n";
             const visible = this.order.find(cd.name) >= 0;
-            const thd = this.addHeaderCell(cd, name, title, 0);
+            const thd = this.addHeaderCell(cd, name, title, 0, visible, true);
             thd.classList.add("col" + i.toString());
             thd.onclick = (e) => this.columnClick(i, e);
             thd.ondblclick = (e) => {
@@ -770,16 +771,14 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 const ag = this.aggregates[i];
                 let name;
                 const dn = this.schema.displayName(ag.cd.name);
-                if (ag.agkind === "Sum")
-                    name = "Sum(" + dn.toString() + ")";
-                else
-                    name = "Count(" + dn.toString() + ")";
+                name = ag.agkind + "(" + dn.toString() + ")";
                 const cd: IColumnDescription = {
                     kind: ag.cd.kind,
                     name: name
                 };
                 const thd = this.addHeaderCell(cd, new DisplayName(name),
-                    "Sum of values in column " + this.schema.displayName(ag.cd.name), 0);
+                    ag.agkind + " of values in column " + this.schema.displayName(ag.cd.name),
+                    0, true, false);
                 const aggIndex = i;
                 thd.oncontextmenu = (e: PointerEvent) => {
                     this.contextMenu.clear();
@@ -878,8 +877,17 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         }
         const order = new RecordOrder(so);
         const rr = this.createProjectRequest(schema.schema);
+        // Remove all aggregates that depend on these columns
+        let aggregates = [];
+        for (const a of this.aggregates) {
+            if (!selected.has(a.cd.name))
+                aggregates.push(a);
+        }
+        if (aggregates.length === 0)
+            aggregates = null;
+
         const rec = new TableOperationCompleted(this.page, rr, this.rowCount,
-            schema, order, this.tableRowsDesired, this.aggregates);
+            schema, order, this.tableRowsDesired, aggregates);
         rr.invoke(rec);
     }
 
@@ -1077,7 +1085,6 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         let cell = this.grid.newCell("all");
         const dataRange = new DataRangeUI(position, row.count, this.rowCount);
         cell.appendChild(dataRange.getDOMRepresentation());
-        cell.classList.add("meta");
         cell.oncontextmenu = moveToTop;
 
         cell = this.grid.newCell("all");
