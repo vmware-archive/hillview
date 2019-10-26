@@ -17,17 +17,18 @@
 
 package org.hillview.table;
 
-import org.hillview.sketches.results.ColumnSortOrientation;
-
 import java.io.Serializable;
 
 /**
  * Describes an aggregation operation to be performed.
+ * All aggregates ignore null values.
  */
 public class AggregateDescription implements Serializable {
-   public enum AggregateKind {
-        Sum,
-        CountNonNull,
+   public enum AggregateKind implements Serializable {
+       Sum,
+       Count,
+       Min,
+       Max
     }
 
     /**

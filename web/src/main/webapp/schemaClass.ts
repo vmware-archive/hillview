@@ -196,7 +196,7 @@ export class SchemaClass implements Serializable<SchemaClass> {
         return null;
     }
 
-    public findByDisplayName(displayName: DisplayName): IColumnDescription {
+    public findByDisplayName(displayName: DisplayName | null): IColumnDescription {
         const original = this.fromDisplayName(displayName);
         return this.find(original);
     }

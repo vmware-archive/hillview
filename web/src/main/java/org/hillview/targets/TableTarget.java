@@ -26,6 +26,7 @@ import org.hillview.dataset.api.*;
 import org.hillview.maps.*;
 import org.hillview.sketches.*;
 import org.hillview.sketches.results.*;
+import org.hillview.table.AggregateDescription;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.RecordOrder;
 import org.hillview.table.Schema;
@@ -71,6 +72,8 @@ public final class TableTarget extends RpcTarget {
         @Nullable
         String[] columnsNoValue;
         int rowsOnScreen;
+        @Nullable
+        AggregateDescription[] aggregates;
     }
 
     @Nullable
@@ -86,7 +89,8 @@ public final class TableTarget extends RpcTarget {
         NextKArgs nextKArgs = request.parseArgs(NextKArgs.class);
         RowSnapshot rs = TableTarget.asRowSnapshot(
                 nextKArgs.firstRow, nextKArgs.order, nextKArgs.columnsNoValue);
-        NextKSketch nk = new NextKSketch(nextKArgs.order, null, rs, nextKArgs.rowsOnScreen);
+        NextKSketch nk = new NextKSketch(nextKArgs.order, nextKArgs.aggregates,
+                rs, nextKArgs.rowsOnScreen);
         this.runSketch(this.table, nk, request, context);
     }
 

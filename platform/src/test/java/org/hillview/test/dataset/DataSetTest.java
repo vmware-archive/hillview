@@ -19,28 +19,20 @@ package org.hillview.test.dataset;
 
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.ParallelDataSet;
-import org.hillview.dataset.PartialResultMonoid;
-import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.*;
-import org.hillview.dataset.remoting.HillviewServer;
 import org.hillview.test.BaseTest;
 import org.hillview.utils.Converters;
-import org.hillview.utils.HostAndPort;
 import org.junit.Assert;
 import org.junit.Test;
 import rx.Observable;
 import rx.Observer;
-import rx.Subscription;
 import rx.observers.TestSubscriber;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class DataSetTest extends BaseTest {
     private static class Increment implements IMap<Integer, Integer> {
@@ -115,7 +107,10 @@ public class DataSetTest extends BaseTest {
         Observable<String> o1 = o.map(s -> s + "0").first().single();
         Observable<String> o2 = o.map(s -> s + "1");
         Observable<String> m = o1.mergeWith(o2);
-        m.subscribe(s -> print("Sub1 got: " + s));
+        m.subscribe(s -> {
+            if (BaseTest.toPrint)
+                System.out.println("Sub1 got: " + s);
+        });
     }
 
     @Test
@@ -271,175 +266,6 @@ public class DataSetTest extends BaseTest {
 
         ts.assertNotCompleted();
         ts.assertValueCount(3);
-    }
-
-    // The following are testing unsubscription
-    private static final AtomicLong initialTime = new AtomicLong(0);
-    private static final AtomicInteger completedLocals = new AtomicInteger(0);
-
-    private static long getTime() {
-        long time = System.currentTimeMillis();
-        initialTime.compareAndSet(0, time);
-        return time - initialTime.get();
-    }
-
-    private static final boolean quiet = true;
-    private static void print(String s) {
-        if (quiet)
-            return;
-        System.out.println(s);
-    }
-
-    static class SlowSketch implements ISketch<Integer, Integer> {
-        @Override
-        public Integer create(Integer data) {
-            print(getTime() + " working " + data);
-            int sum = 0;
-            for (int i = 0; i < 10000000; i++)
-                sum = (sum + i) % 43;
-            print(getTime() + " ready " + data + ": " + sum);
-            completedLocals.getAndIncrement();
-            return 0;
-        }
-
-        @Nullable
-        @Override
-        public Integer zero() {
-            return 0;
-        }
-
-        @Nullable
-        @Override
-        public Integer add(@Nullable Integer left, @Nullable Integer right) {
-            return 0;
-        }
-    }
-
-    /**
-     * Test unsubscription through a RemoteDataSet.
-     * There were several races which prevented unsubscription from cancelling
-     * the remote operation.  Unfortunately it is not easy to write a fully
-     * reproducible test.
-     */
-    @Test
-    public void unsubscriptionTest1() throws InterruptedException, IOException {
-        ArrayList<IDataSet<Integer>> l = new ArrayList<IDataSet<Integer>>(100);
-        for (int j = 0; j < 100; j++) {
-            LocalDataSet<Integer> ld = new LocalDataSet<Integer>(j, true);
-            l.add(ld);
-        }
-        ParallelDataSet<Integer> ld = new ParallelDataSet<Integer>(l);
-
-        HostAndPort serverAddress = HostAndPort.fromParts("127.0.0.1", 1235);
-        HillviewServer server = new HillviewServer(serverAddress, ld);
-        IDataSet<Integer> remote = new RemoteDataSet<Integer>(serverAddress);
-
-        SlowSketch sketch = new SlowSketch();
-        PartialResultMonoid<Integer> prm = new PartialResultMonoid<Integer>(sketch);
-
-        for (int i = 0; i < 2; i++) {
-            completedLocals.set(0);
-            IDataSet<Integer> toTest = i == 0 ? ld : remote;
-            Observable<PartialResult<Integer>> src = toTest.sketch(sketch).scan(prm::add);
-            Observer<PartialResult<Integer>> obs = new Observer<PartialResult<Integer>>() {
-                @Override
-                public void onCompleted() {
-                }
-
-                @Override
-                public void onError(Throwable throwable) {
-                }
-
-                @Override
-                public void onNext(PartialResult<Integer> i) {
-                }
-            };
-            src = src.doOnUnsubscribe(() -> print(getTime() + " unsubscribed"));
-
-            print(getTime() + " starting");
-            Subscription sub = src.subscribe(obs);
-            print(getTime() + " sleeping");
-            Thread.sleep(200);
-            print(getTime() + " unsubscribing");
-            sub.unsubscribe();
-            print(getTime() + " Sleeping some more");
-            Thread.sleep(3000);
-            print("Completed locals: " + completedLocals.get());
-
-            while (!sub.isUnsubscribed())
-                Thread.sleep(50);
-        }
-
-        server.shutdown();
-    }
-
-    static class SlowMap implements IMap<Integer, Integer> {
-        @Override
-        public Integer apply(Integer data) {
-            print(getTime() + " working " + data);
-            int sum = 0;
-            for (int i = 0; i < 10000000; i++)
-                sum = (sum + i) % 43;
-            print(getTime() + " ready " + data + ": " + sum);
-            completedLocals.getAndIncrement();
-            return sum;
-        }
-    }
-
-    /**
-     * Test unsubscription through a RemoteDataSet.
-     * There were several races which prevented unsubscription from cancelling
-     * the remote operation.  Unfortunately it is not easy to write a fully
-     * reproducible test.
-     */
-    @Test
-    public void unsubscriptionTest2() throws InterruptedException, IOException {
-        ArrayList<IDataSet<Integer>> l = new ArrayList<IDataSet<Integer>>(100);
-        for (int j = 0; j < 100; j++) {
-            LocalDataSet<Integer> ld = new LocalDataSet<Integer>(j, true);
-            l.add(ld);
-        }
-        ParallelDataSet<Integer> ld = new ParallelDataSet<Integer>(l);
-
-        HostAndPort serverAddress = HostAndPort.fromParts("127.0.0.1", 1236);
-        HillviewServer server = new HillviewServer(serverAddress, ld);
-        IDataSet<Integer> remote = new RemoteDataSet<Integer>(serverAddress);
-        SlowMap sketch = new SlowMap();
-
-        for (int i = 0; i < 2; i++) {
-            completedLocals.set(0);
-            IDataSet<Integer> toTest = i == 0 ? ld : remote;
-            Observable<PartialResult<IDataSet<Integer>>> src = toTest.map(sketch);
-            Observer<PartialResult<IDataSet<Integer>>> obs =
-                    new Observer<PartialResult<IDataSet<Integer>>>() {
-                        @Override
-                        public void onCompleted() {
-                        }
-
-                        @Override
-                        public void onError(Throwable throwable) {
-                        }
-
-                        @Override
-                        public void onNext(PartialResult<IDataSet<Integer>> i) {
-                        }
-                    };
-            src = src.doOnUnsubscribe(() -> print(getTime() + " unsubscribed"));
-
-            print(getTime() + " starting");
-            Subscription sub = src.subscribe(obs);
-            print(getTime() + " sleeping");
-            Thread.sleep(200);
-            print(getTime() + " unsubscribing");
-            sub.unsubscribe();
-            print(getTime() + " Sleeping some more");
-            Thread.sleep(5000);
-            print("Completed locals: " + completedLocals.get());
-
-            while (!sub.isUnsubscribed())
-                Thread.sleep(50);
-        }
-        server.shutdown();
     }
 
     @Test

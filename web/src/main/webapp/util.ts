@@ -23,7 +23,7 @@ import * as FileSaver from "file-saver";
 import {ErrorReporter} from "./ui/errReporter";
 import {NotifyDialog} from "./ui/dialog";
 import {HtmlString, Size} from "./ui/ui";
-import {ContentsKind, kindIsNumeric, kindIsString} from "./javaBridge";
+import {AggregateDescription, ContentsKind, kindIsNumeric, kindIsString} from "./javaBridge";
 import {PageTitle} from "./ui/fullPage";
 
 export interface Pair<T1, T2> {
@@ -394,6 +394,23 @@ interface NameValue<T> {
     value: T;
 }
 
+export function sameAggregate(a: AggregateDescription, b: AggregateDescription): boolean {
+    return a.agkind === b.agkind && a.cd.name === b.cd.name && a.cd.kind === b.cd.kind;
+}
+
+/**
+ * Find a value in an array using a specified equality function.  Return index in array.
+ * @param value         Value to search.
+ * @param array         Array to search in.
+ * @param comparison    Comparison function, returns true if two values are equal.
+ */
+export function find<T>(value: T, array: T[], comparison: (l: T, r: T) => boolean): number {
+    for (let i = 0; i < array.length; i++)
+        if (comparison(value, array[i]))
+            return i;
+    return -1;
+}
+
 /**
  * This class builds some useful iterators over typescript enums.
  * In all these methods enumType is an enum *type*
@@ -609,4 +626,3 @@ export function px(dim: number): string {
         return dim.toString();
     return dim.toString() + "px";
 }
-

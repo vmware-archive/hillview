@@ -133,8 +133,8 @@ td.all {
     border: 1px solid black;
 }
 
-.tableView div.meta {
-    background-color: #fafafa;
+.tableView .meta {
+    background-color: #e8ffe8;
 }
 
 .tableView td.top {
@@ -146,6 +146,10 @@ td.all {
 /* Used to display divs inside table cells that are truncated when the cells are too narrow */
 .resizable {
     position: relative;
+}
+
+tr:hover {
+    border: 1px double darkred;
 }
 
 td:not(.header) .truncated:hover {

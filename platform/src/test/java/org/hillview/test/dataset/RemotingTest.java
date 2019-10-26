@@ -20,32 +20,50 @@ package org.hillview.test.dataset;
 import com.google.common.collect.ImmutableList;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.ParallelDataSet;
+import org.hillview.dataset.PartialResultMonoid;
 import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.*;
 import org.hillview.dataset.remoting.HillviewServer;
 import org.hillview.maps.FalseMap;
+import org.hillview.sketches.NextKSketch;
+import org.hillview.sketches.SampleQuantileSketch;
+import org.hillview.sketches.results.ColumnSortOrientation;
+import org.hillview.sketches.results.NextKList;
+import org.hillview.sketches.results.SampleList;
+import org.hillview.table.ColumnDescription;
+import org.hillview.table.RecordOrder;
+import org.hillview.table.SmallTable;
+import org.hillview.table.api.ContentsKind;
+import org.hillview.table.api.ITable;
+import org.hillview.table.api.IndexComparator;
 import org.hillview.test.BaseTest;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HostAndPort;
+import org.hillview.utils.TestTables;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import rx.Observable;
+import rx.Observer;
 import rx.Subscriber;
+import rx.Subscription;
 import rx.observers.TestSubscriber;
 import rx.subjects.PublishSubject;
 import rx.subjects.SerializedSubject;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
@@ -54,8 +72,10 @@ import static org.junit.Assert.fail;
  */
 @net.jcip.annotations.NotThreadSafe
 public class RemotingTest extends BaseTest {
-    private final static HostAndPort serverAddress = HostAndPort.fromParts("127.0.0.1",
-                                                                           1234);
+    // We have to be careful to use different ports for all the servers we start
+    // Although there's a NotThreadSafe annotation it does not seem to have much effect.
+    private final static HostAndPort serverAddress =
+            HostAndPort.fromParts("127.0.0.1", 1239);
     @Nullable private static HillviewServer server;
 
     private static class IncrementMap implements IMap<int[], int[]> {
@@ -377,6 +397,272 @@ public class RemotingTest extends BaseTest {
     public static void shutdown() {
         if (server != null) {
             server.shutdown();
+        }
+    }
+
+    // The following are testing unsubscription
+    private static final AtomicLong initialTime = new AtomicLong(0);
+    private static final AtomicInteger completedLocals = new AtomicInteger(0);
+
+    private static long getTime() {
+        long time = System.currentTimeMillis();
+        initialTime.compareAndSet(0, time);
+        return time - initialTime.get();
+    }
+
+    private static final boolean quiet = true;
+    private static void print(String s) {
+        if (quiet)
+            return;
+        System.out.println(s);
+    }
+
+    static class SlowSketch implements ISketch<Integer, Integer> {
+        @Override
+        public Integer create(Integer data) {
+            print(getTime() + " working " + data);
+            int sum = 0;
+            for (int i = 0; i < 10000000; i++)
+                sum = (sum + i) % 43;
+            print(getTime() + " ready " + data + ": " + sum);
+            completedLocals.getAndIncrement();
+            return 0;
+        }
+
+        @Nullable
+        @Override
+        public Integer zero() {
+            return 0;
+        }
+
+        @Nullable
+        @Override
+        public Integer add(@Nullable Integer left, @Nullable Integer right) {
+            return 0;
+        }
+    }
+
+    static class SlowMap implements IMap<Integer, Integer> {
+        @Override
+        public Integer apply(Integer data) {
+            print(getTime() + " working " + data);
+            int sum = 0;
+            for (int i = 0; i < 10000000; i++)
+                sum = (sum + i) % 43;
+            print(getTime() + " ready " + data + ": " + sum);
+            completedLocals.getAndIncrement();
+            return sum;
+        }
+    }
+
+    /**
+     * Test unsubscription through a RemoteDataSet.
+     * There were several races which prevented unsubscription from cancelling
+     * the remote operation.  Unfortunately it is not easy to write a fully
+     * reproducible test.
+     */
+    @Test
+    public void unsubscriptionTest1() throws InterruptedException, IOException {
+        ArrayList<IDataSet<Integer>> l = new ArrayList<IDataSet<Integer>>(100);
+        for (int j = 0; j < 100; j++) {
+            LocalDataSet<Integer> ld = new LocalDataSet<Integer>(j, true);
+            l.add(ld);
+        }
+        ParallelDataSet<Integer> ld = new ParallelDataSet<Integer>(l);
+
+        HostAndPort serverAddress = HostAndPort.fromParts("127.0.0.1", 1240);
+        HillviewServer server = new HillviewServer(serverAddress, ld);
+        IDataSet<Integer> remote = new RemoteDataSet<Integer>(serverAddress);
+
+        SlowSketch sketch = new SlowSketch();
+        PartialResultMonoid<Integer> prm = new PartialResultMonoid<Integer>(sketch);
+
+        for (int i = 0; i < 2; i++) {
+            completedLocals.set(0);
+            IDataSet<Integer> toTest = i == 0 ? ld : remote;
+            Observable<PartialResult<Integer>> src = toTest.sketch(sketch).scan(prm::add);
+            Observer<PartialResult<Integer>> obs = new Observer<PartialResult<Integer>>() {
+                @Override
+                public void onCompleted() {
+                }
+
+                @Override
+                public void onError(Throwable throwable) {
+                }
+
+                @Override
+                public void onNext(PartialResult<Integer> i) {
+                }
+            };
+            src = src.doOnUnsubscribe(() -> print(getTime() + " unsubscribed"));
+
+            print(getTime() + " starting");
+            Subscription sub = src.subscribe(obs);
+            print(getTime() + " sleeping");
+            Thread.sleep(200);
+            print(getTime() + " unsubscribing");
+            sub.unsubscribe();
+            print(getTime() + " Sleeping some more");
+            Thread.sleep(3000);
+            print("Completed locals: " + completedLocals.get());
+
+            while (!sub.isUnsubscribed())
+                Thread.sleep(50);
+        }
+
+        server.shutdown();
+    }
+
+    /**
+     * Test unsubscription through a RemoteDataSet.
+     * There were several races which prevented unsubscription from cancelling
+     * the remote operation.  Unfortunately it is not easy to write a fully
+     * reproducible test.
+     */
+    @Test
+    public void unsubscriptionTest2() throws InterruptedException, IOException {
+        ArrayList<IDataSet<Integer>> l = new ArrayList<IDataSet<Integer>>(100);
+        for (int j = 0; j < 100; j++) {
+            LocalDataSet<Integer> ld = new LocalDataSet<Integer>(j, true);
+            l.add(ld);
+        }
+        ParallelDataSet<Integer> ld = new ParallelDataSet<Integer>(l);
+
+        HostAndPort serverAddress = HostAndPort.fromParts("127.0.0.1", 1241);
+        HillviewServer server = new HillviewServer(serverAddress, ld);
+        IDataSet<Integer> remote = new RemoteDataSet<Integer>(serverAddress);
+        SlowMap sketch = new SlowMap();
+
+        for (int i = 0; i < 2; i++) {
+            completedLocals.set(0);
+            IDataSet<Integer> toTest = i == 0 ? ld : remote;
+            Observable<PartialResult<IDataSet<Integer>>> src = toTest.map(sketch);
+            Observer<PartialResult<IDataSet<Integer>>> obs =
+                    new Observer<PartialResult<IDataSet<Integer>>>() {
+                        @Override
+                        public void onCompleted() {
+                        }
+
+                        @Override
+                        public void onError(Throwable throwable) {
+                        }
+
+                        @Override
+                        public void onNext(PartialResult<IDataSet<Integer>> i) {
+                        }
+                    };
+            src = src.doOnUnsubscribe(() -> print(getTime() + " unsubscribed"));
+
+            print(getTime() + " starting");
+            Subscription sub = src.subscribe(obs);
+            print(getTime() + " sleeping");
+            Thread.sleep(200);
+            print(getTime() + " unsubscribing");
+            sub.unsubscribe();
+            print(getTime() + " Sleeping some more");
+            Thread.sleep(5000);
+            print("Completed locals: " + completedLocals.get());
+
+            while (!sub.isUnsubscribed())
+                Thread.sleep(50);
+        }
+        server.shutdown();
+    }
+
+    @Test
+    public void remoteDataSetTest() throws IOException {
+        int numCols = 3;
+        int size = 1000, resolution = 20;
+        SmallTable randTable = TestTables.getIntTable(size, numCols);
+        RecordOrder cso = new RecordOrder();
+        for (String colName : randTable.getSchema().getColumnNames()) {
+            cso.append(new ColumnSortOrientation(randTable.getSchema().getDescription(colName), true));
+        }
+        SampleQuantileSketch sqSketch = new SampleQuantileSketch(cso, resolution, size, 0);
+        HostAndPort h1 = HostAndPort.fromParts("127.0.0.1", 1234);
+        HillviewServer server1 = new HillviewServer(h1, new LocalDataSet<ITable>(randTable));
+        try {
+            RemoteDataSet<ITable> rds1 = new RemoteDataSet<ITable>(h1);
+            SampleList sl = rds1.blockingSketch(sqSketch);
+            Assert.assertNotNull(sl);
+            IndexComparator comp = cso.getIndexComparator(sl.table);
+            for (int i = 0; i < (sl.table.getNumOfRows() - 1); i++)
+                assertTrue(comp.compare(i, i + 1) <= 0);
+        } finally {
+            server1.shutdown();
+        }
+    }
+
+    @Test
+    public void remoteDataSetTest1() throws IOException {
+        RecordOrder cso = new RecordOrder();
+        cso.append(new ColumnSortOrientation(new ColumnDescription("Column0", ContentsKind.Integer), true));
+        HostAndPort h1 = HostAndPort.fromParts("127.0.0.1", 1235);
+        ArrayList<IDataSet<ITable>> one = new ArrayList<IDataSet<ITable>>();
+        LocalDataSet<ITable> local = new LocalDataSet<ITable>(TestTables.getIntTable(20, 2));
+        one.add(local);
+        IDataSet<ITable> small = new ParallelDataSet<ITable>(one);
+        HillviewServer server1 = new HillviewServer(h1, small);
+        try {
+            RemoteDataSet<ITable> rds1 = new RemoteDataSet<ITable>(h1);
+            NextKSketch sketch = new NextKSketch(cso, null, null, 10);
+            NextKList sl = rds1.blockingSketch(sketch);
+            Assert.assertNotNull(sl);
+            Assert.assertEquals("Table[1x10]", sl.rows.toString());
+        } finally {
+            server1.shutdown();
+        }
+    }
+
+    @Test
+    public void remoteDataSetTest2() throws IOException {
+        RecordOrder cso = new RecordOrder();
+        cso.append(new ColumnSortOrientation(new ColumnDescription("Name", ContentsKind.String), true));
+        HostAndPort h1 = HostAndPort.fromParts("127.0.0.1", 1236);
+        ArrayList<IDataSet<ITable>> empty = new ArrayList<IDataSet<ITable>>();
+        IDataSet<ITable> small = new ParallelDataSet<ITable>(empty);
+        HillviewServer server1 = new HillviewServer(h1, small);
+        try {
+            RemoteDataSet<ITable> rds1 = new RemoteDataSet<ITable>(h1);
+            NextKSketch sketch = new NextKSketch(cso, null, null, 10);
+            NextKList sl = rds1.blockingSketch(sketch);
+            Assert.assertNotNull(sl);
+            Assert.assertEquals("Table[1x0]", sl.rows.toString());
+        } finally {
+            server1.shutdown();
+        }
+    }
+
+    @Test
+    public void remoteDataSetTest3() throws IOException {
+        RecordOrder cso = new RecordOrder();
+        cso.append(new ColumnSortOrientation(new ColumnDescription("Name", ContentsKind.String), true));
+        HostAndPort h1 = HostAndPort.fromParts("127.0.0.1", 1237);
+        HostAndPort h2 = HostAndPort.fromParts("127.0.0.1", 1238);
+
+        ArrayList<IDataSet<ITable>> one = new ArrayList<IDataSet<ITable>>();
+        LocalDataSet<ITable> local = new LocalDataSet<ITable>(TestTables.testTable());
+        one.add(local);
+        IDataSet<ITable> small = new ParallelDataSet<ITable>(one);
+        HillviewServer server1 = new HillviewServer(h1, small);
+
+        ArrayList<IDataSet<ITable>> none = new ArrayList<IDataSet<ITable>>();
+        IDataSet<ITable> empty = new ParallelDataSet<ITable>(none);
+        HillviewServer server2 = new HillviewServer(h2, empty);
+        try {
+            RemoteDataSet<ITable> rds1 = new RemoteDataSet<ITable>(h1);
+            RemoteDataSet<ITable> rds2 = new RemoteDataSet<ITable>(h2);
+            ArrayList<IDataSet<ITable>> two = new ArrayList<IDataSet<ITable>>();
+            two.add(rds1);
+            two.add(rds2);
+            ParallelDataSet<ITable> top = new ParallelDataSet<ITable>(two);
+            NextKSketch sketch = new NextKSketch(cso, null, null, 10);
+            NextKList sl = top.blockingSketch(sketch);
+            Assert.assertNotNull(sl);
+            Assert.assertEquals("Table[1x10]", sl.rows.toString());
+        } finally {
+            server1.shutdown();
+            server2.shutdown();
         }
     }
 }

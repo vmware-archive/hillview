@@ -209,4 +209,9 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
     public Duration getDuration(String colName) {
         return this.getColumnChecked(colName).getDuration(this.rowIndex);
     }
+
+    @Override
+    public double asDouble(String colName) {
+        return this.getColumnChecked(colName).asDouble(this.rowIndex);
+    }
 }
