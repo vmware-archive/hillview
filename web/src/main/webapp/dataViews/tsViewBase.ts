@@ -30,7 +30,7 @@ import {
     RecordOrder,
     RemoteObjectId,
     StringFilterDescription,
-    StringRowFilterDescription
+    StringRowFilterDescription, AggregateDescription
 } from "../javaBridge";
 import {OnCompleteReceiver} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
@@ -78,7 +78,8 @@ export abstract class TSViewBase extends BigTableView {
     /**
      * Convert the data in a column to a different column kind.
      */
-    public convert(origDisplayName: DisplayName, order: RecordOrder | null, rowsDesired: number): void {
+    public convert(origDisplayName: DisplayName, order: RecordOrder | null,
+                   rowsDesired: number, aggregates: AggregateDescription[] | null): void {
         const dialog = new ConverterDialog(origDisplayName, this.schema);
         dialog.setAction(
             () => {
@@ -119,7 +120,7 @@ export abstract class TSViewBase extends BigTableView {
                     console.assert(ok);
                 }
                 rr.invoke(new TableOperationCompleted(this.page, rr, this.rowCount, schema,
-                    o, rowsDesired));
+                    o, rowsDesired, aggregates));
             });
         dialog.show();
     }
@@ -181,7 +182,8 @@ export abstract class TSViewBase extends BigTableView {
         dialog.show();
     }
 
-    public createJSColumnDialog(order: RecordOrder | null, tableRowsDesired: number): void {
+    public createJSColumnDialog(order: RecordOrder | null, tableRowsDesired: number,
+                                aggregates: AggregateDescription[] | null): void {
         const dialog = new Dialog(
             "Create new column", "Specify a JavaScript function which computes the values in a new column.");
         const name = dialog.addTextField(
@@ -196,11 +198,12 @@ export abstract class TSViewBase extends BigTableView {
             "The function has a single argument 'row'.  The row is a JavaScript map that can be indexed with " +
             "a column name (a string) and which produces a value.");
         dialog.setCacheTitle("CreateJSDialog");
-        dialog.setAction(() => this.createJSColumn(dialog, order, tableRowsDesired));
+        dialog.setAction(() => this.createJSColumn(dialog, order, tableRowsDesired, aggregates));
         dialog.show();
     }
 
-    private createJSColumn(dialog: Dialog, order: RecordOrder | null, tableRowsDesired: number): void {
+    private createJSColumn(dialog: Dialog, order: RecordOrder | null,
+                           tableRowsDesired: number, aggregates: AggregateDescription[] | null): void {
         const col = dialog.getFieldValue("outColName");
         if (this.schema.find(col) != null) {
             this.page.reportError("Column " + col + " already exists");
@@ -228,7 +231,7 @@ export abstract class TSViewBase extends BigTableView {
             o.addColumn({columnDescription: cd, isAscending: true});
 
         const rec = new TableOperationCompleted(
-            this.page, rr, this.rowCount, schema, o, tableRowsDesired);
+            this.page, rr, this.rowCount, schema, o, tableRowsDesired, aggregates);
         rr.invoke(rec);
     }
 
@@ -321,14 +324,6 @@ export abstract class TSViewBase extends BigTableView {
             return;
         }
         this.histogram(this.getSelectedColNames());
-    }
-
-    protected privateHistSelected(): void {
-        if (this.getSelectedColCount() !== 1) {
-            this.page.reportError("Must select 1 column for private histogram");
-            return;
-        }
-        this.histogram(this.getSelectedColNames()); // backend will multiplex over histogram type
     }
 
     protected trellisSelected(heatmap: boolean): void {
@@ -478,9 +473,11 @@ export abstract class TSViewBase extends BigTableView {
      * @param displayColName     Display column name.  If null the user will select the column.
      * @param order  Current record ordering; if null the data will be displayed in a schema view.
      * @param tableRowsDesired  Number of table rows to display.
+     * @param aggregates        Aggregations that should be computed.
      */
     protected showFilterDialog(
-        displayColName: DisplayName, order: RecordOrder | null, tableRowsDesired: number): void {
+        displayColName: DisplayName, order: RecordOrder | null, tableRowsDesired: number,
+        aggregates: AggregateDescription[] | null): void {
         const cd = this.schema.findByDisplayName(displayColName);
         const ef = new FilterDialog(cd, this.schema);
         ef.setAction(() => {
@@ -508,7 +505,8 @@ export abstract class TSViewBase extends BigTableView {
                 title += " does not equal ";
             title += strFilter.compareValue;
             const newPage = this.dataset.newPage(new PageTitle(title), this.page);
-            rr.invoke(new TableOperationCompleted(newPage, rr, this.rowCount, this.schema, o, tableRowsDesired));
+            rr.invoke(new TableOperationCompleted(newPage, rr, this.rowCount, this.schema,
+                o, tableRowsDesired, aggregates));
         });
         ef.show();
     }
@@ -518,16 +516,20 @@ export abstract class TSViewBase extends BigTableView {
      * @param displayName       Column display name.  If null the user will select the column.
      * @param order             Current record ordering.
      * @param tableRowsDesired  Number of table rows to display.
+     * @param aggregates        Aggregations that should be computed.
      */
     protected showCompareDialog(
-        displayName: DisplayName, order: RecordOrder | null, tableRowsDesired: number): void {
+        displayName: DisplayName, order: RecordOrder | null, tableRowsDesired: number,
+        aggregates: AggregateDescription[] | null): void {
         const cfd = new ComparisonFilterDialog(displayName, this.schema, this.page.getErrorReporter());
-        cfd.setAction(() => this.runComparisonFilter(cfd.getFilter(), order, tableRowsDesired));
+        cfd.setAction(() => this.runComparisonFilter(
+            cfd.getFilter(), order, tableRowsDesired, aggregates));
         cfd.show();
     }
 
     protected runComparisonFilter(
-        filter: ComparisonFilterDescription | null, order: RecordOrder | null, tableRowsDesired: number): void {
+        filter: ComparisonFilterDescription | null, order: RecordOrder | null,
+        tableRowsDesired: number, aggregates: AggregateDescription[] | null): void {
         if (filter == null)
             // Some error occurred
             return;
@@ -547,7 +549,8 @@ export abstract class TSViewBase extends BigTableView {
         const title = "Filtered: " + Converters.valueToString(value, kind) +
                     " " + filter.comparison + " " + this.schema.displayName(filter.column.name);
         const newPage = this.dataset.newPage(new PageTitle(title), this.page);
-        rr.invoke(new TableOperationCompleted(newPage, rr, this.rowCount, this.schema, o, tableRowsDesired));
+        rr.invoke(new TableOperationCompleted(newPage, rr, this.rowCount, this.schema,
+            o, tableRowsDesired, aggregates));
     }
 
     protected runHeavyHitters(percent: number): void {

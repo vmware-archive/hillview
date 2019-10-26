@@ -258,7 +258,8 @@ export class HeavyHittersView extends BigTableView {
             const rr = this.remoteTableObject.createFilterHeavyRequest(
                 this.heavyHittersId, this.columnsShown, includeSet);
             rr.invoke(new TableOperationCompleted(
-                newPage, rr, this.rowCount, this.schema, this.createOrder(), Resolution.tableRowsOnScreen));
+                newPage, rr, this.rowCount, this.schema,
+                this.createOrder(), Resolution.tableRowsOnScreen, null));
         }
     }
 
@@ -271,7 +272,7 @@ export class HeavyHittersView extends BigTableView {
             this.heavyHittersId, this.columnsShown, includeSet, this.getSelectedRows());
         rr.invoke(new TableOperationCompleted(
             newPage, rr, this.rowCount, this.schema, this.createOrder(),
-            Resolution.tableRowsOnScreen));
+            Resolution.tableRowsOnScreen, null));
     }
 
     private getSelectedRows(): number[] {
@@ -476,6 +477,6 @@ export class HeavyHittersReceiver3 extends OnCompleteReceiver<TopList> {
             exactList.heavyHittersId, this.hhv.columnsShown, this.includeSet);
         rr.invoke(new TableOperationCompleted(
             newPage, rr, this.hhv.rowCount, this.hhv.schema, this.hhv.createOrder(),
-            Resolution.tableRowsOnScreen));
+            Resolution.tableRowsOnScreen, null));
     }
 }

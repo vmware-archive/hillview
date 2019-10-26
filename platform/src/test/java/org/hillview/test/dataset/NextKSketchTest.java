@@ -195,6 +195,34 @@ public class NextKSketchTest extends BaseTest {
         Assert.assertEquals(sb, Converters.checkNull(nks.create(t)).toLongString(5));
     }
 
+    @Test
+    public  void TestAggregate() {
+        Table t = TestTables.testTable();
+        RecordOrder ro = new RecordOrder();
+        ColumnDescription nameCol = t.getSchema().getDescription("Name");
+        ColumnDescription ageCol = t.getSchema().getDescription("Age");
+        ro.append(new ColumnSortOrientation(nameCol, true));
+        AggregateDescription[] agg = new AggregateDescription[2];
+        agg[0] = new AggregateDescription(ageCol, AggregateDescription.AggregateKind.Sum);
+        agg[1] = new AggregateDescription(ageCol, AggregateDescription.AggregateKind.CountNonNull);
+        NextKSketch nks = new NextKSketch(ro, agg, null, 20);
+
+        String sb = "Table[1x12]\n" +
+                "Bill: 2\n" +
+                "Bob: 1\n" +
+                "Bruce: 1\n" +
+                "Dave: 1\n" +
+                "Donald: 1\n" +
+                "...Table[2x12]\n" +
+                "3.0,2.0\n" +
+                "6.0,1.0\n" +
+                "5.0,1.0\n" +
+                "10.0,1.0\n" +
+                "4.0,1.0\n" +
+                "...";
+        Assert.assertEquals(sb, Converters.checkNull(nks.create(t)).toLongString(5));
+    }
+
     /**
      * Test involving some missing values
      */

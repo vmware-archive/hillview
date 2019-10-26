@@ -45,7 +45,12 @@ import {
     FindResult,
     Heatmap3D,
     StringFilterDescription,
-    ContainsArgs, KVCreateColumnInfo, BasicColStats, AugmentedHistogram,
+    ContainsArgs,
+    KVCreateColumnInfo,
+    BasicColStats,
+    AugmentedHistogram,
+    AggregateDescription,
+    HeavyHittersFilterInfo,
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
 import {FullPage, PageTitle} from "./ui/fullPage";
@@ -191,18 +196,20 @@ export class TableTargetAPI extends RemoteObject {
      * @param order            Sorting order.
      * @param firstRow         Values in the smallest row (may be null).
      * @param rowsOnScreen     How many rows to bring.
-     * @param columnsNoValue   List of columns in the firstRow for which we want to specify "minimum possible value"
-     * instead of "null".
+     * @param aggregates       List of aggregates to compute.
+     * @param columnsNoValue   List of columns in the firstRow for which we want to specify
+     *                         "minimum possible value" instead of "null".
      */
     public createNextKRequest(order: RecordOrder, firstRow: any[] | null, rowsOnScreen: number,
-                              columnsNoValue?: string[]):
+                              aggregates?: AggregateDescription[], columnsNoValue?: string[]):
         RpcRequest<PartialResult<NextKList>> {
         const nextKArgs: NextKArgs = {
             toFind: null,
             order: order,
             firstRow: firstRow,
             rowsOnScreen: rowsOnScreen,
-            columnsNoValue: columnsNoValue
+            columnsNoValue: columnsNoValue,
+            aggregates
         };
         return this.createStreamingRpcRequest<NextKList>("getNextK", nextKArgs);
     }
@@ -240,7 +247,7 @@ export class TableTargetAPI extends RemoteObject {
         return this.createStreamingRpcRequest<TopList>("checkHeavy", {
             hittersId: r.remoteObjectId,
             schema: schema
-        });
+        } as HeavyHittersFilterInfo);
     }
 
     public createFilterHeavyRequest(rid: RemoteObjectId, schema: Schema, includeSet: boolean):

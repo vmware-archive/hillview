@@ -470,17 +470,6 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
     }
 }
 
-export class HistogramDialog extends Dialog {
-    constructor(allColumns: string[]) {
-        super("1D histogram", "Display a 1D histogram of the data in a column");
-        this.addSelectField("columnName", "Column", allColumns, allColumns[0], "Column to histogram");
-    }
-
-    public getColumn(): string {
-        return this.getFieldValue("columnName");
-    }
-}
-
 export class HistogramReceiver extends Receiver<Pair<AugmentedHistogram, AugmentedHistogram>>  {
     private readonly view: HistogramView;
 

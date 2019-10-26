@@ -24,6 +24,9 @@ import it.unimi.dsi.fastutil.ints.Int2IntSortedMap;
  * - Membership: is it already present?
  * - Maximum: If not present, compare to the Maximum value currently in the Top K
  * - Insertion: for adding a new element.
+ * We assume that all elements are positive.
+ * In general the values we insert in this data structure are indexes of the actual values
+ * in an array/column/list.
  */
 public interface IntTopK {
     /**
@@ -31,7 +34,8 @@ public interface IntTopK {
      */
     Int2IntSortedMap getTopK();
     /**
-     * tries to add a new value newVal to the data structure.
+     * Tries to add a new value newVal to the data structure.
+     * @param newVal value to add to the data structure.
      */
     void push(int newVal);
 }

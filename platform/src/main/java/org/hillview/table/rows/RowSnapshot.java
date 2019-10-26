@@ -153,6 +153,11 @@ public class RowSnapshot extends BaseRowSnapshot
         return (double)this.fields.get(colName);
     }
 
+    @Override
+    public double asDouble(String colName) {
+        return this.getDouble(colName);
+    }
+
     public Instant getDate(String colName) {
         if (this.isMissing(colName))
             return null;

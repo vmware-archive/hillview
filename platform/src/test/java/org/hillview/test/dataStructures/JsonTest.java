@@ -96,7 +96,15 @@ public class JsonTest extends BaseTest {
                 "\"rows\":[" +
                     "{\"count\":2,\"values\":[10,90.0,\"John\"]}," +
                     "{\"count\":3,\"values\":[20,120.0,\"Mike\"]}" +
-                "]}");
+                "],\"aggregates\":null}");
+
+        String d = "[{\"cd\":{\"name\":\"Age\",\"kind\":\"Integer\"},\"agkind\":\"Sum\"}]";
+        AggregateDescription[] desc = IJson.gsonInstance.fromJson(d, AggregateDescription[].class);
+        Assert.assertNotNull(desc);
+        Assert.assertEquals(1, desc.length);
+        Assert.assertEquals("Age", desc[0].cd.name);
+        Assert.assertEquals(ContentsKind.Integer, desc[0].cd.kind);
+        Assert.assertEquals(AggregateDescription.AggregateKind.Sum, desc[0].agkind);
     }
 
     @Test

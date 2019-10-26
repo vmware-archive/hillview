@@ -58,5 +58,6 @@ public interface IRow extends Map<String, Object> {
     String getString(String colName);
     int getInt(String colName);
     double getDouble(String colName);
+    double asDouble(String colName);
     boolean isMissing(final String colName);
 }

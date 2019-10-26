@@ -24,8 +24,10 @@ import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.ints.IntLists;
 import org.hillview.dataset.api.IJson;
 import org.hillview.table.AggregateDescription;
+import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.SmallTable;
+import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.VirtualRowSnapshot;
@@ -97,17 +99,26 @@ public class NextKList implements Serializable, IJson {
         return this.rows.getNumOfRows() == 0;
     }
 
+    // Computes a schema suitable for the columns in aggregates.
+    // This schema is never displayed to the user, so it's not very important.
+    public static Schema getSchema(AggregateDescription[] aggregates) {
+        Schema schema = new Schema();
+        for (AggregateDescription cad : aggregates) {
+            String name = schema.newColumnName(cad.cd.name);
+            // aggregate columns always contain doubles
+            ColumnDescription cd = new ColumnDescription(name, ContentsKind.Double);
+            schema.append(cd);  // to generate different names
+        }
+        return schema;
+    }
+
     /**
      * A NextK list containing an empty table with the specified schema.
      */
     public NextKList(Schema schema, @Nullable AggregateDescription[] aggregates) {
         this.rows = new SmallTable(schema);
         if (aggregates != null) {
-            Schema aggSchema = new Schema();
-            for (AggregateDescription a : aggregates) {
-                aggSchema.append(a.cd);
-            }
-            this.aggregates = new SmallTable(aggSchema);
+            this.aggregates = new SmallTable(getSchema(aggregates));
         } else {
             this.aggregates = null;
         }
@@ -120,7 +131,7 @@ public class NextKList implements Serializable, IJson {
         final StringBuilder builder = new StringBuilder();
         builder.append(this.rows.toString());
         builder.append(System.getProperty("line.separator"));
-        final IRowIterator rowIt = this.rows.getRowIterator();
+        IRowIterator rowIt = this.rows.getRowIterator();
         int nextRow = rowIt.getNextRow();
         int i = 0;
         VirtualRowSnapshot vrs = new VirtualRowSnapshot(this.rows);
@@ -133,6 +144,25 @@ public class NextKList implements Serializable, IJson {
         }
         if (i == rowsToDisplay)
             builder.append("...");
+
+        if (this.aggregates != null) {
+            builder.append(this.aggregates.toString());
+            builder.append(System.getProperty("line.separator"));
+            rowIt = this.aggregates.getRowIterator();
+            nextRow = rowIt.getNextRow();
+            i = 0;
+            vrs = new VirtualRowSnapshot(this.aggregates);
+            while ((nextRow >= 0) && (i < rowsToDisplay)) {
+                vrs.setRow(nextRow);
+                builder.append(vrs.toString());
+                builder.append(System.getProperty("line.separator"));
+                nextRow = rowIt.getNextRow();
+                i++;
+            }
+            if (i == rowsToDisplay)
+                builder.append("...");
+        }
+
         return builder.toString();
     }
 
@@ -154,6 +184,16 @@ public class NextKList implements Serializable, IJson {
             row.addProperty("count", this.count.getInt(i));
             row.add("values", new RowSnapshot(this.rows, i).toJsonTree());
             rows.add(row);
+        }
+        if (this.aggregates == null)
+            result.add("aggregates", null);
+        else {
+            JsonArray aggregates = new JsonArray();
+            for (int i = 0; i < this.aggregates.getNumOfRows(); i++) {
+                RowSnapshot aggRow = new RowSnapshot(this.aggregates, i);
+                aggregates.add(aggRow.toJsonTree());
+            }
+            result.add("aggregates", aggregates);
         }
         return result;
     }

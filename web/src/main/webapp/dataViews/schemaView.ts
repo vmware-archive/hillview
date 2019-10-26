@@ -282,17 +282,19 @@ export class SchemaView extends TSViewBase {
         }, selectedCount === 1);
         this.contextMenu.addItem({
             text: "Filter...",
-            action: () => this.showFilterDialog(this.schema.displayName(selectedColumn), null, 0),
+            action: () => this.showFilterDialog(
+                this.schema.displayName(selectedColumn), null, 0, null),
             help : "Eliminate data that matches/does not match a specific value.",
         }, selectedCount === 1);
         this.contextMenu.addItem({
             text: "Compare...",
-            action: () => this.showCompareDialog(this.schema.displayName(selectedColumn), null, 0),
+            action: () => this.showCompareDialog(
+                this.schema.displayName(selectedColumn), null, 0, null),
             help : "Eliminate data that matches/does not match a specific value.",
         }, selectedCount === 1);
         this.contextMenu.addItem({
             text: "Create column in JS...",
-            action: () => this.createJSColumnDialog(null, 0),
+            action: () => this.createJSColumnDialog(null, 0, null),
             help: "Add a new column computed from the selected columns.",
         }, true);
         this.contextMenu.addItem({
@@ -302,7 +304,7 @@ export class SchemaView extends TSViewBase {
         }, selectedCount === 1);
         this.contextMenu.addItem({
             text: "Convert...",
-            action: () => this.convert(this.schema.displayName(selectedColumn), null, 0),
+            action: () => this.convert(this.schema.displayName(selectedColumn), null, 0, null),
             help: "Convert the data in the selected column to a different data type.",
         }, selectedCount === 1);
         this.contextMenu.addItem({
@@ -421,6 +423,7 @@ export class SchemaView extends TSViewBase {
             rowsScanned: this.rowCount,
             startPosition: 0,
             rows: [],
+            aggregates: null
         };
         tv.updateView(nkl, false, new RecordOrder([]), null);
         tv.updateCompleted(0);

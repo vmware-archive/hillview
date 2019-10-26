@@ -17,15 +17,13 @@
 
 package org.hillview.table;
 
-import org.hillview.sketches.results.ColumnSortOrientation;
-
 import java.io.Serializable;
 
 /**
  * Describes an aggregation operation to be performed.
  */
 public class AggregateDescription implements Serializable {
-   public enum AggregateKind {
+   public enum AggregateKind implements Serializable {
         Sum,
         CountNonNull,
     }

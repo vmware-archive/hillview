@@ -344,7 +344,7 @@ public class JdbcDatabase {
 
     private ResultSet getQueryResult(String query) {
         try {
-            System.out.println(query);
+            // System.out.println(query);
             HillviewLogger.instance.info("Executing SQL query", "{0}", query);
             Statement st = Converters.checkNull(this.connection).createStatement();
             return st.executeQuery(query);

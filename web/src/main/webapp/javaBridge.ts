@@ -25,7 +25,6 @@ export type Comparison = "==" | "!=" | "<" | ">" | "<=" | ">=";
 
 export type ContentsKind = "Json" | "String" | "Integer" |
     "Double" | "Date" | "Interval";
-
 /* We are not using an enum for ContentsKind because JSON deserialization does not
    return an enum from a string. */
 export const allContentsKind: ContentsKind[] = ["Json", "String", "Integer", "Double", "Date", "Interval"];
@@ -101,12 +100,6 @@ export interface TableSummary {
     metadata: PrivacySchema;
 }
 
-export interface PrivacySummary {
-    schema: Schema;
-    rowCount: number;
-    metadta: PrivacySchema;
-}
-
 export interface ConvertColumnInfo {
     colName: string;
     newColName: string;
@@ -179,6 +172,14 @@ export interface Heatmap3D {
     buckets: number[][][];
     eitherMissing: number;
     totalPresent: number;
+}
+
+export type AggregateKind = "Sum" | "CountNonNull";
+export const allAggregateKind: AggregateKind[] = ["Sum", "CountNonNull"];
+
+export interface AggregateDescription {
+    agkind: AggregateKind;
+    cd: IColumnDescription;
 }
 
 /**
@@ -301,18 +302,6 @@ export interface HistogramArgs {
     max?: number;
 }
 
-// Data returned by private histogram call
-export interface PrivateHistogramData {
-    buckets: number[];
-    // Backend may adjust min/max to render
-    minValue: number;
-    maxValue: number;
-    // Confidence intervals
-    confMins: number[];
-    confMaxes: number[];
-    missingData: number;
-}
-
 export interface HeavyHittersFilterInfo {
     hittersId: string;
     schema: Schema;
@@ -334,6 +323,7 @@ export interface NextKArgs {
     firstRow: any[] | null;
     rowsOnScreen: number;
     columnsNoValue: string[] | null;
+    aggregates: AggregateDescription[] | null;
 }
 
 export interface EigenVal {
@@ -350,6 +340,7 @@ export interface NextKList {
     rowsScanned: number;
     startPosition: number;
     rows: RowData[];
+    aggregates: number[][] | null;
 }
 
 export class RecordOrder {
