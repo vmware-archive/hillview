@@ -71,7 +71,7 @@ public class Converters {
      */
     public static <T> T checkNull(@Nullable T data) {
         if (data == null)
-            throw new NullPointerException("Converters.checkNull() failed");
+            throw new NullPointerException("Value should not be null");
         return data;
     }
 

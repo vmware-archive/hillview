@@ -177,8 +177,7 @@ export function saveAs(filename: string, contents: string): void {
     const blob = new Blob([contents], {type: "text/plain;charset=utf-8"});
     FileSaver.saveAs(blob, filename);
     const notify = new NotifyDialog("File has been saved.",
-        "Look for file " + filename + " in the browser Downloads folder",
-        "File has been saved");
+        "Look for file " + filename, "File has been saved");
     notify.show();
 }
 

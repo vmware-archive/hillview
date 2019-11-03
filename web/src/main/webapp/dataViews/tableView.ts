@@ -28,7 +28,7 @@ import {
     PrivacySchema,
     RecordOrder,
     RemoteObjectId,
-    RowData,
+    RowData, RowFilterDescription,
     Schema,
     StringFilterDescription,
     TableSummary,
@@ -856,6 +856,19 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             (this.dataset.isLog() && col === "StructuredData"));
     }
 
+    public filterOnRowValue(row: any[], comparison: Comparison): void {
+        const filter: RowFilterDescription = {
+            order: this.order,
+            data: row,
+            comparison: comparison
+        };
+        const rr = this.createRowFilterRequest(filter);
+        const title = "Filtered: " + filter.comparison + " to row.";
+        const newPage = this.dataset.newPage(new PageTitle(title), this.page);
+        rr.invoke(new TableOperationCompleted(newPage, rr, this.rowCount, this.schema,
+            this.order, this.tableRowsDesired, this.aggregates));
+    }
+
     public filterOnValue(cd: IColumnDescription, value: string | number, comparison: Comparison): void {
         const cfd: ComparisonFilterDescription = {
             column: cd,
@@ -1072,8 +1085,32 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                   cds: IColumnDescription[], last: boolean): void {
         this.grid.newRow();
         const position = this.startPosition + this.dataRowsDisplayed;
-        const moveToTop = (e: PointerEvent) => {
+        const rowContextMenu = (e: PointerEvent) => {
             this.contextMenu.clear();
+            this.contextMenu.addItem({text: "Keep equal rows",
+                action: () => this.filterOnRowValue(row.values, "=="),
+                help: "Keep only the rows that are equal to this one."
+            }, true);
+            this.contextMenu.addItem({text: "Keep different rows",
+                action: () => this.filterOnRowValue(row.values, "!="),
+                help: "Keep only the rows that are different."
+            }, true);
+            this.contextMenu.addItem({text: "Keep rows before",
+                action: () => this.filterOnRowValue(row.values, ">"),
+                help: "Keep only the rows that come before this one in the sort order."
+            }, true);
+            this.contextMenu.addItem({text: "Keep rows after",
+                action: () => this.filterOnRowValue(row.values, "<"),
+                help: "Keep only the rows that come after this one in the sort order."
+            }, true);
+            this.contextMenu.addItem({text: "Keep all rows before and this one",
+                action: () => this.filterOnRowValue(row.values, ">="),
+                help: "Keep only this row and the rows that come before this one in the sort order."
+            }, true);
+            this.contextMenu.addItem({text: "Keep all rows after and this one",
+                action: () => this.filterOnRowValue(row.values, "<="),
+                help: "Keep only this rows and the rows that cone after this one in the sort order."
+            }, true);
             this.contextMenu.addItem({
                 text: "Move to top",
                 action: () => this.moveRowToTop(row),
@@ -1085,12 +1122,12 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         let cell = this.grid.newCell("all");
         const dataRange = new DataRangeUI(position, row.count, this.rowCount);
         cell.appendChild(dataRange.getDOMRepresentation());
-        cell.oncontextmenu = moveToTop;
+        cell.oncontextmenu = rowContextMenu;
 
         cell = this.grid.newCell("all");
         cell.classList.add("meta");
         cell.style.textAlign = "right";
-        cell.oncontextmenu = moveToTop;
+        cell.oncontextmenu = rowContextMenu;
         significantDigitsHtml(row.count).setInnerHtml(cell);
         cell.title = "Number of rows that have these values: " + formatNumber(row.count);
 
@@ -1188,7 +1225,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                     }, true);
                     this.contextMenu.addItem({text: "Keep all < " + shortValue,
                         action: () => this.filterOnValue(cd, value, ">"),
-                        help: "Keep only the rows that have a a smaller value in this column."
+                        help: "Keep only the rows that have a smaller value in this column."
                     }, true);
                     this.contextMenu.addItem({text: "Keep all > " + shortValue,
                         action: () => this.filterOnValue(cd, value, "<"),
@@ -1221,7 +1258,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             } else {
                 cell.classList.add("empty");
                 cell.innerHTML = "&nbsp;";
-                cell.oncontextmenu = moveToTop;
+                cell.oncontextmenu = rowContextMenu;
             }
         }
 
@@ -1233,6 +1270,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 cell.classList.add("meta");
                 const shownValue = significantDigits(agg[i]);
                 cell.appendChild(makeSpan(shownValue));
+                cell.oncontextmenu = rowContextMenu;
             }
         }
 
