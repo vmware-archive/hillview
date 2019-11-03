@@ -36,8 +36,8 @@ public class RowComparisonFilterDescription implements ITableFilterDescription {
     /**
      * Make a filter that accepts rows that compares in the specific way with the
      * given row.
-     * @param order Column that is compared.
-     * @param row   Set of values to compare with.  Should be compatible with the order.
+     * @param order Comparison order.
+     * @param row   Row to compare with.
      *              The row will be to the left of the comparison.
      * @param comparison Operation for comparison: one of "==", "!=", "<", ">", "<=", ">="
      */

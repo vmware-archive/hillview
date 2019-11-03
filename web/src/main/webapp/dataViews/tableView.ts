@@ -1087,9 +1087,6 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         const position = this.startPosition + this.dataRowsDisplayed;
         const rowContextMenu = (e: PointerEvent) => {
             this.contextMenu.clear();
-            // This menu shows the value to the right, but the filter
-            // takes the value to the left, so we have to flip all
-            // comparison signs.
             this.contextMenu.addItem({text: "Keep equal rows",
                 action: () => this.filterOnRowValue(row.values, "=="),
                 help: "Keep only the rows that are equal to this one."
