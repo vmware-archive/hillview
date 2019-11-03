@@ -304,32 +304,54 @@ public final class TableTarget extends RpcTarget {
         this.runSketch(this.table, sk, request, context);
     }
 
+    private void runFilter(
+            ITableFilterDescription filter, RpcRequest request, RpcRequestContext context) {
+        FilterMap filterMap = new FilterMap(filter);
+        this.runMap(this.table, filterMap, TableTarget::new, request, context);
+    }
+
+    static class RowFilterDescription {
+        RecordOrder order = new RecordOrder();
+        @Nullable
+        Object[] data;
+        String comparison = "";
+
+        ITableFilterDescription getFilter() {
+            RowSnapshot row = TableTarget.asRowSnapshot(
+                    this.data, this.order, null);
+            return new RowComparisonFilterDescription(
+                    Converters.checkNull(row), order, comparison);
+        }
+    }
+
+    @HillviewRpc
+    public void filterOnRow(RpcRequest request, RpcRequestContext context) {
+        RowFilterDescription desc = request.parseArgs(RowFilterDescription.class);
+        this.runFilter(desc.getFilter(), request, context);
+    }
+
     @HillviewRpc
     public void filterEquality(RpcRequest request, RpcRequestContext context) {
         StringRowFilterDescription filter = request.parseArgs(StringRowFilterDescription.class);
-        FilterMap filterMap = new FilterMap(filter);
-        this.runMap(this.table, filterMap, TableTarget::new, request, context);
+        this.runFilter(filter, request, context);
     }
 
     @HillviewRpc
     public void filterComparison(RpcRequest request, RpcRequestContext context) {
         ComparisonFilterDescription filter = request.parseArgs(ComparisonFilterDescription.class);
-        FilterMap filterMap = new FilterMap(filter);
-        this.runMap(this.table, filterMap, TableTarget::new, request, context);
+        this.runFilter(filter, request, context);
     }
 
     @HillviewRpc
     public void filterRange(RpcRequest request, RpcRequestContext context) {
         RangeFilterDescription filter = request.parseArgs(RangeFilterDescription.class);
-        FilterMap fm = new FilterMap(filter);
-        this.runMap(this.table, fm, TableTarget::new, request, context);
+        this.runFilter(filter, request, context);
     }
 
     @HillviewRpc
     public void filter2DRange(RpcRequest request, RpcRequestContext context) {
         RangeFilterPairDescription filter = request.parseArgs(RangeFilterPairDescription.class);
-        FilterMap fm = new FilterMap(filter);
-        this.runMap(this.table, fm, TableTarget::new, request, context);
+        this.runFilter(filter, request, context);
     }
 
     static class CorrelationMatrixRequest {
@@ -594,8 +616,7 @@ public final class TableTarget extends RpcTarget {
                 HeavyHittersTarget hht = (HeavyHittersTarget)rpcTarget;
                 ITableFilterDescription filter = hht.heavyHitters.getFilter(hhl.schema,
                         hhl.includeSet, hhl.rowIndices);
-                FilterMap fm = new FilterMap(filter);
-                TableTarget.this.runMap(TableTarget.this.table, fm, TableTarget::new, request, context);
+                TableTarget.this.runFilter(filter, request, context);
             }
         };
         RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(hhl.hittersId), true, observer);
@@ -612,8 +633,7 @@ public final class TableTarget extends RpcTarget {
             public void onSuccess(RpcTarget rpcTarget) {
                 HeavyHittersTarget hht = (HeavyHittersTarget)rpcTarget;
                 ITableFilterDescription filter = hht.heavyHitters.getFilter(hhi.schema, hhi.includeSet);
-                FilterMap fm = new FilterMap(filter);
-                TableTarget.this.runMap(TableTarget.this.table, fm, TableTarget::new, request, context);
+                TableTarget.this.runFilter(filter, request, context);
             }
         };
         RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(hhi.hittersId), true, observer);

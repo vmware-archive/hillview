@@ -95,7 +95,7 @@ public class RowSnapshot extends BaseRowSnapshot
      * @param schema  Schema; describes the columns in the row snapshot.
      * @param data    One value for each column in the schema.
      */
-    private RowSnapshot(final Schema schema, final Object[] data) {
+    public RowSnapshot(final Schema schema, final Object[] data) {
         if (schema.getColumnCount() != data.length)
             throw new RuntimeException("Mismatched schema");
         int index = 0;

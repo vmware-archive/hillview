@@ -290,6 +290,12 @@ export interface FilterDescription {
     complement: boolean;
 }
 
+export interface RowFilterDescription {
+    order: RecordOrder;
+    data: any[];
+    comparison: string;
+}
+
 export interface HistogramArgs {
     cd: IColumnDescription;
     seed: number;

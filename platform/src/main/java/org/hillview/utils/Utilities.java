@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * This class has some useful static helper methods.
@@ -288,5 +289,30 @@ public class Utilities {
             throw new RuntimeException("Attempted to take the log of a negative value: " + x);
         }
         return (int)(Math.floor(Math.log(x) / Math.log(2)));
+    }
+
+    /**
+     * This function is given a comparison function as a string, like ==, <=.
+     * The result is function that takes the result of a comparison (-1, 0, 1) and
+     * returns 'true' when the result matches the comparison function.
+     * @param operation  A string indicating a comparison.
+     */
+    public static Function<Integer, Boolean> convertComparison(String operation) {
+        switch (operation) {
+            case "==":
+                return x -> x == 0;
+            case "<=":
+                return x -> x <= 0;
+            case "<":
+                return x -> x < 0;
+            case ">":
+                return x -> x > 0;
+            case ">=":
+                return x -> x >= 0;
+            case "!=":
+                return x -> x != 0;
+            default:
+                throw new HillviewException("Unexpected comparison: " + operation);
+        }
     }
 }

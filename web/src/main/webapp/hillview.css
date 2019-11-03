@@ -148,7 +148,7 @@ td.all {
     position: relative;
 }
 
-tr:hover {
+.tableView tr:hover {
     border: 1px double darkred;
 }
 
