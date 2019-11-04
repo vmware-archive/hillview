@@ -17,16 +17,17 @@
 
 import {DatasetView} from "./datasetView";
 import {InitialObject} from "./initialObject";
-import {FileSetDescription, JdbcConnectionInformation, Status} from "./javaBridge";
+import {FileSetDescription, JdbcConnectionInformation, Status, UIConfig} from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject} from "./rpc";
 import {Test} from "./test";
 import {IDataView} from "./ui/dataview";
 import {Dialog, FieldKind} from "./ui/dialog";
 import {ErrorDisplay} from "./ui/errReporter";
 import {FullPage} from "./ui/fullPage";
-import {SubMenu, TopMenu, TopMenuItem} from "./ui/menu";
+import {MenuItem, SubMenu, TopMenu, TopMenuItem} from "./ui/menu";
 import {ViewKind} from "./ui/ui";
 import {Converters, ICancellable, loadFile, getUUID} from "./util";
+import {HillviewToplevel} from "./toplevel";
 
 /**
  * The load menu is the first menu that is displayed on the screen.
@@ -35,10 +36,10 @@ import {Converters, ICancellable, loadFile, getUUID} from "./util";
  */
 export class LoadMenu extends RemoteObject implements IDataView {
     private readonly top: HTMLElement;
-    private readonly menu: TopMenu;
+    private menu: TopMenu;
     private readonly console: ErrorDisplay;
-    private readonly testDatasetsMenu: SubMenu;
-    private readonly loadMenu: SubMenu;
+    private testDatasetsMenu: SubMenu;
+    private loadMenu: SubMenu;
     private advanced: boolean;
     public readonly viewKind: ViewKind;
 
@@ -46,10 +47,28 @@ export class LoadMenu extends RemoteObject implements IDataView {
         super(init.remoteObjectId);
         this.viewKind = "Load";
         this.advanced = false;
-
         this.top = document.createElement("div");
-        this.testDatasetsMenu = new SubMenu([
-            { text: "Gaussian (1 column, private, CSV)", // TODO: to delete
+        this.console = new ErrorDisplay();
+        this.top.appendChild(this.console.getHTMLRepresentation());
+        this.getUIConfig();
+    }
+
+    private getUIConfig(): void {
+        const rr = this.createStreamingRpcRequest<UIConfig>("getUIConfig", null);
+        const observer = new UIConfigReceiver(this, rr);
+        rr.invoke(observer);
+    }
+
+    public configReceived(uiconfig: UIConfig): void {
+        HillviewToplevel.instance.setUIConfig(uiconfig);
+        this.createMenus();
+    }
+
+    private createMenus(): void {
+        const testitems: MenuItem[] = [];
+        if (HillviewToplevel.instance.uiconfig.showPrivateMenus) {
+            testitems.push({
+                text: "Gaussian (1 column, private, CSV)", // TODO: to delete
                 action: () => {
                     const files: FileSetDescription = {
                         fileNamePattern: "data/synthetic/*.csv*",
@@ -65,7 +84,27 @@ export class LoadMenu extends RemoteObject implements IDataView {
                     this.init.loadFiles(files, this.page);
                 },
                 help: "Synthetic Gaussian data.",
-            },
+            }, { text: "Flights (15 columns, CSV, private)",
+                    action: () => {
+                        const files: FileSetDescription = {
+                            fileNamePattern: "data/ontime_private/????_*.csv*",
+                            schemaFile: "short.schema",
+                            headerRow: true,
+                            repeat: 1,
+                            name: "Flights (15 columns, private)",
+                            fileKind: "csv",
+                            logFormat: null,
+                            startTime: null,
+                            endTime: null
+                        };
+                        this.init.loadFiles(files, this.page);
+                    },
+                    help: "The US flights dataset.",
+                },
+            );
+        }
+
+        testitems.push(
             { text: "Flights (15 columns, CSV)",
                 action: () => {
                     const files: FileSetDescription = {
@@ -74,23 +113,6 @@ export class LoadMenu extends RemoteObject implements IDataView {
                         headerRow: true,
                         repeat: 1,
                         name: "Flights (15 columns)",
-                        fileKind: "csv",
-                        logFormat: null,
-                        startTime: null,
-                        endTime: null
-                    };
-                    this.init.loadFiles(files, this.page);
-                },
-                help: "The US flights dataset.",
-            },
-            { text: "Flights (15 columns, CSV, private)",
-                action: () => {
-                    const files: FileSetDescription = {
-                        fileNamePattern: "data/ontime_private/????_*.csv*",
-                        schemaFile: "short.schema",
-                        headerRow: true,
-                        repeat: 1,
-                        name: "Flights (15 columns, private)",
                         fileKind: "csv",
                         logFormat: null,
                         startTime: null,
@@ -132,20 +154,26 @@ export class LoadMenu extends RemoteObject implements IDataView {
                     };
                     this.init.loadFiles(files, this.page);
                 },
-                help: "The US flights dataset -- all 110 columns." },
-        ]);
-        this.loadMenu = new SubMenu([
-            { text: "Hillview logs",
-                action: () => init.loadLogs(page),
-                help: "The logs generated by the hillview system itself." },
-            { text: "Generic logs...",
+                help: "The US flights dataset -- all 110 columns." });
+
+        this.testDatasetsMenu = new SubMenu(testitems);
+
+        const loadMenuItems: MenuItem[] = [];
+        loadMenuItems.push({
+                text: "Hillview logs",
+                    action: () => this.init.loadLogs(this.page),
+                    help: "The logs generated by the hillview system itself." },
+            {
+                text: "Generic logs...",
                 action: () => {
                     const dialog = new GenericLogDialog();
                     dialog.setAction(() => this.init.loadFiles(dialog.getFiles(), this.page));
                     dialog.show();
                 },
-                help: "A set of log files residing on the worker machines." },
-            { text: "Syslog...",
+                help: "A set of log files residing on the worker machines."
+            },
+            {
+                text: "Syslog...",
                 action: () => {
                     const dialog = new GenericLogDialog();
                     dialog.setFieldValue("fileNamePattern", "/var/log/syslog*");
@@ -155,53 +183,68 @@ export class LoadMenu extends RemoteObject implements IDataView {
                     dialog.setAction(() => this.init.loadFiles(dialog.getFiles(), this.page));
                     dialog.show();
                 },
-                help: "A set of log files residing on the worker machines." },
-            { text: "Saved view",
+                help: "A set of log files residing on the worker machines."
+            },
+            {
+                text: "Saved view",
                 action: () => this.loadSavedDialog(),
-                help: "Load a data view that has been saved previously." },
-            { text: "CSV files...",
+                help: "Load a data view that has been saved previously."
+            },
+            {
+                text: "CSV files...",
                 action: () => {
                     const dialog = new CSVFileDialog();
                     dialog.setAction(() => this.init.loadFiles(dialog.getFiles(), this.page));
                     dialog.show();
                 },
-                help: "A set of comma-separated value files residing on the worker machines." },
-            { text: "JSON files...",
-                action: () =>  {
+                help: "A set of comma-separated value files residing on the worker machines."
+            },
+            {
+                text: "JSON files...",
+                action: () => {
                     const dialog = new JsonFileDialog();
                     dialog.setAction(() => this.init.loadFiles(dialog.getFiles(), this.page));
                     dialog.show();
                 },
-                help: "A set of files containing JSON values residing on the worker machines." },
-            { text: "Parquet files...",
+                help: "A set of files containing JSON values residing on the worker machines."
+            },
+            {
+                text: "Parquet files...",
                 action: () => {
                     const dialog = new ParquetFileDialog();
                     dialog.setAction(() => this.init.loadFiles(dialog.getFiles(), this.page));
                     dialog.show();
                 },
-                help: "A set of Parquet files residing on the worker machines." },
-            { text: "ORC files...",
+                help: "A set of Parquet files residing on the worker machines."
+            },
+            {
+                text: "ORC files...",
                 action: () => {
                     const dialog = new OrcFileDialog();
                     dialog.setAction(() => this.init.loadFiles(dialog.getFiles(), this.page));
                     dialog.show();
                 },
-                help: "A set of Orc files residing on the worker machines." },
-            { text: "Federated DB tables...",
+                help: "A set of Orc files residing on the worker machines."
+            },
+            {
+                text: "Federated DB tables...",
                 action: () => {
                     const dialog = new DBDialog();
                     dialog.setAction(() => this.init.loadDBTable(dialog.getConnection(), this.page));
                     dialog.show();
                 },
-                help: "A set of database tables residing in databases on each worker machine." },
-            { text: "Local DB table...",
+                help: "A set of database tables residing in databases on each worker machine."
+            });
+        if (HillviewToplevel.instance.uiconfig.showPrivateMenus)
+            loadMenuItems.push({
+                text: "Local DB table...",
                 action: () => {
                     const dialog = new DBDialog();
                     dialog.setAction(() => this.init.loadSimpleDBTable(dialog.getConnection(), this.page));
                     dialog.show();
                 },
-                help: "A database table in a single database." },
-        ]);
+                help: "A database table in a single database." });
+        this.loadMenu = new SubMenu(loadMenuItems);
 
         const items: TopMenuItem[] = [
             { text: "Test datasets", help: "Hardwired datasets for testing Hillview.",
@@ -210,24 +253,28 @@ export class LoadMenu extends RemoteObject implements IDataView {
                 text: "Load", help: "Load data from the worker machines.",
                 subMenu: this.loadMenu },
         ];
+
+        if (HillviewToplevel.instance.uiconfig.showTestMenu) {
+            items.push({
+                text: "Test", help: "Run UI tests", subMenu: new SubMenu([
+                    {
+                        text: "Run", help: "Run end-to-end tests from the user interface. " +
+                            "These tests simulate the user clicking in various menus in the browser." +
+                            "The tests must be run " +
+                            "immediately after reloading the main web page. The user should " +
+                            "not use the mouse during the tests.", action: () => this.runTests(),
+                    },
+                ]),
+            });
+        }
+
         /**
          * These are operations supported by the back-end management API.
          * They are mostly for testing, debugging, maintenance and measurement.
          */
-        items.push(
-            {
-                text: "Test", help: "Run UI tests", subMenu: new SubMenu([
-                    {
-                        text: "Run", help: "Run end-to-end tests from the user interface. " +
-                        "These tests simulate the user clicking in various menus in the browser." +
-                        "The tests must be run " +
-                        "immediately after reloading the main web page. The user should " +
-                        "not use the mouse during the tests.", action: () => this.runTests(),
-                    },
-                ]),
-            },
-            {
-                text: "Manage", help: "Execute cluster management operations.", subMenu: new SubMenu([
+        items.push({
+                text: "Manage", help: "Execute cluster management operations.",
+                subMenu: new SubMenu([
                     {
                         text: "List machines",
                         action: () => this.ping(),
@@ -266,10 +313,7 @@ export class LoadMenu extends RemoteObject implements IDataView {
         );
 
         this.menu = new TopMenu(items);
-        this.showAdvanced(false);
-        this.console = new ErrorDisplay();
         this.page.setMenu(this.menu);
-        this.top.appendChild(this.console.getHTMLRepresentation());
     }
 
     public purgeAll(): void {
@@ -325,7 +369,6 @@ export class LoadMenu extends RemoteObject implements IDataView {
 
     public showAdvanced(show: boolean): void {
         this.menu.enable("Manage", show);
-        this.menu.enable("Test", show);
         this.loadMenu.enable("Federated DB tables...", show);
         this.loadMenu.enable("CSV files...", show);
         this.loadMenu.enable("JSON files...", show);
@@ -364,6 +407,16 @@ export class LoadMenu extends RemoteObject implements IDataView {
 
     public getPage(): FullPage {
         return this.page;
+    }
+}
+
+class UIConfigReceiver extends OnCompleteReceiver<UIConfig> {
+    public constructor(protected loadMenu: LoadMenu, operation: ICancellable<UIConfig>) {
+        super(loadMenu.getPage(), operation, "get UI config");
+    }
+
+    public run(value: UIConfig): void {
+        this.loadMenu.configReceived(value);
     }
 }
 

@@ -29,7 +29,7 @@ import {SchemaClass} from "../schemaClass";
 import {IDataView} from "../ui/dataview";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage, PageTitle} from "../ui/fullPage";
-import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
+import {ContextMenu, SubMenu, TopMenu, TopMenuItem} from "../ui/menu";
 import {TabularDisplay} from "../ui/tabularDisplay";
 import {
     cloneToSet,
@@ -43,6 +43,7 @@ import {TableView} from "./tableView";
 import {TSViewBase} from "./tsViewBase";
 import {BaseReceiver} from "../tableTarget";
 import {Receiver, RpcRequest} from "../rpc";
+import {HillviewToplevel} from "../toplevel";
 
 /**
  * This class is used to browse through the columns of a table schema
@@ -132,12 +133,15 @@ export class SchemaView extends TSViewBase {
             action: () => statDialog.show(),
             help: "Select columns by statistics."
         }]);
-        const menu = new TopMenu([
-            // this.saveAsMenu(),
+        const items: TopMenuItem[] = [];
+        if (HillviewToplevel.instance.uiconfig.enableSaveAs)
+            items.push(this.saveAsMenu());
+        items.push(
             {text: "View", subMenu: viewMenu, help: "Change the way the data is displayed."},
             {text: "Select", subMenu: selectMenu, help: "Select columns based on attributes."},
             this.chartMenu(),
-        ]);
+        );
+        const menu = new TopMenu(items);
         this.page.setMenu(menu);
         this.topLevel.appendChild(document.createElement("br"));
         this.display = new TabularDisplay();
