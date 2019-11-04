@@ -76,8 +76,11 @@ export class GenericLogs {
 }
 
 // Describes the configuration of the UI for a specific installation of Hillview
+// The default values should all be 'false'
 export interface UIConfig {
-    disableSaveAs: boolean;
+    enableSaveAs?: boolean;
+    showPrivateMenus?: boolean;
+    showTestMenu?: boolean;
 }
 
 export interface ColumnQuantization {

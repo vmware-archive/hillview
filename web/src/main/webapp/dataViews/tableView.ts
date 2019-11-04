@@ -40,7 +40,7 @@ import {DataRangeUI} from "../ui/dataRangeUI";
 import {IDataView} from "../ui/dataview";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage, PageTitle} from "../ui/fullPage";
-import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
+import {ContextMenu, SubMenu, TopMenu, TopMenuItem} from "../ui/menu";
 import {IScrollTarget, ScrollBar} from "../ui/scroll";
 import {SelectionStateMachine} from "../ui/selectionStateMachine";
 import {HtmlString, Resolution, SpecialChars, ViewKind} from "../ui/ui";
@@ -63,6 +63,7 @@ import {TSViewBase} from "./tsViewBase";
 import {Grid} from "../ui/grid";
 import {LogFileReceiver} from "./logFileView";
 import {FindBar} from "../ui/findBar";
+import {HillviewToplevel} from "../toplevel";
 
 /**
  * Displays a table in the browser.
@@ -105,29 +106,26 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         this.strFilter = null;
         this.aggregates = null;
 
-        const menu = new TopMenu([
-            {
-                text: "Export",
-                help: "Save information from this view in a local file.",
-                subMenu: new SubMenu([{
-                    text: "Schema",
-                    help: "Saves the schema of this data JSON file.",
-                    action: () => { this.exportSchema(); },
-                }]),
-            },
-            // this.saveAsMenu(),
-            {
+        const items: TopMenuItem[] = [];
+        items.push({
+            text: "Export",
+            help: "Save information from this view in a local file.",
+            subMenu: new SubMenu([{
+                text: "Schema",
+                help: "Saves the schema of this data JSON file.",
+                action: () => {
+                    this.exportSchema();
+                },
+            }]),
+        });
+        if (HillviewToplevel.instance.uiconfig.enableSaveAs)
+            items.push(this.saveAsMenu());
+        items.push({
                 text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
                     { text: "Refresh",
                       action: () => this.refresh(),
                       help: "Redraw this view.",
                     },
-                    /*
-                    { text: "All columns",
-                        action: () => this.showAllColumns(),
-                        help: "Make all columns visible."
-                    },
-                    */
                     { text: "No columns",
                         action: () => this.setOrder(new RecordOrder([]), false),
                         help: "Make all columns invisible",
@@ -172,9 +170,9 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                             null, this.order, this.tableRowsDesired, this.aggregates) },
                 ]),
             },
-            this.dataset.combineMenu(this, page.pageId),
-        ]);
+            this.dataset.combineMenu(this, page.pageId));
 
+        const menu = new TopMenu(items);
         this.page.setMenu(menu);
         this.contextMenu = new ContextMenu(this.topLevel);
         this.topLevel.appendChild(document.createElement("hr"));

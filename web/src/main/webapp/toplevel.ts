@@ -22,6 +22,7 @@ import {FullPage, PageTitle} from "./ui/fullPage";
 import {ContextMenu} from "./ui/menu";
 import {IHtmlElement, removeAllChildren} from "./ui/ui";
 import {assert} from "./util";
+import {UIConfig} from "./javaBridge";
 
 /**
  * The toplevel class implements the web page structure for Hillview.
@@ -36,6 +37,7 @@ export class HillviewToplevel implements IHtmlElement {
     private readonly content: HTMLDivElement;
     protected datasetCounter: number;
     protected current: DatasetView;
+    public uiconfig: UIConfig;
 
     public static readonly instance = new HillviewToplevel();
 
@@ -64,9 +66,14 @@ export class HillviewToplevel implements IHtmlElement {
 
         tabStrip.appendChild(this.strip);
         this.tabs = [];
-
+        // default configuration
+        this.uiconfig = {};
         this.content = document.createElement("div");
         this.topLevel.appendChild(this.content);
+    }
+
+    public setUIConfig(uiconfig: UIConfig): void {
+        this.uiconfig = uiconfig;
     }
 
     public getHTMLRepresentation(): HTMLElement {
@@ -131,7 +138,8 @@ export class HillviewToplevel implements IHtmlElement {
         cell.insertBefore(input, cell.children[0]);
         input.value = oldName;
         input.type = "text";
-        input.onmouseout = input.onchange = () => this.renamed(cell, input, tabName);
+        input.onmouseout = () => this.renamed(cell, input, tabName);
+        input.onchange = () => this.renamed(cell, input, tabName);
     }
 
     public renamed(cell: HTMLElement, input: HTMLInputElement, tabName: string): void {

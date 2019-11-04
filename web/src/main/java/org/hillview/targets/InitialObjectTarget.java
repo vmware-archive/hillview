@@ -18,6 +18,7 @@
 package org.hillview.targets;
 
 import org.hillview.*;
+import org.hillview.sketches.PrecomputedSketch;
 import org.hillview.table.PrivacySchema;
 import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.*;
@@ -32,6 +33,7 @@ import org.hillview.utils.*;
 import javax.annotation.Nullable;
 import javax.websocket.Session;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
@@ -78,10 +80,27 @@ public class InitialObjectTarget extends RpcTarget {
     }
 
     @HillviewRpc
+    public void getUIConfig(RpcRequest request, RpcRequestContext context) {
+        JsonString result;
+        try {
+            List<String> str = Files.readAllLines(Paths.get("uiconfig.json"));
+            result = new JsonString(String.join("\n", str));
+            result.toJsonTree();  // force parsing of the JSON -- to catch syntax errors
+        } catch (Exception e) {
+            HillviewLogger.instance.warn("File uiconfig.json file could not be loaded",
+                    "{0}", e.getMessage());
+            result = new JsonString("{}");
+        }
+        Converters.checkNull(this.emptyDataset);
+        PrecomputedSketch<Empty, JsonString> sk = new PrecomputedSketch<Empty, JsonString>(result);
+        this.runCompleteSketch(this.emptyDataset, sk, (e, c) -> e, request, context);
+    }
+
+    @HillviewRpc
     public void loadSimpleDBTable(RpcRequest request, RpcRequestContext context) {
         JdbcConnectionInformation conn = request.parseArgs(JdbcConnectionInformation.class);
         IMap<Empty, Empty> map = new IdMap<Empty>();
-        assert this.emptyDataset != null;
+        Converters.checkNull(this.emptyDataset);
         String dir = Paths.get(Converters.checkNull(conn.database), conn.table).toString();
 
         String privacyMetadataFile = DPWrapper.privacyMetadataFile(dir);
@@ -98,7 +117,7 @@ public class InitialObjectTarget extends RpcTarget {
     public void loadDBTable(RpcRequest request, RpcRequestContext context) {
         JdbcConnectionInformation conn = request.parseArgs(JdbcConnectionInformation.class);
         LoadDatabaseTableMap mapper = new LoadDatabaseTableMap(conn);
-        assert this.emptyDataset != null;
+        Converters.checkNull(this.emptyDataset);
         this.runMap(this.emptyDataset, mapper, TableTarget::new, request, context);
     }
 
@@ -107,7 +126,7 @@ public class InitialObjectTarget extends RpcTarget {
         FileSetDescription desc = request.parseArgs(FileSetDescription.class);
         HillviewLogger.instance.info("Finding files", "{0}", desc);
         IMap<Empty, List<IFileReference>> finder = new FindFilesMap(desc);
-        assert this.emptyDataset != null;
+        Converters.checkNull(this.emptyDataset);
 
         String privacyMetadataFile = DPWrapper.privacyMetadataFile(Utilities.getFolder(desc.fileNamePattern));
         if (privacyMetadataFile != null) {

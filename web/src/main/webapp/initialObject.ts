@@ -21,7 +21,7 @@ import {
     FileSetDescription,
     FileSizeSketchInfo,
     JdbcConnectionInformation,
-    RemoteObjectId,
+    RemoteObjectId, UIConfig,
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject} from "./rpc";
 import {BaseReceiver} from "./tableTarget";

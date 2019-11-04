@@ -27,7 +27,6 @@ import java.util.function.Function;
 
 /**
  * Wrapper around a list which makes it serializable as JSON.
- * All elements of the list must also be serializable as JSON.
  */
 public class JsonList<T> implements IJson, List<T> {
     private final List<T> data;
