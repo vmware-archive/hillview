@@ -62,6 +62,7 @@ export class LoadMenu extends RemoteObject implements IDataView {
     public configReceived(uiconfig: UIConfig): void {
         HillviewToplevel.instance.setUIConfig(uiconfig);
         this.createMenus();
+        this.showAdvanced(false);
     }
 
     private createMenus(): void {

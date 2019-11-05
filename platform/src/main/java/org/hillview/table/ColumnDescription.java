@@ -42,7 +42,7 @@ public class ColumnDescription implements Serializable, IJson {
     }
 
     @SuppressWarnings("ConstantConditions")
-    public void validate() {
+    void validate() {
         // This can happen because column descriptions may be read from external files.
         if (this.name == null || this.kind == null)
             throw new RuntimeException("null field in column description");

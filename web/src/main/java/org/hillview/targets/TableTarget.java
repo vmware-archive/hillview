@@ -26,13 +26,12 @@ import org.hillview.dataset.api.*;
 import org.hillview.maps.*;
 import org.hillview.sketches.*;
 import org.hillview.sketches.results.*;
-import org.hillview.table.AggregateDescription;
-import org.hillview.table.ColumnDescription;
-import org.hillview.table.RecordOrder;
-import org.hillview.table.Schema;
+import org.hillview.table.*;
 import org.hillview.table.api.ContentsKind;
+import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.table.api.ITableFilterDescription;
+import org.hillview.table.columns.DoubleArrayColumn;
 import org.hillview.table.filters.*;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.*;
@@ -41,6 +40,8 @@ import rx.Observer;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.BiFunction;
 
 /**
@@ -74,6 +75,112 @@ public final class TableTarget extends RpcTarget {
         int rowsOnScreen;
         @Nullable
         AggregateDescription[] aggregates;
+
+        @Nullable
+        public AggregateDescription[] getAggregates() {
+            if (aggregates == null)
+                return null;
+
+            // Replaces Average with a Sum and Count
+            List<AggregateDescription> result = new ArrayList<AggregateDescription>();
+            for (AggregateDescription a: aggregates) {
+                if (a.agkind == AggregateDescription.AggregateKind.Average) {
+                    // Search a sum and a count on the same column
+                    boolean sumFound = false;
+                    boolean countFound = false;
+                    for (AggregateDescription o: aggregates) {
+                        if (!o.cd.equals(a.cd))
+                            continue;
+                        if (o.agkind == AggregateDescription.AggregateKind.Sum)
+                           sumFound = true;
+                        else if (o.agkind == AggregateDescription.AggregateKind.Count)
+                            countFound = true;
+                    }
+                    if (!sumFound)
+                        result.add(new AggregateDescription(
+                                a.cd, AggregateDescription.AggregateKind.Sum, true));
+                    if (!countFound)
+                        result.add(new AggregateDescription(
+                                a.cd, AggregateDescription.AggregateKind.Count, true));
+                } else {
+                    result.add(a);
+                }
+            }
+            return result.toArray(new AggregateDescription[0]);
+        }
+
+        private static IColumn divideColumns(String name, IColumn sum, IColumn count) {
+            ColumnDescription cd = new ColumnDescription(name, ContentsKind.Double);
+            int rows = sum.sizeInRows();
+            DoubleArrayColumn avg = new DoubleArrayColumn(cd, rows);
+            for (int j = 0; j < rows; j++) {
+                if (sum.isMissing(j))
+                    avg.setMissing(j);
+                else {
+                    double s = sum.getDouble(j);
+                    double c = count.getDouble(j);
+                    avg.set(j, s / c);
+                }
+            }
+            return avg;
+        }
+
+        @Nullable
+        NextKList postprocess(NextKList list) {
+            if (list.aggregates != null) {
+                // build here a new table
+                List<IColumn> columns = new ArrayList<IColumn>();
+                Converters.checkNull(this.aggregates);
+
+                // This SmallTable contains the columns produced by getAggregates,
+                // but we need the columns indicated by this.aggregates
+                Schema schema = list.aggregates.getSchema();
+                List<String> cols = schema.getColumnNames();
+
+                int rows = list.aggregates.getNumOfRows();
+                AggregateDescription[] computed = this.getAggregates();
+                Converters.checkNull(computed);
+                if (computed.length != cols.size())
+                    throw new HillviewException("The number of aggregate columns does not match: " +
+                            computed.length + " vs " + cols.size());
+                for (AggregateDescription a : this.aggregates) {
+                    // iterating over the requested aggregates
+                    if (a.agkind != AggregateDescription.AggregateKind.Average) {
+                        int index = Utilities.indexOf(a, computed);
+                        if (index < 0)
+                            throw new HillviewException("Could not find aggregated column " + a);
+                        IColumn col = list.aggregates.getColumn(cols.get(index));
+                        columns.add(col);
+                    } else {
+                        // Let's find the sum and count columns
+                        IColumn sum = null;
+                        IColumn count = null;
+                        for (int j = 0; j < computed.length; j++) {
+                            AggregateDescription o = computed[j];
+                            if (!o.cd.equals(a.cd))
+                                continue;
+                            if (o.agkind == AggregateDescription.AggregateKind.Sum)
+                                sum = list.aggregates.getColumn(cols.get(j));
+                            else if (o.agkind == AggregateDescription.AggregateKind.Count)
+                                count = list.aggregates.getColumn(cols.get(j));
+                        }
+                        if (sum == null)
+                            throw new HillviewException(
+                                    "Could not find sum aggregate column for average");
+                        if (count == null)
+                            throw new HillviewException(
+                                    "Could not find count aggregate column for average");
+                        String colname = schema.generateColumnName("Average(" + a.cd.name + ")");
+                        IColumn avg = divideColumns(colname, sum, count);
+                        columns.add(avg);
+                    }
+                }
+                SmallTable aggregates = new SmallTable(columns);
+                return new NextKList(
+                        list.rows, aggregates, list.count, list.startPosition, list.rowsScanned);
+            }
+            return list;
+        }
     }
 
     @Nullable
@@ -89,9 +196,10 @@ public final class TableTarget extends RpcTarget {
         NextKArgs nextKArgs = request.parseArgs(NextKArgs.class);
         RowSnapshot rs = TableTarget.asRowSnapshot(
                 nextKArgs.firstRow, nextKArgs.order, nextKArgs.columnsNoValue);
-        NextKSketch nk = new NextKSketch(nextKArgs.order, nextKArgs.aggregates,
+        NextKSketch nk = new NextKSketch(nextKArgs.order, nextKArgs.getAggregates(),
                 rs, nextKArgs.rowsOnScreen);
-        this.runSketch(this.table, nk, request, context);
+        this.runSketchPostprocessing(this.table, nk, (s, c) -> nextKArgs.postprocess(s),
+                request, context);
     }
 
     static class LogFragmentArgs {

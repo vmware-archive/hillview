@@ -315,4 +315,16 @@ public class Utilities {
                 throw new HillviewException("Unexpected comparison: " + operation);
         }
     }
+
+    public static <T> int indexOf(@Nullable T needle, T[] haystack) {
+        for (int i = 0; i < haystack.length; i++) {
+            if (needle == null) {
+                if (haystack[i] == null)
+                    return i;
+            } else if (needle.equals(haystack[i])) {
+                return i;
+            }
+        }
+        return -1;
+    }
 }

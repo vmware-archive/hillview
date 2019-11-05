@@ -593,6 +593,18 @@ The next figure shows a typical table view.
 
 ![Table user-interface](table-ui.png)
 
+The columns in a table view are colored as follows:
+
+* Columns that are hidden are shown in gray
+
+* Columns that are visible are shown in white
+
+* Columns that contain metadata are shown in green.  Metadata columns
+  do not actually exist in the dataset, they are computed only when
+  displaying a view.  For example, the second column always shows the
+  count of rows that have a specific value.  Metadata columns do not
+  offer all operations that are available on data columns.
+
 Double-clicking on a column separator will enlarge the column to the
 left of the mouse to fit the displayed data.
 
@@ -614,9 +626,9 @@ sorted as follows:
 This display is equivalent to the output of the following SQL query:
 
 ```SQL
-SELECT COUNT(*), Origin, UniqueCarrier, Cancelled FROM data
-GROUP BY Origin, UniqueCarrier, Cancelled
-ORDER BY Origin ASC, UniqueCarrier ASC, Cancelled ASC
+SELECT COUNT(*), Sum(Distance), DayOfWeek, UniqueCarrier FROM data
+GROUP BY DayOfWeek, UniqueCarrier
+ORDER BY dayOfWeek ASC, UniqueCarrier ASC
 LIMIT 20
 ```
 
@@ -630,23 +642,22 @@ values are considered larger than any other value.
 
 In the tabular display a visible row can correspond to multiple rows
 in the original dataset.  For example, in this figure, the first
-displayed row corresponds to 104,840 different rows in the dataset.
-Otherwise said, if one ignores all columns except the 3 visible ones,
-there are 104,840 rows that have these exact values in the chosen 3
-columns (AA/SFO/0).  This is displayed in the first two columns of the
-table:
+displayed row corresponds to 22.73 thousands different rows in the
+dataset.  Otherwise said, if one ignores all columns except the 2
+visible ones, there are 22.73 thousand rows that have these exact
+values in the 2 visible columns (1/SFO).  This is displayed in the
+first two columns of the table:
 
 ![Position information columns](table-position.png)
 
 The first column, labeled (position) indicates with a horizontal
-scroll-bar where in the sorted order the current displayed row
+bar where in the sorted order the current displayed row
 resides.  In this figure the first row is at the beginning of the
 sorted order (the dark bar is at the very left).  The second column,
 labeled (count) indicates how many rows in the dataset correspond to
-the displayed row.  The scroll-bar also indicates what percentage of
-the whole dataset is covered by this row; in this case we can see that
-this row covers about 9% of the data.  You can see that, although the
-table only has 20 rows, it actually displays information for 292,241
+the displayed row.  The horizontal bar also indicates what percentage of
+the whole dataset is covered by this.  You can see that, although the
+table only has 20 rows, it actually displays information for 212 thousand
 rows in the original dataset, or 24% of the data!
 
 #### Scrolling
@@ -680,10 +691,7 @@ into view a set of rows that includes the requested quantile.
 #### Selecting columns
 
 The user can [select](#mouse-based-selection) one or more column using
-the mouse.  The following image shows the header of a table with 6
-selected columns.
-
-![A table header with multiple selected columns](selected-columns-header.png)
+the mouse.  The figure above shows table with 3 selected columns.
 
 #### Operations on selected columns
 
@@ -817,6 +825,11 @@ the current state of the display.
   column.  For example, a numeric column can be converted to a string
   column.  After conversion a new column is appended to the table, containing the
   converted data.
+
+* Aggregate...: this pops up a menu that allows the user to create a metadata
+  column using an aggregation function over the data in the selected column.
+
+  ![Aggregate menu](aggregate-menu.png)
 
 * Create column in JS...: allows the user to write a JavaScript program that
   computes values for a new column.

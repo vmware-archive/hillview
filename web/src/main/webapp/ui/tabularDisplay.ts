@@ -83,7 +83,7 @@ export class TabularDisplay implements IHtmlElement {
             thd.title = tip;
             thd.textContent = c;
             thr.appendChild(thd);
-            thd.classList.add("noselect");
+            thd.classList.add("preventselection");
             this.columnCount++;
             this.colHeaderMap.set(c, thd);
         }
@@ -103,7 +103,7 @@ export class TabularDisplay implements IHtmlElement {
     private static addRowCell(trow: HTMLTableRowElement): HTMLTableCellElement {
         const cell = trow.insertCell(trow.cells.length);
         cell.style.textAlign = "right";
-        cell.classList.add("noselect");
+        cell.classList.add("preventselection");
         return cell;
     }
 
@@ -138,7 +138,7 @@ export class TabularDisplay implements IHtmlElement {
         for (const d of data) {
             const cell = TabularDisplay.addRowCell(trow);
             cell.appendChild(d);
-            d.classList.add("noselect");
+            d.classList.add("preventselection");
         }
         return trow;
     }
