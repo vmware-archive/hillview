@@ -116,24 +116,28 @@ export class Grid implements IHtmlElement {
      * @param width   in pixels. if not zero the column is considered fixed width.
      * @param colName Column to add.
      * @param forgetWidth   if true we do not reuse the old width.
+     * @param className     Class to add to list of classes for header.
      */
-    public addHeader(width: number, colName: string, forgetWidth: boolean): HTMLElement {
-        const th = document.createElement("td");
-        th.className = "header";
-        this.thr.appendChild(th);
+    public addHeader(width: number, colName: string,
+                     forgetWidth: boolean, className: string): HTMLElement {
+        const td = document.createElement("td");
+        td.classList.add("header");
+        if (className != null)
+            td.classList.add(className);
+        this.thr.appendChild(td);
 
-        th.classList.add("noselect");
-        th.setAttribute("data-colname", colName);
+        td.classList.add("preventselection");
+        td.setAttribute("data-colname", colName);
         let useWidth = width;
         if (this.colWidths != null && !forgetWidth &&
             this.colWidths.has(colName)) {
             useWidth = this.colWidths.get(colName);
         }
         const w = (useWidth !== 0) ? useWidth : this.defaultColumnWidth;
-        th.style.width = px(w);
+        td.style.width = px(w);
 
         const resizable = this.createResizable(width !== 0);
-        th.appendChild(resizable);
+        td.appendChild(resizable);
         this.currentColumn++;
         this.currentWidth += w + 1;  // 1 for the borders
         return Grid.getDataCell(resizable);

@@ -18,17 +18,19 @@
 package org.hillview.table;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * Describes an aggregation operation to be performed.
  * All aggregates ignore null values.
  */
 public class AggregateDescription implements Serializable {
-   public enum AggregateKind implements Serializable {
+    public enum AggregateKind implements Serializable {
        Sum,
        Count,
        Min,
-       Max
+       Max,
+       Average
     }
 
     /**
@@ -36,9 +38,40 @@ public class AggregateDescription implements Serializable {
      */
     public final ColumnDescription cd;
     public final AggregateKind agkind;
+    /**
+     * The internal flag is set for aggregates that are not requested by
+     * the user, but generated internally.  For example, computing Average
+     * requires computing a Sum and Count.
+     */
+    public boolean internal;
 
     public AggregateDescription(ColumnDescription cd, AggregateKind agkind) {
+        this(cd, agkind, false);
+    }
+
+    public AggregateDescription(ColumnDescription cd, AggregateKind agkind, boolean internal) {
         this.cd = cd;
         this.agkind = agkind;
+        this.internal = internal;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        AggregateDescription that = (AggregateDescription) o;
+        return internal == that.internal &&
+                cd.equals(that.cd) &&
+                agkind == that.agkind;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(cd, agkind, internal);
+    }
+
+    @Override
+    public String toString() {
+        return this.cd.toString() + ":" + this.agkind.toString();
     }
 }

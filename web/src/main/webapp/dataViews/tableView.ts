@@ -446,8 +446,9 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                           width: number,
                           isVisible: boolean,
                           isSortable: boolean): HTMLElement {
-        const th = this.grid.addHeader(width, cd.name, !isVisible);
-        th.classList.add("noselect");
+        const className = isSortable ? null : "meta";
+        const th = this.grid.addHeader(width, cd.name, !isVisible, className);
+        th.classList.add("preventselection");
         th.title = help;
         if (!isVisible) {
             th.style.fontWeight = "normal";
@@ -708,12 +709,10 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             let thd = this.addHeaderCell(posCd, new DisplayName(posCd.name),
                 "Position within sorted order.", DataRangeUI.width, true, false);
             thd.oncontextmenu = () => {};
-            thd.classList.add("meta");
 
             thd = this.addHeaderCell(ctCd, new DisplayName(ctCd.name),
                 "Number of occurrences.", 75, true, false);
             thd.oncontextmenu = () => {};
-            thd.classList.add("meta");
             if (this.schema == null)
                 return;
         }
@@ -792,7 +791,6 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                     }, true);
                     this.contextMenu.show(e);
                 };
-                thd.classList.add("meta");
             }
         }
 
@@ -890,9 +888,11 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         const rr = this.createProjectRequest(schema.schema);
         // Remove all aggregates that depend on these columns
         let aggregates = [];
-        for (const a of this.aggregates) {
-            if (!selected.has(a.cd.name))
-                aggregates.push(a);
+        if (this.aggregates != null) {
+            for (const a of this.aggregates) {
+                if (!selected.has(a.cd.name))
+                    aggregates.push(a);
+            }
         }
         if (aggregates.length === 0)
             aggregates = null;
@@ -1265,10 +1265,12 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             for (let i = 0; i < agg.length; i++) {
                 cell = this.grid.newCell("all");
                 cell.style.textAlign = "right";
-                cell.classList.add("meta");
                 const shownValue = significantDigits(agg[i]);
-                cell.appendChild(makeSpan(shownValue));
+                const span = makeSpan(shownValue);
+                cell.classList.add("meta");
+                cell.appendChild(span);
                 cell.oncontextmenu = rowContextMenu;
+                cell.title = formatNumber(agg[i]);
             }
         }
 
