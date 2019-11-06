@@ -1,5 +1,6 @@
 {
-    enableSaveAs: true,
-    showPrivateMenus: true,
-    showTestMenu: true
+    "enableSaveAs": true,
+    "showPrivateMenus": true,
+    "showTestMenu": true,
+    "enableAdvanced": true
 }

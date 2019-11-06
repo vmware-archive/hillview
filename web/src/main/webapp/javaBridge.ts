@@ -81,6 +81,7 @@ export interface UIConfig {
     enableSaveAs?: boolean;
     showPrivateMenus?: boolean;
     showTestMenu?: boolean;
+    enableAdvanced?: boolean;
 }
 
 export interface ColumnQuantization {
