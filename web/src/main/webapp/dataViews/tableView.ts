@@ -635,15 +635,15 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 action: () => this.aggregateDialog(),
                 help: "Compute aggregations on some columns"
             }, this.getSelectedColNames().reduce((a, b) => a && this.isNumericColumn(b), true));
-            this.contextMenu.addItem({
-                text: "Extract value...",
-                action: () => {
-                    const colName = this.getSelectedColNames()[0];
-                    this.createKVColumnDialog(colName, this.tableRowsDesired);
-                },
-                help: "Extract a value associated with a specific key.",
-            }, selectedCount === 1 &&
-                this.isKVColumn(this.getSelectedColNames()[0]));
+            if (selectedCount === 1 && this.isKVColumn(this.getSelectedColNames()[0]))
+                    this.contextMenu.addItem({
+                        text: "Extract value...",
+                        action: () => {
+                            const colName = this.getSelectedColNames()[0];
+                            this.createKVColumnDialog(colName, this.tableRowsDesired);
+                        },
+                        help: "Extract a value associated with a specific key."
+                    }, true);
             this.contextMenu.show(e);
         };
     }

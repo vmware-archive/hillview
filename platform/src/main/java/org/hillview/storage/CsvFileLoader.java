@@ -84,6 +84,7 @@ public class CsvFileLoader extends TextFileLoader {
                 settings.setMaxColumns(this.actualSchema.getColumnCount());
             else
                 settings.setMaxColumns(50000);
+            settings.setMaxCharsPerColumn(100000);
             CsvParser reader = new CsvParser(settings);
             reader.beginParsing(file);
 

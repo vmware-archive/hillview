@@ -884,9 +884,13 @@ the current state of the display.
   converted data.
 
 * Aggregate...: this pops up a menu that allows the user to create a metadata
-  column using an aggregation function over the data in the selected column.
+  column using an aggregation function over the data in the selected column;
+  this is only applicable for numeric columns.
 
   ![Aggregate menu](aggregate-menu.png)
+
+  The user can select one of the following aggregates: sum, min, max, count, average.
+  The aggregate data is displayed in a meta column, shown in green.
 
 * Create column in JS...: allows the user to write a JavaScript program that
   computes values for a new column.

@@ -252,15 +252,8 @@ export class SchemaView extends TSViewBase {
         this.contextMenu.addItem({
             text: "Histogram",
             action: () => this.histogramSelected(),
-            help: "Plot the data in the selected columns as a histogram.  Applies to one or two columns only. " +
-            "The data cannot be of type String.",
+            help: "Plot the data in the selected columns as a histogram.  Applies to one or two columns only."
         }, selectedCount >= 1 && selectedCount <= 2);
-        this.contextMenu.addItem({
-            text: "Private histogram",
-            action: () => this.histogramSelected(),
-            help: "Plot the data in the selected columns as a private histogram. " +
-                "Applies to one numeric column only.",
-        }, selectedCount === 1);
         this.contextMenu.addItem({
             text: "Heatmap",
             action: () => this.heatmapSelected(),
@@ -372,6 +365,11 @@ export class SchemaView extends TSViewBase {
 
             if (allE && stat.presentCount === 0)
                 this.display.selectedRows.add(i);
+            if (this.schema.get(i).kind === "Date") {
+                if (stat.moments[0] === 0.0)
+                    this.display.selectedRows.add(i);
+                continue;
+            }
             if (stat.moments[0] > .001 &&
                 (stat.moments[1] / stat.moments[0]) < thresh)
                 this.display.selectedRows.add(i);

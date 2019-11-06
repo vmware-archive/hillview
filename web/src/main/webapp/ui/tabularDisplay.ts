@@ -18,7 +18,7 @@
 import {PlottingSurface} from "./plottingSurface";
 import {SelectionStateMachine} from "./selectionStateMachine";
 import {IHtmlElement} from "./ui";
-import {px} from "../util";
+import {px, truncate} from "../util";
 
 /**
  * A TabularDisplay is a visual representation that uses an HTML table to display
@@ -40,7 +40,6 @@ export class TabularDisplay implements IHtmlElement {
         this.topLevel.classList.add("tabularDisplay");
         this.topLevel.style.maxHeight = px(PlottingSurface.canvasHeight);
         this.topLevel.style.overflowY = "scroll";  // This should be auto, but it looks bad on Mozilla
-        this.topLevel.style.display =  "inline-block";
         this.table = null;
         this.clear();
     }
@@ -118,7 +117,8 @@ export class TabularDisplay implements IHtmlElement {
         const trow = this.insertRow(canClick);
         for (const d of data) {
             const cell = TabularDisplay.addRowCell(trow);
-            cell.textContent = d;
+            cell.textContent = truncate(d, 50);
+            cell.title = d;
         }
         return trow;
     }
