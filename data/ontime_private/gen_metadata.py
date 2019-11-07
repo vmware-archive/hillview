@@ -59,7 +59,7 @@ def main():
                 quantization[cn] = get_string_metadata(cn)
             else:
                 quantization[cn] = get_metadata(cn)
-        output = {'quantization': { 'quantization': quantization }, 'epsilons': {}, 'defaultEpsilons': defaultEpsilons }
+        output = {'epsilons': {}, 'defaultEpsilons': defaultEpsilons, 'quantization': { 'quantization': quantization } }
         f.write(json.dumps(output))
 
 if __name__=='__main__':

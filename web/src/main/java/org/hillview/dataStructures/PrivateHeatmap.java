@@ -5,6 +5,7 @@ import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.Pair;
 import org.hillview.sketches.results.Heatmap;
 import org.hillview.utils.HashUtil;
+import org.hillview.utils.HillviewLogger;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -64,6 +65,7 @@ public class PrivateHeatmap implements Serializable, IJson {
      * The total noise is the sum of the noise variables in the intervals composing the desired interval or bucket.
      */
     private void addDyadicLaplaceNoise(DyadicDecomposition dx, DyadicDecomposition dy) {
+        HillviewLogger.instance.info("Adding heatmap noise with", "epsilon={0}", this.epsilon);
         List<List<Pair<Integer, Integer>>> xIntervals =
                 new ArrayList<List<Pair<Integer, Integer>>>(this.heatmap.xBucketCount);
         List<List<Pair<Integer, Integer>>> yIntervals =

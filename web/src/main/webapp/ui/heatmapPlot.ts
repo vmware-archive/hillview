@@ -39,12 +39,14 @@ export class HeatmapPlot extends Plot {
     protected distinct: number;
     protected dots: Dot[];
     protected schema: SchemaClass;
+    protected isPrivate: boolean;
 
     public constructor(surface: PlottingSurface,
                        protected legendPlot: HeatmapLegendPlot,
                        protected showAxes: boolean) {
         super(surface);
         this.dots = null;
+        this.isPrivate = false;
     }
 
     public draw(): void {
@@ -88,8 +90,11 @@ export class HeatmapPlot extends Plot {
             this.drawAxes();
 
         if (!kindIsString(this.yAxisData.description.kind) &&
-            !kindIsString(this.xAxisData.description.kind)) {
-            // it makes no sense to do regressions for string values
+            !kindIsString(this.xAxisData.description.kind) &&
+            !this.isPrivate) {
+            // It makes no sense to do regressions for string values.
+            // Regressions for private data should be computed in a different way; this
+            // way gives too much noise.
             const regr = regression(this.heatmap.buckets);
             if (regr.length === 2) {
                 const b = regr[0];
@@ -134,11 +139,13 @@ export class HeatmapPlot extends Plot {
         return this.distinct;
     }
 
-    public setData(heatmap: Heatmap, xData: AxisData, yData: AxisData, schema: SchemaClass): void {
+    public setData(heatmap: Heatmap, xData: AxisData, yData: AxisData,
+                   schema: SchemaClass, isPrivate: boolean): void {
         this.heatmap = heatmap;
         this.xAxisData = xData;
         this.yAxisData = yData;
         this.schema = schema;
+        this.isPrivate = isPrivate;
         this.xAxisData.setResolution(this.getChartWidth(), AxisKind.Bottom, PlottingSurface.bottomMargin);
         this.yAxisData.setResolution(this.getChartHeight(), AxisKind.Left, Resolution.heatmapLabelWidth);
 

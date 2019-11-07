@@ -304,5 +304,4 @@ public class SimpleDBTarget extends RpcTarget {
             return result;
         }, request, context);
     }
-
 }
