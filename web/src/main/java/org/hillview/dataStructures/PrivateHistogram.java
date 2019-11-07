@@ -5,6 +5,7 @@ import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.Pair;
 import org.hillview.sketches.results.Histogram;
 import org.hillview.utils.Converters;
+import org.hillview.utils.HillviewLogger;
 
 /**
  * Contains methods for adding privacy to a non-private histogram computed over dyadic buckets,
@@ -61,6 +62,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
      * The total noise is the sum of the noise variables in the intervals composing the desired interval or bucket.
      */
     private void addDyadicLaplaceNoise(DyadicDecomposition decomposition) {
+        HillviewLogger.instance.info("Adding histogram noise with", "epsilon={0}", this.epsilon);
         int totalLeaves = decomposition.getQuantizationIntervalCount();
         double scale = Math.log(totalLeaves / epsilon) / Math.log(2);
         double baseVariance = 2 * Math.pow(scale, 2);

@@ -17,8 +17,12 @@
 
 package org.hillview.targets;
 
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import org.hillview.*;
-import org.hillview.dataStructures.*;
+import org.hillview.dataStructures.DyadicDecomposition;
+import org.hillview.dataStructures.HistogramRequestInfo;
+import org.hillview.dataStructures.PrivateHeatmap;
+import org.hillview.dataStructures.PrivateHistogram;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.Pair;
@@ -26,16 +30,20 @@ import org.hillview.maps.IdMap;
 import org.hillview.sketches.PrecomputedSketch;
 import org.hillview.sketches.results.Heatmap;
 import org.hillview.sketches.results.Histogram;
+import org.hillview.sketches.results.NextKList;
 import org.hillview.sketches.results.TableSummary;
 import org.hillview.storage.JdbcConnectionInformation;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.PrivacySchema;
+import org.hillview.table.SmallTable;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.ColumnQuantization;
 import org.hillview.table.filters.RangeFilterDescription;
 import org.hillview.table.filters.RangeFilterPairDescription;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewException;
+import org.hillview.utils.HillviewLogger;
+import org.hillview.utils.JsonString;
 
 import java.sql.SQLException;
 
@@ -53,6 +61,15 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
     private PrivateSimpleDBTarget(PrivateSimpleDBTarget other, HillviewComputation computation) {
         super(other.jdbc, computation);
         this.wrapper = new DPWrapper(other.wrapper);
+    }
+
+    @HillviewRpc
+    public void changePrivacy(RpcRequest request, RpcRequestContext context) {
+        this.wrapper.privacySchema = request.parseArgs(PrivacySchema.class);
+        HillviewLogger.instance.info("Updated privacy schema");
+        PrecomputedSketch<ITable, JsonString> empty =
+                new PrecomputedSketch<ITable, JsonString>(new JsonString("{}"));
+        this.runCompleteSketch(this.table, empty, (d, c) -> d, request, context);
     }
 
     @HillviewRpc
@@ -163,6 +180,18 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @HillviewRpc
+    public void getNextK(RpcRequest request, RpcRequestContext context) {
+        TableTarget.NextKArgs nextKArgs = request.parseArgs(TableTarget.NextKArgs.class);
+        // Only allow this if the sort order is empty
+        if (nextKArgs.order.getSize() != 0)
+            throw new HillviewException("No column data can be displayed privately");
+        NextKList result = new NextKList(new SmallTable(nextKArgs.order.toSchema()),
+            null, new IntArrayList(), 0, 0);
+        PrecomputedSketch<ITable, NextKList> nk = new PrecomputedSketch<ITable, NextKList>(result);
+        this.runSketch(this.table, nk, request, context);
     }
 
     @Override

@@ -219,7 +219,7 @@ export class HeatmapView extends ChartView {
         }
 
         // The order of these operations is important
-        this.plot.setData(heatmap, this.xAxisData, this.yAxisData, this.schema);
+        this.plot.setData(heatmap, this.xAxisData, this.yAxisData, this.schema, this.isPrivate());
         if (!keepColorMap) {
             this.colorLegend.setData(1, this.plot.getMaxCount());
         }
