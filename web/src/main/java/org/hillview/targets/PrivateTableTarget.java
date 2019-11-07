@@ -15,6 +15,9 @@ import org.hillview.table.filters.RangeFilterDescription;
 import org.hillview.table.filters.RangeFilterPairDescription;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.Converters;
+import org.hillview.utils.HillviewException;
+import org.hillview.utils.HillviewLogger;
+import org.hillview.utils.JsonString;
 
 import java.util.function.BiFunction;
 
@@ -37,6 +40,15 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
         this.table = table;
         this.wrapper = new DPWrapper(wrapper);
         this.registerObject();
+    }
+
+    @HillviewRpc
+    public void changePrivacy(RpcRequest request, RpcRequestContext context) {
+        this.wrapper.privacySchema = request.parseArgs(PrivacySchema.class);
+        HillviewLogger.instance.info("Updated privacy schema");
+        PrecomputedSketch<ITable, JsonString> empty =
+                new PrecomputedSketch<ITable, JsonString>(new JsonString("{}"));
+        this.runCompleteSketch(this.table, empty, (d, c) -> d, request, context);
     }
 
     @HillviewRpc
@@ -152,9 +164,12 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
                 new PrivateHeatmap(d0, d1, e, epsilon).heatmap, request, context);
     }
 
-    //@HillviewRpc
+    @HillviewRpc
     public void getNextK(RpcRequest request, RpcRequestContext context) {
         TableTarget.NextKArgs nextKArgs = request.parseArgs(TableTarget.NextKArgs.class);
+        // Only allow this if the sort order is empty
+        if (nextKArgs.order.getSize() != 0)
+            throw new HillviewException("No column data can be displayed privately");
         RowSnapshot rs = TableTarget.asRowSnapshot(
                 nextKArgs.firstRow, nextKArgs.order, nextKArgs.columnsNoValue);
         NextKSketch nk = new NextKSketch(nextKArgs.order, null, rs, nextKArgs.rowsOnScreen,

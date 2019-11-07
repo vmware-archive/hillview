@@ -25,7 +25,7 @@ import {SchemaReceiver, TableView} from "./dataViews/tableView";
 import {DataLoaded, getDescription} from "./initialObject";
 import {
     CombineOperators,
-    IColumnDescription,
+    IColumnDescription, JsonString, PrivacySchema,
     RecordOrder,
     RemoteObjectId,
 } from "./javaBridge";
@@ -34,12 +34,14 @@ import {BigTableView, TableTargetAPI} from "./tableTarget";
 import {HillviewToplevel} from "./toplevel";
 import {IDataView} from "./ui/dataview";
 import {FullPage, PageTitle} from "./ui/fullPage";
-import {MenuItem, SubMenu, TopMenuItem} from "./ui/menu";
-import {IHtmlElement, ViewKind} from "./ui/ui";
-import {assert, EnumIterators, saveAs} from "./util";
+import {ContextMenu, MenuItem, SubMenu, TopMenuItem} from "./ui/menu";
+import {IHtmlElement, removeAllChildren, ViewKind} from "./ui/ui";
+import {assert, EnumIterators, ICancellable, saveAs} from "./util";
 import {TrellisHeatmapView} from "./dataViews/trellisHeatmapView";
 import {TrellisHistogram2DView} from "./dataViews/trellisHistogram2DView";
 import {TrellisHistogramView} from "./dataViews/trellisHistogramView";
+import JSONEditor, {JSONEditorOptions} from "jsoneditor";
+import {OnCompleteReceiver} from "./rpc";
 
 export interface IViewSerialization {
     viewKind: ViewKind;
@@ -123,26 +125,54 @@ export class DatasetView implements IHtmlElement {
     private readonly pageContainer: HTMLElement;
     private pageCounter: number;
     public readonly allPages: FullPage[];
-    protected differentialyPrivate: boolean = false;
+    public privacySchema: PrivacySchema = null;
+    protected privacyEditor: HTMLElement;
+    private readonly menu: ContextMenu;
 
     /**
      * Build a dataset object.
      * @param remoteObjectId  Id of the remote object containing the dataset data.
      * @param name            A name to display for this dataset.
      * @param loaded          A description of the data that was loaded.
+     * @param loadMenuPage    The page of the load menu.
      */
     constructor(public readonly remoteObjectId: RemoteObjectId,
                 public name: string,
-                public readonly loaded: DataLoaded) {
+                public readonly loaded: DataLoaded,
+                protected loadMenuPage: FullPage) {
         this.remoteObject = new TableTargetAPI(remoteObjectId);
         this.pageCounter = 1;
         this.allPages = [];
         this.topLevel = document.createElement("div");
         this.topLevel.className = "dataset";
+        this.privacyEditor = document.createElement("span");
+        this.privacyEditor.style.width = "100%";
+        this.privacyEditor.style.height = "500px";
+        this.privacyEditor.style.display = "none";
+        this.topLevel.appendChild(this.privacyEditor);
         this.pageContainer = document.createElement("div");
         this.topLevel.appendChild(this.pageContainer);
         this.topLevel.appendChild(document.createElement("hr"));
-        HillviewToplevel.instance.addDataset(this);
+        this.menu = new ContextMenu(this.topLevel, [{
+            text: "Save this tab to file",
+            action: () => this.saveToFile(),
+            help: "Save the views in this tab to a local file;\n" +
+                "this file can be loaded later using \"Load saved view\".",
+        }, {
+            text: "Reload original view",
+            action: () => this.redisplay(),
+            help: "Load again the first view of this dataset.",
+        }, {
+            text: "Refresh",
+            action: () => this.refresh(),
+            help: "Refresh all views of the dataset."
+        }, {
+            text: "Edit privacy policy",
+            action: () => this.editPrivacy(),
+            help: "For private datasets opens an editor to edit the privacy parameters."
+        }]);
+        this.menu.enable("Edit privacy policy", false);
+        HillviewToplevel.instance.addDataset(this, this.menu);
     }
 
     /**
@@ -154,12 +184,58 @@ export class DatasetView implements IHtmlElement {
                 this.loaded.description.fileKind === "genericlog");
     }
 
-    public setPrivate(): void {
-        this.differentialyPrivate = true;
+    public editPrivacy(): void {
+        this.privacyEditor.style.display = "block";
+        const span = document.createElement("span");
+        span.textContent = "Edit the privacy policy and press button when done";
+        this.privacyEditor.appendChild(span);
+        const done = document.createElement("button");
+        done.textContent = "Done";
+        done.title = "Upload the new privacy policy and refresh all views.";
+        this.privacyEditor.appendChild(done);
+
+        const cancel = document.createElement("button");
+        cancel.textContent = "Cancel";
+        cancel.title = "Do not update the privacy policy.";
+        this.privacyEditor.appendChild(cancel);
+
+        const editOptions: JSONEditorOptions = { mode: "text", mainMenuBar: false, statusBar: false };
+        const editor = new JSONEditor(this.privacyEditor, editOptions, "{}");
+        editor.set(this.privacySchema);
+        const destroy = () => {
+            this.privacyEditor.style.display = "none";
+            editor.destroy();
+            removeAllChildren(this.privacyEditor);
+        };
+        done.onclick = () => {
+            try {
+                const json = editor.getText();  // throws when text is invalid
+                this.privacySchema = JSON.parse(json);
+                this.uploadPrivacy(json);
+                destroy();
+            } catch (exception) {
+                this.loadMenuPage.reportError(exception.toString());
+            }
+        };
+        cancel.onclick = () => {
+            destroy();
+        };
+    }
+
+    private uploadPrivacy(json: string): void {
+        const js = new JsonString(json);
+        const rr = this.remoteObject.createStreamingRpcRequest<string>("changePrivacy", js);
+        const updateReceiver = new UploadPrivacyReceiver(this, this.loadMenuPage, rr);
+        rr.invoke(updateReceiver);
+    }
+
+    public setPrivate(privacySchema: PrivacySchema): void {
+        this.privacySchema = privacySchema;
+        this.menu.enable("Edit privacy policy", privacySchema != null);
     }
 
     public isPrivate(): boolean {
-        return this.differentialyPrivate;
+        return this.privacySchema != null;
     }
 
     public getHTMLRepresentation(): HTMLElement {
@@ -409,5 +485,22 @@ export class DatasetView implements IHtmlElement {
         const str = JSON.stringify(ser);
         const fileName = "savedView.txt";
         saveAs(fileName, str);
+    }
+
+    public refresh(): void {
+        for (const page of  this.allPages) {
+            page.getDataView().refresh();
+        }
+    }
+}
+
+class UploadPrivacyReceiver extends OnCompleteReceiver<string> {
+    constructor(protected dataset: DatasetView, page: FullPage, operation: ICancellable<string>) {
+        super(page, operation, "upload privacy");
+    }
+
+    public run(value: string): void {
+        console.log("Privacy policy has been updated.");
+        this.dataset.refresh();
     }
 }

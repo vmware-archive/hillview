@@ -31,18 +31,33 @@ import java.util.LinkedHashMap;
 /**
  * PrivacySchema contains additional metadata for columns that are visualized using the binary mechanism for
  * differential privacy, as per Chan, Song, Shi, TISSEC '11 (https://eprint.iacr.org/2010/076.pdf).
- * Epsilon budgets can be specified for both single-column (1-d) queries as well as for multi-column queries.
- * Metadata for a multi-column histogram is indexed by the key corresponding to the concatenation of the column names,
- * in alphabetical order, with "+" as the delimiter.
- * */
+ * Epsilon budgets can be specified for both single-column (1-d) queries
+ * as well as for multi-column queries.
+ */
 public class PrivacySchema implements IJson, Serializable {
     final public QuantizationSchema quantization;
     // We use a LinkedHashMap for deterministic serialization
+    /**
+     * Metadata for a multi-column histogram is indexed by the key corresponding
+     * to the concatenation of the column names,
+     * in alphabetical order, with "+" as the delimiter.
+     */
     final private LinkedHashMap<String, Double> epsilons;
+    /**
+     * Default epsilons for column combinations not listed in the above hashmap.
+     * This hashmap is indexed with the number of columns.
+     */
+    final private LinkedHashMap<String, Double> defaultEpsilons;
+    /**
+     * Default value of epsilon for any other column combination.
+     */
+    final private double defaultEpsilon;
 
     public PrivacySchema(QuantizationSchema quantization) {
         this.quantization = quantization;
         this.epsilons = new LinkedHashMap<String, Double>();
+        this.defaultEpsilons = new LinkedHashMap<String, Double>();
+        this.defaultEpsilon = .001;
     }
 
     @Nullable
@@ -54,21 +69,31 @@ public class PrivacySchema implements IJson, Serializable {
      * Get the epsilon corresponding to a set of columns.
      * @param colNames  Columns that we need the epsilon for.
      * @return          epsilon exploring the joint columns.
-     *                  0 if there is no epsilon for this group of columns.
      */
     public double epsilon(String[] colNames) {
         Arrays.sort(colNames);
         String key = String.join("+", colNames);
-        return this.epsilon(key);
+        Double result = this.epsilons.get(key);
+        if (result != null) {
+            if (result == 0)
+                throw new RuntimeException("Default epsilon of 0 for " + key);
+            return result;
+        }
+        result = this.defaultEpsilons.get(Integer.toString(colNames.length));
+        if (result != null) {
+            if (result == 0)
+                throw new RuntimeException("Default epsilon of 0 for " +
+                        colNames.length + " columns");
+            return result;
+        }
+        // default value of epsilon for any other combination of columns.
+        return this.defaultEpsilon;
     }
 
-    public double epsilon(String colName) {
-        Double epsilon = this.epsilons.get(colName);
-        if (epsilon == null)
-            return 1;
-        if (epsilon == 0)
-            throw new RuntimeException("Eplsilon of 0 for " + colName);
-        return epsilon;
+    public Double epsilon(String colName) {
+        String[] array = new String[1];
+        array[0] = colName;
+        return this.epsilon(array);
     }
 
     public void setEpsilon(String colName, double epsilon) {

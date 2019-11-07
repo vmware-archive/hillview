@@ -25,7 +25,6 @@ import {
     IColumnDescription,
     kindIsString, KVCreateColumnInfo,
     NextKList,
-    PrivacySchema,
     RecordOrder,
     RemoteObjectId,
     RowData, RowFilterDescription,
@@ -40,7 +39,7 @@ import {DataRangeUI} from "../ui/dataRangeUI";
 import {IDataView} from "../ui/dataview";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage, PageTitle} from "../ui/fullPage";
-import {ContextMenu, SubMenu, TopMenu, TopMenuItem} from "../ui/menu";
+import {ContextMenu, MenuItem, SubMenu, TopMenu, TopMenuItem} from "../ui/menu";
 import {IScrollTarget, ScrollBar} from "../ui/scroll";
 import {SelectionStateMachine} from "../ui/selectionStateMachine";
 import {HtmlString, Resolution, SpecialChars, ViewKind} from "../ui/ui";
@@ -93,8 +92,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         remoteObjectId: RemoteObjectId,
         rowCount: number,
         schema: SchemaClass,
-        page: FullPage,
-        protected privacySchema: PrivacySchema) {
+        page: FullPage) {
         super(remoteObjectId, rowCount, schema, page, "Table");
         this.selectedColumns = new SelectionStateMachine();
         this.tableRowsDesired = Resolution.tableRowsOnScreen;
@@ -120,26 +118,27 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         });
         if (HillviewToplevel.instance.uiconfig.enableSaveAs)
             items.push(this.saveAsMenu());
+        const viewSubMenu: MenuItem[] = [
+            {
+                text: "Refresh",
+                action: () => this.refresh(),
+                help: "Redraw this view.",
+            }, {
+                text: "No columns",
+                action: () => this.setOrder(new RecordOrder([]), false),
+                help: "Make all columns invisible",
+            }, {
+                text: "Schema",
+                action: () => this.viewSchema(),
+                help: "Browse the list of columns of this table and choose a subset to visualize.",
+            }, {
+                text: "Change table size...",
+                action: () => this.changeTableSize(),
+                help: "Change the number of rows displayed",
+            }];
         items.push({
-                text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
-                    { text: "Refresh",
-                      action: () => this.refresh(),
-                      help: "Redraw this view.",
-                    },
-                    { text: "No columns",
-                        action: () => this.setOrder(new RecordOrder([]), false),
-                        help: "Make all columns invisible",
-                    },
-                    { text: "Schema",
-                        action: () => this.viewSchema(),
-                        help: "Browse the list of columns of this table and choose a subset to visualize.",
-                    },
-                    {
-                        text: "Change table size...",
-                        action: () => this.changeTableSize(),
-                        help: "Change the number of rows displayed",
-                    },
-                ]),
+                text: "View", help: "Change the way the data is displayed.",
+                subMenu: new SubMenu(viewSubMenu),
             },
             this.chartMenu(),
             {
@@ -217,7 +216,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         const rowsDesired = ser.tableRowsDesired;
         if (order == null || schema == null || rowsDesired == null)
             return null;
-        const tableView = new TableView(ser.remoteObjectId, ser.rowCount, schema, page, null);
+        const tableView = new TableView(ser.remoteObjectId, ser.rowCount, schema, page);
         // We need to set the first row for the refresh.
         tableView.nextKList = {
             rowsScanned: 0,
@@ -586,19 +585,20 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 action: () => this.heavyHittersDialog(),
                 help: "Find the values that occur most frequently in the selected columns.",
             }, true);
-            this.contextMenu.addItem({
-                text: "PCA...",
-                action: () => this.pca(true),
-                help: "Perform Principal Component Analysis on a set of numeric columns. " +
-                    "This produces a smaller set of columns that preserve interesting properties of the data.",
-            }, selectedCount > 1 &&
-                this.getSelectedColNames().reduce((a, b) => a && this.isNumericColumn(b), true));
-            this.contextMenu.addItem({
-                text: "Plot Singular Value Spectrum",
-                action: () => this.spectrum(true),
-                help: "Plot singular values for the selected columns. ",
-            }, selectedCount > 1 &&
-                this.getSelectedColNames().reduce((a, b) => a && this.isNumericColumn(b), true));
+            if (selectedCount > 1 &&
+                this.getSelectedColNames().reduce((a, b) => a && this.isNumericColumn(b), true)) {
+                this.contextMenu.addItem({
+                    text: "PCA...",
+                    action: () => this.pca(true),
+                    help: "Perform Principal Component Analysis on a set of numeric columns. " +
+                        "This produces a smaller set of columns that preserve interesting properties of the data.",
+                }, true);
+                this.contextMenu.addItem({
+                    text: "Plot Singular Value Spectrum",
+                    action: () => this.spectrum(true),
+                    help: "Plot singular values for the selected columns. ",
+                }, true);
+            }
             this.contextMenu.addItem({
                 text: "Filter...",
                 action: () => {
@@ -725,11 +725,13 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             const name = this.schema.displayName(cd.name);
             let title = name + "\nType is " + kindString + "\n";
             if (this.isPrivate()) {
-                const pm = this.privacySchema.quantization.quantization[cd.name];
+                const pm = this.dataset.privacySchema.quantization.quantization[cd.name];
                 if (pm != null) {
-                    let eps = this.privacySchema.epsilons[cd.name];
+                    let eps = this.dataset.privacySchema.epsilons[cd.name];
                     if (eps == null)
-                        eps = 0;
+                        eps = this.dataset.privacySchema.defaultEpsilons["1"];
+                    if (eps == null)
+                        eps = this.dataset.privacySchema.defaultEpsilon;
                     title += "Epsilon=" + eps + "\n";
                     if (kindIsString(cd.kind)) {
                         title += "Range is [" + pm.leftBoundaries[0] + ", " + pm.globalMax + "]\n";
@@ -1385,9 +1387,8 @@ export class SchemaReceiver extends OnCompleteReceiver<TableSummary> {
             this.page.reportError("No schema received; empty dataset?");
             return;
         }
-        if (summary.metadata != null) {
-            this.dataset.setPrivate();
-        }
+        if (summary.metadata != null)
+            this.dataset.setPrivate(summary.metadata);
         const schemaClass = this.schema == null ? new SchemaClass(summary.schema) : this.schema;
         const useSchema = this.viewKind === "Schema" ||
             (this.viewKind === null && summary.schema.length > 20);
@@ -1406,7 +1407,7 @@ export class SchemaReceiver extends OnCompleteReceiver<TableSummary> {
 
             const order = new RecordOrder([]);
             const table = new TableView(this.remoteObject.remoteObjectId, summary.rowCount,
-                schemaClass, this.page, summary.metadata);
+                schemaClass, this.page);
             this.page.setDataView(table);
             table.updateView(nk, false, order, null);
             table.updateCompleted(this.elapsedMilliseconds());
@@ -1510,7 +1511,7 @@ class PCASchemaReceiver extends OnCompleteReceiver<TableSummary> {
 
         const schema = this.tv.schema.concat(newCols);
         const table = new TableView(
-            this.remoteObject.remoteObjectId, this.tv.rowCount, schema, this.page, null);
+            this.remoteObject.remoteObjectId, this.tv.rowCount, schema, this.page);
         this.page.setDataView(table);
         const rr = table.createNextKRequest(o, null, this.tableRowsDesired, null);
         rr.chain(this.operation);
@@ -1551,7 +1552,7 @@ export class TableOperationCompleted extends BaseReceiver {
                 this.page, rr, this.remoteObject, this.page.dataset, this.schema, "Schema"));
         } else {
             const table = new TableView(
-                this.remoteObject.remoteObjectId, this.rowCount, this.schema, this.page, null);
+                this.remoteObject.remoteObjectId, this.rowCount, this.schema, this.page);
             table.aggregates = this.aggregates;
             this.page.setDataView(table);
             const rr = table.createNextKRequest(

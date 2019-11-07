@@ -542,7 +542,7 @@ export class Histogram2DView extends HistogramViewBase {
         } ]);
 
         const page = this.dataset.newPage(new PageTitle("Table"), this.page);
-        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, page, null);
+        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, page);
         const rr = table.createNextKRequest(order, null, Resolution.tableRowsOnScreen);
         page.setDataView(table);
         rr.invoke(new NextKReceiver(page, table, rr, false, order, null));

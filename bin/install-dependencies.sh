@@ -19,9 +19,9 @@ case "$OSTYPE" in
 	curl -sL https://deb.nodesource.com/setup_11.x | ${SUDO} -E bash -
 esac
 
-${SUDO} ${INSTALL}  install wget maven ${NODEJS} ${NPM} ${LIBFORTRAN} unzip gzip
+${SUDO} ${INSTALL} install wget maven ${NODEJS} ${NPM} ${LIBFORTRAN} unzip gzip
 echo "Installing typescript compiler"
-${SUDO} npm install -g typescript@3.1.5
+${SUDO} npm install -g typescript@3.7
 
 cd ..
 if [ ! -d apache-tomcat-${TOMCATVERSION} ]; then

@@ -114,7 +114,7 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
             }
             const rr = this.originator.createCorrelationMatrixRequest(this.colNames, this.rowCount, true);
             const newestPage = this.newPage.dataset.newPage(new PageTitle("Table"), this.newPage);
-            const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newestPage, null);
+            const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newestPage);
             newestPage.setDataView(table);
             const order  = new RecordOrder([]);
             rr.invoke(new CorrelationMatrixReceiver(newestPage, table, rr, order, numComponents, projectionName));

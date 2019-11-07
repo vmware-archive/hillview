@@ -31,7 +31,7 @@ import java.util.HashMap;
 public class PrivacySchemaTest {
     @Test
     public void parseMetadataTest() {
-        String metadata = "{\"quantization\":{\"quantization\":{\"col1\":{\"type\":\"DoubleColumnQuantization\",\"granularity\":12.345,\"globalMin\":0.0,\"globalMax\":123.45},\"col2\":{\"type\":\"StringColumnQuantization\",\"globalMax\":\"d\",\"leftBoundaries\":[\"a\",\"b\",\"c\"]}}},\"epsilons\":{\"col1\":0.1,\"col2\":0.5}}";
+        String metadata = "{\"quantization\":{\"quantization\":{\"col1\":{\"type\":\"DoubleColumnQuantization\",\"granularity\":12.345,\"globalMin\":0.0,\"globalMax\":123.45},\"col2\":{\"type\":\"StringColumnQuantization\",\"globalMax\":\"d\",\"leftBoundaries\":[\"a\",\"b\",\"c\"]}}},\"epsilons\":{\"col1\":0.1,\"col2\":0.5},\"defaultEpsilons\":{},\"defaultEpsilon\":0.001}";
         PrivacySchema mdSchema = PrivacySchema.loadFromString(metadata);
         Assert.assertNotNull(mdSchema);
         Assert.assertNotNull(mdSchema.quantization);
@@ -41,7 +41,10 @@ public class PrivacySchemaTest {
         ColumnQuantization col2 = mdSchema.quantization.get("col2");
         Assert.assertNotNull(col2);
         Assert.assertTrue(col2 instanceof StringColumnQuantization);
-        Assert.assertEquals(0.1, mdSchema.epsilon("col1"), 0.001);
+        double eps = mdSchema.epsilon("col1");
+        Assert.assertEquals(0.1, eps, 0.001);
+        eps = mdSchema.epsilon("not there");
+        Assert.assertEquals(.001, eps, .0001);
     }
 
     @Test
@@ -56,7 +59,7 @@ public class PrivacySchemaTest {
         mdSchema.setEpsilon("col1", .1);
         mdSchema.setEpsilon("col2", .5);
         String mdJson = mdSchema.toJson();
-        String expected = "{\"quantization\":{\"quantization\":{\"col1\":{\"type\":\"DoubleColumnQuantization\",\"granularity\":12.345,\"globalMin\":0.0,\"globalMax\":123.45},\"col2\":{\"type\":\"StringColumnQuantization\",\"globalMax\":\"d\",\"leftBoundaries\":[\"a\",\"b\",\"c\"]}}},\"epsilons\":{\"col1\":0.1,\"col2\":0.5}}";
+        String expected = "{\"quantization\":{\"quantization\":{\"col1\":{\"type\":\"DoubleColumnQuantization\",\"granularity\":12.345,\"globalMin\":0.0,\"globalMax\":123.45},\"col2\":{\"type\":\"StringColumnQuantization\",\"globalMax\":\"d\",\"leftBoundaries\":[\"a\",\"b\",\"c\"]}}},\"epsilons\":{\"col1\":0.1,\"col2\":0.5},\"defaultEpsilons\":{},\"defaultEpsilon\":0.001}";
         Assert.assertEquals(expected, mdJson);
     }
 
@@ -73,14 +76,19 @@ public class PrivacySchemaTest {
         msSchema.setEpsilon("col1", .1);
         msSchema.setEpsilon("col1", .5);
         String mdJson = msSchema.toJson();
-        String expected = "{\"quantization\":{\"quantization\":{\"col1\":{\"type\":\"DoubleColumnQuantization\",\"granularity\":12.345,\"globalMin\":0.0,\"globalMax\":123.45},\"col2\":{\"type\":\"DoubleColumnQuantization\",\"granularity\":0.5,\"globalMin\":-0.5,\"globalMax\":13.0}}},\"epsilons\":{\"col1+col2\":0.25,\"col1\":0.5}}";
+        String expected = "{\"quantization\":{\"quantization\":{\"col1\":{\"type\":\"DoubleColumnQuantization\",\"granularity\":12.345,\"globalMin\":0.0,\"globalMax\":123.45},\"col2\":{\"type\":\"DoubleColumnQuantization\",\"granularity\":0.5,\"globalMin\":-0.5,\"globalMax\":13.0}}},\"epsilons\":{\"col1+col2\":0.25,\"col1\":0.5},\"defaultEpsilons\":{},\"defaultEpsilon\":0.001}";
         Assert.assertEquals(expected, mdJson);
     }
 
     @Test
     public void deserializeMultipleColumnsTest() {
-        String md = "{'quantization':{'quantization':{'col1':{'type':'DoubleColumnQuantization','granularity':12.345,'globalMin':0.0,'globalMax':123.45},'col2':{'type':'DoubleColumnQuantization','granularity':0.5,'globalMin':-0.5,'globalMax':13.0}}},'epsilons':{'col1+col2':0.25,'col1':0.5}}";
+        String md = "{'quantization':{'quantization':{'col1':{'type':'DoubleColumnQuantization','granularity':12.345,'globalMin':0.0,'globalMax':123.45},'col2':{'type':'DoubleColumnQuantization','granularity':0.5,'globalMin':-0.5,'globalMax':13.0}}},'epsilons':{'col1+col2':0.25,'col1':0.5},\"defaultEpsilons\":{\"1\":1,\"2\":1},\"defaultEpsilon\":0.001}";
         PrivacySchema mdSchema = PrivacySchema.loadFromString(md);
-        Assert.assertEquals(mdSchema.epsilon(new String[] {"col1", "col2"}), 0.25, 0.001);
+        double eps = mdSchema.epsilon(new String[] {"col1", "col2"});
+        Assert.assertEquals(.25, eps, 0.001);
+        eps = mdSchema.epsilon("not there");
+        Assert.assertEquals(1, eps, .0001);
+        eps = mdSchema.epsilon(new String[] {"col1", "col2", "col3"});
+        Assert.assertEquals(.001, eps, .0001);
     }
 }

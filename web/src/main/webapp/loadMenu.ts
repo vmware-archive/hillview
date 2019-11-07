@@ -363,7 +363,7 @@ export class LoadMenu extends RemoteObject implements IDataView {
             return;
         }
         this.page.reportError("Reconstructing " + json.views.length + " views");
-        const dataset = new DatasetView(json.remoteObjectId, title, json);
+        const dataset = new DatasetView(json.remoteObjectId, title, json, this.page);
         const success = dataset.reconstruct(json);
         if (!success)
             this.page.reportError("Error reconstructing view");
