@@ -33,15 +33,12 @@ def get_metadata(cn):
             'globalMax': gMax}
 
 def get_string_metadata(col):
-    letters = list(string.ascii_uppercase) + list(string.ascii_lowercase)
+    letters = list(string.ascii_uppercase)
     if col == "OriginState" or col == "DestState":
         letters = states
     return {'type': "StringColumnQuantization",
-            'globalMax': 'z',
+            'globalMax': 'a',
             'leftBoundaries': letters }
-
-def concat_colnames(colnames):
-    return '+'.join(colnames)
 
 def main():
     colnames = []
@@ -55,18 +52,14 @@ def main():
 
     with open('privacy_metadata.json', 'w') as f:
         quantization = {}
-        epsilons = {}
+        defaultEpsilons = { "1": 1, "2": .1 }
         for col in schema:
             cn = col["name"]
             if col["kind"] == "String":
                 quantization[cn] = get_string_metadata(cn)
             else:
                 quantization[cn] = get_metadata(cn)
-            epsilons[cn] = 1
-        for cn in length2:
-            concat_cn = concat_colnames(cn)
-            epsilons[concat_cn] = 0.1
-        output = {'quantization': { 'quantization': quantization }, 'epsilons': epsilons }
+        output = {'quantization': { 'quantization': quantization }, 'epsilons': {}, 'defaultEpsilons': defaultEpsilons }
         f.write(json.dumps(output))
 
 if __name__=='__main__':

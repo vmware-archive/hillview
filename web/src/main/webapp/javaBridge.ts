@@ -95,7 +95,17 @@ export interface ColumnQuantization {
 
 export interface PrivacySchema {
     quantization: { quantization: { [colName: string]: ColumnQuantization } };
-    epsilons: { [colName: string]: number };
+    epsilons: { [colNames: string]: number };
+    // map a column count (encoded as a string, to suit JSON label requirements) to an epsilon
+    defaultEpsilons: { [count: string]: number };
+    defaultEpsilon: number;
+}
+
+// This class is used to package a string argument that should be sent
+// unchanged through a remote all.
+export class JsonString {
+    constructor(private value: string) {}
+    public toJSON(): string { return this.value; }
 }
 
 export interface TableSummary {

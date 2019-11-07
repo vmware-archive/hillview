@@ -80,7 +80,7 @@ export class HillviewToplevel implements IHtmlElement {
         return this.topLevel;
     }
 
-    public addDataset(dataset: DatasetView): void {
+    public addDataset(dataset: DatasetView, menu: ContextMenu): void {
         // tab names never change once tabs are created.  They are also unique.
         // The tab name is not the dataset name; the dataset name is displayed in the tab.
         const tabName = "tab" + this.datasetCounter++;
@@ -98,17 +98,6 @@ export class HillviewToplevel implements IHtmlElement {
         cell.title = dataset.name + "\nRight-click opens a menu";
         cell.onclick = () => { if (this.select(tabName)) { this.rename(tabName); } };
         cell.className = "dataset-name";
-
-        const menu = new ContextMenu(this.topLevel, [{
-            text: "Save this tab to file",
-            action: () => dataset.saveToFile(),
-            help: "Save the views in this tab to a local file;\n" +
-            "this file can be loaded later using \"Load saved view\".",
-        }, {
-            text: "Redisplay",
-            action: () => dataset.redisplay(),
-            help: "Display again the original dataset",
-        }]);
         cell.oncontextmenu = (e) => menu.show(e);
 
         const close = document.createElement("span");

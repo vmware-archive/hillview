@@ -21,7 +21,7 @@ import {
     FileSetDescription,
     FileSizeSketchInfo,
     JdbcConnectionInformation,
-    RemoteObjectId, UIConfig,
+    RemoteObjectId,
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject} from "./rpc";
 import {BaseReceiver} from "./tableTarget";
@@ -138,14 +138,14 @@ class FilePruneReceiver extends OnCompleteReceiver<RemoteObjectId> {
 export class RemoteTableReceiver extends BaseReceiver {
     /**
      * Create a renderer for a new table.
-     * @param page            Parent page initiating this request.
+     * @param loadMenuPage    Parent page initiating this request, always the page of the LoadMenu.
      * @param data            Data that has been loaded.
      * @param operation       Operation that will bring the results.
      * @param progressInfo    Description of the files that are being loaded.
      */
-    constructor(page: FullPage, operation: ICancellable<RemoteObjectId>, protected data: DataLoaded,
+    constructor(loadMenuPage: FullPage, operation: ICancellable<RemoteObjectId>, protected data: DataLoaded,
                 progressInfo: string) {
-        super(page, operation, progressInfo, null);
+        super(loadMenuPage, operation, progressInfo, null);
     }
 
     public run(): void {
@@ -153,7 +153,7 @@ export class RemoteTableReceiver extends BaseReceiver {
         const rr = this.remoteObject.createGetSummaryRequest();
         rr.chain(this.operation);
         const title = getDescription(this.data);
-        const dataset = new DatasetView(this.remoteObject.remoteObjectId, title, this.data);
+        const dataset = new DatasetView(this.remoteObject.remoteObjectId, title, this.data, this.page);
         const newPage = dataset.newPage(new PageTitle(title), null);
         rr.invoke(new SchemaReceiver(newPage, rr, this.remoteObject, dataset, null, null));
     }

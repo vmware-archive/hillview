@@ -419,7 +419,7 @@ export class SchemaView extends TSViewBase {
         const newPage = this.dataset.newPage(new PageTitle("Selected columns"), this.page);
         const selected = this.display.getSelectedRows();
         const newSchema = this.schema.filter((c) => selected.has(this.schema.columnIndex(c.name)));
-        const tv = new TableView(this.remoteObjectId, this.rowCount, newSchema, newPage, null);
+        const tv = new TableView(this.remoteObjectId, this.rowCount, newSchema, newPage);
         newPage.setDataView(tv);
         const nkl: NextKList = {
             rowsScanned: this.rowCount,

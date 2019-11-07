@@ -158,7 +158,7 @@ export class TrellisHistogramView extends TrellisChartView {
 
     protected showTable(): void {
         const newPage = this.dataset.newPage(new PageTitle("Table"), this.page);
-        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newPage, null);
+        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newPage);
         newPage.setDataView(table);
         table.schema = this.schema;
 
