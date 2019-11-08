@@ -52,12 +52,12 @@ public class DPWrapper {
     /* Global parameters for differentially-private histograms using the binary mechanism. */
     protected PrivacySchema privacySchema;
 
-    DPWrapper(PrivacySchema privacySchema) {
+    public DPWrapper(PrivacySchema privacySchema) {
         this.columnLimits = new ColumnLimits();
         this.privacySchema = privacySchema;
     }
 
-    DPWrapper(DPWrapper other) {
+    public DPWrapper(DPWrapper other) {
         this.privacySchema = other.privacySchema;
         this.columnLimits = new ColumnLimits(other.columnLimits);
     }
@@ -66,7 +66,7 @@ public class DPWrapper {
      * If a dataset composed of files is private, we expect that a corresponding directory exists at the root server
      * with a matching name and with such a file inside.
      */
-    private static final String PRIVACY_METADATA_NAME = "privacy_metadata.json";
+    public static final String PRIVACY_METADATA_NAME = "privacy_metadata.json";
 
     /**
      * If the privacy metadata file exists return the file name.
@@ -74,7 +74,7 @@ public class DPWrapper {
      * @return  null if the file does not exist, the file name otherwise.
      */
     @Nullable
-    static String privacyMetadataFile(String folder) {
+    public static String privacyMetadataFile(String folder) {
         File metadataFile = new File(folder, PRIVACY_METADATA_NAME);
         if (metadataFile.getAbsoluteFile().exists())
             return metadataFile.toString();

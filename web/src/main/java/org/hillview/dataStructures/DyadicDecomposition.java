@@ -81,8 +81,27 @@ public abstract class DyadicDecomposition {
         return this.buckets;
     }
 
-    int getQuantizationIntervalCount() {
+    public int getQuantizationIntervalCount() {
         return this.quantization.getIntervalCount();
+    }
+
+    /**
+     * Return the start and end leaves for this bucket (right-exclusive).
+     */
+    Pair<Integer, Integer> bucketRange(int bucketIdx, boolean cdf) {
+        int left = 0;
+        if (!cdf)
+            left = this.bucketQuantizationIndexes[bucketIdx];
+        int right = -1;
+        if (bucketIdx < this.bucketQuantizationIndexes.length - 1)
+            right = this.bucketQuantizationIndexes[bucketIdx + 1];
+        if (left < 0 && right >= 0)
+            // left endpoint out of bounds
+            left = 0;
+        if (left >= 0 && right < 0)
+            // right endpoint out of bounds
+            right = left + 1;
+        return new Pair(left, right);
     }
 
     /**
@@ -93,19 +112,29 @@ public abstract class DyadicDecomposition {
      * Leaves are zero-indexed. The returned intervals are right-exclusive.
      */
     List<Pair<Integer, Integer>> bucketDecomposition(int bucketIdx, boolean cdf) {
-        int left = 0;
-        if (!cdf)
-            left = this.bucketQuantizationIndexes[bucketIdx];
-        int right = -1;
-        if (bucketIdx < this.bucketQuantizationIndexes.length - 1)
-            right = this.bucketQuantizationIndexes[bucketIdx + 1];
-        if (left < 0 && right >= 0)
-            // left endpoint ot of bounds
-            left = 0;
-        if (left >= 0 && right < 0)
-            // right endpoint out of bounds
-            right = left + 1;
-        return DyadicDecomposition.dyadicDecomposition(left, right);
+        Pair<Integer, Integer> range = this.bucketRange(bucketIdx, cdf);
+        return DyadicDecomposition.dyadicDecomposition(range.first, range.second);
+    }
+
+    /**
+     * Compute noise for the given [left leaf, right leaf) range using the dyadic decomposition.
+     * See also noiseForBucket.
+     */
+    public Pair<Double, Double> noiseForRange(int left, int right, double epsilon,
+                                       LaplaceDistribution dist, double baseVariance, boolean isCdf) {
+        List<Pair<Integer, Integer>> intervals = DyadicDecomposition.dyadicDecomposition(left, right);
+        double noise = 0;
+        double variance = 0;
+
+        int hashCode = 31;
+        for (Pair<Integer, Integer> x : intervals) {
+            hashCode = HashUtil.murmurHash3(hashCode, x.first);
+            hashCode = HashUtil.murmurHash3(hashCode, x.second);
+            dist.reseedRandomGenerator(hashCode);
+            noise += dist.sample();
+            variance += baseVariance;
+        }
+        return new Pair<>(noise, variance);
     }
 
     /**
@@ -121,19 +150,8 @@ public abstract class DyadicDecomposition {
     @SuppressWarnings("ConstantConditions")
     Pair<Double, Double> noiseForBucket(int bucketIdx, double epsilon,
                                         LaplaceDistribution dist, double baseVariance, boolean isCdf) {
-        List<Pair<Integer, Integer>> intervals = this.bucketDecomposition(bucketIdx, isCdf);
-        double noise = 0;
-        double variance = 0;
-
-        int hashCode = 31;
-        for (Pair<Integer, Integer> x : intervals) {
-            hashCode = HashUtil.murmurHash3(hashCode, x.first);
-            hashCode = HashUtil.murmurHash3(hashCode, x.second);
-            dist.reseedRandomGenerator(hashCode);
-            noise += dist.sample();
-            variance += baseVariance;
-        }
-        return new Pair<Double, Double>(noise, variance);
+        Pair<Integer, Integer> range = this.bucketRange(bucketIdx, isCdf);
+        return noiseForRange(range.first, range.second, epsilon, dist, baseVariance, isCdf);
     }
 
     @Override
