@@ -302,7 +302,7 @@
             <artifactId>java-grok</artifactId>
             <version>0.1.9</version>
             </dependency>
-        </dependencies>
+    </dependencies>
     <build>
         <extensions>
             <extension>

@@ -38,7 +38,8 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
      */
     private void recomputeCDF(DyadicDecomposition decomposition) {
         int totalLeaves = decomposition.getQuantizationIntervalCount();
-        double scale = Math.log(totalLeaves / epsilon) / Math.log(2);
+        double scale = Math.log(totalLeaves) / Math.log(2);
+        scale /= epsilon;
         double baseVariance = 2 * Math.pow(scale, 2);
         LaplaceDistribution dist = new LaplaceDistribution(0, scale); // TODO: (more) secure PRG
 
@@ -64,7 +65,8 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
     private void addDyadicLaplaceNoise(DyadicDecomposition decomposition) {
         HillviewLogger.instance.info("Adding histogram noise with", "epsilon={0}", this.epsilon);
         int totalLeaves = decomposition.getQuantizationIntervalCount();
-        double scale = Math.log(totalLeaves / epsilon) / Math.log(2);
+        double scale = Math.log(totalLeaves) / Math.log(2);
+        scale /= epsilon;
         double baseVariance = 2 * Math.pow(scale, 2);
         LaplaceDistribution dist = new LaplaceDistribution(0, scale); // TODO: (more) secure PRG
 

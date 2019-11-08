@@ -44,6 +44,18 @@ public class HistogramRequestInfo {
     private double max;
     private int bucketCount;
 
+    /**
+     * Explicit constructors for headless testing.
+     */
+    public HistogramRequestInfo(ColumnDescription cd, long seed, double min, double max, int bucketCount) {
+        this.cd = cd;
+        this.seed = seed;
+        this.min = min;
+        this.max = max;
+        this.bucketCount = bucketCount;
+        this.samplingRate = 1.0;
+    }
+
     public IHistogramBuckets getBuckets(@Nullable ColumnQuantization quantization) {
         if (cd.kind.isString()) {
             Converters.checkNull(this.leftBoundaries);
