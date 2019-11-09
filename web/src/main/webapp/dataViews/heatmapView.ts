@@ -49,6 +49,7 @@ import {AxisData} from "./axisData";
 import {NextKReceiver, TableView} from "./tableView";
 import {DataRangesReceiver, FilterReceiver} from "./dataRangesCollectors";
 import {ChartView} from "./chartView";
+import {Dialog, FieldKind} from "../ui/dialog";
 
 /**
  * A HeatMapView renders information as a heatmap.
@@ -90,6 +91,9 @@ export class HeatmapView extends ChartView {
                 text: "swap axes",
                 action: () => this.swapAxes(),
                 help: "Draw the heatmap with the same data by swapping the X and Y axes.",
+            },  { text: "# buckets...",
+                action: () => this.chooseBuckets(),
+                help: "Change the number of buckets used to draw this histogram. ",
             }, {
                 text: "table",
                 action: () => this.showTable(),
@@ -125,6 +129,40 @@ export class HeatmapView extends ChartView {
 
         this.summary = document.createElement("div");
         this.topLevel.appendChild(this.summary);
+    }
+
+    public chooseBuckets(): void {
+        const bucketDialog = new Dialog("Set buckets",
+            "Change the resolution used to display the heatmap.");
+
+        const chartSize = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
+        let input = bucketDialog.addTextField("x_buckets", "X axis buckets:", FieldKind.Integer, null,
+            "The number of buckets on X axis.");
+        input.min = "1";
+        input.max = Math.floor(chartSize.width / Resolution.minDotSize).toString();
+        input.required = true;
+
+        input = bucketDialog.addTextField("y_buckets", "Y axis buckets:", FieldKind.Integer, null,
+            "The number of buckets on Y axis.");
+        input.min = "1";
+        input.max = Math.floor(chartSize.height / Resolution.minDotSize).toString();
+        input.required = true;
+
+        bucketDialog.setCacheTitle("XYBucketDialog");
+        bucketDialog.setAction(() => this.changeBuckets(
+            bucketDialog.getFieldValueAsInt("x_buckets"),
+            bucketDialog.getFieldValueAsInt("y_buckets")));
+        bucketDialog.show();
+    }
+
+    private changeBuckets(x: number, y: number): void {
+        const rr = this.createDataQuantilesRequest(
+            [this.xAxisData.description, this.yAxisData.description],
+            this.page, "Heatmap");
+        rr.invoke(new DataRangesReceiver(
+            this, this.page, rr, this.schema, [x, y],
+            [this.xAxisData.description, this.yAxisData.description], null,
+            { chartKind: "Heatmap", relative: false, exact: true, reusePage: true }));
     }
 
     protected createNewSurfaces(keepColorMap: boolean): void {
@@ -217,6 +255,10 @@ export class HeatmapView extends ChartView {
             this.page.reportError("No data to display");
             return;
         }
+
+        if (this.isPrivate())
+            this.page.setEpsilon(this.dataset.getEpsilon(
+                [this.xAxisData.description.name, this.yAxisData.description.name]));
 
         // The order of these operations is important
         this.plot.setData(heatmap, this.xAxisData, this.yAxisData, this.schema, this.isPrivate());

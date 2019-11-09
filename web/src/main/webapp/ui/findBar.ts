@@ -31,7 +31,8 @@ export class FindBar implements IHtmlElement {
     protected caseFindCheckbox: HTMLInputElement;
     protected foundCount: HTMLElement;
 
-    constructor(onClick: (next: boolean, fromTop: boolean) => void) {
+    constructor(onClick: (next: boolean, fromTop: boolean) => void,
+                onFilter: () => void) {
         this.visible = false;
         this.topLevel = document.createElement("div");
         this.topLevel.style.margin = "2px";
@@ -76,6 +77,10 @@ export class FindBar implements IHtmlElement {
         filler.style.flexGrow = "100";
         this.topLevel.appendChild(filler);
 
+        const filterButton = this.topLevel.appendChild(document.createElement("button"));
+        filterButton.innerText = "Keep only matching data";
+        filterButton.onclick = () => onFilter();
+        this.addSpace(1);
         const close = document.createElement("span");
         close.className = "close";
         close.innerHTML = "&times;";

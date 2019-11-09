@@ -77,7 +77,8 @@ public class PrivateHeatmap implements Serializable, IJson {
 
         Noise noise = new Noise();
         long totalLeaves = dx.getQuantizationIntervalCount() * dy.getQuantizationIntervalCount();
-        double scale = Math.log(totalLeaves / this.epsilon) / Math.log(2);
+        double scale = Math.log(totalLeaves) / Math.log(2);
+        scale /= epsilon;
         LaplaceDistribution dist = new LaplaceDistribution(0, scale);
         double baseVariance = 2 * (Math.pow(scale, 2));
         for (int i = 0; i < this.heatmap.buckets.length; i++) {

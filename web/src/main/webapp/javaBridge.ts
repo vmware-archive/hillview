@@ -473,8 +473,13 @@ export interface StringFilterDescription {
     complement: boolean;
 }
 
-export interface StringRowFilterDescription {
+export interface StringColumnFilterDescription {
     colName: string;
+    stringFilterDescription: StringFilterDescription;
+}
+
+export interface StringColumnsFilterDescription {
+    colNames: string[];
     stringFilterDescription: StringFilterDescription;
 }
 

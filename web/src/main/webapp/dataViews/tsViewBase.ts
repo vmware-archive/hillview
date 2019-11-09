@@ -30,7 +30,7 @@ import {
     RecordOrder,
     RemoteObjectId,
     StringFilterDescription,
-    StringRowFilterDescription, AggregateDescription
+    StringColumnFilterDescription, AggregateDescription
 } from "../javaBridge";
 import {OnCompleteReceiver} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
@@ -493,7 +493,7 @@ export abstract class TSViewBase extends BigTableView {
                 };
                 o.addColumn(so);
             }
-            const rr = this.createFilterEqualityRequest(rowFilter);
+            const rr = this.createFilterColumnRequest(rowFilter);
             let title = "Filtered: " + rowFilter.colName;
             if ((strFilter.asSubString || strFilter.asRegEx) && !strFilter.complement)
                 title += " contains ";
@@ -624,7 +624,7 @@ class FilterDialog extends Dialog {
         this.setCacheTitle("FilterDialog");
     }
 
-    public getFilter(): StringRowFilterDescription {
+    public getFilter(): StringColumnFilterDescription {
         const textQuery: string = this.getFieldValue("query");
         if (this.columnDescription == null) {
             const colName = this.getColumnName("column");

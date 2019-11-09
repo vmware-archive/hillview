@@ -59,7 +59,7 @@ export class LogFileView extends TableTargetAPI implements IHtmlElement, OnNextK
         header.appendChild(wrap);
         wrap.appendChild(titleBar);
 
-        this.findBar = new FindBar((n, f) => this.onFind(n, f));
+        this.findBar = new FindBar((n, f) => this.onFind(n, f), null);
         header.appendChild(this.findBar.getHTMLRepresentation());
         this.findBar.show(false);
 

@@ -19,7 +19,7 @@ package org.hillview.table.filters;
 
 import org.hillview.table.api.*;
 
-public class StringRowFilterDescription implements ITableFilterDescription {
+public class StringColumnFilterDescription implements ITableFilterDescription {
     /**
      * The name of the column on which the filtering operation is performed.
      */
@@ -29,7 +29,7 @@ public class StringRowFilterDescription implements ITableFilterDescription {
      */
     private final StringFilterDescription stringFilterDescription;
 
-    public StringRowFilterDescription(String colName, StringFilterDescription
+    public StringColumnFilterDescription(String colName, StringFilterDescription
             stringFilterDescription) {
         this.colName = colName;
         this.stringFilterDescription = stringFilterDescription;
@@ -37,19 +37,19 @@ public class StringRowFilterDescription implements ITableFilterDescription {
 
     @Override
     public ITableFilter getFilter(ITable table) {
-        return new StringRowFilter(table);
+        return new StringColumnFilter(table);
     }
 
     /**
      * This filter maps a given Table to a Table that only contains the given value in the
      * specified column.
      */
-    public class StringRowFilter implements ITableFilter {
+    public class StringColumnFilter implements ITableFilter {
         private final IColumn column;
         private final IStringFilter stringFilter;
-        StringRowFilter(ITable table) {
+        StringColumnFilter(ITable table) {
             this.stringFilter = StringFilterFactory.getFilter(stringFilterDescription);
-            this.column = table.getLoadedColumn(StringRowFilterDescription.this.colName);
+            this.column = table.getLoadedColumn(StringColumnFilterDescription.this.colName);
         }
 
         /**

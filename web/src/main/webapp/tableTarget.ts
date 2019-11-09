@@ -41,7 +41,7 @@ import {
     NextKArgs,
     ComparisonFilterDescription,
     EigenVal,
-    StringRowFilterDescription,
+    StringColumnFilterDescription,
     FindResult,
     Heatmap3D,
     StringFilterDescription,
@@ -50,7 +50,7 @@ import {
     BasicColStats,
     AugmentedHistogram,
     AggregateDescription,
-    HeavyHittersFilterInfo, RowFilterDescription,
+    HeavyHittersFilterInfo, RowFilterDescription, StringColumnsFilterDescription,
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
 import {FullPage, PageTitle} from "./ui/fullPage";
@@ -154,7 +154,6 @@ export class TableTargetAPI extends RemoteObject {
      */
     public createDataQuantilesRequest(cds: IColumnDescription[], page: FullPage, viewKind: ViewKind):
         RpcRequest<PartialResult<BucketsInfo[]>> {
-
         // Determine the resolution of the ranges request based on the plot kind.
         const bucketCounts: number[] = TableTargetAPI.rangesResolution(page, viewKind);
         assert(bucketCounts.length === cds.length);
@@ -283,9 +282,14 @@ export class TableTargetAPI extends RemoteObject {
         return this.createStreamingRpcRequest<RemoteObjectId>("filterOnRow", filter);
     }
 
-    public createFilterEqualityRequest(filter: StringRowFilterDescription):
+    public createFilterColumnRequest(filter: StringColumnFilterDescription):
             RpcRequest<PartialResult<RemoteObjectId>> {
-        return this.createStreamingRpcRequest<RemoteObjectId>("filterEquality", filter);
+        return this.createStreamingRpcRequest<RemoteObjectId>("filterColumn", filter);
+    }
+
+    public createFilterColumnsRequest(filter: StringColumnsFilterDescription):
+        RpcRequest<PartialResult<RemoteObjectId>> {
+        return this.createStreamingRpcRequest<RemoteObjectId>("filterColumns", filter);
     }
 
     public createFilterComparisonRequest(filter: ComparisonFilterDescription):

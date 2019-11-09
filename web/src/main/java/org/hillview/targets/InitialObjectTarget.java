@@ -35,6 +35,7 @@ import javax.websocket.Session;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
 
@@ -107,7 +108,13 @@ public class InitialObjectTarget extends RpcTarget {
         if (privacyMetadataFile != null) {
             PrivacySchema privacySchema = PrivacySchema.loadFromFile(privacyMetadataFile);
             this.runMap(this.emptyDataset, map,
-                    (e, c) -> new PrivateSimpleDBTarget(conn, c, privacySchema), request, context);
+                    (e, c) -> {
+                        try {
+                            return new PrivateSimpleDBTarget(conn, c, privacySchema);
+                        } catch (SQLException ex) {
+                            throw new RuntimeException(ex);
+                        }
+                    }, request, context);
         } else {
             this.runMap(this.emptyDataset, map, (e, c) -> new SimpleDBTarget(conn, c), request, context);
         }
