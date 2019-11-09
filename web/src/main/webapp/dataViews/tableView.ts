@@ -188,11 +188,30 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         this.grid = new Grid(80);
         tblAndScrollBar.appendChild(this.scrollBar.getHTMLRepresentation());
         tblAndScrollBar.appendChild(this.grid.getHTMLRepresentation());
-        this.findBar = new FindBar((n, f) => this.find(n, f));
+        this.findBar = new FindBar((n, f) => this.find(n, f), () => this.findFilter());
         this.topLevel.appendChild(this.findBar.getHTMLRepresentation());
 
         this.message = document.createElement("div");
         this.topLevel.appendChild(this.message);
+    }
+
+    /**
+     * This function is invoked when someone clicks the "Filter" button on the find bar.
+     * This filters and keeps only rows that match the find criteria.
+     */
+    private findFilter(): void {
+        const filter = this.findBar.getFilter();
+        const columns = this.order.getSchema().map((c) => c.name);
+        if (columns.length === 0) {
+            this.page.reportError("No columns are visible");
+            return;
+        }
+        const rr = this.createFilterColumnsRequest(
+            { colNames: columns, stringFilterDescription: filter });
+        const title = "Filtered on: " + filter.compareValue;
+        const newPage = this.dataset.newPage(new PageTitle(title), this.page);
+        rr.invoke(new TableOperationCompleted(newPage, rr, this.rowCount, this.schema,
+            this.order, this.tableRowsDesired, this.aggregates));
     }
 
     private exportSchema(): void {
@@ -682,6 +701,8 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         this.dataRowsDisplayed = 0;
         this.startPosition = nextKList.startPosition;
         this.order = order.clone();
+        if (this.isPrivate())
+            this.page.setEpsilon(null);
 
         if (revert) {
             let rowsDisplayed = 0;
@@ -727,11 +748,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             if (this.isPrivate()) {
                 const pm = this.dataset.privacySchema.quantization.quantization[cd.name];
                 if (pm != null) {
-                    let eps = this.dataset.privacySchema.epsilons[cd.name];
-                    if (eps == null)
-                        eps = this.dataset.privacySchema.defaultEpsilons["1"];
-                    if (eps == null)
-                        eps = this.dataset.privacySchema.defaultEpsilon;
+                    const eps = this.dataset.getEpsilon([cd.name]);
                     title += "Epsilon=" + eps + "\n";
                     if (kindIsString(cd.kind)) {
                         title += "Range is [" + pm.leftBoundaries[0] + ", " + pm.globalMax + "]\n";

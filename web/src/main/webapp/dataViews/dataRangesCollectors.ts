@@ -429,8 +429,12 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
             }
             case "Heatmap": {
                 const args: HistogramArgs[] = [];
-                const maxXBucketCount = Math.floor(chartSize.width / Resolution.minDotSize);
-                const maxYBucketCount = Math.floor(chartSize.height / Resolution.minDotSize);
+                let maxXBucketCount = this.bucketCounts[0];
+                if (maxXBucketCount === 0)
+                    maxXBucketCount = Math.floor(chartSize.width / Resolution.minDotSize);
+                let maxYBucketCount = this.bucketCounts[1];
+                if (maxYBucketCount === 0)
+                    maxYBucketCount = Math.floor(chartSize.height / Resolution.minDotSize);
                 const xArg = DataRangesReceiver.computeHistogramArgs(
                     this.cds[0], ranges[0], maxXBucketCount, this.options.exact, chartSize);
                 args.push(xArg);

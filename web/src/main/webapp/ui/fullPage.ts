@@ -111,6 +111,7 @@ export class FullPage implements IHtmlElement {
     protected xDrag: HTMLElement;
     protected yDrag: HTMLElement;
     protected gDrag: HTMLElement;
+    protected eBox: HTMLElement;  // displays epsilon
     // These functions are registered to handle drop events.
     // Each drop event has a text payload and starts with a prefix.
     // The functions are each registered for a prefix.
@@ -174,6 +175,12 @@ export class FullPage implements IHtmlElement {
         }
 
         if (this.dataset != null) {
+            this.eBox = makeSpan(SpecialChars.epsilon);
+            this.eBox.title = "Data is shown with differential privacy";
+            this.eBox.className = "axisbox";
+            this.addCell(this.eBox, true);
+            this.eBox.style.visibility = this.dataset.isPrivate() ? "visible" : "hidden";
+
             this.xDrag = makeSpan("X");
             this.xDrag.title = "Drag this to copy the X axis to another chart";
             this.xDrag.className = "axisbox";
@@ -244,6 +251,12 @@ export class FullPage implements IHtmlElement {
 
         this.bottomContainer.appendChild(this.progressManager.getHTMLRepresentation());
         this.bottomContainer.appendChild(this.console.getHTMLRepresentation());
+    }
+
+    public setEpsilon(epsilon: number | null): void {
+        this.eBox.innerText =
+            SpecialChars.epsilon + ((epsilon != null) ? ("=" + epsilon.toString()) : "");
+        this.eBox.style.visibility = "visible";
     }
 
     /**

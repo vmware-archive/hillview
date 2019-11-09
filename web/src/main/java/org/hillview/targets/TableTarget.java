@@ -273,8 +273,8 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     public void find(RpcRequest request, RpcRequestContext context) {
         FindArgs args = request.parseArgs(FindArgs.class);
-        assert args.order != null;
-        assert args.stringFilterDescription != null;
+        Converters.checkNull(args.order);
+        Converters.checkNull(args.stringFilterDescription);
         RowSnapshot rs = TableTarget.asRowSnapshot(args.topRow, args.order, null);
         FindSketch sk = new FindSketch(args.stringFilterDescription, rs, args.order,
                 args.excludeTopRow, args.next);
@@ -439,8 +439,14 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    public void filterEquality(RpcRequest request, RpcRequestContext context) {
-        StringRowFilterDescription filter = request.parseArgs(StringRowFilterDescription.class);
+    public void filterColumns(RpcRequest request, RpcRequestContext context) {
+        StringColumnsFilterDescription filter = request.parseArgs(StringColumnsFilterDescription.class);
+        this.runFilter(filter, request, context);
+    }
+
+    @HillviewRpc
+    public void filterColumn(RpcRequest request, RpcRequestContext context) {
+        StringColumnFilterDescription filter = request.parseArgs(StringColumnFilterDescription.class);
         this.runFilter(filter, request, context);
     }
 

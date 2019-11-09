@@ -206,6 +206,9 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         }
         this.augmentedHistogram = augmentedHistogram;
         this.rowCount = augmentedHistogram.histogram.buckets.reduce((a, b) => a + b, 0);
+        if (this.isPrivate())
+            this.page.setEpsilon(this.dataset.getEpsilon(
+                [this.xAxisData.description.name]));
 
         const h = augmentedHistogram.histogram;
         this.histogram = h;
