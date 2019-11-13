@@ -30,6 +30,7 @@ import {IHtmlElement, removeAllChildren, SpecialChars, ViewKind} from "./ui";
 import {helpUrl} from "./helpUrl";
 import {BigTableView} from "../tableTarget";
 import {CombineOperators} from "../javaBridge";
+import {Dialog, FieldKind} from "./dialog";
 
 const minus = "&#8722;";
 const plus = "+";
@@ -116,6 +117,8 @@ export class FullPage implements IHtmlElement {
     // Each drop event has a text payload and starts with a prefix.
     // The functions are each registered for a prefix.
     protected dropHandler: Map<string, (s: string) => void>;
+    protected epsilon: number | null;
+    protected epsilonColumns: string[];
 
     /**
      * Creates a page which will be used to display some rendering.
@@ -130,6 +133,7 @@ export class FullPage implements IHtmlElement {
                        public readonly sourcePageId: number | null,
                        public readonly dataset: DatasetView) {
         this.dataView = null;
+        this.epsilon = null;
         this.console = new ErrorDisplay();
         this.progressManager = new ProgressManager();
         this.minimized = false;
@@ -176,8 +180,9 @@ export class FullPage implements IHtmlElement {
 
         if (this.dataset != null) {
             this.eBox = makeSpan(SpecialChars.epsilon);
-            this.eBox.title = "Data is shown with differential privacy";
-            this.eBox.className = "axisbox";
+            this.eBox.title = "Data is shown with differential privacy.";
+            this.eBox.style.border = "black";
+            this.eBox.onclick = () => this.changeEpsilon();
             this.addCell(this.eBox, true);
             this.eBox.style.visibility = this.dataset.isPrivate() ? "visible" : "hidden";
 
@@ -253,10 +258,28 @@ export class FullPage implements IHtmlElement {
         this.bottomContainer.appendChild(this.console.getHTMLRepresentation());
     }
 
-    public setEpsilon(epsilon: number | null): void {
+    public changeEpsilon(): void {
+        if (this.epsilonColumns == null)
+            return;
+        const dialog = new Dialog("Change " + SpecialChars.epsilon,
+            "Change the privacy parameter for this view");
+        dialog.addTextField("epsilon", SpecialChars.epsilon + "=", FieldKind.Double,
+            this.epsilon.toString(), "Epsilon value");
+        dialog.setAction(() => {
+            const eps = dialog.getFieldValueAsNumber("epsilon");
+            this.dataset.setEpsilon(this.epsilonColumns, eps);
+        });
+        dialog.show();
+    }
+
+    public setEpsilon(epsilon: number | null, columns: string[]): void {
+        this.epsilon = epsilon;
+        this.epsilonColumns = columns;
         this.eBox.innerText =
             SpecialChars.epsilon + ((epsilon != null) ? ("=" + epsilon.toString()) : "");
         this.eBox.style.visibility = "visible";
+        if (epsilon != null)
+            this.eBox.title = "Data is shown with differential privacy; click to change.";
     }
 
     /**

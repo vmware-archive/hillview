@@ -196,6 +196,14 @@ export class DatasetView implements IHtmlElement {
         return eps;
     }
 
+    public setEpsilon(columns: string[], epsilon: number): void {
+        const copy = cloneArray(columns);
+        copy.sort();
+        const key = copy.join("+");
+        this.privacySchema.epsilons[key] = epsilon;
+        this.uploadPrivacy(JSON.stringify(this.privacySchema));
+    }
+
     public editPrivacy(): void {
         this.privacyEditor.style.display = "block";
         const span = document.createElement("span");

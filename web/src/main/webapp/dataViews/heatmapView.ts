@@ -256,9 +256,11 @@ export class HeatmapView extends ChartView {
             return;
         }
 
-        if (this.isPrivate())
-            this.page.setEpsilon(this.dataset.getEpsilon(
-                [this.xAxisData.description.name, this.yAxisData.description.name]));
+        if (this.isPrivate()) {
+            const cols = [this.xAxisData.description.name, this.yAxisData.description.name];
+            const eps = this.dataset.getEpsilon(cols);
+            this.page.setEpsilon(eps, cols);
+        }
 
         // The order of these operations is important
         this.plot.setData(heatmap, this.xAxisData, this.yAxisData, this.schema, this.isPrivate());
