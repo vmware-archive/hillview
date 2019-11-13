@@ -79,6 +79,8 @@ class DialogBase implements IHtmlElement {
      * The fieldsDiv is a div that contains all the form fields.
      */
     protected readonly fieldsDiv: HTMLDivElement;
+    // True if any dialog is currently visible.
+    private static dialogVisible: boolean;
 
     /**
      * Create a dialog with the given name.
@@ -100,6 +102,7 @@ class DialogBase implements IHtmlElement {
         this.topLevel.style.left = "50%";
         this.topLevel.style.top = "50%";
         this.topLevel.style.transform = "translate(-50%, -50%)";
+        DialogBase.dialogVisible = false;
 
         const titleElement = document.createElement("h1");
         titleElement.textContent = title;
@@ -144,6 +147,7 @@ class DialogBase implements IHtmlElement {
     public hide(): void {
         // Removes the menu from the DOM
         this.topLevel.remove();
+        Dialog.dialogVisible = false;
     }
 
     public getHTMLRepresentation(): HTMLElement {
@@ -151,7 +155,11 @@ class DialogBase implements IHtmlElement {
     }
 
     public show(): void {
+        if (Dialog.dialogVisible)
+            return;
         document.body.appendChild(this.topLevel);
+        // Prevent two dialogs from being shown at the same time.
+        Dialog.dialogVisible = true;
     }
 }
 

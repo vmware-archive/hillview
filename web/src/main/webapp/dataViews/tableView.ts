@@ -702,7 +702,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         this.startPosition = nextKList.startPosition;
         this.order = order.clone();
         if (this.isPrivate())
-            this.page.setEpsilon(null);
+            this.page.setEpsilon(null, null);
 
         if (revert) {
             let rowsDisplayed = 0;
