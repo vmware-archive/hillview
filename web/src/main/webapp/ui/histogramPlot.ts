@@ -170,8 +170,8 @@ export class HistogramPlot extends Plot {
             return "0";
         const value = this.histogram.histogram.buckets[bucket];
         if (this.isPrivate) {
-            return significantDigits(value - this.histogram.confMins[bucket]) + " : "
-                + significantDigits(value + this.histogram.confMaxes[bucket]);
+            return significantDigits(Math.round(value - this.histogram.confMins[bucket])) + " : "
+                + significantDigits(Math.round(value + this.histogram.confMaxes[bucket]));
         } else {
             return significantDigits(value);
         }

@@ -108,6 +108,7 @@ export class SpecialChars {
     public static ellipsis = "…";
     public static downArrowHtml = "&dArr;";
     public static upArrowHtml = "&uArr;";
+    public static epsilon = "\u03B5";
 }
 
 /**

@@ -36,7 +36,7 @@ import {IDataView} from "./ui/dataview";
 import {FullPage, PageTitle} from "./ui/fullPage";
 import {ContextMenu, MenuItem, SubMenu, TopMenuItem} from "./ui/menu";
 import {IHtmlElement, removeAllChildren, ViewKind} from "./ui/ui";
-import {assert, EnumIterators, ICancellable, saveAs} from "./util";
+import {assert, cloneArray, EnumIterators, ICancellable, saveAs} from "./util";
 import {TrellisHeatmapView} from "./dataViews/trellisHeatmapView";
 import {TrellisHistogram2DView} from "./dataViews/trellisHistogram2DView";
 import {TrellisHistogramView} from "./dataViews/trellisHistogramView";
@@ -182,6 +182,26 @@ export class DatasetView implements IHtmlElement {
         return this.loaded.kind === "Hillview logs"
             || (this.loaded.kind === "Files" &&
                 this.loaded.description.fileKind === "genericlog");
+    }
+
+    public getEpsilon(columns: string[]): number {
+        const copy = cloneArray(columns);
+        copy.sort();
+        const key = copy.join("+");
+        let eps = this.privacySchema.epsilons[key];
+        if (eps == null)
+            eps = this.privacySchema.defaultEpsilons[copy.length.toString()];
+        if (eps == null)
+            eps = this.privacySchema.defaultEpsilon;
+        return eps;
+    }
+
+    public setEpsilon(columns: string[], epsilon: number): void {
+        const copy = cloneArray(columns);
+        copy.sort();
+        const key = copy.join("+");
+        this.privacySchema.epsilons[key] = epsilon;
+        this.uploadPrivacy(JSON.stringify(this.privacySchema));
     }
 
     public editPrivacy(): void {

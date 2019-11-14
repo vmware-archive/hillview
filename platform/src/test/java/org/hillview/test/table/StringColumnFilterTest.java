@@ -20,21 +20,22 @@ package org.hillview.test.table;
 import org.hillview.maps.FilterMap;
 import org.hillview.table.*;
 import org.hillview.table.api.*;
+import org.hillview.table.filters.StringColumnsFilterDescription;
 import org.hillview.table.filters.StringFilterDescription;
-import org.hillview.table.filters.StringRowFilterDescription;
+import org.hillview.table.filters.StringColumnFilterDescription;
 import org.hillview.test.BaseTest;
 import org.hillview.utils.TestTables;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class StringRowFilterTest extends BaseTest {
+public class StringColumnFilterTest extends BaseTest {
     @Test
     public void testFilterSmallTable() {
         // Make a small table
         Table table = TestTables.testRepTable();
 
         // Make a filter and apply it
-        StringRowFilterDescription equalityFilter = new StringRowFilterDescription("Name",
+        StringColumnFilterDescription equalityFilter = new StringColumnFilterDescription("Name",
                 new StringFilterDescription("Ed"));
         FilterMap filterMap = new FilterMap(equalityFilter);
         ITable result = filterMap.apply(table);
@@ -53,8 +54,50 @@ public class StringRowFilterTest extends BaseTest {
         }
 
         // Same process for Mike.
-        equalityFilter = new StringRowFilterDescription("Name",
+        equalityFilter = new StringColumnFilterDescription("Name",
                 new StringFilterDescription("Mike"));
+        filterMap = new FilterMap(equalityFilter);
+        result = filterMap.apply(table);
+        Assert.assertNotNull(result);
+        Assert.assertEquals(2, result.getNumOfRows());
+
+        it = result.getMembershipSet().getIterator();
+        row = it.getNextRow();
+        while (row != -1) {
+            Assert.assertEquals("Mike", col.getString(row));
+            row = it.getNextRow();
+        }
+    }
+
+    @Test
+    public void testFindFilterSmallTable() {
+        // Make a small table
+        Table table = TestTables.testRepTable();
+
+        String[] cols = new String[1];
+        cols[0] = "Name";
+        StringColumnsFilterDescription equalityFilter =
+                new StringColumnsFilterDescription(cols,
+                new StringFilterDescription("Ed"), null);
+        FilterMap filterMap = new FilterMap(equalityFilter);
+        ITable result = filterMap.apply(table);
+        Assert.assertNotNull(result);
+
+        // Assert number of rows are as expected
+        Assert.assertEquals(1, result.getNumOfRows());
+
+        IColumn col = result.getLoadedColumn("Name");
+        // Make sure the rows are correct
+        IRowIterator it = result.getMembershipSet().getIterator();
+        int row = it.getNextRow();
+        while (row != -1) {
+            Assert.assertEquals("Ed", col.getString(row));
+            row = it.getNextRow();
+        }
+
+        // Same process for Mike.
+        equalityFilter = new StringColumnsFilterDescription(cols,
+                new StringFilterDescription("Mike"), null);
         filterMap = new FilterMap(equalityFilter);
         result = filterMap.apply(table);
         Assert.assertNotNull(result);
@@ -74,7 +117,7 @@ public class StringRowFilterTest extends BaseTest {
         Table table = TestTables.testRepTable();
 
         // Make a filter and apply it
-        StringRowFilterDescription equalityFilter = new StringRowFilterDescription("Age", new StringFilterDescription("10"));
+        StringColumnFilterDescription equalityFilter = new StringColumnFilterDescription("Age", new StringFilterDescription("10"));
         FilterMap filterMap = new FilterMap(equalityFilter);
         ITable result = filterMap.apply(table);
         Assert.assertNotNull(result);
@@ -82,7 +125,7 @@ public class StringRowFilterTest extends BaseTest {
         Assert.assertEquals(4, result.getNumOfRows());
 
         // Make a filter and apply it
-        equalityFilter = new StringRowFilterDescription("Age", new StringFilterDescription("40"));
+        equalityFilter = new StringColumnFilterDescription("Age", new StringFilterDescription("40"));
         filterMap = new FilterMap(equalityFilter);
         result = filterMap.apply(table);
         Assert.assertNotNull(result);
@@ -100,7 +143,7 @@ public class StringRowFilterTest extends BaseTest {
         ITable table = TestTables.testLargeStringTable(size, possibleNames, count, name);
 
         // Make the filter map
-        StringRowFilterDescription equalityFilter = new StringRowFilterDescription("Name",
+        StringColumnFilterDescription equalityFilter = new StringColumnFilterDescription("Name",
                 new StringFilterDescription(name));
         FilterMap filterMap = new FilterMap(equalityFilter);
 

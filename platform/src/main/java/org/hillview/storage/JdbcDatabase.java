@@ -236,7 +236,6 @@ public class JdbcDatabase {
      * @param limits  Limits on the data to read.
      */
     public DataRange numericDataRange(ColumnDescription cd, @Nullable ColumnLimits limits) {
-        assert this.conn.info.table != null;
         String query = this.conn.getQueryForNumericRange(cd, null, limits);
         ResultSet rs = this.getQueryResult(query);
         List<IAppendableColumn> cols = JdbcDatabase.convertResultSet(rs);
@@ -265,7 +264,6 @@ public class JdbcDatabase {
 
     public StringQuantiles stringBuckets(ColumnDescription cd, int stringsToSample,
                                          @Nullable ColumnLimits columnLimits) {
-        assert this.conn.info.table != null;
         @Nullable String max = null;
         JsonList<String> boundaries = new JsonList<String>();
         long presentCount, missingCount;
