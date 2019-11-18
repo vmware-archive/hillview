@@ -23,6 +23,7 @@ import org.hillview.table.columns.ColumnQuantization;
 import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.LinkedHashMap;
+import java.util.Set;
 
 /**
  * A quantization schema has quantization information for each column.
@@ -38,6 +39,10 @@ public class QuantizationSchema implements IJson, Serializable {
     @Nullable
     public ColumnQuantization get(String colName) {
         return quantization.get(colName);
+    }
+
+    public Set<String> getColNames() {
+        return quantization.keySet();
     }
 
     public void set(String col, ColumnQuantization quantization) {

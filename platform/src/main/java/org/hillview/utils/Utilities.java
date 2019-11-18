@@ -28,10 +28,7 @@ import org.hillview.dataset.api.PartialResult;
 import javax.annotation.Nullable;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 
 /**
@@ -289,6 +286,23 @@ public class Utilities {
             throw new RuntimeException("Attempted to take the log of a negative value: " + x);
         }
         return (int)(Math.floor(Math.log(x) / Math.log(2)));
+    }
+
+    public static double stdev(ArrayList<Double> values) {
+        double tot = 0;
+        for ( double x : values ) {
+            tot += x;
+        }
+        double mean = tot / values.size();
+
+        double normsq = 0;
+        for ( double x : values ) {
+            normsq += Math.pow(x - mean, 2);
+        }
+
+        normsq /= values.size();
+
+        return Math.sqrt(normsq);
     }
 
     /**

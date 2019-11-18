@@ -49,7 +49,7 @@ public abstract class DyadicDecomposition {
     }
 
     /**
-     * Return the dyadic decomposition of this interval, as a list of <left boundary, right boundary> pairs
+     * Return the dyadic decomposition of this interval, as a list of <left boundary, size> pairs
      * for each interval in the decomposition. The decomposition assumes that the first leaf of the dyadic tree
      * is at index 0.
      */
@@ -66,9 +66,57 @@ public abstract class DyadicDecomposition {
             // get largest valid interval starting at left and not extending past right
             int lob = Integer.lowestOneBit(left);
             int lsb = lob > 0 ? Utilities.intLog2(lob) : -1; // smallest power of 2 that divides left
-            int rem = Utilities.intLog2(right - left); // smallest power of 2 contained in remaining interval
+            int rem = Utilities.intLog2(right - left); // largest power of 2 contained in remaining interval
             int pow = lsb < 0 ? rem : Math.min(lsb, rem); // largest valid covering interval
             int nodeEnd = (int)Math.pow(2, pow);
+            nodes.add(new Pair<Integer, Integer>(left, nodeEnd));
+            left += nodeEnd;
+        }
+
+        assert(right == left);
+        return nodes;
+    }
+
+    /**
+     * Return the k-adic decomposition of this interval, i.e. the decomposition corresponding
+     * to a tree with degree k. The decomposition assumes that the first leaf of the k-adic tree
+     * is at index 0.
+     */
+    public static ArrayList<Pair<Integer, Integer>> kadicDecomposition(int left, int right, int k) {
+        ArrayList<Pair<Integer, Integer>> nodes = new ArrayList<Pair<Integer, Integer>>();
+        if (left == right)
+            // handles the case -1,-1
+            return nodes;
+
+        if (left < 0 || right < left) {
+            throw new IllegalArgumentException("Invalid interval bounds: " + left + ":" + right);
+        }
+
+        if (right - left == k) {
+            // no root node
+            for (int i = left; i < right; i++) {
+                nodes.add(new Pair<Integer, Integer>(i, 1));
+            }
+
+            return nodes;
+        }
+
+        while (left < right) {
+            // get largest valid interval starting at left and not extending past right
+
+            // smallest power of k that divides left
+            int smallestPower = -1;
+            if ( left > 0 ) {
+                smallestPower = (int) Math.floor(Math.log(left) / Math.log(k));
+            }
+
+            // largest power of k that actually fits in remaining interval
+            int rem = (int)(Math.log(right - left) / Math.log(k));
+
+            // largest valid covering interval
+            int pow = smallestPower < 0 ? rem : Math.min(smallestPower, rem);
+
+            int nodeEnd = (int)Math.pow(k, pow);
             nodes.add(new Pair<Integer, Integer>(left, nodeEnd));
             left += nodeEnd;
         }
@@ -121,12 +169,11 @@ public abstract class DyadicDecomposition {
      * See also noiseForBucket.
      */
     public Pair<Double, Double> noiseForRange(int left, int right, double epsilon,
-                                       LaplaceDistribution dist, double baseVariance, boolean isCdf) {
-        List<Pair<Integer, Integer>> intervals = DyadicDecomposition.dyadicDecomposition(left, right);
+                                       LaplaceDistribution dist, double baseVariance, boolean isCdf, int hashCode) {
+        List<Pair<Integer, Integer>> intervals = DyadicDecomposition.kadicDecomposition(left, right, 2);
         double noise = 0;
         double variance = 0;
 
-        int hashCode = 31;
         for (Pair<Integer, Integer> x : intervals) {
             hashCode = HashUtil.murmurHash3(hashCode, x.first);
             hashCode = HashUtil.murmurHash3(hashCode, x.second);
@@ -151,7 +198,7 @@ public abstract class DyadicDecomposition {
     Pair<Double, Double> noiseForBucket(int bucketIdx, double epsilon,
                                         LaplaceDistribution dist, double baseVariance, boolean isCdf) {
         Pair<Integer, Integer> range = this.bucketRange(bucketIdx, isCdf);
-        return noiseForRange(range.first, range.second, epsilon, dist, baseVariance, isCdf);
+        return noiseForRange(range.first, range.second, epsilon, dist, baseVariance, isCdf, 31);
     }
 
     @Override
