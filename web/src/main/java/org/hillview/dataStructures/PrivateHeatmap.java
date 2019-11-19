@@ -4,6 +4,7 @@ import org.apache.commons.math3.distribution.LaplaceDistribution;
 import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.Pair;
 import org.hillview.sketches.results.Heatmap;
+import org.hillview.utils.Converters;
 import org.hillview.utils.HashUtil;
 import org.hillview.utils.HillviewLogger;
 
@@ -22,11 +23,6 @@ public class PrivateHeatmap implements Serializable, IJson {
         this.addDyadicLaplaceNoise(d0, d1);
     }
 
-    static class Noise {
-        double noise;
-        double variance;
-    }
-
     /**
      * Compute noise to add to this bucket using the dyadic decomposition as the PRG seed.
      * If cdfBuckets is true, computes the noise based on the dyadic decomposition of the interval [0, bucket right leaf]
@@ -40,9 +36,7 @@ public class PrivateHeatmap implements Serializable, IJson {
             LaplaceDistribution dist,
             double baseVariance,
             /*out*/Noise result) {
-        result.noise = 0.0;
-        result.variance = 0.0;
-
+        result.clear();
         int hashCode = 31;
         for (Pair<Integer, Integer> x : xIntervals) {
             for (Pair<Integer, Integer> y : yIntervals) {
@@ -76,16 +70,18 @@ public class PrivateHeatmap implements Serializable, IJson {
             yIntervals.add(dy.bucketDecomposition(i, false));
 
         Noise noise = new Noise();
+        this.heatmap.allocateConfidence();
         long totalLeaves = dx.getQuantizationIntervalCount() * dy.getQuantizationIntervalCount();
         double scale = Math.log(totalLeaves) / Math.log(2);
         scale /= epsilon;
         LaplaceDistribution dist = new LaplaceDistribution(0, scale);
         double baseVariance = 2 * (Math.pow(scale, 2));
+        Converters.checkNull(this.heatmap.confidence);
         for (int i = 0; i < this.heatmap.buckets.length; i++) {
             for (int j = 0; j < this.heatmap.buckets[i].length; j++) {
                 this.noiseForBucket(xIntervals.get(i), yIntervals.get(j), dist, baseVariance, noise);
                 this.heatmap.buckets[i][j] += noise.noise;
-                // TODO: use variance
+                this.heatmap.confidence[i][j] = 2 * Math.sqrt(noise.variance);
                 this.heatmap.buckets[i][j] = Math.max(0, this.heatmap.buckets[i][j]);
             }
         }

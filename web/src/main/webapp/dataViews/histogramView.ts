@@ -33,13 +33,14 @@ import {IDataView} from "../ui/dataview";
 import {Dialog} from "../ui/dialog";
 import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
 import {HistogramPlot} from "../ui/histogramPlot";
+import {PiePlot} from "../ui/piePlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
 import {HistogramOptions, HtmlString, Resolution, SpecialChars} from "../ui/ui";
 import {
     formatNumber,
-    ICancellable,
+    ICancellable, makeInterval,
     Pair,
     PartialResult,
     percent,
@@ -60,7 +61,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
     protected cdf: AugmentedHistogram;
     protected augmentedHistogram: AugmentedHistogram;
     protected histogram: Histogram;
-    protected plot: HistogramPlot;
+    protected plot: HistogramPlot | PiePlot;
     protected bucketCount: number;
 
     constructor(
@@ -161,6 +162,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         if (this.surface != null)
             this.surface.destroy();
         this.surface = new HtmlPlottingSurface(this.chartDiv, this.page, {});
+        // this.plot = new PiePlot(this.surface);
         this.plot = new HistogramPlot(this.surface);
         this.cdfPlot = new CDFPlot(this.surface);
     }
@@ -403,7 +405,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         const y = Math.round(this.plot.getYScale().invert(position[1]));
         const ys = significantDigits(y);
         const size = this.plot.get(mouseX);
-        const pointDesc = [xs, ys, size];
+        const pointDesc = [xs, ys, makeInterval(size)];
 
         if (this.cdfPlot != null) {
             const cdfPos = this.cdfPlot.getY(mouseX);

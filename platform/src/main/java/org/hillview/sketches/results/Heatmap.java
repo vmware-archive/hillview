@@ -18,6 +18,8 @@
 package org.hillview.sketches.results;
 import org.hillview.dataset.api.IJson;
 import org.hillview.table.api.*;
+
+import javax.annotation.Nullable;
 import java.io.Serializable;
 
 /**
@@ -25,6 +27,8 @@ import java.io.Serializable;
  */
 public class Heatmap implements Serializable, IJson {
     public final long[][] buckets;
+    @Nullable
+    public double[][] confidence;
     private long missingData; // number of items missing on both columns
     private Histogram histogramMissingX; // dim1 is missing, dim2 exists
     private Histogram histogramMissingY; // dim2 is missing, dim1 exists
@@ -40,6 +44,7 @@ public class Heatmap implements Serializable, IJson {
         // Automatically initialized to 0
         this.histogramMissingX = new Histogram(yBucketCount);
         this.histogramMissingY = new Histogram(xBucketCount);
+        this.confidence = null;
     }
 
     public void createHeatmap(final IColumn columnD1, final IColumn columnD2,
@@ -111,5 +116,9 @@ public class Heatmap implements Serializable, IJson {
         unionH.histogramMissingX = this.histogramMissingX.union(otherHeatmap.histogramMissingX);
         unionH.histogramMissingY = this.histogramMissingY.union(otherHeatmap.histogramMissingY);
         return unionH;
+    }
+
+    public void allocateConfidence() {
+        this.confidence = new double[this.xBucketCount][this.yBucketCount];
     }
 }

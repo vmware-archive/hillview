@@ -29,7 +29,7 @@ import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {DisplayName, SchemaClass} from "../schemaClass";
 import {
-    ICancellable,
+    ICancellable, makeInterval,
     PartialResult,
     percent, prefixSum,
     reorder,
@@ -316,7 +316,14 @@ export class TrellisHistogramView extends TrellisChartView {
     }
 
     public updateView(data: Heatmap, bucketCount: number): void {
+        if (data.buckets == null)
+            return;
         this.createNewSurfaces();
+        if (this.isPrivate()) {
+            const cols = [this.xAxisData.description.name, this.groupByAxisData.description.name];
+            const eps = this.dataset.getEpsilon(cols);
+            this.page.setEpsilon(eps, cols);
+        }
         if (bucketCount !== 0)
             this.bucketCount = bucketCount;
         else
@@ -349,8 +356,7 @@ export class TrellisHistogramView extends TrellisChartView {
             const augHist: AugmentedHistogram = {
                 histogram: coarse,
                 cdfBuckets: null,
-                confMins: null,
-                confMaxes: null
+                confidence: data.confidence != null ? data.confidence[i] : null,
             };
 
             plot.setHistogram(augHist, this.samplingRate, this.xAxisData,
@@ -402,7 +408,7 @@ export class TrellisHistogramView extends TrellisChartView {
         this.cdfDot.attr("cy", (1 - cdfPos) * cdfPlot.getChartHeight() + this.shape.headerHeight +
             mousePosition.plotYIndex * (this.shape.size.height + this.shape.headerHeight));
         const perc = percent(cdfPos);
-        this.pointDescription.update([xs, group, value, perc], position[0], position[1]);
+        this.pointDescription.update([xs, group, makeInterval(value), perc], position[0], position[1]);
     }
 
     public getAxisData(event: DragEventKind): AxisData | null {
@@ -505,7 +511,7 @@ export class TrellisHistogramReceiver extends Receiver<Heatmap> {
 
     public onNext(value: PartialResult<Heatmap>): void {
         super.onNext(value);
-        if (value == null) {
+        if (value == null || value.data == null) {
             return;
         }
 

@@ -141,6 +141,21 @@ export function makeSpan(text: string | null, highlight: boolean = false): HTMLE
     return span;
 }
 
+export function valueWithConfidence(value: number, confidence: number | null): [number, number] {
+    if (confidence != null) {
+        return [Math.max(0, Math.round(value - confidence)), Math.round(value + confidence)];
+    } else {
+        return [value, value];
+    }
+}
+
+export function makeInterval(value: [number, number]): string {
+    if (value[0] >= value[1])
+        return significantDigits(value[0]);
+    else
+        return significantDigits(value[0]) + " : " + significantDigits(value[1]);
+}
+
 /**
  * Creates an HTML element that displays as missing data.
  */

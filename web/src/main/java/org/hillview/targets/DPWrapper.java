@@ -57,7 +57,7 @@ public class DPWrapper {
         this.privacySchema = privacySchema;
     }
 
-    public DPWrapper(DPWrapper other) {
+    DPWrapper(DPWrapper other) {
         this.privacySchema = other.privacySchema;
         this.columnLimits = new ColumnLimits(other.columnLimits);
     }
@@ -66,7 +66,7 @@ public class DPWrapper {
      * If a dataset composed of files is private, we expect that a corresponding directory exists at the root server
      * with a matching name and with such a file inside.
      */
-    public static final String PRIVACY_METADATA_NAME = "privacy_metadata.json";
+    private static final String PRIVACY_METADATA_NAME = "privacy_metadata.json";
 
     /**
      * If the privacy metadata file exists return the file name.

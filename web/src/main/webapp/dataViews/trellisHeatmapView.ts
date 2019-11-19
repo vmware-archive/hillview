@@ -26,7 +26,6 @@ import {
 import {SchemaClass} from "../schemaClass";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
-import {HeatmapLegendPlot} from "../ui/legendPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {Resolution} from "../ui/ui";
@@ -38,7 +37,7 @@ import {
     TrellisLayoutComputation
 } from "./dataRangesCollectors";
 import {Receiver, RpcRequest} from "../rpc";
-import {ICancellable, PartialResult, reorder} from "../util";
+import {ICancellable, makeInterval, PartialResult, reorder} from "../util";
 import {HeatmapPlot} from "../ui/heatmapPlot";
 import {IViewSerialization, TrellisHeatmapSerialization} from "../datasetView";
 import {IDataView} from "../ui/dataview";
@@ -46,6 +45,7 @@ import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {TextOverlay} from "../ui/textOverlay";
 import {TrellisChartView} from "./trellisChartView";
 import {NextKReceiver, TableView} from "./tableView";
+import {HeatmapLegendPlot} from "../ui/heatmapLegendPlot";
 
 /**
  * A Trellis plot containing multiple heatmaps.
@@ -358,7 +358,7 @@ export class TrellisHeatmapView extends TrellisChartView {
 
         // The point description is a child of the canvas, so we use canvas coordinates
         const position = d3mouse(this.surface.getCanvas().node());
-        this.pointDescription.update([xs, ys, group, value.toString()], position[0], position[1]);
+        this.pointDescription.update([xs, ys, group, makeInterval(value)], position[0], position[1]);
     }
 
     protected getCombineRenderer(title: PageTitle):
