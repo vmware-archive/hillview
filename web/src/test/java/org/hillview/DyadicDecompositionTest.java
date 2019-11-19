@@ -46,4 +46,45 @@ public class DyadicDecompositionTest {
         assert(e.first == 8);
         assert(e.second == 2);
     }
+
+    @Test
+    public void testThreeadicDecomposition() {
+        int leftLeafIdx = 0;
+        int rightLeafIdx = 10;
+
+        ArrayList<Pair<Integer, Integer>> ret =
+                NumericDyadicDecomposition.kadicDecomposition(leftLeafIdx, rightLeafIdx, 3);
+        Assert.assertNotNull(ret);
+        Pair<Integer, Integer> e = ret.get(0);
+        Assert.assertNotNull(e);
+        Assert.assertNotNull(e.first);
+        Assert.assertNotNull(e.second);
+        assert(e.first == 0);
+        assert(e.second == 9);
+
+        e = ret.get(1);
+        Assert.assertNotNull(e.first);
+        Assert.assertNotNull(e.second);
+        assert(e.first == 9);
+        assert(e.second == 1);
+    }
+
+
+    @Test
+    public void testNadicDecomposition() {
+        int leftLeafIdx = 0;
+        int rightLeafIdx = 10;
+
+        ArrayList<Pair<Integer, Integer>> ret =
+                NumericDyadicDecomposition.kadicDecomposition(leftLeafIdx, rightLeafIdx, 10);
+        Assert.assertNotNull(ret);
+        System.out.println(ret.size());
+        assert(ret.size() == 10);
+        Pair<Integer, Integer> e = ret.get(0);
+        Assert.assertNotNull(e);
+        Assert.assertNotNull(e.first);
+        Assert.assertNotNull(e.second);
+        assert(e.first == 0);
+        assert(e.second == 1);
+    }
 }
