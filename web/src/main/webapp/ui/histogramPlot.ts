@@ -25,10 +25,10 @@ import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {D3Axis, D3Scale} from "./ui";
 import {symbol, symbolTriangle} from "d3-shape";
-import {significantDigits} from "../util";
+import {valueWithConfidence} from "../util";
 
 /**
- * A HistogramPlot draws a  bar chart on a PlottingSurface, including the axes.
+ * A HistogramPlot draws a bar chart on a PlottingSurface, including the axes.
  */
 export class HistogramPlot extends Plot {
     // While the data has histogram type, nothing prevents the values in the histogram
@@ -77,19 +77,16 @@ export class HistogramPlot extends Plot {
         this.isPrivate = isPrivate;
     }
 
-    public drawBars(): void {
+    private drawBars(): void {
         const counts = this.histogram.histogram.buckets;
         this.max = Math.max(...counts);
         const displayMax = this.maxYAxis == null ? this.max : this.maxYAxis;
 
         const chartWidth = this.getChartWidth();
         const chartHeight = this.getChartHeight();
-        const confMins = this.isPrivate ? this.histogram.confMins :
+        const confidence = this.isPrivate ? this.histogram.confidence :
             new Array(this.histogram.histogram.buckets.length);
-        const confMaxes = this.isPrivate ? this.histogram.confMaxes :
-            new Array(this.histogram.histogram.buckets.length);
-
-        const zippedData = d3zip(this.histogram.histogram.buckets, confMins, confMaxes);
+        const zippedData = d3zip(this.histogram.histogram.buckets, confidence);
         const bars = this.plottingSurface
             .getChart()
             .selectAll("g")
@@ -124,7 +121,7 @@ export class HistogramPlot extends Plot {
                 .attr("x1", 0)
                 .attr("y1", (d) => this.yScale(d[0] - d[1]))
                 .attr("x2", 0)
-                .attr("y2", (d) => this.yScale(d[0] + d[2]))
+                .attr("y2", (d) => this.yScale(d[0] + d[1]))
                 .attr("stroke-width", 1)
                 .attr("stroke", "black")
                 .attr("stroke-linecap", "round")
@@ -164,16 +161,12 @@ export class HistogramPlot extends Plot {
         return this.yScale;
     }
 
-    public get(x: number): string {
+    public get(x: number): [number, number] {
         const bucket = Math.floor(x / this.barWidth);
         if (bucket < 0 || bucket >= this.histogram.histogram.buckets.length)
-            return "0";
+            return valueWithConfidence(0, null);
         const value = this.histogram.histogram.buckets[bucket];
-        if (this.isPrivate) {
-            return significantDigits(Math.round(value - this.histogram.confMins[bucket])) + " : "
-                + significantDigits(Math.round(value + this.histogram.confMaxes[bucket]));
-        } else {
-            return significantDigits(value);
-        }
+        const conf = this.isPrivate ? this.histogram.confidence[bucket] : null;
+        return valueWithConfidence(value, conf);
     }
 }

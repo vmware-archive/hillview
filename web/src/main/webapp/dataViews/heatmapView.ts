@@ -32,14 +32,13 @@ import {IDataView} from "../ui/dataview";
 import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
 import {HeatmapPlot} from "../ui/heatmapPlot";
 import {HistogramPlot} from "../ui/histogramPlot";
-import {ColorMapKind, HeatmapLegendPlot} from "../ui/legendPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
 import {HtmlString, Resolution} from "../ui/ui";
 import {
     formatNumber,
-    ICancellable,
+    ICancellable, makeInterval,
     PartialResult,
     reorder,
     saveAs,
@@ -50,6 +49,7 @@ import {NextKReceiver, TableView} from "./tableView";
 import {DataRangesReceiver, FilterReceiver} from "./dataRangesCollectors";
 import {ChartView} from "./chartView";
 import {Dialog, FieldKind} from "../ui/dialog";
+import {ColorMapKind, HeatmapLegendPlot} from "../ui/heatmapLegendPlot";
 
 /**
  * A HeatMapView renders information as a heatmap.
@@ -271,19 +271,11 @@ export class HeatmapView extends ChartView {
             this.colorLegend.setColorMapKind(ColorMapKind.Grayscale);
         this.colorLegend.draw();
         this.plot.draw();
-        /*
-        let margin = this.plot.labelWidth();
-        if (margin > this.surface.leftMargin) {
-            this.surface.setMargins(null, null, null, margin);
-            this.surface.moveCanvas();
-        }
-        */
         if (this.showMissingData) {
             const augHist: AugmentedHistogram = {
                 histogram: heatmap.histogramMissingX,
                 cdfBuckets: null,
-                confMins: null,
-                confMaxes: null
+                confidence: null,
             };
 
             this.xHistoPlot.setHistogram(augHist, this.samplingRate, this.xAxisData, null,
@@ -475,7 +467,8 @@ export class HeatmapView extends ChartView {
         const ys = this.yAxisData.invert(mouseY);
 
         const value = this.plot.getCount(mouseX, mouseY);
-        this.pointDescription.update([xs, ys, value.toString()], mouseX, mouseY);
+        this.pointDescription.update([xs, ys, makeInterval(value)], mouseX, mouseY);
+        this.colorLegend.highlight(value[0], value[1]);
     }
 
     protected dragStart(): void {

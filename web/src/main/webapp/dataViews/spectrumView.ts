@@ -167,8 +167,7 @@ export class SpectrumView extends ChartView {
         const augHist: AugmentedHistogram = {
             histogram: h,
             cdfBuckets: null,
-            confMins: null,
-            confMaxes: null
+            confidence: null,
         };
 
         this.plot.setHistogram(augHist, 1, axisData, null, this.page.dataset.isPrivate());

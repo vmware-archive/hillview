@@ -341,4 +341,9 @@ public class Utilities {
         }
         return -1;
     }
+
+    @SafeVarargs
+    public static <T> List<T> list(T... data) {
+        return Arrays.asList(data);
+    }
 }

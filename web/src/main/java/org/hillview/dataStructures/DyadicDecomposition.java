@@ -21,6 +21,7 @@ import org.apache.commons.math3.distribution.LaplaceDistribution;
 import org.hillview.dataset.api.Pair;
 import org.hillview.sketches.results.IHistogramBuckets;
 import org.hillview.table.columns.ColumnQuantization;
+import org.hillview.utils.Converters;
 import org.hillview.utils.HashUtil;
 import org.hillview.utils.Utilities;
 
@@ -136,7 +137,7 @@ public abstract class DyadicDecomposition {
     /**
      * Return the start and end leaves for this bucket (right-exclusive).
      */
-    Pair<Integer, Integer> bucketRange(int bucketIdx, boolean cdf) {
+    private Pair<Integer, Integer> bucketRange(int bucketIdx, boolean cdf) {
         int left = 0;
         if (!cdf)
             left = this.bucketQuantizationIndexes[bucketIdx];
@@ -149,7 +150,7 @@ public abstract class DyadicDecomposition {
         if (left >= 0 && right < 0)
             // right endpoint out of bounds
             right = left + 1;
-        return new Pair(left, right);
+        return new Pair<Integer, Integer>(left, right);
     }
 
     /**
@@ -161,27 +162,26 @@ public abstract class DyadicDecomposition {
      */
     List<Pair<Integer, Integer>> bucketDecomposition(int bucketIdx, boolean cdf) {
         Pair<Integer, Integer> range = this.bucketRange(bucketIdx, cdf);
-        return DyadicDecomposition.dyadicDecomposition(range.first, range.second);
+        return DyadicDecomposition.dyadicDecomposition(
+            Converters.checkNull(range.first), Converters.checkNull(range.second));
     }
 
     /**
      * Compute noise for the given [left leaf, right leaf) range using the dyadic decomposition.
      * See also noiseForBucket.
      */
-    public Pair<Double, Double> noiseForRange(int left, int right, double epsilon,
-                                       LaplaceDistribution dist, double baseVariance, boolean isCdf, int hashCode) {
+    public void noiseForRange(int left, int right, double epsilon,
+                              LaplaceDistribution dist, double baseVariance, boolean isCdf,
+                              int hashCode, /*out*/Noise noise) {
         List<Pair<Integer, Integer>> intervals = DyadicDecomposition.kadicDecomposition(left, right, 2);
-        double noise = 0;
-        double variance = 0;
-
+        noise.clear();
         for (Pair<Integer, Integer> x : intervals) {
-            hashCode = HashUtil.murmurHash3(hashCode, x.first);
-            hashCode = HashUtil.murmurHash3(hashCode, x.second);
+            hashCode = HashUtil.murmurHash3(hashCode, Converters.checkNull(x.first));
+            hashCode = HashUtil.murmurHash3(hashCode, Converters.checkNull(x.second));
             dist.reseedRandomGenerator(hashCode);
-            noise += dist.sample();
-            variance += baseVariance;
+            noise.noise += dist.sample();
+            noise.variance += baseVariance;
         }
-        return new Pair<>(noise, variance);
     }
 
     /**
@@ -195,10 +195,11 @@ public abstract class DyadicDecomposition {
      * Returns the noise and the total variance of the variables used to compute the noise.
      */
     @SuppressWarnings("ConstantConditions")
-    Pair<Double, Double> noiseForBucket(int bucketIdx, double epsilon,
-                                        LaplaceDistribution dist, double baseVariance, boolean isCdf) {
+    void noiseForBucket(int bucketIdx, double epsilon,
+                        LaplaceDistribution dist, double baseVariance,
+                        boolean isCdf, Noise noise) {
         Pair<Integer, Integer> range = this.bucketRange(bucketIdx, isCdf);
-        return noiseForRange(range.first, range.second, epsilon, dist, baseVariance, isCdf, 31);
+        this.noiseForRange(range.first, range.second, epsilon, dist, baseVariance, isCdf, 31, noise);
     }
 
     @Override

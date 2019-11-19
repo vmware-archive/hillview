@@ -176,6 +176,7 @@ export interface KVCreateColumnInfo {
 
 export interface Heatmap {
     buckets: number[][];
+    confidence?: number[][];
     missingData: number;
     histogramMissingX: Histogram;
     histogramMissingY: Histogram;
@@ -251,10 +252,8 @@ export interface AugmentedHistogram {
     histogram: Histogram;
     /// values of the cdf
     cdfBuckets?: number[];
-    /// minimum confidence value for each histogram bucket
-    confMins?: number[];
-    /// maximum confidence value for each histogram bucket
-    confMaxes?: number[];
+    /// confidence interval for each histogram bucket
+    confidence?: number[];
     // Confidence values around the missing count
     missingMin?: number;
     missingMax?: number;

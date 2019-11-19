@@ -334,10 +334,11 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 console.assert(ranges.length === 2);
                 // noinspection JSObjectNullOrUndefined
                 const xArg = DataRangesReceiver.computeHistogramArgs(
-                    this.cds[0], ranges[0], this.bucketCounts[1], false, trellisShape.size);
+                    this.cds[0], ranges[0], this.bucketCounts[1],
+                    this.options.exact, trellisShape.size);
                 const groups = this.bucketCounts[1] === 0 ? trellisShape.bucketCount : this.bucketCounts[1];
                 const wArg = DataRangesReceiver.computeHistogramArgs(
-                    this.cds[1], ranges[1], groups, false, trellisShape.size);
+                    this.cds[1], ranges[1], groups, this.options.exact, trellisShape.size);
                 // Window argument comes first
                 const args = [wArg, xArg];
                 // Trellis histograms are computed by heatmap requests

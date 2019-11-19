@@ -2,9 +2,7 @@ package org.hillview.dataStructures;
 
 import org.apache.commons.math3.distribution.LaplaceDistribution;
 import org.hillview.dataset.api.IJson;
-import org.hillview.dataset.api.Pair;
 import org.hillview.sketches.results.Histogram;
-import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
 
 /**
@@ -13,16 +11,15 @@ import org.hillview.utils.HillviewLogger;
  */
 @SuppressWarnings("MismatchedReadAndWriteOfArray")
 public class PrivateHistogram extends HistogramPrefixSum implements IJson {
-    private double[] confMins;
-    private double[] confMaxes;
+    private double[] confidence;
     private final double epsilon;
 
-    public PrivateHistogram(DyadicDecomposition decomposition, final Histogram histogram,
+    public PrivateHistogram(DyadicDecomposition decomposition,
+                            final Histogram histogram,
                             double epsilon, boolean isCdf) {
         super(histogram);
         this.epsilon = epsilon;
-        this.confMins  = new double[histogram.getBucketCount()];
-        this.confMaxes = new double[histogram.getBucketCount()];
+        this.confidence  = new double[histogram.getBucketCount()];
         this.addDyadicLaplaceNoise(decomposition);
         if (isCdf) {
             this.recomputeCDF(decomposition);
@@ -43,11 +40,12 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
         double baseVariance = 2 * Math.pow(scale, 2);
         LaplaceDistribution dist = new LaplaceDistribution(0, scale); // TODO: (more) secure PRG
 
+        Noise noise = new Noise();
         for (int i = 0; i < this.cdfBuckets.length; i++) {
-            Pair<Double, Double> p = decomposition.noiseForBucket(
-                    i, this.epsilon, dist, baseVariance, true);
-            Converters.checkNull(p.first);
-            this.cdfBuckets[i] += p.first;
+            noise.clear();
+            decomposition.noiseForBucket(
+                    i, this.epsilon, dist, baseVariance, true, noise);
+            this.cdfBuckets[i] += noise.noise;
             if (i > 0) {
                 // Postprocess CDF to be monotonically increasing
                 this.cdfBuckets[i] = Math.max(this.cdfBuckets[i-1], this.cdfBuckets[i]);
@@ -70,16 +68,15 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
         double baseVariance = 2 * Math.pow(scale, 2);
         LaplaceDistribution dist = new LaplaceDistribution(0, scale); // TODO: (more) secure PRG
 
+        Noise noise = new Noise();
         for (int i = 0; i < this.histogram.buckets.length; i++) {
-            Pair<Double, Double> noise = decomposition.noiseForBucket(
-                    i, this.epsilon, dist, baseVariance, false);
-            this.histogram.buckets[i] += Converters.checkNull(noise.first);
+            decomposition.noiseForBucket(
+                    i, this.epsilon, dist, baseVariance, false, noise);
+            this.histogram.buckets[i] += noise.noise;
             // Postprocess so that no buckets are negative
             this.histogram.buckets[i] = Math.max(0, this.histogram.buckets[i]);
             // also set confidence intervals for this noise level
-            Converters.checkNull(noise.second);
-            this.confMins[i] = 2 * Math.sqrt(noise.second);
-            this.confMaxes[i] = 2 * Math.sqrt(noise.second);
+            this.confidence[i] = noise.getConfidence();
         }
     }
 }

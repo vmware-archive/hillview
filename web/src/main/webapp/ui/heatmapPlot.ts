@@ -17,12 +17,12 @@
 
 import {AxisData, AxisKind} from "../dataViews/axisData";
 import {Heatmap, kindIsString} from "../javaBridge";
-import {regression} from "../util";
-import {HeatmapLegendPlot} from "./legendPlot";
+import {regression, valueWithConfidence} from "../util";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {SchemaClass} from "../schemaClass";
 import {Resolution} from "./ui";
+import {HeatmapLegendPlot} from "./heatmapLegendPlot";
 
 interface Dot {
     x: number;
@@ -115,16 +115,19 @@ export class HeatmapPlot extends Plot {
     /**
      * Given two screen coordinates within the chart, return the count displayed at that coordinate.
      */
-    public getCount(x: number, y: number): number {
+    public getCount(x: number, y: number): [number, number] {
         let xi = x / this.pointWidth;
         let yi = (this.getChartHeight() - y) / this.pointHeight;
         xi = Math.floor(xi);
         yi = Math.floor(yi);
         const xPoints = this.heatmap.buckets.length;
         const yPoints = this.heatmap.buckets[0].length;
-        if (xi >= 0 && xi < xPoints && yi >= 0 && yi < yPoints)
-            return this.heatmap.buckets[xi][yi];
-        return 0;
+        if (xi >= 0 && xi < xPoints && yi >= 0 && yi < yPoints) {
+            const value = this.heatmap.buckets[xi][yi];
+            const conf = this.heatmap.confidence != null ? this.heatmap.confidence[xi][yi] : null;
+            return valueWithConfidence(value, conf);
+        }
+        return valueWithConfidence(0, null);
     }
 
     public getMaxCount(): number {

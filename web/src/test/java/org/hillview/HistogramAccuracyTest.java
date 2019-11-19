@@ -20,13 +20,12 @@ package org.hillview;
 import org.apache.commons.math3.distribution.LaplaceDistribution;
 import org.hillview.dataStructures.DyadicDecomposition;
 import org.hillview.dataStructures.HistogramRequestInfo;
+import org.hillview.dataStructures.Noise;
 import org.hillview.dataStructures.PrivateHistogram;
-import org.hillview.dataset.ConcurrentSketch;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IMap;
-import org.hillview.dataset.api.Pair;
 import org.hillview.maps.FindFilesMap;
 import org.hillview.maps.LoadFilesMap;
 import org.hillview.sketches.HistogramSketch;
@@ -42,19 +41,17 @@ import org.hillview.table.columns.ColumnQuantization;
 import org.hillview.table.columns.DoubleColumnQuantization;
 
 import org.hillview.targets.DPWrapper;
-import org.hillview.targets.InitialObjectTarget;
-import org.hillview.targets.PrivateTableTarget;
 
-import org.hillview.utils.Converters;
 import org.hillview.utils.Utilities;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.List;
 
+@SuppressWarnings("FieldCanBeLocal")
 public class HistogramAccuracyTest {
-    static String ontime_directory = "../data/ontime_private/";
-    static String privacy_metadata_name = "privacy_metadata.json";
+    private static String ontime_directory = "../data/ontime_private/";
+    private static String privacy_metadata_name = "privacy_metadata.json";
 
     @Test
     public void computeAccuracyTest() {
@@ -93,6 +90,7 @@ public class HistogramAccuracyTest {
         DPWrapper wrapper = new DPWrapper(mdSchema);
 
         Histogram hist = table.blockingSketch(sk); // Leaf counts.
+        Assert.assertNotNull(hist);
         PrivateHistogram ph = new PrivateHistogram(dd, hist, epsilon, false);
 
         int totalLeaves = dd.getQuantizationIntervalCount();
@@ -105,12 +103,13 @@ public class HistogramAccuracyTest {
         int n = 0;
         double sqtot = 0.0;
         double abstot = 0.0;
+        Noise noise = new Noise();
         for (int left = 0; left < hist.getBucketCount(); left++) {
             for (int right = left; right < hist.getBucketCount(); right++) {
-                Pair<Double, Double> noise = dd.noiseForRange(left, right, epsilon,
-                        dist, baseVariance, false);
-                sqtot += Math.pow(noise.first, 2);
-                abstot += Math.abs(noise.first);
+                dd.noiseForRange(left, right, epsilon,
+                        dist, baseVariance, false, 31, noise);
+                sqtot += Math.pow(noise.noise, 2);
+                abstot += Math.abs(noise.noise);
                 n++;
             }
         }
