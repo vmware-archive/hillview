@@ -342,13 +342,16 @@ export class TrellisHistogram2DView extends TrellisChartView {
 
     public refresh(): void {
         const cds = [this.xAxisData.description, this.legendAxisData.description, this.groupByAxisData.description];
-        const rr = this.createDataQuantilesRequest(cds, this.page, "Trellis2DHistogram");
-        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [this.xAxisData.bucketCount, this.legendAxisData.bucketCount, this.shape.bucketCount],
-            cds, null, {
-            reusePage: true, relative: this.relative,
-            chartKind: "Trellis2DHistogram", exact: this.samplingRate >= 1
-        }));
+        const ranges = [this.xAxisData.dataRange, this.legendAxisData.dataRange, this.groupByAxisData.dataRange];
+        const collector = new DataRangesReceiver(this,
+            this.page, null, this.schema,
+            [this.xAxisData.bucketCount, this.legendAxisData.bucketCount, this.groupByAxisData.bucketCount],
+            cds, this.page.title, {
+                chartKind: "Trellis2DHistogram", exact: this.samplingRate >= 1,
+                relative: this.relative, reusePage: true
+            });
+        collector.run(ranges);
+        collector.finished();
     }
 
     public serialize(): IViewSerialization {

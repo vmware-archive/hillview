@@ -143,7 +143,7 @@ export function makeSpan(text: string | null, highlight: boolean = false): HTMLE
 
 export function valueWithConfidence(value: number, confidence: number | null): [number, number] {
     if (confidence != null) {
-        return [Math.max(0, Math.round(value - confidence)), Math.round(value + confidence)];
+        return [Math.round(value - confidence), Math.round(value + confidence)];
     } else {
         return [value, value];
     }

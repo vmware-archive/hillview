@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.hillview;
+package org.hillview.test.table;
 
 import org.hillview.table.PrivacySchema;
 import org.hillview.table.QuantizationSchema;
@@ -23,12 +23,13 @@ import org.hillview.table.columns.ColumnQuantization;
 
 import org.hillview.table.columns.DoubleColumnQuantization;
 import org.hillview.table.columns.StringColumnQuantization;
+import org.hillview.test.BaseTest;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.HashMap;
 
-public class PrivacySchemaTest {
+public class PrivacySchemaTest extends BaseTest {
     @Test
     public void parseMetadataTest() {
         String metadata = "{\"quantization\":{\"quantization\":{\"col1\":{\"type\":\"DoubleColumnQuantization\",\"granularity\":12.345,\"globalMin\":0.0,\"globalMax\":123.45},\"col2\":{\"type\":\"StringColumnQuantization\",\"globalMax\":\"d\",\"leftBoundaries\":[\"a\",\"b\",\"c\"]}}},\"epsilons\":{\"col1\":0.1,\"col2\":0.5},\"defaultEpsilons\":{},\"defaultEpsilon\":0.001}";

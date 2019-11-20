@@ -42,9 +42,13 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
         this.registerObject();
     }
 
+    private PrivacySchema getPrivacySchema() {
+        return this.wrapper.getPrivacySchema();
+    }
+
     @HillviewRpc
     public void changePrivacy(RpcRequest request, RpcRequestContext context) {
-        this.wrapper.privacySchema = request.parseArgs(PrivacySchema.class);
+        this.wrapper.setPrivacySchema(request.parseArgs(PrivacySchema.class));
         HillviewLogger.instance.info("Updated privacy schema");
         PrecomputedSketch<ITable, JsonString> empty =
                 new PrecomputedSketch<ITable, JsonString>(new JsonString("{}"));
@@ -66,13 +70,13 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
     public void histogram(RpcRequest request, RpcRequestContext context) {
         HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
         assert info.length == 2;
-        ColumnQuantization quantization = this.wrapper.privacySchema.quantization(info[0].cd.name);
+        ColumnQuantization quantization = this.getPrivacySchema().quantization(info[0].cd.name);
         Converters.checkNull(quantization);
         HistogramSketch sk = info[0].getSketch(quantization); // Histogram
         HistogramSketch cdf = info[1].getSketch(quantization);
         DyadicDecomposition d0 = info[0].getDecomposition(quantization);
         DyadicDecomposition d1 = info[1].getDecomposition(quantization);
-        double epsilon = this.wrapper.privacySchema.epsilon(info[0].cd.name);
+        double epsilon = this.getPrivacySchema().epsilon(info[0].cd.name);
         ConcurrentSketch<ITable, Histogram, Histogram> csk =
                 new ConcurrentSketch<ITable, Histogram, Histogram>(sk, cdf);
         this.runCompleteSketch(this.table, csk, (e, c) ->
@@ -90,7 +94,7 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
     @HillviewRpc
     public void filterRange(RpcRequest request, RpcRequestContext context) {
         RangeFilterDescription filter = request.parseArgs(RangeFilterDescription.class);
-        FilterMap map = new FilterMap(filter, this.wrapper.privacySchema.quantization);
+        FilterMap map = new FilterMap(filter, this.getPrivacySchema().quantization);
         BiFunction<IDataSet<ITable>, HillviewComputation, IRpcTarget> constructor = (e, c) -> {
             PrivateTableTarget result = new PrivateTableTarget(e, c, this.wrapper);
             result.getWrapper().filter(filter);
@@ -102,7 +106,7 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
     @HillviewRpc
     public void filter2DRange(RpcRequest request, RpcRequestContext context) {
         RangeFilterPairDescription filter = request.parseArgs(RangeFilterPairDescription.class);
-        FilterMap map = new FilterMap(filter, this.wrapper.privacySchema.quantization);
+        FilterMap map = new FilterMap(filter, this.getPrivacySchema().quantization);
         BiFunction<IDataSet<ITable>, HillviewComputation, IRpcTarget> constructor = (e, c) -> {
             PrivateTableTarget result = new PrivateTableTarget(e, c, this.wrapper);
             result.getWrapper().filter(filter.first);
@@ -123,7 +127,7 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
     private void heavyHitters(RpcRequest request, RpcRequestContext context) {
         HeavyHittersRequestInfo info = request.parseArgs(HeavyHittersRequestInfo.class);
         MGFreqKSketch sk = new MGFreqKSketch(info.columns, info.amount/100,
-                this.wrapper.privacySchema.quantization);
+                this.getPrivacySchema().quantization);
         // TODO(pratiksha): add noise to the counts
         this.runCompleteSketch(this.table, sk, (x, c) -> TableTarget.getTopList(x, info.columns, c),
                 request, context);
@@ -148,11 +152,11 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
     public void heatmap(RpcRequest request, RpcRequestContext context) {
         HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
         assert info.length == 2;
-        ColumnQuantization q0 = this.wrapper.privacySchema.quantization(info[0].cd.name);
-        ColumnQuantization q1 = this.wrapper.privacySchema.quantization(info[1].cd.name);
+        ColumnQuantization q0 = this.getPrivacySchema().quantization(info[0].cd.name);
+        ColumnQuantization q1 = this.getPrivacySchema().quantization(info[1].cd.name);
         Converters.checkNull(q0);
         Converters.checkNull(q1);
-        double epsilon = this.wrapper.privacySchema.epsilon(new String[] {
+        double epsilon = this.getPrivacySchema().epsilon(new String[] {
                 info[0].cd.name, info[1].cd.name});
         IHistogramBuckets b0 = info[0].getBuckets(q0);
         IHistogramBuckets b1 = info[1].getBuckets(q1);
@@ -173,7 +177,7 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
         RowSnapshot rs = TableTarget.asRowSnapshot(
                 nextKArgs.firstRow, nextKArgs.order, nextKArgs.columnsNoValue);
         NextKSketch nk = new NextKSketch(nextKArgs.order, null, rs, nextKArgs.rowsOnScreen,
-                this.wrapper.privacySchema.quantization);
+                this.getPrivacySchema().quantization);
         // TODO(pratiksha): add noise to the counts on the NextKList
         this.runSketch(this.table, nk, request, context);
     }
@@ -183,7 +187,7 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
         QuantileInfo info = request.parseArgs(QuantileInfo.class);
         SampleQuantileSketch sk = new SampleQuantileSketch(
                 info.order, info.precision, info.tableSize, info.seed,
-                this.wrapper.privacySchema.quantization);
+                this.getPrivacySchema().quantization);
         BiFunction<SampleList, HillviewComputation, RowSnapshot> getRow = (ql, c) -> ql.getRow(info.position);
         this.runCompleteSketch(this.table, sk, getRow, request, context);
     }

@@ -73,9 +73,6 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
             decomposition.noiseForBucket(
                     i, this.epsilon, dist, baseVariance, false, noise);
             this.histogram.buckets[i] += noise.noise;
-            // Postprocess so that no buckets are negative
-            this.histogram.buckets[i] = Math.max(0, this.histogram.buckets[i]);
-            // also set confidence intervals for this noise level
             this.confidence[i] = noise.getConfidence();
         }
     }

@@ -40,9 +40,6 @@ import org.hillview.table.columns.ColumnQuantization;
 
 import org.hillview.table.columns.DoubleColumnQuantization;
 
-import org.hillview.targets.DPWrapper;
-
-import org.hillview.utils.Utilities;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -81,13 +78,10 @@ public class HistogramAccuracyTest {
 
         Empty e = new Empty();
         LocalDataSet<Empty> local = new LocalDataSet<Empty>(e);
-        String privacyMetadataFile = DPWrapper.privacyMetadataFile(Utilities.getFolder(fsd.fileNamePattern));
-
         IMap<Empty, List<IFileReference>> finder = new FindFilesMap(fsd);
         IDataSet<IFileReference> found = local.blockingFlatMap(finder);
         IMap<IFileReference, ITable> loader = new LoadFilesMap();
         IDataSet<ITable> table = found.blockingMap(loader);
-        DPWrapper wrapper = new DPWrapper(mdSchema);
 
         Histogram hist = table.blockingSketch(sk); // Leaf counts.
         Assert.assertNotNull(hist);

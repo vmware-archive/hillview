@@ -121,7 +121,7 @@ export class HeatmapLegendPlot extends Plot {
                 .attr("width", 0);
         } else {
             const minX = min < 1 ? 0 : this.scale(min);
-            const maxX = this.scale(max);
+            const maxX = max < 1 ? 0 : this.scale(max);
             const x = (this.plottingSurface.getChartWidth() - Resolution.legendBarWidth) / 2;
             this.hilightRect
                 .attr("width", maxX - minX)

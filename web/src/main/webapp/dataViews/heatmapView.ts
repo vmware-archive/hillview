@@ -49,7 +49,7 @@ import {NextKReceiver, TableView} from "./tableView";
 import {DataRangesReceiver, FilterReceiver} from "./dataRangesCollectors";
 import {ChartView} from "./chartView";
 import {Dialog, FieldKind} from "../ui/dialog";
-import {ColorMapKind, HeatmapLegendPlot} from "../ui/heatmapLegendPlot";
+import {HeatmapLegendPlot} from "../ui/heatmapLegendPlot";
 
 /**
  * A HeatMapView renders information as a heatmap.
@@ -140,15 +140,15 @@ export class HeatmapView extends ChartView {
             "The number of buckets on X axis.");
         input.min = "1";
         input.max = Math.floor(chartSize.width / Resolution.minDotSize).toString();
+        input.value = this.xAxisData.bucketCount.toString();
         input.required = true;
 
         input = bucketDialog.addTextField("y_buckets", "Y axis buckets:", FieldKind.Integer, null,
             "The number of buckets on Y axis.");
         input.min = "1";
         input.max = Math.floor(chartSize.height / Resolution.minDotSize).toString();
+        input.value = this.yAxisData.bucketCount.toString();
         input.required = true;
-
-        bucketDialog.setCacheTitle("XYBucketDialog");
         bucketDialog.setAction(() => this.changeBuckets(
             bucketDialog.getFieldValueAsInt("x_buckets"),
             bucketDialog.getFieldValueAsInt("y_buckets")));
@@ -267,8 +267,6 @@ export class HeatmapView extends ChartView {
         if (!keepColorMap) {
             this.colorLegend.setData(1, this.plot.getMaxCount());
         }
-        if (this.isPrivate())
-            this.colorLegend.setColorMapKind(ColorMapKind.Grayscale);
         this.colorLegend.draw();
         this.plot.draw();
         if (this.showMissingData) {
@@ -436,16 +434,15 @@ export class HeatmapView extends ChartView {
     }
 
     public refresh(): void {
-        const cds = [this.xAxisData.description, this.yAxisData.description];
-        const rr = this.createDataQuantilesRequest(cds, this.page, "Heatmap");
-        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [this.xAxisData.bucketCount, this.yAxisData.bucketCount],
-            cds, this.page.title, {
-            reusePage: true,
-            relative: false,
-            chartKind: "Heatmap",
-            exact: true
-        }));
+        const ranges = [this.xAxisData.dataRange, this.yAxisData.dataRange];
+        const collector = new DataRangesReceiver(this,
+            this.page, null, this.schema, [this.xAxisData.bucketCount, this.yAxisData.bucketCount],
+            [this.xAxisData.description, this.yAxisData.description], this.page.title, {
+                chartKind: "Heatmap", exact: this.samplingRate >= 1,
+                relative: false, reusePage: true
+            });
+        collector.run(ranges);
+        collector.finished();
     }
 
     public resize(): void {
