@@ -47,18 +47,32 @@ import java.util.function.BiFunction;
  * This class offers support for differentially-private queries on a data source.
  */
 public class DPWrapper {
+    // This class is introduced to allow multiple DPWrappers to share a single
+    // privacy schema.  This enables the curator to change the schema once
+    // for a whole set of related views.
+    static class PrivacySchemaContainer {
+        private PrivacySchema privacySchema;
+        PrivacySchemaContainer(PrivacySchema ps) {
+            this.privacySchema = ps;
+        }
+
+        void setPrivacySchema(PrivacySchema ps) {
+            this.privacySchema = ps;
+        }
+    }
+
     // For each column the range allowed after filtering
     final ColumnLimits columnLimits;
     /* Global parameters for differentially-private histograms using the binary mechanism. */
-    protected PrivacySchema privacySchema;
+    protected final PrivacySchemaContainer container;
 
     public DPWrapper(PrivacySchema privacySchema) {
         this.columnLimits = new ColumnLimits();
-        this.privacySchema = privacySchema;
+        this.container = new PrivacySchemaContainer(privacySchema);
     }
 
     DPWrapper(DPWrapper other) {
-        this.privacySchema = other.privacySchema;
+        this.container = other.container;
         this.columnLimits = new ColumnLimits(other.columnLimits);
     }
 
@@ -81,6 +95,14 @@ public class DPWrapper {
         return null;
     }
 
+    PrivacySchema getPrivacySchema() {
+        return this.container.privacySchema;
+    }
+
+    void setPrivacySchema(PrivacySchema ps) {
+        this.container.setPrivacySchema(ps);
+    }
+
     public static class PrivacySummary implements IJson {
         @Nullable
         public Schema schema;
@@ -92,7 +114,7 @@ public class DPWrapper {
     PrivacySummary addPrivateMetadata(TableSummary summary) {
         PrivacySummary pSumm = new PrivacySummary();
         pSumm.schema = summary.schema;
-        pSumm.metadata = this.privacySchema;
+        pSumm.metadata = this.container.privacySchema;
         // TODO(pratiksha): add noise to the row count too.
         pSumm.rowCount = summary.rowCount;
         return pSumm;
@@ -102,7 +124,7 @@ public class DPWrapper {
         if (filter.complement)
             throw new HillviewException("Only filters on contiguous range are supported");
         RangeFilterDescription rf = this.columnLimits.get(filter.cd.name);
-        ColumnQuantization q = this.privacySchema.quantization(filter.cd.name);
+        ColumnQuantization q = this.getPrivacySchema().quantization(filter.cd.name);
         filter = filter.intersect(q);
         filter = filter.intersect(rf);
         this.columnLimits.put(filter);
@@ -115,7 +137,7 @@ public class DPWrapper {
 
     private BucketsInfo getRange(QuantilesArgs qa) {
         ColumnDescription cd = qa.cd;
-        ColumnQuantization quantization = this.privacySchema.quantization(cd.name);
+        ColumnQuantization quantization = this.getPrivacySchema().quantization(cd.name);
         RangeFilterDescription filter = this.columnLimits.get(cd.name);
         BucketsInfo quantiles = Converters.checkNull(quantization).getQuantiles(qa.stringsToSample);
         if (filter == null)

@@ -82,7 +82,6 @@ public class PrivateHeatmap implements Serializable, IJson {
                 this.noiseForBucket(xIntervals.get(i), yIntervals.get(j), dist, baseVariance, noise);
                 this.heatmap.buckets[i][j] += noise.noise;
                 this.heatmap.confidence[i][j] = 2 * Math.sqrt(noise.variance);
-                this.heatmap.buckets[i][j] = Math.max(0, this.heatmap.buckets[i][j]);
             }
         }
     }

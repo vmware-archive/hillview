@@ -28,6 +28,7 @@ interface Dot {
     x: number;
     y: number;
     v: number;
+    confident: boolean;
 }
 
 export class HeatmapPlot extends Plot {
@@ -76,7 +77,10 @@ export class HeatmapPlot extends Plot {
         const ctx: CanvasRenderingContext2D = htmlCanvas.getContext("2d");
         for (const dot of this.dots) {
             ctx.beginPath();
-            ctx.fillStyle = this.legendPlot.getColor(dot.v);
+            if (dot.confident)
+                ctx.fillStyle = this.legendPlot.getColor(dot.v);
+            else
+                ctx.fillStyle = "lightgrey";
             ctx.fillRect(dot.x, dot.y, this.pointWidth, this.pointHeight);
             ctx.closePath();
         }
@@ -149,8 +153,10 @@ export class HeatmapPlot extends Plot {
         this.yAxisData = yData;
         this.schema = schema;
         this.isPrivate = isPrivate;
-        this.xAxisData.setResolution(this.getChartWidth(), AxisKind.Bottom, PlottingSurface.bottomMargin);
-        this.yAxisData.setResolution(this.getChartHeight(), AxisKind.Left, Resolution.heatmapLabelWidth);
+        this.xAxisData.setResolution(
+            this.getChartWidth(), AxisKind.Bottom, PlottingSurface.bottomMargin);
+        this.yAxisData.setResolution(
+            this.getChartHeight(), AxisKind.Left, Resolution.heatmapLabelWidth);
 
         const xPoints = this.heatmap.buckets.length;
         const yPoints = this.heatmap.buckets[0].length;
@@ -166,14 +172,24 @@ export class HeatmapPlot extends Plot {
 
         for (let x = 0; x < this.heatmap.buckets.length; x++) {
             for (let y = 0; y < this.heatmap.buckets[x].length; y++) {
-                const v = this.heatmap.buckets[x][y];
+                const b = this.heatmap.buckets[x][y];
+                const v = Math.max(0, b);
+                let conf;
+                if (!isPrivate) {
+                    conf = true;
+                } else {
+                    const confidence = this.heatmap.confidence[x][y];
+                    conf = b > (2 * confidence);
+                }
                 if (v > this.max)
                     this.max = v;
-                if (v !== 0) {
+                if ((this.isPrivate && conf) || (!this.isPrivate && v !== 0)) {
                     const rec = {
                         x: x * this.pointWidth,
-                        y: this.getChartHeight() - (y + 1) * this.pointHeight,  // +1 because it's the upper corner
-                        v: v
+                        // +1 because it's the upper corner
+                        y: this.getChartHeight() - (y + 1) * this.pointHeight,
+                        v: v,
+                        confident: conf
                     };
                     this.visible += v;
                     this.distinct++;

@@ -427,12 +427,15 @@ export class Histogram2DView extends HistogramViewBase {
 
     public refresh(): void {
         const cds = [this.xAxisData.description, this.yData.description];
-        const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
-        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [this.xPoints, this.yPoints], cds, null, {
-            reusePage: true, relative: this.relative,
-            chartKind: "2DHistogram", exact: false
-        }));
+        const ranges = [this.xAxisData.dataRange, this.yData.dataRange];
+        const collector = new DataRangesReceiver(this,
+            this.page, null, this.schema, [this.xAxisData.bucketCount, this.yData.bucketCount],
+            cds, this.page.title, {
+                chartKind: "2DHistogram", exact: this.samplingRate >= 1,
+                relative: this.relative, reusePage: true
+            });
+        collector.run(ranges);
+        collector.finished();
     }
 
     public onMouseEnter(): void {

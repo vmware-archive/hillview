@@ -77,8 +77,14 @@ export class HistogramPlot extends Plot {
         this.isPrivate = isPrivate;
     }
 
+    private confident(valueAndConf: number[]): boolean {
+        if (!this.isPrivate)
+            return true;
+        return valueAndConf[0] > 2 * valueAndConf[1];
+    }
+
     private drawBars(): void {
-        const counts = this.histogram.histogram.buckets;
+        const counts = this.histogram.histogram.buckets.map((x) => Math.max(x, 0));
         this.max = Math.max(...counts);
         const displayMax = this.maxYAxis == null ? this.max : this.maxYAxis;
 
@@ -102,7 +108,7 @@ export class HistogramPlot extends Plot {
         // a negative value, and we have to truncate the rectangles.
         bars.append("rect")
             .attr("y", (d) => this.yScale(d[0]) < 0 ? 0 : this.yScale(d[0]))
-            .attr("fill", "darkcyan")
+            .attr("fill", (d) => this.confident(d) ? "darkcyan" : "lightgrey")
             .attr("height", (d) => chartHeight - (this.yScale(d[0]) < 0 ? 0 : this.yScale(d[0])))
             .attr("width", this.barWidth - 1);
 

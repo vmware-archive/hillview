@@ -65,9 +65,13 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
         this.database.connect();
     }
 
+    private PrivacySchema getPrivacySchema() {
+        return this.wrapper.getPrivacySchema();
+    }
+
     @HillviewRpc
     public void changePrivacy(RpcRequest request, RpcRequestContext context) {
-        this.wrapper.privacySchema = request.parseArgs(PrivacySchema.class);
+        this.wrapper.setPrivacySchema(request.parseArgs(PrivacySchema.class));
         HillviewLogger.instance.info("Updated privacy schema");
         PrecomputedSketch<ITable, JsonString> empty =
                 new PrecomputedSketch<ITable, JsonString>(new JsonString("{}"));
@@ -103,8 +107,8 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
         assert info.length == 2;
 
         ColumnDescription cd = info[0].cd;  // both args should be on the same column
-        ColumnQuantization quantization = this.wrapper.privacySchema.quantization(cd.name);
-        double epsilon = this.wrapper.privacySchema.epsilon(cd.name);
+        ColumnQuantization quantization = this.getPrivacySchema().quantization(cd.name);
+        double epsilon = this.getPrivacySchema().epsilon(cd.name);
         if (quantization == null)
             throw new RuntimeException("No quantization information for column " + cd.name);
 
@@ -167,10 +171,10 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
                 info[0].getBuckets(), info[1].getBuckets(),
                 this.wrapper.columnLimits,
                 null, null);
-        double epsilon = this.wrapper.privacySchema.epsilon(new String[] {
+        double epsilon = this.getPrivacySchema().epsilon(new String[] {
                 info[0].cd.name, info[1].cd.name});
-        ColumnQuantization q0 = this.wrapper.privacySchema.quantization(info[0].cd.name);
-        ColumnQuantization q1 = this.wrapper.privacySchema.quantization(info[1].cd.name);
+        ColumnQuantization q0 = this.getPrivacySchema().quantization(info[0].cd.name);
+        ColumnQuantization q1 = this.getPrivacySchema().quantization(info[1].cd.name);
         Converters.checkNull(q0);
         Converters.checkNull(q1);
         DyadicDecomposition d0 = info[0].getDecomposition(q0);

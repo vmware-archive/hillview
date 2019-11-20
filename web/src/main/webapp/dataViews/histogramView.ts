@@ -37,7 +37,7 @@ import {PiePlot} from "../ui/piePlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {HistogramOptions, HtmlString, Resolution, SpecialChars} from "../ui/ui";
+import {HtmlString, Resolution, SpecialChars} from "../ui/ui";
 import {
     formatNumber,
     ICancellable, makeInterval,
@@ -369,29 +369,22 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
     }
 
     public refresh(): void {
-        this.histogram1D(
-            this.page.title,
-            this.xAxisData.description,
-            this.bucketCount,
-            { exact: this.samplingRate >= 1, reusePage: true } );
-    }
-
-    public histogram1D(title: PageTitle, cd: IColumnDescription,
-                       bucketCount: number, options: HistogramOptions): void {
-        const rr = this.createDataQuantilesRequest([cd], this.page, "Histogram");
-        rr.invoke(new DataRangesReceiver(
-            this, this.page, rr, this.schema, [bucketCount], [cd], title,
-            { chartKind: "Histogram", relative: false, reusePage: options.reusePage, exact: options.exact }));
+        const ranges = [this.xAxisData.dataRange];
+        const collector = new DataRangesReceiver(this,
+            this.page, null, this.schema, [this.xAxisData.bucketCount],
+            [this.xAxisData.description], this.page.title, {
+                chartKind: "Histogram", exact: this.samplingRate >= 1,
+                relative: false, reusePage: true
+            });
+        collector.run(ranges);
+        collector.finished();
     }
 
     public exactHistogram(): void {
         if (this == null)
             return;
-        this.histogram1D(
-            this.page.title,
-            this.xAxisData.description,
-            this.bucketCount,
-            { exact: true, reusePage: true } );
+        this.samplingRate = 1.0;
+        this.refresh();
     }
 
     protected onMouseMove(): void {

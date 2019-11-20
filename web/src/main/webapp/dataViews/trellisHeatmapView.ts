@@ -199,12 +199,16 @@ export class TrellisHeatmapView extends TrellisChartView {
 
     public refresh(): void {
         const cds = [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description];
-        const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisHeatmap");
-        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [this.xAxisData.bucketCount, this.yAxisData.bucketCount, this.shape.bucketCount], cds, null, {
-                reusePage: true, relative: false,
-                chartKind: "TrellisHeatmap", exact: true
-            }));
+        const ranges = [this.xAxisData.dataRange, this.yAxisData.dataRange, this.groupByAxisData.dataRange];
+        const collector = new DataRangesReceiver(this,
+            this.page, null, this.schema,
+            [this.xAxisData.bucketCount, this.yAxisData.bucketCount, this.groupByAxisData.bucketCount],
+            cds, this.page.title, {
+                chartKind: "TrellisHeatmap", exact: this.samplingRate >= 1,
+                relative: false, reusePage: true
+            });
+        collector.run(ranges);
+        collector.finished();
     }
 
     public resize(): void {
