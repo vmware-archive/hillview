@@ -51,7 +51,8 @@ public class TableSummary implements IJson {
         if (this.schema == null)
             s = other.schema;
         else if (other.schema != null && !this.schema.equals(other.schema))
-            throw new RuntimeException("Schemas differ");
+            throw new RuntimeException("Schemas differ:\n" +
+                this.schema.diff(other.schema));
         return new TableSummary(s, this.rowCount + other.rowCount);
     }
 

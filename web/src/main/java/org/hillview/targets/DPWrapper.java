@@ -95,7 +95,7 @@ public class DPWrapper {
         return null;
     }
 
-    PrivacySchema getPrivacySchema() {
+    public PrivacySchema getPrivacySchema() {
         return this.container.privacySchema;
     }
 

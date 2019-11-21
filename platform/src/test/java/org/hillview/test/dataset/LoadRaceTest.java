@@ -38,7 +38,7 @@ public class LoadRaceTest extends BaseTest {
     // Test for issue #318
     @Test
     public void load() throws InterruptedException {
-        Empty e = new Empty();
+        Empty e = Empty.getInstance();
         LocalDataSet<Empty> local = new LocalDataSet<Empty>(e);
         FileSetDescription desc = new FileSetDescription();
         desc.fileKind = "csv";

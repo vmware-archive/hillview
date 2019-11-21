@@ -18,7 +18,7 @@ def get_metadata(cn):
     elif cn == "DepDelay" or cn == "ArrDelay":
         (g, gMin, gMax) = (1, -100, 1000)
     elif cn == "Cancelled":
-        (g, gMin, gMax) = (1, 0, 1)
+        (g, gMin, gMax) = (1, 0, 2)
     elif cn == "ActualElapsedTime":
         (g, gMin, gMax) = (1, 15, 700)
     elif cn == "Distance":
