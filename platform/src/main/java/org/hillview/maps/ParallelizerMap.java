@@ -39,7 +39,7 @@ public class ParallelizerMap implements IMap<Empty, List<Empty>> {
     public List<Empty> apply(@Nullable Empty data) {
         List<Empty> result = new ArrayList<Empty>();
         for (int i = 0; i < cores; i++)
-            result.add(new Empty());
+            result.add(Empty.getInstance());
         return result;
     }
 }

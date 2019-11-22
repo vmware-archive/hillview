@@ -23,6 +23,7 @@ package org.hillview.dataset.api;
  */
 public class Empty implements IJson {
     private static final Empty instance = new Empty();
+    private Empty() {}
 
     public static Empty getInstance() {
         return instance;

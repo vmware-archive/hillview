@@ -156,8 +156,7 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
         ColumnQuantization q1 = this.getPrivacySchema().quantization(info[1].cd.name);
         Converters.checkNull(q0);
         Converters.checkNull(q1);
-        double epsilon = this.getPrivacySchema().epsilon(new String[] {
-                info[0].cd.name, info[1].cd.name});
+        double epsilon = this.getPrivacySchema().epsilon(info[0].cd.name, info[1].cd.name);
         IHistogramBuckets b0 = info[0].getBuckets(q0);
         IHistogramBuckets b1 = info[1].getBuckets(q1);
         DyadicDecomposition d0 = info[0].getDecomposition(q0);

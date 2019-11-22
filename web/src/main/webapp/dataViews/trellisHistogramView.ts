@@ -311,7 +311,7 @@ export class TrellisHistogramView extends TrellisChartView {
                 console.assert(j < cdf.buckets.length);
                 sum += cdf.buckets[j];
             }
-            buckets.push(sum);
+            buckets.push(Math.max(sum, 0));
         }
 
         const hist: Histogram = { buckets: buckets,
@@ -320,7 +320,7 @@ export class TrellisHistogramView extends TrellisChartView {
     }
 
     public updateView(data: Heatmap, bucketCount: number): void {
-        if (data.buckets == null)
+        if (data == null || data.buckets == null)
             return;
         this.createNewSurfaces();
         if (this.isPrivate()) {

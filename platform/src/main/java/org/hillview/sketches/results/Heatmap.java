@@ -28,7 +28,7 @@ import java.io.Serializable;
 public class Heatmap implements Serializable, IJson {
     public final long[][] buckets;
     @Nullable
-    public double[][] confidence;
+    public int[][] confidence;
     private long missingData; // number of items missing on both columns
     private Histogram histogramMissingX; // dim1 is missing, dim2 exists
     private Histogram histogramMissingY; // dim2 is missing, dim1 exists
@@ -119,6 +119,6 @@ public class Heatmap implements Serializable, IJson {
     }
 
     public void allocateConfidence() {
-        this.confidence = new double[this.xBucketCount][this.yBucketCount];
+        this.confidence = new int[this.xBucketCount][this.yBucketCount];
     }
 }

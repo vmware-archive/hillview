@@ -70,7 +70,7 @@ public class PrivacySchema implements IJson, Serializable {
      * @param colNames  Columns that we need the epsilon for.
      * @return          epsilon exploring the joint columns.
      */
-    public double epsilon(String[] colNames) {
+    public double epsilon(String... colNames) {
         Arrays.sort(colNames);
         String key = String.join("+", colNames);
         Double result = this.epsilons.get(key);
@@ -88,12 +88,6 @@ public class PrivacySchema implements IJson, Serializable {
         }
         // default value of epsilon for any other combination of columns.
         return this.defaultEpsilon;
-    }
-
-    public Double epsilon(String colName) {
-        String[] array = new String[1];
-        array[0] = colName;
-        return this.epsilon(array);
     }
 
     public void setEpsilon(String colName, double epsilon) {

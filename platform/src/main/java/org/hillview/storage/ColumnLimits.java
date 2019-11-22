@@ -48,7 +48,7 @@ public class ColumnLimits {
         this.columnLimits.put(filter.cd.name, filter);
     }
 
-    public Collection<RangeFilterDescription> allFilters() {
+    Collection<RangeFilterDescription> allFilters() {
         return this.columnLimits.values();
     }
 

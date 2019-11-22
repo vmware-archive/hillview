@@ -53,12 +53,36 @@ public final class Schema implements Serializable, IJson {
     private List<ContentsKind> cachedKinds;
     @Nullable
     private List<ColumnDescription> cachedDescriptions;
+    @Nullable
+    private String sourceFile;
 
     /**
      * Canonical name for schema files.  Most useful when there is only one
      * schema file expected in a folder.
      */
     public static final String schemaFileName = "schema";
+
+    /**
+     * Returns the first difference between the two schemas in a human-readable format.
+     */
+    public String diff(Schema schema) {
+        String prefix = "";
+        if (this.sourceFile != null && schema.sourceFile != null)
+            prefix = this.sourceFile + " compared to " + schema.sourceFile + ": ";
+        if (this.getColumnCount() != schema.getColumnCount())
+            return prefix + "column count differs: " + this.getColumnCount() + " vs. " +
+            schema.getColumnCount();
+        List<ColumnDescription> cols = this.getColumnDescriptions();
+        List<ColumnDescription> ocols = schema.getColumnDescriptions();
+        for (int i=0; i < this.getColumnCount(); i++) {
+            ColumnDescription coli = cols.get(i);
+            ColumnDescription ocoli = ocols.get(i);
+            if (coli.equals(ocoli))
+                continue;
+            return prefix + "column " + i + " is different: " + coli + " vs. " + ocoli;
+        }
+        return prefix + "No difference";
+    }
 
     public static class Serializer implements JsonSerializer<Schema> {
         public JsonElement serialize(Schema schema, Type typeOfSchema,
@@ -276,7 +300,9 @@ public final class Schema implements Serializable, IJson {
             p -> {
                 try {
                     String s = new String(Files.readAllBytes(p));
-                    return Schema.fromJson(s);
+                    Schema result = Schema.fromJson(s);
+                    result.sourceFile = s;
+                    return result;
                 } catch (Exception ex) {
                     throw new RuntimeException(ex);
                 }

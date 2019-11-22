@@ -11,7 +11,7 @@ import org.hillview.utils.HillviewLogger;
  */
 @SuppressWarnings("MismatchedReadAndWriteOfArray")
 public class PrivateHistogram extends HistogramPrefixSum implements IJson {
-    private double[] confidence;
+    private int[] confidence;
     private final double epsilon;
 
     public PrivateHistogram(DyadicDecomposition decomposition,
@@ -19,7 +19,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
                             double epsilon, boolean isCdf) {
         super(histogram);
         this.epsilon = epsilon;
-        this.confidence  = new double[histogram.getBucketCount()];
+        this.confidence  = new int[histogram.getBucketCount()];
         this.addDyadicLaplaceNoise(decomposition);
         if (isCdf) {
             this.recomputeCDF(decomposition);
@@ -35,7 +35,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
      */
     private void recomputeCDF(DyadicDecomposition decomposition) {
         int totalLeaves = decomposition.getQuantizationIntervalCount();
-        double scale = Math.log(totalLeaves) / Math.log(2);
+        double scale = Math.log(totalLeaves + 1) / Math.log(2);  // +1 leaf for NULL
         scale /= epsilon;
         double baseVariance = 2 * Math.pow(scale, 2);
         LaplaceDistribution dist = new LaplaceDistribution(0, scale); // TODO: (more) secure PRG
@@ -63,7 +63,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
     private void addDyadicLaplaceNoise(DyadicDecomposition decomposition) {
         HillviewLogger.instance.info("Adding histogram noise with", "epsilon={0}", this.epsilon);
         int totalLeaves = decomposition.getQuantizationIntervalCount();
-        double scale = Math.log(totalLeaves) / Math.log(2);
+        double scale = Math.log(totalLeaves + 1) / Math.log(2);  // +1 for NULL leaf
         scale /= epsilon;
         double baseVariance = 2 * Math.pow(scale, 2);
         LaplaceDistribution dist = new LaplaceDistribution(0, scale); // TODO: (more) secure PRG
@@ -73,7 +73,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
             decomposition.noiseForBucket(
                     i, this.epsilon, dist, baseVariance, false, noise);
             this.histogram.buckets[i] += noise.noise;
-            this.confidence[i] = noise.getConfidence();
+            this.confidence[i] = (int)noise.getConfidence();
         }
     }
 }

@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Some utility classes inspired by C# Linq.
@@ -73,6 +74,23 @@ public class Linq {
         for (T aData : data)
             result.add(function.apply(aData));
         return result;
+    }
+
+    public static <T> List<T> where(List<T> data, Predicate<T> function) {
+        List<T> result = new ArrayList<T>();
+        for (T aData : data)
+            if (function.test(aData))
+                result.add(aData);
+        return result;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> T[] where(T[] data, Predicate<T> function) {
+        List<T> result = new ArrayList<T>();
+        for (T datum : data)
+            if (function.test(datum))
+                result.add(datum);
+        return (T[]) result.toArray();
     }
 
     public static <T, S> S[] map(T[] data, Function<T, S> function, Class<S> sc) {

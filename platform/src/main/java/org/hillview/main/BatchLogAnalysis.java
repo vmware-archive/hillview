@@ -55,7 +55,7 @@ public class BatchLogAnalysis {
      */
     private static HeatmapData heatmapErrTime(FileSetDescription desc, int numOfTimestampBuckets) {
         /* Load data through file desc */
-        Empty e = new Empty();
+        Empty e = Empty.getInstance();
         LocalDataSet<Empty> local = new LocalDataSet<Empty>(e);
         IMap<Empty, List<IFileReference>> finder = new FindFilesMap(desc);
         IDataSet<IFileReference> found = local.blockingFlatMap(finder);
@@ -82,6 +82,7 @@ public class BatchLogAnalysis {
         /* Find errorCode (y-axis) buckets for the heatmap */
         SampleDistinctElementsSketch sampleSketch = new SampleDistinctElementsSketch("errorCode", 0, 500);
         MinKSet<String> samples = table1.blockingSketch(sampleSketch);
+        assert samples != null;
         JsonList<String> leftBoundaries = samples.getLeftBoundaries(500);
         StringHistogramBuckets bucketsErrorCode = new StringHistogramBuckets(leftBoundaries.toArray(new String[0]));
 
@@ -127,7 +128,7 @@ public class BatchLogAnalysis {
                 sb.append(',');
                 sb.append("Count");
                 sb.append('\n');
-                for (int x = 0; x < Converters.checkNull(heatmapData).matrix.length; x++) {
+                for (int x = 0; x < Converters.checkNull(heatmapData.matrix).length; x++) {
                     for (int y = 0; y < heatmapData.matrix[0].length; y++) {
                         if (heatmapData.matrix[x][y] >= 0) {        // keep zeros or not
                             sb.append(heatmapData.timeLabels.get(x));
@@ -153,26 +154,21 @@ public class BatchLogAnalysis {
      * @param figDir destination directory to save the CSV files for all bugs
      * @param numOfTimestampBuckets number of timestamp (x-axis) intervals for each heatmap
      */
-    public static void getBugHeatmaps(String logDir, String figDir, int numOfTimestampBuckets) {
+    private static void getBugHeatmaps(String logDir, String figDir, int numOfTimestampBuckets) {
         File path = new File(logDir);
-        String[] bugIDs = path.list(new FilenameFilter() {    // each subDir in logDir corresponds to one bug
-            @Override
-            public boolean accept(File current, String name) {
-                return new File(current, name).isDirectory();
-            }
-        });
+        // each subDir in logDir corresponds to one bug
+        String[] bugIDs = path.list(
+            (current, name) -> new File(current, name).isDirectory());
         // create empty directory for nsx_manager and nsx_edge respectively
-        new File(figDir + "/nsx_manager_syslog/").mkdirs();
-        new File(figDir + "/nsx_edge_syslog/").mkdirs();
+        boolean ignored = new File(figDir + "/nsx_manager_syslog/").mkdirs();
+        ignored = new File(figDir + "/nsx_edge_syslog/").mkdirs();
 
-        for (int i = 0; i < bugIDs.length; i++) {
-            File bugFolder = new File(logDir + "/" + bugIDs[i]);
-            String[] subFolders = bugFolder.list(new FilenameFilter() {
-                @Override
-                public boolean accept(File current, String name) {
-                    return new File(current, name).isDirectory();
-                }
-            });
+        assert bugIDs != null;
+        for (String bugID : bugIDs) {
+            File bugFolder = new File(logDir + "/" + bugID);
+            String[] subFolders = bugFolder.list(
+                (current, name) -> new File(current, name).isDirectory());
+            assert subFolders != null;
             if (subFolders.length != 0) { // exists syslogs for that bug
                 FileSetDescription descManager = new FileSetDescription();
                 descManager.fileKind = "genericlog";
@@ -186,16 +182,15 @@ public class BatchLogAnalysis {
                 descEdge.headerRow = false;
                 descEdge.fileNamePattern = "";
 
-                for (int j = 0; j < subFolders.length; j++) {
-                    if (subFolders[j].startsWith("nsx_manager")) {
-                        descManager.fileNamePattern += logDir + "/" + bugIDs[i] + "/" + subFolders[j] + "/var/log/syslog*,";  // adding a comma at the end doesn't matter
-                    }
-                    else if (subFolders[j].startsWith("nsx_edge")) {
-                        descEdge.fileNamePattern += logDir + "/" + bugIDs[i] + "/" + subFolders[j] + "/var/log/syslog*,";  // adding a comma at the end doesn't matter
+                for (String subFolder : subFolders) {
+                    if (subFolder.startsWith("nsx_manager")) {
+                        descManager.fileNamePattern += logDir + "/" + bugID + "/" + subFolder + "/var/log/syslog*,";  // adding a comma at the end doesn't matter
+                    } else if (subFolder.startsWith("nsx_edge")) {
+                        descEdge.fileNamePattern += logDir + "/" + bugID + "/" + subFolder + "/var/log/syslog*,";  // adding a comma at the end doesn't matter
                     }
                 }
-                if (descManager.fileNamePattern.length()!=0) {
-                    String filePathStr = figDir + "/nsx_manager_syslog/" + "Bug" + bugIDs[i] + ".csv";
+                if (descManager.fileNamePattern.length() != 0) {
+                    String filePathStr = figDir + "/nsx_manager_syslog/" + "Bug" + bugID + ".csv";
                     Path filePath = Paths.get(filePathStr);
                     if (Files.notExists(filePath)) {    // call the two step methods to get heatmap data
 //                        System.out.println("start " + descManager.fileNamePattern);
@@ -204,8 +199,8 @@ public class BatchLogAnalysis {
 //                        System.out.println("finish " + descManager.fileNamePattern);
                     }
                 }
-                if (descEdge.fileNamePattern.length()!=0) {
-                    String filePathStr = figDir + "/nsx_edge_syslog/" + "Bug" + bugIDs[i] + ".csv";
+                if (descEdge.fileNamePattern.length() != 0) {
+                    String filePathStr = figDir + "/nsx_edge_syslog/" + "Bug" + bugID + ".csv";
                     Path filePath = Paths.get(filePathStr);
                     if (Files.notExists(filePath)) {    // call the two step methods to get heatmap data
 //                        System.out.println("start " + descEdge.fileNamePattern);
@@ -218,8 +213,8 @@ public class BatchLogAnalysis {
         }
     }
 
+    @SuppressWarnings("AccessStaticViaInstance")
     public static void main(String[] args) {
-
         /* Arguments parser for two arguments: logDir and figDir */
         Options options = new Options();
         options.addOption("help",false,"java BatchLogAnalysis [-l] logDir [-f] figDir");

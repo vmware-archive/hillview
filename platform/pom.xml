@@ -70,7 +70,7 @@
                                 <configuration>
                                     <archive>
                                         <manifest>
-                                            <mainClass>org.hillview.main.Benchmarks</mainClass>
+                                            <mainClass>org.hillview.main.HillviewBenchmarks</mainClass>
                                         </manifest>
                                     </archive>
                                     <descriptorRefs>

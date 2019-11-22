@@ -21,7 +21,7 @@ import org.hillview.sketches.results.DoubleHistogramBuckets;
 import org.hillview.table.columns.DoubleColumnQuantization;
 
 public class NumericDyadicDecomposition extends DyadicDecomposition {
-    NumericDyadicDecomposition(DoubleColumnQuantization quantization, DoubleHistogramBuckets buckets) {
+    public NumericDyadicDecomposition(DoubleColumnQuantization quantization, DoubleHistogramBuckets buckets) {
         super(quantization, buckets);
 
         for (int i = 0; i < buckets.getBucketCount(); i++) {

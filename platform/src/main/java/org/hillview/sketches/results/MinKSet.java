@@ -19,6 +19,7 @@ package org.hillview.sketches.results;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectRBTreeMap;
 import org.hillview.utils.JsonList;
+import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -79,18 +80,6 @@ public class MinKSet<T> extends BucketsInfo {
     }
 
     /**
-     * Rescale an index from 0-maxBuckets to 0-totalElements.
-     * Rank 0 is mapped to 0, rank maxBuckets is mapped to totalElements.
-     * The other values of rank are interpolated in between.
-     * @param rank            Rank of an element between 0 and maxBuckets.
-     * @param maxBuckets      Number of ranks desired.
-     * @param totalElements   Number of elements from which we extract the rank.
-     */
-    public static int getIntegerRank(int rank, int maxBuckets, int totalElements) {
-        return (int) Math.ceil(totalElements * rank / ((double)maxBuckets));
-    }
-
-    /**
      * This method will return (at most) a prescribed number of left bucket boundaries.
      * @param maxBuckets The maximum number of buckets.
      * @return An ordered list of boundaries for b <= maxBuckets buckets. If the number of distinct
@@ -107,19 +96,10 @@ public class MinKSet<T> extends BucketsInfo {
             return boundaries;
         }
         List<T> samples = this.getSamples();
-        samples.remove(this.min);
-        int numSamples = samples.size();
+        if (!samples.contains(this.min))
+            samples.add(0, this.min);
         JsonList <T> boundaries = new JsonList<T>(maxBuckets);
-        boundaries.add(this.min);
-        if (numSamples <= maxBuckets - 1) {
-            boundaries.addAll(samples);
-        } else {
-            for (int i = 1; i < maxBuckets; i++) {
-                int j = getIntegerRank(i, maxBuckets, numSamples);
-                // The samples list does not contain the minimum anymore.
-                boundaries.add(samples.get(j - 1));
-            }
-        }
+        Utilities.equiSpaced(samples, maxBuckets, boundaries);
         return boundaries;
     }
 }

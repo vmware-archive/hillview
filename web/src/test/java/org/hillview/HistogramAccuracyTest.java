@@ -76,7 +76,7 @@ public class HistogramAccuracyTest {
         fsd.fileKind = "csv";
         fsd.schemaFile = "short.schema";
 
-        Empty e = new Empty();
+        Empty e = Empty.getInstance();
         LocalDataSet<Empty> local = new LocalDataSet<Empty>(e);
         IMap<Empty, List<IFileReference>> finder = new FindFilesMap(fsd);
         IDataSet<IFileReference> found = local.blockingFlatMap(finder);

@@ -12,6 +12,44 @@
     <name>web</name>
     <url>http://maven.apache.org</url>
 
+    <profiles>
+        <!--
+             Profiles enable conditional compilation
+             For example, to build the various tools, in this profile run
+             maven -P tools package
+        -->
+        <profile>
+            <id>tools</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>2.4</version>
+                        <executions>
+                            <execution>
+                                <id>build-dp-benchmark</id>
+                                <configuration>
+                                    <archive>
+                                        <manifest>
+                                            <mainClass>org.hillview.main.Benchmarks</mainClass>
+                                        </manifest>
+                                    </archive>
+                                    <descriptorRefs>
+                                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                                    </descriptorRefs>
+                                    <finalName>dp-benchmarks</finalName>
+                                </configuration>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
     <dependencies>
         <!-- Java reactive APIs: Observables -->
         <dependency>

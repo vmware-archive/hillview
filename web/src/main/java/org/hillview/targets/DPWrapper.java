@@ -38,6 +38,7 @@ import org.hillview.table.filters.RangeFilterDescription;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewException;
 import org.hillview.utils.JsonList;
+import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -95,7 +96,7 @@ public class DPWrapper {
         return null;
     }
 
-    PrivacySchema getPrivacySchema() {
+    public PrivacySchema getPrivacySchema() {
         return this.container.privacySchema;
     }
 
@@ -143,7 +144,6 @@ public class DPWrapper {
         if (filter == null)
             return quantiles;
 
-        BucketsInfo result;
         if (cd.kind.isString()) {
             StringColumnQuantization q = (StringColumnQuantization) quantization;
             String left = q.roundDown(filter.minString);
@@ -152,22 +152,25 @@ public class DPWrapper {
             boolean before = true;
             for (int i = 0; i < q.leftBoundaries.length; i++) {
                 if (before) {
-                    if (q.leftBoundaries[i].equals(left))
+                    if (left == null || q.leftBoundaries[i].compareTo(left) >= 0)
                         before = false;
                 }
                 if (!before)
                     included.add(q.leftBoundaries[i]);
-                if (q.leftBoundaries[i].equals(right))
+                if (right == null || q.leftBoundaries[i].compareTo(right) >= 0)
                     break;
             }
-            return new StringQuantiles(included, q.globalMax, true, -1, -1);
+            JsonList<String> sampled = new JsonList<String>();
+            Utilities.equiSpaced(included, qa.stringsToSample, sampled);
+            boolean allStringsKnown = sampled.size() == included.size();
+            return new StringQuantiles(sampled, q.globalMax, allStringsKnown, -1, -1);
         } else {
-            result = new DataRange(quantization.roundDown(filter.min),
+            BucketsInfo result = new DataRange(quantization.roundDown(filter.min),
                     quantization.roundDown(filter.max));
+            result.missingCount = -1;
+            result.presentCount = -1;
+            return result;
         }
-        result.missingCount = -1;
-        result.presentCount = -1;
-        return result;
     }
 
     // The following are methods used in common by various Private targets;
