@@ -90,8 +90,10 @@ public class StringColumnQuantization extends ColumnQuantization {
 
     @Override
     public BucketsInfo getQuantiles(int bucketCount) {
+        JsonList<String> result = new JsonList<String>(bucketCount);
+        Utilities.equiSpaced(Arrays.asList(this.leftBoundaries), bucketCount, result);
         return new StringQuantiles(
-                new JsonList<String>(this.leftBoundaries), this.globalMax, true, -1, -1);
+            result, this.globalMax, result.size() == this.leftBoundaries.length, -1, -1);
     }
 
     public int bucketIndex(String value) {

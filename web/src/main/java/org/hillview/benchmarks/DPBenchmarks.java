@@ -19,6 +19,7 @@ package org.hillview.benchmarks;
 
 import org.hillview.dataStructures.DyadicDecomposition;
 import org.hillview.dataStructures.NumericDyadicDecomposition;
+import org.hillview.dataStructures.PrivateHeatmap;
 import org.hillview.dataStructures.PrivateHistogram;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.api.Empty;
@@ -29,6 +30,7 @@ import org.hillview.main.Benchmarks;
 import org.hillview.maps.FindFilesMap;
 import org.hillview.maps.LoadFilesMap;
 import org.hillview.sketches.DoubleDataRangeSketch;
+import org.hillview.sketches.HeatmapSketch;
 import org.hillview.sketches.HistogramSketch;
 import org.hillview.sketches.SummarySketch;
 import org.hillview.sketches.results.*;
@@ -44,10 +46,12 @@ import org.hillview.table.columns.ColumnQuantization;
 import org.hillview.table.columns.DoubleColumnQuantization;
 import org.hillview.targets.DPWrapper;
 import org.hillview.utils.HillviewLogger;
+import org.hillview.utils.Linq;
 
 import javax.annotation.Nullable;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -58,8 +62,9 @@ import java.util.logging.Level;
  */
 @SuppressWarnings("FieldCanBeLocal")
 public class DPBenchmarks extends Benchmarks {
-    private static int runCount = 10;
+    private static int runCount = 5;
     private static boolean local = true;
+    private static int buckets = 100;
     @Nullable
     private Schema ontimeSchema;
 
@@ -91,7 +96,7 @@ public class DPBenchmarks extends Benchmarks {
         FileSetDescription desc = new FileSetDescription();
         desc.fileKind = "csv";
         desc.headerRow = true;
-        desc.fileNamePattern = "data/ontime/2017*.csv.gz";
+        desc.fileNamePattern = "data/bench/2017*.csv.gz";
         desc.schemaFile = "short.schema";
         System.out.println("Loading dataset");
         this.flights = this.loadTable(desc);
@@ -116,11 +121,73 @@ public class DPBenchmarks extends Benchmarks {
 
         public String toString() {
             String result = "";
-            result += this.useDatabase ? "DB " : "files ";
-            result += this.usePublicData ? "public " : "private ";
-            result += this.usePostProcessing ? "noised " : "";
+            result += this.useDatabase ? "DB" : "files";
+            result += this.usePublicData ? " public" : " private";
+            result += this.usePostProcessing ? " noised" : "";
             return result;
         }
+    }
+
+    private double benchmarkNumericHeatmap(ExperimentConfig conf, String col0, String col1) {
+        IDataSet<ITable> data = this.flights;
+        assert data != null;
+        SummarySketch sk = new SummarySketch();
+        TableSummary tableSummary = data.blockingSketch(sk);
+        assert tableSummary != null;
+        long size = tableSummary.rowCount;
+
+        DoubleDataRangeSketch drsk = new DoubleDataRangeSketch(col0);
+        DataRange dataRange0 = data.blockingSketch(drsk);
+        assert dataRange0 != null;
+        drsk = new DoubleDataRangeSketch(col1);
+        DataRange dataRange1 = data.blockingSketch(drsk);
+        assert dataRange1 != null;
+
+        DoubleHistogramBuckets buckDes0 = new DoubleHistogramBuckets(
+            dataRange0.min, dataRange0.max, buckets);
+        DoubleHistogramBuckets buckDes1 = new DoubleHistogramBuckets(
+            dataRange1.min, dataRange1.max, buckets);
+
+        ColumnQuantization q0 = null;
+        ColumnQuantization q1 = null;
+        Function<Heatmap, PrivateHeatmap> postprocess = x -> null;
+        if (!conf.usePublicData) {
+            PrivacySchema ps = this.flightsWrapper.getPrivacySchema();
+            q0 = ps.quantization(col0);
+            q1 = ps.quantization(col1);
+            double epsilon = ps.epsilon(col0, col1);
+            assert q0 != null;
+            assert q1 != null;
+            DyadicDecomposition d0 = new NumericDyadicDecomposition(
+                (DoubleColumnQuantization)q0, buckDes0);
+            DyadicDecomposition d1 = new NumericDyadicDecomposition(
+                (DoubleColumnQuantization)q0, buckDes0);
+            if (conf.usePostProcessing)
+                postprocess = x -> new PrivateHeatmap(d0, d1, x, epsilon);
+        }
+
+        assert this.ontimeSchema != null;
+        ColumnDescription desc0 = this.ontimeSchema.getDescription(col0);
+        ColumnDescription desc1 = this.ontimeSchema.getDescription(col1);
+        System.out.println("Bench,Time (ms),Melems/s,Percent slower");
+        String bench = "Heatmap " + col0 + "," + col1 + "," + conf.toString();
+        Runnable r;
+        Function<Heatmap, PrivateHeatmap> finalPostprocess = postprocess;
+        if (conf.useDatabase) {
+            ColumnQuantization finalQ0 = q0;
+            ColumnQuantization finalQ1 = q1;
+            r = () -> {
+                Heatmap h = this.database.heatmap(desc0, desc1,
+                    buckDes0, buckDes1, null, finalQ0, finalQ1);
+                finalPostprocess.apply(h);
+            };
+            return runNTimes(r, runCount, bench, size);
+        } else {
+            ISketch<ITable, Heatmap> hsk = new HeatmapSketch(
+                buckDes0, buckDes1, col0, col1, 1.0, 0, q0, q1);
+            r = () -> finalPostprocess.apply(data.blockingSketch(hsk));
+        }
+        return runNTimes(r, runCount, bench, size);
     }
 
     private double benchmarkNumericHistogram(ExperimentConfig conf, String col) {
@@ -135,9 +202,8 @@ public class DPBenchmarks extends Benchmarks {
         DataRange dataRange = data.blockingSketch(drsk);
         assert dataRange != null;
 
-        int bucketNum = 50;
         DoubleHistogramBuckets buckDes = new DoubleHistogramBuckets(
-            dataRange.min, dataRange.max, bucketNum);
+            dataRange.min, dataRange.max, buckets);
 
         ColumnQuantization q = null;
         Function<Histogram, PrivateHistogram> postprocess = x -> null;
@@ -155,7 +221,7 @@ public class DPBenchmarks extends Benchmarks {
         assert this.ontimeSchema != null;
         ColumnDescription desc = this.ontimeSchema.getDescription(col);
         System.out.println("Bench,Time (ms),Melems/s,Percent slower");
-        String bench = "Histogram " + col + conf.toString();
+        String bench = "Histogram " + col + "," + conf.toString();
         Runnable r;
         Function<Histogram, PrivateHistogram> finalPostprocess = postprocess;
         if (conf.useDatabase) {
@@ -177,9 +243,11 @@ public class DPBenchmarks extends Benchmarks {
     public void run() {
         assert this.ontimeSchema != null;
         ExperimentConfig conf = new ExperimentConfig();
-        conf.useDatabase = true;
-        for (ColumnDescription col: this.ontimeSchema.getColumnDescriptions()) {
-            if (col.kind.isNumeric()) {
+        for (boolean b: Arrays.asList(false, true)) {
+            conf.useDatabase = b;
+            List<ColumnDescription> cols = this.ontimeSchema.getColumnDescriptions();
+            cols = Linq.where(cols, c -> c.kind.isNumeric());
+            for (ColumnDescription col: cols) {
                 conf.usePublicData = true;
                 conf.usePostProcessing = false;
                 double pub = this.benchmarkNumericHistogram(conf, col.name);
@@ -187,6 +255,19 @@ public class DPBenchmarks extends Benchmarks {
                 double pri0 = this.benchmarkNumericHistogram(conf, col.name);
                 conf.usePostProcessing = true;
                 double pri1 = this.benchmarkNumericHistogram(conf, col.name);
+                System.out.println("Slowdown=" + Math.round(pri0 / pub * 100) + "%");
+                System.out.println("Slowdown w post=" + Math.round(pri1 / pub * 100) + "%");
+            }
+            for (int i = 0; i < cols.size() - 1; i++) {
+                String col0 = cols.get(i).name;
+                String col1 = cols.get(i + 1).name;
+                conf.usePublicData = true;
+                conf.usePostProcessing = false;
+                double pub = this.benchmarkNumericHeatmap(conf, col0, col1);
+                conf.usePublicData = false;
+                double pri0 = this.benchmarkNumericHeatmap(conf, col0, col1);
+                conf.usePostProcessing = true;
+                double pri1 = this.benchmarkNumericHeatmap(conf, col0, col1);
                 System.out.println("Slowdown=" + Math.round(pri0 / pub * 100) + "%");
                 System.out.println("Slowdown w post=" + Math.round(pri1 / pub * 100) + "%");
             }

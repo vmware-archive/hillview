@@ -171,8 +171,7 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
                 info[0].getBuckets(), info[1].getBuckets(),
                 this.wrapper.columnLimits,
                 null, null);
-        double epsilon = this.getPrivacySchema().epsilon(new String[] {
-                info[0].cd.name, info[1].cd.name});
+        double epsilon = this.getPrivacySchema().epsilon(info[0].cd.name, info[1].cd.name);
         ColumnQuantization q0 = this.getPrivacySchema().quantization(info[0].cd.name);
         ColumnQuantization q1 = this.getPrivacySchema().quantization(info[1].cd.name);
         Converters.checkNull(q0);

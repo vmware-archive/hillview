@@ -267,7 +267,7 @@ public class HillviewBenchmarks extends Benchmarks {
         assert ranks.get(0) == 0;
         for (int i = 1; i < numBuckets; i++) {
             int rankI = ranks.get(i);
-            int expected = MinKSet.getIntegerRank(i, numBuckets, suppSize - 1);
+            int expected = Utilities.getIntegerRank(i, numBuckets, suppSize - 1);
             int err = Math.abs(rankI - expected);
             if (err >= maxErr)
                 maxErr = err;

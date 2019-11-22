@@ -346,4 +346,34 @@ public class Utilities {
     public static <T> List<T> list(T... data) {
         return Arrays.asList(data);
     }
+
+    /**
+     * Rescale an index from 0-maxBuckets to 0-totalElements.
+     * Rank 0 is mapped to 0, rank maxBuckets is mapped to totalElements.
+     * The other values of rank are interpolated in between.
+     * @param rank            Rank of an element between 0 and maxBuckets.
+     * @param maxBuckets      Number of ranks desired.
+     * @param totalElements   Number of elements from which we extract the rank.
+     */
+    public static int getIntegerRank(int rank, int maxBuckets, int totalElements) {
+        return (int) Math.ceil(totalElements * rank / ((double)maxBuckets));
+    }
+
+    /**
+     * Extract `count` equi-spaced elements from `data`
+     * @param data    Data to extract from.
+     * @param count   Number of values to extract.  If data has fewer values return all.
+     * @param result  Deposit the result here.
+     */
+    public static <T> void equiSpaced(List<T> data, int count, List<T> result) {
+        int size = data.size();
+        if (size <= count) {
+            result.addAll(data);
+        } else {
+            for (int i = 0; i < count; i++) {
+                int j = Utilities.getIntegerRank(i, count, size);
+                result.add(data.get(j));
+            }
+        }
+    }
 }

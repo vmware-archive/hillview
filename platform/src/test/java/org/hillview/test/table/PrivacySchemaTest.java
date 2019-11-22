@@ -85,11 +85,11 @@ public class PrivacySchemaTest extends BaseTest {
     public void deserializeMultipleColumnsTest() {
         String md = "{'quantization':{'quantization':{'col1':{'type':'DoubleColumnQuantization','granularity':12.345,'globalMin':0.0,'globalMax':123.45},'col2':{'type':'DoubleColumnQuantization','granularity':0.5,'globalMin':-0.5,'globalMax':13.0}}},'epsilons':{'col1+col2':0.25,'col1':0.5},\"defaultEpsilons\":{\"1\":1,\"2\":1},\"defaultEpsilon\":0.001}";
         PrivacySchema mdSchema = PrivacySchema.loadFromString(md);
-        double eps = mdSchema.epsilon(new String[] {"col1", "col2"});
+        double eps = mdSchema.epsilon("col1", "col2");
         Assert.assertEquals(.25, eps, 0.001);
         eps = mdSchema.epsilon("not there");
         Assert.assertEquals(1, eps, .0001);
-        eps = mdSchema.epsilon(new String[] {"col1", "col2", "col3"});
+        eps = mdSchema.epsilon("col1", "col2", "col3");
         Assert.assertEquals(.001, eps, .0001);
     }
 }

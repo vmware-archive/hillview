@@ -11,7 +11,7 @@ import org.hillview.utils.HillviewLogger;
  */
 @SuppressWarnings("MismatchedReadAndWriteOfArray")
 public class PrivateHistogram extends HistogramPrefixSum implements IJson {
-    private double[] confidence;
+    private int[] confidence;
     private final double epsilon;
 
     public PrivateHistogram(DyadicDecomposition decomposition,
@@ -19,7 +19,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
                             double epsilon, boolean isCdf) {
         super(histogram);
         this.epsilon = epsilon;
-        this.confidence  = new double[histogram.getBucketCount()];
+        this.confidence  = new int[histogram.getBucketCount()];
         this.addDyadicLaplaceNoise(decomposition);
         if (isCdf) {
             this.recomputeCDF(decomposition);
@@ -73,7 +73,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
             decomposition.noiseForBucket(
                     i, this.epsilon, dist, baseVariance, false, noise);
             this.histogram.buckets[i] += noise.noise;
-            this.confidence[i] = noise.getConfidence();
+            this.confidence[i] = (int)noise.getConfidence();
         }
     }
 }
