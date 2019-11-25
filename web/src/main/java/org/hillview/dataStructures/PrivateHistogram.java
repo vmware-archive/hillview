@@ -44,7 +44,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
         for (int i = 0; i < this.cdfBuckets.length; i++) {
             noise.clear();
             decomposition.noiseForBucket(
-                    i, this.epsilon, dist, baseVariance, true, noise);
+                    i, this.epsilon, scale, baseVariance, true, noise);
             this.cdfBuckets[i] += noise.noise;
             if (i > 0) {
                 // Postprocess CDF to be monotonically increasing
@@ -71,7 +71,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
         Noise noise = new Noise();
         for (int i = 0; i < this.histogram.buckets.length; i++) {
             decomposition.noiseForBucket(
-                    i, this.epsilon, dist, baseVariance, false, noise);
+                    i, this.epsilon, scale, baseVariance, false, noise);
             this.histogram.buckets[i] += noise.noise;
             this.confidence[i] = (int)noise.getConfidence();
         }
