@@ -173,7 +173,7 @@ public abstract class DyadicDecomposition {
      * Compute noise for the given [left leaf, right leaf) range using the dyadic decomposition.
      * See also noiseForBucket.
      */
-    public void noiseForRange(int left, int right, double epsilon,
+    public long noiseForRange(int left, int right, double epsilon,
                               double scale, double baseVariance, boolean isCdf,
                               int hashCode, /*out*/Noise noise) {
         List<Pair<Integer, Integer>> intervals = DyadicDecomposition.kadicDecomposition(left, right, 2);
@@ -182,6 +182,8 @@ public abstract class DyadicDecomposition {
             noise.noise += laplace.sampleLaplace(x, scale);
             noise.variance += baseVariance;
         }
+
+        return intervals.size();
     }
 
     /**
@@ -195,11 +197,11 @@ public abstract class DyadicDecomposition {
      * Returns the noise and the total variance of the variables used to compute the noise.
      */
     @SuppressWarnings("ConstantConditions")
-    void noiseForBucket(int bucketIdx, double epsilon,
+    long noiseForBucket(int bucketIdx, double epsilon,
                         double scale, double baseVariance,
                         boolean isCdf, Noise noise) {
         Pair<Integer, Integer> range = this.bucketRange(bucketIdx, isCdf);
-        this.noiseForRange(range.first, range.second, epsilon, scale, baseVariance, isCdf, 31, noise);
+        return this.noiseForRange(range.first, range.second, epsilon, scale, baseVariance, isCdf, 31, noise);
     }
 
     @Override
