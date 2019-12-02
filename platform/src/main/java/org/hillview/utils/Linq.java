@@ -93,6 +93,14 @@ public class Linq {
         return (T[]) result.toArray();
     }
 
+    public static <T> boolean any(Iterable<T> data, Predicate<T> test) {
+        for (T d: data)
+            if (test.test(d)) {
+                return true;
+            }
+        return false;
+    }
+
     public static <T, S> S[] map(T[] data, Function<T, S> function, Class<S> sc) {
         @SuppressWarnings("unchecked")
         S[] result = (S[])Array.newInstance(sc, data.length);
