@@ -32,7 +32,7 @@ if [ ! -d apache-tomcat-${TOMCATVERSION} ]; then
     cd apache-tomcat-${TOMCATVERSION}/webapps
     rm -rf ROOT*
     ln -s ../../web/target/web-1.0-SNAPSHOT.war ROOT.war
-    cd ${mydir}
+    cd ../..
     rm -rf apache-tomcat-${TOMCATVERSION}.tar.gz
 else
     echo "Tomcat already installed"
