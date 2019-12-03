@@ -42,7 +42,7 @@ def download(startyear, startmonth, endyear, endmonth):
             print("Already having " + basename)
 
 def main():
-    download(2017, 1, 2017, 12)
+    download(2016, 1, 2016, 2)
 
 if __name__ == "__main__":
     main()
