@@ -77,6 +77,7 @@ data/segmentation.readme
 data/synthetic/gaussian.csv
 data/synthetic/gaussian.schema
 data/synthetic/privacy_metadata.json
+data/ontime_private/privacy_metadata.json
 
 *.DS_Store
 
