@@ -339,6 +339,8 @@ IntelliJ there.
 Alternatively, if you have IntelliJ Ultimate you can create an empty project
 in the hillview folder, and then import three modules (from File/Project structure/Modules,
 add three modules: web/pom.xml, platform/pom.xml, and the root folder hillview itself).
+After running `mvn install` in platform you should also mark the following directories 
+as generated sources: `platform/target/generated-sources/protobuf/*` 
 
 ## Using git to contribute
 
