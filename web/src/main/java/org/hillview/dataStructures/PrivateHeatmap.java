@@ -1,12 +1,10 @@
 package org.hillview.dataStructures;
 
-import org.apache.commons.math3.distribution.LaplaceDistribution;
 import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.Pair;
 import org.hillview.security.SecureLaplace;
 import org.hillview.sketches.results.Heatmap;
 import org.hillview.utils.Converters;
-import org.hillview.utils.HashUtil;
 import org.hillview.utils.HillviewLogger;
 
 import java.io.Serializable;
@@ -32,7 +30,6 @@ public class PrivateHeatmap implements Serializable, IJson {
      * rather than [bucket left leaf, bucket right leaf].
      * Returns the noise and the total variance of the variables used to compute the noise.
      */
-    @SuppressWarnings("ConstantConditions")
     private void noiseForBucket(
             List<Pair<Integer, Integer>> xIntervals,
             List<Pair<Integer, Integer>> yIntervals,
@@ -40,7 +37,6 @@ public class PrivateHeatmap implements Serializable, IJson {
             double baseVariance,
             /*out*/Noise result) {
         result.clear();
-        int hashCode = 31;
         for (Pair<Integer, Integer> x : xIntervals) {
             for (Pair<Integer, Integer> y : yIntervals) {
                 result.noise += laplace.sampleLaplace(x, y, scale);
@@ -73,7 +69,6 @@ public class PrivateHeatmap implements Serializable, IJson {
             (1 + dy.getQuantizationIntervalCount());  // +1 for the NULL bucket
         double scale = Math.log(totalLeaves) / Math.log(2);
         scale /= epsilon;
-        LaplaceDistribution dist = new LaplaceDistribution(0, scale);
         double baseVariance = 2 * (Math.pow(scale, 2));
         Converters.checkNull(this.heatmap.confidence);
         for (int i = 0; i < this.heatmap.buckets.length; i++) {

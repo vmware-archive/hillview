@@ -131,7 +131,7 @@ export class RpcRequest<T> implements ICancellable<T> {
     }
 
     public serialize(): Uint8Array {
-        let argString = "";
+        let argString;
         if (this.args == null)
             argString = JSON.stringify(null);
         else if  (this.args.toJSON != null)

@@ -99,8 +99,8 @@ public class MySqlJdbcConnection extends JdbcConnection {
             String result = "";
             if (filter.complement)
                 result += "not ";
-            String minString = "";
-            String maxString = "";
+            String minString;
+            String maxString;
             if (filter.cd.kind.isString()) {
                 minString = filter.minString;
                 maxString = filter.maxString;
@@ -108,12 +108,12 @@ public class MySqlJdbcConnection extends JdbcConnection {
                 Instant minDate = Converters.toDate(filter.min);
                 Instant maxDate = Converters.toDate(filter.max);
                 minString = this.dateFormatter.format(minDate);
-                 maxString = this.dateFormatter.format(maxDate);
+                maxString = this.dateFormatter.format(maxDate);
             } else {
                 minString = Double.toString(filter.min);
                 maxString = Double.toString(filter.max);
             }
-            return "(" + filter.cd.name + " >= " +
+            return result + "(" + filter.cd.name + " >= " +
                     this.quote(filter.cd, minString) + " and " +
                     filter.cd.name + " <= " + this.quote(filter.cd, maxString) + ")";
         }
@@ -143,9 +143,7 @@ public class MySqlJdbcConnection extends JdbcConnection {
             } else if (this.cd.kind == ContentsKind.Date) {
                 DoubleColumnQuantization q = this.getDoubleQuantization();
                 Instant minDate = Converters.toDate(q.globalMin);
-                Instant maxDate = Converters.toDate(q.globalMax);
                 String minString = this.dateFormatter.format(minDate);
-                String maxString = this.dateFormatter.format(maxDate);
                 double g = 1000.0 * q.granularity;
                 return "TIMESTAMPADD(MICROSECOND, FLOOR(TIMESTAMPDIFF(MICROSECOND, " +
                         "'" + minString + "', " + cd.name + ") / " + g + ") * " + g + ", '" +
@@ -461,7 +459,6 @@ public class MySqlJdbcConnection extends JdbcConnection {
               order by count desc
               having ct > minCt
          */
-        boolean first = true;
         String cols = String.join(", ", schema.getColumnNames());
         builder.append("select ").append(cols)
                 .append(", count(*) AS ").append(ctcol)

@@ -2,10 +2,10 @@ package org.hillview.test.security;
 
 import org.hillview.dataset.api.Pair;
 import org.hillview.security.SecureLaplace;
+import org.hillview.test.BaseTest;
 import org.junit.Test;
 
-public class SecureLaplaceTest {
-
+public class SecureLaplaceTest extends BaseTest {
     @Test
     public void LaplaceTest() {
         SecureLaplace sl = new SecureLaplace();

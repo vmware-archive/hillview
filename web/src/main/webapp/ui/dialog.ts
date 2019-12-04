@@ -605,7 +605,7 @@ export class Dialog extends DialogBase {
      * @param {string} value  Value that is being set.
      */
     public setFieldValue(field: string, value: string): void {
-        const f = this.fields.get(field);
+        let f = this.fields.get(field);
         if (f.type === FieldKind.Boolean) {
             const hi = f.html as HTMLInputElement;
             hi.checked = (value === "true");

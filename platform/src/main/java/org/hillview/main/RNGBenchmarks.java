@@ -3,7 +3,6 @@ package org.hillview.main;
 import org.apache.commons.math3.distribution.LaplaceDistribution;
 import org.hillview.dataset.api.Pair;
 import org.hillview.security.SecureLaplace;
-import org.hillview.utils.Converters;
 import org.hillview.utils.HashUtil;
 
 import java.util.ArrayList;
@@ -18,7 +17,9 @@ public class RNGBenchmarks extends Benchmarks {
     static ArrayList<Pair<Integer, Integer>> generateRandomPairs(int nPairs, int min, int max) {
         ArrayList<Pair<Integer, Integer>> ret = new ArrayList<>();
         for (int i = 0; i < nPairs; i++) {
-             ret.add(new Pair(rand.nextInt((max - min) + 1) + min, rand.nextInt((max - min) + 1) + min));
+             ret.add(new Pair<Integer, Integer>(
+                     rand.nextInt((max - min) + 1) + min,
+                     rand.nextInt((max - min) + 1) + min));
         }
 
         return ret;
@@ -44,10 +45,8 @@ public class RNGBenchmarks extends Benchmarks {
 
     public static void main(String[] args) {
         ArrayList<Pair<Integer, Integer>> pairs = generateRandomPairs(1000000, 100, 100);
-
         Runnable r = () -> runAES(pairs);
         runNTimes(r, 1, "AES", pairs.size());
-
         Runnable r2 = () -> runMurmur(pairs);
         runNTimes(r2, 1, "Murmur+CommonsLaplace", pairs.size());
     }

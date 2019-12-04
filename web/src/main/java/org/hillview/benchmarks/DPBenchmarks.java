@@ -45,6 +45,7 @@ import org.hillview.table.api.ITable;
 import org.hillview.table.columns.ColumnQuantization;
 import org.hillview.table.columns.DoubleColumnQuantization;
 import org.hillview.targets.DPWrapper;
+import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Linq;
 
@@ -60,19 +61,18 @@ import java.util.logging.Level;
  * This is a main class for running various differential privacy benchmarks.
  * The measurements are run headless.
  */
-@SuppressWarnings("FieldCanBeLocal")
 public class DPBenchmarks extends Benchmarks {
     private static int runCount = 5;
-    private static boolean local = true;
     private static int buckets = 100;
     @Nullable
     private Schema ontimeSchema;
 
     @Nullable
     private IDataSet<ITable> flights;
-    private LocalDataSet<Empty> start = new LocalDataSet<Empty>(Empty.getInstance());
+    private LocalDataSet<Empty> start;
     private DPWrapper flightsWrapper;
     private JdbcDatabase database;
+    private long size;
 
     private DPBenchmarks() throws SQLException {
         this.start = new LocalDataSet<Empty>(Empty.getInstance());
@@ -80,7 +80,7 @@ public class DPBenchmarks extends Benchmarks {
     }
 
     private void loadData() throws SQLException {
-        /*System.out.println("Loading database");
+        System.out.println("Loading database");
         JdbcConnectionInformation conn = new JdbcConnectionInformation();
         conn.host = "localhost";
         conn.database = "flights";
@@ -91,12 +91,12 @@ public class DPBenchmarks extends Benchmarks {
         conn.port = 3306;
         conn.lazyLoading = false;
         this.database = new JdbcDatabase(conn);
-        this.database.connect();*/
+        this.database.connect();
 
         FileSetDescription desc = new FileSetDescription();
         desc.fileKind = "csv";
         desc.headerRow = true;
-        desc.fileNamePattern = "data/ontime_private/2016*.csv";
+        desc.fileNamePattern = "data/bench/2017*.csv*";
         desc.schemaFile = "short.schema";
         System.out.println("Loading dataset");
         this.flights = this.loadTable(desc);
@@ -105,6 +105,15 @@ public class DPBenchmarks extends Benchmarks {
         PrivacySchema ps = PrivacySchema.loadFromFile(privacyMetadataFile);
         this.flightsWrapper = new DPWrapper(ps);
         this.ontimeSchema = Schema.readFromJsonFile(Paths.get("data/ontime/short.schema"));
+
+        IDataSet<ITable> data = this.flights;
+        assert data != null;
+        SummarySketch sk = new SummarySketch();
+        TableSummary tableSummary = data.blockingSketch(sk);
+        assert tableSummary != null;
+        this.size = tableSummary.rowCount;
+        if (this.size == 0)
+            throw new RuntimeException("No file data loaded");
     }
 
     private IDataSet<ITable> loadTable(FileSetDescription desc) {
@@ -129,18 +138,12 @@ public class DPBenchmarks extends Benchmarks {
     }
 
     private double benchmarkNumericHeatmap(ExperimentConfig conf, String col0, String col1) {
-        IDataSet<ITable> data = this.flights;
-        assert data != null;
-        SummarySketch sk = new SummarySketch();
-        TableSummary tableSummary = data.blockingSketch(sk);
-        assert tableSummary != null;
-        long size = tableSummary.rowCount;
-
         DoubleDataRangeSketch drsk = new DoubleDataRangeSketch(col0);
-        DataRange dataRange0 = data.blockingSketch(drsk);
+        Converters.checkNull(this.flights);
+        DataRange dataRange0 = this.flights.blockingSketch(drsk);
         assert dataRange0 != null;
         drsk = new DoubleDataRangeSketch(col1);
-        DataRange dataRange1 = data.blockingSketch(drsk);
+        DataRange dataRange1 = this.flights.blockingSketch(drsk);
         assert dataRange1 != null;
 
         DoubleHistogramBuckets buckDes0 = new DoubleHistogramBuckets(
@@ -185,21 +188,15 @@ public class DPBenchmarks extends Benchmarks {
         } else {
             ISketch<ITable, Heatmap> hsk = new HeatmapSketch(
                 buckDes0, buckDes1, col0, col1, 1.0, 0, q0, q1);
-            r = () -> finalPostprocess.apply(data.blockingSketch(hsk));
+            r = () -> finalPostprocess.apply(this.flights.blockingSketch(hsk));
         }
         return runNTimes(r, runCount, bench, size);
     }
 
     private double benchmarkNumericHistogram(ExperimentConfig conf, String col) {
-        IDataSet<ITable> data = this.flights;
-        assert data != null;
-        SummarySketch sk = new SummarySketch();
-        TableSummary tableSummary = data.blockingSketch(sk);
-        assert tableSummary != null;
-        long size = tableSummary.rowCount;
-
         DoubleDataRangeSketch drsk = new DoubleDataRangeSketch(col);
-        DataRange dataRange = data.blockingSketch(drsk);
+        Converters.checkNull(this.flights);
+        DataRange dataRange = this.flights.blockingSketch(drsk);
         assert dataRange != null;
 
         DoubleHistogramBuckets buckDes = new DoubleHistogramBuckets(
@@ -235,8 +232,7 @@ public class DPBenchmarks extends Benchmarks {
         } else {
             ISketch<ITable, Histogram> hsk = new HistogramSketch(
                 buckDes, col, 1.0, 0, q);
-            Histogram histo = data.blockingSketch(hsk);
-            r = () -> finalPostprocess.apply(histo);
+            r = () -> finalPostprocess.apply(this.flights.blockingSketch(hsk));
         }
         return runNTimes(r, runCount, bench, size);
     }
@@ -244,7 +240,7 @@ public class DPBenchmarks extends Benchmarks {
     public void run() {
         assert this.ontimeSchema != null;
         ExperimentConfig conf = new ExperimentConfig();
-        for (boolean b: Arrays.asList(false)) {
+        for (boolean b: Arrays.asList(false, true)) {
             conf.useDatabase = b;
             List<ColumnDescription> cols = this.ontimeSchema.getColumnDescriptions();
             cols = Linq.where(cols, c -> c.kind.isNumeric());

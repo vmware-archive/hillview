@@ -61,6 +61,7 @@ public class JsonList<T> implements IJson, List<T> {
         this.add(v3);
     }
 
+    @SuppressWarnings({"ManualArrayToCollectionCopy", "UseBulkOperation"})
     public JsonList(T[] data) {
         this(data.length);
         for (T t : data)

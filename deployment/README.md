@@ -1,7 +1,7 @@
 # Deploying Hillview
 
 We are deprecating Ansible for Hillview's management; the deployment
-is now done using just: ![../README.md#deployment](Python scripts).
+is now done using just: ![Python scripts](../README.md#deployment).
 This folder contains some left-over ansible scripts for managing
 software installation on the cluster; they will be eventually
 deprecated.
