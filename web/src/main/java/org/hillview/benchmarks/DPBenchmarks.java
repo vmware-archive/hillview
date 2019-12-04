@@ -80,7 +80,7 @@ public class DPBenchmarks extends Benchmarks {
     }
 
     private void loadData() throws SQLException {
-        System.out.println("Loading database");
+        /*System.out.println("Loading database");
         JdbcConnectionInformation conn = new JdbcConnectionInformation();
         conn.host = "localhost";
         conn.database = "flights";
@@ -91,12 +91,12 @@ public class DPBenchmarks extends Benchmarks {
         conn.port = 3306;
         conn.lazyLoading = false;
         this.database = new JdbcDatabase(conn);
-        this.database.connect();
+        this.database.connect();*/
 
         FileSetDescription desc = new FileSetDescription();
         desc.fileKind = "csv";
         desc.headerRow = true;
-        desc.fileNamePattern = "data/bench/2017*.csv.gz";
+        desc.fileNamePattern = "data/ontime_private/2016*.csv";
         desc.schemaFile = "short.schema";
         System.out.println("Loading dataset");
         this.flights = this.loadTable(desc);
@@ -235,7 +235,8 @@ public class DPBenchmarks extends Benchmarks {
         } else {
             ISketch<ITable, Histogram> hsk = new HistogramSketch(
                 buckDes, col, 1.0, 0, q);
-            r = () -> finalPostprocess.apply(data.blockingSketch(hsk));
+            Histogram histo = data.blockingSketch(hsk);
+            r = () -> finalPostprocess.apply(histo);
         }
         return runNTimes(r, runCount, bench, size);
     }
@@ -243,7 +244,7 @@ public class DPBenchmarks extends Benchmarks {
     public void run() {
         assert this.ontimeSchema != null;
         ExperimentConfig conf = new ExperimentConfig();
-        for (boolean b: Arrays.asList(false, true)) {
+        for (boolean b: Arrays.asList(false)) {
             conf.useDatabase = b;
             List<ColumnDescription> cols = this.ontimeSchema.getColumnDescriptions();
             cols = Linq.where(cols, c -> c.kind.isNumeric());
@@ -255,8 +256,8 @@ public class DPBenchmarks extends Benchmarks {
                 double pri0 = this.benchmarkNumericHistogram(conf, col.name);
                 conf.usePostProcessing = true;
                 double pri1 = this.benchmarkNumericHistogram(conf, col.name);
-                System.out.println("Slowdown=" + Math.round(pri0 / pub * 100) + "%");
-                System.out.println("Slowdown w post=" + Math.round(pri1 / pub * 100) + "%");
+                System.out.println("Slowdown of quantized=" + Math.round(pri0 / pub * 100) + "%");
+                System.out.println("Slowdown of private=" + Math.round(pri1 / pub * 100) + "%");
             }
             for (int i = 0; i < cols.size() - 1; i++) {
                 String col0 = cols.get(i).name;
@@ -268,8 +269,8 @@ public class DPBenchmarks extends Benchmarks {
                 double pri0 = this.benchmarkNumericHeatmap(conf, col0, col1);
                 conf.usePostProcessing = true;
                 double pri1 = this.benchmarkNumericHeatmap(conf, col0, col1);
-                System.out.println("Slowdown=" + Math.round(pri0 / pub * 100) + "%");
-                System.out.println("Slowdown w post=" + Math.round(pri1 / pub * 100) + "%");
+                System.out.println("Slowdown of quantized=" + Math.round(pri0 / pub * 100) + "%");
+                System.out.println("Slowdown of private=" + Math.round(pri1 / pub * 100) + "%");
             }
         }
     }
