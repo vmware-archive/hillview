@@ -73,7 +73,6 @@ public class SecureLaplace {
 
 
     /* **** Equivalent functions in two dimensions *****/
-    /* TODO (pratiksha): Check that AES is using the correct number of input bytes. */
 
     /**
      * Securely sample a random double uniformly in [0, 1). This implementation returns
