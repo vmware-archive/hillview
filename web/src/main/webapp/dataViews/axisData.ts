@@ -15,29 +15,12 @@
  * limitations under the License.
  */
 
-import {
-    axisBottom as d3axisBottom,
-    axisLeft as d3axisLeft,
-} from "d3-axis";
-import {
-    scaleLinear as d3scaleLinear,
-    scaleTime as d3scaleTime,
-} from "d3-scale";
-import {
-    ContentsKind,
-    BucketsInfo,
-    IColumnDescription,
-    kindIsString
-} from "../javaBridge";
-import {
-    assert,
-    Converters,
-    formatDate,
-    formatNumber,
-    significantDigits, truncate,
-} from "../util";
+import {axisBottom as d3axisBottom, axisLeft as d3axisLeft,} from "d3-axis";
+import {scaleLinear as d3scaleLinear, scaleTime as d3scaleTime,} from "d3-scale";
+import {BucketsInfo, ContentsKind, IColumnDescription, kindIsString} from "../javaBridge";
+import {assert, Converters, formatDate, formatNumber, significantDigits, truncate,} from "../util";
 import {AnyScale, D3Axis, D3SvgElement, SpecialChars} from "../ui/ui";
-import { SchemaClass } from "../schemaClass";
+import {SchemaClass} from "../schemaClass";
 
 export enum AxisKind {
     Bottom,
@@ -205,8 +188,7 @@ export class AxisData {
                 };
             }
         }
-        const strings = this.range !== null ? this.range.stringQuantiles : null;
-        this.leftBucketBoundaries = strings;
+        this.leftBucketBoundaries = this.range !== null ? this.range.stringQuantiles : null;
         // These are set when we know the screen size.
         this.scale = null;
         this.axis = null;

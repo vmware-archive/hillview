@@ -45,6 +45,7 @@ import org.hillview.table.api.ITable;
 import org.hillview.table.columns.ColumnQuantization;
 import org.hillview.table.columns.DoubleColumnQuantization;
 import org.hillview.targets.DPWrapper;
+import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Linq;
 
@@ -60,19 +61,18 @@ import java.util.logging.Level;
  * This is a main class for running various differential privacy benchmarks.
  * The measurements are run headless.
  */
-@SuppressWarnings("FieldCanBeLocal")
 public class DPBenchmarks extends Benchmarks {
     private static int runCount = 5;
-    private static boolean local = true;
     private static int buckets = 100;
     @Nullable
     private Schema ontimeSchema;
 
     @Nullable
     private IDataSet<ITable> flights;
-    private LocalDataSet<Empty> start = new LocalDataSet<Empty>(Empty.getInstance());
+    private LocalDataSet<Empty> start;
     private DPWrapper flightsWrapper;
     private JdbcDatabase database;
+    private long size;
 
     private DPBenchmarks() throws SQLException {
         this.start = new LocalDataSet<Empty>(Empty.getInstance());
@@ -96,7 +96,7 @@ public class DPBenchmarks extends Benchmarks {
         FileSetDescription desc = new FileSetDescription();
         desc.fileKind = "csv";
         desc.headerRow = true;
-        desc.fileNamePattern = "data/bench/2017*.csv.gz";
+        desc.fileNamePattern = "data/bench/2017*.csv*";
         desc.schemaFile = "short.schema";
         System.out.println("Loading dataset");
         this.flights = this.loadTable(desc);
@@ -105,6 +105,15 @@ public class DPBenchmarks extends Benchmarks {
         PrivacySchema ps = PrivacySchema.loadFromFile(privacyMetadataFile);
         this.flightsWrapper = new DPWrapper(ps);
         this.ontimeSchema = Schema.readFromJsonFile(Paths.get("data/ontime/short.schema"));
+
+        IDataSet<ITable> data = this.flights;
+        assert data != null;
+        SummarySketch sk = new SummarySketch();
+        TableSummary tableSummary = data.blockingSketch(sk);
+        assert tableSummary != null;
+        this.size = tableSummary.rowCount;
+        if (this.size == 0)
+            throw new RuntimeException("No file data loaded");
     }
 
     private IDataSet<ITable> loadTable(FileSetDescription desc) {
@@ -129,18 +138,12 @@ public class DPBenchmarks extends Benchmarks {
     }
 
     private double benchmarkNumericHeatmap(ExperimentConfig conf, String col0, String col1) {
-        IDataSet<ITable> data = this.flights;
-        assert data != null;
-        SummarySketch sk = new SummarySketch();
-        TableSummary tableSummary = data.blockingSketch(sk);
-        assert tableSummary != null;
-        long size = tableSummary.rowCount;
-
         DoubleDataRangeSketch drsk = new DoubleDataRangeSketch(col0);
-        DataRange dataRange0 = data.blockingSketch(drsk);
+        Converters.checkNull(this.flights);
+        DataRange dataRange0 = this.flights.blockingSketch(drsk);
         assert dataRange0 != null;
         drsk = new DoubleDataRangeSketch(col1);
-        DataRange dataRange1 = data.blockingSketch(drsk);
+        DataRange dataRange1 = this.flights.blockingSketch(drsk);
         assert dataRange1 != null;
 
         DoubleHistogramBuckets buckDes0 = new DoubleHistogramBuckets(
@@ -185,21 +188,15 @@ public class DPBenchmarks extends Benchmarks {
         } else {
             ISketch<ITable, Heatmap> hsk = new HeatmapSketch(
                 buckDes0, buckDes1, col0, col1, 1.0, 0, q0, q1);
-            r = () -> finalPostprocess.apply(data.blockingSketch(hsk));
+            r = () -> finalPostprocess.apply(this.flights.blockingSketch(hsk));
         }
         return runNTimes(r, runCount, bench, size);
     }
 
     private double benchmarkNumericHistogram(ExperimentConfig conf, String col) {
-        IDataSet<ITable> data = this.flights;
-        assert data != null;
-        SummarySketch sk = new SummarySketch();
-        TableSummary tableSummary = data.blockingSketch(sk);
-        assert tableSummary != null;
-        long size = tableSummary.rowCount;
-
         DoubleDataRangeSketch drsk = new DoubleDataRangeSketch(col);
-        DataRange dataRange = data.blockingSketch(drsk);
+        Converters.checkNull(this.flights);
+        DataRange dataRange = this.flights.blockingSketch(drsk);
         assert dataRange != null;
 
         DoubleHistogramBuckets buckDes = new DoubleHistogramBuckets(
@@ -235,7 +232,7 @@ public class DPBenchmarks extends Benchmarks {
         } else {
             ISketch<ITable, Histogram> hsk = new HistogramSketch(
                 buckDes, col, 1.0, 0, q);
-            r = () -> finalPostprocess.apply(data.blockingSketch(hsk));
+            r = () -> finalPostprocess.apply(this.flights.blockingSketch(hsk));
         }
         return runNTimes(r, runCount, bench, size);
     }
@@ -255,8 +252,8 @@ public class DPBenchmarks extends Benchmarks {
                 double pri0 = this.benchmarkNumericHistogram(conf, col.name);
                 conf.usePostProcessing = true;
                 double pri1 = this.benchmarkNumericHistogram(conf, col.name);
-                System.out.println("Slowdown=" + Math.round(pri0 / pub * 100) + "%");
-                System.out.println("Slowdown w post=" + Math.round(pri1 / pub * 100) + "%");
+                System.out.println("Slowdown of quantized=" + Math.round(pri0 / pub * 100) + "%");
+                System.out.println("Slowdown of private=" + Math.round(pri1 / pub * 100) + "%");
             }
             for (int i = 0; i < cols.size() - 1; i++) {
                 String col0 = cols.get(i).name;
@@ -268,8 +265,8 @@ public class DPBenchmarks extends Benchmarks {
                 double pri0 = this.benchmarkNumericHeatmap(conf, col0, col1);
                 conf.usePostProcessing = true;
                 double pri1 = this.benchmarkNumericHeatmap(conf, col0, col1);
-                System.out.println("Slowdown=" + Math.round(pri0 / pub * 100) + "%");
-                System.out.println("Slowdown w post=" + Math.round(pri1 / pub * 100) + "%");
+                System.out.println("Slowdown of quantized=" + Math.round(pri0 / pub * 100) + "%");
+                System.out.println("Slowdown of private=" + Math.round(pri1 / pub * 100) + "%");
             }
         }
     }

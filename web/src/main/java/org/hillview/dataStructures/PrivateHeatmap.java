@@ -1,11 +1,10 @@
 package org.hillview.dataStructures;
 
-import org.apache.commons.math3.distribution.LaplaceDistribution;
 import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.Pair;
+import org.hillview.security.SecureLaplace;
 import org.hillview.sketches.results.Heatmap;
 import org.hillview.utils.Converters;
-import org.hillview.utils.HashUtil;
 import org.hillview.utils.HillviewLogger;
 
 import java.io.Serializable;
@@ -15,11 +14,13 @@ import java.util.List;
 public class PrivateHeatmap implements Serializable, IJson {
     public Heatmap heatmap;
     private double epsilon;
+    private SecureLaplace laplace;
 
     public PrivateHeatmap(DyadicDecomposition d0, DyadicDecomposition d1,
                           Heatmap heatmap, double epsilon) {
         this.heatmap = heatmap;
         this.epsilon = epsilon;
+        this.laplace = new SecureLaplace();
         this.addDyadicLaplaceNoise(d0, d1);
     }
 
@@ -29,23 +30,16 @@ public class PrivateHeatmap implements Serializable, IJson {
      * rather than [bucket left leaf, bucket right leaf].
      * Returns the noise and the total variance of the variables used to compute the noise.
      */
-    @SuppressWarnings("ConstantConditions")
     private void noiseForBucket(
             List<Pair<Integer, Integer>> xIntervals,
             List<Pair<Integer, Integer>> yIntervals,
-            LaplaceDistribution dist,
+            double scale,
             double baseVariance,
             /*out*/Noise result) {
         result.clear();
-        int hashCode = 31;
         for (Pair<Integer, Integer> x : xIntervals) {
             for (Pair<Integer, Integer> y : yIntervals) {
-                hashCode = HashUtil.murmurHash3(hashCode, x.first);
-                hashCode = HashUtil.murmurHash3(hashCode, x.second);
-                hashCode = HashUtil.murmurHash3(hashCode, y.first);
-                hashCode = HashUtil.murmurHash3(hashCode, y.second);
-                dist.reseedRandomGenerator(hashCode);
-                result.noise += dist.sample();
+                result.noise += laplace.sampleLaplace(x, y, scale);
                 result.variance += baseVariance;
             }
         }
@@ -75,12 +69,11 @@ public class PrivateHeatmap implements Serializable, IJson {
             (1 + dy.getQuantizationIntervalCount());  // +1 for the NULL bucket
         double scale = Math.log(totalLeaves) / Math.log(2);
         scale /= epsilon;
-        LaplaceDistribution dist = new LaplaceDistribution(0, scale);
         double baseVariance = 2 * (Math.pow(scale, 2));
         Converters.checkNull(this.heatmap.confidence);
         for (int i = 0; i < this.heatmap.buckets.length; i++) {
             for (int j = 0; j < this.heatmap.buckets[i].length; j++) {
-                this.noiseForBucket(xIntervals.get(i), yIntervals.get(j), dist, baseVariance, noise);
+                this.noiseForBucket(xIntervals.get(i), yIntervals.get(j), scale, baseVariance, noise);
                 this.heatmap.buckets[i][j] += noise.noise;
                 this.heatmap.confidence[i][j] = (int)(2 * Math.sqrt(noise.variance));
             }

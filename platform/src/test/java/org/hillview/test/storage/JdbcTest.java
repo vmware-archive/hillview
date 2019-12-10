@@ -22,7 +22,6 @@ import org.hillview.storage.JdbcDatabase;
 import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;
 import org.junit.Assert;
-import org.junit.Test;
 
 import javax.annotation.Nullable;
 import java.sql.SQLException;

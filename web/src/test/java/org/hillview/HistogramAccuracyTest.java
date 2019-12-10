@@ -17,7 +17,6 @@
 
 package org.hillview;
 
-import org.apache.commons.math3.distribution.LaplaceDistribution;
 import org.hillview.dataStructures.DyadicDecomposition;
 import org.hillview.dataStructures.HistogramRequestInfo;
 import org.hillview.dataStructures.Noise;
@@ -92,8 +91,6 @@ public class HistogramAccuracyTest {
             double scale = Math.log(totalLeaves) / Math.log(2);
             scale /= epsilon;
             double baseVariance = 2 * Math.pow(scale, 2);
-            LaplaceDistribution dist = new LaplaceDistribution(0, scale); // TODO: (more) secure PRG
-
             // Do all-intervals accuracy on leaves.
             int n = 0;
             double sqtot = 0.0;
@@ -101,8 +98,8 @@ public class HistogramAccuracyTest {
             Noise noise = new Noise();
             for (int left = 0; left < hist.getBucketCount(); left++) {
                 for (int right = left; right < hist.getBucketCount(); right++) {
-                    dd.noiseForRange(left, right, epsilon,
-                            dist, baseVariance, false, 31, noise);
+                    dd.noiseForRange(left, right,
+                            scale, baseVariance, noise);
                     sqtot += Math.pow(noise.noise, 2);
                     abstot += Math.abs(noise.noise);
                     n++;

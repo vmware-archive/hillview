@@ -38,7 +38,14 @@ else
     echo "Tomcat already installed"
 fi
 
-cd ${mydir}/../web/src/main/webapp
+echo "Downloading test data"
+cd ${mydir}/../data/ontime
+./download.py
+cd ../ontime_private
+./gen_metadata.py
+cd ../..
+
+cd web/src/main/webapp
 echo "Installing Javascript packages"
 rm -f node_modules/typescript
 npm install

@@ -495,7 +495,7 @@ export class Histogram2DView extends HistogramViewBase {
      * canvas or legend rectangle respectively.
      */
     protected selectionCompleted(xl: number, xr: number, inLegend: boolean): void {
-        let selectedAxis: AxisData = null;
+        let selectedAxis: AxisData;
         [xl, xr] = reorder(xl, xr);
 
         if (inLegend) {

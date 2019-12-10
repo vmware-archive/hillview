@@ -16,13 +16,7 @@
  */
 
 import {OnCompleteReceiver} from "../rpc";
-import {
-    BucketsInfo,
-    HistogramArgs,
-    IColumnDescription,
-    kindIsString,
-    RemoteObjectId,
-} from "../javaBridge";
+import {BucketsInfo, HistogramArgs, IColumnDescription, kindIsString, RemoteObjectId,} from "../javaBridge";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {ICancellable, Seed} from "../util";
@@ -88,10 +82,12 @@ export class TrellisLayoutComputation {
     }
 
     public static resize(xMax: number, yMax: number, shape: TrellisShape): TrellisShape {
-        const result = { ... shape, size: {
-            width: Math.floor(xMax / shape.xNum),
-                height: Math.floor(yMax / shape.yNum) - shape.headerHeight  } };
-        return result;
+        return {
+            ...shape, size: {
+                width: Math.floor(xMax / shape.xNum),
+                height: Math.floor(yMax / shape.yNum) - shape.headerHeight
+            }
+        };
     }
 
     public getShape(nBuckets: number): TrellisShape {
@@ -207,14 +203,13 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
             let bounds = range.stringQuantiles;
             if (bucketCount !== 0)
                 bounds = periodicSamples(range.stringQuantiles, bucketCount);
-            const args: HistogramArgs = {
+            return {
                 cd: cd,
                 seed: Seed.instance.getSampled(samplingRate),
                 samplingRate: samplingRate,
                 leftBoundaries: bounds,
                 bucketCount: bounds.length,
             };
-            return args;
         } else {
             let cdfCount = Math.floor(chartSize.width);
             if (bucketCount !== 0)
