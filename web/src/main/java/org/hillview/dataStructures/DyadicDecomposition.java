@@ -18,7 +18,6 @@
 package org.hillview.dataStructures;
 
 import org.hillview.dataset.api.Pair;
-import org.hillview.security.SecureLaplace;
 import org.hillview.sketches.results.IHistogramBuckets;
 import org.hillview.table.columns.ColumnQuantization;
 import org.hillview.utils.Converters;
@@ -40,12 +39,10 @@ public abstract class DyadicDecomposition {
      */
     final int[] bucketQuantizationIndexes;
     final ColumnQuantization quantization;
-    private SecureLaplace laplace;
 
     DyadicDecomposition(ColumnQuantization quantization, IHistogramBuckets buckets) {
         this.bucketQuantizationIndexes = new int[buckets.getBucketCount()];
         this.quantization = quantization;
-        this.laplace = new SecureLaplace();
     }
 
     /**
@@ -132,7 +129,7 @@ public abstract class DyadicDecomposition {
     /**
      * Return the start and end leaves for this bucket (right-exclusive).
      */
-    private Pair<Integer, Integer> bucketRange(int bucketIdx, boolean cdf) {
+    public Pair<Integer, Integer> bucketRange(int bucketIdx, boolean cdf) {
         int left = 0;
         if (!cdf)
             left = this.bucketQuantizationIndexes[bucketIdx];
@@ -162,39 +159,6 @@ public abstract class DyadicDecomposition {
             Converters.checkNull(range.first), Converters.checkNull(range.second));
     }
 
-    /**
-     * Compute noise for the given [left leaf, right leaf) range using the dyadic decomposition.
-     * See also noiseForBucket.
-     */
-    public long noiseForRange(int left, int right,
-                              double scale, double baseVariance,
-                              /*out*/Noise noise) {
-        List<Pair<Integer, Integer>> intervals = DyadicDecomposition.kadicDecomposition(left, right, 2);
-        noise.clear();
-        for (Pair<Integer, Integer> x : intervals) {
-            noise.noise += laplace.sampleLaplace(x, scale);
-            noise.variance += baseVariance;
-        }
-
-        return intervals.size();
-    }
-
-    /**
-     * Compute noise to add to this bucket using the dyadic decomposition as the PRG seed.
-     * @param bucketIdx: index of the bucket to compute noise for.
-     * @param scale:      scale of laplace distribution used to sample data
-     * @param baseVariance:  factor added to variance for each bucket
-     * @param isCdf: If true, computes the noise based on the dyadic decomposition of the interval [0, bucket right leaf]
-     *             rather than [bucket left leaf, bucket right leaf].
-     * Returns the noise and the total variance of the variables used to compute the noise.
-     */
-    @SuppressWarnings("ConstantConditions")
-    long noiseForBucket(int bucketIdx,
-                        double scale, double baseVariance,
-                        boolean isCdf, Noise noise) {
-        Pair<Integer, Integer> range = this.bucketRange(bucketIdx, isCdf);
-        return this.noiseForRange(range.first, range.second, scale, baseVariance, noise);
-    }
 
     @Override
     public String toString() {

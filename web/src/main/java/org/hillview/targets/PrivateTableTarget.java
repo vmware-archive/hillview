@@ -90,8 +90,8 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
                 new ConcurrentSketch<ITable, Histogram, Histogram>(sk, cdf);
         this.runCompleteSketch(this.table, csk, (e, c) ->
                 new Pair<PrivateHistogram, PrivateHistogram>(
-                        new PrivateHistogram(d0, Converters.checkNull(e.first), epsilon, false),
-                        new PrivateHistogram(d1, Converters.checkNull(e.second), epsilon, true)),
+                        new PrivateHistogram(d0, Converters.checkNull(e.first), epsilon, false, this.wrapper.laplace),
+                        new PrivateHistogram(d1, Converters.checkNull(e.second), epsilon, true, this.wrapper.laplace)),
                 request, context);
     }
 
@@ -173,7 +173,7 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
         HeatmapSketch sk = new HeatmapSketch(
                 b0, b1, info[0].cd.name, info[1].cd.name, 1.0, 0, q0, q1);
         this.runCompleteSketch(this.table, sk, (e, c) ->
-                new PrivateHeatmap(d0, d1, e, epsilon).heatmap, request, context);
+                new PrivateHeatmap(d0, d1, e, epsilon, this.wrapper.laplace).heatmap, request, context);
     }
 
     @HillviewRpc

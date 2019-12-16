@@ -166,7 +166,7 @@ public class DPBenchmarks extends Benchmarks {
             DyadicDecomposition d1 = new NumericDyadicDecomposition(
                 (DoubleColumnQuantization)q0, buckDes0);
             if (conf.usePostProcessing)
-                postprocess = x -> new PrivateHeatmap(d0, d1, x, epsilon);
+                postprocess = x -> new PrivateHeatmap(d0, d1, x, epsilon, this.flightsWrapper.laplace);
         }
 
         assert this.ontimeSchema != null;
@@ -212,7 +212,7 @@ public class DPBenchmarks extends Benchmarks {
             DyadicDecomposition d = new NumericDyadicDecomposition(
                 (DoubleColumnQuantization)q, buckDes);
             if (conf.usePostProcessing)
-                postprocess = x -> new PrivateHistogram(d, x, epsilon, false);
+                postprocess = x -> new PrivateHistogram(d, x, epsilon, false, this.flightsWrapper.laplace);
         }
 
         assert this.ontimeSchema != null;
