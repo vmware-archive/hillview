@@ -39,7 +39,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
      */
     public long noiseForRange(int left, int right,
                               double scale, double baseVariance,
-            /*out*/Noise noise) {
+                             /*out*/Noise noise) {
         List<Pair<Integer, Integer>> intervals = DyadicDecomposition.kadicDecomposition(left, right, 2);
         noise.clear();
         for (Pair<Integer, Integer> x : intervals) {
@@ -57,6 +57,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
      * @param baseVariance:  factor added to variance for each bucket
      * @param isCdf: If true, computes the noise based on the dyadic decomposition of the interval [0, bucket right leaf]
      *             rather than [bucket left leaf, bucket right leaf].
+     * @param decomposition: Specifies the dyadic decomposition to use when computing the nodes for this bucket.
      * Returns the noise and the total variance of the variables used to compute the noise.
      */
     @SuppressWarnings("ConstantConditions")
