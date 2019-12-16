@@ -1,8 +1,12 @@
 package org.hillview.dataStructures;
 
 import org.hillview.dataset.api.IJson;
+import org.hillview.dataset.api.Pair;
+import org.hillview.security.SecureLaplace;
 import org.hillview.sketches.results.Histogram;
 import org.hillview.utils.HillviewLogger;
+
+import java.util.List;
 
 /**
  * Contains methods for adding privacy to a non-private histogram computed over dyadic buckets,
@@ -12,11 +16,14 @@ import org.hillview.utils.HillviewLogger;
 public class PrivateHistogram extends HistogramPrefixSum implements IJson {
     private int[] confidence;
     private final double epsilon;
+    private final SecureLaplace laplace;
 
     public PrivateHistogram(DyadicDecomposition decomposition,
                             final Histogram histogram,
-                            double epsilon, boolean isCdf) {
+                            double epsilon, boolean isCdf,
+                            SecureLaplace laplace) {
         super(histogram);
+        this.laplace = laplace;
         this.epsilon = epsilon;
         this.confidence  = new int[histogram.getBucketCount()];
         long numRngCalls = this.addDyadicLaplaceNoise(decomposition);
@@ -24,6 +31,42 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
         if (isCdf) {
             this.recomputeCDF(decomposition);
         }
+    }
+
+    /**
+     * Compute noise for the given [left leaf, right leaf) range using the dyadic decomposition.
+     * See also noiseForBucket.
+     */
+    public long noiseForRange(int left, int right,
+                              double scale, double baseVariance,
+                             /*out*/Noise noise) {
+        List<Pair<Integer, Integer>> intervals = DyadicDecomposition.kadicDecomposition(left, right, 2);
+        noise.clear();
+        for (Pair<Integer, Integer> x : intervals) {
+            noise.noise += this.laplace.sampleLaplace(x, scale);
+            noise.variance += baseVariance;
+        }
+
+        return intervals.size();
+    }
+
+    /**
+     * Compute noise to add to this bucket using the dyadic decomposition as the PRG seed.
+     * @param bucketIdx: index of the bucket to compute noise for.
+     * @param scale:      scale of laplace distribution used to sample data
+     * @param baseVariance:  factor added to variance for each bucket
+     * @param isCdf: If true, computes the noise based on the dyadic decomposition of the interval [0, bucket right leaf]
+     *             rather than [bucket left leaf, bucket right leaf].
+     * @param decomposition: Specifies the dyadic decomposition to use when computing the nodes for this bucket.
+     * Returns the noise and the total variance of the variables used to compute the noise.
+     */
+    @SuppressWarnings("ConstantConditions")
+    long noiseForBucket(int bucketIdx,
+                        double scale, double baseVariance,
+                        boolean isCdf, Noise noise,
+                        DyadicDecomposition decomposition) {
+        Pair<Integer, Integer> range = decomposition.bucketRange(bucketIdx, isCdf);
+        return this.noiseForRange(range.first, range.second, scale, baseVariance, noise);
     }
 
     /**
@@ -41,8 +84,8 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
         Noise noise = new Noise();
         for (int i = 0; i < this.cdfBuckets.length; i++) {
             noise.clear();
-            decomposition.noiseForBucket(
-                    i, scale, baseVariance, true, noise);
+            this.noiseForBucket(
+                    i, scale, baseVariance, true, noise, decomposition);
             this.cdfBuckets[i] += noise.noise;
             if (i > 0) {
                 // Postprocess CDF to be monotonically increasing
@@ -68,8 +111,8 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
         Noise noise = new Noise();
         long totalIntervals = 0;
         for (int i = 0; i < this.histogram.buckets.length; i++) {
-            long nIntervals = decomposition.noiseForBucket(
-                    i, scale, baseVariance, false, noise);
+            long nIntervals = this.noiseForBucket(
+                    i, scale, baseVariance, false, noise, decomposition);
             totalIntervals += nIntervals;
             this.histogram.buckets[i] += noise.noise;
             this.confidence[i] = (int)noise.getConfidence();

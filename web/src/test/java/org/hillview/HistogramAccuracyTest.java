@@ -27,6 +27,7 @@ import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IMap;
 import org.hillview.maps.FindFilesMap;
 import org.hillview.maps.LoadFilesMap;
+import org.hillview.security.SecureLaplace;
 import org.hillview.sketches.HistogramSketch;
 import org.hillview.sketches.results.Histogram;
 import org.hillview.storage.FileSetDescription;
@@ -42,6 +43,7 @@ import org.hillview.table.columns.DoubleColumnQuantization;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.nio.file.Paths;
 import java.util.List;
 
 @SuppressWarnings("FieldCanBeLocal")
@@ -85,7 +87,8 @@ public class HistogramAccuracyTest {
 
             Histogram hist = table.blockingSketch(sk); // Leaf counts.
             Assert.assertNotNull(hist);
-            PrivateHistogram ph = new PrivateHistogram(dd, hist, epsilon, false);
+            SecureLaplace laplace = new SecureLaplace(Paths.get("./hillview_test_key"));
+            PrivateHistogram ph = new PrivateHistogram(dd, hist, epsilon, false, laplace);
 
             int totalLeaves = dd.getQuantizationIntervalCount();
             double scale = Math.log(totalLeaves) / Math.log(2);
@@ -98,7 +101,7 @@ public class HistogramAccuracyTest {
             Noise noise = new Noise();
             for (int left = 0; left < hist.getBucketCount(); left++) {
                 for (int right = left; right < hist.getBucketCount(); right++) {
-                    dd.noiseForRange(left, right,
+                    ph.noiseForRange(left, right,
                             scale, baseVariance, noise);
                     sqtot += Math.pow(noise.noise, 2);
                     abstot += Math.abs(noise.noise);

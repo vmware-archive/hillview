@@ -14,10 +14,12 @@ import org.hillview.table.api.ITable;
 
 public class PrivateFileDescriptionTarget extends FileDescriptionTarget {
     private PrivacySchema metadata;
+    private String schemaFilename;
 
     PrivateFileDescriptionTarget(IDataSet<IFileReference> files, HillviewComputation computation, String file) {
         super(files, computation);
         this.metadata = PrivacySchema.loadFromFile(file);
+        this.schemaFilename = file;
     }
 
     @HillviewRpc
@@ -29,6 +31,6 @@ public class PrivateFileDescriptionTarget extends FileDescriptionTarget {
     @HillviewRpc
     public void loadTable(RpcRequest request, RpcRequestContext context) {
         IMap<IFileReference, ITable> loader = new LoadFilesMap();
-        this.runMap(this.files, loader, (d, c) -> new PrivateTableTarget(d, c, metadata), request, context);
+        this.runMap(this.files, loader, (d, c) -> new PrivateTableTarget(d, c, metadata, schemaFilename), request, context);
     }
 }

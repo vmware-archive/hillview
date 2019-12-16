@@ -53,9 +53,9 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
     private final DPWrapper wrapper;
 
     PrivateSimpleDBTarget(JdbcConnectionInformation conn, HillviewComputation c,
-                          PrivacySchema privacySchema) throws SQLException {
+                          PrivacySchema privacySchema, String schemaFilename) throws SQLException {
         super(conn, c);
-        this.wrapper = new DPWrapper(privacySchema);
+        this.wrapper = new DPWrapper(privacySchema, schemaFilename);
         this.database.connect();
     }
 
@@ -122,8 +122,8 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
         ISketch<ITable, Pair<Histogram, Histogram>> sk = new PrecomputedSketch<ITable, Pair<Histogram, Histogram>>(result);
         this.runCompleteSketch(this.table, sk, (e, c) ->
                 new Pair<PrivateHistogram, PrivateHistogram>(
-                        new PrivateHistogram(d0, Converters.checkNull(e.first), epsilon, false),
-                        new PrivateHistogram(d1, Converters.checkNull(e.second), epsilon, true)),
+                        new PrivateHistogram(d0, Converters.checkNull(e.first), epsilon, false, this.wrapper.laplace),
+                        new PrivateHistogram(d1, Converters.checkNull(e.second), epsilon, true, this.wrapper.laplace)),
                 request, context);
     }
 
@@ -178,7 +178,7 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
         Converters.checkNull(q1);
         DyadicDecomposition d0 = info[0].getDecomposition(q0);
         DyadicDecomposition d1 = info[1].getDecomposition(q1);
-        PrivateHeatmap result = new PrivateHeatmap(d0, d1, heatmap, epsilon);
+        PrivateHeatmap result = new PrivateHeatmap(d0, d1, heatmap, epsilon, this.wrapper.laplace);
         ISketch<ITable, Heatmap> sk = new PrecomputedSketch<ITable, Heatmap>(result.heatmap);
         this.runCompleteSketch(this.table, sk, (e, c) -> e, request, context);
     }

@@ -207,10 +207,10 @@ export class DatasetView implements IHtmlElement {
     public editPrivacy(): void {
         this.privacyEditor.style.display = "block";
         const span = document.createElement("span");
-        span.textContent = "Edit the privacy policy and press button when done";
+        span.textContent = "Edit the privacy policy and press Apply to view. Press Save to save to disk. ";
         this.privacyEditor.appendChild(span);
         const done = document.createElement("button");
-        done.textContent = "Done";
+        done.textContent = "Apply";
         done.title = "Upload the new privacy policy and refresh all views.";
         this.privacyEditor.appendChild(done);
 
@@ -218,6 +218,11 @@ export class DatasetView implements IHtmlElement {
         cancel.textContent = "Cancel";
         cancel.title = "Do not update the privacy policy.";
         this.privacyEditor.appendChild(cancel);
+
+        const save = document.createElement("button");
+        save.textContent = "Save";
+        save.title = "Write the privacy policy to disk, overwriting the existing policy on disk.";
+        this.privacyEditor.appendChild(save);
 
         const editOptions: JSONEditorOptions = { mode: "text", mainMenuBar: false, statusBar: false };
         const editor = new JSONEditor(this.privacyEditor, editOptions, "{}");
@@ -237,6 +242,16 @@ export class DatasetView implements IHtmlElement {
                 this.loadMenuPage.reportError(exception.toString());
             }
         };
+        save.onclick = () => {
+            try {
+                const json = editor.getText();  // throws when text is invalid
+                this.privacySchema = JSON.parse(json);
+                this.savePrivacy(json);
+                destroy();
+            } catch (exception) {
+                this.loadMenuPage.reportError(exception.toString());
+            }
+        };
         cancel.onclick = () => {
             destroy();
         };
@@ -245,6 +260,13 @@ export class DatasetView implements IHtmlElement {
     private uploadPrivacy(json: string): void {
         const js = new JsonString(json);
         const rr = this.remoteObject.createStreamingRpcRequest<string>("changePrivacy", js);
+        const updateReceiver = new UploadPrivacyReceiver(this, this.loadMenuPage, rr);
+        rr.invoke(updateReceiver);
+    }
+
+    private savePrivacy(json: string): void {
+        const js = new JsonString(json);
+        const rr = this.remoteObject.createStreamingRpcRequest<string>("savePrivacy", js);
         const updateReceiver = new UploadPrivacyReceiver(this, this.loadMenuPage, rr);
         rr.invoke(updateReceiver);
     }

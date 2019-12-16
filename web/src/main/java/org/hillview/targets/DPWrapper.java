@@ -21,6 +21,7 @@ import org.hillview.*;
 import org.hillview.dataStructures.QuantilesArgs;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.Pair;
+import org.hillview.security.SecureLaplace;
 import org.hillview.sketches.PrecomputedSketch;
 import org.hillview.sketches.results.BucketsInfo;
 import org.hillview.sketches.results.DataRange;
@@ -42,6 +43,9 @@ import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.function.BiFunction;
 
 /**
@@ -57,6 +61,7 @@ public class DPWrapper {
             this.privacySchema = ps;
         }
 
+        /* Set the privacy schema locally but do not persist it. */
         void setPrivacySchema(PrivacySchema ps) {
             this.privacySchema = ps;
         }
@@ -66,15 +71,22 @@ public class DPWrapper {
     final ColumnLimits columnLimits;
     /* Global parameters for differentially-private histograms using the binary mechanism. */
     protected final PrivacySchemaContainer container;
+    final String schemaFilename;
 
-    public DPWrapper(PrivacySchema privacySchema) {
+    public final SecureLaplace laplace;
+
+    public DPWrapper(PrivacySchema privacySchema, String schemaFilename) {
         this.columnLimits = new ColumnLimits();
         this.container = new PrivacySchemaContainer(privacySchema);
+        this.schemaFilename = schemaFilename;
+        this.laplace = this.getOrCreateLaplace();
     }
 
     DPWrapper(DPWrapper other) {
         this.container = other.container;
         this.columnLimits = new ColumnLimits(other.columnLimits);
+        this.schemaFilename = other.schemaFilename;
+        this.laplace = this.getOrCreateLaplace();
     }
 
     /**
@@ -82,6 +94,8 @@ public class DPWrapper {
      * with a matching name and with such a file inside.
      */
     private static final String PRIVACY_METADATA_NAME = "privacy_metadata.json";
+
+    private static final String KEY_NAME = "hillview_root_key";
 
     /**
      * If the privacy metadata file exists return the file name.
@@ -96,12 +110,30 @@ public class DPWrapper {
         return null;
     }
 
+    private SecureLaplace getOrCreateLaplace() {
+        String basename = Utilities.getFolder(this.schemaFilename);
+        Path keyFilePath = Paths.get(basename, DPWrapper.KEY_NAME);
+
+        // Retrieves key stored on disk or creates a new key and persists it, if no such key exists.
+        SecureLaplace laplace = new SecureLaplace(keyFilePath);
+        return laplace;
+    }
+
     public PrivacySchema getPrivacySchema() {
         return this.container.privacySchema;
     }
 
     void setPrivacySchema(PrivacySchema ps) {
         this.container.setPrivacySchema(ps);
+    }
+
+    /* Persist the privacy schema to disk, overwriting the existing schema. */
+    void savePrivacySchema() {
+        try {
+            this.container.privacySchema.saveToFile(this.schemaFilename);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static class PrivacySummary implements IJson {

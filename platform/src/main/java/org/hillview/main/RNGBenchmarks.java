@@ -5,6 +5,7 @@ import org.hillview.dataset.api.Pair;
 import org.hillview.security.SecureLaplace;
 import org.hillview.utils.HashUtil;
 
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -37,7 +38,7 @@ public class RNGBenchmarks extends Benchmarks {
     }
 
     static void runAES(ArrayList<Pair<Integer, Integer>> pairs) {
-        SecureLaplace laplace = new SecureLaplace();
+        SecureLaplace laplace = new SecureLaplace(Paths.get("./hillview_test_key"));
         for (Pair<Integer, Integer> p : pairs) {
             laplace.sampleLaplace(p, scale);
         }

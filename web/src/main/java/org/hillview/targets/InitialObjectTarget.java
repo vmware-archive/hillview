@@ -110,7 +110,7 @@ public class InitialObjectTarget extends RpcTarget {
             this.runMap(this.emptyDataset, map,
                     (e, c) -> {
                         try {
-                            return new PrivateSimpleDBTarget(conn, c, privacySchema);
+                            return new PrivateSimpleDBTarget(conn, c, privacySchema, privacyMetadataFile);
                         } catch (SQLException ex) {
                             throw new RuntimeException(ex);
                         }

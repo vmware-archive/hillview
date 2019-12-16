@@ -17,10 +17,10 @@ public class PrivateHeatmap implements Serializable, IJson {
     private SecureLaplace laplace;
 
     public PrivateHeatmap(DyadicDecomposition d0, DyadicDecomposition d1,
-                          Heatmap heatmap, double epsilon) {
+                          Heatmap heatmap, double epsilon, SecureLaplace laplace) {
         this.heatmap = heatmap;
         this.epsilon = epsilon;
-        this.laplace = new SecureLaplace();
+        this.laplace = laplace;
         this.addDyadicLaplaceNoise(d0, d1);
     }
 

@@ -18,12 +18,16 @@
 package org.hillview.table;
 
 import org.hillview.dataset.api.IJson;
+import org.hillview.security.SecureLaplace;
 import org.hillview.table.columns.ColumnQuantization;
 
 import javax.annotation.Nullable;
+import java.io.File;
+import java.io.IOException;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -53,11 +57,14 @@ public class PrivacySchema implements IJson, Serializable {
      */
     final private double defaultEpsilon;
 
+    final private SecureLaplace laplace;
+
     public PrivacySchema(QuantizationSchema quantization) {
         this.quantization = quantization;
         this.epsilons = new LinkedHashMap<String, Double>();
         this.defaultEpsilons = new LinkedHashMap<String, Double>();
         this.defaultEpsilon = .001;
+        this.laplace = new SecureLaplace(Paths.get("./default_key")); // TODO: Curator should be able to create a new schema from scratch.
     }
 
     @Nullable
@@ -113,5 +120,10 @@ public class PrivacySchema implements IJson, Serializable {
             throw new RuntimeException(e);
         }
         return loadFromString(contents);
+    }
+
+    public void saveToFile(String metadataFile) throws IOException {
+        String jsonSchema = IJson.gsonInstance.toJson(this, PrivacySchema.class);
+        Files.write(Paths.get(metadataFile), jsonSchema.getBytes());
     }
 }
