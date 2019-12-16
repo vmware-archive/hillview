@@ -26,9 +26,9 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
     public final DPWrapper wrapper;
 
     PrivateTableTarget(IDataSet<ITable> table, HillviewComputation computation,
-                       PrivacySchema privacySchema) {
+                       PrivacySchema privacySchema, String schemaFilename) {
         super(computation);
-        this.wrapper = new DPWrapper(privacySchema);
+        this.wrapper = new DPWrapper(privacySchema, schemaFilename);
         this.table = table;
         this.registerObject();
     }
@@ -50,6 +50,15 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
     public void changePrivacy(RpcRequest request, RpcRequestContext context) {
         this.wrapper.setPrivacySchema(request.parseArgs(PrivacySchema.class));
         HillviewLogger.instance.info("Updated privacy schema");
+        PrecomputedSketch<ITable, JsonString> empty =
+                new PrecomputedSketch<ITable, JsonString>(new JsonString("{}"));
+        this.runCompleteSketch(this.table, empty, (d, c) -> d, request, context);
+    }
+
+    @HillviewRpc
+    public void savePrivacy(RpcRequest request, RpcRequestContext context) {
+        this.wrapper.savePrivacySchema();
+        HillviewLogger.instance.info("Saved privacy schema");
         PrecomputedSketch<ITable, JsonString> empty =
                 new PrecomputedSketch<ITable, JsonString>(new JsonString("{}"));
         this.runCompleteSketch(this.table, empty, (d, c) -> d, request, context);

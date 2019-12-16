@@ -42,6 +42,7 @@ import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.io.File;
+import java.io.IOException;
 import java.util.function.BiFunction;
 
 /**
@@ -57,6 +58,7 @@ public class DPWrapper {
             this.privacySchema = ps;
         }
 
+        /* Set the privacy schema locally but do not persist it. */
         void setPrivacySchema(PrivacySchema ps) {
             this.privacySchema = ps;
         }
@@ -66,15 +68,18 @@ public class DPWrapper {
     final ColumnLimits columnLimits;
     /* Global parameters for differentially-private histograms using the binary mechanism. */
     protected final PrivacySchemaContainer container;
+    final String schemaFilename;
 
-    public DPWrapper(PrivacySchema privacySchema) {
+    public DPWrapper(PrivacySchema privacySchema, String schemaFilename) {
         this.columnLimits = new ColumnLimits();
         this.container = new PrivacySchemaContainer(privacySchema);
+        this.schemaFilename = schemaFilename;
     }
 
     DPWrapper(DPWrapper other) {
         this.container = other.container;
         this.columnLimits = new ColumnLimits(other.columnLimits);
+        this.schemaFilename = other.schemaFilename;
     }
 
     /**
@@ -102,6 +107,16 @@ public class DPWrapper {
 
     void setPrivacySchema(PrivacySchema ps) {
         this.container.setPrivacySchema(ps);
+    }
+
+    /* Persist the privacy schema to disk, overwriting the existing schema. */
+    void savePrivacySchema() {
+        try {
+            this.container.privacySchema.saveToFile(this.schemaFilename);
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Could not save privacy schema to file");
+        }
     }
 
     public static class PrivacySummary implements IJson {

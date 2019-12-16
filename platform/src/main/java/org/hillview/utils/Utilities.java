@@ -389,7 +389,7 @@ public class Utilities {
 
         for (int i = INT_SIZE - 1; i >= 0; i--) {
             arr[i]          = (byte)(p.first  >> 8*i);
-            arr[i+ INT_SIZE] = (byte)(p.second >> 8*i);
+            arr[i+INT_SIZE] = (byte)(p.second >> 8*i);
         }
     }
 

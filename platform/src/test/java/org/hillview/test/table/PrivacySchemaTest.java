@@ -17,6 +17,7 @@
 
 package org.hillview.test.table;
 
+import org.hillview.dataset.api.IJson;
 import org.hillview.table.PrivacySchema;
 import org.hillview.table.QuantizationSchema;
 import org.hillview.table.columns.ColumnQuantization;
@@ -27,6 +28,11 @@ import org.hillview.test.BaseTest;
 import org.junit.Assert;
 import org.junit.Test;
 
+import javax.management.loading.PrivateClassLoader;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 
 public class PrivacySchemaTest extends BaseTest {
@@ -91,5 +97,27 @@ public class PrivacySchemaTest extends BaseTest {
         Assert.assertEquals(1, eps, .0001);
         eps = mdSchema.epsilon("col1", "col2", "col3");
         Assert.assertEquals(.001, eps, .0001);
+    }
+
+    @Test
+    public void saveTest() throws IOException {
+        HashMap<String, ColumnQuantization> mdMap = new HashMap<String, ColumnQuantization>();
+        ColumnQuantization md1 = new DoubleColumnQuantization(12.345, 0.0, 123.45);
+        ColumnQuantization md2 = new StringColumnQuantization(new String[] {"a", "b", "c"}, "d");
+        QuantizationSchema qs = new QuantizationSchema();
+        qs.set("col1", md1);
+        qs.set("col2", md2);
+        PrivacySchema mdSchema = new PrivacySchema(qs);
+        mdSchema.setEpsilon("col1", .1);
+        mdSchema.setEpsilon("col2", .5);
+
+        String fname = "test.json";
+        mdSchema.saveToFile(fname);
+        assert(Files.exists(Paths.get(fname)));
+
+        PrivacySchema loadSchema = PrivacySchema.loadFromFile(fname);
+        assert(IJson.gsonInstance.toJson(loadSchema).equals(IJson.gsonInstance.toJson(mdSchema)));
+
+        Files.delete(Paths.get(fname));
     }
 }

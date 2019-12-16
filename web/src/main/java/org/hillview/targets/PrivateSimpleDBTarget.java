@@ -53,9 +53,9 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
     private final DPWrapper wrapper;
 
     PrivateSimpleDBTarget(JdbcConnectionInformation conn, HillviewComputation c,
-                          PrivacySchema privacySchema) throws SQLException {
+                          PrivacySchema privacySchema, String schemaFilename) throws SQLException {
         super(conn, c);
-        this.wrapper = new DPWrapper(privacySchema);
+        this.wrapper = new DPWrapper(privacySchema, schemaFilename);
         this.database.connect();
     }
 

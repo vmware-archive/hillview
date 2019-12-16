@@ -103,7 +103,7 @@ public class DPBenchmarks extends Benchmarks {
         String privacyMetadataFile = DPWrapper.privacyMetadataFile("data/ontime_private");
         assert privacyMetadataFile != null;
         PrivacySchema ps = PrivacySchema.loadFromFile(privacyMetadataFile);
-        this.flightsWrapper = new DPWrapper(ps);
+        this.flightsWrapper = new DPWrapper(ps, privacyMetadataFile);
         this.ontimeSchema = Schema.readFromJsonFile(Paths.get("data/ontime/short.schema"));
 
         IDataSet<ITable> data = this.flights;
