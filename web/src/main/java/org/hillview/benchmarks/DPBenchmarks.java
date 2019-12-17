@@ -17,8 +17,8 @@
 
 package org.hillview.benchmarks;
 
-import org.hillview.dataStructures.DyadicDecomposition;
-import org.hillview.dataStructures.NumericDyadicDecomposition;
+import org.hillview.dataStructures.IntervalDecomposition;
+import org.hillview.dataStructures.NumericIntervalDecomposition;
 import org.hillview.dataStructures.PrivateHeatmap;
 import org.hillview.dataStructures.PrivateHistogram;
 import org.hillview.dataset.LocalDataSet;
@@ -209,9 +209,9 @@ public class DPBenchmarks extends Benchmarks {
             double epsilon = ps.epsilon(col0, col1);
             assert q0 != null;
             assert q1 != null;
-            DyadicDecomposition d0 = new NumericDyadicDecomposition(
+            IntervalDecomposition d0 = new NumericIntervalDecomposition(
                 (DoubleColumnQuantization)q0, buckDes0);
-            DyadicDecomposition d1 = new NumericDyadicDecomposition(
+            IntervalDecomposition d1 = new NumericIntervalDecomposition(
                 (DoubleColumnQuantization)q0, buckDes0);
             if (conf.usePostProcessing)
                 postprocess = x -> new PrivateHeatmap(d0, d1, x, epsilon, this.flightsWrapper.laplace);
@@ -257,7 +257,7 @@ public class DPBenchmarks extends Benchmarks {
             q = ps.quantization(col);
             double epsilon = ps.epsilon(col);
             assert q != null;
-            DyadicDecomposition d = new NumericDyadicDecomposition(
+            IntervalDecomposition d = new NumericIntervalDecomposition(
                 (DoubleColumnQuantization)q, buckDes);
             if (conf.usePostProcessing)
                 postprocess = x -> new PrivateHistogram(d, x, epsilon, false, this.flightsWrapper.laplace);

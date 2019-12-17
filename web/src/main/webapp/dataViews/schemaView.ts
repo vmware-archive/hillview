@@ -115,6 +115,10 @@ export class SchemaView extends TSViewBase {
         statDialog.setAction(() => {
             const selE: boolean = statDialog.getBooleanValue("selectEmpty");
             const stddev: number = statDialog.getFieldValueAsNumber("lowStder");
+            if (selE == null || stddev == null) {
+                this.page.reportError("Illegal value");
+                return;
+            }
             this.statAction(selE, stddev);
             this.display.highlightSelectedRows();
             this.selectedSummary();

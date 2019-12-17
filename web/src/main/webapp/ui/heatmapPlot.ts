@@ -147,7 +147,7 @@ export class HeatmapPlot extends Plot {
     }
 
     public setData(heatmap: Heatmap, xData: AxisData, yData: AxisData,
-                   schema: SchemaClass, isPrivate: boolean): void {
+                   schema: SchemaClass, confThreshold: number, isPrivate: boolean): void {
         this.heatmap = heatmap;
         this.xAxisData = xData;
         this.yAxisData = yData;
@@ -179,7 +179,7 @@ export class HeatmapPlot extends Plot {
                     conf = true;
                 } else {
                     const confidence = this.heatmap.confidence[x][y];
-                    conf = b > (2 * confidence);
+                    conf = b >= (confThreshold * confidence);
                 }
                 if (v > this.max)
                     this.max = v;

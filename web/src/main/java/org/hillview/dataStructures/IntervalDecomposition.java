@@ -33,15 +33,20 @@ import java.util.List;
  * in the private range query tree). Since bucket boundaries may not fall on the quantized leaf boundaries,
  * leaves are assigned to buckets based on their left boundary value.
  */
-public abstract class DyadicDecomposition {
+public abstract class IntervalDecomposition {
     /**
      * For each bucket boundary the quantization interval it belongs to.
      */
     final int[] bucketQuantizationIndexes;
     final ColumnQuantization quantization;
 
-    DyadicDecomposition(ColumnQuantization quantization, IHistogramBuckets buckets) {
-        this.bucketQuantizationIndexes = new int[buckets.getBucketCount()];
+    protected IntervalDecomposition(ColumnQuantization quantization, int[] quantizationIndexes) {
+        this.bucketQuantizationIndexes = quantizationIndexes;
+        this.quantization = quantization;
+    }
+
+    protected IntervalDecomposition(ColumnQuantization quantization, int bucketCount) {
+        this.bucketQuantizationIndexes = new int[bucketCount];
         this.quantization = quantization;
     }
 
@@ -94,25 +99,20 @@ public abstract class DyadicDecomposition {
             for (int i = left; i < right; i++) {
                 nodes.add(new Pair<Integer, Integer>(i, 1));
             }
-
             return nodes;
         }
 
         while (left < right) {
             // get largest valid interval starting at left and not extending past right
-
             // smallest power of k that divides left
             int smallestPower = -1;
-            if ( left > 0 ) {
+            if (left > 0) {
                 smallestPower = (int) Math.floor(Math.log(left) / Math.log(k));
             }
-
             // largest power of k that actually fits in remaining interval
             int rem = (int)(Math.log(right - left) / Math.log(k));
-
             // largest valid covering interval
             int pow = smallestPower < 0 ? rem : Math.min(smallestPower, rem);
-
             int nodeEnd = (int)Math.pow(k, pow);
             nodes.add(new Pair<Integer, Integer>(left, nodeEnd));
             left += nodeEnd;
@@ -155,10 +155,9 @@ public abstract class DyadicDecomposition {
     @SuppressWarnings("SameParameterValue")
     List<Pair<Integer, Integer>> bucketDecomposition(int bucketIdx, boolean cdf) {
         Pair<Integer, Integer> range = this.bucketRange(bucketIdx, cdf);
-        return DyadicDecomposition.dyadicDecomposition(
+        return IntervalDecomposition.dyadicDecomposition(
             Converters.checkNull(range.first), Converters.checkNull(range.second));
     }
-
 
     @Override
     public String toString() {
@@ -170,4 +169,9 @@ public abstract class DyadicDecomposition {
         }
         return builder.toString();
     }
+
+    /**
+     * Combine neighboring buckets and return a new coarser-grain interval decomposition.
+     */
+    public abstract IntervalDecomposition mergeNeighbors();
 }

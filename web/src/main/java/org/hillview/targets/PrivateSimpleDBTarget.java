@@ -19,7 +19,7 @@ package org.hillview.targets;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import org.hillview.*;
-import org.hillview.dataStructures.DyadicDecomposition;
+import org.hillview.dataStructures.IntervalDecomposition;
 import org.hillview.dataStructures.HistogramRequestInfo;
 import org.hillview.dataStructures.PrivateHeatmap;
 import org.hillview.dataStructures.PrivateHistogram;
@@ -112,8 +112,8 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
         if (quantization == null)
             throw new RuntimeException("No quantization information for column " + cd.name);
 
-        DyadicDecomposition d0 = info[0].getDecomposition(quantization);
-        DyadicDecomposition d1 = info[1].getDecomposition(quantization);
+        IntervalDecomposition d0 = info[0].getDecomposition(quantization);
+        IntervalDecomposition d1 = info[1].getDecomposition(quantization);
         Histogram histo = this.database.histogram(
                 cd, info[0].getBuckets(quantization), this.wrapper.columnLimits, quantization, this.rowCount);
         Histogram cdf = this.database.histogram(
@@ -176,8 +176,8 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
         ColumnQuantization q1 = this.getPrivacySchema().quantization(info[1].cd.name);
         Converters.checkNull(q0);
         Converters.checkNull(q1);
-        DyadicDecomposition d0 = info[0].getDecomposition(q0);
-        DyadicDecomposition d1 = info[1].getDecomposition(q1);
+        IntervalDecomposition d0 = info[0].getDecomposition(q0);
+        IntervalDecomposition d1 = info[1].getDecomposition(q1);
         PrivateHeatmap result = new PrivateHeatmap(d0, d1, heatmap, epsilon, this.wrapper.laplace);
         ISketch<ITable, Heatmap> sk = new PrecomputedSketch<ITable, Heatmap>(result.heatmap);
         this.runCompleteSketch(this.table, sk, (e, c) -> e, request, context);

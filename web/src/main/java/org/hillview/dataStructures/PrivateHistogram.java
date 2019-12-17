@@ -18,7 +18,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
     private final double epsilon;
     private final SecureLaplace laplace;
 
-    public PrivateHistogram(DyadicDecomposition decomposition,
+    public PrivateHistogram(IntervalDecomposition decomposition,
                             final Histogram histogram,
                             double epsilon, boolean isCdf,
                             SecureLaplace laplace) {
@@ -40,7 +40,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
     public long noiseForRange(int left, int right,
                               double scale, double baseVariance,
                              /*out*/Noise noise) {
-        List<Pair<Integer, Integer>> intervals = DyadicDecomposition.kadicDecomposition(left, right, 2);
+        List<Pair<Integer, Integer>> intervals = IntervalDecomposition.kadicDecomposition(left, right, 2);
         noise.clear();
         for (Pair<Integer, Integer> x : intervals) {
             noise.noise += this.laplace.sampleLaplace(x, scale);
@@ -64,7 +64,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
     long noiseForBucket(int bucketIdx,
                         double scale, double baseVariance,
                         boolean isCdf, Noise noise,
-                        DyadicDecomposition decomposition) {
+                        IntervalDecomposition decomposition) {
         Pair<Integer, Integer> range = decomposition.bucketRange(bucketIdx, isCdf);
         return this.noiseForRange(range.first, range.second, scale, baseVariance, noise);
     }
@@ -76,7 +76,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
      * This function uses the dyadic decomposition of each prefix to add the smallest amount of
      * noise for that prefix.
      */
-    private void recomputeCDF(DyadicDecomposition decomposition) {
+    private void recomputeCDF(IntervalDecomposition decomposition) {
         int totalLeaves = decomposition.getQuantizationIntervalCount();
         double scale = Math.log(totalLeaves + 1) / Math.log(2);  // +1 leaf for NULL
         scale /= epsilon;
@@ -101,7 +101,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
      * Each node in the dyadic interval tree is perturbed by an independent noise variable distributed as Laplace(log T / epsilon).
      * The total noise is the sum of the noise variables in the intervals composing the desired interval or bucket.
      */
-    private long addDyadicLaplaceNoise(DyadicDecomposition decomposition) {
+    private long addDyadicLaplaceNoise(IntervalDecomposition decomposition) {
         HillviewLogger.instance.info("Adding histogram noise with", "epsilon={0}", this.epsilon);
         int totalLeaves = decomposition.getQuantizationIntervalCount();
         double scale = Math.log(totalLeaves + 1) / Math.log(2);  // +1 for NULL leaf

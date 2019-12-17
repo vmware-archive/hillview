@@ -377,6 +377,8 @@ export class Histogram2DView extends HistogramViewBase {
     }
 
     public changeBuckets(bucketCount: number): void {
+        if (bucketCount == null)
+            return;
         const cds = [this.xAxisData.description, this.yData.description];
         const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,

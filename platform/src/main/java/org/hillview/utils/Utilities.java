@@ -297,14 +297,11 @@ public class Utilities {
             tot += x;
         }
         double mean = tot / values.size();
-
         double normsq = 0;
         for ( double x : values ) {
             normsq += Math.pow(x - mean, 2);
         }
-
         normsq /= values.size();
-
         return Math.sqrt(normsq);
     }
 
@@ -420,5 +417,25 @@ public class Utilities {
         value += (((long) bytes[7] & 0xffL) << 48);
         value &=  ((1L << 53L) - 1L);
         return value;
+    }
+
+    /**
+     * Keep every k-th element of an array.
+     */
+    public static int[] decimate(int[] data, int k) {
+        int[] copy = new int[(data.length + k - 1)/ k];
+        for (int i = 0; i < data.length; i += k)
+            copy[i / k] = data[i];
+        return copy;
+    }
+
+    /**
+     * Keep every k-th element of an array.
+     */
+    public static String[] decimate(String[] data, int k) {
+        String[] copy = new String[data.length / k];
+        for (int i = 0; i < data.length; i += k)
+            copy[i / k] = data[i];
+        return copy;
     }
 }

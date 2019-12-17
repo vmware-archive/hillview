@@ -374,6 +374,8 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
     }
 
     public changeBuckets(bucketCount: number): void {
+        if (bucketCount == null)
+            return;
         const rr = this.createDataQuantilesRequest([this.xAxisData.description],
             this.page, "Histogram");
         const exact = this.isPrivate() || this.samplingRate >= 1;

@@ -308,7 +308,7 @@ export class TrellisHeatmapView extends TrellisChartView {
             };
             const plot = this.hps[i];
             // The order of these operations is important
-            plot.setData(heatmap, this.xAxisData, this.yAxisData, this.schema, this.isPrivate());
+            plot.setData(heatmap, this.xAxisData, this.yAxisData, this.schema, 2, this.isPrivate());
             max = Math.max(max, plot.getMaxCount());
         }
 

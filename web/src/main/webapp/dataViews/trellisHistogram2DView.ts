@@ -284,9 +284,11 @@ export class TrellisHistogram2DView extends TrellisChartView {
 
     protected chooseBuckets(): void {
         const bucketDialog = new BucketDialog(this.buckets);
-        bucketDialog.setAction(() =>
-            this.updateView(this.data, [bucketDialog.getBucketCount(), this.legendAxisData.bucketCount],
-                this.maxYAxis));
+        bucketDialog.setAction(() => {
+            const ct = bucketDialog.getBucketCount();
+            if (ct != null)
+                this.updateView(this.data, [ct, this.legendAxisData.bucketCount], this.maxYAxis)
+        });
         bucketDialog.show();
     }
 

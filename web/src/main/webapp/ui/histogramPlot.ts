@@ -93,7 +93,7 @@ export class HistogramPlot extends Plot implements IBarPlot {
         const chartHeight = this.getChartHeight();
         const confidence = this.isPrivate ? this.histogram.confidence :
             new Array(this.histogram.histogram.buckets.length);
-        const zippedData = d3zip(this.histogram.histogram.buckets, confidence);
+        const zippedData = d3zip(counts, confidence);
         const bars = this.plottingSurface
             .getChart()
             .selectAll("g")

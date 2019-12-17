@@ -17,21 +17,21 @@
 
 package org.hillview;
 
-import org.hillview.dataStructures.NumericDyadicDecomposition;
+import org.hillview.dataStructures.NumericIntervalDecomposition;
 import org.hillview.dataset.api.Pair;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;
 
-public class DyadicDecompositionTest {
+public class IntervalDecompositionTest {
     @Test
     public void testDyadicDecomposition() {
         int leftLeafIdx = 0;
         int rightLeafIdx = 10;
 
         ArrayList<Pair<Integer, Integer>> ret =
-                NumericDyadicDecomposition.dyadicDecomposition(leftLeafIdx, rightLeafIdx);
+                NumericIntervalDecomposition.dyadicDecomposition(leftLeafIdx, rightLeafIdx);
         Assert.assertNotNull(ret);
         Pair<Integer, Integer> e = ret.get(0);
         Assert.assertNotNull(e);
@@ -53,7 +53,7 @@ public class DyadicDecompositionTest {
         int rightLeafIdx = 10;
 
         ArrayList<Pair<Integer, Integer>> ret =
-                NumericDyadicDecomposition.kadicDecomposition(leftLeafIdx, rightLeafIdx, 3);
+                NumericIntervalDecomposition.kadicDecomposition(leftLeafIdx, rightLeafIdx, 3);
         Assert.assertNotNull(ret);
         Pair<Integer, Integer> e = ret.get(0);
         Assert.assertNotNull(e);
@@ -76,7 +76,7 @@ public class DyadicDecompositionTest {
         int rightLeafIdx = 10;
 
         ArrayList<Pair<Integer, Integer>> ret =
-                NumericDyadicDecomposition.kadicDecomposition(leftLeafIdx, rightLeafIdx, 10);
+                NumericIntervalDecomposition.kadicDecomposition(leftLeafIdx, rightLeafIdx, 10);
         Assert.assertNotNull(ret);
         System.out.println(ret.size());
         assert(ret.size() == 10);

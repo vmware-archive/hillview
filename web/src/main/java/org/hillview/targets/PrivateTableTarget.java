@@ -83,8 +83,8 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
         Converters.checkNull(quantization);
         HistogramSketch sk = info[0].getSketch(quantization); // Histogram
         HistogramSketch cdf = info[1].getSketch(quantization);
-        DyadicDecomposition d0 = info[0].getDecomposition(quantization);
-        DyadicDecomposition d1 = info[1].getDecomposition(quantization);
+        IntervalDecomposition d0 = info[0].getDecomposition(quantization);
+        IntervalDecomposition d1 = info[1].getDecomposition(quantization);
         double epsilon = this.getPrivacySchema().epsilon(info[0].cd.name);
         ConcurrentSketch<ITable, Histogram, Histogram> csk =
                 new ConcurrentSketch<ITable, Histogram, Histogram>(sk, cdf);
@@ -168,8 +168,8 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
         double epsilon = this.getPrivacySchema().epsilon(info[0].cd.name, info[1].cd.name);
         IHistogramBuckets b0 = info[0].getBuckets(q0);
         IHistogramBuckets b1 = info[1].getBuckets(q1);
-        DyadicDecomposition d0 = info[0].getDecomposition(q0);
-        DyadicDecomposition d1 = info[1].getDecomposition(q1);
+        IntervalDecomposition d0 = info[0].getDecomposition(q0);
+        IntervalDecomposition d1 = info[1].getDecomposition(q1);
         HeatmapSketch sk = new HeatmapSketch(
                 b0, b1, info[0].cd.name, info[1].cd.name, 1.0, 0, q0, q1);
         this.runCompleteSketch(this.table, sk, (e, c) ->
