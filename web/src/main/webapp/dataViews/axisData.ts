@@ -159,13 +159,12 @@ export class AxisData {
     public readonly leftBucketBoundaries: string[];
     public scale: AnyScale;
     public axis: AxisDescription;
-    public bucketCount: number;
     public range: BucketsInfo; // the range used to draw the data; may be adjusted from BucketsInfo
 
     public constructor(public description: IColumnDescription | null, // may be null for e.g., the Y col in a histogram
                        // dataRange is the original range of the data
-                       public dataRange: BucketsInfo | null) {
-        this.bucketCount = 0;
+                       public dataRange: BucketsInfo | null,
+                       public bucketCount: number) {
         this.range = dataRange;
         const kind = description == null ? null : description.kind;
         if (dataRange != null) {
@@ -200,10 +199,6 @@ export class AxisData {
 
     private static needsAdjustment(kind: ContentsKind): boolean {
         return kindIsString(kind) || kind === "Integer";
-    }
-
-    public setBucketCount(bucketCount: number): void {
-        this.bucketCount = bucketCount;
     }
 
     public getString(index: number, clamp: boolean): string {

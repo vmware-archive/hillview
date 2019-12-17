@@ -80,7 +80,7 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
         const icd: IColumnDescription = { kind: "Integer", name: "Singular Values" };
         const range: BucketsInfo = { min: -.5, max: ev.length - .5,
             presentCount: 0, missingCount: 0 };
-        const axisData = new AxisData(icd, range);
+        const axisData = new AxisData(icd, range, ev.length);
         this.specView.updateView("Spectrum", histogram, axisData);
         this.newPage.reportError("Showing top " + eVals.eigenValues.length + "/" + this.colNames.length +
             " singular values, Total Variance: " + significantDigits(eVals.totalVar) +
@@ -170,7 +170,8 @@ export class SpectrumView extends ChartView {
             confidence: null,
         };
 
-        this.plot.setHistogram(augHist, 1, axisData, null, this.page.dataset.isPrivate());
+        this.plot.setHistogram(augHist, 1, h.missingData,
+            axisData, null, this.page.dataset.isPrivate());
         this.plot.draw();
 
         this.summary.textContent = "Columns: " + this.colNames.join(", ");
@@ -183,6 +184,7 @@ export class SpectrumView extends ChartView {
     }
 
     public serialize(): IViewSerialization {
+        // noinspection UnnecessaryLocalVariableJS
         const result: SpectrumSerialization = {
             ...super.serialize(),
             colNames: this.colNames,

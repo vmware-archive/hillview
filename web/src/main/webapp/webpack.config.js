@@ -35,7 +35,7 @@ module.exports = {
             {
                 test: /\.tsx?$/,
                 use: [
-                    "cache-loader",
+                    //"cache-loader",
                     "ts-loader"
                 ],
                 exclude: /node_modules/

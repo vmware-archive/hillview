@@ -160,7 +160,7 @@ export class Histogram2DView extends HistogramViewBase {
                     presentCount: this.rowCount - this.heatMap.missingData,
                     missingCount: this.heatMap.missingData
                 };
-                return new AxisData(null, range);
+                return new AxisData(null, range, this.yData.bucketCount);
         }
         return null;
     }
@@ -224,6 +224,7 @@ export class Histogram2DView extends HistogramViewBase {
     }
 
     public serialize(): IViewSerialization {
+        // noinspection UnnecessaryLocalVariableJS
         const result: Histogram2DSerialization = {
             ...super.serialize(),
             samplingRate: this.samplingRate,
@@ -249,7 +250,8 @@ export class Histogram2DView extends HistogramViewBase {
             return null;
 
         const hv = new Histogram2DView(ser.remoteObjectId, ser.rowCount, schema, samplingRate, page);
-        hv.setAxes(new AxisData(cd0, null), new AxisData(cd1, null), relative);
+        hv.setAxes(new AxisData(cd0, null, ser.xBucketCount),
+            new AxisData(cd1, null, ser.yBucketCount), relative);
         hv.xPoints = xPoints;
         hv.yPoints = yPoints;
         return hv;

@@ -26,11 +26,12 @@ import {PlottingSurface} from "./plottingSurface";
 import {D3Axis, D3Scale} from "./ui";
 import {symbol, symbolTriangle} from "d3-shape";
 import {valueWithConfidence} from "../util";
+import {IBarPlot} from "./IBarPlot";
 
 /**
  * A HistogramPlot draws a bar chart on a PlottingSurface, including the axes.
  */
-export class HistogramPlot extends Plot {
+export class HistogramPlot extends Plot implements IBarPlot {
     // While the data has histogram type, nothing prevents the values in the histogram
     // from being non-integers, so this class can be used to draw more general bar-charts.
 
@@ -60,14 +61,14 @@ export class HistogramPlot extends Plot {
      * Set the histogram that we want to draw.
      * @param bars          Description of the histogram bars.
      * @param samplingRate  Sampling rate used to compute this histogram.
+     * @param missingCount  Number of values missing.  TODO: display it graphically.
      * @param axisData      Description of the X axis.
      * @param maxYAxis      If present it is used to scale the maximum value for the Y axis.
      * @param isPrivate     True if we are plotting private data.
      */
-    public setHistogram(bars: AugmentedHistogram, samplingRate: number,
+    public setHistogram(bars: AugmentedHistogram, samplingRate: number, missingCount: number,
                         axisData: AxisData, maxYAxis: number | null, isPrivate: boolean): void {
         this.histogram = bars;
-
         this.samplingRate = samplingRate;
         this.xAxisData = axisData;
         const chartWidth = this.getChartWidth();

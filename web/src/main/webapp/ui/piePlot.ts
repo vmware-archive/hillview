@@ -21,11 +21,12 @@ import {AugmentedHistogram} from "../javaBridge";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {D3Scale} from "./ui";
+import {IBarPlot} from "./IBarPlot";
 
 /**
  * A PiePlot draws a histogram as a pie chart on a PlottingSurface.
  */
-export class PiePlot extends Plot {
+export class PiePlot extends Plot implements IBarPlot {
     /**
      * Histogram that is being drawn.
      */
@@ -35,6 +36,8 @@ export class PiePlot extends Plot {
      */
     public samplingRate: number;
     public isPrivate: boolean;
+    private missingCount: number;
+    public maxYAxis: number;
 
     public constructor(protected plottingSurface: PlottingSurface) {
         super(plottingSurface);
@@ -44,35 +47,45 @@ export class PiePlot extends Plot {
      * Set the histogram that we want to draw.
      * @param bars          Description of the histogram bars.
      * @param samplingRate  Sampling rate used to compute this histogram.
+     * @param missingCount  Number of missing values.
      * @param axisData      Description of the X axis.
-     * @param maxYAxis      If present it is used to scale the maximum value for the Y axis.
+     * @param maxYAxis      Not used for pie chart.
      * @param isPrivate     True if we are plotting private data.
      */
-    public setHistogram(bars: AugmentedHistogram, samplingRate: number,
+    public setHistogram(bars: AugmentedHistogram, samplingRate: number, missingCount: number,
                         axisData: AxisData, maxYAxis: number | null, isPrivate: boolean): void {
         this.histogram = bars;
-
         this.samplingRate = samplingRate;
         this.xAxisData = axisData;
         this.isPrivate = isPrivate;
+        this.missingCount = missingCount;
+        this.maxYAxis = maxYAxis;
     }
 
     private drawPie(): void {
+        // TODO: draw missing data
+        // TODO: label arcs
         const counts = this.histogram.histogram.buckets;
-        const arcs = d3pie().sort(null)(counts);
+        const pie = d3pie().sort(null);
         const chartWidth = this.getChartWidth();
         const chartHeight = this.getChartHeight();
         const arc = d3arc()
             .innerRadius(0)
             .outerRadius(Math.min(chartWidth, chartHeight) / 2.2);
+
+        const tr = 'translate(' + (chartWidth / 2) + "," + (chartHeight / 2) + ')';
         this.plottingSurface
             .getChart()
             .selectAll("g")
-            .selectAll("path")
-            .data(arcs)
-            .join("path")
+            .data(pie(counts))
+            .enter()
+            .append("g")
+            .attr('transform', tr)
+            .append("path")
             .attr("d", arc)
-            .append("title");
+            .attr('fill', (d,i) => Plot.colorMap(i / counts.length))
+            .append("svg:title")
+            .text((d,i) => this.xAxisData.bucketDescription(i, 40));
     }
 
     public draw(): void {
@@ -82,10 +95,7 @@ export class PiePlot extends Plot {
         this.drawPie();
     }
 
-    // The following methods should never be called
-
-    public maxYAxis: number = 0;
-
+    // These should not be called.
     public getYScale(): D3Scale {
         return null;
     }

@@ -43,6 +43,7 @@ export abstract class HistogramViewBase extends ChartView {
         page: FullPage, viewKind: ViewKind) {
         super(remoteObjectId, rowCount, schema, page, viewKind);
         this.chartDiv = this.createChartDiv();
+        this.cdfDot = null;
         // this.scrollBar = new ScrollBar(this, true);
         // this.topLevel.appendChild(this.scrollBar.getHTMLRepresentation());
 

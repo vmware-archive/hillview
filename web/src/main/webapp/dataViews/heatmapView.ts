@@ -276,7 +276,9 @@ export class HeatmapView extends ChartView {
                 confidence: null,
             };
 
-            this.xHistoPlot.setHistogram(augHist, this.samplingRate, this.xAxisData, null,
+            this.xHistoPlot.setHistogram(augHist, this.samplingRate,
+                heatmap.histogramMissingX.missingData,
+                this.xAxisData, null,
                 this.page.dataset.isPrivate());
             this.xHistoPlot.draw();
         }
@@ -307,6 +309,7 @@ export class HeatmapView extends ChartView {
 
     public serialize(): IViewSerialization {
         const ser = super.serialize();
+        // noinspection UnnecessaryLocalVariableJS
         const result: HeatmapSerialization = {
             samplingRate: this.samplingRate,
             columnDescription0: this.xAxisData.description,
@@ -326,7 +329,9 @@ export class HeatmapView extends ChartView {
         }
         const schema: SchemaClass = new SchemaClass([]).deserialize(ser.schema);
         const hv = new HeatmapView(ser.remoteObjectId, ser.rowCount, schema, ser.samplingRate, page);
-        hv.setAxes(new AxisData(ser.columnDescription0, null), new AxisData(ser.columnDescription1, null));
+        hv.setAxes(
+            new AxisData(ser.columnDescription0, null, ser.xBucketCount),
+            new AxisData(ser.columnDescription1, null, ser.yBucketCount));
         return hv;
     }
 
