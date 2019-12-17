@@ -24,19 +24,20 @@ ${SUDO} ${INSTALL} install wget maven ${NODEJS} ${NPM} ${LIBFORTRAN} unzip gzip
 echo "Installing typescript compiler"
 ${SUDO} npm install -g typescript@3.7
 
-cd ${mydir}/..
+pushd ..
 if [ ! -d apache-tomcat-${TOMCATVERSION} ]; then
     echo "Installing apache Tomcat web server"
     wget http://archive.apache.org/dist/tomcat/tomcat-9/v${TOMCATVERSION}/bin/apache-tomcat-${TOMCATVERSION}.tar.gz
     tar xvfz apache-tomcat-${TOMCATVERSION}.tar.gz
     cd apache-tomcat-${TOMCATVERSION}/webapps
-    rm -rf ROOT*
+    rm -rf ROOT* examples docs manager host-manager
     ln -s ../../web/target/web-1.0-SNAPSHOT.war ROOT.war
     cd ../..
     rm -rf apache-tomcat-${TOMCATVERSION}.tar.gz
 else
     echo "Tomcat already installed"
 fi
+popd
 
 echo "Downloading test data"
 cd ${mydir}/../data/ontime
