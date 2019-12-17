@@ -376,7 +376,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
     }
 
     public chooseBuckets(): void {
-        const bucketDialog = new BucketDialog();
+        const bucketDialog = new BucketDialog(this.bucketCount);
         bucketDialog.setAction(() => this.changeBuckets(bucketDialog.getBucketCount()));
         bucketDialog.show();
     }

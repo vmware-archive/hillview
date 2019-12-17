@@ -416,7 +416,7 @@ export class Histogram2DView extends HistogramViewBase {
         if (this == null)
             return;
 
-        const bucketDialog = new BucketDialog();
+        const bucketDialog = new BucketDialog(this.xPoints);
         bucketDialog.setAction(() => this.changeBuckets(bucketDialog.getBucketCount()));
         bucketDialog.show();
     }
