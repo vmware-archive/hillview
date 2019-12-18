@@ -299,7 +299,6 @@ export class Histogram2DView extends HistogramViewBase {
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
             reusePage: false,
-            relative: false,
             chartKind: "Heatmap",
             exact: true
         }));
@@ -345,7 +344,7 @@ export class Histogram2DView extends HistogramViewBase {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
             return new FilterReceiver(title, [this.xAxisData.description, this.yData.description],
                 this.schema, [0, 0], page, operation, this.dataset, {
-                exact: this.samplingRate >= 1, chartKind: "Histogram",
+                exact: this.samplingRate >= 1, chartKind: "2DHistogram",
                 relative: this.relative, reusePage: false
             });
         };
@@ -402,7 +401,7 @@ export class Histogram2DView extends HistogramViewBase {
                 this.page, null, this.schema, [0, 0],  // any number of buckets
                 [this.xAxisData.description, this.yData.description], this.page.title, {
                     chartKind: "2DHistogram", exact: this.samplingRate >= 1,
-                    relative: this.relative, reusePage: true
+                    relative: this.relative, reusePage: true,
                 });
             collector.run([sourceRange, this.yData.dataRange]);
             collector.finished();

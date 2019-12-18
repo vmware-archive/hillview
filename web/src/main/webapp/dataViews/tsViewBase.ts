@@ -240,7 +240,7 @@ export abstract class TSViewBase extends BigTableView {
         const exact = this.isPrivate(); // If private, do not sample
         rr.invoke(new DataRangesReceiver(
             this, this.page, rr, this.schema, [0], [cd], null,
-            { chartKind: "Histogram", relative: false, exact: exact, reusePage: false }));
+            { chartKind: "Histogram", relative: false, exact: exact, reusePage: false, pieChart: false }));
     }
 
     protected histogram2D(cds: IColumnDescription[]): void {

@@ -202,7 +202,7 @@ export class AxisData {
     }
 
     public getString(index: number, clamp: boolean): string {
-        index = Math.round(index);
+        index = Math.floor(index);
         if (clamp) {
             if (index < 0)
                 index = 0;
@@ -214,9 +214,13 @@ export class AxisData {
         return null;
     }
 
-    public bucketLeftString(bucketNumber: number, clamp: boolean): string {
-        bucketNumber = Math.round(bucketNumber);
-        return this.getString(bucketNumber * this.stringQuantiles.length / this.bucketCount, clamp);
+    private bucketIndexToStringIndex(bucketNumber: number): number {
+        return Math.floor(bucketNumber * this.stringQuantiles.length / this.bucketCount);
+    }
+
+    private bucketLeftString(bucketNumber: number, clamp: boolean): string {
+        bucketNumber = Math.floor(bucketNumber);
+        return this.getString(this.bucketIndexToStringIndex(bucketNumber), clamp);
     }
 
     /**
@@ -370,11 +374,23 @@ export class AxisData {
                     return new BucketBoundaries(leftBoundary, null);
                 return new BucketBoundaries(leftBoundary,
                     new BucketBoundary(this.range.maxBoundary, valueKind, true));
-            }
-            else {
-                const right = this.bucketLeftString(bucket + 1, false);
+            } else {
+                let right = this.bucketLeftString(bucket + 1, false);
                 if (left == right)
                     return new BucketBoundaries(leftBoundary, null);
+                if (this.range.allStringsKnown) {
+                    const leftStringIndex = this.bucketIndexToStringIndex(bucket);
+                    const nextStringIndex = this.bucketIndexToStringIndex(bucket + 1);
+                    if (nextStringIndex === leftStringIndex + 1)
+                        // The right-open interval contains in fact a single point
+                        return new BucketBoundaries(leftBoundary, null);
+                    if (nextStringIndex == leftStringIndex + 2) {
+                        // An interval with just two points: show the right point inclusive
+                        right = this.getString(leftStringIndex + 1, true);
+                        return new BucketBoundaries(leftBoundary,
+                            new BucketBoundary(right, valueKind, true));
+                    }
+                }
                 return new BucketBoundaries(
                     leftBoundary,
                     new BucketBoundary(right, valueKind, false));

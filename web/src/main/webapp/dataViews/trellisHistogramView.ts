@@ -143,7 +143,7 @@ export class TrellisHistogramView extends TrellisChartView {
             rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
                 [0], cds, null, {
                     reusePage: true, relative: false,
-                    chartKind: "Histogram", exact: this.samplingRate >= 1
+                    chartKind: "Histogram", exact: this.samplingRate >= 1, pieChart: false
                 }));
         } else {
             const cds = [this.xAxisData.description, this.groupByAxisData.description];
@@ -251,6 +251,7 @@ export class TrellisHistogramView extends TrellisChartView {
         // noinspection UnnecessaryLocalVariableJS
         const ser: TrellisHistogramSerialization = {
             ...super.serialize(),
+            isPie: false,
             bucketCount: this.bucketCount,
             samplingRate: this.samplingRate,
             columnDescription: this.xAxisData.description,

@@ -322,7 +322,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                         "Histogram of " + this.schema.displayName(this.cds[0].name).toString());
                 const renderer = new HistogramReceiver(this.title, this.page,
                     this.originator.remoteObjectId, rowCount, this.schema, this.bucketCounts[0],
-                    axisData, rr, cdfArg.samplingRate, this.options.reusePage); // TODO sampling rate?
+                    axisData, rr, cdfArg.samplingRate, this.options.pieChart, this.options.reusePage); // TODO sampling rate?
                 rr.invoke(renderer);
                 break;
             }

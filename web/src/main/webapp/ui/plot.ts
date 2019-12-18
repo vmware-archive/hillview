@@ -18,7 +18,12 @@
 import {PlottingSurface} from "./plottingSurface";
 import {AxisData, AxisDescription} from "../dataViews/axisData";
 import {D3SvgElement, SpecialChars} from "./ui";
-import {interpolateRainbow as d3interpolateRainbow} from "d3-scale-chromatic";
+import {interpolateRainbow as d3interpolateRainbow,
+    schemeDark2 as d3dark2,
+    schemePaired as d3paired,
+    schemePastel1 as d3pastel1,
+    schemeSet3 as d3set3
+} from "d3-scale-chromatic";
 import {significantDigits} from "../util";
 
 /**
@@ -113,6 +118,19 @@ export abstract class Plot {
         // The rainbow color map starts and ends with a similar hue
         // so we skip the first 20% of it.
         return d3interpolateRainbow(d * .8 + .2);
+    }
+
+    static tableau10 = ["#4e79a7", "#f28e2b", "#e15759", "#76b7b2", "#59a14f",
+        "#edc948", "#b07aa1", "#ff9da7", "#9c755f", "#bab0ac"];
+    static categoricalColor = d3dark2.concat(d3paired).concat(d3paired)
+        .concat(d3pastel1).concat(d3set3).concat(Plot.tableau10);
+
+    // a categorical color map for up to 50 values
+    public static categoricalMap(d: number): string {
+        let result = "black";
+        if (d < 0 || d > Plot.categoricalColor.length)
+            return result;
+        return Plot.categoricalColor[d];
     }
 
     /**
