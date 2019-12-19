@@ -15,6 +15,7 @@ public class PrivateHeatmap implements Serializable, IJson {
     public Heatmap heatmap;
     private double epsilon;
     private SecureLaplace laplace;
+    static final boolean coarsen = false;
 
     public PrivateHeatmap(IntervalDecomposition d0, IntervalDecomposition d1,
                           Heatmap heatmap, double epsilon, SecureLaplace laplace) {
@@ -86,6 +87,9 @@ public class PrivateHeatmap implements Serializable, IJson {
             }
         }
 
+        if (!coarsen)
+            return;
+        
         /* if some buckets are too noisy try to merge them with their neighbors */
         int xRect = 1; // x size of merged rectangles
         int yRect = 1; // y size of merged rectangles
