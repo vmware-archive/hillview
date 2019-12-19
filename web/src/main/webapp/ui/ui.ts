@@ -70,13 +70,14 @@ export type ViewKind = "Table" | "Histogram" | "2DHistogram" | "Heatmap" |
 // Using an interface for emulating named arguments
 // otherwise it's hard to remember the order of all these booleans.
 export interface HistogramOptions {
-    exact: boolean;  // exact histogram
+    exact?: boolean;  // exact histogram
     reusePage: boolean;   // reuse the original page
+    pieChart?: boolean;
 }
 
 export interface ChartOptions extends HistogramOptions {
     chartKind: ViewKind;
-    relative: boolean;  // draw a relative 2D histogram
+    relative?: boolean;  // draw a relative 2D histogram
 }
 
 /**

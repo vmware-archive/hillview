@@ -43,6 +43,7 @@ export abstract class HistogramViewBase extends ChartView {
         page: FullPage, viewKind: ViewKind) {
         super(remoteObjectId, rowCount, schema, page, viewKind);
         this.chartDiv = this.createChartDiv();
+        this.cdfDot = null;
         // this.scrollBar = new ScrollBar(this, true);
         // this.topLevel.appendChild(this.scrollBar.getHTMLRepresentation());
 
@@ -96,9 +97,9 @@ export abstract class HistogramViewBase extends ChartView {
  * A dialog that queries the user about the number of buckets to use.
  */
 export class BucketDialog extends Dialog {
-    constructor() {
+    constructor(count: number) {
         super("Set buckets", "Change the number of buckets (bars) used to display the histogram.");
-        const input = this.addTextField("n_buckets", "Number of buckets:", FieldKind.Integer, null,
+        const input = this.addTextField("n_buckets", "Number of buckets:", FieldKind.Integer, count.toString(),
             "The number of buckets to use.");
         input.min = "1";
         input.max = Resolution.maxBucketCount.toString();

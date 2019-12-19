@@ -160,7 +160,7 @@ export class Histogram2DView extends HistogramViewBase {
                     presentCount: this.rowCount - this.heatMap.missingData,
                     missingCount: this.heatMap.missingData
                 };
-                return new AxisData(null, range);
+                return new AxisData(null, range, this.yData.bucketCount);
         }
         return null;
     }
@@ -224,6 +224,7 @@ export class Histogram2DView extends HistogramViewBase {
     }
 
     public serialize(): IViewSerialization {
+        // noinspection UnnecessaryLocalVariableJS
         const result: Histogram2DSerialization = {
             ...super.serialize(),
             samplingRate: this.samplingRate,
@@ -249,7 +250,8 @@ export class Histogram2DView extends HistogramViewBase {
             return null;
 
         const hv = new Histogram2DView(ser.remoteObjectId, ser.rowCount, schema, samplingRate, page);
-        hv.setAxes(new AxisData(cd0, null), new AxisData(cd1, null), relative);
+        hv.setAxes(new AxisData(cd0, null, ser.xBucketCount),
+            new AxisData(cd1, null, ser.yBucketCount), relative);
         hv.xPoints = xPoints;
         hv.yPoints = yPoints;
         return hv;
@@ -297,7 +299,6 @@ export class Histogram2DView extends HistogramViewBase {
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
             reusePage: false,
-            relative: false,
             chartKind: "Heatmap",
             exact: true
         }));
@@ -343,7 +344,7 @@ export class Histogram2DView extends HistogramViewBase {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
             return new FilterReceiver(title, [this.xAxisData.description, this.yData.description],
                 this.schema, [0, 0], page, operation, this.dataset, {
-                exact: this.samplingRate >= 1, chartKind: "Histogram",
+                exact: this.samplingRate >= 1, chartKind: "2DHistogram",
                 relative: this.relative, reusePage: false
             });
         };
@@ -400,7 +401,7 @@ export class Histogram2DView extends HistogramViewBase {
                 this.page, null, this.schema, [0, 0],  // any number of buckets
                 [this.xAxisData.description, this.yData.description], this.page.title, {
                     chartKind: "2DHistogram", exact: this.samplingRate >= 1,
-                    relative: this.relative, reusePage: true
+                    relative: this.relative, reusePage: true,
                 });
             collector.run([sourceRange, this.yData.dataRange]);
             collector.finished();
@@ -414,7 +415,7 @@ export class Histogram2DView extends HistogramViewBase {
         if (this == null)
             return;
 
-        const bucketDialog = new BucketDialog();
+        const bucketDialog = new BucketDialog(this.xPoints);
         bucketDialog.setAction(() => this.changeBuckets(bucketDialog.getBucketCount()));
         bucketDialog.show();
     }

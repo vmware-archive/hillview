@@ -68,44 +68,6 @@ export class LoadMenu extends RemoteObject implements IDataView {
 
     private createMenus(): void {
         const testitems: MenuItem[] = [];
-        if (HillviewToplevel.instance.uiconfig.showPrivateMenus) {
-            testitems.push({
-                text: "Gaussian (1 column, private, CSV)", // TODO: to delete
-                action: () => {
-                    const files: FileSetDescription = {
-                        fileNamePattern: "data/synthetic/*.csv*",
-                        schemaFile: "gaussian.schema",
-                        headerRow: true,
-                        repeat: 1,
-                        name: "Gaussian (1 column)",
-                        fileKind: "csv",
-                        logFormat: null,
-                        startTime: null,
-                        endTime: null
-                    };
-                    this.init.loadFiles(files, this.page);
-                },
-                help: "Synthetic Gaussian data.",
-            }, { text: "Flights (15 columns, CSV, private)",
-                    action: () => {
-                        const files: FileSetDescription = {
-                            fileNamePattern: "data/ontime_private/????_*.csv*",
-                            schemaFile: "short.schema",
-                            headerRow: true,
-                            repeat: 1,
-                            name: "Flights (15 columns, private)",
-                            fileKind: "csv",
-                            logFormat: null,
-                            startTime: null,
-                            endTime: null
-                        };
-                        this.init.loadFiles(files, this.page);
-                    },
-                    help: "The US flights dataset.",
-                },
-            );
-        }
-
         testitems.push(
             { text: "Flights (15 columns, CSV)",
                 action: () => {
@@ -156,7 +118,62 @@ export class LoadMenu extends RemoteObject implements IDataView {
                     };
                     this.init.loadFiles(files, this.page);
                 },
-                help: "The US flights dataset -- all 110 columns." });
+                help: "The US flights dataset -- all 110 columns." },
+            { text: "Flights (15 columns, CSV, private)",
+                action: () => {
+                    const files: FileSetDescription = {
+                        fileNamePattern: "data/ontime_private/????_*.csv*",
+                        schemaFile: "short.schema",
+                        headerRow: true,
+                        repeat: 1,
+                        name: "Flights (private)",
+                        fileKind: "csv",
+                        logFormat: null,
+                        startTime: null,
+                        endTime: null
+                    };
+                    this.init.loadFiles(files, this.page);
+                },
+                help: "The US flights dataset.",
+            },
+            { text: "Flights (15 columns, ORC, private)",
+                action: () => {
+                    const files: FileSetDescription = {
+                        fileNamePattern: "data/ontime_private/*.orc",
+                        schemaFile: "schema",
+                        headerRow: true,
+                        repeat: 1,
+                        name: "Flights (private)",
+                        fileKind: "orc",
+                        logFormat: null,
+                        startTime: null,
+                        endTime: null
+                    };
+                    this.init.loadFiles(files, this.page);
+                },
+                help: "The US flights dataset.",
+            });
+        if (HillviewToplevel.instance.uiconfig.showPrivateMenus) {
+            testitems.push({
+                    text: "Gaussian (1 column, private, CSV)", // TODO: to delete
+                    action: () => {
+                        const files: FileSetDescription = {
+                            fileNamePattern: "data/synthetic/*.csv*",
+                            schemaFile: "gaussian.schema",
+                            headerRow: true,
+                            repeat: 1,
+                            name: "Gaussian (1 column)",
+                            fileKind: "csv",
+                            logFormat: null,
+                            startTime: null,
+                            endTime: null
+                        };
+                        this.init.loadFiles(files, this.page);
+                    },
+                    help: "Synthetic Gaussian data.",
+                }
+            );
+        }
 
         this.testDatasetsMenu = new SubMenu(testitems);
 
@@ -372,10 +389,6 @@ export class LoadMenu extends RemoteObject implements IDataView {
     public showAdvanced(show: boolean): void {
         this.menu.enable("Manage", show);
         this.loadMenu.enable("Federated DB tables...", show);
-        this.loadMenu.enable("CSV files...", show);
-        this.loadMenu.enable("JSON files...", show);
-        this.loadMenu.enable("Parquet files...", show);
-        this.loadMenu.enable("ORC files...", show);
     }
 
     // noinspection JSMethodCanBeStatic

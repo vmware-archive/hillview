@@ -226,6 +226,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
             if (!exact)
                 samplingRate = DataRangesReceiver.samplingRate(
                     cdfCount, range.presentCount, chartSize);
+            // noinspection UnnecessaryLocalVariableJS
             const args: HistogramArgs = {
                 cd: cd,
                 min: range.min - adjust,
@@ -315,13 +316,13 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
 
                 const rr = this.originator.createHistogramRequest(args);
                 rr.chain(this.operation);
-                const axisData = new AxisData(this.cds[0], ranges[0]);
+                const axisData = new AxisData(this.cds[0], ranges[0], xarg.bucketCount);
                 if (this.title == null)
                     this.title = new PageTitle(
                         "Histogram of " + this.schema.displayName(this.cds[0].name).toString());
                 const renderer = new HistogramReceiver(this.title, this.page,
                     this.originator.remoteObjectId, rowCount, this.schema, this.bucketCounts[0],
-                    axisData, rr, cdfArg.samplingRate, this.options.reusePage); // TODO sampling rate?
+                    axisData, rr, cdfArg.samplingRate, this.options.pieChart, this.options.reusePage); // TODO sampling rate?
                 rr.invoke(renderer);
                 break;
             }
@@ -338,10 +339,8 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 const args = [wArg, xArg];
                 // Trellis histograms are computed by heatmap requests
                 const rr = this.originator.createHeatmapRequest(args);
-                const xAxisData = new AxisData(this.cds[0], ranges[0]);
-                xAxisData.setBucketCount(this.bucketCounts[0]);
-                const groupByAxis = new AxisData(this.cds[1], ranges[1]);
-                groupByAxis.setBucketCount(wArg.bucketCount);
+                const xAxisData = new AxisData(this.cds[0], ranges[0], xArg.bucketCount);
+                const groupByAxis = new AxisData(this.cds[1], ranges[1], wArg.bucketCount);
                 if (this.title == null)
                     this.title = new PageTitle(
                         "Histograms of " + this.schema.displayName(this.cds[0].name).toString() +
@@ -370,12 +369,9 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 args.push(xArg);
                 args.push(yArg);
                 const rr = this.originator.createTrellis2DHistogramRequest(args);
-                const xAxis = new AxisData(this.cds[0], ranges[0]);
-                xAxis.setBucketCount(xArg.bucketCount);
-                const yAxis = new AxisData(this.cds[1], ranges[1]);
-                yAxis.setBucketCount(yArg.bucketCount);
-                const groupByAxis = new AxisData(this.cds[2], ranges[2]);
-                groupByAxis.setBucketCount(wArg.bucketCount);
+                const xAxis = new AxisData(this.cds[0], ranges[0], xArg.bucketCount);
+                const yAxis = new AxisData(this.cds[1], ranges[1], yArg.bucketCount);
+                const groupByAxis = new AxisData(this.cds[2], ranges[2], wArg.bucketCount);
                 if (this.title == null)
                     this.title = new PageTitle(
                                  "Histograms (" + this.schema.displayName(this.cds[0].name).displayName +
@@ -405,12 +401,9 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 args.push(yArg);
 
                 const rr = this.originator.createHeatmap3DRequest(args);
-                const xAxis = new AxisData(this.cds[0], ranges[0]);
-                xAxis.setBucketCount(xArg.bucketCount);
-                const yAxis = new AxisData(this.cds[1], ranges[1]);
-                yAxis.setBucketCount(yArg.bucketCount);
-                const groupByAxis = new AxisData(this.cds[2], ranges[2]);
-                groupByAxis.setBucketCount(wArg.bucketCount);
+                const xAxis = new AxisData(this.cds[0], ranges[0], xArg.bucketCount);
+                const yAxis = new AxisData(this.cds[1], ranges[1], yArg.bucketCount);
+                const groupByAxis = new AxisData(this.cds[2], ranges[2], wArg.bucketCount);
                 if (this.title == null)
                     this.title = new PageTitle(
                         "Heatmaps (" + this.schema.displayName(this.cds[0].name).displayName +
@@ -439,10 +432,8 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 args.push(yArg);
 
                 const rr = this.originator.createHeatmapRequest(args);
-                const xAxis = new AxisData(this.cds[0], ranges[0]);
-                xAxis.setBucketCount(xArg.bucketCount);
-                const yAxis = new AxisData(this.cds[1], ranges[1]);
-                yAxis.setBucketCount(yArg.bucketCount);
+                const xAxis = new AxisData(this.cds[0], ranges[0], xArg.bucketCount);
+                const yAxis = new AxisData(this.cds[1], ranges[1], yArg.bucketCount);
                 if (this.title == null)
                     this.title = new PageTitle(
                         "Heatmap (" + this.schema.displayName(this.cds[0].name).displayName + ", " +
@@ -480,9 +471,8 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                     this.options.exact, chartSize);
                 args.push(cdfArg);
                 const rr = this.originator.createHistogram2DRequest(args);
-                const xAxis = new AxisData(this.cds[0], ranges[0]);
-                const yData = new AxisData(this.cds[1], ranges[1]);
-                yData.setBucketCount(yarg.bucketCount);
+                const xAxis = new AxisData(this.cds[0], ranges[0], xarg.bucketCount);
+                const yData = new AxisData(this.cds[1], ranges[1], yarg.bucketCount);
                 if (this.title == null)
                     this.title = new PageTitle(
                         "Histogram (" + this.schema.displayName(this.cds[0].name).displayName + ", " +

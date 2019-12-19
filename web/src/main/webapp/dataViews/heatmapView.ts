@@ -162,7 +162,7 @@ export class HeatmapView extends ChartView {
         rr.invoke(new DataRangesReceiver(
             this, this.page, rr, this.schema, [x, y],
             [this.xAxisData.description, this.yAxisData.description], null,
-            { chartKind: "Heatmap", relative: false, exact: true, reusePage: true }));
+            { chartKind: "Heatmap", exact: true, reusePage: true }));
     }
 
     protected createNewSurfaces(keepColorMap: boolean): void {
@@ -235,7 +235,7 @@ export class HeatmapView extends ChartView {
             this.page, null, this.schema, [0, 0],  // any number of buckets
             [this.xAxisData.description, this.yAxisData.description], this.page.title, {
                 chartKind: "Heatmap", exact: this.samplingRate >= 1,
-                relative: false, reusePage: true
+                relative: false, pieChart: false, reusePage: true
             });
         collector.run(ranges);
         collector.finished();
@@ -276,7 +276,9 @@ export class HeatmapView extends ChartView {
                 confidence: null,
             };
 
-            this.xHistoPlot.setHistogram(augHist, this.samplingRate, this.xAxisData, null,
+            this.xHistoPlot.setHistogram(augHist, this.samplingRate,
+                heatmap.histogramMissingX.missingData,
+                this.xAxisData, null,
                 this.page.dataset.isPrivate());
             this.xHistoPlot.draw();
         }
@@ -307,6 +309,7 @@ export class HeatmapView extends ChartView {
 
     public serialize(): IViewSerialization {
         const ser = super.serialize();
+        // noinspection UnnecessaryLocalVariableJS
         const result: HeatmapSerialization = {
             samplingRate: this.samplingRate,
             columnDescription0: this.xAxisData.description,
@@ -326,7 +329,9 @@ export class HeatmapView extends ChartView {
         }
         const schema: SchemaClass = new SchemaClass([]).deserialize(ser.schema);
         const hv = new HeatmapView(ser.remoteObjectId, ser.rowCount, schema, ser.samplingRate, page);
-        hv.setAxes(new AxisData(ser.columnDescription0, null), new AxisData(ser.columnDescription1, null));
+        hv.setAxes(
+            new AxisData(ser.columnDescription0, null, ser.xBucketCount),
+            new AxisData(ser.columnDescription1, null, ser.yBucketCount));
         return hv;
     }
 
@@ -337,7 +342,6 @@ export class HeatmapView extends ChartView {
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
             reusePage: false,
-            relative: false,
             chartKind: "2DHistogram",
             exact: true
         }));
@@ -387,8 +391,7 @@ export class HeatmapView extends ChartView {
         const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisHeatmap");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0, 0], cds, null, {
-            reusePage: false, relative: false,
-            chartKind: "TrellisHeatmap", exact: true
+            reusePage: false, chartKind: "TrellisHeatmap", exact: true
         }));
     }
 
@@ -397,8 +400,7 @@ export class HeatmapView extends ChartView {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
             return new FilterReceiver(title, [this.xAxisData.description, this.yAxisData.description],
                 this.schema, [0, 0], page, operation, this.dataset, {
-                exact: true, chartKind: "Heatmap",
-                reusePage: false, relative: false,
+                exact: true, chartKind: "Heatmap", reusePage: false,
             });
         };
     }
@@ -427,8 +429,7 @@ export class HeatmapView extends ChartView {
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
             chartKind: "Heatmap",
-            exact: true,
-            relative: true,
+            exact: this.samplingRate >= 1,
             reusePage: true
         }));
     }
@@ -438,8 +439,7 @@ export class HeatmapView extends ChartView {
         const collector = new DataRangesReceiver(this,
             this.page, null, this.schema, [this.xAxisData.bucketCount, this.yAxisData.bucketCount],
             [this.xAxisData.description, this.yAxisData.description], this.page.title, {
-                chartKind: "Heatmap", exact: this.samplingRate >= 1,
-                relative: false, reusePage: true
+                chartKind: "Heatmap", exact: this.samplingRate >= 1, reusePage: true,
             });
         collector.run(ranges);
         collector.finished();
@@ -524,8 +524,7 @@ export class HeatmapView extends ChartView {
             this.yAxisData.getDisplayNameString(this.schema)),
             [this.xAxisData.description, this.yAxisData.description],
             this.schema, [0, 0], this.page, rr, this.dataset, {
-            exact: this.samplingRate >= 1, chartKind: "Heatmap",
-            relative: false, reusePage: false
+            exact: this.samplingRate >= 1, chartKind: "Heatmap", reusePage: false,
         });
         rr.invoke(renderer);
     }

@@ -69,6 +69,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         rowCount: number,
         schema: SchemaClass,
         protected samplingRate: number,
+        protected pie: boolean,
         page: FullPage) {
         super(remoteObjectId, rowCount, schema, page, "Histogram");
 
@@ -88,6 +89,10 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
                 { text: "table",
                     action: () => this.showTable(),
                     help: "Show the data underlying this histogram using a table view.",
+                },
+                { text: "pie chart/histogram",
+                    action: () => this.togglePie(),
+                    help: "Draw the data as a pie chart or as a histogram.",
                 },
                 { text: "exact",
                     action: () => this.exactHistogram(),
@@ -118,6 +123,11 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         }
     }
 
+    public dragStart(): void {
+        if (!this.pie)
+            super.dragStart();
+    }
+
     public getAxisData(event: DragEventKind): AxisData | null {
         switch (event) {
             case "Title":
@@ -132,8 +142,13 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
                     presentCount: this.rowCount - this.histogram.missingData,
                     missingCount: this.histogram.missingData
                 };
-                return new AxisData(null, range);
+                return new AxisData(null, range, 0);
         }
+    }
+
+    private togglePie(): void {
+        this.pie = !this.pie;
+        this.resize();
     }
 
     protected replaceAxis(pageId: string, eventKind: DragEventKind): void {
@@ -148,7 +163,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
                 this.page, null, this.schema, [0],  // any number of buckets
                 [this.xAxisData.description], this.page.title, {
                     chartKind: "Histogram", exact: this.samplingRate >= 1,
-                    relative: false, reusePage: true
+                    relative: false, reusePage: true, pieChart: this.pie
                 });
             collector.run([sourceRange]);
             collector.finished();
@@ -162,17 +177,23 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         if (this.surface != null)
             this.surface.destroy();
         this.surface = new HtmlPlottingSurface(this.chartDiv, this.page, {});
-        // this.plot = new PiePlot(this.surface);
-        this.plot = new HistogramPlot(this.surface);
-        this.cdfPlot = new CDFPlot(this.surface);
+        if (this.pie) {
+            this.plot = new PiePlot(this.surface);
+            this.cdfPlot = null;
+        } else {
+            this.plot = new HistogramPlot(this.surface);
+            this.cdfPlot = new CDFPlot(this.surface);
+        }
     }
 
     public serialize(): IViewSerialization {
+        // noinspection UnnecessaryLocalVariableJS
         const result: HistogramSerialization = {
             ...super.serialize(),
             samplingRate: this.samplingRate,
             bucketCount: this.bucketCount,
             columnDescription: this.xAxisData.description,
+            isPie: this.pie
         };
         return result;
     }
@@ -184,14 +205,16 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
             return null;
 
         const hv = new HistogramView(
-            ser.remoteObjectId, ser.rowCount, schema, ser.samplingRate, page);
-        hv.setAxes(new AxisData(ser.columnDescription, null));
+            ser.remoteObjectId, ser.rowCount, schema, ser.samplingRate, ser.isPie, page);
+        hv.setAxes(new AxisData(ser.columnDescription, null, ser.bucketCount));
         hv.bucketCount = ser.bucketCount;
         return hv;
     }
 
-   public setAxes(xAxisData: AxisData): void {
+    public setAxes(xAxisData: AxisData): void {
         this.xAxisData = xAxisData;
+        const submenu = this.menu.getSubmenu("View");
+        submenu.enable("pie chart/histogram", kindIsString(this.xAxisData.description.kind));
     }
 
     /**
@@ -220,20 +243,23 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
 
         const counts = h.buckets;
         this.bucketCount = counts.length;
-        this.plot.setHistogram(augmentedHistogram, this.samplingRate,
+        this.plot.setHistogram(augmentedHistogram, this.samplingRate, h.missingData,
                                this.xAxisData, maxYAxis, this.page.dataset.isPrivate());
         this.plot.draw();
 
         const discrete = kindIsString(this.xAxisData.description.kind) ||
             this.xAxisData.description.kind === "Integer";
-        this.cdfPlot.setData(cdf.cdfBuckets, discrete);
-        this.cdfPlot.draw();
+        if (this.cdfPlot != null) {
+            this.cdfPlot.setData(cdf.cdfBuckets, discrete);
+            this.cdfPlot.draw();
+        }
         this.setupMouse();
 
-        this.cdfDot =  this.surface.getChart()
-            .append("circle")
-            .attr("r", Resolution.mouseDotRadius)
-            .attr("fill", "blue");
+        if (!this.pie)
+            this.cdfDot =  this.surface.getChart()
+                .append("circle")
+                .attr("r", Resolution.mouseDotRadius)
+                .attr("fill", "blue");
 
         const pointDesc = ["x", "y", "count"];
         pointDesc.push("cdf");
@@ -273,7 +299,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
-            reusePage: false, relative: false,
+            reusePage: false, relative: false, pieChart: false,
             chartKind: "TrellisHistogram", exact: false
         }));
     }
@@ -283,7 +309,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
             return new FilterReceiver(title, [this.xAxisData.description], this.schema,
                 [0], page, operation, this.dataset, {
-                exact: this.samplingRate >= 1, reusePage: false,
+                exact: this.samplingRate >= 1, reusePage: false, pieChart: this.pie,
                 relative: false, chartKind: "Histogram"
             });
         };
@@ -353,11 +379,11 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         const exact = this.isPrivate() || this.samplingRate >= 1;
         rr.invoke(new DataRangesReceiver(
             this, this.page, rr, this.schema, [bucketCount], [this.xAxisData.description], null,
-            { chartKind: "Histogram", relative: false, exact: exact, reusePage: true }));
+            { chartKind: "Histogram", relative: false, exact: exact, reusePage: true, pieChart: this.pie }));
     }
 
     public chooseBuckets(): void {
-        const bucketDialog = new BucketDialog();
+        const bucketDialog = new BucketDialog(this.bucketCount);
         bucketDialog.setAction(() => this.changeBuckets(bucketDialog.getBucketCount()));
         bucketDialog.show();
     }
@@ -374,7 +400,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
             this.page, null, this.schema, [this.xAxisData.bucketCount],
             [this.xAxisData.description], this.page.title, {
                 chartKind: "Histogram", exact: this.samplingRate >= 1,
-                relative: false, reusePage: true
+                relative: false, reusePage: true, pieChart: this.pie
             });
         collector.run(ranges);
         collector.finished();
@@ -388,26 +414,30 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
     }
 
     protected onMouseMove(): void {
-        const position = d3mouse(this.surface.getChart().node());
-        const mouseX = position[0];
-        const mouseY = position[1];
+        if (this.pie) {
+            // TODO
+        } else {
+            const position = d3mouse(this.surface.getChart().node());
+            const mouseX = position[0];
+            const mouseY = position[1];
 
-        let xs = "";
-        if (this.xAxisData.scale != null)
-            xs = this.xAxisData.invert(position[0]);
-        const y = Math.round(this.plot.getYScale().invert(position[1]));
-        const ys = significantDigits(y);
-        const size = this.plot.get(mouseX);
-        const pointDesc = [xs, ys, makeInterval(size)];
+            let xs = "";
+            if (this.xAxisData.scale != null)
+                xs = this.xAxisData.invert(position[0]);
+            const y = Math.round(this.plot.getYScale().invert(position[1]));
+            const ys = significantDigits(y);
+            const size = this.plot.get(mouseX);
+            const pointDesc = [xs, ys, makeInterval(size)];
 
-        if (this.cdfPlot != null) {
-            const cdfPos = this.cdfPlot.getY(mouseX);
-            this.cdfDot.attr("cx", mouseX);
-            this.cdfDot.attr("cy", (1 - cdfPos) * this.surface.getChartHeight());
-            const perc = percent(cdfPos);
-            pointDesc.push(perc);
+            if (this.cdfPlot != null) {
+                const cdfPos = this.cdfPlot.getY(mouseX);
+                this.cdfDot.attr("cx", mouseX);
+                this.cdfDot.attr("cy", (1 - cdfPos) * this.surface.getChartHeight());
+                const perc = percent(cdfPos);
+                pointDesc.push(perc);
+            }
+            this.pointDescription.update(pointDesc, mouseX, mouseY);
         }
-        this.pointDescription.update(pointDesc, mouseX, mouseY);
     }
 
     public dragEnd(): boolean {
@@ -463,7 +493,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
             [0], this.page, rr, this.dataset, {
             exact: this.samplingRate >= 1,
             reusePage: false,
-            relative: false,
+            relative: false, pieChart: this.pie,
             chartKind: "Histogram"
         });
         rr.invoke(renderer);
@@ -482,11 +512,12 @@ export class HistogramReceiver extends Receiver<Pair<AugmentedHistogram, Augment
                 protected xAxisData: AxisData,
                 operation: ICancellable<Pair<AugmentedHistogram, AugmentedHistogram>>,
                 protected samplingRate: number,
+                protected isPie: boolean,
                 reusePage: boolean) {
         super(reusePage ? sourcePage : sourcePage.dataset.newPage(title, sourcePage),
             operation, "histogram");
         this.view = new HistogramView(
-            remoteTableId, rowCount, schema, this.samplingRate, this.page);
+            remoteTableId, rowCount, schema, this.samplingRate, this.isPie, this.page);
         this.view.setAxes(xAxisData);
         this.page.setDataView(this.view);
     }

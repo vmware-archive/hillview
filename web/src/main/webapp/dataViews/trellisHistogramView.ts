@@ -143,7 +143,7 @@ export class TrellisHistogramView extends TrellisChartView {
             rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
                 [0], cds, null, {
                     reusePage: true, relative: false,
-                    chartKind: "Histogram", exact: this.samplingRate >= 1
+                    chartKind: "Histogram", exact: this.samplingRate >= 1, pieChart: false
                 }));
         } else {
             const cds = [this.xAxisData.description, this.groupByAxisData.description];
@@ -184,7 +184,7 @@ export class TrellisHistogramView extends TrellisChartView {
     }
 
     protected chooseBuckets(): void {
-        const bucketDialog = new BucketDialog();
+        const bucketDialog = new BucketDialog(this.bucketCount);
         bucketDialog.setAction(() => this.updateView(this.data, bucketDialog.getBucketCount()));
         bucketDialog.show();
     }
@@ -248,8 +248,10 @@ export class TrellisHistogramView extends TrellisChartView {
     }
 
     public serialize(): IViewSerialization {
+        // noinspection UnnecessaryLocalVariableJS
         const ser: TrellisHistogramSerialization = {
             ...super.serialize(),
+            isPie: false,
             bucketCount: this.bucketCount,
             samplingRate: this.samplingRate,
             columnDescription: this.xAxisData.description,
@@ -270,8 +272,8 @@ export class TrellisHistogramView extends TrellisChartView {
         const shape = TrellisChartView.deserializeShape(ser, page);
         const view = new TrellisHistogramView(ser.remoteObjectId, ser.rowCount,
             schema, shape, ser.samplingRate, page);
-        view.setAxes(new AxisData(ser.columnDescription, null),
-            new AxisData(ser.groupByColumn, null));
+        view.setAxes(new AxisData(ser.columnDescription, null, ser.bucketCount),
+            new AxisData(ser.groupByColumn, null, ser.groupByBucketCount));
         return view;
     }
 
@@ -314,6 +316,7 @@ export class TrellisHistogramView extends TrellisChartView {
             buckets.push(Math.max(sum, 0));
         }
 
+        // noinspection UnnecessaryLocalVariableJS
         const hist: Histogram = { buckets: buckets,
             missingData: cdf.missingData };
         return hist;
@@ -342,7 +345,7 @@ export class TrellisHistogramView extends TrellisChartView {
             const bucketData = data.buckets[i];
             const histo: Histogram = {
                 buckets: bucketData,
-                missingData: data.missingData,
+                missingData: data.histogramMissingX.buckets[i],
             };
 
             const cdfp = this.cdfs[i];
@@ -363,8 +366,10 @@ export class TrellisHistogramView extends TrellisChartView {
                 confidence: data.confidence != null ? data.confidence[i] : null,
             };
 
-            plot.setHistogram(augHist, this.samplingRate, this.xAxisData,
-                              max, this.page.dataset.isPrivate());
+            plot.setHistogram(augHist, this.samplingRate,
+                data.histogramMissingX.buckets[i],
+                this.xAxisData,
+                max, this.page.dataset.isPrivate());
             plot.displayAxes = false;
             plot.draw();
             plot.border(1);

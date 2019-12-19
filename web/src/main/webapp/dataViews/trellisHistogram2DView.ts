@@ -283,7 +283,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
     }
 
     protected chooseBuckets(): void {
-        const bucketDialog = new BucketDialog();
+        const bucketDialog = new BucketDialog(this.buckets);
         bucketDialog.setAction(() =>
             this.updateView(this.data, [bucketDialog.getBucketCount(), this.legendAxisData.bucketCount],
                 this.maxYAxis));
@@ -355,6 +355,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
     }
 
     public serialize(): IViewSerialization {
+        // noinspection UnnecessaryLocalVariableJS
         const ser: TrellisHistogram2DSerialization = {
             ...super.serialize(),
             samplingRate: this.samplingRate,
@@ -380,9 +381,9 @@ export class TrellisHistogram2DView extends TrellisChartView {
         const shape = TrellisChartView.deserializeShape(ser, page);
         const view = new TrellisHistogram2DView(ser.remoteObjectId, ser.rowCount,
             schema, shape, ser.samplingRate, page);
-        view.setAxes(new AxisData(ser.columnDescription0, null),
-            new AxisData(ser.columnDescription1, null),
-            new AxisData(ser.groupByColumn, null),
+        view.setAxes(new AxisData(ser.columnDescription0, null, ser.xBucketCount),
+            new AxisData(ser.columnDescription1, null, ser.yBucketCount),
+            new AxisData(ser.groupByColumn, null, ser.groupByBucketCount),
             ser.relative);
         return view;
     }

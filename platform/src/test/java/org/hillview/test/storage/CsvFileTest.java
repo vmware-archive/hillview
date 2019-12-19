@@ -56,6 +56,15 @@ public class CsvFileTest extends BaseTest {
     private static final String criteoSchema = "criteo.schema";
     private static final String criteoCompressed = "criteoTab.gz";
 
+    @Test
+    public void letterPairs() {
+        for (char c = 'A'; c <= 'Z'; c++) {
+            for (char d = 'a'; d <= 'z'; d++) {
+                System.out.print("\"" + Character.toString(c) + Character.toString(d) + "\",");
+            }
+        }
+    }
+
     private ITable readTable(String folder, String file) {
         Path path = Paths.get(folder, file);
         CsvFileLoader.Config config = new CsvFileLoader.Config();

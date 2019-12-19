@@ -156,16 +156,15 @@ export class AxisDescription {
  * Contains all information required to build an axis and a d3 scale associated to it.
  */
 export class AxisData {
-    public readonly leftBucketBoundaries: string[];
+    public readonly stringQuantiles: string[];
     public scale: AnyScale;
     public axis: AxisDescription;
-    public bucketCount: number;
     public range: BucketsInfo; // the range used to draw the data; may be adjusted from BucketsInfo
 
     public constructor(public description: IColumnDescription | null, // may be null for e.g., the Y col in a histogram
                        // dataRange is the original range of the data
-                       public dataRange: BucketsInfo | null) {
-        this.bucketCount = 0;
+                       public dataRange: BucketsInfo | null,
+                       public bucketCount: number) {
         this.range = dataRange;
         const kind = description == null ? null : description.kind;
         if (dataRange != null) {
@@ -188,7 +187,7 @@ export class AxisData {
                 };
             }
         }
-        this.leftBucketBoundaries = this.range !== null ? this.range.stringQuantiles : null;
+        this.stringQuantiles = this.range !== null ? this.range.stringQuantiles : null;
         // These are set when we know the screen size.
         this.scale = null;
         this.axis = null;
@@ -202,21 +201,26 @@ export class AxisData {
         return kindIsString(kind) || kind === "Integer";
     }
 
-    public setBucketCount(bucketCount: number): void {
-        this.bucketCount = bucketCount;
-    }
-
     public getString(index: number, clamp: boolean): string {
-        index = Math.round(index);
+        index = Math.floor(index);
         if (clamp) {
             if (index < 0)
                 index = 0;
-            if (index >= this.leftBucketBoundaries.length)
-                index = this.leftBucketBoundaries.length - 1;
+            if (index >= this.stringQuantiles.length)
+                index = this.stringQuantiles.length - 1;
         }
-        if (index >= 0 && index < this.leftBucketBoundaries.length)
-            return this.leftBucketBoundaries[index];
+        if (index >= 0 && index < this.stringQuantiles.length)
+            return this.stringQuantiles[index];
         return null;
+    }
+
+    private bucketIndexToStringIndex(bucketNumber: number): number {
+        return Math.floor(bucketNumber * this.stringQuantiles.length / this.bucketCount);
+    }
+
+    private bucketLeftString(bucketNumber: number, clamp: boolean): string {
+        bucketNumber = Math.floor(bucketNumber);
+        return this.getString(this.bucketIndexToStringIndex(bucketNumber), clamp);
     }
 
     /**
@@ -363,17 +367,34 @@ export class AxisData {
 
         const valueKind = this.description.kind;
         if (kindIsString(this.description.kind)) {
-            const left = this.getString(bucket, false);
-            if (this.range.allStringsKnown)
-                return new BucketBoundaries(new BucketBoundary(left, valueKind, true), null);
-            if (bucket === this.bucketCount - 1)
-                return new BucketBoundaries(
-                    new BucketBoundary(left, valueKind, true),
+            const left = this.bucketLeftString(bucket, false);
+            const leftBoundary = new BucketBoundary(left, valueKind, true);
+            if (bucket === this.bucketCount - 1) {
+                if (left == this.range.maxBoundary)
+                    return new BucketBoundaries(leftBoundary, null);
+                return new BucketBoundaries(leftBoundary,
                     new BucketBoundary(this.range.maxBoundary, valueKind, true));
-            else
+            } else {
+                let right = this.bucketLeftString(bucket + 1, false);
+                if (left == right)
+                    return new BucketBoundaries(leftBoundary, null);
+                if (this.range.allStringsKnown) {
+                    const leftStringIndex = this.bucketIndexToStringIndex(bucket);
+                    const nextStringIndex = this.bucketIndexToStringIndex(bucket + 1);
+                    if (nextStringIndex === leftStringIndex + 1)
+                        // The right-open interval contains in fact a single point
+                        return new BucketBoundaries(leftBoundary, null);
+                    if (nextStringIndex == leftStringIndex + 2) {
+                        // An interval with just two points: show the right point inclusive
+                        right = this.getString(leftStringIndex + 1, true);
+                        return new BucketBoundaries(leftBoundary,
+                            new BucketBoundary(right, valueKind, true));
+                    }
+                }
                 return new BucketBoundaries(
-                    new BucketBoundary(left, valueKind, true),
-                    new BucketBoundary(this.getString(bucket + 1, false), valueKind, false));
+                    leftBoundary,
+                    new BucketBoundary(right, valueKind, false));
+            }
         }
 
         const interval = (this.range.max - this.range.min) / this.bucketCount;

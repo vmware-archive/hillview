@@ -110,13 +110,14 @@ export class TrellisHeatmapView extends TrellisChartView {
 
         const schema: SchemaClass = new SchemaClass([]).deserialize(ser.schema);
         const hv = new TrellisHeatmapView(ser.remoteObjectId, ser.rowCount, schema, shape, ser.samplingRate, page);
-        hv.setAxes(new AxisData(ser.columnDescription0, null),
-            new AxisData(ser.columnDescription1, null),
-            new AxisData(ser.groupByColumn, null));
+        hv.setAxes(new AxisData(ser.columnDescription0, null, ser.xBucketCount),
+            new AxisData(ser.columnDescription1, null, ser.yBucketCount),
+            new AxisData(ser.groupByColumn, null, ser.groupByBucketCount));
         return hv;
     }
 
     public serialize(): IViewSerialization {
+        // noinspection UnnecessaryLocalVariableJS
         const ser: TrellisHeatmapSerialization = {
             ...super.serialize(),
             samplingRate: this.samplingRate,
