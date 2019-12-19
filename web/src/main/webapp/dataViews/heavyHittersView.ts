@@ -424,7 +424,7 @@ export class HeavyHittersView extends BigTableView {
         percentDialog.setAction(() => {
             const newPercent = percentDialog.getFieldValueAsNumber("newPercent");
             if (newPercent != null) this.runWithThreshold(newPercent);
-            });
+        });
         percentDialog.setCacheTitle("ChangeHeavyHittersDialog");
         percentDialog.show();
     }

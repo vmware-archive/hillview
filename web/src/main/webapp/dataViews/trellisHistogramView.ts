@@ -185,7 +185,11 @@ export class TrellisHistogramView extends TrellisChartView {
 
     protected chooseBuckets(): void {
         const bucketDialog = new BucketDialog(this.bucketCount);
-        bucketDialog.setAction(() => this.updateView(this.data, bucketDialog.getBucketCount()));
+        bucketDialog.setAction(() => {
+            const ct = bucketDialog.getBucketCount();
+            if (ct != null)
+                this.updateView(this.data, ct);
+        });
         bucketDialog.show();
     }
 

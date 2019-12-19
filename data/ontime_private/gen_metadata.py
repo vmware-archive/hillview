@@ -9,6 +9,8 @@ states = [ "AK", "AL", "AR", "AZ", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "IA
            "KY", "LA", "MA", "MD", "ME", "MI", "MN", "MO", "MS", "MT", "NC", "ND", "NE", "NH", "NJ", "NM",
            "NV", "NY", "OH", "OK", "OR", "PA", "PR", "RI", "SC", "SD", "TN", "TT", "TX", "UT", "VA", "VT",
            "WA", "WI", "WV", "WY" ]
+carriers = ["9E", "AA", "AS", "B6", "CO", "DH", "DL", "EV", "F9", "FL", "G4", "GA", "HP", "KH", "MQ", "NK",
+            "NW", "OH", "OO", "TW", "TZ", "UA", "US", "VX", "WN", "XE", "YV", "YX"]
 
 def get_metadata(cn):
     if cn == "DayOfWeek":
@@ -36,6 +38,8 @@ def get_string_metadata(col):
     letters = list(string.ascii_uppercase)
     if col == "OriginState" or col == "DestState":
         letters = states
+    elif col == "UniqueCarrier":
+        letters = carriers
     return {'type': "StringColumnQuantization",
             'globalMax': 'a',
             'leftBoundaries': letters }

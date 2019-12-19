@@ -71,6 +71,7 @@ export class HeatmapView extends ChartView {
     protected legendDiv: HTMLDivElement;
     protected heatmapDiv: HTMLDivElement;
     protected missingDiv: HTMLDivElement;
+    protected confThreshold: number;
 
     constructor(remoteObjectId: RemoteObjectId,
                 rowCount: number,
@@ -80,6 +81,7 @@ export class HeatmapView extends ChartView {
         super(remoteObjectId, rowCount, schema, page, "Heatmap");
         this.topLevel = document.createElement("div");
         this.topLevel.className = "chart";
+        this.confThreshold = 2;
         this.viewMenu = new SubMenu([
             {
                 text: "refresh",
@@ -106,6 +108,10 @@ export class HeatmapView extends ChartView {
                 text: "group by...",
                 action: () => this.groupBy(),
                 help: "Group data by a third column.",
+            }, {
+                text: "Confidence threshold...",
+                action: () => this.changeThreshold(),
+                help: "Specify how much larger than the confidence interval the data must be to be displayed.",
             },
         ]);
         this.menu = new TopMenu([
@@ -122,13 +128,31 @@ export class HeatmapView extends ChartView {
             this.dataset.combineMenu(this, page.pageId),
         ]);
 
+        this.viewMenu.enable("Confidence threshold...", this.isPrivate());
         this.page.setMenu(this.menu);
         this.legendDiv = this.makeToplevelDiv();
         this.heatmapDiv = this.makeToplevelDiv();
         this.missingDiv = this.makeToplevelDiv();
-
         this.summary = document.createElement("div");
         this.topLevel.appendChild(this.summary);
+    }
+
+    public changeThreshold(): void {
+        const thDialog = new Dialog("Confidence threshold",
+            "Change the threshold for the confidence interval.");
+        let input = thDialog.addTextField("multiplier", "Multiplier:", FieldKind.Double, this.confThreshold.toString(),
+            "Data with value > multiplier * confidence is displayed.");
+        input.required = true;
+        thDialog.setAction(() => {
+            const c = thDialog.getFieldValueAsNumber("multiplier");
+            if (c == null) {
+                this.page.reportError("Threshold must be a number");
+                return;
+            }
+            this.confThreshold = c;
+            this.resize();
+        });
+        thDialog.show();
     }
 
     public chooseBuckets(): void {
@@ -156,6 +180,10 @@ export class HeatmapView extends ChartView {
     }
 
     private changeBuckets(x: number, y: number): void {
+        if (x == null || y == null) {
+            this.page.reportError("Illegal value");
+            return;
+        }
         const rr = this.createDataQuantilesRequest(
             [this.xAxisData.description, this.yAxisData.description],
             this.page, "Heatmap");
@@ -263,7 +291,7 @@ export class HeatmapView extends ChartView {
         }
 
         // The order of these operations is important
-        this.plot.setData(heatmap, this.xAxisData, this.yAxisData, this.schema, this.isPrivate());
+        this.plot.setData(heatmap, this.xAxisData, this.yAxisData, this.schema, this.confThreshold, this.isPrivate());
         if (!keepColorMap) {
             this.colorLegend.setData(1, this.plot.getMaxCount());
         }

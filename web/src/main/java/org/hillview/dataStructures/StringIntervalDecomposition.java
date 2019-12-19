@@ -19,11 +19,15 @@ package org.hillview.dataStructures;
 
 import org.hillview.sketches.results.StringHistogramBuckets;
 import org.hillview.table.columns.StringColumnQuantization;
+import org.hillview.utils.Utilities;
 
-class StringDyadicDecomposition extends DyadicDecomposition {
-    StringDyadicDecomposition(StringColumnQuantization quantization, StringHistogramBuckets buckets) {
-        super(quantization, new StringHistogramBuckets(buckets.leftBoundaries, quantization.globalMax));
+class StringIntervalDecomposition extends IntervalDecomposition {
+    private StringIntervalDecomposition(StringColumnQuantization quantization, int[] indexes) {
+        super(quantization, indexes);
+    }
 
+    StringIntervalDecomposition(StringColumnQuantization quantization, StringHistogramBuckets buckets) {
+        super(quantization, buckets.leftBoundaries.length);
         int previous = 0;
         for (int i = 0; i < buckets.getBucketCount(); i++) {
             String s = buckets.leftMargin(i);
@@ -33,5 +37,12 @@ class StringDyadicDecomposition extends DyadicDecomposition {
             previous = si;
             this.bucketQuantizationIndexes[i] = si;
         }
+    }
+
+    @Override
+    public IntervalDecomposition mergeNeighbors() {
+        return new StringIntervalDecomposition(
+                (StringColumnQuantization)this.quantization,
+                Utilities.decimate(this.bucketQuantizationIndexes, 2));
     }
 }

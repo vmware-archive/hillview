@@ -78,14 +78,14 @@ public class HistogramRequestInfo {
         return new HistogramSketch(buckets, this.cd.name, this.samplingRate, this.seed, quantization);
     }
 
-    public DyadicDecomposition getDecomposition(ColumnQuantization quantization) {
+    public IntervalDecomposition getDecomposition(ColumnQuantization quantization) {
         IHistogramBuckets buckets = this.getBuckets(quantization);
         if (cd.kind.isString()) {
-            return new StringDyadicDecomposition(
+            return new StringIntervalDecomposition(
                     (StringColumnQuantization)quantization,
                     (StringHistogramBuckets)buckets);
         } else {
-            return new NumericDyadicDecomposition(
+            return new NumericIntervalDecomposition(
                     (DoubleColumnQuantization)quantization,
                     (DoubleHistogramBuckets)buckets);
         }
