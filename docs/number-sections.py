@@ -6,6 +6,7 @@
 
 import re
 import os
+import datetime
 
 class Headings:
     def __init__(self):
@@ -93,7 +94,9 @@ def process(rows, headings, banner):
     while index < len(outRows) and not outRows[index].startswith("##"):
         result.append(outRows[index])
         index += 1
+
     if headings.toc:
+        result.append("Updated on " + datetime.datetime.today().strftime("%Y %b %d") + ".\n\n")
         result.append("# Contents\n")
         result.append("|Section|Reference|\n")
         result.append("|---:|:---|\n")

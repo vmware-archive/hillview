@@ -21,6 +21,8 @@ performs all operations using a class of very efficient algorithms,
 called “sketches”, which are constrained to compute with bounded
 memory over distributed data.
 
+Updated on 2019 Dec 19.
+
 # Contents
 |Section|Reference|
 |---:|:---|
@@ -38,7 +40,7 @@ memory over distributed data.
 |2.3.2.2.|[Regular Expressions](#2322-regular-expressions)|
 |2.3.2.3.|[Custom Patterns](#2323-custom-patterns)|
 |2.3.3.|[Reading generic logs](#233-reading-generic-logs)|
-|2.3.4.|[Reading saved data views](#234-reading-saved-data-views)|
+|2.3.4.|[Reading saved dataset views](#234-reading-saved-dataset-views)|
 |2.3.5.|[Reading CSV files](#235-reading-csv-files)|
 |2.3.6.|[Reading JSON files](#236-reading-json-files)|
 |2.3.7.|[Reading ORC files](#237-reading-orc-files)|
@@ -56,9 +58,10 @@ memory over distributed data.
 |3.2.2.|[Selecting columns](#322-selecting-columns)|
 |3.2.3.|[Operations on selected columns](#323-operations-on-selected-columns)|
 |3.2.4.|[Operations on a table cell](#324-operations-on-a-table-cell)|
-|3.2.5.|[Operations on tables](#325-operations-on-tables)|
-|3.2.6.|[The table view menu](#326-the-table-view-menu)|
-|3.2.7.|[The table filter menu](#327-the-table-filter-menu)|
+|3.2.5.|[Operations on a table row](#325-operations-on-a-table-row)|
+|3.2.6.|[Operations on tables](#326-operations-on-tables)|
+|3.2.7.|[The table view menu](#327-the-table-view-menu)|
+|3.2.8.|[The table filter menu](#328-the-table-filter-menu)|
 |3.3.|[Frequent elements views](#33-frequent-elements-views)|
 |3.3.1.|[View as a Table](#331-view-as-a-table)|
 |3.3.2.|[Modify](#332-modify)|
@@ -186,7 +189,7 @@ storage.
   files](#233-reading-generic-logs).
 
 * Saved view: allows the user to [read data from a saved
-  view](#234-reading-saved-data-views).
+  view](#234-reading-saved-dataset-views).
 
 * CSV files: allows the user to [read data from a set of CSV
   files](#235-reading-csv-files).
@@ -304,10 +307,12 @@ is deployed*.
 
 * Log format: The [log format](#232-specifying-rules-for-parsing-logs) of the logs.
 
-#### 2.3.4. Reading saved data views
+#### 2.3.4. Reading saved dataset views
 
-Hillview can reload a view that was previously visualized. The
-following menu allows the users to specify the files to load.
+Hillview can reload all the data views associated with a datased.
+A collection of views can be saved to a file from the dataset tab menu,
+as described in [Navigating multiple datasets](#24-navigating-multiple-datasets).
+The following menu allows the users to specify the files to load.
 
 ![Specifying a view to load](bookmarked-data-menu.png)
 
@@ -464,6 +469,29 @@ The currently-selected dataset is displayed below the line of tabs;
 the page contains simultaneously multiple different views of a
 dataset.
 
+Right-clicking a tab brings up a tab-specific menu:
+
+![Tab menu](tab-menu.png)
+
+The tab menu offers the following options:
+
+* Save this tab to file.  The data can be loaded back from the
+[load menu](#23-loading-data) as described in
+[Reading saved dataset views](#234-reading-saved-dataset-views).  The file
+can also be sent to other users, who will be able to open
+the exact same view (this requires the users to access the same
+service and the data to not change).
+
+* Reload original view: in case the first page of the view was accidentally
+closed, this option will reopen it.
+
+* Refresh: fetches and redraws all the views associated with this dataset.
+
+* Edit privacy policy: this is an experimental feature related to
+  differentially-private data visualizations, which is not yet documented.
+  This option is only enabled for a data curator while visualizing a
+  private dataset.
+
 ## 3. Data views
 
 As the user navigates the dataset new views are opened and displayed.
@@ -532,10 +560,11 @@ as shown below.
 
 ![Column selection menu](schema-select-menu.png)
 
-Columns can be un/selected using either the name or type.  We describe
+Columns can be un/selected using either the name, type, or, if already
+computed, by basic statistics.  We describe
 the search criteria allowed in detail below.  In all cases, the search
-returns a subset of column descriptions, which can be added to or
-removed from the current selection.
+returns a subset of column descriptions, which are added to
+the current selection.
 
 * By Name: allows regular expression matching against the name of the column.
 
@@ -544,6 +573,14 @@ removed from the current selection.
 * By Type: allows choosing all columns of a particular type.
 
 ![Select by type Menu](type-selection.png)
+
+* By Statistics:
+
+[!Select by statistics](select-by-statistics.png)
+
+Allows the user to select all columns that have only "missing" value
+or all columns where the standard deviation is much smaller than the mean
+(the user can specify a threshold for the ratio of the two).
 
 Once the user selects a set of column descriptions, they can display a view of the
 data table restricted to the selected columns using the View/Selected columns menu.
@@ -631,7 +668,7 @@ of columns using the chart menu:
 #### 3.1.4. Saving data
 
 * This menu allows users to save the data in a different format as
-  files on the worker machines.
+  files on the worker machines.  It is only enabled for authorized users.
 
 ![Save-as menu](saveas-menu.png)
 
@@ -928,7 +965,17 @@ keep all rows based on a comparison with the specific table cell:
 
 ![Cell filtering context menu](filter-context-menu.png)
 
-#### 3.2.5. Operations on tables
+#### 3.2.5. Operations on a table row
+
+Right-clicking on a table cell in a meta column opens a row-specific menu.
+
+![Row menu](row-menu.png)
+
+The row-level operations are similar to cell-level operations described in
+[Operations on a table cell](#324-operations-on-a-table-cell), but perform all
+comparisons at the row level, using just the visible columns.
+
+#### 3.2.6. Operations on tables
 
 The table view has a menu that offers the following options:
 
@@ -939,16 +986,16 @@ The table view has a menu that offers the following options:
   service is running*
 
 * View: allows the user to [change the way the data is
-  displayed](#326-the-table-view-menu).
+  displayed](#327-the-table-view-menu).
 
 * Chart: [allows the user to chart the data](#313-the-chart-menu).
 
-* Filter: allows the user [to filter data](#327-the-table-filter-menu) according
+* Filter: allows the user [to filter data](#328-the-table-filter-menu) according
   to various criteria.
 
 * Combine: allows the user to [combine the data in two views](#44-combining-two-views).
 
-#### 3.2.6. The table view menu
+#### 3.2.7. The table view menu
 
 The view menu offers the following options.
 
@@ -962,7 +1009,7 @@ The view menu offers the following options.
 
 * Change table size: this changes the number of rows displayed.
 
-#### 3.2.7. The table filter menu
+#### 3.2.8. The table filter menu
 
 The table filter menu allows the user to find specific values or
 filter the data according to specific criteria.
@@ -982,16 +1029,23 @@ filter the data according to specific criteria.
 
 ![Table compare menu](table-compare-menu.png)
 
-* Find rows that contain a specific substring.  The find will scroll
-  the table view to the next row that contains the string sought.  The
-  search is only done in the currently visible columns.  The user
+* Find rows that contain a specific substring.  'Find'
+  searches only in the currently visible columns.  The user
   specifies a string to search, and whether the search matches on
   substrings, whether it treats the string as a regular expression,
-  and whether it is case-sensitive.  Finding will be soon be enhanced
-  with a "find next/find previous" menu, which allows the search to be
-  quickly repeated.
+  and whether it is case-sensitive.  The following figure shows
+  the operation of the find bar:
 
-![Table find menu](table-find-menu.png)
+![Find bar](find.png)
+
+  The user has typed a search string (in this figure CA) and pressed the
+  "Search from top" button followed by the "next" (down arrow) button.
+  The found string is highlighted in the visible columns.  The first visible
+  row is responsible for 144 matches (the "count" meta column is 144).  The second
+  highlighted row is responsible for 6206 metches.  There are also 9,101 matches
+  before the first displayed row, and 150,452 total matches not counting the first
+  row.  Pressing the button labeled "Keep only matching data" will eliminate
+  all rows that do not match.
 
 ### 3.3. Frequent elements views
 
@@ -1111,6 +1165,12 @@ The "View" menu from a histogram display has the following functions:
 
 * table: switches to a tabular display of the data shown in the
   current histogram.
+
+* pie chart/histogram: switch the displayed view between a histogram
+  or a pie chart.  This is only enabled for non-numeric columns.  The following
+  image shows a typical pie chart view of the data in a histogram.
+
+  ![Pie chart](pie-chart.png)
 
 * exact: (only shown if the current histogram is only approximately
   computed) redraws the current histogram display by computing
@@ -1297,9 +1357,11 @@ The heatmap view menu has the following operations:
 
 * swap axes: Swaps the X and Y axes.
 
+* \# buckets: Change the number of buckets used to display the heatmap.
+
 * table: Displays the data in the current heatmap in a tabular form.
 
-* Histogram: Draws a [2D histogram](#35-two-dimensional-histogram-views)
+* histogram: Draws a [2D histogram](#35-two-dimensional-histogram-views)
   of the data in the two columns that are used for the heatmap
   display.
 

@@ -67,7 +67,7 @@ public final class HostList implements IJson {
 
     public static class HostAndPortDeserializer implements JsonDeserializer<HostAndPort> {
         public HostAndPort deserialize(JsonElement json, Type typeOfT,
-                                  JsonDeserializationContext context)
+                                       JsonDeserializationContext context)
                 throws JsonParseException {
             return HostAndPort.fromString(json.getAsString());
         }
