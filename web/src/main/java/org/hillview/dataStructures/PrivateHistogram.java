@@ -27,7 +27,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
         this.epsilon = epsilon;
         this.confidence  = new int[histogram.getBucketCount()];
         long numRngCalls = this.addDyadicLaplaceNoise(decomposition);
-        HillviewLogger.instance.info("RNG calls:", "{0}", numRngCalls);
+        HillviewLogger.instance.info("RNG calls", "{0}", numRngCalls);
         if (isCdf) {
             this.recomputeCDF(decomposition);
         }

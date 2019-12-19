@@ -115,8 +115,7 @@ public class DPWrapper {
         Path keyFilePath = Paths.get(basename, DPWrapper.KEY_NAME);
 
         // Retrieves key stored on disk or creates a new key and persists it, if no such key exists.
-        SecureLaplace laplace = new SecureLaplace(keyFilePath);
-        return laplace;
+        return new SecureLaplace(keyFilePath);
     }
 
     public PrivacySchema getPrivacySchema() {

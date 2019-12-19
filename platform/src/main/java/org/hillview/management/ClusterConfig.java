@@ -62,6 +62,7 @@ public class ClusterConfig {
     /**
      * User account that runs the hillview workers and web server.
      */
+    @Nullable
     public String user;
     /**
      * Network port used by backend workers.

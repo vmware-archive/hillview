@@ -22,11 +22,13 @@ import org.hillview.dataStructures.NumericDyadicDecomposition;
 import org.hillview.dataStructures.PrivateHeatmap;
 import org.hillview.dataStructures.PrivateHistogram;
 import org.hillview.dataset.LocalDataSet;
+import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IMap;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.main.Benchmarks;
+import org.hillview.management.ClusterConfig;
 import org.hillview.maps.FindFilesMap;
 import org.hillview.maps.LoadFilesMap;
 import org.hillview.sketches.DoubleDataRangeSketch;
@@ -47,12 +49,15 @@ import org.hillview.table.columns.DoubleColumnQuantization;
 import org.hillview.targets.DPWrapper;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
+import org.hillview.utils.HostList;
 import org.hillview.utils.Linq;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -69,68 +74,109 @@ public class DPBenchmarks extends Benchmarks {
 
     @Nullable
     private IDataSet<ITable> flights;
-    private LocalDataSet<Empty> start;
+    @Nullable
+    private IDataSet<ITable> cloudFlights; // flights dataset in the cloud
     private DPWrapper flightsWrapper;
     private JdbcDatabase database;
-    private long size;
 
-    private DPBenchmarks() throws SQLException {
-        this.start = new LocalDataSet<Empty>(Empty.getInstance());
-        this.loadData();
+    private DPBenchmarks(HashSet<String> datasets) throws SQLException, IOException {
+        this.loadData(datasets);
     }
 
-    private void loadData() throws SQLException {
-        System.out.println("Loading database");
-        JdbcConnectionInformation conn = new JdbcConnectionInformation();
-        conn.host = "localhost";
-        conn.database = "flights";
-        conn.table = "flights";
-        conn.user = "user";
-        conn.password = "password";
-        conn.databaseKind = "mysql";
-        conn.port = 3306;
-        conn.lazyLoading = false;
-        this.database = new JdbcDatabase(conn);
-        this.database.connect();
-
-        FileSetDescription desc = new FileSetDescription();
-        desc.fileKind = "csv";
-        desc.headerRow = true;
-        desc.fileNamePattern = "data/bench/2017*.csv*";
-        desc.schemaFile = "short.schema";
-        System.out.println("Loading dataset");
-        this.flights = this.loadTable(desc);
+    private void loadData(HashSet<String> datasets) throws SQLException, IOException {
+        this.ontimeSchema = Schema.readFromJsonFile(Paths.get("data/ontime/short.schema"));
         String privacyMetadataFile = DPWrapper.privacyMetadataFile("data/ontime_private");
         assert privacyMetadataFile != null;
         PrivacySchema ps = PrivacySchema.loadFromFile(privacyMetadataFile);
         this.flightsWrapper = new DPWrapper(ps, privacyMetadataFile);
-        this.ontimeSchema = Schema.readFromJsonFile(Paths.get("data/ontime/short.schema"));
 
-        IDataSet<ITable> data = this.flights;
-        assert data != null;
-        SummarySketch sk = new SummarySketch();
-        TableSummary tableSummary = data.blockingSketch(sk);
-        assert tableSummary != null;
-        this.size = tableSummary.rowCount;
-        if (this.size == 0)
-            throw new RuntimeException("No file data loaded");
+        if (datasets.contains("DB")) {
+            System.out.println("Loading database");
+            JdbcConnectionInformation conn = new JdbcConnectionInformation();
+            conn.host = "localhost";
+            conn.database = "flights";
+            conn.table = "flights";
+            conn.user = "user";
+            conn.password = "password";
+            conn.databaseKind = "mysql";
+            conn.port = 3306;
+            conn.lazyLoading = false;
+            this.database = new JdbcDatabase(conn);
+            this.database.connect();
+        }
+
+        if (datasets.contains("Local")) {
+            FileSetDescription desc = new FileSetDescription();
+            desc.fileKind = "csv";
+            desc.headerRow = true;
+            desc.fileNamePattern = "data/bench/2017*.csv*";
+            desc.schemaFile = "short.schema";
+            System.out.println("Loading dataset");
+            LocalDataSet<Empty> start = new LocalDataSet<Empty>(Empty.getInstance());
+            this.flights = this.loadTable(start, desc);
+            IDataSet<ITable> data = this.flights;
+            SummarySketch sk = new SummarySketch();
+            TableSummary tableSummary = data.blockingSketch(sk);
+            assert tableSummary != null;
+            if (tableSummary.rowCount == 0)
+                throw new RuntimeException("No file data loaded");
+        }
+
+        if (datasets.contains("Cloud")) {
+            System.out.println("Loading cloud dataset");
+            // Load the flights dataset in the cloud.
+            ClusterConfig config = ClusterConfig.parse("config-aws.json");
+            HostList workers = config.getWorkers();
+            IDataSet<Empty> clusterInit = RemoteDataSet.createCluster(workers, RemoteDataSet.defaultDatasetIndex);
+            FileSetDescription desc = new FileSetDescription();
+            desc.fileKind = "orc";
+            desc.fileNamePattern = "data/ontime_small_orc/*.orc";
+            desc.schemaFile = "schema";
+            this.cloudFlights = this.loadTable(clusterInit, desc);
+            IDataSet<ITable> data = this.cloudFlights;
+            SummarySketch sk = new SummarySketch();
+            TableSummary tableSummary = data.blockingSketch(sk);
+            assert tableSummary != null;
+            if (tableSummary.rowCount == 0)
+                throw new RuntimeException("No file data loaded");
+        }
     }
 
-    private IDataSet<ITable> loadTable(FileSetDescription desc) {
+    private IDataSet<ITable> loadTable(IDataSet<Empty> start, FileSetDescription desc) {
         IMap<Empty, List<IFileReference>> finder = new FindFilesMap(desc);
         IDataSet<IFileReference> found = start.blockingFlatMap(finder);
         IMap<IFileReference, ITable> loader = new LoadFilesMap();
         return found.blockingMap(loader);
     }
 
+    enum Dataset {
+        Local,
+        DB,
+        Cloud;
+
+        @Override
+        public String toString() {
+            switch (this) {
+                case Local:
+                    return "Local";
+                case DB:
+                    return "DB";
+                case Cloud:
+                    return "Cloud";
+                default:
+                    throw new RuntimeException("Unexpected dataset");
+            }
+        }
+    }
+
     static class ExperimentConfig {
         boolean usePublicData;
         boolean usePostProcessing;
-        boolean useDatabase;
+        Dataset dataset;
 
         public String toString() {
             String result = "";
-            result += this.useDatabase ? "DB" : "files";
+            result += this.dataset.toString();
             result += this.usePublicData ? " public" : " private";
             result += this.usePostProcessing ? " noised" : "";
             return result;
@@ -138,12 +184,14 @@ public class DPBenchmarks extends Benchmarks {
     }
 
     private double benchmarkNumericHeatmap(ExperimentConfig conf, String col0, String col1) {
+        IDataSet<ITable> table = conf.dataset == Dataset.Cloud ? this.cloudFlights : this.flights;
+        Converters.checkNull(table);
+
         DoubleDataRangeSketch drsk = new DoubleDataRangeSketch(col0);
-        Converters.checkNull(this.flights);
-        DataRange dataRange0 = this.flights.blockingSketch(drsk);
+        DataRange dataRange0 = table.blockingSketch(drsk);
         assert dataRange0 != null;
         drsk = new DoubleDataRangeSketch(col1);
-        DataRange dataRange1 = this.flights.blockingSketch(drsk);
+        DataRange dataRange1 = table.blockingSketch(drsk);
         assert dataRange1 != null;
 
         DoubleHistogramBuckets buckDes0 = new DoubleHistogramBuckets(
@@ -176,7 +224,7 @@ public class DPBenchmarks extends Benchmarks {
         String bench = "Heatmap " + col0 + "," + col1 + "," + conf.toString();
         Runnable r;
         Function<Heatmap, PrivateHeatmap> finalPostprocess = postprocess;
-        if (conf.useDatabase) {
+        if (conf.dataset == Dataset.DB) {
             ColumnQuantization finalQ0 = q0;
             ColumnQuantization finalQ1 = q1;
             r = () -> {
@@ -184,24 +232,24 @@ public class DPBenchmarks extends Benchmarks {
                     buckDes0, buckDes1, null, finalQ0, finalQ1);
                 finalPostprocess.apply(h);
             };
-            return runNTimes(r, runCount, bench, size);
+            return runNTimes(r, runCount, bench, 0);
         } else {
             ISketch<ITable, Heatmap> hsk = new HeatmapSketch(
                 buckDes0, buckDes1, col0, col1, 1.0, 0, q0, q1);
-            r = () -> finalPostprocess.apply(this.flights.blockingSketch(hsk));
+            r = () -> finalPostprocess.apply(table.blockingSketch(hsk));
         }
-        return runNTimes(r, runCount, bench, size);
+        return runNTimes(r, runCount, bench, 0);
     }
 
     private double benchmarkNumericHistogram(ExperimentConfig conf, String col) {
+        IDataSet<ITable> table = conf.dataset == Dataset.Cloud ? this.cloudFlights : this.flights;
+        Converters.checkNull(table);
         DoubleDataRangeSketch drsk = new DoubleDataRangeSketch(col);
-        Converters.checkNull(this.flights);
-        DataRange dataRange = this.flights.blockingSketch(drsk);
+        DataRange dataRange = table.blockingSketch(drsk);
         assert dataRange != null;
 
         DoubleHistogramBuckets buckDes = new DoubleHistogramBuckets(
             dataRange.min, dataRange.max, buckets);
-
         ColumnQuantization q = null;
         Function<Histogram, PrivateHistogram> postprocess = x -> null;
         if (!conf.usePublicData) {
@@ -221,27 +269,30 @@ public class DPBenchmarks extends Benchmarks {
         String bench = "Histogram " + col + "," + conf.toString();
         Runnable r;
         Function<Histogram, PrivateHistogram> finalPostprocess = postprocess;
-        if (conf.useDatabase) {
+        if (conf.dataset == Dataset.DB) {
             ColumnQuantization finalQ = q;
             r = () -> {
                 Histogram histo = this.database.histogram(
-                    desc, buckDes, null, finalQ, (int)size);
+                    desc, buckDes, null, finalQ, 0);
                 finalPostprocess.apply(histo);
             };
-            return runNTimes(r, runCount, bench, size);
+            return runNTimes(r, runCount, bench, 0);
         } else {
             ISketch<ITable, Histogram> hsk = new HistogramSketch(
                 buckDes, col, 1.0, 0, q);
-            r = () -> finalPostprocess.apply(this.flights.blockingSketch(hsk));
+            r = () -> finalPostprocess.apply(table.blockingSketch(hsk));
         }
-        return runNTimes(r, runCount, bench, size);
+        return runNTimes(r, runCount, bench, 0);
     }
 
-    public void run() {
+    public void run(HashSet<String> datasets) {
         assert this.ontimeSchema != null;
         ExperimentConfig conf = new ExperimentConfig();
-        for (boolean b: Arrays.asList(false, true)) {
-            conf.useDatabase = b;
+        for (Dataset d: Arrays.asList(Dataset.Cloud, Dataset.Local, Dataset.DB)) {
+            if (!datasets.contains(d.toString()))
+                continue;
+
+            conf.dataset = d;
             List<ColumnDescription> cols = this.ontimeSchema.getColumnDescriptions();
             cols = Linq.where(cols, c -> c.kind.isNumeric());
             for (ColumnDescription col: cols) {
@@ -271,9 +322,10 @@ public class DPBenchmarks extends Benchmarks {
         }
     }
 
-    public static void main(String[] args) throws SQLException {
+    public static void main(String[] args) throws SQLException, IOException {
         HillviewLogger.instance.setLogLevel(Level.WARNING);
-        DPBenchmarks bench = new DPBenchmarks();
-        bench.run();
+        HashSet<String> datasets = new HashSet<String>(Arrays.asList(args));
+        DPBenchmarks bench = new DPBenchmarks(datasets);
+        bench.run(datasets);
     }
 }
