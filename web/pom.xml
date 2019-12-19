@@ -7,7 +7,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.hillview</groupId>
     <artifactId>web</artifactId>
-    <packaging>war</packaging>
+    <packaging>${packaging.type}</packaging>
     <version>1.0-SNAPSHOT</version>
     <name>web</name>
     <url>http://maven.apache.org</url>
@@ -19,7 +19,19 @@
              maven -P tools package
         -->
         <profile>
+            <id>war</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <packaging.type>war</packaging.type>
+            </properties>
+        </profile>
+        <profile>
             <id>tools</id>
+            <properties>
+                <packaging.type>jar</packaging.type>
+            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -31,7 +43,7 @@
                                 <configuration>
                                     <archive>
                                         <manifest>
-                                            <mainClass>org.hillview.main.Benchmarks</mainClass>
+                                            <mainClass>org.hillview.benchmarks.DPBenchmarks</mainClass>
                                         </manifest>
                                     </archive>
                                     <descriptorRefs>

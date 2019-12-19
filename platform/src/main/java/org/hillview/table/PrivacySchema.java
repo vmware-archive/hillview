@@ -18,16 +18,13 @@
 package org.hillview.table;
 
 import org.hillview.dataset.api.IJson;
-import org.hillview.security.SecureLaplace;
 import org.hillview.table.columns.ColumnQuantization;
 
 import javax.annotation.Nullable;
-import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -51,20 +48,18 @@ public class PrivacySchema implements IJson, Serializable {
      * Default epsilons for column combinations not listed in the above hashmap.
      * This hashmap is indexed with the number of columns.
      */
+    @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
     final private LinkedHashMap<String, Double> defaultEpsilons;
     /**
      * Default value of epsilon for any other column combination.
      */
     final private double defaultEpsilon;
 
-    final private SecureLaplace laplace;
-
     public PrivacySchema(QuantizationSchema quantization) {
         this.quantization = quantization;
         this.epsilons = new LinkedHashMap<String, Double>();
         this.defaultEpsilons = new LinkedHashMap<String, Double>();
         this.defaultEpsilon = .001;
-        this.laplace = new SecureLaplace(Paths.get("./default_key")); // TODO: Curator should be able to create a new schema from scratch.
     }
 
     @Nullable
@@ -112,14 +107,13 @@ public class PrivacySchema implements IJson, Serializable {
     }
 
     public static PrivacySchema loadFromFile(String metadataFname) {
-        String contents = "";
         try {
             byte[] encoded = Files.readAllBytes(Paths.get(metadataFname));
-            contents = new String(encoded, StandardCharsets.US_ASCII);
+            String contents = new String(encoded, StandardCharsets.US_ASCII);
+            return loadFromString(contents);
         } catch (java.io.IOException e) {
             throw new RuntimeException(e);
         }
-        return loadFromString(contents);
     }
 
     public void saveToFile(String metadataFile) throws IOException {

@@ -14,7 +14,6 @@
     <name>platform</name>
     <url>http://maven.apache.org</url>
 
-
     <profiles>
         <!--
              Profiles enable conditional compilation
