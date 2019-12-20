@@ -1,67 +1,91 @@
-/*
- * Copyright (c) 2017 VMware Inc. All Rights Reserved.
- * SPDX-License-Identifier: Apache-2.0
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-import {drag as d3drag} from "d3-drag";
-import {mouse as d3mouse} from "d3-selection";
-import {AxisData, AxisKind} from "../dataViews/axisData";
 import {Plot} from "./plot";
 import {D3SvgElement, Point, Rectangle, Resolution} from "./ui";
-import {SchemaClass} from "../schemaClass";
+import {mouse as d3mouse} from "d3-selection";
+import {drag as d3drag} from "d3-drag";
+import {HtmlPlottingSurface} from "./plottingSurface";
 
 /**
- * Displays a legend for a 2D histogram.
+ * A Plot for the legend of a chart.
  */
-export class HistogramLegendPlot extends Plot {
-    protected axisData: AxisData;
-    protected legendRect: Rectangle;
-    protected missingLegend: boolean;  // if true display legend for missing
-    protected hilightRect: D3SvgElement;
-    protected missingX: number;
-    protected missingY: number;
-    protected readonly missingGap = 30;
-    protected readonly missingWidth = 20;
-    protected readonly height = 15;
-    protected colorWidth: number;
-    protected x: number;
-    protected y: number;
-    protected width: number;
-    protected schema: SchemaClass;
+export abstract class LegendPlot extends Plot {
+    protected hilightRect: D3SvgElement;  // used to highlight
+    protected legendSelectionRectangle: D3SvgElement;  // used to select
+    protected readonly height = 16;
     protected drawn: boolean;
     protected dragging: boolean;
-    protected moved: boolean;
-    protected legendSelectionRectangle: D3SvgElement;
+    protected dragMoved: boolean;
+    protected width: number;
+    protected x: number;
+    protected y: number;
     protected selectionCompleted: (xl: number, xr: number) => void;
+
     /**
      * Coordinates of mouse within canvas.
      */
     protected selectionOrigin: Point;
+    protected legendRect: Rectangle;
 
-    public constructor(surface, onCompleted: (xl: number, xr: number) => void) {
+    protected constructor(surface: HtmlPlottingSurface, onSelectionCompleted: (xl: number, xr: number) => void) {
         super(surface);
+        this.selectionCompleted = onSelectionCompleted;
         this.drawn = false;
-        this.selectionCompleted = onCompleted;
         this.dragging = false;
-        this.moved = false;
+        this.dragMoved = false;
+        this.width = Resolution.legendBarWidth;
+        if (this.width > this.getChartWidth())
+            this.width = this.getChartWidth();
+        this.x = (this.getChartWidth() - this.width) / 2;
+        surface.topLevel.tabIndex = 1;  // necessary to get key events?
+        surface.topLevel.onkeydown = (e) => this.keyDown(e);
+    }
+
+    protected createRectangle() {
+        this.legendRect = new Rectangle(
+            { x: this.x, y: this.y },
+            { width: this.width, height: this.height });
+    }
+
+    public draw() {
+        const canvas = this.plottingSurface.getCanvas();
+        this.hilightRect = canvas.append("rect")
+            .attr("class", "dashed")
+            .attr("height", this.height)
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("stroke-dasharray", "5,5")
+            .attr("stroke", "cyan")
+            .attr("fill", "none");
+        this.legendSelectionRectangle = canvas
+            .append("rect")
+            .attr("class", "dashed")
+            .attr("width", 0)
+            .attr("height", 0);
+        const legendDrag = d3drag()
+            .on("start", () => this.dragLegendStart())
+            .on("drag", () => this.dragLegendMove())
+            .on("end", () => this.dragLegendEnd());
+        canvas.call(legendDrag);
+        canvas.tabIndex = 1;  // seems to be necessary to get keyboard events
+        this.drawn = true;
+    }
+
+    protected keyDown(ev: KeyboardEvent): void {
+        if (ev.code === "Escape")
+            this.cancelDrag();
+    }
+
+    protected cancelDrag(): void {
+        this.dragging = false;
+        this.dragMoved = false;
+        this.legendSelectionRectangle
+            .attr("width", 0)
+            .attr("height", 0);
     }
 
     // dragging in the legend
     protected dragLegendStart(): void {
         this.dragging = true;
-        this.moved = false;
+        this.dragMoved = false;
         const position = d3mouse(this.plottingSurface.getCanvas().node());
         this.selectionOrigin = {
             x: position[0],
@@ -71,7 +95,7 @@ export class HistogramLegendPlot extends Plot {
     protected dragLegendMove(): void {
         if (!this.dragging || !this.drawn)
             return;
-        this.moved = true;
+        this.dragMoved = true;
         let ox = this.selectionOrigin.x;
         const position = d3mouse(this.plottingSurface.getCanvas().node());
         const x = position[0];
@@ -101,144 +125,23 @@ export class HistogramLegendPlot extends Plot {
         }
     }
 
-    protected dragLegendEnd(): void {
-        if (!this.dragging || !this.moved || !this.drawn)
-            return;
+    protected dragLegendEnd(): boolean {
+        if (!this.dragging || !this.dragMoved || !this.drawn)
+            return false;
         this.dragging = false;
-        this.moved = false;
+        this.dragMoved = false;
         this.legendSelectionRectangle
             .attr("width", 0)
             .attr("height", 0);
-
         const position = d3mouse(this.plottingSurface.getCanvas().node());
         const x = position[0];
         if (this.selectionCompleted != null)
             this.selectionCompleted(this.selectionOrigin.x - this.legendRect.lowerLeft().x,
                 x - this.legendRect.lowerLeft().x);
-    }
-
-    public draw(): void {
-        this.plottingSurface.getCanvas()
-            .append("text")
-            .text(this.axisData.getDisplayNameString(this.schema))
-            .attr("transform", `translate(${this.getChartWidth() / 2}, 0)`)
-            .attr("text-anchor", "middle")
-            .attr("dominant-baseline", "text-before-edge");
-        const legendDrag = d3drag()
-            .on("start", () => this.dragLegendStart())
-            .on("drag", () => this.dragLegendMove())
-            .on("end", () => this.dragLegendEnd());
-        const canvas = this.plottingSurface.getCanvas();
-        canvas.call(legendDrag);
-
-        this.width = Resolution.legendBarWidth;
-        if (this.width > this.getChartWidth())
-            this.width = this.getChartWidth();
-
-        this.x = (this.getChartWidth() - this.width) / 2;
-        this.y = Resolution.legendSpaceHeight / 3;
-        let x = this.x;
-        this.legendRect = new Rectangle({ x: this.x, y: this.y }, { width: this.width, height: this.height });
-
-        this.colorWidth = this.width / this.axisData.bucketCount;
-        for (let i = 0; i < this.axisData.bucketCount; i++) {
-            let color: string;
-            if (this.axisData.bucketCount === 1)
-                color = Plot.colorMap(0);
-            else
-                color = Plot.colorMap(i / (this.axisData.bucketCount - 1));
-            canvas.append("rect")
-                .attr("width", this.colorWidth)
-                .attr("height", this.height)
-                .style("fill", color)
-                .attr("x", x)
-                .attr("y", this.y)
-                .append("title")
-                .text(this.axisData.bucketDescription(i, 100));
-            x += this.colorWidth;
-        }
-
-        this.axisData.setResolution(this.legendRect.width(), AxisKind.Legend, Resolution.legendSpaceHeight / 3);
-        const g = canvas.append("g")
-            .attr("transform", `translate(${this.legendRect.lowerLeft().x},
-                                          ${this.legendRect.lowerLeft().y})`)
-            .attr("class", "x-axis");
-        this.axisData.axis.draw(g);
-
-        if (this.missingLegend) {
-            if (this.legendRect != null) {
-                this.missingX = this.legendRect.upperRight().x + this.missingGap;
-                this.missingY = this.legendRect.upperRight().y;
-            } else {
-                this.missingX = this.getChartWidth() / 2;
-                this.missingY = Resolution.legendSpaceHeight / 3;
-            }
-
-            canvas.append("rect")
-                .attr("width", this.missingWidth)
-                .attr("height", this.height)
-                .attr("x", this.missingX)
-                .attr("y", this.missingY)
-                .attr("stroke", "black")
-                .attr("fill", "none")
-                .attr("stroke-width", 1);
-
-            canvas.append("text")
-                .text("missing")
-                .attr("transform", `translate(${this.missingX + this.missingWidth / 2},
-                                              ${this.missingY + this.height + 7})`)
-                .attr("text-anchor", "middle")
-                .attr("font-size", 10)
-                .attr("dominant-baseline", "text-before-edge");
-        }
-
-        this.hilightRect = canvas.append("rect")
-            .attr("class", "dashed")
-            .attr("height", this.height)
-            .attr("x", 0)
-            .attr("y", 0)
-            .attr("stroke-dasharray", "5,5")
-            .attr("stroke", "cyan")
-            .attr("fill", "none");
-        this.drawn = true;
-
-        this.legendSelectionRectangle = canvas
-            .append("rect")
-            .attr("class", "dashed")
-            .attr("width", 0)
-            .attr("height", 0);
-    }
-
-    /**
-     * Highlight the color with the specified index.  Special values:
-     * - colorIndex is < 0: missing box
-     * - colorIndex is null: nothing
-     */
-    public highlight(colorIndex: number | null): void {
-        if (colorIndex == null) {
-            this.hilightRect
-                .attr("width", 0);
-        } else if (colorIndex < 0) {
-            this.hilightRect
-                .attr("x", this.missingX)
-                .attr("y", this.missingY)
-                .attr("width", this.missingWidth);
-        } else {
-            this.hilightRect
-                .attr("width", this.colorWidth)
-                .attr("x", this.x + colorIndex * this.colorWidth)
-                .attr("y", this.y);
-        }
-    }
-
-    public setData(axis: AxisData, missingLegend: boolean, schema: SchemaClass): void {
-        this.axisData = axis;
-        this.missingLegend = missingLegend;
-        this.schema = schema;
+        return true;
     }
 
     public legendRectangle(): Rectangle {
         return this.legendRect;
     }
 }
-

@@ -21,6 +21,11 @@ html {
     overflow-y: scroll;
 }
 
+/* Do not highlight elements with a tabindex */
+[tabindex] {
+    outline: none;
+}
+
 /* This is tuned to align the title with the logo. */
 .hillviewTitle > div {
     display: inline-block;

@@ -133,14 +133,21 @@ export class TrellisHeatmapView extends TrellisChartView {
         return ser;
     }
 
-    protected createNewSurfaces(): void {
+    protected createNewSurfaces(keepColorMap: boolean): void {
         if (this.surface != null)
             this.surface.destroy();
         if (this.legendSurface != null)
             this.legendSurface.destroy();
         this.legendSurface = new HtmlPlottingSurface(this.legendDiv, this.page, {
             height: Resolution.legendSpaceHeight });
-        this.colorLegend = new HeatmapLegendPlot(this.legendSurface);
+        if (keepColorMap)
+            this.colorLegend.setSurface(this.legendSurface);
+        else {
+            this.colorLegend = new HeatmapLegendPlot(
+                this.legendSurface, (xl, xr) => this.colorLegend.emphasizeRange(xl, xr));
+            this.colorLegend.setColorMapChangeEventListener(
+                () => this.updateView(this.heatmaps, true));
+        }
         this.hps = [];
         this.createAllSurfaces((surface) => {
             const hp = new HeatmapPlot(surface, this.colorLegend, false);
@@ -215,7 +222,7 @@ export class TrellisHeatmapView extends TrellisChartView {
     public resize(): void {
         const chartSize = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
         this.shape = TrellisLayoutComputation.resize(chartSize.width, chartSize.height, this.shape);
-        this.updateView(this.heatmaps);
+        this.updateView(this.heatmaps, true);
     }
 
     protected doChangeGroups(groupCount: number): void {
@@ -288,8 +295,8 @@ export class TrellisHeatmapView extends TrellisChartView {
         rr.invoke(new NextKReceiver(newPage, table, rr, false, order, null));
     }
 
-    public updateView(heatmaps: Heatmap3D): void {
-        this.createNewSurfaces();
+    public updateView(heatmaps: Heatmap3D, keepColorMap: boolean): void {
+        this.createNewSurfaces(keepColorMap);
         this.heatmaps = heatmaps;
         if (heatmaps == null || heatmaps.buckets.length === 0) {
             this.page.reportError("No data to display");
@@ -467,7 +474,7 @@ export class TrellisHeatmapReceiver extends Receiver<Heatmap3D> {
         if (value == null) {
             return;
         }
-        this.trellisView.updateView(value.data);
+        this.trellisView.updateView(value.data, false);
     }
 
     public onCompleted(): void {

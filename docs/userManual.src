@@ -1278,7 +1278,7 @@ will also display a line that gives the best [linear
 regression](https://en.wikipedia.org/wiki/Linear_regression).  between
 the values in the two columns.
 
-*TODO* discuss missing values.
+Currently heatmaps do not display details about the missing values.
 
 ![A heatmap](hillview-heatmap.png)
 
@@ -1288,6 +1288,11 @@ allows to togle between a log scale color scheme and a linear color
 scheme.
 
 ![Colormap menu](colormap-menu.png)
+
+Also, by selecting a range within the colormap one can highlight a range
+of values in the heatmap:
+
+![Highlighted heatmap](highlighted-heatmap.png)
 
 The heatmap view menu has the following operations:
 

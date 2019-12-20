@@ -19,15 +19,15 @@ import {
     interpolateCool as d3interpolateCool,
     interpolateWarm as d3interpolateWarm
 } from "d3-scale-chromatic";
-import {Plot} from "./plot";
 import {D3Axis, D3Scale, D3SvgElement, Resolution} from "./ui";
 import {ContextMenu} from "./menu";
 import {HtmlPlottingSurface, PlottingSurface} from "./plottingSurface";
-import {assert} from "../util";
+import {assert, Color} from "../util";
 import {scaleLinear as d3scaleLinear, scaleLog as d3scaleLog} from "d3-scale";
 import {axisBottom as d3axisBottom} from "d3-axis";
 import {AxisDescription} from "../dataViews/axisData";
 import {event as d3event} from "d3-selection";
+import {LegendPlot} from "./legendPlot";
 
 /**
  * Represents a map from the range 0-1 to colors.
@@ -38,11 +38,15 @@ class HeatmapColormap {
      */
     public static logThreshold = 50;
     public logScale: boolean;
-
-    protected map: (x) => string;
+    private minSaturated: number;
+    private maxSaturated: number;
+    protected map: (x: number) => string;
 
     constructor(public readonly min: number, public readonly max: number) {
         this.setMap(d3interpolateWarm);
+        // out of range
+        this.minSaturated = -1;
+        this.maxSaturated = 2;
     }
 
     public setLogScale(logScale: boolean): void {
@@ -59,17 +63,35 @@ class HeatmapColormap {
 
     public apply(x: number): string {
         if (this.logScale)
-            return this.applyLog(x);
+            x = this.applyLog(x);
         else
-            return this.applyLinear(x);
+            x = this.applyLinear(x);
+        return this.desaturate(x, this.map(x));
     }
 
-    private applyLinear(x: number): string {
-        return this.map(x / this.max);
+    private desaturate(x: number, c: string): string {
+        if (x < this.minSaturated || x > this.maxSaturated) {
+            const color = Color.parse(c);
+            const b = color.brighten(4);
+            return b.toString();
+        }
+        return c;
     }
 
-    private applyLog(x: number): string {
-        return this.map(Math.log(x) / Math.log(this.max));
+    private applyLinear(x: number): number {
+        return x / this.max;
+    }
+
+    private applyLog(x: number): number {
+        if (x <= 1)
+            return 0;
+        return Math.log(x) / Math.log(this.max);
+    }
+
+    // Colors outside the specified range are de-saturated.
+    public desaturateOutsideRange(min: number, max: number): void {
+        this.minSaturated = min;
+        this.maxSaturated = max;
     }
 }
 
@@ -82,7 +104,7 @@ export enum ColorMapKind {
 /**
  * Displays a color map suitable for heatmaps.
  */
-export class HeatmapLegendPlot extends Plot {
+export class HeatmapLegendPlot extends LegendPlot {
     /* Static counter that increments to assign every ColorLegend object
        a unique ID for the gradient element. */
     private static nextUniqueId: number = 0;
@@ -92,20 +114,17 @@ export class HeatmapLegendPlot extends Plot {
     // Function that is called to update other elements when the color map changes.
     private onColorMapChange: (ColorMap) => void;
     private contextMenu: ContextMenu;
-    private barHeight: number;
     private colorMap: HeatmapColormap;
-    private legendRectangle: D3SvgElement;
+    private svgRectangle: D3SvgElement;
     private axisElement: D3SvgElement;
     protected xAxis: D3Axis;
-    protected drawn: boolean;
-    protected hilightRect: D3SvgElement;
     protected scale: D3Scale;
 
-    constructor(surface: HtmlPlottingSurface) {
-        super(surface);
-        this.barHeight = 16;
+    constructor(surface: HtmlPlottingSurface, onSelectionCompleted: (xl: number, xr: number) => void) {
+        super(surface, onSelectionCompleted);
         this.uniqueId = HeatmapLegendPlot.nextUniqueId++;
-        this.drawn = false;
+        this.y = 0;
+        this.createRectangle();
     }
 
     public setColorMapChangeEventListener(listener: (ColorMap) => void): void {
@@ -195,6 +214,18 @@ export class HeatmapLegendPlot extends Plot {
         }
     }
 
+    public emphasizeRange(x0: number, x1: number): void {
+        if (x0 > x1) {
+            const c = x0;
+            x0 = x1;
+            x1 = c;
+        }
+        if (this.onColorMapChange != null) {
+            this.colorMap.desaturateOutsideRange(x0 / this.width, x1 / this.width);
+            this.onColorMapChange(this.colorMap);
+        }
+    }
+
     // Redraw the legend, and notify the listeners.
     private mapUpdated(): void {
         this.setData(this.colorMap.min, this.colorMap.max, this.colorMap.logScale);
@@ -236,8 +267,8 @@ export class HeatmapLegendPlot extends Plot {
     public draw(): void {
         if (this.contextMenu == null)
             this.enableContextMenu();
-        if (this.legendRectangle != null) {
-            this.legendRectangle.remove();
+        if (this.svgRectangle != null) {
+            this.svgRectangle.remove();
             this.axisElement.remove();
             if (this.gradient != null)
                 this.gradient.remove();
@@ -247,20 +278,19 @@ export class HeatmapLegendPlot extends Plot {
         const min = this.colorMap.min;
         const max = this.colorMap.max;
         const canvas = this.plottingSurface.getCanvas();
-        const x = (this.plottingSurface.getChartWidth() - Resolution.legendBarWidth) / 2;
         if (!this.colorMap.logScale && this.colorMap.max - this.colorMap.min < 25) {
             // use discrete colors
             const colorCount = max - min + 1;
             const colorWidth = Resolution.legendBarWidth / colorCount;
-            let rectX = x;
+            let rectX = this.x;
             for (let i = this.colorMap.min; i <= this.colorMap.max; i++) {
                 const color = this.getColor(i);
                 canvas.append("rect")
                     .attr("width", colorWidth)
-                    .attr("height", this.barHeight)
+                    .attr("height", this.height)
                     .style("fill", color)
                     .attr("x", rectX)
-                    .attr("y", 0);
+                    .attr("y", this.y);
                 rectX += colorWidth;
             }
         } else {
@@ -278,23 +308,16 @@ export class HeatmapLegendPlot extends Plot {
                     .attr("stop-color", this.colorMap.valueMap(i / 100))
                     .attr("stop-opacity", 1);
         }
-        this.legendRectangle = canvas.append("rect")
-            .attr("x", x)
-            .attr("y", 0)
+        this.svgRectangle = canvas.append("rect")
+            .attr("x", this.x)
+            .attr("y", this.y)
             .attr("width", Resolution.legendBarWidth)
-            .attr("height", this.barHeight)
+            .attr("height", this.height)
             .style("fill", this.gradient != null ? `url(#gradient${this.uniqueId})` : "none");
-        this.legendRectangle.on("contextmenu", () => this.showContextMenu(d3event));
+        this.svgRectangle.on("contextmenu", () => this.showContextMenu(d3event));
         this.axisElement = canvas.append("g")
-            .attr("transform", `translate(${x}, ${this.barHeight})`)
+            .attr("transform", `translate(${this.x}, ${this.height})`)
             .call(this.getXAxis().axis);
-        this.hilightRect = canvas.append("rect")
-            .attr("class", "dashed")
-            .attr("height", this.barHeight)
-            .attr("x", 0)
-            .attr("y", 0)
-            .attr("stroke-dasharray", "5,5")
-            .attr("stroke", "cyan")
-            .attr("fill", "none");
+        super.draw();
     }
 }
