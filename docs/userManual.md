@@ -21,7 +21,7 @@ performs all operations using a class of very efficient algorithms,
 called “sketches”, which are constrained to compute with bounded
 memory over distributed data.
 
-Updated on 2019 Dec 19.
+Updated on 2019 Dec 20.
 
 # Contents
 |Section|Reference|
@@ -48,33 +48,34 @@ Updated on 2019 Dec 19.
 |2.3.9.|[Reading Parquet files](#239-reading-parquet-files)|
 |2.4.|[Navigating multiple datasets](#24-navigating-multiple-datasets)|
 |3.|[Data views](#3-data-views)|
-|3.1.|[Schema views](#31-schema-views)|
-|3.1.1.|[Selecting columns](#311-selecting-columns)|
-|3.1.2.|[The schema view menu](#312-the-schema-view-menu)|
-|3.1.3.|[The chart menu](#313-the-chart-menu)|
-|3.1.4.|[Saving data](#314-saving-data)|
-|3.2.|[Table views](#32-table-views)|
-|3.2.1.|[Scrolling](#321-scrolling)|
-|3.2.2.|[Selecting columns](#322-selecting-columns)|
-|3.2.3.|[Operations on selected columns](#323-operations-on-selected-columns)|
-|3.2.4.|[Operations on a table cell](#324-operations-on-a-table-cell)|
-|3.2.5.|[Operations on a table row](#325-operations-on-a-table-row)|
-|3.2.6.|[Operations on tables](#326-operations-on-tables)|
-|3.2.7.|[The table view menu](#327-the-table-view-menu)|
-|3.2.8.|[The table filter menu](#328-the-table-filter-menu)|
-|3.3.|[Frequent elements views](#33-frequent-elements-views)|
-|3.3.1.|[View as a Table](#331-view-as-a-table)|
-|3.3.2.|[Modify](#332-modify)|
-|3.4.|[Uni-dimensional histogram views](#34-uni-dimensional-histogram-views)|
-|3.4.1.|[The histogram menu](#341-the-histogram-menu)|
-|3.4.2.|[The histogram view menu](#342-the-histogram-view-menu)|
-|3.4.3.|[Mouse selection in histogram views](#343-mouse-selection-in-histogram-views)|
-|3.4.4.|[String histograms](#344-string-histograms)|
-|3.5.|[Two-dimensional histogram views](#35-two-dimensional-histogram-views)|
-|3.5.1.|[Selection in 2D histograms](#351-selection-in-2d-histograms)|
-|3.6.|[Heatmap views](#36-heatmap-views)|
-|3.6.1.|[Selection from a heatmap](#361-selection-from-a-heatmap)|
-|3.7.|[Singular value spectrum views](#37-singular-value-spectrum-views)|
+|3.1.|[The heading of a view](#31-the-heading-of-a-view)|
+|3.2.|[Schema views](#32-schema-views)|
+|3.2.1.|[Selecting columns](#321-selecting-columns)|
+|3.2.2.|[The schema view menu](#322-the-schema-view-menu)|
+|3.2.3.|[The chart menu](#323-the-chart-menu)|
+|3.2.4.|[Saving data](#324-saving-data)|
+|3.3.|[Table views](#33-table-views)|
+|3.3.1.|[Scrolling](#331-scrolling)|
+|3.3.2.|[Selecting columns](#332-selecting-columns)|
+|3.3.3.|[Operations on selected columns](#333-operations-on-selected-columns)|
+|3.3.4.|[Operations on a table cell](#334-operations-on-a-table-cell)|
+|3.3.5.|[Operations on a table row](#335-operations-on-a-table-row)|
+|3.3.6.|[Operations on tables](#336-operations-on-tables)|
+|3.3.7.|[The table view menu](#337-the-table-view-menu)|
+|3.3.8.|[The table filter menu](#338-the-table-filter-menu)|
+|3.4.|[Frequent elements views](#34-frequent-elements-views)|
+|3.4.1.|[View as a Table](#341-view-as-a-table)|
+|3.4.2.|[Modify](#342-modify)|
+|3.5.|[Uni-dimensional histogram views](#35-uni-dimensional-histogram-views)|
+|3.5.1.|[The histogram menu](#351-the-histogram-menu)|
+|3.5.2.|[The histogram view menu](#352-the-histogram-view-menu)|
+|3.5.3.|[Mouse selection in histogram views](#353-mouse-selection-in-histogram-views)|
+|3.5.4.|[String histograms](#354-string-histograms)|
+|3.6.|[Two-dimensional histogram views](#36-two-dimensional-histogram-views)|
+|3.6.1.|[Selection in 2D histograms](#361-selection-in-2d-histograms)|
+|3.7.|[Heatmap views](#37-heatmap-views)|
+|3.7.1.|[Selection from a heatmap](#371-selection-from-a-heatmap)|
+|3.8.|[Singular value spectrum views](#38-singular-value-spectrum-views)|
 |4.|[Trellis plots](#4-trellis-plots)|
 |4.1.|[Trellis plots of 1D histograms](#41-trellis-plots-of-1d-histograms)|
 |4.2.|[Trellis plots of 2D histograms](#42-trellis-plots-of-2d-histograms)|
@@ -208,8 +209,8 @@ storage.
 
 After the data loading is initiated the user will be presented with a
 view of the loaded table.  If the table has relatively few columns,
-the user is shown directly a [Tabular view](#32-table-views).  Otherwise
-the user is shown a [Schema view](#31-schema-views), which can be
+the user is shown directly a [Tabular view](#33-table-views).  Otherwise
+the user is shown a [Schema view](#32-schema-views), which can be
 used to select a smaller set of columns to browse.
 
 #### 2.3.1. Specifying the data schema
@@ -501,6 +502,8 @@ user needs to scroll up and down to see the views.
 
 ![User interface organization](ui-organization.png)
 
+### 3.1. The heading of a view
+
 Each view has a heading that describes it briefly, as shown in the
 following figure.  Each view has a unique number, shown before the
 title.  The lineage of views is usually shown in the title, allowing
@@ -516,7 +519,7 @@ dragged between some views; dropping them will "move" the
 corresponding axis from the source view to the target view.  (G stands
 for the "group-by" axis in a Trellis plot view.)
 
-### 3.1. Schema views
+### 3.2. Schema views
 
 The data schema views allow users to browse the schema of the current
 table and select a set of columns from the dataset to focus on. This
@@ -535,20 +538,20 @@ menu with the following options:
 
 ![Schema menu](schema-menu.png)
 
-* Save as: allows the user to [save a copy of the data](#314-saving-data)
+* Save as: allows the user to [save a copy of the data](#324-saving-data)
   in a different format; *the data is saved on the cluster where the
   service is running*
 
 * View: allows the user to [change the way data is
-  displayed](#312-the-schema-view-menu)
+  displayed](#322-the-schema-view-menu)
 
-* Chart: allows users to [draw charts](#313-the-chart-menu) of one or two
+* Chart: allows users to [draw charts](#323-the-chart-menu) of one or two
   colums
 
 * Combine: allows users to [combine data in two
   views](#44-combining-two-views)
 
-#### 3.1.1. Selecting columns
+#### 3.2.1. Selecting columns
 
 There are two ways to modify the selection:
 1. By [using the mouse](#22-mouse-based-selection).
@@ -589,14 +592,14 @@ Right-clicking on a selected set of descriptions opens up a context menu
 ![Context menu for selected rows in a schema view](schema-view-context-menu.png)
 
 The following operations can be invoked through the context menu:
-* Show as table: this displays a [table view](#32-table-views) of the
+* Show as table: this displays a [table view](#33-table-views) of the
   data restricted to the selected columns.
 
-* Histogram: draws a [1D](#34-uni-dimensional-histogram-views) or
-  [2D](#35-two-dimensional-histogram-views) histogram of the selected
+* Histogram: draws a [1D](#35-uni-dimensional-histogram-views) or
+  [2D](#36-two-dimensional-histogram-views) histogram of the selected
   columns
 
-* Heatmap: draws a [heatmap](#36-heatmap-views) view of the selected columns.
+* Heatmap: draws a [heatmap](#37-heatmap-views) view of the selected columns.
 
 * Trellis histogram: draw the selected columns using a Trellis view of
   [1D](#41-trellis-plots-of-1d-histograms) or
@@ -608,31 +611,31 @@ The following operations can be invoked through the context menu:
 * Estimate distinct elements: estimate the number of distinct values in this column
 
 * Filter...: opens up a filter menu that allows the user to filter data based on values in the selected column.
-  See the description of the filter operation [below](#323-operations-on-selected-columns).
+  See the description of the filter operation [below](#333-operations-on-selected-columns).
 
 * Compare...: compares the data in the column with a specified constant.
-  See the description of the compare operation [below](#323-operations-on-selected-columns).
+  See the description of the compare operation [below](#333-operations-on-selected-columns).
 
 * Create column in JS...:
-  See the description of the create column operation [below](#323-operations-on-selected-columns).
+  See the description of the create column operation [below](#333-operations-on-selected-columns).
 
 * Rename...: shows up a menu that allows the user to rename this column
 
 * Frequent elements...: shows up a menu that allows the user to find frequent elements
-  See the description of the frequent elements operation [below](#323-operations-on-selected-columns).
+  See the description of the frequent elements operation [below](#333-operations-on-selected-columns).
 
 * Basic statistics: shows for each selected column some basic statistics, as in the following figure:
 
   ![Basic statistics](basic-statistics.png)
 
-#### 3.1.2. The schema view menu
+#### 3.2.2. The schema view menu
 
 ![Schema view menu](schema-view-menu.png)
 
-* Selected columns: this displays a [table view](#32-table-views) of the
+* Selected columns: this displays a [table view](#33-table-views) of the
 data restricted to the selected columns.
 
-#### 3.1.3. The chart menu
+#### 3.2.3. The chart menu
 
 The user can also directly draw a chart of the data in a selected set
 of columns using the chart menu:
@@ -641,18 +644,18 @@ of columns using the chart menu:
 
 * 1D Histogram...: presents a dialog allowing the user to
   select a column whose data will be drawn as a
-  [uni-dimensional histogram view](#34-uni-dimensional-histogram-views).
+  [uni-dimensional histogram view](#35-uni-dimensional-histogram-views).
 
 ![1D histogram dialog](1d-histogram-dialog.png)
 
 * 2D Histogram...: presents a dialog allowing the
   user to select two columns whose data will be drawn as a
-  [two-dimensional histogram view](#35-two-dimensional-histogram-views).
+  [two-dimensional histogram view](#36-two-dimensional-histogram-views).
 
 ![2D histogram dialog](2d-histogram-dialog.png)
 
 * Heatmap...:  presents a dialog allowing the user to
-  select two columns whose data will be drawn as a [heatmap](#36-heatmap-views).
+  select two columns whose data will be drawn as a [heatmap](#37-heatmap-views).
 
 ![Heatmap dialog](heatmap-dialog.png)
 
@@ -665,7 +668,7 @@ of columns using the chart menu:
 * Trellis heatmaps...: presents a dialog allowing the user to select three columns to use
   to display a [Trellish plot of heatmaps](#43-trellis-plots-of-heatmaps).
 
-#### 3.1.4. Saving data
+#### 3.2.4. Saving data
 
 * This menu allows users to save the data in a different format as
   files on the worker machines.  It is only enabled for authorized users.
@@ -681,7 +684,7 @@ The user can specify a folder on the remote worker machines.  Each
 file in the current dataset will be saved as a new file in ORC format
 in the specified folder.
 
-### 3.2. Table views
+### 3.3. Table views
 
 The next figure shows a typical table view.
 
@@ -754,7 +757,7 @@ the whole dataset is covered by this.  You can see that, although the
 table only has 20 rows, it actually displays information for 212 thousand
 rows in the original dataset, or 24% of the data!
 
-#### 3.2.1. Scrolling
+#### 3.3.1. Scrolling
 
 Because each displayed row summarizes information from multiple rows,
 scrolling through a Hillview table is somewhat different from the
@@ -782,12 +785,12 @@ middle of the scroll-bar, this indicates that the user wants to know
 the rows around the *median* of the distribution.  Hillview will bring
 into view a set of rows that includes the requested quantile.
 
-#### 3.2.2. Selecting columns
+#### 3.3.2. Selecting columns
 
 The user can [select](#22-mouse-based-selection) one or more column using
 the mouse.  The figure above shows table with 3 selected columns.
 
-#### 3.2.3. Operations on selected columns
+#### 3.3.3. Operations on selected columns
 
 Double-clicking on a column header will show or hide the data in that
 column.
@@ -826,15 +829,15 @@ the current state of the display.
 * Histogram: this option requires exactly one or two columns to be
   selected.  If one column is selected, this operation will draw a
   histogram of the data in the selected column.  See
-  [Uni dimensional histogram views](#34-uni-dimensional-histogram-views).
+  [Uni dimensional histogram views](#35-uni-dimensional-histogram-views).
   If two columns are selected this menu will draw a two-dimensional
   histogram of the data in the selected columns.  For two-dimensional
   histograms see [Two-dimensional
-  histograms](#35-two-dimensional-histogram-views).
+  histograms](#36-two-dimensional-histogram-views).
 
 * Heatmap: this option requires exactly two columns to be selected.
   This displays the data in these columns as a [Heatmap
-  view](#36-heatmap-views).
+  view](#37-heatmap-views).
 
 * Trellis histograms: this option requires exactly two or three
   columns to be selected.  If two columns are selected, this operation
@@ -844,7 +847,7 @@ the current state of the display.
   If two columns are selected this menu will draw a two-dimensional
   histogram of the data in the selected columns.  For two-dimensional
   histograms see [Two-dimensional
-  histograms](#35-two-dimensional-histogram-views).
+  histograms](#36-two-dimensional-histogram-views).
 
 * Trellis heatmaps: this options requires exactly 3 columns to be
   selected.  This displays the data as a [Trellis plot
@@ -866,7 +869,7 @@ the current state of the display.
   The user has to specify a percentage, between .01 (1/10,000 of the
   data) and 100 (the whole data).  The result is all items whose
   frequency in the selected columns is above the threshold. the result
-  is shown in a [frequent elements view](#33-frequent-elements-views).
+  is shown in a [frequent elements view](#34-frequent-elements-views).
 
 * PCA...: principal component analysis.  [Principal Component
   Analysis](https://en.wikipedia.org/wiki/Principal_component_analysis)
@@ -887,7 +890,7 @@ the current state of the display.
 
 * Plot singular value spectrum.  This operation requires a set of
   numeric columns.  This will display the singular values of the matrix formed
-  from these columns as a [Singular value spectrum view](#37-singular-value-spectrum-views).
+  from these columns as a [Singular value spectrum view](#38-singular-value-spectrum-views).
 
 * Filter...: this option will pop-up a dialog window that allows the user
   to filter the data in the selected column (this option requires only
@@ -957,7 +960,7 @@ function map(row) {
   specify a key and a destination column; the associated value will be
   extracted into the indicated column.
 
-#### 3.2.4. Operations on a table cell
+#### 3.3.4. Operations on a table cell
 
 The user can also right-click on a cell in a visible column to pop-up
 a menu allowing filtering based on values; the menu permits to
@@ -965,37 +968,37 @@ keep all rows based on a comparison with the specific table cell:
 
 ![Cell filtering context menu](filter-context-menu.png)
 
-#### 3.2.5. Operations on a table row
+#### 3.3.5. Operations on a table row
 
 Right-clicking on a table cell in a meta column opens a row-specific menu.
 
 ![Row menu](row-menu.png)
 
 The row-level operations are similar to cell-level operations described in
-[Operations on a table cell](#324-operations-on-a-table-cell), but perform all
+[Operations on a table cell](#334-operations-on-a-table-cell), but perform all
 comparisons at the row level, using just the visible columns.
 
-#### 3.2.6. Operations on tables
+#### 3.3.6. Operations on tables
 
 The table view has a menu that offers the following options:
 
 ![Table menu](table-menu.png)
 
-* Save as: allows the user to [save a copy of the data](#314-saving-data)
+* Save as: allows the user to [save a copy of the data](#324-saving-data)
   in a different format; *the data is saved on the cluster where the
   service is running*
 
 * View: allows the user to [change the way the data is
-  displayed](#327-the-table-view-menu).
+  displayed](#337-the-table-view-menu).
 
-* Chart: [allows the user to chart the data](#313-the-chart-menu).
+* Chart: [allows the user to chart the data](#323-the-chart-menu).
 
-* Filter: allows the user [to filter data](#328-the-table-filter-menu) according
+* Filter: allows the user [to filter data](#338-the-table-filter-menu) according
   to various criteria.
 
 * Combine: allows the user to [combine the data in two views](#44-combining-two-views).
 
-#### 3.2.7. The table view menu
+#### 3.3.7. The table view menu
 
 The view menu offers the following options.
 
@@ -1005,11 +1008,11 @@ The view menu offers the following options.
 
 * No columns: all columns will be hidden.
 
-* Schema: displays [the table schema](#31-schema-views).
+* Schema: displays [the table schema](#32-schema-views).
 
 * Change table size: this changes the number of rows displayed.
 
-#### 3.2.8. The table filter menu
+#### 3.3.8. The table filter menu
 
 The table filter menu allows the user to find specific values or
 filter the data according to specific criteria.
@@ -1047,7 +1050,7 @@ filter the data according to specific criteria.
   row.  Pressing the button labeled "Keep only matching data" will eliminate
   all rows that do not match.
 
-### 3.3. Frequent elements views
+### 3.4. Frequent elements views
 
 A frequent elements view shows the most frequent values that appear in the
 dataset in a set of selected columns (above a certain user-specified
@@ -1062,22 +1065,22 @@ which indicates the total over all rows corresponding to elements  that do not a
 frequently enough individually to be above the chosen threshold. This value only appears
 if the total over all these rows is itself above the threshold.
 
-There are two menu options offered from this view: [View as a table](#331-view-as-a-table) and [Modify](#332-modify).
+There are two menu options offered from this view: [View as a table](#341-view-as-a-table) and [Modify](#342-modify).
 
-#### 3.3.1. View as a Table
+#### 3.4.1. View as a Table
 
 Clicking this button gives the user two options:
 ![View as a Table](heavy-hitters-tableMenu.png)
 
 * All frequent elements as table: switches back to a [table
-  view](#32-table-views), but where the table only contains the rows
+  view](#33-table-views), but where the table only contains the rows
   corresponding to the frequent values.
 
 * Selected frequent elements As table: switches back to a [table
-  view](#32-table-views), but where the table only contains the rows
+  view](#33-table-views), but where the table only contains the rows
   corresponding to the frequent values currently selected.
 
-#### 3.3.2. Modify
+#### 3.4.2. Modify
 Clicking this button gives the user two options:
 ![Modify](heavy-hitters-modifyMenu.png)
 * Get exact counts: runs a more expensive but more precise
@@ -1095,12 +1098,12 @@ be useful to see a larger list for instance.
 Note that if the threshold is set very low, then the number of results can be very large. HillView
 only displays the 200 most frequent elements results, and alerts the user to the possible existence
 of further frequent elements. These can be viewed using the All frequent elements option from the
- [View as a table](#331-view-as-a-table) menu option.
+ [View as a table](#341-view-as-a-table) menu option.
 
-### 3.4. Uni-dimensional histogram views
+### 3.5. Uni-dimensional histogram views
 
 A uni-dimensional (1D) histogram is a succinct representation of the
-data in a column.  See [below](#344-string-histograms) for a
+data in a column.  See [below](#354-string-histograms) for a
 description of string histograms.  A histogram is computed in two
 phases:
 
@@ -1138,7 +1141,15 @@ Next to the mouse an overlay box displays the following values:
 * the size of the histogram bar at the current X coordinate
 * the value of the CDF function at the current X coordinate of the mouse, in percents
 
-#### 3.4.1. The histogram menu
+If the Y axis is dragged between two different histogram plots (see
+[The heading of a view](#31-the-heading-of-a-view))
+some bars may be truncated, since they do not fit in the available
+screen space; in this case they are displayed with a red
+triangle on top:
+
+![Truncated histogram](truncated-histogram.png)
+
+#### 3.5.1. The histogram menu
 
 Histogram views have a menu that offers to the users several operations:
 
@@ -1150,12 +1161,12 @@ Histogram views have a menu that offers to the users several operations:
   second describing the bucket size.  This data can be used to plot
   the same histogram using a tool like Excel.
 
-* View: [changing parameters](#342-the-histogram-view-menu) of the current view.
+* View: [changing parameters](#352-the-histogram-view-menu) of the current view.
 
 * Combine: [combining the data](#44-combining-two-views) in the current view with
   another one.
 
-#### 3.4.2. The histogram view menu
+#### 3.5.2. The histogram view menu
 
 ![View menu](histogram-view-menu.png)
 
@@ -1186,9 +1197,9 @@ The "View" menu from a histogram display has the following functions:
 
 * correlate: allows the user to specify a second column and switches
   the display to a [two-dimensional
-  histogram](#35-two-dimensional-histogram-views)
+  histogram](#36-two-dimensional-histogram-views)
 
-#### 3.4.3. Mouse selection in histogram views
+#### 3.5.3. Mouse selection in histogram views
 
 The mouse can be used to select a portion of the data in a histogram.
 The user can click-and-drag to select a subset of the data.  The
@@ -1202,7 +1213,7 @@ can be complemented by pressing the CONTROL at the time the selection
 is released (this will eliminate all the data that has been
 selected).
 
-#### 3.4.4. String histograms
+#### 3.5.4. String histograms
 
 When drawing a histogram of string data it is possible to have
 more values on the X axis than there are buckets.  In this case
@@ -1219,7 +1230,7 @@ The figure above shows a histogram where there are 294 distinct values
 but only 40 buckets.  One can see multiple ticks in each bucket.  Only
 some of the tick labels are displayed.
 
-### 3.5. Two-dimensional histogram views
+### 3.6. Two-dimensional histogram views
 
 A 2D histogram is a useful visual tool for estimating whether the
 values in two columns are independent of each other.  Neither of the
@@ -1290,7 +1301,7 @@ The "view" menu for a 2D histogram offers the following operations:
 * swap axes: Draws a new 2D histogram where the two columns are
   swapped.
 
-* heatmap: Displays a [heat map](#36-heatmap-views) of the data using the
+* heatmap: Displays a [heat map](#37-heatmap-views) of the data using the
   same two columns as in the current histogram.
 
 * relative/absolute: This toggles between displaying the 2D histogram
@@ -1305,7 +1316,7 @@ The "view" menu for a 2D histogram offers the following operations:
 
 For a description of the combine menu see [combining two views](#44-combining-two-views).
 
-#### 3.5.1. Selection in 2D histograms
+#### 3.6.1. Selection in 2D histograms
 
 In a 2D histogram users can select data in two ways:
 
@@ -1322,7 +1333,7 @@ In a 2D histogram users can select data in two ways:
 
 ![Selecting from a 2D histogram legend](legend-selection.png)
 
-### 3.6. Heatmap views
+### 3.7. Heatmap views
 
 A heatmap view displays the data in two columns.  Neither of the two
 columns can be a string column.  The two columns are mapped to the two
@@ -1366,7 +1377,7 @@ The heatmap view menu has the following operations:
 
 * table: Displays the data in the current heatmap in a tabular form.
 
-* histogram: Draws a [2D histogram](#35-two-dimensional-histogram-views)
+* histogram: Draws a [2D histogram](#36-two-dimensional-histogram-views)
   of the data in the two columns that are used for the heatmap
   display.
 
@@ -1375,13 +1386,13 @@ The heatmap view menu has the following operations:
 
 For a description of the combine menu see [combining two views](#44-combining-two-views).
 
-#### 3.6.1. Selection from a heatmap
+#### 3.7.1. Selection from a heatmap
 
 Users can select a rectangular area from a heatmap with the mouse.
 
 ![Selection from a heatmap](heatmap-selection.png)
 
-### 3.7. Singular value spectrum views
+### 3.8. Singular value spectrum views
 
 The view display the [singular-value
 decomposition](https://en.wikipedia.org/wiki/Singular-value_decomposition)
@@ -1427,7 +1438,7 @@ The following operations are available from the View menu of a Trellis histogram
 ![View operations on Trellis histograms](trellis-histogram-view-menu.png)
 
 * refresh: will redraw the view
-* table: will display the underlying data in a [tabular view](#32-table-views).
+* table: will display the underlying data in a [tabular view](#33-table-views).
 * exact: will compute and display the histograms without approximation
 * \#buckets: allows the user to change the number of buckets displayed for each histogram
 * \#groups: allows the user to change the number of groups used for displaying the Trellis plot

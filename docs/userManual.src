@@ -441,6 +441,8 @@ user needs to scroll up and down to see the views.
 
 ![User interface organization](ui-organization.png)
 
+### The heading of a view
+
 Each view has a heading that describes it briefly, as shown in the
 following figure.  Each view has a unique number, shown before the
 title.  The lineage of views is usually shown in the title, allowing
@@ -1077,6 +1079,14 @@ Next to the mouse an overlay box displays the following values:
 * the mouse's position on the Y axis
 * the size of the histogram bar at the current X coordinate
 * the value of the CDF function at the current X coordinate of the mouse, in percents
+
+If the Y axis is dragged between two different histogram plots (see
+[The heading of a view](#the-heading-of-a-view))
+some bars may be truncated, since they do not fit in the available
+screen space; in this case they are displayed with a red
+triangle on top:
+
+![Truncated histogram](truncated-histogram.png)
 
 #### The histogram menu
 
