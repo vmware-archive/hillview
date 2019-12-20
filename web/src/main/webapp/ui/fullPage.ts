@@ -318,6 +318,9 @@ export class FullPage implements IHtmlElement {
      * source dataset.
      */
     protected dropCombine(pageId: string): void {
+        if (this.pageId === +pageId)
+            // no point to combine with self
+            return;
         const view = this.dataView as BigTableView;
         if (view == null)
             return;

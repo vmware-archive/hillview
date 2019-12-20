@@ -33,11 +33,11 @@ import {CDFPlot} from "../ui/CDFPlot";
 import {IDataView} from "../ui/dataview";
 import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
 import {Histogram2DPlot} from "../ui/Histogram2DPlot";
-import {HistogramLegendPlot} from "../ui/legendPlot";
+import {HistogramLegendPlot} from "../ui/histogramLegendPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
-import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
+import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {ChartOptions, HtmlString, Rectangle, Resolution} from "../ui/ui";
+import {ChartOptions, HtmlString, Resolution} from "../ui/ui";
 import {
     formatNumber,
     ICancellable,
@@ -64,10 +64,9 @@ export class Histogram2DView extends HistogramViewBase {
     protected xPoints: number;
     protected yPoints: number;
     protected relative: boolean;  // true when bars are normalized to 100%
-    protected legendRect: Rectangle;  // legend position on the screen; relative to canvas
     protected plot: Histogram2DPlot;
     protected legendPlot: HistogramLegendPlot;
-    protected legendSurface: PlottingSurface;
+    protected legendSurface: HtmlPlottingSurface;
 
     constructor(remoteObjectId: RemoteObjectId, rowCount: number,
                 schema: SchemaClass, protected samplingRate: number, page: FullPage) {
@@ -199,7 +198,6 @@ export class Histogram2DView extends HistogramViewBase {
             .attr("r", Resolution.mouseDotRadius)
             .attr("fill", "blue");
 
-        this.legendRect = this.legendPlot.legendRectangle();
         this.pointDescription = new TextOverlay(this.surface.getChart(),
             this.surface.getActualChartSize(),
             [this.xAxisData.getDisplayNameString(this.schema),

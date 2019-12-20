@@ -206,7 +206,9 @@ export class HeatmapView extends ChartView {
         if (keepColorMap)
             this.colorLegend.setSurface(this.legendSurface);
         else {
-            this.colorLegend = new HeatmapLegendPlot(this.legendSurface);
+            this.colorLegend = new HeatmapLegendPlot(
+                this.legendSurface,
+                (xl, xr) => this.colorLegend.emphasizeRange(xl, xr));
             this.colorLegend.setColorMapChangeEventListener(
                 () => this.updateView(this.heatmap, true));
         }

@@ -157,8 +157,7 @@ export abstract class PlottingSurface {
     }
 
     public createChildSurface(xOffset: number, yOffset: number, sb: SizeAndBorders): PlottingSurface {
-        const result = new SvgPlottingSurface(this.getCanvas().node(), xOffset, yOffset, this.page, sb);
-        return result;
+        return new SvgPlottingSurface(this.getCanvas().node(), xOffset, yOffset, this.page, sb);
     }
 
     protected createObjects(root: D3SvgElement): void {

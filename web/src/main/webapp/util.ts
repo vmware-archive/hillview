@@ -640,3 +640,38 @@ export function px(dim: number): string {
         return dim.toString();
     return dim.toString() + "px";
 }
+
+/**
+ * A color triple normalized in the range 0-1 for each component.
+ */
+export class Color {
+    public constructor(public readonly r: number,
+                       public readonly g: number,
+                       public readonly b: number) {
+        if (r < 0 || r > 1 || g < 0 || g > 1 || b < 0 || b > 1)
+            throw new Error("Color out of range: " + r +"," + g + "," + b)
+    }
+
+    private static colorReg = new RegExp(/rgb\((\d+), (\d+), (\d+)\)/);
+
+    public toString(): string {
+        return "rgb(" + Math.round(this.r * 255) + "," + Math.round(this.g * 255) + "," + Math.round(this.b * 255) + ")";
+    }
+
+    /**
+     * Parse a color in the format rgb(r, g, b).
+     */
+    public static parse(s: string): Color {
+        const m = Color.colorReg.exec(s);
+        if (m == null)
+            return null;
+        return new Color(+m[1]/255, +m[2]/255, +m[3]/255);
+    }
+
+    public brighten(amount: number): Color {
+        return new Color(
+            (this.r + (amount - 1)) / amount,
+            (this.g + (amount - 1)) / amount,
+            (this.b + (amount - 1)) / amount);
+    }
+}

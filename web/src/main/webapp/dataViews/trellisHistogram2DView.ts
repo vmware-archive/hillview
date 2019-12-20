@@ -46,7 +46,7 @@ import {NextKReceiver, TableView} from "./tableView";
 import {BucketDialog} from "./histogramViewBase";
 import {TextOverlay} from "../ui/textOverlay";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
-import {HistogramLegendPlot} from "../ui/legendPlot";
+import {HistogramLegendPlot} from "../ui/histogramLegendPlot";
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 
 export class TrellisHistogram2DView extends TrellisChartView {
@@ -54,7 +54,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
     protected buckets: number;
     protected xAxisData: AxisData;
     protected legendAxisData: AxisData;
-    private legendSurface: PlottingSurface;
+    private legendSurface: HtmlPlottingSurface;
     private readonly legendDiv: HTMLDivElement;
     protected legendPlot: HistogramLegendPlot;
     protected relative: boolean;
