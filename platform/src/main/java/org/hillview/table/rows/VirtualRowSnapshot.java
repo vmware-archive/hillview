@@ -23,10 +23,7 @@ import org.hillview.table.api.*;
 import javax.annotation.Nullable;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * A pointer to a (projection of a) row in a table. The projection is
@@ -61,7 +58,7 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
     protected final HashMap<String, IColumn> columns;
 
     public VirtualRowSnapshot(final ITable table, final Schema schema,
-            @Nullable final HashMap<String, String> columnRenameMap) {
+            @Nullable final Map<String, String> columnRenameMap) {
         this.table = table;
         this.schema = schema;
         this.columns = new HashMap<String, IColumn>();

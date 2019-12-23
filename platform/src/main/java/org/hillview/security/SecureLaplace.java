@@ -2,18 +2,12 @@ package org.hillview.security;
 
 
 import org.hillview.dataset.api.Pair;
-import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Utilities;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-import javax.crypto.spec.SecretKeySpec;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.*;
 
 import static org.hillview.utils.Utilities.INT_SIZE;
@@ -22,14 +16,13 @@ import static org.hillview.utils.Utilities.byteArrayToLong;
 public class SecureLaplace {
     private byte[] scratchBytes = new byte[4*INT_SIZE]; // For sampling Laplace noise on intervals.
     private Cipher aes;
-    private Key sk;
     private double normalizer = Math.pow(2, -53);
 
     public SecureLaplace(KeyLoader keyLoader) {
         try {
-            this.sk = keyLoader.getOrCreateKey();
+            Key sk = keyLoader.getOrCreateKey();
             this.aes = Cipher.getInstance("AES/CBC/PKCS5Padding");
-            this.aes.init(Cipher.ENCRYPT_MODE, this.sk);
+            this.aes.init(Cipher.ENCRYPT_MODE, sk);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException e) {
             throw new RuntimeException(e);
         }

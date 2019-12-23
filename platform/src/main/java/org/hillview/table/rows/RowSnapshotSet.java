@@ -114,9 +114,4 @@ public class RowSnapshotSet implements Serializable {
             return left.compareForEquality(right, this.schema);
         }
     }
-
-    /* public ITableFilterDescription rowInTable() {
-        return new SetTableFilterDescription(this);
-    }
-    */
 }
