@@ -302,6 +302,12 @@ export interface FilterDescription {
     complement: boolean;
 }
 
+export interface JSFilterInfo {
+    jsCode: string;
+    schema: Schema;
+    renameMap: string[];
+}
+
 export interface RowFilterDescription {
     order: RecordOrder;
     data: any[];

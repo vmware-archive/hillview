@@ -26,7 +26,7 @@ import org.hillview.utils.Utilities;
 import java.util.function.Function;
 
 /**
- * A filter that describes how values in a whole row should be compared with a given row..
+ * A filter that describes how values in a whole row should be compared with a given row.
  */
 public class RowComparisonFilterDescription implements ITableFilterDescription {
     private final RowSnapshot row;

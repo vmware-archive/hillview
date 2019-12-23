@@ -50,7 +50,7 @@ import {
     BasicColStats,
     AugmentedHistogram,
     AggregateDescription,
-    HeavyHittersFilterInfo, RowFilterDescription, StringColumnsFilterDescription,
+    HeavyHittersFilterInfo, RowFilterDescription, StringColumnsFilterDescription, JSFilterInfo,
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
 import {FullPage, PageTitle} from "./ui/fullPage";
@@ -275,6 +275,10 @@ export class TableTargetAPI extends RemoteObject {
             numComponents: dimension,
             projectionName: projectionName
         });
+    }
+
+    public createJSFilterRequest(filter: JSFilterInfo): RpcRequest<PartialResult<RemoteObjectId>> {
+        return this.createStreamingRpcRequest<RemoteObjectId>("jsFilter", filter);
     }
 
     public createRowFilterRequest(filter: RowFilterDescription):

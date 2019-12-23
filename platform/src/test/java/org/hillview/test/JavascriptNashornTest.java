@@ -21,9 +21,11 @@ import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.maps.CreateColumnJSMap;
+import org.hillview.maps.FilterMap;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.api.*;
+import org.hillview.table.filters.JSFilterDescription;
 import org.hillview.table.membership.SparseMembershipSet;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.VirtualRowSnapshot;
@@ -103,6 +105,23 @@ public class JavascriptNashornTest extends BaseTest {
     }
 
     @Test
+    public void testFilter() {
+        ITable table = TestTables.testRepTable();
+        LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);
+        String function = "function filter(row) { return row['Age'] > 18; }";
+        JSFilterDescription desc = new JSFilterDescription(function, table.getSchema(), null);
+        FilterMap map = new FilterMap(desc);
+        IDataSet<ITable> mapped = lds.blockingMap(map);
+        ITable outTable = ((LocalDataSet<ITable>)mapped).data;
+        Assert.assertNotNull(outTable);
+        String data = outTable.toLongString(3);
+        Assert.assertEquals("Table[2x11]\n" +
+                "Mike,20\n" +
+                "John,30\n" +
+                "Bill,20\n", data);
+    }
+
+    @Test
     public void testDate() {
         ITable table = TestTables.testRepTable();
         LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);
@@ -166,7 +185,7 @@ public class JavascriptNashornTest extends BaseTest {
     }
 
     @Test
-    public void testFilter() {
+    public void testCompute() {
         ITable table = TestTables.testRepTable();
         SparseMembershipSet set = new SparseMembershipSet(table.getMembershipSet().getMax(), 2);
         set.add(0);

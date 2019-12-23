@@ -815,6 +815,21 @@ public final class TableTarget extends RpcTarget {
         this.runMap(this.table, map, TableTarget::new, request, context);
     }
 
+    static class JSFilterInfo {
+        Schema schema;
+        String jsCode;
+        @Nullable String[] renameMap;
+    }
+
+    @HillviewRpc
+    public void jsFilter(RpcRequest request, RpcRequestContext context) {
+        JSFilterInfo filter = request.parseArgs(JSFilterInfo.class);
+        JSFilterDescription desc = new JSFilterDescription(
+                filter.jsCode, filter.schema, Utilities.arrayToMap(filter.renameMap));
+        FilterMap map = new FilterMap(desc);
+        this.runMap(this.table, map, TableTarget::new, request, context);
+    }
+
     @SuppressWarnings("NullableProblems")
     static class KVCreateColumnInfo {
         String key = "";

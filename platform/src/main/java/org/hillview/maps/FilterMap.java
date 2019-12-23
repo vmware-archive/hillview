@@ -43,9 +43,9 @@ public class FilterMap implements IMap<ITable, ITable> {
     private final QuantizationSchema quantization;
 
     public FilterMap(ITableFilterDescription rowFilterPredicate,
-                     @Nullable QuantizationSchema quantiation) {
+                     @Nullable QuantizationSchema quantization) {
         this.rowFilterPredicate = rowFilterPredicate;
-        this.quantization = quantiation;
+        this.quantization = quantization;
     }
 
     public FilterMap(ITableFilterDescription rowFilterPredicate) {

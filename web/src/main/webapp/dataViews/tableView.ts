@@ -22,7 +22,7 @@ import {
     Comparison,
     ComparisonFilterDescription,
     FindResult,
-    IColumnDescription,
+    IColumnDescription, JSFilterInfo,
     kindIsString, KVCreateColumnInfo,
     NextKList,
     RecordOrder,
@@ -167,6 +167,10 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                         help: "Filter rows by comparing with a specific value",
                         action: () => this.showCompareDialog(
                             null, this.order, this.tableRowsDesired, this.aggregates) },
+                    {
+                        text: "Filter using JavaScript...",
+                        help: "Filter rows with JavaScript",
+                        action: () => this.filterJSDialog() },
                 ]),
             },
             this.dataset.combineMenu(this, page.pageId));
@@ -219,6 +223,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
     }
 
     public serialize(): IViewSerialization {
+        // noinspection UnnecessaryLocalVariableJS
         const result: TableSerialization = {
             ...super.serialize(),
             order: this.order,
@@ -665,6 +670,34 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                     }, true);
             this.contextMenu.show(e);
         };
+    }
+
+    public filterJSDialog(): void {
+        const dialog = new Dialog(
+            "Filter using JavaScript", "Specify a JavaScript function which filters each row.");
+        dialog.addMultiLineTextField("function", "Function",
+            "function filter(row) {", "  return row['col'] != 0;", "}",
+            "A JavaScript function that computes a Boolean value for each row." +
+            "The function has a single argument 'row'.  The row is a JavaScript map that can be indexed with " +
+            "a column name (a string) and which produces a value.  Rows where the function returns 'true' are keps.");
+        dialog.setCacheTitle("FilterJSDialog");
+        dialog.setAction(() => {
+            const fun = "function filter(row) {" + dialog.getFieldValue("function") + "}";
+            const selColumns = cloneToSet(this.getSelectedColNames());
+            const subSchema = this.schema.filter((c) => selColumns.has(c.name));
+            const arg: JSFilterInfo = {
+                jsCode: fun,
+                schema: subSchema.schema,
+                renameMap: subSchema.getRenameVector(),
+            };
+            const rr = this.createJSFilterRequest(arg);
+            const title = "Filtered using JS";
+            const newPage = this.dataset.newPage(new PageTitle(title), this.page);
+            const rec = new TableOperationCompleted(
+                newPage, rr, this.rowCount, this.schema, this.order, this.tableRowsDesired, this.aggregates);
+            rr.invoke(rec);
+        });
+        dialog.show();
     }
 
     public aggregateDialog(): void {
