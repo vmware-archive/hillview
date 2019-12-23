@@ -20,15 +20,15 @@
  * Maps each ViewKind to a url anchor in the github userManual.
  */
 export const helpUrl = {
-    "Table": "(#32-table-views)",
-    "Histogram": "(#34-uni-dimensional-histogram-views)",
-    "2DHistogram": "(#35-two-dimensional-histogram-views)",
-    "Heatmap": "(#36-heatmap-views)",
+    "Table": "(#33-table-views)",
+    "Histogram": "(#35-uni-dimensional-histogram-views)",
+    "2DHistogram": "(#36-two-dimensional-histogram-views)",
+    "Heatmap": "(#37-heatmap-views)",
     "TrellisHistogram": "(#41-trellis-plots-of-1d-histograms)",
     "TrellisHeatmap": "(#43-trellis-plots-of-heatmaps)",
     "Trellis2DHistogram": "(#42-trellis-plots-of-2d-histograms)",
-    "HeavyHitters": "(#33-frequent-elements-views)",
-    "Schema": "(#31-schema-views)",
+    "HeavyHitters": "(#34-frequent-elements-views)",
+    "Schema": "(#32-schema-views)",
     "Load": "(#23-loading-data)",
-    "SVD Spectrum": "(#37-singular-value-spectrum-views)"
+    "SVD Spectrum": "(#38-singular-value-spectrum-views)"
 };

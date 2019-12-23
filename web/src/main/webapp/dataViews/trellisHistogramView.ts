@@ -371,7 +371,6 @@ export class TrellisHistogramView extends TrellisChartView {
             };
 
             plot.setHistogram(augHist, this.samplingRate,
-                data.histogramMissingX.buckets[i],
                 this.xAxisData,
                 max, this.page.dataset.isPrivate());
             plot.displayAxes = false;

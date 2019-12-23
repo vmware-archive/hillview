@@ -1117,8 +1117,8 @@ The "View" menu from a histogram display has the following functions:
   current histogram.
 
 * pie chart/histogram: switch the displayed view between a histogram
-  or a pie chart.  This is only enabled for non-numeric columns.  The following
-  image shows a typical pie chart view of the data in a histogram.
+  or a pie chart.  This is only enabled for categorical or integer columns.
+  The following image shows a typical pie chart view of the data in a histogram.
 
   ![Pie chart](pie-chart.png)
 

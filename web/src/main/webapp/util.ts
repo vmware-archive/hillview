@@ -153,7 +153,7 @@ export function makeInterval(value: [number, number]): string {
     if (value[0] >= value[1])
         return significantDigits(value[0]);
     else
-        return significantDigits(value[0]) + " : " + significantDigits(value[1]);
+        return significantDigits(value[0]) + ":" + significantDigits(value[1]);
 }
 
 /**
