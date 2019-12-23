@@ -16,7 +16,7 @@ import java.util.List;
 public class PrivateHistogram extends HistogramPrefixSum implements IJson {
     private int[] confidence;
     private final double epsilon;
-    private final SecureLaplace laplace;
+    private SecureLaplace laplace;
 
     public PrivateHistogram(IntervalDecomposition decomposition,
                             final Histogram histogram,
@@ -31,6 +31,15 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
         if (isCdf) {
             this.recomputeCDF(decomposition);
         }
+    }
+
+    /**
+     * Replace the Laplace distribution. For use in testing.
+     *
+     * @param laplace A new Laplace distribution to use in sampling noise.
+     */
+    public void setLaplace(SecureLaplace laplace) {
+        this.laplace = laplace;
     }
 
     /**
@@ -118,5 +127,9 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
             this.confidence[i] = (int)noise.getConfidence();
         }
         return totalIntervals;
+    }
+
+    public double getEpsilon() {
+        return this.epsilon;
     }
 }
