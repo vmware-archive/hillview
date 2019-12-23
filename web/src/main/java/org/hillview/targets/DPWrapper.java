@@ -21,6 +21,7 @@ import org.hillview.*;
 import org.hillview.dataStructures.QuantilesArgs;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.Pair;
+import org.hillview.security.PersistedKeyLoader;
 import org.hillview.security.SecureLaplace;
 import org.hillview.sketches.PrecomputedSketch;
 import org.hillview.sketches.results.BucketsInfo;
@@ -115,7 +116,8 @@ public class DPWrapper {
         Path keyFilePath = Paths.get(basename, DPWrapper.KEY_NAME);
 
         // Retrieves key stored on disk or creates a new key and persists it, if no such key exists.
-        return new SecureLaplace(keyFilePath);
+        PersistedKeyLoader loader = new PersistedKeyLoader(keyFilePath);
+        return new SecureLaplace(loader);
     }
 
     public PrivacySchema getPrivacySchema() {

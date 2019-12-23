@@ -8,7 +8,7 @@ import org.hillview.sketches.results.Histogram;
  * The TypeScript interface AugmentedHistogram represents this class and its subclasses.
  */
 public class AugmentedHistogram implements IJson {
-    protected Histogram histogram;
+    public Histogram histogram;
     public AugmentedHistogram(Histogram histogram) {
         this.histogram = histogram;
     }

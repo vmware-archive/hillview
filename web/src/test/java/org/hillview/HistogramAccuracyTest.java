@@ -25,15 +25,19 @@ import org.hillview.dataset.api.IMap;
 import org.hillview.maps.FindFilesMap;
 import org.hillview.maps.LoadFilesMap;
 import org.hillview.security.SecureLaplace;
+import org.hillview.security.TestKeyLoader;
 import org.hillview.sketches.HeatmapSketch;
 import org.hillview.sketches.HistogramSketch;
+import org.hillview.sketches.SummarySketch;
 import org.hillview.sketches.results.DoubleHistogramBuckets;
 import org.hillview.sketches.results.Heatmap;
 import org.hillview.sketches.results.Histogram;
+import org.hillview.sketches.results.TableSummary;
 import org.hillview.storage.FileSetDescription;
 import org.hillview.storage.IFileReference;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.PrivacySchema;
+import org.hillview.table.Schema;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.ColumnQuantization;
@@ -46,6 +50,7 @@ import org.junit.Test;
 
 import javax.annotation.Nullable;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
 
 @SuppressWarnings("FieldCanBeLocal")
@@ -73,6 +78,16 @@ public class HistogramAccuracyTest {
         }
     }
 
+    @Nullable
+    Schema loadSchema(IDataSet<ITable> data) {
+        SummarySketch sk = new SummarySketch();
+        TableSummary tableSummary = data.blockingSketch(sk);
+        assert tableSummary != null;
+        if (tableSummary.rowCount == 0)
+            throw new RuntimeException("No file data loaded");
+        return tableSummary.schema;
+    }
+
     void generateHeatmap(int xBuckets, int yBuckets, PrivacySchema ps, IDataSet<ITable> table) {
         String col0 = "DepDelay";
         String col1 = "ArrDelay";
@@ -88,7 +103,8 @@ public class HistogramAccuracyTest {
         HeatmapSketch sk = new HeatmapSketch(b0, b1, col0, col1, 1.0, 0, q0, q1);
         Heatmap h = table.blockingSketch(sk);
         Assert.assertNotNull(h);
-        SecureLaplace laplace = new SecureLaplace(Paths.get("./hillview_test_key"));
+        TestKeyLoader tkl = new TestKeyLoader();
+        SecureLaplace laplace = new SecureLaplace(tkl);
         PrivateHeatmap ph = new PrivateHeatmap(d0, d1, h, epsilon, laplace);
         Assert.assertNotNull(ph);
         h = ph.heatmap;
@@ -111,6 +127,69 @@ public class HistogramAccuracyTest {
         this.generateHeatmap(110, 55, ps, table);
     }
 
+    /**
+     * Compute the absolute and L2 error vs. ground truth for an instantiation of a private histogram
+     * averaged over all possible range queries.
+     *
+     * @param ph The histogram whose accuracy we want to compute.
+     * @param totalLeaves The "global" number of leaves in case this histogram is computed only on a zoomed-in range.
+     *                    This is needed to correctly compute the amount of noise to add to each leaf.
+     * @return The average per-query absolute error.
+     */
+    private double computeAccuracy(PrivateHistogram ph, int totalLeaves) {
+        double scale = Math.log(totalLeaves) / Math.log(2);
+        scale /= ph.getEpsilon();
+        double baseVariance = 2 * Math.pow(scale, 2);
+        // Do all-intervals accuracy on leaves.
+        int n = 0;
+        double sqtot = 0.0;
+        double abstot = 0.0;
+        Noise noise = new Noise();
+        for (int left = 0; left < ph.histogram.getBucketCount(); left++) {
+            for (int right = left; right < ph.histogram.getBucketCount(); right++) {
+                ph.noiseForRange(left, right,
+                        scale, baseVariance, noise);
+                sqtot += Math.pow(noise.noise, 2);
+                abstot += Math.abs(noise.noise);
+                n++;
+            }
+        }
+
+        System.out.println("Bucket count: " + ph.histogram.getBucketCount());
+        System.out.println("Num intervals: " + n);
+        System.out.println("Average absolute error: " + abstot / (double) n);
+        System.out.println("Average L2 error: " + Math.sqrt(sqtot) / (double) n);
+
+        return abstot / (double) n;
+    }
+
+    private double computeSingleColumnAccuracy(String col, DoubleColumnQuantization dq, double epsilon, IDataSet<ITable> table,
+                                             int iterations) {
+        // Construct a histogram corresponding to the leaves.
+        // We will manually aggregate buckets as needed for the accuracy test.
+        HistogramRequestInfo info = new HistogramRequestInfo(new ColumnDescription(col, ContentsKind.Double),
+                0, dq.globalMin, dq.globalMax, dq.getIntervalCount());
+        HistogramSketch sk = info.getSketch(dq);
+        IntervalDecomposition dd = info.getDecomposition(dq);
+
+        System.out.println("Epsilon: " + epsilon);
+        Histogram hist = table.blockingSketch(sk); // Leaf counts.
+        Assert.assertNotNull(hist);
+
+        int totalLeaves = dd.getQuantizationIntervalCount();
+        TestKeyLoader tkl = new TestKeyLoader();
+
+        double totAccuracy = 0.0;
+        for (int i = 0 ; i < iterations; i++) {
+            tkl.setIndex(i);
+            SecureLaplace laplace = new SecureLaplace(tkl);
+            PrivateHistogram ph = new PrivateHistogram(dd, hist, epsilon, false, laplace);
+            double acc = computeAccuracy(ph, totalLeaves);
+            totAccuracy += acc;
+        }
+        return totAccuracy / iterations;
+    }
+
     @Test
     public void computeAccuracyTest() {
         @Nullable
@@ -120,51 +199,30 @@ public class HistogramAccuracyTest {
             return;
         }
 
+        Schema schema = this.loadSchema(table);
+        List<String> cols = schema.getColumnNames();
+
         PrivacySchema mdSchema = PrivacySchema.loadFromFile(ontime_directory + privacy_metadata_name);
         Assert.assertNotNull(mdSchema);
         Assert.assertNotNull(mdSchema.quantization);
-        ColumnQuantization col1 = mdSchema.quantization.get("DepTime");
-        Assert.assertNotNull(col1);
-        Assert.assertTrue(col1 instanceof DoubleColumnQuantization);
 
-        DoubleColumnQuantization dq = (DoubleColumnQuantization) col1;
+        int iterations = 5;
 
-        // Construct a histogram corresponding to the leaves.
-        // We will manually aggregate buckets as needed for the accuracy test.
-        HistogramRequestInfo info = new HistogramRequestInfo(new ColumnDescription("DepTime", ContentsKind.Double),
-                0, dq.globalMin, dq.globalMax, dq.getIntervalCount());
-        HistogramSketch sk = info.getSketch(col1);
-        IntervalDecomposition dd = info.getDecomposition(col1);
+        HashMap<String, Double> accuracies = new HashMap<>();
+        for (String col : cols) {
+            ColumnQuantization quantization = mdSchema.quantization.get(col);
+            Assert.assertNotNull(quantization);
 
-        double epsilon = mdSchema.epsilon(info.cd.name);
-        System.out.println("Epsilon: " + epsilon);
-        Histogram hist = table.blockingSketch(sk); // Leaf counts.
-        Assert.assertNotNull(hist);
-        SecureLaplace laplace = new SecureLaplace(Paths.get("./hillview_test_key"));
-        PrivateHistogram ph = new PrivateHistogram(dd, hist, epsilon, false, laplace);
-
-        int totalLeaves = dd.getQuantizationIntervalCount();
-        double scale = Math.log(totalLeaves) / Math.log(2);
-        scale /= epsilon;
-        double baseVariance = 2 * Math.pow(scale, 2);
-        // Do all-intervals accuracy on leaves.
-        int n = 0;
-        double sqtot = 0.0;
-        double abstot = 0.0;
-        Noise noise = new Noise();
-        for (int left = 0; left < hist.getBucketCount(); left++) {
-            for (int right = left; right < hist.getBucketCount(); right++) {
-                ph.noiseForRange(left, right,
-                        scale, baseVariance, noise);
-                sqtot += Math.pow(noise.noise, 2);
-                abstot += Math.abs(noise.noise);
-                n++;
+            if (!(quantization instanceof DoubleColumnQuantization)) {
+                continue;
             }
-        }
+            DoubleColumnQuantization dq = (DoubleColumnQuantization) quantization;
 
-        System.out.println("Bucket count: " + hist.getBucketCount());
-        System.out.println("Num intervals: " + n);
-        System.out.println("Average absolute error: " + abstot / (double) n);
-        System.out.println("Average L2 error: " + Math.sqrt(sqtot) / (double) n);
+            double epsilon = mdSchema.epsilon(col);
+
+            double acc = this.computeSingleColumnAccuracy(col, dq, epsilon, table, iterations);
+            System.out.println("Averaged absolute error over " + iterations + " iterations: " + acc);
+            accuracies.put(col, acc);
+        }
     }
 }
