@@ -12,6 +12,6 @@ export JAVA_OPTS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=
 # If you want GRPC logging uncomment the following line.
 # LOGGING=" -Djava.util.logging.config.file=logging.properties"
 export JAVA_OPTS="$JAVA_OPTS$LOGGING"
-
+export CATALINA_PID="catalina.pid"
 cd ${mydir}/..
 ./apache-tomcat-${TOMCATVERSION}/bin/catalina.sh run

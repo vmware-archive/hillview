@@ -6,7 +6,7 @@ import {AxisData} from "../dataViews/axisData";
 import {D3Scale} from "./ui";
 
 export interface IBarPlot {
-    setHistogram(bars: AugmentedHistogram, samplingRate: number, missingCount: number,
+    setHistogram(bars: AugmentedHistogram, samplingRate: number,
                  axisData: AxisData, maxYAxis: number | null, isPrivate: boolean): void;
     draw(): void;
     getYScale(): D3Scale;

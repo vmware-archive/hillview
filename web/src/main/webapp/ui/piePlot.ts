@@ -22,7 +22,7 @@ import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {D3Scale, SpecialChars} from "./ui";
 import {IBarPlot} from "./IBarPlot";
-import {cloneArray, formatNumber, percent, significantDigits} from "../util";
+import {cloneArray, formatNumber, makeInterval, percent, significantDigits, valueWithConfidence} from "../util";
 
 interface ValueAndIndex {
     value: number;
@@ -42,7 +42,6 @@ export class PiePlot extends Plot implements IBarPlot {
      */
     public samplingRate: number;
     public isPrivate: boolean;
-    private missingCount: number;
     public maxYAxis: number;
 
     public constructor(protected plottingSurface: PlottingSurface) {
@@ -53,18 +52,16 @@ export class PiePlot extends Plot implements IBarPlot {
      * Set the histogram that we want to draw.
      * @param bars          Description of the histogram bars.
      * @param samplingRate  Sampling rate used to compute this histogram.
-     * @param missingCount  Number of missing values.
      * @param axisData      Description of the X axis.
      * @param maxYAxis      Not used for pie chart.
      * @param isPrivate     True if we are plotting private data.
      */
-    public setHistogram(bars: AugmentedHistogram, samplingRate: number, missingCount: number,
+    public setHistogram(bars: AugmentedHistogram, samplingRate: number,
                         axisData: AxisData, maxYAxis: number | null, isPrivate: boolean): void {
         this.histogram = bars;
         this.samplingRate = samplingRate;
         this.xAxisData = axisData;
         this.isPrivate = isPrivate;
-        this.missingCount = missingCount;
         this.maxYAxis = maxYAxis;
     }
 
@@ -82,17 +79,46 @@ export class PiePlot extends Plot implements IBarPlot {
         return this.xAxisData.bucketDescription(bucketIndex, 40);
     }
 
-    private countAsString(count: number): string {
-        if (this.samplingRate < 1) {
-            return SpecialChars.approx + significantDigits(count);
+    private countAsString(count: number, confidence: number, sum: number): string {
+        let result;
+        if (this.isPrivate) {
+            result = SpecialChars.approx + makeInterval(valueWithConfidence(count, confidence));
+        } else if (this.samplingRate < 1) {
+            result = SpecialChars.approx + significantDigits(count);
         } else {
-            return formatNumber(count);
+            result = formatNumber(count);
         }
+        result += ", ";
+        if (this.isPrivate) {
+            const min = Math.max(0, count - confidence);
+            const percLow = percent(min/sum);
+            const percHigh = percent((count + confidence) / sum);
+            if (percLow === percHigh)
+                result += percLow;
+            else
+                result += percent(min / sum) + ":" + percent((count + confidence) / sum);
+        } else {
+            result += percent(count / sum);
+        }
+        return result;
+    }
+
+    private static clamp(value: number, min: number, max: number): number {
+        if (min > max) {
+            // This should not happen.
+            return min;
+        } else {
+            if (value < min)
+                return min;
+            else if (value > max)
+                return max;
+        }
+        return value;
     }
 
     private drawPie(): void {
-        const counts = cloneArray(this.histogram.histogram.buckets);
-        counts.push(this.missingCount);
+        const counts = this.histogram.histogram.buckets.map((x) => Math.max(x, 0));
+        counts.push(this.histogram.histogram.missingData);
         const pie = d3pie().sort(null);
         const chartWidth = this.getChartWidth();
         const chartHeight = this.getChartHeight();
@@ -100,6 +126,13 @@ export class PiePlot extends Plot implements IBarPlot {
         const arc = d3arc()
             .innerRadius(0)
             .outerRadius(radius);
+        let confidence;
+        if (this.isPrivate) {
+            confidence = cloneArray(this.histogram.confidence);
+            confidence.push(this.histogram.missingConfidence);
+        } else {
+            confidence = new Array(this.histogram.histogram.buckets.length + 1);
+        }
 
         const sum = counts.reduce((a,b) => a + b);
         const sum2 = sum / 2;   // sum2 is the half of the total count
@@ -116,7 +149,7 @@ export class PiePlot extends Plot implements IBarPlot {
             .attr("d", arc)
             .attr('fill', (d,i) => this.color(i, counts.length))
             .append("svg:title")
-            .text((d,i) => this.label(i) + ":" + this.countAsString(counts[i]) + ", " + percent(counts[i] / sum))
+            .text((d,i) => this.label(i) + ":" + this.countAsString(counts[i], confidence[i], sum))
             .exit();
 
         let total = 0;
@@ -154,16 +187,7 @@ export class PiePlot extends Plot implements IBarPlot {
             const min = Math.max(i * spacingSize, previousPosition + spacingSize);
             const max = chartHeight - (rightPosition.length - i - 1) * spacingSize; // -1 for the start of the next label
             let ideal = chartHeight / 2 - Math.cos(rightPosition[i].value * Math.PI) * radius;
-            let labelPosition = ideal;
-            if (min > max) {
-                // This should not happen.
-                labelPosition = min;
-            } else {
-                if (ideal < min)
-                    labelPosition = min;
-                else if (ideal > max)
-                    labelPosition = max;
-            }
+            let labelPosition = PiePlot.clamp(ideal, min, max);
             rightLabelPosition.push({ value: labelPosition, index: rightPosition[i].index });
             previousPosition = labelPosition;
         }
@@ -173,16 +197,7 @@ export class PiePlot extends Plot implements IBarPlot {
             const min = (leftPosition.length - i) * spacingSize;
             const max = Math.min(previousPosition - spacingSize, chartHeight - (i + 1) * spacingSize);
             const ideal = chartHeight / 2 - Math.cos(leftPosition[i].value * Math.PI) * radius;
-            let labelPosition = ideal;
-            if (min > max) {
-                // This should not happen.
-                labelPosition = max;
-            } else {
-                if (ideal < min)
-                    labelPosition = min;
-                else if (ideal > max)
-                    labelPosition = max;
-            }
+            let labelPosition = PiePlot.clamp(ideal, min, max);
             leftLabelPosition.push({ value: labelPosition, index: leftPosition[i].index });
             previousPosition = labelPosition;
         }
@@ -200,7 +215,7 @@ export class PiePlot extends Plot implements IBarPlot {
             .attr("text-anchor", "end")
             .text((d) => this.label(d.index))
             .append("svg:title")
-            .text((d) => this.countAsString(counts[d.index]) + ", " + percent(counts[d.index] / sum));
+            .text((d) => this.countAsString(counts[d.index], confidence[d.index], sum));
         drawing.data(rightLabelPosition)
             .enter()
             .append("text")
@@ -210,7 +225,7 @@ export class PiePlot extends Plot implements IBarPlot {
             .attr("text-anchor", "start")
             .text((d) => this.label(d.index))
             .append("svg:title")
-            .text((d) => this.countAsString(counts[d.index]) + ", " + percent(counts[d.index] / sum));
+            .text((d) => this.countAsString(counts[d.index], confidence[d.index], sum));
         // lines connecting labels to pie segments
         drawing.data(rightLabelPosition)
             .enter()

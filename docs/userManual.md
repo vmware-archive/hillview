@@ -21,7 +21,7 @@ performs all operations using a class of very efficient algorithms,
 called “sketches”, which are constrained to compute with bounded
 memory over distributed data.
 
-Updated on 2019 Dec 20.
+Updated on 2019 Dec 23.
 
 # Contents
 |Section|Reference|
@@ -1178,8 +1178,8 @@ The "View" menu from a histogram display has the following functions:
   current histogram.
 
 * pie chart/histogram: switch the displayed view between a histogram
-  or a pie chart.  This is only enabled for non-numeric columns.  The following
-  image shows a typical pie chart view of the data in a histogram.
+  or a pie chart.  This is only enabled for categorical or integer columns.
+  The following image shows a typical pie chart view of the data in a histogram.
 
   ![Pie chart](pie-chart.png)
 

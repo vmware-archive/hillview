@@ -15,6 +15,8 @@ import java.util.List;
 @SuppressWarnings("MismatchedReadAndWriteOfArray")
 public class PrivateHistogram extends HistogramPrefixSum implements IJson {
     private int[] confidence;
+    private int missingConfidence;  // Confidence for the missing value
+    // TODO(pratiksha): compute the missing value confidence
     private final double epsilon;
     private SecureLaplace laplace;
 

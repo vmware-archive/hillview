@@ -304,10 +304,10 @@ export class HeatmapView extends ChartView {
                 histogram: heatmap.histogramMissingX,
                 cdfBuckets: null,
                 confidence: null,
+                missingConfidence: null
             };
 
             this.xHistoPlot.setHistogram(augHist, this.samplingRate,
-                heatmap.histogramMissingX.missingData,
                 this.xAxisData, null,
                 this.page.dataset.isPrivate());
             this.xHistoPlot.draw();

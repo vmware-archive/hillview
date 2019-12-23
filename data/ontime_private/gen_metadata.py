@@ -20,12 +20,13 @@ def get_metadata(cn):
     elif cn == "DepDelay" or cn == "ArrDelay":
         (g, gMin, gMax) = (1, -100, 1000)
     elif cn == "Cancelled":
-        (g, gMin, gMax) = (1, 0, 2)
+        (g, gMin, gMax) = (1, 0, 1)
     elif cn == "ActualElapsedTime":
-        (g, gMin, gMax) = (1, 15, 700)
+        (g, gMin, gMax) = (1, 15, 800)
     elif cn == "Distance":
-        (g, gMin, gMax) = (10, 0, 5000)
+        (g, gMin, gMax) = (10, 0, 5100)
     elif cn == "FlightDate":
+        # cluster values: (86400000, 852076800000, 1561852800000)
         (g, gMin, gMax) = (86400000, 1451635200000, 1456732800000)
     else:
         raise Exception("Unexpected column " + cn)

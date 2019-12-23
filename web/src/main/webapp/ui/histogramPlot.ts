@@ -61,13 +61,13 @@ export class HistogramPlot extends Plot implements IBarPlot {
      * Set the histogram that we want to draw.
      * @param bars          Description of the histogram bars.
      * @param samplingRate  Sampling rate used to compute this histogram.
-     * @param missingCount  Number of values missing.  TODO: display it graphically.
      * @param axisData      Description of the X axis.
      * @param maxYAxis      If present it is used to scale the maximum value for the Y axis.
      * @param isPrivate     True if we are plotting private data.
      */
-    public setHistogram(bars: AugmentedHistogram, samplingRate: number, missingCount: number,
+    public setHistogram(bars: AugmentedHistogram, samplingRate: number,
                         axisData: AxisData, maxYAxis: number | null, isPrivate: boolean): void {
+        // TODO: display missing data graphically.
         this.histogram = bars;
         this.samplingRate = samplingRate;
         this.xAxisData = axisData;
@@ -88,7 +88,6 @@ export class HistogramPlot extends Plot implements IBarPlot {
         const counts = this.histogram.histogram.buckets.map((x) => Math.max(x, 0));
         this.max = Math.max(...counts);
         const displayMax = this.maxYAxis == null ? this.max : this.maxYAxis;
-
         const chartWidth = this.getChartWidth();
         const chartHeight = this.getChartHeight();
         const confidence = this.isPrivate ? this.histogram.confidence :

@@ -254,9 +254,8 @@ export interface AugmentedHistogram {
     cdfBuckets?: number[];
     /// confidence interval for each histogram bucket
     confidence?: number[];
-    // Confidence values around the missing count
-    missingMin?: number;
-    missingMax?: number;
+    // Confidence for the missing count
+    missingConfidence?: number;
 }
 
 // This is actually a union of two java classes

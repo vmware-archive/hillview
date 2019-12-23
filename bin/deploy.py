@@ -26,6 +26,7 @@ def generate_script(config, rh, template):
     filename = template.replace("-template", "")
     lines = [variables if "REPLACE_WITH_VARIABLES" in x else x for x in lines]
     with open(filename, "w") as f:
+        f.write("# Automatically generated from " + template)
         for l in lines:
             f.write(l)
     os.chmod(filename, 0o770)

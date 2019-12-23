@@ -168,9 +168,10 @@ export class SpectrumView extends ChartView {
             histogram: h,
             cdfBuckets: null,
             confidence: null,
+            missingConfidence: null
         };
 
-        this.plot.setHistogram(augHist, 1, h.missingData,
+        this.plot.setHistogram(augHist, 1,
             axisData, null, this.page.dataset.isPrivate());
         this.plot.draw();
 

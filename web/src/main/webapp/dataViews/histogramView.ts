@@ -214,7 +214,8 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
     public setAxes(xAxisData: AxisData): void {
         this.xAxisData = xAxisData;
         const submenu = this.menu.getSubmenu("View");
-        submenu.enable("pie chart/histogram", kindIsString(this.xAxisData.description.kind));
+        submenu.enable("pie chart/histogram", kindIsString(this.xAxisData.description.kind) ||
+            this.xAxisData.description.kind === "Integer");
     }
 
     /**
@@ -243,7 +244,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
 
         const counts = h.buckets;
         this.bucketCount = counts.length;
-        this.plot.setHistogram(augmentedHistogram, this.samplingRate, h.missingData,
+        this.plot.setHistogram(augmentedHistogram, this.samplingRate,
                                this.xAxisData, maxYAxis, this.page.dataset.isPrivate());
         this.plot.draw();
 

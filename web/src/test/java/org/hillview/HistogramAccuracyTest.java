@@ -49,8 +49,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import javax.annotation.Nullable;
-import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.List;
 
 @SuppressWarnings("FieldCanBeLocal")
@@ -78,14 +76,13 @@ public class HistogramAccuracyTest {
         }
     }
 
-    @Nullable
     Schema loadSchema(IDataSet<ITable> data) {
         SummarySketch sk = new SummarySketch();
         TableSummary tableSummary = data.blockingSketch(sk);
         assert tableSummary != null;
         if (tableSummary.rowCount == 0)
             throw new RuntimeException("No file data loaded");
-        return tableSummary.schema;
+        return Converters.checkNull(tableSummary.schema);
     }
 
     void generateHeatmap(int xBuckets, int yBuckets, PrivacySchema ps, IDataSet<ITable> table) {
@@ -207,8 +204,6 @@ public class HistogramAccuracyTest {
         Assert.assertNotNull(mdSchema.quantization);
 
         int iterations = 5;
-
-        HashMap<String, Double> accuracies = new HashMap<>();
         for (String col : cols) {
             ColumnQuantization quantization = mdSchema.quantization.get(col);
             Assert.assertNotNull(quantization);
@@ -222,7 +217,6 @@ public class HistogramAccuracyTest {
 
             double acc = this.computeSingleColumnAccuracy(col, dq, epsilon, table, iterations);
             System.out.println("Averaged absolute error over " + iterations + " iterations: " + acc);
-            accuracies.put(col, acc);
         }
     }
 }

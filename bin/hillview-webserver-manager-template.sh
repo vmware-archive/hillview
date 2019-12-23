@@ -12,12 +12,13 @@ start() {
         rm -f hillview-web.log hillview-web.log.* hillview-web.log*.lck
     fi
     export WEB_CLUSTER_DESCRIPTOR=serverlist
-    nohup ./${TOMCAT}/bin/startup.sh &
+    export CATALINA_PID=catalina.pid
+    ./${TOMCAT}/bin/startup.sh
 }
 
 stop() {
     if pgrep -f tomcat; then
-        ${SERVICE_DIRECTORY}"/"${TOMCAT}/bin/shutdown.sh
+        ${SERVICE_DIRECTORY}"/"${TOMCAT}/bin/shutdown.sh -force
         echo Stopped
     else
         echo "Web server already stopped"
