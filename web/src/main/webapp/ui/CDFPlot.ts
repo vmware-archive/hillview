@@ -104,6 +104,8 @@ export class CDFPlot extends Plot {
      */
     public getY(x: number): number {
         // determine mouse position on cdf curve
+        if (this.cdf == null)
+            return 0;
         if (this.adjust)
             x += this.bucketWidth / 2;
         const cdfX = x / this.bucketWidth;

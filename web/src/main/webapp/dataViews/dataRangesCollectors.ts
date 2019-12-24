@@ -347,7 +347,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                         " grouped by " + this.schema.displayName(this.cds[1].name).toString());
                 const renderer = new TrellisHistogramReceiver(this.title, this.page,
                     this.originator, rowCount, this.schema,
-                    [xAxisData, groupByAxis],
+                    [xAxisData, groupByAxis], this.bucketCounts[0],
                     xArg.samplingRate, trellisShape, rr, this.options.reusePage);
                 rr.chain(this.operation);
                 rr.invoke(renderer);

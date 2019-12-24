@@ -169,7 +169,8 @@ export class HistogramPlot extends Plot implements IBarPlot {
 
     public get(x: number): [number, number] {
         const bucket = Math.floor(x / this.barWidth);
-        if (bucket < 0 || bucket >= this.histogram.histogram.buckets.length)
+        if (bucket < 0 || this.histogram == null || this.histogram.histogram == null ||
+            bucket >= this.histogram.histogram.buckets.length)
             return valueWithConfidence(0, null);
         const value = this.histogram.histogram.buckets[bucket];
         const conf = this.isPrivate ? this.histogram.confidence[bucket] : null;

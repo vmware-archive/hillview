@@ -509,6 +509,7 @@ export class TrellisHistogramReceiver extends Receiver<Heatmap> {
                 protected rowCount: number,
                 protected schema: SchemaClass,
                 protected axes: AxisData[],
+                protected bucketCount: number,
                 protected samplingRate: number,
                 protected shape: TrellisShape,
                 operation: ICancellable<Heatmap>,
@@ -527,7 +528,7 @@ export class TrellisHistogramReceiver extends Receiver<Heatmap> {
             return;
         }
 
-        this.trellisView.updateView(value.data, this.axes[0].bucketCount);
+        this.trellisView.updateView(value.data, this.bucketCount);
     }
 
     public onCompleted(): void {
