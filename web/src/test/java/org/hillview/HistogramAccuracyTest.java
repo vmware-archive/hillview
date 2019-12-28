@@ -17,11 +17,13 @@
 
 package org.hillview;
 
+import com.google.gson.*;
 import org.hillview.dataStructures.*;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IMap;
+import org.hillview.dataset.api.Pair;
 import org.hillview.maps.FindFilesMap;
 import org.hillview.maps.LoadFilesMap;
 import org.hillview.security.SecureLaplace;
@@ -44,17 +46,28 @@ import org.hillview.table.columns.ColumnQuantization;
 
 import org.hillview.table.columns.DoubleColumnQuantization;
 
+import org.hillview.table.columns.StringColumnQuantization;
 import org.hillview.utils.Converters;
+import org.hillview.utils.HillviewLogger;
+import org.hillview.utils.Utilities;
 import org.junit.Assert;
 import org.junit.Test;
 
 import javax.annotation.Nullable;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.logging.Level;
 
 @SuppressWarnings("FieldCanBeLocal")
 public class HistogramAccuracyTest {
     private static String ontime_directory = "../data/ontime_private/";
     private static String privacy_metadata_name = "privacy_metadata.json";
+
+    private static String results_filename = "../results/ontime_private_results.json";
 
     @Nullable
     IDataSet<ITable> loadData() {
@@ -160,14 +173,23 @@ public class HistogramAccuracyTest {
         return abstot / (double) n;
     }
 
-    private double computeSingleColumnAccuracy(String col, DoubleColumnQuantization dq, double epsilon, IDataSet<ITable> table,
+    private Pair<Double, Double> computeSingleColumnAccuracy(String col, ColumnQuantization cq, double epsilon, IDataSet<ITable> table,
                                              int iterations) {
         // Construct a histogram corresponding to the leaves.
         // We will manually aggregate buckets as needed for the accuracy test.
-        HistogramRequestInfo info = new HistogramRequestInfo(new ColumnDescription(col, ContentsKind.Double),
-                0, dq.globalMin, dq.globalMax, dq.getIntervalCount());
-        HistogramSketch sk = info.getSketch(dq);
-        IntervalDecomposition dd = info.getDecomposition(dq);
+        HistogramRequestInfo info;
+        if (cq instanceof DoubleColumnQuantization) {
+            DoubleColumnQuantization dq = (DoubleColumnQuantization)cq;
+            info = new HistogramRequestInfo(new ColumnDescription(col, ContentsKind.Double),
+                    0, dq.globalMin, dq.globalMax, dq.getIntervalCount());
+        } else {
+            // StringColumnQuantization
+            StringColumnQuantization sq = (StringColumnQuantization)cq;
+            info = new HistogramRequestInfo(new ColumnDescription(col, ContentsKind.String),0, sq.leftBoundaries);
+        }
+
+        HistogramSketch sk = info.getSketch(cq);
+        IntervalDecomposition dd = info.getDecomposition(cq);
 
         System.out.println("Epsilon: " + epsilon);
         Histogram hist = table.blockingSketch(sk); // Leaf counts.
@@ -176,19 +198,23 @@ public class HistogramAccuracyTest {
         int totalLeaves = dd.getQuantizationIntervalCount();
         TestKeyLoader tkl = new TestKeyLoader();
 
+        ArrayList<Double> accuracies = new ArrayList<>();
         double totAccuracy = 0.0;
         for (int i = 0 ; i < iterations; i++) {
             tkl.setIndex(i);
             SecureLaplace laplace = new SecureLaplace(tkl);
             PrivateHistogram ph = new PrivateHistogram(dd, hist, epsilon, false, laplace);
             double acc = computeAccuracy(ph, totalLeaves);
+            accuracies.add(acc);
             totAccuracy += acc;
         }
-        return totAccuracy / iterations;
+        return new Pair(totAccuracy / iterations, Utilities.stdev(accuracies));
     }
 
     @Test
-    public void computeAccuracyTest() {
+    public void computeAccuracyTest() throws IOException {
+        HillviewLogger.instance.setLogLevel(Level.OFF);
+
         @Nullable
         IDataSet<ITable> table = this.loadData();
         if (table == null) {
@@ -203,20 +229,29 @@ public class HistogramAccuracyTest {
         Assert.assertNotNull(mdSchema);
         Assert.assertNotNull(mdSchema.quantization);
 
+        HashMap<String, ArrayList<Double>> results = new HashMap();
         int iterations = 5;
         for (String col : cols) {
             ColumnQuantization quantization = mdSchema.quantization.get(col);
             Assert.assertNotNull(quantization);
 
-            if (!(quantization instanceof DoubleColumnQuantization)) {
-                continue;
-            }
-            DoubleColumnQuantization dq = (DoubleColumnQuantization) quantization;
-
             double epsilon = mdSchema.epsilon(col);
 
-            double acc = this.computeSingleColumnAccuracy(col, dq, epsilon, table, iterations);
-            System.out.println("Averaged absolute error over " + iterations + " iterations: " + acc);
+            Pair<Double, Double> res = this.computeSingleColumnAccuracy(col, quantization, epsilon, table, iterations);
+            System.out.println("Averaged absolute error over " + iterations + " iterations: " + res.first);
+
+            // for JSON parsing convenience
+            ArrayList<Double> resArr = new ArrayList();
+            resArr.add(res.first); // mean
+            resArr.add(res.second); // stdev
+
+            results.put(col, resArr);
         }
+
+        FileWriter writer = new FileWriter(results_filename);
+        Gson resultsGson = new GsonBuilder().create();
+        writer.write(resultsGson.toJson(results));
+        writer.flush();
+        writer.close();
     }
 }

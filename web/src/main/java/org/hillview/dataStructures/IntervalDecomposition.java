@@ -155,8 +155,8 @@ public abstract class IntervalDecomposition {
     @SuppressWarnings("SameParameterValue")
     List<Pair<Integer, Integer>> bucketDecomposition(int bucketIdx, boolean cdf) {
         Pair<Integer, Integer> range = this.bucketRange(bucketIdx, cdf);
-        return IntervalDecomposition.dyadicDecomposition(
-            Converters.checkNull(range.first), Converters.checkNull(range.second));
+        return IntervalDecomposition.kadicDecomposition(
+            Converters.checkNull(range.first), Converters.checkNull(range.second), 20);
     }
 
     @Override
