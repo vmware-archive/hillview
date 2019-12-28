@@ -36,15 +36,6 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
     }
 
     /**
-     * Replace the Laplace distribution. For use in testing.
-     *
-     * @param laplace A new Laplace distribution to use in sampling noise.
-     */
-    public void setLaplace(SecureLaplace laplace) {
-        this.laplace = laplace;
-    }
-
-    /**
      * Compute noise for the given [left leaf, right leaf) range using the dyadic decomposition.
      * See also noiseForBucket.
      */
