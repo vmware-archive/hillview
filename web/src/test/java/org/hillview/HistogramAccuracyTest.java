@@ -18,6 +18,7 @@
 package org.hillview;
 
 import com.google.gson.*;
+import org.apache.parquet.filter2.predicate.Operators;
 import org.hillview.dataStructures.*;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.api.Empty;
@@ -67,7 +68,8 @@ public class HistogramAccuracyTest {
     private static String ontime_directory = "../data/ontime_private/";
     private static String privacy_metadata_name = "privacy_metadata.json";
 
-    private static String results_filename = "../results/ontime_private_results.json";
+    private static String histogram_results_filename = "../results/ontime_private_histogram.json";
+    private static String heatmap_results_filename = "../results/ontime_private_heatmap.json";
 
     @Nullable
     IDataSet<ITable> loadData() {
@@ -173,8 +175,48 @@ public class HistogramAccuracyTest {
         return abstot / (double) n;
     }
 
-    private Pair<Double, Double> computeSingleColumnAccuracy(String col, ColumnQuantization cq, double epsilon, IDataSet<ITable> table,
-                                             int iterations) {
+    /**
+     * Compute the absolute and L2 error vs. ground truth for an instantiation of a private heat map
+     * averaged over all possible range queries (every rectangle).
+     *
+     * @param ph The heat map whose accuracy we want to compute.
+     * @param totalXLeaves The "global" number of leaves (in the x-dimension) in case this heat map is computed only on a zoomed-in range.
+     *                    This is needed to correctly compute the amount of noise to add to each leaf.
+     * @param totalYLeaves same as totalXLeaves but for y-axis
+     * @return The average per-query absolute error.
+     */
+    private Double computeAccuracy(PrivateHeatmap ph, int totalXLeaves, int totalYLeaves) {
+        double scale = Math.log(totalXLeaves * totalYLeaves) / Math.log(2);
+        scale /= ph.getEpsilon();
+        double baseVariance = 2 * Math.pow(scale, 2);
+        // Do all-intervals accuracy on leaves.
+        int n = 0;
+        double sqtot = 0.0;
+        double abstot = 0.0;
+        Noise noise = new Noise();
+        for (int left = 0; left < ph.heatmap.getXBucketCount(); left++) {
+            for (int right = left; right < ph.heatmap.getXBucketCount(); right++) {
+                for (int top = 0; top < ph.heatmap.getYBucketCount(); top++) {
+                    for (int bot = top; bot < ph.heatmap.getYBucketCount(); bot++) {
+                        ph.noiseForRange(left, right, top, bot,
+                                scale, baseVariance, noise);
+                        sqtot += Math.pow(noise.noise, 2);
+                        abstot += Math.abs(noise.noise);
+                        n++;
+                    }
+                }
+            }
+        }
+
+        System.out.println("Bucket count: " + ph.heatmap.getXBucketCount() * ph.heatmap.getYBucketCount());
+        System.out.println("Num intervals: " + n);
+        System.out.println("Average absolute error: " + abstot / (double) n);
+        System.out.println("Average L2 error: " + Math.sqrt(sqtot) / (double) n);
+
+        return abstot / (double) n;
+    }
+
+    private HistogramRequestInfo createHistogramRequest(String col, ColumnQuantization cq) {
         // Construct a histogram corresponding to the leaves.
         // We will manually aggregate buckets as needed for the accuracy test.
         HistogramRequestInfo info;
@@ -188,6 +230,14 @@ public class HistogramAccuracyTest {
             info = new HistogramRequestInfo(new ColumnDescription(col, ContentsKind.String),0, sq.leftBoundaries);
         }
 
+        return info;
+    }
+
+    private Pair<Double, Double> computeSingleColumnAccuracy(String col, ColumnQuantization cq, double epsilon, IDataSet<ITable> table,
+                                             int iterations) {
+        // Construct a histogram corresponding to the leaves.
+        // We will manually aggregate buckets as needed for the accuracy test.
+        HistogramRequestInfo info = createHistogramRequest(col, cq);
         HistogramSketch sk = info.getSketch(cq);
         IntervalDecomposition dd = info.getDecomposition(cq);
 
@@ -211,8 +261,49 @@ public class HistogramAccuracyTest {
         return new Pair(totAccuracy / iterations, Utilities.stdev(accuracies));
     }
 
+    private Pair<Double, Double> computeHeatmapAccuracy(String col1, ColumnQuantization cq1,
+                                                        String col2, ColumnQuantization cq2,
+                                                        double epsilon, IDataSet<ITable> table,
+                                                        int iterations) {
+        // Construct a histogram corresponding to the leaves.
+        // We will manually aggregate buckets as needed for the accuracy test.
+        HistogramRequestInfo[] info = new HistogramRequestInfo[]
+                {
+                        createHistogramRequest(col1, cq1),
+                        createHistogramRequest(col2, cq2)
+                };
+
+        HeatmapSketch sk = new HeatmapSketch(
+                info[0].getBuckets(),
+                info[1].getBuckets(),
+                info[0].cd.name,
+                info[1].cd.name, 1.0, 0);
+        IntervalDecomposition d0 = info[0].getDecomposition(cq1);
+        IntervalDecomposition d1 = info[1].getDecomposition(cq2);
+
+        System.out.println("Epsilon: " + epsilon);
+        Heatmap heatmap = table.blockingSketch(sk); // Leaf counts.
+        Assert.assertNotNull(heatmap);
+
+        int totalXLeaves = d0.getQuantizationIntervalCount();
+        int totalYLeaves = d1.getQuantizationIntervalCount();
+        TestKeyLoader tkl = new TestKeyLoader();
+
+        ArrayList<Double> accuracies = new ArrayList<>();
+        double totAccuracy = 0.0;
+        for (int i = 0 ; i < iterations; i++) {
+            tkl.setIndex(i);
+            SecureLaplace laplace = new SecureLaplace(tkl);
+            PrivateHeatmap ph = new PrivateHeatmap(d0, d1, heatmap, epsilon, laplace);
+            double acc = computeAccuracy(ph, totalXLeaves, totalYLeaves);
+            accuracies.add(acc);
+            totAccuracy += acc;
+        }
+        return new Pair(totAccuracy / iterations, Utilities.stdev(accuracies));
+    }
+
     @Test
-    public void computeAccuracyTest() throws IOException {
+    public void histogramAccuracyTest() throws IOException {
         HillviewLogger.instance.setLogLevel(Level.OFF);
 
         @Nullable
@@ -242,13 +333,65 @@ public class HistogramAccuracyTest {
 
             // for JSON parsing convenience
             ArrayList<Double> resArr = new ArrayList();
-            resArr.add(res.first); // mean
+            resArr.add(res.first); // noise
             resArr.add(res.second); // stdev
 
             results.put(col, resArr);
         }
 
-        FileWriter writer = new FileWriter(results_filename);
+        FileWriter writer = new FileWriter(histogram_results_filename);
+        Gson resultsGson = new GsonBuilder().create();
+        writer.write(resultsGson.toJson(results));
+        writer.flush();
+        writer.close();
+    }
+
+    @Test
+    public void heatmapAccuracyTest() throws IOException {
+        HillviewLogger.instance.setLogLevel(Level.OFF);
+
+        @Nullable
+        IDataSet<ITable> table = this.loadData();
+        if (table == null) {
+            System.out.println("Skipping test: no data");
+            return;
+        }
+
+        Schema schema = this.loadSchema(table);
+        List<String> cols = schema.getColumnNames();
+
+        PrivacySchema mdSchema = PrivacySchema.loadFromFile(ontime_directory + privacy_metadata_name);
+        Assert.assertNotNull(mdSchema);
+        Assert.assertNotNull(mdSchema.quantization);
+
+        HashMap<String, ArrayList<Double>> results = new HashMap();
+        int iterations = 5;
+        for (String col1 : cols) {
+            for (String col2 : cols) {
+                if (col1.equals(col2)) continue;
+
+                ColumnQuantization q1 = mdSchema.quantization.get(col1);
+                Assert.assertNotNull(q1);
+                ColumnQuantization q2 = mdSchema.quantization.get(col2);
+                Assert.assertNotNull(q2);
+
+                String key = mdSchema.getKeyForColumns(col1, col2);
+                double epsilon = mdSchema.epsilon(key);
+
+                Pair<Double, Double> res = this.computeHeatmapAccuracy(col1, q1, col2, q2, epsilon, table, iterations);
+                System.out.println("Averaged absolute error over " + iterations + " iterations: " + res.first);
+
+                // for JSON parsing convenience
+                ArrayList<Double> resArr = new ArrayList();
+                resArr.add(res.first); // noise
+                resArr.add(res.second); // stdev
+
+                System.out.println("Key: " + key + ", mean: " + res.first);
+                results.put(key, resArr);
+            }
+        }
+
+        FileWriter writer = new FileWriter(heatmap_results_filename);
         Gson resultsGson = new GsonBuilder().create();
         writer.write(resultsGson.toJson(results));
         writer.flush();

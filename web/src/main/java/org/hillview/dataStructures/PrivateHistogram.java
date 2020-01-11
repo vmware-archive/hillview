@@ -42,7 +42,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
     public long noiseForRange(int left, int right,
                               double scale, double baseVariance,
                              /*out*/Noise noise) {
-        List<Pair<Integer, Integer>> intervals = IntervalDecomposition.kadicDecomposition(left, right, 20);
+        List<Pair<Integer, Integer>> intervals = IntervalDecomposition.kadicDecomposition(left, right, IntervalDecomposition.BRANCHING_FACTOR);
         noise.clear();
         for (Pair<Integer, Integer> x : intervals) {
             noise.noise += this.laplace.sampleLaplace(x, scale);

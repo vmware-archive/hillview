@@ -121,4 +121,14 @@ public class Heatmap implements Serializable, IJson {
     public void allocateConfidence() {
         this.confidence = new int[this.xBucketCount][this.yBucketCount];
     }
+
+    public int getXBucketCount() {
+        return this.buckets.length;
+    }
+
+    public int getYBucketCount() {
+        if (this.getXBucketCount() == 0) return 0;
+
+        return this.buckets[0].length;
+    }
 }

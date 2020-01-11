@@ -40,6 +40,8 @@ public abstract class IntervalDecomposition {
     final int[] bucketQuantizationIndexes;
     final ColumnQuantization quantization;
 
+    public static final int BRANCHING_FACTOR = 20;
+
     protected IntervalDecomposition(ColumnQuantization quantization, int[] quantizationIndexes) {
         this.bucketQuantizationIndexes = quantizationIndexes;
         this.quantization = quantization;
@@ -156,7 +158,7 @@ public abstract class IntervalDecomposition {
     List<Pair<Integer, Integer>> bucketDecomposition(int bucketIdx, boolean cdf) {
         Pair<Integer, Integer> range = this.bucketRange(bucketIdx, cdf);
         return IntervalDecomposition.kadicDecomposition(
-            Converters.checkNull(range.first), Converters.checkNull(range.second), 20);
+            Converters.checkNull(range.first), Converters.checkNull(range.second), BRANCHING_FACTOR);
     }
 
     @Override
