@@ -8,11 +8,12 @@ import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Noise;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PrivateHeatmap implements Serializable, IJson {
+import static org.hillview.dataStructures.IntervalDecomposition.kadicDecomposition;
+
+public class PrivateHeatmap {
     public Heatmap heatmap;
     private double epsilon;
     private SecureLaplace laplace;
@@ -62,9 +63,9 @@ public class PrivateHeatmap implements Serializable, IJson {
     }
 
     public void noiseForRange(int left, int right, int top, int bot,
-                               double scale, double baseVariance, /*out*/Noise result) {
-        List<Pair<Integer, Integer>> xIntervals = dx.kadicDecomposition(left, right, IntervalDecomposition.BRANCHING_FACTOR);
-        List<Pair<Integer, Integer>> yIntervals = dy.kadicDecomposition(top, bot, IntervalDecomposition.BRANCHING_FACTOR);
+                              double scale, double baseVariance, /*out*/Noise result) {
+        List<Pair<Integer, Integer>> xIntervals = kadicDecomposition(left, right, IntervalDecomposition.BRANCHING_FACTOR);
+        List<Pair<Integer, Integer>> yIntervals = kadicDecomposition(top, bot, IntervalDecomposition.BRANCHING_FACTOR);
 
         noiseForDecomposition(xIntervals, yIntervals, scale, baseVariance, result);
     }

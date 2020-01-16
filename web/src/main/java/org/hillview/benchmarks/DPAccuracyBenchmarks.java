@@ -18,7 +18,6 @@
 package org.hillview.benchmarks;
 
 import com.google.gson.*;
-import org.apache.parquet.filter2.predicate.Operators;
 import org.hillview.dataStructures.*;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.api.Empty;
@@ -33,7 +32,6 @@ import org.hillview.security.TestKeyLoader;
 import org.hillview.sketches.HeatmapSketch;
 import org.hillview.sketches.HistogramSketch;
 import org.hillview.sketches.SummarySketch;
-import org.hillview.sketches.results.DoubleHistogramBuckets;
 import org.hillview.sketches.results.Heatmap;
 import org.hillview.sketches.results.Histogram;
 import org.hillview.sketches.results.TableSummary;
@@ -51,18 +49,16 @@ import org.hillview.table.columns.DoubleColumnQuantization;
 import org.hillview.table.columns.StringColumnQuantization;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
+import org.hillview.utils.Noise;
 import org.hillview.utils.Utilities;
 import org.junit.Assert;
-import org.junit.Test;
 
 import javax.annotation.Nullable;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -70,12 +66,12 @@ public class DPAccuracyBenchmarks extends Benchmarks {
     private static String ontime_directory = "../data/ontime_private/";
     private static String privacy_metadata_name = "privacy_metadata.json";
 
-    private static String histogram_results_filename = "../results/ontime_private_histogram.json";
-    private static String heatmap_results_filename = "../results/ontime_private_heatmap.json";
+    private static final String histogram_results_filename = "../results/ontime_private_histogram.json";
+    private static final String heatmap_results_filename = "../results/ontime_private_heatmap.json";
 
     String resultsFilename;
 
-    private DPAccuracyBenchmarks(String resultsFilename) throws SQLException, IOException {
+    private DPAccuracyBenchmarks(String resultsFilename) {
         this.resultsFilename = resultsFilename;
     }
 
@@ -117,7 +113,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
      *                    This is needed to correctly compute the amount of noise to add to each leaf.
      * @return The average per-query absolute error.
      */
-    private double computeAccuracy(PrivateHistogram ph, int totalLeaves) {
+    private double computeAccuracy(PrivateHistogram ph, int totalLeaves, SecureLaplace laplace) {
         double scale = Math.log(totalLeaves) / Math.log(2);
         scale /= ph.getEpsilon();
         double baseVariance = 2 * Math.pow(scale, 2);
@@ -128,10 +124,9 @@ public class DPAccuracyBenchmarks extends Benchmarks {
         Noise noise = new Noise();
         for (int left = 0; left < ph.histogram.getBucketCount(); left++) {
             for (int right = left; right < ph.histogram.getBucketCount(); right++) {
-                ph.noiseForRange(left, right,
-                        scale, baseVariance, noise);
-                sqtot += Math.pow(noise.noise, 2);
-                abstot += Math.abs(noise.noise);
+                ph.noiseForRange(left, right, scale, baseVariance, laplace, noise);
+                sqtot += Math.pow(noise.getNoise(), 2);
+                abstot += Math.abs(noise.getNoise());
                 n++;
             }
         }
@@ -169,8 +164,8 @@ public class DPAccuracyBenchmarks extends Benchmarks {
                     for (int bot = top; bot < ph.heatmap.getYBucketCount(); bot++) {
                         ph.noiseForRange(left, right, top, bot,
                                 scale, baseVariance, noise);
-                        sqtot += Math.pow(noise.noise, 2);
-                        abstot += Math.abs(noise.noise);
+                        sqtot += Math.pow(noise.getNoise(), 2);
+                        abstot += Math.abs(noise.getNoise());
                         n++;
                     }
                 }
@@ -223,11 +218,11 @@ public class DPAccuracyBenchmarks extends Benchmarks {
             tkl.setIndex(i);
             SecureLaplace laplace = new SecureLaplace(tkl);
             PrivateHistogram ph = new PrivateHistogram(dd, hist, epsilon, false, laplace);
-            double acc = computeAccuracy(ph, totalLeaves);
+            double acc = computeAccuracy(ph, totalLeaves, laplace);
             accuracies.add(acc);
             totAccuracy += acc;
         }
-        return new Pair(totAccuracy / iterations, Utilities.stdev(accuracies));
+        return new Pair<Double, Double>(totAccuracy / iterations, Utilities.stdev(accuracies));
     }
 
     private Pair<Double, Double> computeHeatmapAccuracy(String col1, ColumnQuantization cq1,
@@ -268,12 +263,11 @@ public class DPAccuracyBenchmarks extends Benchmarks {
             accuracies.add(acc);
             totAccuracy += acc;
         }
-        return new Pair(totAccuracy / iterations, Utilities.stdev(accuracies));
+        return new Pair<Double, Double>(totAccuracy / iterations, Utilities.stdev(accuracies));
     }
 
     public void benchmarkHistogramL2Accuracy() throws IOException {
         HillviewLogger.instance.setLogLevel(Level.OFF);
-
         @Nullable
         IDataSet<ITable> table = this.loadData();
         if (table == null) {
@@ -288,7 +282,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
         Assert.assertNotNull(mdSchema);
         Assert.assertNotNull(mdSchema.quantization);
 
-        HashMap<String, ArrayList<Double>> results = new HashMap();
+        HashMap<String, ArrayList<Double>> results = new HashMap<String, ArrayList<Double>>();
         int iterations = 5;
         for (String col : cols) {
             ColumnQuantization quantization = mdSchema.quantization.get(col);
@@ -300,7 +294,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
             System.out.println("Averaged absolute error over " + iterations + " iterations: " + res.first);
 
             // for JSON parsing convenience
-            ArrayList<Double> resArr = new ArrayList();
+            ArrayList<Double> resArr = new ArrayList<Double>();
             resArr.add(res.first); // noise
             resArr.add(res.second); // stdev
 
@@ -316,7 +310,6 @@ public class DPAccuracyBenchmarks extends Benchmarks {
 
     public void benchmarkHeatmapL2Accuracy() throws IOException {
         HillviewLogger.instance.setLogLevel(Level.OFF);
-
         @Nullable
         IDataSet<ITable> table = this.loadData();
         if (table == null) {
@@ -331,7 +324,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
         Assert.assertNotNull(mdSchema);
         Assert.assertNotNull(mdSchema.quantization);
 
-        HashMap<String, ArrayList<Double>> results = new HashMap();
+        HashMap<String, ArrayList<Double>> results = new HashMap<String, ArrayList<Double>>();
         int iterations = 5;
         for (String col1 : cols) {
             for (String col2 : cols) {
@@ -349,7 +342,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
                 System.out.println("Averaged absolute error over " + iterations + " iterations: " + res.first);
 
                 // for JSON parsing convenience
-                ArrayList<Double> resArr = new ArrayList();
+                ArrayList<Double> resArr = new ArrayList<Double>();
                 resArr.add(res.first); // noise
                 resArr.add(res.second); // stdev
 
