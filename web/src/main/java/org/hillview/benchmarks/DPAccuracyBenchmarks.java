@@ -149,7 +149,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
      * @param totalYLeaves same as totalXLeaves but for y-axis
      * @return The average per-query absolute error.
      */
-    private Double computeAccuracy(PrivateHeatmap ph, int totalXLeaves, int totalYLeaves) {
+    private Double computeAccuracy(PrivateHeatmapFactory ph, int totalXLeaves, int totalYLeaves) {
         double scale = Math.log(totalXLeaves * totalYLeaves) / Math.log(2);
         scale /= ph.getEpsilon();
         double baseVariance = 2 * Math.pow(scale, 2);
@@ -258,7 +258,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
         for (int i = 0 ; i < iterations; i++) {
             tkl.setIndex(i);
             SecureLaplace laplace = new SecureLaplace(tkl);
-            PrivateHeatmap ph = new PrivateHeatmap(d0, d1, heatmap, epsilon, laplace);
+            PrivateHeatmapFactory ph = new PrivateHeatmapFactory(d0, d1, heatmap, epsilon, laplace);
             double acc = computeAccuracy(ph, totalXLeaves, totalYLeaves);
             accuracies.add(acc);
             totAccuracy += acc;

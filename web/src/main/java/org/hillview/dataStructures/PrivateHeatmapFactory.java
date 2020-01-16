@@ -1,6 +1,5 @@
 package org.hillview.dataStructures;
 
-import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.Pair;
 import org.hillview.security.SecureLaplace;
 import org.hillview.sketches.results.Heatmap;
@@ -13,7 +12,10 @@ import java.util.List;
 
 import static org.hillview.dataStructures.IntervalDecomposition.kadicDecomposition;
 
-public class PrivateHeatmap {
+/**
+ * This class is used to add noise to a heatmap.
+ */
+public class PrivateHeatmapFactory {
     public Heatmap heatmap;
     private double epsilon;
     private SecureLaplace laplace;
@@ -24,8 +26,8 @@ public class PrivateHeatmap {
     IntervalDecomposition dx;
     IntervalDecomposition dy;
 
-    public PrivateHeatmap(IntervalDecomposition d0, IntervalDecomposition d1,
-                          Heatmap heatmap, double epsilon, SecureLaplace laplace) {
+    public PrivateHeatmapFactory(IntervalDecomposition d0, IntervalDecomposition d1,
+                                 Heatmap heatmap, double epsilon, SecureLaplace laplace) {
         this.heatmap = heatmap;
         this.epsilon = epsilon;
         this.laplace = laplace;

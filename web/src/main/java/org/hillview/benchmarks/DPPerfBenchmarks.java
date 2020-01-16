@@ -231,7 +231,7 @@ public class DPPerfBenchmarks extends Benchmarks {
 
         IHistogramBuckets buckDes0 = null;
         IHistogramBuckets buckDes1 = null;
-        Function<Heatmap, PrivateHeatmap> postprocess = x -> null;
+        Function<Heatmap, PrivateHeatmapFactory> postprocess = x -> null;
         IntervalDecomposition d0;
         IntervalDecomposition d1;
 
@@ -251,13 +251,13 @@ public class DPPerfBenchmarks extends Benchmarks {
             buckDes1 = p1.first;
             d1 = p1.second;
             if (conf.usePostProcessing)
-                postprocess = x -> new PrivateHeatmap(d0, d1, x, epsilon, this.flightsWrapper.laplace);
+                postprocess = x -> new PrivateHeatmapFactory(d0, d1, x, epsilon, this.flightsWrapper.laplace);
         }
 
         assert this.ontimeSchema != null;
         String bench = "Heatmap," + col0.name + "+" + col1.name + "," + conf.toString();
         Runnable r;
-        Function<Heatmap, PrivateHeatmap> finalPostprocess = postprocess;
+        Function<Heatmap, PrivateHeatmapFactory> finalPostprocess = postprocess;
         if (conf.dataset == Dataset.DB) {
             ColumnQuantization finalQ0 = q0;
             ColumnQuantization finalQ1 = q1;

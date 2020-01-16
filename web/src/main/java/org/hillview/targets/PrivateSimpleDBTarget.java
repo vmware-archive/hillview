@@ -18,7 +18,6 @@
 package org.hillview.targets;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import org.apache.commons.math3.distribution.LaplaceDistribution;
 import org.hillview.*;
 import org.hillview.dataStructures.*;
 import org.hillview.dataset.api.IDataSet;
@@ -190,7 +189,7 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
         Converters.checkNull(q1);
         IntervalDecomposition d0 = info[0].getDecomposition(q0);
         IntervalDecomposition d1 = info[1].getDecomposition(q1);
-        PrivateHeatmap result = new PrivateHeatmap(d0, d1, heatmap, epsilon, this.wrapper.laplace);
+        PrivateHeatmapFactory result = new PrivateHeatmapFactory(d0, d1, heatmap, epsilon, this.wrapper.laplace);
         ISketch<ITable, Heatmap> sk = new PrecomputedSketch<ITable, Heatmap>(result.heatmap);
         this.runCompleteSketch(this.table, sk, (e, c) -> e, request, context);
     }

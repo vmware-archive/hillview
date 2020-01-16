@@ -163,7 +163,7 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
         HeatmapSketch sk = new HeatmapSketch(
                 b0, b1, info[0].cd.name, info[1].cd.name, 1.0, 0, q0, q1);
         this.runCompleteSketch(this.table, sk, (e, c) ->
-                new PrivateHeatmap(d0, d1, e, epsilon, this.wrapper.laplace).heatmap, request, context);
+                new PrivateHeatmapFactory(d0, d1, e, epsilon, this.wrapper.laplace).heatmap, request, context);
     }
 
     @HillviewRpc
