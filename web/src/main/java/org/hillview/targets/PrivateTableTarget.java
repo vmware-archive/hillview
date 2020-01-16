@@ -6,18 +6,17 @@ import org.hillview.dataset.ConcurrentSketch;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.Pair;
 import org.hillview.maps.FilterMap;
+import org.hillview.maps.ProjectMap;
 import org.hillview.sketches.*;
 import org.hillview.sketches.results.*;
 import org.hillview.table.PrivacySchema;
+import org.hillview.table.Schema;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.ColumnQuantization;
 import org.hillview.table.filters.RangeFilterDescription;
 import org.hillview.table.filters.RangeFilterPairDescription;
 import org.hillview.table.rows.RowSnapshot;
-import org.hillview.utils.Converters;
-import org.hillview.utils.HillviewException;
-import org.hillview.utils.HillviewLogger;
-import org.hillview.utils.JsonString;
+import org.hillview.utils.*;
 
 import java.util.function.BiFunction;
 
@@ -95,6 +94,7 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
                 request, context);
     }
 
+    @SuppressWarnings("unused")
     @HillviewRpc
     public void getDataQuantiles1D(RpcRequest request, RpcRequestContext context) {
         this.wrapper.getDataQuantiles1D(request, context, this);
@@ -129,29 +129,19 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
     public void hLogLog(RpcRequest request, RpcRequestContext context) {
         DistinctCountRequestInfo col = request.parseArgs(DistinctCountRequestInfo.class);
         HLogLogSketch sketch = new HLogLogSketch(col.columnName, col.seed);
-        // TODO(pratiksha): add noise to this count
-        this.runSketch(this.table, sketch, request, context);
+        double epsilon = this.wrapper.getPrivacySchema().epsilon(col.columnName);
+        Noise noise = DPWrapper.computeCountNoise(DPWrapper.SpecialBucket.DistinctCount, epsilon, this.wrapper.laplace);
+        this.runSketchPostprocessing(this.table, sketch,
+                (r, c) -> r.getCount().add(noise), request, context);
     }
 
-    private void heavyHitters(RpcRequest request, RpcRequestContext context) {
-        HeavyHittersRequestInfo info = request.parseArgs(HeavyHittersRequestInfo.class);
-        MGFreqKSketch sk = new MGFreqKSketch(info.columns, info.amount/100,
-                this.getPrivacySchema().quantization);
-        // TODO(pratiksha): add noise to the counts
-        this.runCompleteSketch(this.table, sk, (x, c) -> TableTarget.getTopList(x, info.columns, c),
-                request, context);
+    @SuppressWarnings("unused")
+    @HillviewRpc
+    public void getDataQuantiles3D(RpcRequest request, RpcRequestContext context) {
+        this.wrapper.getDataQuantiles3D(request, context, this);
     }
 
-    //@HillviewRpc // TODO: we don't know how to do this privately
-    public void heavyHittersMG(RpcRequest request, RpcRequestContext context) {
-        this.heavyHitters(request, context);
-    }
-
-    //@HillviewRpc // TODO: we don't know how to do this privately
-    public void heavyHittersSampling(RpcRequest request, RpcRequestContext context) {
-        this.heavyHitters(request, context);
-    }
-
+    @SuppressWarnings("unused")
     @HillviewRpc
     public void getDataQuantiles2D(RpcRequest request, RpcRequestContext context) {
         this.wrapper.getDataQuantiles2D(request, context, this);
@@ -186,8 +176,13 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
                 nextKArgs.firstRow, nextKArgs.order, nextKArgs.columnsNoValue);
         NextKSketch nk = new NextKSketch(nextKArgs.order, null, rs, nextKArgs.rowsOnScreen,
                 this.getPrivacySchema().quantization);
-        // TODO(pratiksha): add noise to the counts on the NextKList
-        this.runSketch(this.table, nk, request, context);
+        double epsilon = this.wrapper.getPrivacySchema().epsilon();
+        Noise noise = DPWrapper.computeCountNoise(DPWrapper.SpecialBucket.TotalCount, epsilon, this.wrapper.laplace);
+        this.runSketchPostprocessing(this.table, nk,
+                (r, c) -> new NextKList(
+                        r.rows, r.aggregates, r.count, r.startPosition,
+                        r.rowsScanned + Utilities.toLong(noise.getNoise())),
+                request, context);
     }
 
     @HillviewRpc
@@ -198,6 +193,13 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
                 this.getPrivacySchema().quantization);
         BiFunction<SampleList, HillviewComputation, RowSnapshot> getRow = (ql, c) -> ql.getRow(info.position);
         this.runCompleteSketch(this.table, sk, getRow, request, context);
+    }
+
+    @HillviewRpc
+    public void project(RpcRequest request, RpcRequestContext context) {
+        Schema proj = request.parseArgs(Schema.class);
+        ProjectMap map = new ProjectMap(proj);
+        this.runMap(this.table, map, TableTarget::new, request, context);
     }
 
     @Override
