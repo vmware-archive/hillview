@@ -48,6 +48,24 @@ public class Utilities {
                         ") are not in sorted order.");
     }
 
+    public static long toLong(double value) {
+        if (value < Long.MIN_VALUE || value > Long.MAX_VALUE)
+            throw new RuntimeException("Cannot convert to long " + value);
+        return (long)value;
+    }
+
+    public static int toInt(double value) {
+        if (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE)
+            throw new RuntimeException("Cannot convert to int " + value);
+        return (int)value;
+    }
+
+    public static int toInt(long value) {
+        if (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE)
+            throw new RuntimeException("Cannot convert to int " + value);
+        return (int)value;
+    }
+
     /**
      * Convert a shell-type filename wildcard pattern into a Java
      * regular expression string.
@@ -288,7 +306,7 @@ public class Utilities {
         if (x <= 0) {
             throw new RuntimeException("Attempted to take the log of a negative value: " + x);
         }
-        return (int)(Math.floor(Math.log(x) / Math.log(2)));
+        return Utilities.toInt((Math.floor(Math.log(x) / Math.log(2))));
     }
 
     public static double stdev(ArrayList<Double> values) {

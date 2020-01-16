@@ -23,6 +23,7 @@ import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import org.hillview.dataset.api.Pair;
 import org.hillview.table.Schema;
 import org.hillview.table.rows.RowSnapshot;
+import org.hillview.utils.Utilities;
 
 /**
  * A subclass of FreqKList that is used by the Sample Heavy Hitters Sketch.
@@ -50,7 +51,7 @@ public class FreqKListSample extends FreqKList {
         this.hMap.forEach((rs, j) -> {
             double fraction = ((double) j) / this.sampleSize;
             if (fraction >= epsilon) {
-                int k = (int) (fraction * this.totalRows);
+                int k = Utilities.toInt(fraction * this.totalRows);
                 this.pList.add(new Pair<RowSnapshot, Integer>(rs, k));
             }
         });
@@ -61,7 +62,7 @@ public class FreqKListSample extends FreqKList {
         for (ObjectIterator<Object2IntMap.Entry<RowSnapshot>> it = this.hMap.object2IntEntrySet().
                 fastIterator(); it.hasNext(); ) {
             final Object2IntMap.Entry<RowSnapshot> entry = it.next();
-            this.hMap.put(entry.getKey(), (int) (entry.getIntValue() *
+            this.hMap.put(entry.getKey(), Utilities.toInt(entry.getIntValue() *
                     ((double) this.totalRows)/this.sampleSize));
         }
     }

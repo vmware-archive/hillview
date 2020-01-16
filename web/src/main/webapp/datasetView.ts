@@ -170,10 +170,18 @@ export class DatasetView implements IHtmlElement {
         }, {
             text: "Edit privacy policy",
             action: () => this.editPrivacy(),
-            help: "For private datasets opens an editor to edit the privacy parameters."
+            help: "For private datasets: opens an editor to edit the privacy parameters."
         }]);
         this.menu.enable("Edit privacy policy", false);
         HillviewToplevel.instance.addDataset(this, this.menu);
+    }
+
+    public rebuild(): void {
+        const ser = this.serialize();
+        const ds = new DatasetView(ser.remoteObjectId, this.name, ser, this.loadMenuPage);
+        const success = ds.reconstruct(ser);
+        if (!success)
+            this.loadMenuPage.reportError("Error recomputing view");
     }
 
     /**
@@ -202,7 +210,7 @@ export class DatasetView implements IHtmlElement {
         copy.sort();
         const key = copy.join("+");
         this.privacySchema.epsilons[key] = epsilon;
-        this.uploadPrivacy(JSON.stringify(this.privacySchema));
+        this.uploadPrivacy(JSON.stringify(this.privacySchema), false);
     }
 
     public editPrivacy(): void {
@@ -220,10 +228,22 @@ export class DatasetView implements IHtmlElement {
         cancel.title = "Do not update the privacy policy.";
         this.privacyEditor.appendChild(cancel);
 
-        const save = document.createElement("button");
-        save.textContent = "Save";
-        save.title = "Write the privacy policy to disk, overwriting the existing policy on disk.";
-        this.privacyEditor.appendChild(save);
+        if (HillviewToplevel.instance.uiconfig.enableAdvanced) {
+            const save = document.createElement("button");
+            save.textContent = "Save";
+            save.title = "Write the privacy policy to disk, overwriting the existing policy on disk.";
+            this.privacyEditor.appendChild(save);
+            save.onclick = () => {
+                try {
+                    const json = editor.getText();  // throws when text is invalid
+                    this.privacySchema = JSON.parse(json);
+                    this.savePrivacy(json);
+                    destroy();
+                } catch (exception) {
+                    this.loadMenuPage.reportError(exception.toString());
+                }
+            };
+        }
 
         const editOptions: JSONEditorOptions = { mode: "text", mainMenuBar: false, statusBar: false };
         const editor = new JSONEditor(this.privacyEditor, editOptions, "{}");
@@ -237,17 +257,7 @@ export class DatasetView implements IHtmlElement {
             try {
                 const json = editor.getText();  // throws when text is invalid
                 this.privacySchema = JSON.parse(json);
-                this.uploadPrivacy(json);
-                destroy();
-            } catch (exception) {
-                this.loadMenuPage.reportError(exception.toString());
-            }
-        };
-        save.onclick = () => {
-            try {
-                const json = editor.getText();  // throws when text is invalid
-                this.privacySchema = JSON.parse(json);
-                this.savePrivacy(json);
+                this.uploadPrivacy(json, true);
                 destroy();
             } catch (exception) {
                 this.loadMenuPage.reportError(exception.toString());
@@ -258,17 +268,17 @@ export class DatasetView implements IHtmlElement {
         };
     }
 
-    private uploadPrivacy(json: string): void {
+    private uploadPrivacy(json: string, rebuild: boolean): void {
         const js = new JsonString(json);
         const rr = this.remoteObject.createStreamingRpcRequest<string>("changePrivacy", js);
-        const updateReceiver = new UploadPrivacyReceiver(this, this.loadMenuPage, rr);
+        const updateReceiver = new UploadPrivacyReceiver(this, this.loadMenuPage, rebuild, rr);
         rr.invoke(updateReceiver);
     }
 
     private savePrivacy(json: string): void {
         const js = new JsonString(json);
         const rr = this.remoteObject.createStreamingRpcRequest<string>("savePrivacy", js);
-        const updateReceiver = new UploadPrivacyReceiver(this, this.loadMenuPage, rr);
+        const updateReceiver = new UploadPrivacyReceiver(this, this.loadMenuPage, true, rr);
         rr.invoke(updateReceiver);
     }
 
@@ -533,17 +543,27 @@ export class DatasetView implements IHtmlElement {
     public refresh(): void {
         for (const page of  this.allPages) {
             page.getDataView().refresh();
+            // TODO: refresh will un-minimize the page
+            // but that will only happen when the asynchronous request comes back,
+            // so there is no point minimizing it here.
         }
     }
 }
 
 class UploadPrivacyReceiver extends OnCompleteReceiver<string> {
-    constructor(protected dataset: DatasetView, page: FullPage, operation: ICancellable<string>) {
+    constructor(protected dataset: DatasetView, page: FullPage,
+                protected rebuild: boolean, operation: ICancellable<string>) {
         super(page, operation, "upload privacy");
     }
 
     public run(value: string): void {
         console.log("Privacy policy has been updated.");
+        /*
+        if (this.rebuild)
+            this.dataset.rebuild();
+        else
+            this.dataset.refresh();
+         */
         this.dataset.refresh();
     }
 }

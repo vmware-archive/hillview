@@ -21,6 +21,7 @@ import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IIntColumn;
+import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
@@ -94,7 +95,7 @@ public final class IntListColumn
             this.parseEmptyOrNull();
         else {
             try {
-                this.append((int) Double.parseDouble(s));
+                this.append(Utilities.toInt(Double.parseDouble(s)));
             } catch (Exception ex) {
                 this.parsingExceptionCount++;
                 this.parseEmptyOrNull();

@@ -46,13 +46,13 @@ public enum ContentsKind implements Serializable {
             case Json:
                 return "";
             case Date:
-                return Converters.toDate(-java.lang.Double.MAX_VALUE);
+                return Converters.toDate(Long.MIN_VALUE);
             case Integer:
                 return java.lang.Integer.MIN_VALUE;
             case Double:
                 return -java.lang.Double.MAX_VALUE;
             case Duration:
-                return Converters.toDuration(-java.lang.Double.MAX_VALUE);
+                return Converters.toDuration(java.lang.Long.MIN_VALUE);
             default:
                 throw new RuntimeException("Unexpected kind " + this);
         }

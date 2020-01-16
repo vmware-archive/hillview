@@ -18,7 +18,7 @@
 import {mouse as d3mouse} from "d3-selection";
 import {RemoteObjectId} from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
-import {CDFPlot} from "../ui/CDFPlot";
+import {ICDFPlot} from "../ui/CDFPlot";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
 import {D3SvgElement, Resolution, ViewKind} from "../ui/ui";
@@ -31,7 +31,7 @@ import {AxisData} from "./axisData";
 export abstract class HistogramViewBase extends ChartView {
     protected summary: HTMLElement;
     protected cdfDot: D3SvgElement;
-    protected cdfPlot: CDFPlot;
+    protected cdfPlot: ICDFPlot;
     protected chartDiv: HTMLDivElement;
     // protected scrollBar: ScrollBar;
     public xAxisData: AxisData;

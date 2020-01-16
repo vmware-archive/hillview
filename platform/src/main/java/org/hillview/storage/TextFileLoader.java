@@ -50,6 +50,7 @@ public abstract class TextFileLoader {
     @Nullable
     private String currentToken;
     boolean allowFewerColumns;
+    boolean traceProgress = false;  // for debugging
 
     // Some of these may be null
     @Nullable
@@ -141,7 +142,7 @@ public abstract class TextFileLoader {
                 this.currentToken = data[this.currentColumn];
                 this.columns[this.currentColumn].parseAndAppendString(this.currentToken);
                 this.currentField++;
-                if ((this.currentField % 100000) == 0) {
+                if (this.traceProgress && (this.currentField % 100000) == 0) {
                     System.out.print(".");
                     System.out.flush();
                 }

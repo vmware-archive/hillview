@@ -25,6 +25,7 @@ import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
+import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;
@@ -203,7 +204,7 @@ public class RowSnapshot extends BaseRowSnapshot
                 }
             } else if (cd.kind == ContentsKind.Integer) {
                 // In JSON everything is a double
-                converted[i] = (int)(double)o;
+                converted[i] = Utilities.toInt((double)o);
             } else {
                 // These should be doubles or strings.
                 // No conversion needed.

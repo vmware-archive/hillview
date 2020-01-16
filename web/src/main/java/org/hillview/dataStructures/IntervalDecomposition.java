@@ -72,7 +72,7 @@ public abstract class IntervalDecomposition {
             int lsb = lob > 0 ? Utilities.intLog2(lob) : -1; // smallest power of 2 that divides left
             int rem = Utilities.intLog2(right - left); // largest power of 2 contained in remaining interval
             int pow = lsb < 0 ? rem : Math.min(lsb, rem); // largest valid covering interval
-            int nodeEnd = (int)Math.pow(2, pow);
+            int nodeEnd = Utilities.toInt(Math.pow(2, pow));
             nodes.add(new Pair<Integer, Integer>(left, nodeEnd));
             left += nodeEnd;
         }
@@ -109,13 +109,13 @@ public abstract class IntervalDecomposition {
             // smallest power of k that divides left
             int smallestPower = -1;
             if (left > 0) {
-                smallestPower = (int) Math.floor(Math.log(left) / Math.log(k));
+                smallestPower = Utilities.toInt(Math.floor(Math.log(left) / Math.log(k)));
             }
             // largest power of k that actually fits in remaining interval
-            int rem = (int)(Math.log(right - left) / Math.log(k));
+            int rem = Utilities.toInt((Math.log(right - left) / Math.log(k)));
             // largest valid covering interval
             int pow = smallestPower < 0 ? rem : Math.min(smallestPower, rem);
-            int nodeEnd = (int)Math.pow(k, pow);
+            int nodeEnd = Utilities.toInt(Math.pow(k, pow));
             nodes.add(new Pair<Integer, Integer>(left, nodeEnd));
             left += nodeEnd;
         }

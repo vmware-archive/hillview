@@ -195,6 +195,16 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         this.findBar = new FindBar((n, f) => this.find(n, f), () => this.findFilter());
         this.topLevel.appendChild(this.findBar.getHTMLRepresentation());
 
+        if (this.isPrivate()) {
+            menu.enable("Filter", false);
+            menu.enable("Combine", false);
+            menu.getSubmenu("View").enable("Change table size...", false);
+            const chart = menu.getSubmenu("Chart");
+            chart.enable("2D Histogram...", false);
+            chart.enable("Trellis 2D histograms...", false);
+            chart.enable("Trellis heatmaps...", false);
+        }
+
         this.message = document.createElement("div");
         this.topLevel.appendChild(this.message);
     }
@@ -553,7 +563,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                     text: "Show",
                     action: () => this.showColumns(1, false),
                     help: "Show the data in the selected columns.",
-                }, true);
+                }, !this.isPrivate());
             }
             this.contextMenu.addItem({
                 text: "Drop",
@@ -569,12 +579,12 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 text: "Sort ascending",
                 action: () => this.showColumns(1, true),
                 help: "Sort the data first on this column, in increasing order.",
-            }, true);
+            }, !this.isPrivate());
             this.contextMenu.addItem({
                 text: "Sort descending",
                 action: () => this.showColumns(-1, true),
                 help: "Sort the data first on this column, in decreasing order",
-            }, true);
+            }, !this.isPrivate());
             this.contextMenu.addItem({
                 text: "Histogram",
                 action: () => this.histogramSelected(),
@@ -598,7 +608,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 action: () => this.trellisSelected(true),
                 help: "Plot the data in the selected columns as a Trellis plot of heatmaps. " +
                     "Applies to three columns only.",
-            }, selectedCount === 3);
+            }, selectedCount === 3 && !this.isPrivate());
             this.contextMenu.addItem({
                 text: "Rename...",
                 action: () => this.renameColumn(),
@@ -608,7 +618,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 text: "Frequent Elements...",
                 action: () => this.heavyHittersDialog(),
                 help: "Find the values that occur most frequently in the selected columns.",
-            }, true);
+            }, !this.isPrivate());
             if (selectedCount > 1 &&
                 this.getSelectedColNames().reduce((a, b) => a && this.isNumericColumn(b), true)) {
                 this.contextMenu.addItem({
@@ -616,12 +626,12 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                     action: () => this.pca(true),
                     help: "Perform Principal Component Analysis on a set of numeric columns. " +
                         "This produces a smaller set of columns that preserve interesting properties of the data.",
-                }, true);
+                }, !this.isPrivate());
                 this.contextMenu.addItem({
                     text: "Plot Singular Value Spectrum",
                     action: () => this.spectrum(true),
                     help: "Plot singular values for the selected columns. ",
-                }, true);
+                }, !this.isPrivate());
             }
             this.contextMenu.addItem({
                 text: "Filter...",
@@ -632,7 +642,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                         colDesc, this.order, this.tableRowsDesired, this.aggregates);
                 },
                 help: "Eliminate data that matches/does not match a specific value.",
-            }, selectedCount === 1);
+            }, selectedCount === 1 && !this.isPrivate());
             this.contextMenu.addItem({
                 text: "Compare...",
                 action: () => {
@@ -641,24 +651,24 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                         this.order, this.tableRowsDesired, this.aggregates);
                 },
                 help: "Eliminate data that matches/does not match a specific value.",
-            }, selectedCount === 1);
+            }, selectedCount === 1 && !this.isPrivate());
             this.contextMenu.addItem({
                 text: "Convert...",
                 action: () => this.convert(this.schema.displayName(cd.name),
                     this.order, this.tableRowsDesired, this.aggregates),
                 help: "Convert the data in the selected column to a different data type.",
-            }, selectedCount === 1);
+            }, selectedCount === 1 && !this.isPrivate());
             this.contextMenu.addItem({
                 text: "Create column in JS...",
                 action: () => this.createJSColumnDialog(
                     this.order, this.tableRowsDesired, this.aggregates),
                 help: "Add a new column computed using Javascript from the selected columns.",
-            }, true);
+            }, !this.isPrivate());
             this.contextMenu.addItem({
                 text: "Aggregate...",
                 action: () => this.aggregateDialog(),
                 help: "Compute aggregations on some columns"
-            }, this.getSelectedColNames().reduce((a, b) => a && this.isNumericColumn(b), true));
+            }, this.getSelectedColNames().reduce((a, b) => a && this.isNumericColumn(b), !this.isPrivate()));
             if (selectedCount === 1 && this.isKVColumn(this.getSelectedColNames()[0]))
                     this.contextMenu.addItem({
                         text: "Extract value...",
@@ -667,7 +677,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                             this.createKVColumnDialog(colName, this.tableRowsDesired);
                         },
                         help: "Extract a value associated with a specific key."
-                    }, true);
+                    }, !this.isPrivate());
             this.contextMenu.show(e);
         };
     }
@@ -878,7 +888,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
 
         const message = new HtmlString(tableRowCount + " displayed rows represent " +
             formatNumber(this.dataRowsDisplayed) +
-            "/" + formatNumber(this.rowCount) + " data rows" + perc);
+            "/" + (this.isPrivate() ? SpecialChars.approx : "") + formatNumber(this.rowCount) + " data rows" + perc);
         message.setInnerHtml(this.message);
 
         if (result != null) {

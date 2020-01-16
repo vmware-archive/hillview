@@ -1,6 +1,7 @@
 {
     "enableSaveAs": true,
-    "showPrivateMenus": true,
+    "localDbMenu": true,
     "showTestMenu": true,
-    "enableAdvanced": true
+    "enableAdvanced": true,
+    "privateIsCsv": true
 }

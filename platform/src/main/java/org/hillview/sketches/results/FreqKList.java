@@ -26,6 +26,7 @@ import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.RowSnapshotSet;
 import org.hillview.utils.Converters;
 import org.hillview.utils.MutableInteger;
+import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;
@@ -107,7 +108,7 @@ public class FreqKList implements Serializable {
         IntList listCounts = new IntArrayList(maxSize);
         for (int i = 0; i < maxSize; i++) {
             listRows.add(pList.get(i).first);
-            listCounts.add((int)Converters.checkNull(pList.get(i).second));
+            listCounts.add(Utilities.toInt(Converters.checkNull(pList.get(i).second)));
         }
         return new NextKList(listRows, listCounts, schema, this.totalRows);
     }

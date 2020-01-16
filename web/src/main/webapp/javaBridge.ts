@@ -78,10 +78,11 @@ export class GenericLogs {
 // Describes the configuration of the UI for a specific installation of Hillview
 // The default values should all be 'false'
 export interface UIConfig {
-    enableSaveAs?: boolean;
-    showPrivateMenus?: boolean;
-    showTestMenu?: boolean;
-    enableAdvanced?: boolean;
+    enableSaveAs?: boolean;  // save as menu enabled
+    localDbMenu?: boolean;   // show the local db connection
+    showTestMenu?: boolean;  // the test menu is shown
+    enableAdvanced?: boolean;  // advanced menus enabled
+    privateIsCsv?: boolean;    // the private dataset is in csv form
 }
 
 export interface ColumnQuantization {
@@ -111,7 +112,8 @@ export class JsonString {
 export interface TableSummary {
     schema: Schema;
     rowCount: number;
-    metadata: PrivacySchema;
+    rowCountConfidence: number | null;  // only present for private data
+    metadata: PrivacySchema | null;     // only present for private data
 }
 
 export interface ConvertColumnInfo {
@@ -155,8 +157,9 @@ export interface FileSetDescription {
     endTime: number | null;
 }
 
-export interface HLogLog {
-    distinctItemCount: number;
+export interface CountWithConfidence {
+    count: number;
+    confidence: number;
 }
 
 export interface JSCreateColumnInfo {

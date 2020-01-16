@@ -137,7 +137,6 @@ public final class TableTarget extends RpcTarget {
                 Schema schema = list.aggregates.getSchema();
                 List<String> cols = schema.getColumnNames();
 
-                int rows = list.aggregates.getNumOfRows();
                 AggregateDescription[] computed = this.getAggregates();
                 Converters.checkNull(computed);
                 if (computed.length != cols.size())
@@ -302,6 +301,7 @@ public final class TableTarget extends RpcTarget {
     // StringBucketBoundaries or DataRange.
 
     // This function manipulates arrays to make it more homogeneous with the other two.
+    @SuppressWarnings("unused")
     @HillviewRpc
     public void getDataQuantiles1D(RpcRequest request, RpcRequestContext context) {
         QuantilesArgs[] args = request.parseArgs(QuantilesArgs[].class);
@@ -313,7 +313,7 @@ public final class TableTarget extends RpcTarget {
         this.runCompleteSketch(this.table, sk, post, request, context);
     }
 
-    @SuppressWarnings("Duplicates")
+    @SuppressWarnings({"Duplicates", "unused"})
     @HillviewRpc
     public void getDataQuantiles2D(RpcRequest request, RpcRequestContext context) {
         QuantilesArgs[] args = request.parseArgs(QuantilesArgs[].class);
@@ -329,7 +329,7 @@ public final class TableTarget extends RpcTarget {
         this.runCompleteSketch(this.table, csk, post, request, context);
     }
 
-    @SuppressWarnings("Duplicates")
+    @SuppressWarnings({"Duplicates", "unused"})
     @HillviewRpc
     public void getDataQuantiles3D(RpcRequest request, RpcRequestContext context) {
         QuantilesArgs[] args = request.parseArgs(QuantilesArgs[].class);
@@ -468,8 +468,8 @@ public final class TableTarget extends RpcTarget {
         this.runFilter(filter, request, context);
     }
 
+    @SuppressWarnings("NotNullFieldNotInitialized")
     static class CorrelationMatrixRequest {
-        @SuppressWarnings("NullableProblems")
         String[] columnNames;
         long totalRows;
         long seed;
@@ -520,7 +520,7 @@ public final class TableTarget extends RpcTarget {
                 DoubleMatrix varianceExplained = mats[1];
                 String[] newColNames = new String[projectionMatrix.rows];
                 for (int i = 0; i < projectionMatrix.rows; i++) {
-                    int perc = (int) Math.round(varianceExplained.get(i) * 100);
+                    int perc = Utilities.toInt(Math.round(varianceExplained.get(i) * 100));
                     newColNames[i] = String.format("%s%d (%d%%)", info.projectionName, i, perc);
                 }
                 LinearProjectionMap lpm = new LinearProjectionMap(cm.columnNames, projectionMatrix, newColNames);
@@ -554,7 +554,7 @@ public final class TableTarget extends RpcTarget {
 
     static class CatCentroidControlPoints {
         String categoricalColumnName = "";
-        @SuppressWarnings("NullableProblems")
+        @SuppressWarnings("NotNullFieldNotInitialized")
         String[] numericalColumnNames;
     }
 
@@ -601,7 +601,7 @@ public final class TableTarget extends RpcTarget {
         RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(info.id), true, observer);
     }
 
-    @SuppressWarnings("NullableProblems")
+    @SuppressWarnings("NotNullFieldNotInitialized")
     static class LAMPMapInfo {
         String controlPointsId = "";
         String[] colNames;
@@ -652,20 +652,6 @@ public final class TableTarget extends RpcTarget {
     }
 
     /**
-     * Post-processing method applied to the result of a heavy hitters sketch before displaying the results. It will
-     * discard elements that are too low in (estimated) frequency.
-     * @param fkList The list of candidate heavy hitters
-     * @param schema The schema of the heavy hitters computation.
-     * @return A TopList
-     */
-    private static TopList getSortedList(FreqKList fkList, Schema schema, HillviewComputation computation) {
-        fkList.sortList();
-        return new TopList(
-                fkList.sortTopK(schema),
-                new HeavyHittersTarget(fkList, computation).getId().toString());
-    }
-
-    /**
      * Calls the Misra-Gries (streaming) heavy hitters routine.
      */
     @HillviewRpc
@@ -690,7 +676,7 @@ public final class TableTarget extends RpcTarget {
 
     static class HeavyHittersFilterInfo {
         String hittersId = "";
-        @SuppressWarnings("NullableProblems")
+        @SuppressWarnings("NotNullFieldNotInitialized")
         Schema schema;
         boolean includeSet;
     }
@@ -793,7 +779,7 @@ public final class TableTarget extends RpcTarget {
         RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(otherId), true, observer);
     }
 
-    @SuppressWarnings("NullableProblems")
+    @SuppressWarnings("NotNullFieldNotInitialized")
     static class JSCreateColumnInfo {
         String jsFunction = "";
         Schema schema;
@@ -815,6 +801,7 @@ public final class TableTarget extends RpcTarget {
         this.runMap(this.table, map, TableTarget::new, request, context);
     }
 
+    @SuppressWarnings("NotNullFieldNotInitialized")
     static class JSFilterInfo {
         Schema schema;
         String jsCode;
@@ -830,7 +817,7 @@ public final class TableTarget extends RpcTarget {
         this.runMap(this.table, map, TableTarget::new, request, context);
     }
 
-    @SuppressWarnings("NullableProblems")
+    @SuppressWarnings("NotNullFieldNotInitialized")
     static class KVCreateColumnInfo {
         String key = "";
         String inputColumn;
@@ -841,7 +828,6 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     public void kvCreateColumn(RpcRequest request, RpcRequestContext context) {
         KVCreateColumnInfo info = request.parseArgs(KVCreateColumnInfo.class);
-        String key = info.key;
         ExtractValueFromKeyMap map = new ExtractValueFromKeyMap(
                 info.key, info.inputColumn, info.outputColumn, info.outputIndex);
         this.runMap(this.table, map, TableTarget::new, request, context);

@@ -24,13 +24,12 @@ import {
     ContentsKind,
     ConvertColumnInfo,
     JSCreateColumnInfo,
-    HLogLog,
     IColumnDescription,
     kindIsString,
     RecordOrder,
     RemoteObjectId,
     StringFilterDescription,
-    StringColumnFilterDescription, AggregateDescription
+    StringColumnFilterDescription, AggregateDescription, CountWithConfidence
 } from "../javaBridge";
 import {OnCompleteReceiver} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
@@ -454,7 +453,7 @@ export abstract class TSViewBase extends BigTableView {
             text: "Chart", help: "Draw a chart", subMenu: new SubMenu([
                 { text: "1D Histogram...", action: () => this.oneDHistogramMenu(),
                     help: "Draw a histogram of the data in one column."},
-                { text: "2D Histogram....", action: () => this.twoDHistogramMenu(false),
+                { text: "2D Histogram...", action: () => this.twoDHistogramMenu(false),
                     help: "Draw a histogram of the data in two columns."},
                 { text: "Heatmap...", action: () => this.twoDHistogramMenu(true),
                     help: "Draw a heatmap of the data in two columns."},
@@ -462,8 +461,8 @@ export abstract class TSViewBase extends BigTableView {
                     help: "Draw a Trellis plot of histograms."},
                 { text: "Trellis 2D histograms...", action: () => this.trellisMenu(false, false),
                     help: "Draw a Trellis plot of 2D histograms."},
-                { text: "Trellis 2D heatmaps...", action: () => this.trellisMenu(false, true),
-                    help: "Draw a Trellis plot of 3D histograms."},
+                { text: "Trellis heatmaps...", action: () => this.trellisMenu(false, true),
+                    help: "Draw a Trellis plot of heatmaps."},
             ]),
         };
     }
@@ -724,16 +723,16 @@ class ComparisonFilterDialog extends Dialog {
     }
 }
 
-class CountReceiver extends OnCompleteReceiver<HLogLog> {
-    constructor(page: FullPage, operation: ICancellable<HLogLog>,
+class CountReceiver extends OnCompleteReceiver<CountWithConfidence> {
+    constructor(page: FullPage, operation: ICancellable<CountWithConfidence>,
                 protected colName: DisplayName) {
         super(page, operation, "Estimate distinct count");
     }
 
-    public run(data: HLogLog): void {
+    public run(data: CountWithConfidence): void {
         const timeInMs = this.elapsedMilliseconds();
         this.page.reportError("Distinct values in column \'" +
-            this.colName.toString() + "\' " + SpecialChars.approx + String(data.distinctItemCount) + "\n" +
+            this.colName.toString() + "\' " + SpecialChars.approx + String(data.count) + "\n" +
             "Operation took " + significantDigits(timeInMs / 1000) + " seconds");
     }
 }

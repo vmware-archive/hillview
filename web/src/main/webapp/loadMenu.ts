@@ -40,13 +40,11 @@ export class LoadMenu extends RemoteObject implements IDataView {
     private readonly console: ErrorDisplay;
     private testDatasetsMenu: SubMenu;
     private loadMenu: SubMenu;
-    private advanced: boolean;
     public readonly viewKind: ViewKind;
 
     constructor(protected init: InitialObject, protected page: FullPage) {
         super(init.remoteObjectId);
         this.viewKind = "Load";
-        this.advanced = false;
         this.top = document.createElement("div");
         this.console = new ErrorDisplay();
         this.top.appendChild(this.console.getHTMLRepresentation());
@@ -118,8 +116,10 @@ export class LoadMenu extends RemoteObject implements IDataView {
                     };
                     this.init.loadFiles(files, this.page);
                 },
-                help: "The US flights dataset -- all 110 columns." },
-            { text: "Flights (15 columns, CSV, private)",
+                help: "The US flights dataset -- all 110 columns." });
+        if (HillviewToplevel.instance.uiconfig.privateIsCsv) {
+            testitems.push({
+                text: "Flights (15 columns, CSV, private)",
                 action: () => {
                     const files: FileSetDescription = {
                         fileNamePattern: "data/ontime_private/????_*.csv*",
@@ -135,8 +135,10 @@ export class LoadMenu extends RemoteObject implements IDataView {
                     this.init.loadFiles(files, this.page);
                 },
                 help: "The US flights dataset.",
-            },
-            { text: "Flights (15 columns, ORC, private)",
+            });
+        } else {
+            testitems.push({
+                text: "Flights (15 columns, ORC, private)",
                 action: () => {
                     const files: FileSetDescription = {
                         fileNamePattern: "data/ontime_private/*.orc",
@@ -153,28 +155,7 @@ export class LoadMenu extends RemoteObject implements IDataView {
                 },
                 help: "The US flights dataset.",
             });
-        if (HillviewToplevel.instance.uiconfig.showPrivateMenus) {
-            testitems.push({
-                    text: "Gaussian (1 column, private, CSV)", // TODO: to delete
-                    action: () => {
-                        const files: FileSetDescription = {
-                            fileNamePattern: "data/synthetic/*.csv*",
-                            schemaFile: "gaussian.schema",
-                            headerRow: true,
-                            repeat: 1,
-                            name: "Gaussian (1 column)",
-                            fileKind: "csv",
-                            logFormat: null,
-                            startTime: null,
-                            endTime: null
-                        };
-                        this.init.loadFiles(files, this.page);
-                    },
-                    help: "Synthetic Gaussian data.",
-                }
-            );
         }
-
         this.testDatasetsMenu = new SubMenu(testitems);
 
         const loadMenuItems: MenuItem[] = [];
@@ -254,7 +235,7 @@ export class LoadMenu extends RemoteObject implements IDataView {
                 },
                 help: "A set of database tables residing in databases on each worker machine."
             });
-        if (HillviewToplevel.instance.uiconfig.showPrivateMenus)
+        if (HillviewToplevel.instance.uiconfig.localDbMenu)
             loadMenuItems.push({
                 text: "Local DB table...",
                 action: () => {
@@ -350,8 +331,12 @@ export class LoadMenu extends RemoteObject implements IDataView {
     }
 
     public toggleAdvanced(): void {
-        this.advanced = !this.advanced;
-        this.showAdvanced(this.advanced);
+        // writing it this way will work with undefined values.
+        if (HillviewToplevel.instance.uiconfig.enableAdvanced)
+            HillviewToplevel.instance.uiconfig.enableAdvanced = false;
+        else
+            HillviewToplevel.instance.uiconfig.enableAdvanced = true;
+        this.showAdvanced(HillviewToplevel.instance.uiconfig.enableAdvanced);
     }
 
     public loadSavedDialog(): void {

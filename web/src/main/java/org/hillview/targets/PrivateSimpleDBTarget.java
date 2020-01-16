@@ -19,10 +19,7 @@ package org.hillview.targets;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import org.hillview.*;
-import org.hillview.dataStructures.IntervalDecomposition;
-import org.hillview.dataStructures.HistogramRequestInfo;
-import org.hillview.dataStructures.PrivateHeatmap;
-import org.hillview.dataStructures.PrivateHistogram;
+import org.hillview.dataStructures.*;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.Pair;
@@ -40,10 +37,7 @@ import org.hillview.table.api.ITable;
 import org.hillview.table.columns.ColumnQuantization;
 import org.hillview.table.filters.RangeFilterDescription;
 import org.hillview.table.filters.RangeFilterPairDescription;
-import org.hillview.utils.Converters;
-import org.hillview.utils.HillviewException;
-import org.hillview.utils.HillviewLogger;
-import org.hillview.utils.JsonString;
+import org.hillview.utils.*;
 
 import java.sql.SQLException;
 
@@ -99,6 +93,12 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
     @HillviewRpc
     public void getDataQuantiles2D(RpcRequest request, RpcRequestContext context) {
         this.wrapper.getDataQuantiles2D(request, context, this);
+    }
+
+    @SuppressWarnings("unused")
+    @HillviewRpc
+    public void getDataQuantiles3D(RpcRequest request, RpcRequestContext context) {
+        this.wrapper.getDataQuantiles3D(request, context, this);
     }
 
     @HillviewRpc
@@ -163,6 +163,17 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
     }
 
     @HillviewRpc
+    public void hLogLog(RpcRequest request, RpcRequestContext context) {
+        DistinctCountRequestInfo col = request.parseArgs(DistinctCountRequestInfo.class);
+        int result = this.database.distinctCount(col.columnName, this.wrapper.columnLimits);
+        double epsilon = this.wrapper.getPrivacySchema().epsilon(col.columnName);
+        Noise noise = DPWrapper.computeCountNoise(DPWrapper.SpecialBucket.DistinctCount, epsilon, this.wrapper.laplace);
+        CountWithConfidence dc = new CountWithConfidence(result).add(noise);
+        ISketch<ITable, CountWithConfidence> sk = new PrecomputedSketch<ITable, CountWithConfidence>(dc);
+        this.runSketch(this.table, sk, request, context);
+    }
+
+    @HillviewRpc
     public void heatmap(RpcRequest request, RpcRequestContext context) {
         HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
         assert info.length == 2;
@@ -178,7 +189,7 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
         Converters.checkNull(q1);
         IntervalDecomposition d0 = info[0].getDecomposition(q0);
         IntervalDecomposition d1 = info[1].getDecomposition(q1);
-        PrivateHeatmap result = new PrivateHeatmap(d0, d1, heatmap, epsilon, this.wrapper.laplace);
+        PrivateHeatmapFactory result = new PrivateHeatmapFactory(d0, d1, heatmap, epsilon, this.wrapper.laplace);
         ISketch<ITable, Heatmap> sk = new PrecomputedSketch<ITable, Heatmap>(result.heatmap);
         this.runCompleteSketch(this.table, sk, (e, c) -> e, request, context);
     }

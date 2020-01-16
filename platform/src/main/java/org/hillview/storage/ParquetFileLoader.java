@@ -40,6 +40,7 @@ import org.hillview.table.Table;
 import org.hillview.table.api.*;
 import org.hillview.table.columns.BaseListColumn;
 import org.hillview.utils.Linq;
+import org.hillview.utils.Utilities;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -232,7 +233,7 @@ public class ParquetFileLoader extends TextFileLoader {
         long rowCount = 0;
         for (BlockMetaData bm : blocks)
             rowCount += bm.getRowCount();
-        return (int)rowCount;
+        return Utilities.toInt(rowCount);
     }
 
     public ITable load() {

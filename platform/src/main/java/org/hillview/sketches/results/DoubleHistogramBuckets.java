@@ -18,6 +18,7 @@
 package org.hillview.sketches.results;
 
 import org.hillview.table.api.IColumn;
+import org.hillview.utils.Utilities;
 
 /**
  * Buckets for computing a histogram of data that can be converted to a double.
@@ -45,7 +46,7 @@ public class DoubleHistogramBuckets implements IHistogramBuckets {
         if ((value < this.minValue) || (value > this.maxValue))
             return -1;
         // As overflow can occur when 'item' is very close to 'this.maxValue', clamp the resulting index.
-        return Math.min((int) ((this.bucketCount * (value - this.minValue)) / this.range), this.bucketCount - 1);
+        return Math.min(Utilities.toInt((this.bucketCount * (value - this.minValue)) / this.range), this.bucketCount - 1);
     }
 
     @Override
