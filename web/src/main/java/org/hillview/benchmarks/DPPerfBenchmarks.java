@@ -17,16 +17,12 @@
 
 package org.hillview.benchmarks;
 
-import org.hillview.dataStructures.IntervalDecomposition;
-import org.hillview.dataStructures.NumericIntervalDecomposition;
-import org.hillview.dataStructures.PrivateHeatmap;
-import org.hillview.dataStructures.PrivateHistogram;
+import it.unimi.dsi.fastutil.ints.IntHeapIndirectPriorityQueue;
+import org.apache.parquet.filter2.predicate.Operators;
+import org.hillview.dataStructures.*;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.RemoteDataSet;
-import org.hillview.dataset.api.Empty;
-import org.hillview.dataset.api.IDataSet;
-import org.hillview.dataset.api.IMap;
-import org.hillview.dataset.api.ISketch;
+import org.hillview.dataset.api.*;
 import org.hillview.main.Benchmarks;
 import org.hillview.management.ClusterConfig;
 import org.hillview.maps.FindFilesMap;
@@ -46,6 +42,7 @@ import org.hillview.table.Schema;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.ColumnQuantization;
 import org.hillview.table.columns.DoubleColumnQuantization;
+import org.hillview.table.columns.StringColumnQuantization;
 import org.hillview.targets.DPWrapper;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
@@ -66,7 +63,7 @@ import java.util.logging.Level;
  * This is a main class for running various differential privacy benchmarks.
  * The measurements are run headless.
  */
-public class DPBenchmarks extends Benchmarks {
+public class DPPerfBenchmarks extends Benchmarks {
     private static int runCount = 5;
     private static int buckets = 100;
     @Nullable
@@ -79,7 +76,7 @@ public class DPBenchmarks extends Benchmarks {
     private DPWrapper flightsWrapper;
     private JdbcDatabase database;
 
-    private DPBenchmarks(HashSet<String> datasets) throws SQLException, IOException {
+    private DPPerfBenchmarks(HashSet<String> datasets) throws SQLException, IOException {
         this.loadData(datasets);
     }
 
@@ -177,49 +174,64 @@ public class DPBenchmarks extends Benchmarks {
         public String toString() {
             String result = "";
             result += this.dataset.toString();
-            result += this.usePublicData ? " public" : " private";
-            result += this.usePostProcessing ? " noised" : "";
+            result += this.usePublicData ? " public" : " quantized";
+            result += this.usePostProcessing ? " private" : "";
             return result;
         }
     }
 
-    private double benchmarkNumericHeatmap(ExperimentConfig conf, String col0, String col1) {
+    private Pair<IHistogramBuckets, IntervalDecomposition> getDecomposition(ColumnDescription col,
+                                                                            ColumnQuantization q) {
+        IHistogramBuckets buckDes = null;
+
+        if (col.kind.isNumeric()) {
+            DoubleColumnQuantization dq = (DoubleColumnQuantization)q;
+            buckDes = new DoubleHistogramBuckets(
+                    dq.globalMin, dq.globalMax, buckets);
+            assert q != null;
+            return new Pair(buckDes,
+                    new NumericIntervalDecomposition((DoubleColumnQuantization) q, (DoubleHistogramBuckets)buckDes));
+        } else if (col.kind.isString()) {
+            StringColumnQuantization sq = (StringColumnQuantization)q;
+            buckDes = new StringHistogramBuckets(sq.leftBoundaries);
+            assert q != null;
+            return new Pair(buckDes, new StringIntervalDecomposition(
+                    (StringColumnQuantization) q, (StringHistogramBuckets)buckDes));
+        } else {
+            throw new RuntimeException("Column type unsupported in benchmark");
+        }
+    }
+
+    private double benchmarkHeatmap(ExperimentConfig conf, ColumnDescription col0, ColumnDescription col1) {
         IDataSet<ITable> table = conf.dataset == Dataset.Cloud ? this.cloudFlights : this.flights;
         Converters.checkNull(table);
 
-        DoubleDataRangeSketch drsk = new DoubleDataRangeSketch(col0);
-        DataRange dataRange0 = table.blockingSketch(drsk);
-        assert dataRange0 != null;
-        drsk = new DoubleDataRangeSketch(col1);
-        DataRange dataRange1 = table.blockingSketch(drsk);
-        assert dataRange1 != null;
-
-        DoubleHistogramBuckets buckDes0 = new DoubleHistogramBuckets(
-            dataRange0.min, dataRange0.max, buckets);
-        DoubleHistogramBuckets buckDes1 = new DoubleHistogramBuckets(
-            dataRange1.min, dataRange1.max, buckets);
-
-        ColumnQuantization q0 = null;
-        ColumnQuantization q1 = null;
+        IHistogramBuckets buckDes0 = null;
+        IHistogramBuckets buckDes1 = null;
         Function<Heatmap, PrivateHeatmap> postprocess = x -> null;
-        if (!conf.usePublicData) {
-            PrivacySchema ps = this.flightsWrapper.getPrivacySchema();
-            q0 = ps.quantization(col0);
-            q1 = ps.quantization(col1);
-            double epsilon = ps.epsilon(col0, col1);
-            assert q0 != null;
-            assert q1 != null;
-            IntervalDecomposition d0 = new NumericIntervalDecomposition(
-                (DoubleColumnQuantization)q0, buckDes0);
-            IntervalDecomposition d1 = new NumericIntervalDecomposition(
-                (DoubleColumnQuantization)q0, buckDes0);
-            if (conf.usePostProcessing)
-                postprocess = x -> new PrivateHeatmap(d0, d1, x, epsilon, this.flightsWrapper.laplace);
-        }
+        PrivacySchema ps = this.flightsWrapper.getPrivacySchema();
+        ColumnQuantization q0 = ps.quantization(col0.name);
+        ColumnQuantization q1 = ps.quantization(col1.name);
+        IntervalDecomposition d0 = null;
+        IntervalDecomposition d1 = null;
+        double epsilon = ps.epsilon(col0.name, col1.name);
+
+        Pair<IHistogramBuckets, IntervalDecomposition> p0 = getDecomposition(col0, q0);
+        Pair<IHistogramBuckets, IntervalDecomposition> p1 = getDecomposition(col1, q1);
+
+        buckDes0 = p0.first;
+        d0 = p0.second;
+        buckDes1 = p1.first;
+        d1 = p1.second;
+
+        IntervalDecomposition finalD0 = d0;
+        IntervalDecomposition finalD1 = d1;
+        if (conf.usePostProcessing)
+            postprocess = x -> new PrivateHeatmap(finalD0, finalD1, x, epsilon, this.flightsWrapper.laplace);
 
         assert this.ontimeSchema != null;
-        ColumnDescription desc0 = this.ontimeSchema.getDescription(col0);
-        ColumnDescription desc1 = this.ontimeSchema.getDescription(col1);
+        ColumnDescription desc0 = this.ontimeSchema.getDescription(col0.name);
+        ColumnDescription desc1 = this.ontimeSchema.getDescription(col1.name);
         System.out.println("Bench,Time (ms),Melems/s,Percent slower");
         String bench = "Heatmap " + col0 + "," + col1 + "," + conf.toString();
         Runnable r;
@@ -227,59 +239,59 @@ public class DPBenchmarks extends Benchmarks {
         if (conf.dataset == Dataset.DB) {
             ColumnQuantization finalQ0 = q0;
             ColumnQuantization finalQ1 = q1;
+            IHistogramBuckets finalB0 = buckDes0;
+            IHistogramBuckets finalB1 = buckDes1;
             r = () -> {
                 Heatmap h = this.database.heatmap(desc0, desc1,
-                    buckDes0, buckDes1, null, finalQ0, finalQ1);
+                    finalB0, finalB1, null, finalQ0, finalQ1);
                 finalPostprocess.apply(h);
             };
             return runNTimes(r, runCount, bench, 0);
         } else {
             ISketch<ITable, Heatmap> hsk = new HeatmapSketch(
-                buckDes0, buckDes1, col0, col1, 1.0, 0, q0, q1);
+                buckDes0, buckDes1, col0.name, col1.name, 1.0, 0, q0, q1);
             r = () -> finalPostprocess.apply(table.blockingSketch(hsk));
         }
         return runNTimes(r, runCount, bench, 0);
     }
 
-    private double benchmarkNumericHistogram(ExperimentConfig conf, String col) {
+    private double benchmarkHistogram(ExperimentConfig conf, ColumnDescription col) {
         IDataSet<ITable> table = conf.dataset == Dataset.Cloud ? this.cloudFlights : this.flights;
         Converters.checkNull(table);
-        DoubleDataRangeSketch drsk = new DoubleDataRangeSketch(col);
-        DataRange dataRange = table.blockingSketch(drsk);
-        assert dataRange != null;
 
-        DoubleHistogramBuckets buckDes = new DoubleHistogramBuckets(
-            dataRange.min, dataRange.max, buckets);
-        ColumnQuantization q = null;
+        IHistogramBuckets buckDes = null;
         Function<Histogram, PrivateHistogram> postprocess = x -> null;
-        if (!conf.usePublicData) {
-            PrivacySchema ps = this.flightsWrapper.getPrivacySchema();
-            q = ps.quantization(col);
-            double epsilon = ps.epsilon(col);
-            assert q != null;
-            IntervalDecomposition d = new NumericIntervalDecomposition(
-                (DoubleColumnQuantization)q, buckDes);
-            if (conf.usePostProcessing)
-                postprocess = x -> new PrivateHistogram(d, x, epsilon, false, this.flightsWrapper.laplace);
-        }
+        PrivacySchema ps = this.flightsWrapper.getPrivacySchema();
+        ColumnQuantization q = ps.quantization(col.name);
+        IntervalDecomposition d = null;
+        double epsilon = ps.epsilon(col.name);
+
+        Pair<IHistogramBuckets, IntervalDecomposition> p = getDecomposition(col, q);
+        buckDes = p.first;
+        d = p.second;
+
+        IntervalDecomposition finalD = d;
+        if (conf.usePostProcessing)
+            postprocess = x -> new PrivateHistogram(finalD, x, epsilon, false, this.flightsWrapper.laplace);
 
         assert this.ontimeSchema != null;
-        ColumnDescription desc = this.ontimeSchema.getDescription(col);
+        ColumnDescription desc = this.ontimeSchema.getDescription(col.name);
         System.out.println("Bench,Time (ms),Melems/s,Percent slower");
         String bench = "Histogram " + col + "," + conf.toString();
         Runnable r;
         Function<Histogram, PrivateHistogram> finalPostprocess = postprocess;
         if (conf.dataset == Dataset.DB) {
             ColumnQuantization finalQ = q;
+            IHistogramBuckets finalBuck = buckDes;
             r = () -> {
                 Histogram histo = this.database.histogram(
-                    desc, buckDes, null, finalQ, 0);
+                    desc, finalBuck, null, finalQ, 0);
                 finalPostprocess.apply(histo);
             };
             return runNTimes(r, runCount, bench, 0);
         } else {
             ISketch<ITable, Histogram> hsk = new HistogramSketch(
-                buckDes, col, 1.0, 0, q);
+                buckDes, col.name, 1.0, 0, q);
             r = () -> finalPostprocess.apply(table.blockingSketch(hsk));
         }
         return runNTimes(r, runCount, bench, 0);
@@ -298,24 +310,24 @@ public class DPBenchmarks extends Benchmarks {
             for (ColumnDescription col: cols) {
                 conf.usePublicData = true;
                 conf.usePostProcessing = false;
-                double pub = this.benchmarkNumericHistogram(conf, col.name);
+                double pub = this.benchmarkHistogram(conf, col);
                 conf.usePublicData = false;
-                double pri0 = this.benchmarkNumericHistogram(conf, col.name);
+                double pri0 = this.benchmarkHistogram(conf, col);
                 conf.usePostProcessing = true;
-                double pri1 = this.benchmarkNumericHistogram(conf, col.name);
+                double pri1 = this.benchmarkHistogram(conf, col);
                 System.out.println("Slowdown of quantized=" + Math.round(pri0 / pub * 100) + "%");
                 System.out.println("Slowdown of private=" + Math.round(pri1 / pub * 100) + "%");
             }
             for (int i = 0; i < cols.size() - 1; i++) {
-                String col0 = cols.get(i).name;
-                String col1 = cols.get(i + 1).name;
+                ColumnDescription col0 = cols.get(i);
+                ColumnDescription col1 = cols.get(i + 1);
                 conf.usePublicData = true;
                 conf.usePostProcessing = false;
-                double pub = this.benchmarkNumericHeatmap(conf, col0, col1);
+                double pub = this.benchmarkHeatmap(conf, col0, col1);
                 conf.usePublicData = false;
-                double pri0 = this.benchmarkNumericHeatmap(conf, col0, col1);
+                double pri0 = this.benchmarkHeatmap(conf, col0, col1);
                 conf.usePostProcessing = true;
-                double pri1 = this.benchmarkNumericHeatmap(conf, col0, col1);
+                double pri1 = this.benchmarkHeatmap(conf, col0, col1);
                 System.out.println("Slowdown of quantized=" + Math.round(pri0 / pub * 100) + "%");
                 System.out.println("Slowdown of private=" + Math.round(pri1 / pub * 100) + "%");
             }
@@ -327,7 +339,7 @@ public class DPBenchmarks extends Benchmarks {
     public static void main(String[] args) throws SQLException, IOException {
         HillviewLogger.instance.setLogLevel(Level.WARNING);
         HashSet<String> datasets = new HashSet<String>(Arrays.asList(args));
-        DPBenchmarks bench = new DPBenchmarks(datasets);
+        DPPerfBenchmarks bench = new DPPerfBenchmarks(datasets);
         bench.run(datasets);
     }
 }

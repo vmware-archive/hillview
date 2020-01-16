@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.hillview;
+package org.hillview.benchmarks;
 
 import com.google.gson.*;
 import org.apache.parquet.filter2.predicate.Operators;
@@ -25,6 +25,7 @@ import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IMap;
 import org.hillview.dataset.api.Pair;
+import org.hillview.main.Benchmarks;
 import org.hillview.maps.FindFilesMap;
 import org.hillview.maps.LoadFilesMap;
 import org.hillview.security.SecureLaplace;
@@ -58,18 +59,25 @@ import javax.annotation.Nullable;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.logging.Level;
 
-@SuppressWarnings("FieldCanBeLocal")
-public class HistogramAccuracyTest {
+public class DPAccuracyBenchmarks extends Benchmarks {
     private static String ontime_directory = "../data/ontime_private/";
     private static String privacy_metadata_name = "privacy_metadata.json";
 
     private static String histogram_results_filename = "../results/ontime_private_histogram.json";
     private static String heatmap_results_filename = "../results/ontime_private_heatmap.json";
+
+    String resultsFilename;
+
+    private DPAccuracyBenchmarks(String resultsFilename) throws SQLException, IOException {
+        this.resultsFilename = resultsFilename;
+    }
 
     @Nullable
     IDataSet<ITable> loadData() {
@@ -98,45 +106,6 @@ public class HistogramAccuracyTest {
         if (tableSummary.rowCount == 0)
             throw new RuntimeException("No file data loaded");
         return Converters.checkNull(tableSummary.schema);
-    }
-
-    void generateHeatmap(int xBuckets, int yBuckets, PrivacySchema ps, IDataSet<ITable> table) {
-        String col0 = "DepDelay";
-        String col1 = "ArrDelay";
-        DoubleColumnQuantization q0 = (DoubleColumnQuantization)ps.quantization(col0);
-        DoubleColumnQuantization q1 = (DoubleColumnQuantization)ps.quantization(col1);
-        Converters.checkNull(q0);
-        Converters.checkNull(q1);
-        double epsilon = ps.epsilon(col0, col1);
-        DoubleHistogramBuckets b0 = new DoubleHistogramBuckets(q0.globalMin, q0.globalMax, xBuckets);
-        DoubleHistogramBuckets b1 = new DoubleHistogramBuckets(q1.globalMin, q1.globalMax, yBuckets);
-        IntervalDecomposition d0 = new NumericIntervalDecomposition(q0, b0);
-        IntervalDecomposition d1 = new NumericIntervalDecomposition(q1, b1);
-        HeatmapSketch sk = new HeatmapSketch(b0, b1, col0, col1, 1.0, 0, q0, q1);
-        Heatmap h = table.blockingSketch(sk);
-        Assert.assertNotNull(h);
-        TestKeyLoader tkl = new TestKeyLoader();
-        SecureLaplace laplace = new SecureLaplace(tkl);
-        PrivateHeatmap ph = new PrivateHeatmap(d0, d1, h, epsilon, laplace);
-        Assert.assertNotNull(ph);
-        h = ph.heatmap;
-        Assert.assertNotNull(h);
-    }
-
-    @Test
-    public void coarsenHeatmap() {
-        @Nullable
-        IDataSet<ITable> table = this.loadData();
-        if (table == null) {
-            System.out.println("Skipping test: no data");
-            return;
-        }
-
-        PrivacySchema ps = PrivacySchema.loadFromFile(ontime_directory + privacy_metadata_name);
-        Assert.assertNotNull(ps);
-        Assert.assertNotNull(ps.quantization);
-        this.generateHeatmap(220, 110, ps, table);
-        this.generateHeatmap(110, 55, ps, table);
     }
 
     /**
@@ -302,8 +271,7 @@ public class HistogramAccuracyTest {
         return new Pair(totAccuracy / iterations, Utilities.stdev(accuracies));
     }
 
-    @Test
-    public void histogramAccuracyTest() throws IOException {
+    public void benchmarkHistogramL2Accuracy() throws IOException {
         HillviewLogger.instance.setLogLevel(Level.OFF);
 
         @Nullable
@@ -346,8 +314,7 @@ public class HistogramAccuracyTest {
         writer.close();
     }
 
-    @Test
-    public void heatmapAccuracyTest() throws IOException {
+    public void benchmarkHeatmapL2Accuracy() throws IOException {
         HillviewLogger.instance.setLogLevel(Level.OFF);
 
         @Nullable
@@ -396,5 +363,15 @@ public class HistogramAccuracyTest {
         writer.write(resultsGson.toJson(results));
         writer.flush();
         writer.close();
+    }
+
+    public static void main(String[] args) throws IOException, SQLException {
+        if (args.length < 1) {
+            return;
+        }
+
+        String resultsFilename = args[0];
+        DPAccuracyBenchmarks bench = new DPAccuracyBenchmarks(resultsFilename);
+        bench.benchmarkHeatmapL2Accuracy();
     }
 }
