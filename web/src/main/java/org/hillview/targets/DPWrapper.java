@@ -18,9 +18,11 @@
 package org.hillview.targets;
 
 import org.hillview.*;
+import org.hillview.utils.*;
 import org.hillview.dataStructures.QuantilesArgs;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.Pair;
+import org.hillview.dataset.api.Triple;
 import org.hillview.security.PersistedKeyLoader;
 import org.hillview.security.SecureLaplace;
 import org.hillview.sketches.PrecomputedSketch;
@@ -37,10 +39,6 @@ import org.hillview.table.api.ITable;
 import org.hillview.table.columns.ColumnQuantization;
 import org.hillview.table.columns.StringColumnQuantization;
 import org.hillview.table.filters.RangeFilterDescription;
-import org.hillview.utils.Converters;
-import org.hillview.utils.HillviewException;
-import org.hillview.utils.JsonList;
-import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -137,11 +135,12 @@ public class DPWrapper {
         }
     }
 
+    @SuppressWarnings({"nullable", "NotNullFieldNotInitialized"})
     public static class PrivacySummary implements IJson {
         @Nullable
         public Schema schema;
         public long rowCount;
-        @Nullable
+        public long rowCountConfidence;
         public PrivacySchema metadata;
     }
 
@@ -149,9 +148,43 @@ public class DPWrapper {
         PrivacySummary pSumm = new PrivacySummary();
         pSumm.schema = summary.schema;
         pSumm.metadata = this.container.privacySchema;
-        // TODO(pratiksha): add noise to the row count too.
-        pSumm.rowCount = summary.rowCount;
+        double epsilon = this.getPrivacySchema().epsilon();
+        Noise noise = DPWrapper.computeCountNoise(SpecialBucket.TotalCount, epsilon, this.laplace);
+        pSumm.rowCount = summary.rowCount + Utilities.toLong(noise.getNoise());
+        pSumm.rowCountConfidence = Utilities.toLong(noise.getConfidence());
         return pSumm;
+    }
+
+    /**
+     * This represents symbolically some buckets that are allocated
+     * outside the normal quantization intervals.
+     */
+    public enum SpecialBucket {
+        TotalCount, // A bucket representing the whole tree
+        NullCount,  // A bucket just for the null values
+        DistinctCount  // A bucket for the distinct count query
+    }
+
+    public static Noise computeCountNoise(SpecialBucket bucket, double epsilon, SecureLaplace laplace) {
+        // TODO(pratiksha): check that this is correct.
+        if (epsilon <= 0)
+            throw new RuntimeException("Zero epsilon");
+        int index;
+        switch (bucket) {
+            case TotalCount:
+                index = -1;
+                break;
+            case NullCount:
+                index = -2;
+                break;
+            case DistinctCount:
+                index = -3;
+                break;
+            default:
+                throw new RuntimeException("Unexpected special bucket " + bucket);
+        }
+        double scale = 1 / epsilon;
+        return new Noise(laplace.sampleLaplace(new Pair<Integer, Integer>(index, index), scale), 2 * Math.pow(scale, 2));
     }
 
     public void filter(RangeFilterDescription filter) {
@@ -231,6 +264,21 @@ public class DPWrapper {
                         new Pair<BucketsInfo, BucketsInfo>(retRange0, retRange1));
         BiFunction<Pair<BucketsInfo, BucketsInfo>, HillviewComputation, JsonList<BucketsInfo>> post =
                 (e, c) -> new JsonList<BucketsInfo>(e.first, e.second);
+        target.runCompleteSketch(target.getDataset(), sk, post, request, context);
+    }
+
+    void getDataQuantiles3D(RpcRequest request, RpcRequestContext context,
+                            IPrivateDataset target) {
+        QuantilesArgs[] args = request.parseArgs(QuantilesArgs[].class);
+        assert args.length == 3;
+        BucketsInfo retRange0 = this.getRange(args[0]);
+        BucketsInfo retRange1 = this.getRange(args[1]);
+        BucketsInfo retRange2 = this.getRange(args[2]);
+        ISketch<ITable, Triple<BucketsInfo, BucketsInfo, BucketsInfo>> sk =
+                new PrecomputedSketch<ITable, Triple<BucketsInfo, BucketsInfo, BucketsInfo>>(
+                        new Triple<BucketsInfo, BucketsInfo, BucketsInfo>(retRange0, retRange1, retRange2));
+        BiFunction<Triple<BucketsInfo, BucketsInfo, BucketsInfo>, HillviewComputation, JsonList<BucketsInfo>> post =
+                (e, c) -> new JsonList<BucketsInfo>(e.first, e.second, e.third);
         target.runCompleteSketch(target.getDataset(), sk, post, request, context);
     }
 }
