@@ -28,7 +28,7 @@ import {
 } from "../javaBridge";
 import {Receiver} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
-import {CDFPlot} from "../ui/CDFPlot";
+import {CDFPlot, NoCDFPlot} from "../ui/CDFPlot";
 import {IDataView} from "../ui/dataview";
 import {Dialog} from "../ui/dialog";
 import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
@@ -73,53 +73,70 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         page: FullPage) {
         super(remoteObjectId, rowCount, schema, page, "Histogram");
 
-        this.menu = new TopMenu( [{
+        this.menu = new TopMenu([{
             text: "Export",
             help: "Save the information in this view in a local file.",
             subMenu: new SubMenu([{
                 text: "As CSV",
                 help: "Saves the data in this view in a CSV file.",
-                action: () => { this.export(); },
+                action: () => {
+                    this.export();
+                },
             }]),
-            }, { text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
-                { text: "refresh",
-                    action: () => { this.refresh(); },
+        }, {
+            text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
+                {
+                    text: "refresh",
+                    action: () => {
+                        this.refresh();
+                    },
                     help: "Redraw this view.",
                 },
-                { text: "table",
+                {
+                    text: "table",
                     action: () => this.showTable(),
                     help: "Show the data underlying this histogram using a table view.",
                 },
-                { text: "pie chart/histogram",
+                {
+                    text: "pie chart/histogram",
                     action: () => this.togglePie(),
                     help: "Draw the data as a pie chart or as a histogram.",
                 },
-                { text: "exact",
+                {
+                    text: "exact",
                     action: () => this.exactHistogram(),
                     help: "Draw this histogram without making any approximations.",
                 },
-                { text: "# buckets...",
+                {
+                    text: "# buckets...",
                     action: () => this.chooseBuckets(),
                     help: "Change the number of buckets used to draw this histogram. ",
                 },
-                { text: "correlate...",
+                {
+                    text: "correlate...",
                     action: () => this.chooseSecondColumn(),
                     help: "Draw a 2-dimensional histogram using this data and another column.",
                 },
-                { text: "group by...",
+                {
+                    text: "group by...",
                     action: () => {
                         this.trellis();
                     },
                     help: "Group data by a third column.",
                 },
-            ]) },
+            ])
+        },
             this.dataset.combineMenu(this, page.pageId),
         ]);
 
         this.page.setMenu(this.menu);
+        const submenu = this.menu.getSubmenu("View");
         if (this.samplingRate >= 1) {
-            const submenu = this.menu.getSubmenu("View");
             submenu.enable("exact", false);
+        }
+        if (this.isPrivate()) {
+            this.menu.enable("Combine", false);
+            submenu.enable("correlate...", false);
         }
     }
 
@@ -179,7 +196,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         this.surface = new HtmlPlottingSurface(this.chartDiv, this.page, {});
         if (this.pie) {
             this.plot = new PiePlot(this.surface);
-            this.cdfPlot = null;
+            this.cdfPlot = new NoCDFPlot();
         } else {
             this.plot = new HistogramPlot(this.surface);
             this.cdfPlot = new CDFPlot(this.surface);
@@ -250,10 +267,8 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
 
         const discrete = kindIsString(this.xAxisData.description.kind) ||
             this.xAxisData.description.kind === "Integer";
-        if (this.cdfPlot != null) {
-            this.cdfPlot.setData(cdf.cdfBuckets, discrete);
-            this.cdfPlot.draw();
-        }
+        this.cdfPlot.setData(cdf.cdfBuckets, discrete);
+        this.cdfPlot.draw();
         this.setupMouse();
 
         if (!this.pie)
@@ -268,14 +283,10 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
             this.surface.getActualChartSize(), pointDesc, 40);
 
         let summary = new HtmlString("");
-        if (h.missingData !== 0) {
-            if (this.isPrivate())
-                summary.appendSafeString(SpecialChars.approx);
-            summary = summary.appendSafeString(formatNumber(h.missingData) + " missing, ");
-        }
-        if (this.isPrivate())
-            summary.appendSafeString(SpecialChars.approx);
-        summary = summary.appendSafeString(formatNumber(this.rowCount) + " points");
+        const approx = this.isPrivate() ? SpecialChars.approx : "";
+        if (h.missingData !== 0)
+            summary = summary.appendSafeString(approx +formatNumber(h.missingData) + " missing, ");
+        summary = summary.appendSafeString(approx + formatNumber(this.rowCount) + " points");
         if (this.xAxisData != null &&
             this.xAxisData.range.stringQuantiles != null &&
             this.xAxisData.range.allStringsKnown)
@@ -431,14 +442,11 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
             const ys = significantDigits(y);
             const size = this.plot.get(mouseX);
             const pointDesc = [xs, ys, makeInterval(size)];
-
-            if (this.cdfPlot != null) {
-                const cdfPos = this.cdfPlot.getY(mouseX);
-                this.cdfDot.attr("cx", mouseX);
-                this.cdfDot.attr("cy", (1 - cdfPos) * this.surface.getChartHeight());
-                const perc = percent(cdfPos);
-                pointDesc.push(perc);
-            }
+            const cdfPos = this.cdfPlot.getY(mouseX);
+            this.cdfDot.attr("cx", mouseX);
+            this.cdfDot.attr("cy", (1 - cdfPos) * this.surface.getChartHeight());
+            const perc = percent(cdfPos);
+            pointDesc.push(perc);
             this.pointDescription.update(pointDesc, mouseX, mouseY);
         }
     }

@@ -242,7 +242,7 @@ export class TrellisHistogramView extends TrellisChartView {
         const ranges = [this.xAxisData.dataRange, this.groupByAxisData.dataRange];
         const collector = new DataRangesReceiver(this,
             this.page, null, this.schema,
-            [this.xAxisData.bucketCount, this.groupByAxisData.bucketCount],
+            [this.bucketCount, this.groupByAxisData.bucketCount],
             cds, this.page.title, {
                 chartKind: "TrellisHistogram", exact: this.samplingRate >= 1,
                 relative: false, reusePage: true
@@ -286,27 +286,6 @@ export class TrellisHistogramView extends TrellisChartView {
         if (bucketCount === cdfBucketCount)
             return cdf;
 
-        /*
-        TODO: switch to this implementation eventually.
-        This does not suffer from combing.
-
-        const buckets = [];
-        const groupSize = Math.ceil(cdfBucketCount / bucketCount);
-        const fullBuckets = Math.floor(cdfBucketCount / groupSize);
-        for (let i = 0; i < fullBuckets; i++) {
-            let sum = 0;
-            for (let j = 0; j < groupSize; j++) {
-                sum += value.data.buckets[i * groupSize + j];
-            }
-            buckets.push(sum);
-        }
-        if (fullBuckets < bucketCount) {
-            let sum = 0;
-            for (let j = fullBuckets * groupSize; j < cdfBucketCount; j++)
-                sum += value.data.buckets[j];
-            buckets.push(sum);
-        }
-        */
         const buckets = [];
         const bucketWidth = cdfBucketCount / bucketCount;
         for (let i = 0; i < bucketCount; i++) {

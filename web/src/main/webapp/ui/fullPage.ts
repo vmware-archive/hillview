@@ -119,6 +119,7 @@ export class FullPage implements IHtmlElement {
     protected dropHandler: Map<string, (s: string) => void>;
     protected epsilon: number | null;
     protected epsilonColumns: string[];
+    protected miniMaxi: HTMLElement;
 
     /**
      * Creates a page which will be used to display some rendering.
@@ -233,12 +234,12 @@ export class FullPage implements IHtmlElement {
 
         if (this.dataset != null) {
             // The load menu does not have these decorative elements
-            const minimize = document.createElement("span");
-            minimize.className = "minimize";
-            minimize.innerHTML = minus;
-            minimize.onclick = () => this.minimize(minimize);
-            minimize.title = "Minimize this view.";
-            this.addCell(minimize, true);
+            this.miniMaxi = document.createElement("span");
+            this.miniMaxi.className = "minimize";
+            this.miniMaxi.innerHTML = minus;
+            this.miniMaxi.onclick = () => this.minimize();
+            this.miniMaxi.title = "Minimize this view.";
+            this.addCell(this.miniMaxi, true);
 
             const close = document.createElement("span");
             close.className = "close";
@@ -374,16 +375,18 @@ export class FullPage implements IHtmlElement {
         this.titleRow.appendChild(c);
     }
 
-    public minimize(span: HTMLElement): void {
+    public isMinimized(): boolean { return this.minimized; }
+
+    public minimize(): void {
         if (this.minimized) {
             if (this.dataView != null)
                 this.displayHolder.appendChild(this.dataView.getHTMLRepresentation());
             this.minimized = false;
-            span.innerHTML = minus;
+            this.miniMaxi.innerHTML = minus;
         } else {
             removeAllChildren(this.displayHolder);
             this.minimized = true;
-            span.innerHTML = plus;
+            this.miniMaxi.innerHTML = plus;
         }
     }
 

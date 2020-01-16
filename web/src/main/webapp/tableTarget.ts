@@ -28,7 +28,7 @@ import {
     Heatmap,
     HistogramArgs,
     Histogram,
-    HLogLog,
+    CountWithConfidence,
     IColumnDescription,
     kindIsString,
     NextKList,
@@ -50,7 +50,7 @@ import {
     BasicColStats,
     AugmentedHistogram,
     AggregateDescription,
-    HeavyHittersFilterInfo, RowFilterDescription, StringColumnsFilterDescription, JSFilterInfo,
+    HeavyHittersFilterInfo, RowFilterDescription, StringColumnsFilterDescription, JSFilterInfo
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
 import {FullPage, PageTitle} from "./ui/fullPage";
@@ -217,8 +217,8 @@ export class TableTargetAPI extends RemoteObject {
         return this.createStreamingRpcRequest<TableSummary>("getSummary", null);
     }
 
-    public createHLogLogRequest(colName: string): RpcRequest<PartialResult<HLogLog>> {
-        return this.createStreamingRpcRequest<HLogLog>("hLogLog",
+    public createHLogLogRequest(colName: string): RpcRequest<PartialResult<CountWithConfidence>> {
+        return this.createStreamingRpcRequest<CountWithConfidence>("hLogLog",
             { columnName: colName, seed: Seed.instance.get() });
     }
 

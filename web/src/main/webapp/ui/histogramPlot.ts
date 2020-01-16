@@ -109,7 +109,7 @@ export class HistogramPlot extends Plot implements IBarPlot {
         bars.append("rect")
             .attr("y", (d) => this.yScale(d[0]) < 0 ? 0 : this.yScale(d[0]))
             .attr("fill", (d) => this.confident(d) ? "darkcyan" : "lightgrey")
-            .attr("height", (d) => chartHeight - (this.yScale(d[0]) < 0 ? 0 : this.yScale(d[0])))
+            .attr("height", (d) => chartHeight - this.yLabel(d[0]))
             .attr("width", this.barWidth - 1);
 
         // overflow signs if necessary
@@ -137,7 +137,7 @@ export class HistogramPlot extends Plot implements IBarPlot {
         bars.append("text")
             .attr("class", "histogramBoxLabel")
             .attr("x", this.barWidth / 2)
-            .attr("y", (d) => this.yScale(d[0]) < 0 ? 0 : this.yScale(d[0]))
+            .attr("y", (d) => this.yLabel(d[0]))
             .attr("text-anchor", "middle")
             .attr("dy", (d) => d[0] <= (9 * displayMax / 10) ? "-.25em" : ".75em")
             .text((d) => HistogramPlot.boxHeight(
@@ -148,6 +148,13 @@ export class HistogramPlot extends Plot implements IBarPlot {
             .tickFormat(d3format(".2s"));
 
         this.xAxisData.setResolution(chartWidth, AxisKind.Bottom, PlottingSurface.bottomMargin);
+    }
+
+    private yLabel(value: number): number {
+        const scale = this.yScale(value);
+        if (scale < 0)
+            return 0;
+        return scale;
     }
 
     public draw(): void {

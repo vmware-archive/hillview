@@ -19,10 +19,16 @@ import {line as d3line} from "d3-shape";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 
+export interface ICDFPlot {
+    setData(cdf: number[], adjust: boolean): void;
+    draw(): void;
+    getY(x: number): number;
+}
+
 /**
  * A CDFPlot draws a CDF curve on a PlottingSurface.
  */
-export class CDFPlot extends Plot {
+export class CDFPlot extends Plot implements ICDFPlot {
     protected cdf: number[];
     // Data displayed on the screen, not exactly the same as cdf
     protected cdfData: number[];
@@ -119,4 +125,13 @@ export class CDFPlot extends Plot {
             return cdfPosition / this.max;
         }
     }
+}
+
+/**
+ * Can substitute for a CDFPlot, but does nothing.
+ */
+export class NoCDFPlot implements ICDFPlot {
+    public setData(cdf: number[], adjust: boolean): void {}
+    public draw(): void {}
+    public getY(x: number): number { return 0; }
 }
