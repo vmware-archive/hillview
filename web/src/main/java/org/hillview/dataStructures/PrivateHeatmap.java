@@ -6,6 +6,7 @@ import org.hillview.security.SecureLaplace;
 import org.hillview.sketches.results.Heatmap;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
+import org.hillview.utils.Noise;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -55,8 +56,7 @@ public class PrivateHeatmap implements Serializable, IJson {
         result.clear();
         for (Pair<Integer, Integer> x : xIntervals) {
             for (Pair<Integer, Integer> y : yIntervals) {
-                result.noise += this.laplace.sampleLaplace(x, y, scale);
-                result.variance += baseVariance;
+                result.add(this.laplace.sampleLaplace(x, y, scale), baseVariance);
             }
         }
     }
@@ -96,7 +96,7 @@ public class PrivateHeatmap implements Serializable, IJson {
         for (int i = 0; i < this.heatmap.buckets.length; i++) {
             for (int j = 0; j < this.heatmap.buckets[i].length; j++) {
                 this.noiseForDecomposition(xIntervals.get(i), yIntervals.get(j), this.scale, this.baseVariance, noise);
-                this.heatmap.buckets[i][j] += noise.noise;
+                this.heatmap.buckets[i][j] += noise.getNoise();
                 this.heatmap.confidence[i][j] = (int)noise.getConfidence();
             }
         }
@@ -105,5 +105,4 @@ public class PrivateHeatmap implements Serializable, IJson {
     public double getEpsilon() {
         return this.epsilon;
     }
-
 }
