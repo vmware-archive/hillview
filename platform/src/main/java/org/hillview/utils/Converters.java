@@ -60,7 +60,7 @@ public class Converters {
     }
 
     public static Duration toDuration(final double d) {
-        return Duration.ofMillis((long)d);
+        return Duration.ofMillis(Utilities.toLong(d));
     }
 
     /**

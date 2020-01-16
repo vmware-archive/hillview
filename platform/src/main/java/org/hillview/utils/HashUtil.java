@@ -86,10 +86,6 @@ public class HashUtil {
         return Math.min((int)Math.ceil((double)((float)n * f)), n - 1);
     }
 
-    public static long maxFill(final long n, final float f) {
-        return Math.min((long)Math.ceil((double)((float)n * f)), n - 1L);
-    }
-
     static int arraySize(final int expected, final float f) {
         final long s = Math.max(2L, nextPowerOfTwo((long)Math.ceil((double)((float)expected / f))));
         if (s > 1073741824L) {

@@ -33,6 +33,7 @@ import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.VirtualRowHashStrategy;
 import org.hillview.utils.Converters;
 import org.hillview.utils.MutableInteger;
+import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
@@ -80,14 +81,14 @@ public class MGFreqKSketch implements ISketch<ITable, FreqKListMG> {
                          @Nullable QuantizationSchema quantization) {
         this.schema = schema;
         this.epsilon = epsilon;
-        this.maxSize = ((int) Math.ceil(alpha/epsilon));
+        this.maxSize = Utilities.toInt(Math.ceil(alpha/epsilon));
         this.quantization = quantization;
     }
 
     public MGFreqKSketch(Schema schema, int maxSize) {
         this.schema = schema;
         this.epsilon = 1.0/maxSize;
-        this.maxSize = ((int) Math.ceil(alpha/epsilon));
+        this.maxSize = Utilities.toInt(Math.ceil(alpha/epsilon));
         this.quantization = null;
     }
 

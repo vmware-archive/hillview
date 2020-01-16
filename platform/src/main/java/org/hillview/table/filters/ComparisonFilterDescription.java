@@ -19,6 +19,8 @@ package org.hillview.table.filters;
 
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.*;
+import org.hillview.utils.Converters;
+import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.util.function.Predicate;
@@ -161,8 +163,8 @@ public class ComparisonFilterDescription implements ITableFilterDescription {
                                     ComparisonFilterDescription.this.comparison);
                     }
                 case Integer:
-                    assert ComparisonFilterDescription.this.doubleValue != null;
-                    int i = (int)(double)ComparisonFilterDescription.this.doubleValue;
+                    Converters.checkNull(ComparisonFilterDescription.this.doubleValue);
+                    int i = Utilities.toInt(ComparisonFilterDescription.this.doubleValue);
                     switch (ComparisonFilterDescription.this.comparison) {
                         case "==":
                             this.comparator = index -> {

@@ -180,13 +180,13 @@ public class JdbcDatabase {
         long[] data = new long[bucketCount];
         long nonNulls = 0;
         for (int i = 0; i < bucketNr.sizeInRows(); i++) {
-            int index = isDouble ? (int)bucketNr.getDouble(i) : bucketNr.getInt(i);
+            int index = isDouble ? Utilities.toInt(bucketNr.getDouble(i)) : bucketNr.getInt(i);
             // In SQL the last bucket boundary is not inclusive, so sometimes
             // we may get an extra bucket.  The semantics in Hillview is to fold
             // that into the penultimate bucket.
             if (index == bucketCount)
                 index--;
-            long count = (long)bucketSize.getDouble(i);
+            long count = Utilities.toLong(bucketSize.getDouble(i));
             data[index] += count;
             nonNulls += count;
         }
@@ -214,8 +214,8 @@ public class JdbcDatabase {
         int b1 = buckets1.getBucketCount();
         Heatmap result = new Heatmap(b0, b1);
         for (int i = 0; i < bucketNr.sizeInRows(); i++) {
-            int index = isDouble ? (int)bucketNr.getDouble(i) : bucketNr.getInt(i);
-            long count = (long)bucketSize.getDouble(i);
+            int index = isDouble ? Utilities.toInt(bucketNr.getDouble(i)) : bucketNr.getInt(i);
+            long count = Utilities.toLong(bucketSize.getDouble(i));
             int x0 = index >> 16;
             // In SQL the last bucket boundary is not inclusive, so sometimes
             // we may get an extra bucket.  The semantics in Hillview is to fold
@@ -257,8 +257,8 @@ public class JdbcDatabase {
             if (max != null)
                 range.max = Converters.toDouble(max);
         }
-        range.presentCount = (long)row.getDouble("nonnulls");
-        range.missingCount = (long)(row.getDouble("total")) - range.presentCount;
+        range.presentCount = Utilities.toLong(row.getDouble("nonnulls"));
+        range.missingCount = Utilities.toLong(row.getDouble("total")) - range.presentCount;
         return range;
     }
 
@@ -295,8 +295,8 @@ public class JdbcDatabase {
             SmallTable table = new SmallTable(cols);
             assert table.getNumOfRows() == 1;
             RowSnapshot row = new RowSnapshot(table, 0);
-            presentCount = (long) row.getDouble("nonnulls");
-            missingCount = (long) (row.getDouble("total")) - presentCount;
+            presentCount = Utilities.toLong(row.getDouble("nonnulls"));
+            missingCount = Utilities.toLong(row.getDouble("total")) - presentCount;
         }
 
         return new StringQuantiles(

@@ -17,11 +17,14 @@
 
 package org.hillview.sketches.results;
 
+import com.google.gson.JsonElement;
 import net.openhft.hashing.LongHashFunction;
 import org.hillview.dataset.api.IJson;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.IRowIterator;
+import org.hillview.utils.CountWithConfidence;
+import org.hillview.utils.Utilities;
 
 /**
  * A class that computes an approximation of the number of distinct elements in a column. Elements
@@ -34,6 +37,7 @@ public class HLogLog implements IJson {
     private final byte[] registers;
     private final long seed;
     public long distinctItemCount; // Field so that value is accessible after serializing
+    private long confidence; // Confidence interval around distinctItemCount: TODO
 
     /**
      * @param logRegNum the logarithm of the number of registers. should be in 4...16
@@ -46,6 +50,7 @@ public class HLogLog implements IJson {
         this.registers = new byte[this.regNum];
         this.logRegNum = logRegNum;
         this.seed = seed;
+        this.confidence = 0;
     }
 
     /**
@@ -114,7 +119,7 @@ public class HLogLog implements IJson {
         if ((zeroRegs > 0) && (rawEstimate < (2.5 * this.regNum)))
             result = Math.round(this.regNum * (Math.log(this.regNum / (double) zeroRegs)));
         else if (rawEstimate > ((double)Integer.MAX_VALUE / 30 ))
-            result = (long) (- Math.pow(2,32) * Math.log(1 - (rawEstimate /  Math.pow(2,32))));
+            result = Utilities.toLong(-Math.pow(2, 32) * Math.log(1 - (rawEstimate / Math.pow(2, 32))));
         this.distinctItemCount = result;
         return result;
     }
@@ -127,5 +132,15 @@ public class HLogLog implements IJson {
     public static void checkSpaceValid(int logSpaceSize) {
         if ((logSpaceSize > 16) || (logSpaceSize < 4))
             throw new IllegalArgumentException("HLogLog initialized with logSpaceSize out of range");
+    }
+
+    public CountWithConfidence getCount() {
+        return new CountWithConfidence(this.distinctItemCount, this.confidence);
+    }
+
+    @Override
+    public JsonElement toJsonTree() {
+        CountWithConfidence result = this.getCount();
+        return result.toJsonTree();
     }
 }

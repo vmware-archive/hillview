@@ -18,6 +18,7 @@
 package org.hillview.sketches.results;
 import org.hillview.dataset.api.IJson;
 import org.hillview.table.api.*;
+import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;
@@ -82,10 +83,10 @@ public class Heatmap implements Serializable, IJson {
         if (samplingRate < 1) {
             this.histogramMissingX.rescale(myIter.rate());
             this.histogramMissingY.rescale(myIter.rate());
-            this.missingData = (long) ((double) this.missingData / samplingRate);
+            this.missingData = Utilities.toLong(((double) this.missingData / samplingRate));
             for (int i = 0; i < this.buckets.length; i++)
                 for (int j = 0; j < this.buckets[i].length; j++)
-                    this.buckets[i][j] = (long) ((double) this.buckets[i][j] / samplingRate);
+                    this.buckets[i][j] = Utilities.toLong(((double) this.buckets[i][j] / samplingRate));
         }
     }
 

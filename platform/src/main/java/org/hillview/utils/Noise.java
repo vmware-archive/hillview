@@ -15,28 +15,40 @@
  * limitations under the License.
  */
 
-package org.hillview.dataStructures;
+package org.hillview.utils;
 
 public class Noise {
-    public double noise;
-    public double variance;
-    private double confidence;
+    private double noise;
+    private double variance;
 
     public Noise() {
-        this.noise = 0;
-        this.variance = 0;
-        this.confidence = 0;
+        this.clear();
+    }
+
+    public Noise(double noise, double variance) {
+        this.set(noise, variance);
     }
 
     public double getConfidence() {
-        if (this.confidence <= 0)
-            this.confidence = 2 * Math.sqrt(this.variance);
-        return this.confidence;
+        return 2 * Math.sqrt(this.variance);
     }
 
     public void clear() {
-        this.noise = 0;
-        this.variance = 0;
-        this.confidence = 0;
+        this.set(0, 0);
+    }
+
+    public void add(double noise, double variance) {
+        this.noise += noise;
+        this.variance += variance;
+    }
+
+    public double getNoise() {
+        return this.noise;
+    }
+
+
+    public void set(double noise, double variance) {
+        this.noise = noise;
+        this.variance = variance;
     }
 }

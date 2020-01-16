@@ -20,6 +20,7 @@ package org.hillview.table.columns;
 import net.openhft.hashing.LongHashFunction;
 import org.hillview.table.api.*;
 import org.hillview.utils.Converters;
+import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
@@ -107,7 +108,7 @@ public class QuantizedColumn extends BaseColumn {
         int v = this.data.getInt(rowIndex);
         if (this.quantization == null)
             return v;
-        return (int)this.quantization.roundDown(v);
+        return Utilities.toInt(this.quantization.roundDown(v));
     }
 
     @Override

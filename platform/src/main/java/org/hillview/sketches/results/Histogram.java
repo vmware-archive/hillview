@@ -21,6 +21,7 @@ import org.hillview.dataset.api.IJson;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ISampledRowIterator;
+import org.hillview.utils.Utilities;
 
 import java.io.Serializable;
 
@@ -28,7 +29,7 @@ import java.io.Serializable;
  * One dimensional histogram.
  */
 public class Histogram implements Serializable, IJson {
-    public long[] buckets = new long[0];
+    public long[] buckets;
     protected long missingData;
 
     public Histogram(int buckets) {
@@ -43,9 +44,9 @@ public class Histogram implements Serializable, IJson {
     public void rescale(double sampleRate) {
         if (sampleRate >= 1)
             return;
-        this.missingData = (long) ((double) this.missingData / sampleRate);
+        this.missingData = Utilities.toLong((double) this.missingData / sampleRate);
         for (int i = 0; i < this.buckets.length; i++) {
-            this.buckets[i] = (long) ((double) this.buckets[i] / sampleRate);
+            this.buckets[i] = Utilities.toLong((double) this.buckets[i] / sampleRate);
         }
     }
 

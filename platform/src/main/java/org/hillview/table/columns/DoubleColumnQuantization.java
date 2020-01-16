@@ -19,6 +19,7 @@ package org.hillview.table.columns;
 
 import org.hillview.sketches.results.BucketsInfo;
 import org.hillview.sketches.results.DataRange;
+import org.hillview.utils.Utilities;
 
 public class DoubleColumnQuantization extends ColumnQuantization {
     /**
@@ -51,7 +52,7 @@ public class DoubleColumnQuantization extends ColumnQuantization {
         if (this.granularity <= 0)
             throw new IllegalArgumentException("Granularity must be positive: " + this.granularity);
         double intervals = (this.globalMax - this.globalMin) / this.granularity;
-        if (Math.abs(intervals - (int) intervals) > .001)
+        if (Math.abs(intervals - Utilities.toInt(intervals)) > .001)
             throw new IllegalArgumentException("Granularity does not divide range into an integer number of intervals");
         if (intervals >= Integer.MAX_VALUE)
             throw new IllegalArgumentException("Number of intervals is too large: " + intervals);
@@ -74,17 +75,13 @@ public class DoubleColumnQuantization extends ColumnQuantization {
         if (this.outOfRange(value))
             return -1;
         double index = Math.floor((value - this.globalMin) / this.granularity);
-        if (index >= Integer.MAX_VALUE)
-            throw new IllegalArgumentException("Interval index is too large: " + index);
-        return (int)index;
+        return Utilities.toInt(index);
     }
 
     @Override
     public int getIntervalCount() {
         double count = ((this.globalMax - this.globalMin) / this.granularity);
-        if (count >= Integer.MAX_VALUE)
-            throw new IllegalArgumentException("Interval count is too large: " + count);
-        return (int)count;
+        return Utilities.toInt(count);
     }
 
     @Override

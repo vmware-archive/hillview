@@ -23,6 +23,7 @@ import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ISampledRowIterator;
 import org.hillview.utils.IntSet;
 import org.hillview.utils.Randomness;
+import org.hillview.utils.Utilities;
 
 /**
  * This implementation uses a Set data structure to store the membership. It uses the Set's
@@ -130,8 +131,8 @@ public class SparseMembershipSet implements IMembershipSet, IMutableMembershipSe
             psg = new Randomness(seed);
             double bias = psg.nextDouble();
             if (bias < rate)
-                this.sampleSize = (int) Math.floor(rate * this.mMap.size());
-            else this.sampleSize = (int) Math.ceil(rate * this.mMap.size());
+                this.sampleSize = Utilities.toInt(Math.floor(rate * this.mMap.size()));
+            else this.sampleSize = Utilities.toInt(Math.ceil(rate * this.mMap.size()));
             currentCursor = psg.nextInt(this.mMap.arraySize());
             this.rate = rate;
         }

@@ -6,8 +6,6 @@ import org.hillview.security.TestKeyLoader;
 import org.hillview.test.BaseTest;
 import org.junit.Test;
 
-import java.nio.file.Paths;
-
 public class SecureLaplaceTest extends BaseTest {
     @Test
     public void LaplaceTest() {

@@ -31,6 +31,7 @@ import org.hillview.table.api.*;
 import org.hillview.table.columns.BaseListColumn;
 import org.hillview.utils.Converters;
 import org.hillview.utils.Linq;
+import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -211,7 +212,7 @@ public class OrcFileLoader extends TextFileLoader {
                             to.append(Double.toString(d));
                             break;
                         case Integer:
-                            to.append((int)d);
+                            to.append(Utilities.toInt(d));
                             break;
                         case Double:
                             to.append(d);
@@ -370,7 +371,7 @@ public class OrcFileLoader extends TextFileLoader {
                     desc = imposed;
                 }
                 long rowCount = reader.getNumberOfRows();
-                result = Table.createLazyTable(desc, (int)rowCount, this.filename, lazyLoader);
+                result = Table.createLazyTable(desc, Utilities.toInt(rowCount), this.filename, lazyLoader);
             } else {
                 Reader.Options options = new Reader.Options();
                 List<IAppendableColumn> cols = readColumns(reader, options, this.hillviewSchema);

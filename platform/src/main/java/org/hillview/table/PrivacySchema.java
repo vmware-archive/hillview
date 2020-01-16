@@ -82,18 +82,20 @@ public class PrivacySchema implements IJson, Serializable {
         String key = getKeyForColumns(colNames);
         Double result = this.epsilons.get(key);
         if (result != null) {
-            if (result == 0)
+            if (result <= 0)
                 throw new RuntimeException("Default epsilon of 0 for " + key);
             return result;
         }
         result = this.defaultEpsilons.get(Integer.toString(colNames.length));
         if (result != null) {
-            if (result == 0)
+            if (result <= 0)
                 throw new RuntimeException("Default epsilon of 0 for " +
                         colNames.length + " columns");
             return result;
         }
         // default value of epsilon for any other combination of columns.
+        if (this.defaultEpsilon <= 0)
+            throw new RuntimeException("Default epsilon of 0 for unspecified combinations");
         return this.defaultEpsilon;
     }
 

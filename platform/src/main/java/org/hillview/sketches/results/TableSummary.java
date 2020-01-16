@@ -63,7 +63,7 @@ public class TableSummary implements IJson {
         if (this.schema == null)
             result.add("schema", JsonNull.INSTANCE);
         else
-            result.add("schema", this.schema.toJsonTree());
+            result.add("schema", this.schema.toJsonTree());      
         return result;
     }
 
