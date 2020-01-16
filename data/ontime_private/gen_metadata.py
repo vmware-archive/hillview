@@ -57,7 +57,7 @@ def main():
 
     with open('privacy_metadata.json', 'w') as f:
         quantization = {}
-        defaultEpsilons = { "1": 1, "2": .1 }
+        defaultEpsilons = { "0": 1, "1": 1, "2": .1 }
         for col in schema:
             cn = col["name"]
             if col["kind"] == "String":

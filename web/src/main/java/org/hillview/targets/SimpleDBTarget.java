@@ -22,7 +22,6 @@ import org.hillview.*;
 import org.hillview.dataStructures.*;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.api.IDataSet;
-import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.Pair;
 import org.hillview.maps.IdMap;
@@ -39,8 +38,10 @@ import org.hillview.table.api.ITable;
 import org.hillview.table.filters.RangeFilterDescription;
 import org.hillview.table.filters.RangeFilterPairDescription;
 import org.hillview.table.rows.RowSnapshot;
+import org.hillview.utils.CountWithConfidence;
 import org.hillview.utils.HillviewException;
 import org.hillview.utils.JsonList;
+import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.sql.DriverManager;
@@ -90,23 +91,6 @@ public class SimpleDBTarget extends RpcTarget {
         }
     }
 
-    SimpleDBTarget(SimpleDBTarget other, HillviewComputation computation) {
-        super(computation);
-        this.jdbc = other.jdbc;
-        this.schema = other.schema;
-        this.registerObject();
-        this.database = new JdbcDatabase(this.jdbc);
-        this.columnLimits = new ColumnLimits(other.columnLimits);
-        this.table = other.table;
-
-        try {
-            this.database.connect();
-            this.rowCount = this.database.getRowCount(this.columnLimits);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     @Override
     public String toString() {
         return "Local database: " + this.jdbc.toString();
@@ -118,27 +102,19 @@ public class SimpleDBTarget extends RpcTarget {
         this.runSketch(this.table, new PrecomputedSketch<ITable, TableSummary>(summary), request, context);
     }
 
-    static class DistinctCount implements IJson {
-        final int distinctItemCount;
-        DistinctCount(int dc) {
-            this.distinctItemCount = dc;
-        }
-    }
-
     @HillviewRpc
     public void hLogLog(RpcRequest request, RpcRequestContext context) {
         DistinctCountRequestInfo col = request.parseArgs(DistinctCountRequestInfo.class);
         int result = this.database.distinctCount(col.columnName, this.columnLimits);
-        // TODO(pratiksha): add noise to this count
-        DistinctCount dc = new DistinctCount(result);
-        ISketch<ITable, DistinctCount> sk = new PrecomputedSketch<ITable, DistinctCount>(dc);
+        CountWithConfidence dc = new CountWithConfidence(result);
+        ISketch<ITable, CountWithConfidence> sk = new PrecomputedSketch<ITable, CountWithConfidence>(dc);
         this.runSketch(this.table, sk, request, context);
     }
 
     private void heavyHitters(RpcRequest request, RpcRequestContext context) {
         HeavyHittersRequestInfo info = request.parseArgs(HeavyHittersRequestInfo.class);
         SmallTable tbl = this.database.topFreq(
-                info.columns, (int)Math.ceil(info.amount * info.totalRows / 100),
+                info.columns, Utilities.toInt(Math.ceil(info.amount * info.totalRows / 100)),
                 this.columnLimits);
         List<String> cols = tbl.getSchema().getColumnNames();
         String lastCol = cols.get(cols.size() - 1);
@@ -146,7 +122,7 @@ public class SimpleDBTarget extends RpcTarget {
         for (int i = 0; i < tbl.getNumOfRows(); i++) {
             RowSnapshot rs = new RowSnapshot(tbl, i);
             RowSnapshot proj = new RowSnapshot(rs, info.columns);
-            map.put(proj, (int)rs.getDouble(lastCol));
+            map.put(proj, Utilities.toInt(rs.getDouble(lastCol)));
         }
         FreqKList fkList = new FreqKList(info.totalRows, 0, map);
         fkList.sortList();
@@ -161,16 +137,17 @@ public class SimpleDBTarget extends RpcTarget {
         this.runSketch(this.table, sk, request, context);
     }
 
-    //@HillviewRpc // TODO: we don't know how to do this privately
+    @HillviewRpc
     public void heavyHittersMG(RpcRequest request, RpcRequestContext context) {
         this.heavyHitters(request, context);
     }
 
-    //@HillviewRpc // TODO: we don't know how to do this privately
+    @HillviewRpc
     public void heavyHittersSampling(RpcRequest request, RpcRequestContext context) {
         this.heavyHitters(request, context);
     }
 
+    @SuppressWarnings("unused")
     @HillviewRpc
     public void getDataQuantiles1D(RpcRequest request, RpcRequestContext context) {
         QuantilesArgs[] info = request.parseArgs(QuantilesArgs[].class);
@@ -191,6 +168,7 @@ public class SimpleDBTarget extends RpcTarget {
         this.runSketch(this.table, sk, request, context);
     }
 
+    @SuppressWarnings("unused")
     @HillviewRpc
     public void getDataQuantiles2D(RpcRequest request, RpcRequestContext context) {
         QuantilesArgs[] info = request.parseArgs(QuantilesArgs[].class);
