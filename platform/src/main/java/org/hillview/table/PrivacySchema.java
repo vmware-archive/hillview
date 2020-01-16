@@ -67,14 +67,19 @@ public class PrivacySchema implements IJson, Serializable {
         return this.quantization.get(colName);
     }
 
+    public String getKeyForColumns(String... colNames) {
+        Arrays.sort(colNames);
+        String key = String.join("+", colNames);
+        return key;
+    }
+
     /**
      * Get the epsilon corresponding to a set of columns.
      * @param colNames  Columns that we need the epsilon for.
      * @return          epsilon exploring the joint columns.
      */
     public double epsilon(String... colNames) {
-        Arrays.sort(colNames);
-        String key = String.join("+", colNames);
+        String key = getKeyForColumns(colNames);
         Double result = this.epsilons.get(key);
         if (result != null) {
             if (result == 0)

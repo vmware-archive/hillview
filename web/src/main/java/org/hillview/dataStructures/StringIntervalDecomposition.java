@@ -21,12 +21,12 @@ import org.hillview.sketches.results.StringHistogramBuckets;
 import org.hillview.table.columns.StringColumnQuantization;
 import org.hillview.utils.Utilities;
 
-class StringIntervalDecomposition extends IntervalDecomposition {
+public class StringIntervalDecomposition extends IntervalDecomposition {
     private StringIntervalDecomposition(StringColumnQuantization quantization, int[] indexes) {
         super(quantization, indexes);
     }
 
-    StringIntervalDecomposition(StringColumnQuantization quantization, StringHistogramBuckets buckets) {
+    public StringIntervalDecomposition(StringColumnQuantization quantization, StringHistogramBuckets buckets) {
         super(quantization, buckets.leftBoundaries.length);
         int previous = 0;
         for (int i = 0; i < buckets.getBucketCount(); i++) {

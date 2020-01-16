@@ -56,6 +56,13 @@ public class HistogramRequestInfo {
         this.samplingRate = 1.0;
     }
 
+    public HistogramRequestInfo(ColumnDescription cd, long seed, String[] leftBoundaries) {
+        this.cd = cd;
+        this.seed = seed;
+        this.leftBoundaries = leftBoundaries;
+        this.samplingRate = 1.0;
+    }
+
     public IHistogramBuckets getBuckets(@Nullable ColumnQuantization quantization) {
         if (cd.kind.isString()) {
             Converters.checkNull(this.leftBoundaries);
