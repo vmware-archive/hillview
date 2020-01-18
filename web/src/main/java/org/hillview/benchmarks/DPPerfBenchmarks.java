@@ -36,6 +36,7 @@ import org.hillview.storage.JdbcDatabase;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.PrivacySchema;
 import org.hillview.table.Schema;
+import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.ColumnQuantization;
 import org.hillview.table.columns.DoubleColumnQuantization;
@@ -59,6 +60,7 @@ import java.util.logging.Level;
  */
 public class DPPerfBenchmarks extends Benchmarks {
     private static int runCount = 7;
+    @SuppressWarnings("FieldCanBeLocal")
     private static int buckets = 100;
     @Nullable
     private Schema ontimeSchema;
@@ -203,76 +205,68 @@ public class DPPerfBenchmarks extends Benchmarks {
         }
     }
 
-    private Pair<IHistogramBuckets, IntervalDecomposition> getDecomposition(ColumnDescription col,
-                                                                            ColumnQuantization q) {
-        IHistogramBuckets buckDes;
+    static class ColumnConfig {
+        @Nullable
+        ColumnQuantization quantization;
+        IHistogramBuckets buckets;
+        IntervalDecomposition decomposition;
+    }
 
-        if (col.kind.isNumeric()) {
+    private ColumnConfig getColumnConfig(ColumnDescription col, ExperimentConfig conf) {
+        ColumnConfig result = new ColumnConfig();
+        PrivacySchema ps = this.flightsWrapper.getPrivacySchema();
+        ColumnQuantization q = ps.quantization(col.name);
+        if (conf.useRawData)
+            result.quantization = null;
+        else
+            result.quantization = q;
+
+        if (col.kind.isNumeric() || col.kind == ContentsKind.Date) {
             DoubleColumnQuantization dq = (DoubleColumnQuantization)q;
-            buckDes = new DoubleHistogramBuckets(
-                    dq.globalMin, dq.globalMax, buckets);
-            assert q != null;
-            return new Pair(buckDes,
-                    new NumericIntervalDecomposition((DoubleColumnQuantization) q, (DoubleHistogramBuckets)buckDes));
+            assert dq != null;
+            DoubleHistogramBuckets b = new DoubleHistogramBuckets(dq.globalMin, dq.globalMax, buckets);
+            result.buckets = b;
+            result.decomposition = new NumericIntervalDecomposition(dq, b);
         } else if (col.kind.isString()) {
             StringColumnQuantization sq = (StringColumnQuantization)q;
-            buckDes = new StringHistogramBuckets(sq.leftBoundaries);
-            assert q != null;
-            return new Pair(buckDes, new StringIntervalDecomposition(
-                    (StringColumnQuantization) q, (StringHistogramBuckets)buckDes));
+            assert sq != null;
+            StringHistogramBuckets b = new StringHistogramBuckets(sq.leftBoundaries);
+            result.buckets = b;
+            result.decomposition =  new StringIntervalDecomposition(sq, b);
         } else {
             throw new RuntimeException("Column type unsupported in benchmark");
         }
+        return result;
     }
 
     private void benchmarkHeatmap(ExperimentConfig conf, ColumnDescription col0, ColumnDescription col1) {
-        IDataSet<ITable> table = conf.dataset == Dataset.Cloud ? this.cloudFlights.get(conf.machines) : this.flights;
+        IDataSet<ITable> table = conf.dataset == Dataset.Cloud ? Converters.checkNull(this.cloudFlights).get(conf.machines) : this.flights;
         Converters.checkNull(table);
 
-        IHistogramBuckets buckDes0 = null;
-        IHistogramBuckets buckDes1 = null;
         Function<Heatmap, PrivateHeatmapFactory> postprocess = x -> null;
-        IntervalDecomposition d0;
-        IntervalDecomposition d1;
 
-        ColumnQuantization q0 = null;
-        ColumnQuantization q1 = null;
-        if (!conf.useRawData) {
-            PrivacySchema ps = this.flightsWrapper.getPrivacySchema();
-            q0 = ps.quantization(col0.name);
-            q1 = ps.quantization(col1.name);
-            double epsilon = ps.epsilon(col0.name, col1.name);
-            assert q0 != null;
-            assert q1 != null;
-            Pair<IHistogramBuckets, IntervalDecomposition> p0 = getDecomposition(col0, q0);
-            Pair<IHistogramBuckets, IntervalDecomposition> p1 = getDecomposition(col1, q1);
-            buckDes0 = p0.first;
-            d0 = p0.second;
-            buckDes1 = p1.first;
-            d1 = p1.second;
-            if (conf.usePostProcessing)
-                postprocess = x -> new PrivateHeatmapFactory(ps.getColumnIndex(col0.name, col1.name),
-                        d0, d1, x, epsilon, this.flightsWrapper.laplace);
-        }
+        PrivacySchema ps = this.flightsWrapper.getPrivacySchema();
+        double epsilon = ps.epsilon(col0.name, col1.name);
+        ColumnConfig c0 = this.getColumnConfig(col0, conf);
+        ColumnConfig c1 = this.getColumnConfig(col1, conf);
+        if (conf.usePostProcessing)
+            postprocess = x -> new PrivateHeatmapFactory(ps.getColumnIndex(col0.name, col1.name),
+                    c0.decomposition, c1.decomposition, x, epsilon, this.flightsWrapper.laplace);
 
         assert this.ontimeSchema != null;
         String bench = "Heatmap," + col0.name + "+" + col1.name + "," + conf.toString();
         Runnable r;
         Function<Heatmap, PrivateHeatmapFactory> finalPostprocess = postprocess;
         if (conf.dataset == Dataset.DB) {
-            ColumnQuantization finalQ0 = q0;
-            ColumnQuantization finalQ1 = q1;
-            IHistogramBuckets finalB0 = buckDes0;
-            IHistogramBuckets finalB1 = buckDes1;
             r = () -> {
                 Heatmap h = this.database.heatmap(col0, col1,
-                    finalB0, finalB1, null, finalQ0, finalQ1);
+                    c0.buckets, c1.buckets, null, c0.quantization, c1.quantization);
                 finalPostprocess.apply(h);
             };
             runNTimes(r, runCount, bench);
         } else {
             ISketch<ITable, Heatmap> hsk = new HeatmapSketch(
-                buckDes0, buckDes1, col0.name, col1.name, 1.0, 0, q0, q1);
+                    c0.buckets, c1.buckets, col0.name, col1.name, 1.0, 0, c0.quantization, c1.quantization);
             r = () -> finalPostprocess.apply(table.blockingSketch(hsk));
         }
         quiet = true;
@@ -282,43 +276,33 @@ public class DPPerfBenchmarks extends Benchmarks {
     }
 
     private void benchmarkHistogram(ExperimentConfig conf, ColumnDescription col) {
-        IDataSet<ITable> table = conf.dataset == Dataset.Cloud ? this.cloudFlights.get(conf.machines) : this.flights;
+        IDataSet<ITable> table = conf.dataset == Dataset.Cloud ?
+                Converters.checkNull(this.cloudFlights).get(conf.machines) : this.flights;
         Converters.checkNull(table);
 
-        IHistogramBuckets buckDes = null;
         Function<Histogram, PrivateHistogram> postprocess = x -> null;
-        ColumnQuantization q = null;
-        if (!conf.useRawData) {
-            PrivacySchema ps = this.flightsWrapper.getPrivacySchema();
-            q = ps.quantization(col.name);
-            double epsilon = ps.epsilon(col.name);
-            assert q != null;
-            IntervalDecomposition d;
-            Pair<IHistogramBuckets, IntervalDecomposition> p = getDecomposition(col, q);
-            buckDes = p.first;
-            d = p.second;
-            if (conf.usePostProcessing)
-                postprocess = x -> new PrivateHistogram(ps.getColumnIndex(col.name),
-                        d, x, epsilon, false, this.flightsWrapper.laplace);
-        }
+
+        PrivacySchema ps = this.flightsWrapper.getPrivacySchema();
+        ColumnConfig c = this.getColumnConfig(col, conf);
+        double epsilon = ps.epsilon(col.name);
+        if (conf.usePostProcessing)
+            postprocess = x -> new PrivateHistogram(ps.getColumnIndex(col.name),
+                    c.decomposition, x, epsilon, false, this.flightsWrapper.laplace);
 
         assert this.ontimeSchema != null;
-        System.out.println("Bench,Time (ms),Melems/s,Percent slower");
-        String bench = "Histogram " + col.name + "," + conf.toString();
+        String bench = "Histogram," + col.name + "," + conf.toString();
         Runnable r;
         Function<Histogram, PrivateHistogram> finalPostprocess = postprocess;
         if (conf.dataset == Dataset.DB) {
-            ColumnQuantization finalQ = q;
-            IHistogramBuckets finalBuck = buckDes;
             r = () -> {
                 Histogram histo = this.database.histogram(
-                    col, finalBuck, null, finalQ, 0);
+                    col, c.buckets, null, c.quantization, 0);
                 finalPostprocess.apply(histo);
             };
             runNTimes(r, runCount, bench);
         } else {
             ISketch<ITable, Histogram> hsk = new HistogramSketch(
-                buckDes, col.name, 1.0, 0, q);
+                c.buckets, col.name, 1.0, 0, c.quantization);
             r = () -> finalPostprocess.apply(table.blockingSketch(hsk));
         }
         quiet = true;
