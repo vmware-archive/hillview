@@ -251,7 +251,8 @@ public class DPPerfBenchmarks extends Benchmarks {
             buckDes1 = p1.first;
             d1 = p1.second;
             if (conf.usePostProcessing)
-                postprocess = x -> new PrivateHeatmapFactory(d0, d1, x, epsilon, this.flightsWrapper.laplace);
+                postprocess = x -> new PrivateHeatmapFactory(ps.getColumnIndex(col0.name, col1.name),
+                        d0, d1, x, epsilon, this.flightsWrapper.laplace);
         }
 
         assert this.ontimeSchema != null;
@@ -297,7 +298,8 @@ public class DPPerfBenchmarks extends Benchmarks {
             buckDes = p.first;
             d = p.second;
             if (conf.usePostProcessing)
-                postprocess = x -> new PrivateHistogram(d, x, epsilon, false, this.flightsWrapper.laplace);
+                postprocess = x -> new PrivateHistogram(ps.getColumnIndex(col.name),
+                        d, x, epsilon, false, this.flightsWrapper.laplace);
         }
 
         assert this.ontimeSchema != null;

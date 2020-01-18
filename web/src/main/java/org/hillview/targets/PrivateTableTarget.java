@@ -89,8 +89,10 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
                 new ConcurrentSketch<ITable, Histogram, Histogram>(sk, cdf);
         this.runCompleteSketch(this.table, csk, (e, c) ->
                 new Pair<PrivateHistogram, PrivateHistogram>(
-                        new PrivateHistogram(d0, Converters.checkNull(e.first), epsilon, false, this.wrapper.laplace),
-                        new PrivateHistogram(d1, Converters.checkNull(e.second), epsilon, true, this.wrapper.laplace)),
+                        new PrivateHistogram(this.wrapper.getColumnIndex(info[0].cd.name),
+                                d0, Converters.checkNull(e.first), epsilon, false, this.wrapper.laplace),
+                        new PrivateHistogram(this.wrapper.getColumnIndex(info[0].cd.name),
+                                d1, Converters.checkNull(e.second), epsilon, true, this.wrapper.laplace)),
                 request, context);
     }
 
@@ -130,7 +132,8 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
         DistinctCountRequestInfo col = request.parseArgs(DistinctCountRequestInfo.class);
         HLogLogSketch sketch = new HLogLogSketch(col.columnName, col.seed);
         double epsilon = this.wrapper.getPrivacySchema().epsilon(col.columnName);
-        Noise noise = DPWrapper.computeCountNoise(DPWrapper.SpecialBucket.DistinctCount, epsilon, this.wrapper.laplace);
+        Noise noise = DPWrapper.computeCountNoise(this.wrapper.getColumnIndex(col.columnName),
+                DPWrapper.SpecialBucket.DistinctCount, epsilon, this.wrapper.laplace);
         this.runSketchPostprocessing(this.table, sketch,
                 (r, c) -> r.getCount().add(noise), request, context);
     }
@@ -163,7 +166,8 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
         HeatmapSketch sk = new HeatmapSketch(
                 b0, b1, info[0].cd.name, info[1].cd.name, 1.0, 0, q0, q1);
         this.runCompleteSketch(this.table, sk, (e, c) ->
-                new PrivateHeatmapFactory(d0, d1, e, epsilon, this.wrapper.laplace).heatmap, request, context);
+                new PrivateHeatmapFactory(this.wrapper.getColumnIndex(info[0].cd.name, info[1].cd.name),
+                        d0, d1, e, epsilon, this.wrapper.laplace).heatmap, request, context);
     }
 
     @HillviewRpc
@@ -177,7 +181,8 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
         NextKSketch nk = new NextKSketch(nextKArgs.order, null, rs, nextKArgs.rowsOnScreen,
                 this.getPrivacySchema().quantization);
         double epsilon = this.wrapper.getPrivacySchema().epsilon();
-        Noise noise = DPWrapper.computeCountNoise(DPWrapper.SpecialBucket.TotalCount, epsilon, this.wrapper.laplace);
+        Noise noise = DPWrapper.computeCountNoise(DPWrapper.TABLE_COLUMN_INDEX, // Computed on entire table
+                DPWrapper.SpecialBucket.TotalCount, epsilon, this.wrapper.laplace);
         this.runSketchPostprocessing(this.table, nk,
                 (r, c) -> new NextKList(
                         r.rows, r.aggregates, r.count, r.startPosition,

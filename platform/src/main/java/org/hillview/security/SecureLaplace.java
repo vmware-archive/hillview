@@ -14,9 +14,15 @@ import static org.hillview.utils.Utilities.INT_SIZE;
 import static org.hillview.utils.Utilities.byteArrayToLong;
 
 public class SecureLaplace {
-    private byte[] scratchBytes = new byte[4*INT_SIZE]; // For sampling Laplace noise on intervals.
+    /**
+     * For sampling Laplace noise on intervals.
+     * For a query on a column with index I and a rectangle <x1, y1, x2, y2>,
+     * scratchBytes is filled with [I, x1, y1, x2, y2].
+     */
+    private byte[] scratchBytes = new byte[5*INT_SIZE];
     private Cipher aes;
-    private double normalizer = Math.pow(2, -53);
+
+    private static final double NORMALIZER = Math.pow(2, -53);
 
     public SecureLaplace(KeyLoader keyLoader) {
         try {
@@ -35,18 +41,26 @@ public class SecureLaplace {
      *
      * NOTE: This implementation is *not* thread-safe. scratchBytes is reused without a lock.
      * */
-    private double sampleUniform(Pair<Integer, Integer> index) {
+    private double sampleUniform(Integer columnIndex, Pair<Integer, Integer>... index) {
+        if (this.scratchBytes.length < index.length*INT_SIZE + 1) {
+            throw new RuntimeException("Not enough bytes allocated to sample with " + index.length + " columns");
+        }
+
+        Utilities.intToByteArray(columnIndex, scratchBytes, 0);
+        for (int i = 0; i < index.length; i++) {
+            Utilities.intPairToByteArray(index[i], scratchBytes, INT_SIZE*(2*i + 1));
+        }
+
         try {
-            Utilities.intPairToByteArray(index, this.scratchBytes);
             byte[] bytes = this.aes.doFinal(scratchBytes);
             long val = byteArrayToLong(bytes);
-            return (double)val * this.normalizer;
+            return (double)val * NORMALIZER;
         } catch (IllegalBlockSizeException | BadPaddingException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private double rescale(double scale, double unif) {
+    private double uniformToLaplace(double scale, double unif) {
         double r = 0.5 - unif;
         if ( r < 0 ) {
             return -1 * scale * Math.log(1 - 2*(-1 * r));
@@ -60,39 +74,8 @@ public class SecureLaplace {
      * Note that this implementation is vulnerable to the attack described in
      * "On Significance of the Least Significant Bits For Differential Privacy", Mironov, CCS 2012.
      */
-    public double sampleLaplace(Pair<Integer, Integer> index, double scale) {
-        double unif = this.sampleUniform(index);
-        return rescale(scale, unif);
-    }
-
-
-    /* **** Equivalent functions in two dimensions **** */
-
-    /**
-     * Securely sample a random double uniformly in [0, 1). This implementation returns
-     * a uniform value that is a multiple of 2^-53 using a pseudorandom function indexed
-     * by index.
-     *
-     * NOTE: This implementation is *not* thread-safe. scratchBytes is reused without a lock.
-     * */
-    private double sampleUniform(Pair<Integer, Integer> index1, Pair<Integer, Integer> index2) {
-        Utilities.intPairPairToByteArray(index1, index2, this.scratchBytes);
-        try {
-            byte[] bytes = this.aes.doFinal(scratchBytes);
-            long val = byteArrayToLong(bytes);
-            return (double)val * this.normalizer;
-        } catch (IllegalBlockSizeException | BadPaddingException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * Sample a value from Laplace(0, scale) using a pseudorandom function indexed by index.
-     * Note that this implementation is vulnerable to the attack described in
-     * "On Significance of the Least Significant Bits For Differential Privacy", Mironov, CCS 2012.
-     */
-    public double sampleLaplace(Pair<Integer, Integer> index1, Pair<Integer, Integer> index2, double scale) {
-        double unif = this.sampleUniform(index1, index2);
-        return rescale(scale, unif);
+    public double sampleLaplace(Integer columnIndex, double scale, Pair<Integer, Integer>... index) {
+        double unif = this.sampleUniform(columnIndex, index);
+        return uniformToLaplace(scale, unif);
     }
 }

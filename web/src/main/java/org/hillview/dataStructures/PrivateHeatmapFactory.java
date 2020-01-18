@@ -26,8 +26,12 @@ public class PrivateHeatmapFactory {
     IntervalDecomposition dx;
     IntervalDecomposition dy;
 
-    public PrivateHeatmapFactory(IntervalDecomposition d0, IntervalDecomposition d1,
-                                 Heatmap heatmap, double epsilon, SecureLaplace laplace) {
+    private final int columnsIndex;
+
+    public PrivateHeatmapFactory(int columnsIndex,
+            IntervalDecomposition d0, IntervalDecomposition d1, Heatmap heatmap, double epsilon, SecureLaplace laplace) {
+        this.columnsIndex = columnsIndex;
+
         this.heatmap = heatmap;
         this.epsilon = epsilon;
         this.laplace = laplace;
@@ -59,7 +63,7 @@ public class PrivateHeatmapFactory {
         result.clear();
         for (Pair<Integer, Integer> x : xIntervals) {
             for (Pair<Integer, Integer> y : yIntervals) {
-                result.add(this.laplace.sampleLaplace(x, y, scale), baseVariance);
+                result.add(this.laplace.sampleLaplace(this.columnsIndex, scale, x, y), baseVariance);
             }
         }
     }
