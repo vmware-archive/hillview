@@ -8,6 +8,7 @@ import org.hillview.targets.DPWrapper;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Noise;
 import org.hillview.utils.Utilities;
+import sun.jvm.hotspot.utilities.Interval;
 
 import java.util.List;
 
@@ -83,7 +84,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
      */
     private void recomputeCDF(IntervalDecomposition decomposition, SecureLaplace laplace) {
         int totalLeaves = decomposition.getQuantizationIntervalCount();
-        double scale = Math.log(totalLeaves + 1) / Math.log(2);  // +1 leaf for NULL
+        double scale = Utilities.logb(totalLeaves, IntervalDecomposition.BRANCHING_FACTOR);
         scale /= epsilon;
         double baseVariance = 2 * Math.pow(scale, 2);
         Noise noise = new Noise();
@@ -108,7 +109,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
     private long addDyadicLaplaceNoise(IntervalDecomposition decomposition, SecureLaplace laplace) {
         HillviewLogger.instance.info("Adding histogram noise with", "epsilon={0}", this.epsilon);
         int totalLeaves = decomposition.getQuantizationIntervalCount();
-        double scale = Math.log(totalLeaves + 1) / Math.log(2);  // +1 for NULL leaf
+        double scale = Utilities.logb(totalLeaves, IntervalDecomposition.BRANCHING_FACTOR);
         scale /= epsilon;
         double baseVariance = 2 * Math.pow(scale, 2);
 

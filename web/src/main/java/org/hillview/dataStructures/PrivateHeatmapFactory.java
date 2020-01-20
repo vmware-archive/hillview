@@ -6,6 +6,7 @@ import org.hillview.sketches.results.Heatmap;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Noise;
+import org.hillview.utils.Utilities;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,9 +36,11 @@ public class PrivateHeatmapFactory {
         this.dx = d0;
         this.dy = d1;
 
-        long totalLeaves = (1 + d0.getQuantizationIntervalCount()) *
-                (1 + d1.getQuantizationIntervalCount());  // +1 for the NULL bucket
-        this.scale = Math.log(totalLeaves) / Math.log(2);
+        long xLeaves = d0.getQuantizationIntervalCount();
+        long yLeaves = d1.getQuantizationIntervalCount();
+
+        this.scale = Utilities.logb(xLeaves, IntervalDecomposition.BRANCHING_FACTOR) *
+                Utilities.logb(yLeaves, IntervalDecomposition.BRANCHING_FACTOR);
         this.scale /= epsilon;
         this.baseVariance = 2 * (Math.pow(this.scale, 2));
 

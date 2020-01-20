@@ -52,6 +52,7 @@ import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Noise;
 import org.hillview.utils.Utilities;
 import org.junit.Assert;
+import sun.jvm.hotspot.utilities.Interval;
 
 import javax.annotation.Nullable;
 import java.io.FileWriter;
@@ -114,7 +115,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
      * @return The average per-query absolute error.
      */
     private double computeAccuracy(PrivateHistogram ph, int totalLeaves, SecureLaplace laplace) {
-        double scale = Math.log(totalLeaves) / Math.log(2);
+        double scale = Utilities.logb(totalLeaves, IntervalDecomposition.BRANCHING_FACTOR);
         scale /= ph.getEpsilon();
         double baseVariance = 2 * Math.pow(scale, 2);
         // Do all-intervals accuracy on leaves.
@@ -150,7 +151,8 @@ public class DPAccuracyBenchmarks extends Benchmarks {
      * @return The average per-query absolute error.
      */
     private Double computeAccuracy(PrivateHeatmapFactory ph, int totalXLeaves, int totalYLeaves) {
-        double scale = Math.log(totalXLeaves * totalYLeaves) / Math.log(2);
+        double scale = Utilities.logb(totalXLeaves, IntervalDecomposition.BRANCHING_FACTOR) *
+                Utilities.logb(totalYLeaves, IntervalDecomposition.BRANCHING_FACTOR);
         scale /= ph.getEpsilon();
         double baseVariance = 2 * Math.pow(scale, 2);
         // Do all-intervals accuracy on leaves.
