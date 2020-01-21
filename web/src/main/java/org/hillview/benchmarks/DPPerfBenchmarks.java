@@ -250,7 +250,7 @@ public class DPPerfBenchmarks extends Benchmarks {
         ColumnConfig c0 = this.getColumnConfig(col0, conf);
         ColumnConfig c1 = this.getColumnConfig(col1, conf);
         if (conf.usePostProcessing)
-            postprocess = x -> new PrivateHeatmapFactory(
+            postprocess = x -> new PrivateHeatmapFactory(ps.getColumnIndex(col0.name, col1.name),
                     c0.decomposition, c1.decomposition, x, epsilon, this.flightsWrapper.laplace);
 
         assert this.ontimeSchema != null;
@@ -281,11 +281,13 @@ public class DPPerfBenchmarks extends Benchmarks {
         Converters.checkNull(table);
 
         Function<Histogram, PrivateHistogram> postprocess = x -> null;
+
         PrivacySchema ps = this.flightsWrapper.getPrivacySchema();
         ColumnConfig c = this.getColumnConfig(col, conf);
         double epsilon = ps.epsilon(col.name);
         if (conf.usePostProcessing)
-            postprocess = x -> new PrivateHistogram(c.decomposition, x, epsilon, false, this.flightsWrapper.laplace);
+            postprocess = x -> new PrivateHistogram(ps.getColumnIndex(col.name),
+                    c.decomposition, x, epsilon, false, this.flightsWrapper.laplace);
 
         assert this.ontimeSchema != null;
         String bench = "Histogram," + col.name + "," + conf.toString();

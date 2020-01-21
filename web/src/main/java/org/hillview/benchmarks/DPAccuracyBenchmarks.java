@@ -191,7 +191,8 @@ public class DPAccuracyBenchmarks extends Benchmarks {
         return info;
     }
 
-    private Pair<Double, Double> computeSingleColumnAccuracy(String col, ColumnQuantization cq, double epsilon, IDataSet<ITable> table,
+    private Pair<Double, Double> computeSingleColumnAccuracy(String col, int colIndex,
+                                                             ColumnQuantization cq, double epsilon, IDataSet<ITable> table,
                                              int iterations) {
         // Construct a histogram corresponding to the leaves.
         // We will manually aggregate buckets as needed for the accuracy test.
@@ -211,8 +212,9 @@ public class DPAccuracyBenchmarks extends Benchmarks {
         for (int i = 0 ; i < iterations; i++) {
             tkl.setIndex(i);
             SecureLaplace laplace = new SecureLaplace(tkl);
-            PrivateHistogram ph = new PrivateHistogram(dd, hist, epsilon, false, laplace);
-            double acc = computeAccuracy(ph, dd, laplace);
+            PrivateHistogram ph = new PrivateHistogram(colIndex, 
+                                                       dd, hist, epsilon, false, laplace);
+            double acc = computeAccuracy(ph, totalLeaves, laplace);
             accuracies.add(acc);
             totAccuracy += acc;
         }
@@ -221,6 +223,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
 
     private Pair<Double, Double> computeHeatmapAccuracy(String col1, ColumnQuantization cq1,
                                                         String col2, ColumnQuantization cq2,
+                                                        int columnsIndex,
                                                         double epsilon, IDataSet<ITable> table,
                                                         int iterations) {
         // Construct a histogram corresponding to the leaves.
@@ -252,8 +255,8 @@ public class DPAccuracyBenchmarks extends Benchmarks {
         for (int i = 0 ; i < iterations; i++) {
             tkl.setIndex(i);
             SecureLaplace laplace = new SecureLaplace(tkl);
-            PrivateHeatmapFactory ph = new PrivateHeatmapFactory(d0, d1, heatmap, epsilon, laplace);
-            double acc = computeAccuracy(ph, d0, d1);
+            PrivateHeatmapFactory ph = new PrivateHeatmapFactory(columnsIndex, d0, d1, heatmap, epsilon, laplace);
+            double acc = computeAccuracy(ph, totalXLeaves, totalYLeaves);
             accuracies.add(acc);
             totAccuracy += acc;
         }
@@ -284,7 +287,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
 
             double epsilon = mdSchema.epsilon(col);
 
-            Pair<Double, Double> res = this.computeSingleColumnAccuracy(col, quantization, epsilon, table, iterations);
+            Pair<Double, Double> res = this.computeSingleColumnAccuracy(col, mdSchema.getColumnIndex(col), quantization, epsilon, table, iterations);
             System.out.println("Averaged absolute error over " + iterations + " iterations: " + res.first);
 
             // for JSON parsing convenience
@@ -332,7 +335,8 @@ public class DPAccuracyBenchmarks extends Benchmarks {
                 String key = mdSchema.getKeyForColumns(col1, col2);
                 double epsilon = mdSchema.epsilon(key);
 
-                Pair<Double, Double> res = this.computeHeatmapAccuracy(col1, q1, col2, q2, epsilon, table, iterations);
+                Pair<Double, Double> res = this.computeHeatmapAccuracy(col1, q1, col2, q2, mdSchema.getColumnIndex(col1, col2),
+                        epsilon, table, iterations);
                 System.out.println("Averaged absolute error over " + iterations + " iterations: " + res.first);
 
                 // for JSON parsing convenience

@@ -42,7 +42,7 @@ public class RNGBenchmarks extends Benchmarks {
         TestKeyLoader tkl = new TestKeyLoader();
         SecureLaplace laplace = new SecureLaplace(tkl);
         for (Pair<Integer, Integer> p : pairs) {
-            laplace.sampleLaplace(p, scale);
+            laplace.sampleLaplace(-1, scale, p);
         }
     }
 

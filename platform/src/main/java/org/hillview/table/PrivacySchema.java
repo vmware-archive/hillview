@@ -17,6 +17,7 @@
 
 package org.hillview.table;
 
+import com.google.gson.internal.LinkedTreeMap;
 import org.hillview.dataset.api.IJson;
 import org.hillview.table.columns.ColumnQuantization;
 
@@ -26,6 +27,7 @@ import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 
@@ -71,6 +73,10 @@ public class PrivacySchema implements IJson, Serializable {
         Arrays.sort(colNames);
         String key = String.join("+", colNames);
         return key;
+    }
+
+    public Integer getColumnIndex(String... colNames) {
+        return quantization.getIndex(getKeyForColumns(colNames));
     }
 
     /**

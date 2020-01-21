@@ -13,7 +13,7 @@ public class SecureLaplaceTest extends BaseTest {
         SecureLaplace sl = new SecureLaplace(tkl);
         double scale = 10;
         Pair<Integer, Integer> idx = new Pair<>(10, 11);
-        double noise = sl.sampleLaplace(idx, scale);
+        double noise = sl.sampleLaplace(-1, scale, idx);
         System.out.println(noise);
     }
 }

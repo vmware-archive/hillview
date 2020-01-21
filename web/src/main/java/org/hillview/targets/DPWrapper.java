@@ -94,7 +94,16 @@ public class DPWrapper {
      */
     private static final String PRIVACY_METADATA_NAME = "privacy_metadata.json";
 
+    /**
+     * The filename at which to look for the generated secret key for this table.
+     */
     private static final String KEY_NAME = "hillview_root_key";
+
+    /**
+     * Column index for counts corresponding to the entire table.
+     * TODO: Make sure this doesn't conflict with counts on "all columns".
+     */
+    public static final int TABLE_COLUMN_INDEX = -1;
 
     /**
      * If the privacy metadata file exists return the file name.
@@ -149,7 +158,7 @@ public class DPWrapper {
         pSumm.schema = summary.schema;
         pSumm.metadata = this.container.privacySchema;
         double epsilon = this.getPrivacySchema().epsilon();
-        Noise noise = DPWrapper.computeCountNoise(SpecialBucket.TotalCount, epsilon, this.laplace);
+        Noise noise = DPWrapper.computeCountNoise(TABLE_COLUMN_INDEX, SpecialBucket.TotalCount, epsilon, this.laplace);
         pSumm.rowCount = summary.rowCount + Utilities.toLong(noise.getNoise());
         pSumm.rowCountConfidence = Utilities.toLong(noise.getConfidence());
         return pSumm;
@@ -165,7 +174,7 @@ public class DPWrapper {
         DistinctCount  // A bucket for the distinct count query
     }
 
-    public static Noise computeCountNoise(SpecialBucket bucket, double epsilon, SecureLaplace laplace) {
+    public static Noise computeCountNoise(Integer columnIndex, SpecialBucket bucket, double epsilon, SecureLaplace laplace) {
         // TODO(pratiksha): check that this is correct.
         if (epsilon <= 0)
             throw new RuntimeException("Zero epsilon");
@@ -184,7 +193,7 @@ public class DPWrapper {
                 throw new RuntimeException("Unexpected special bucket " + bucket);
         }
         double scale = 1 / epsilon;
-        return new Noise(laplace.sampleLaplace(new Pair<Integer, Integer>(index, index), scale), 2 * Math.pow(scale, 2));
+        return new Noise(laplace.sampleLaplace(columnIndex, scale, new Pair<Integer, Integer>(index, index)), 2 * Math.pow(scale, 2));
     }
 
     public void filter(RangeFilterDescription filter) {
@@ -280,5 +289,9 @@ public class DPWrapper {
         BiFunction<Triple<BucketsInfo, BucketsInfo, BucketsInfo>, HillviewComputation, JsonList<BucketsInfo>> post =
                 (e, c) -> new JsonList<BucketsInfo>(e.first, e.second, e.third);
         target.runCompleteSketch(target.getDataset(), sk, post, request, context);
+    }
+
+    int getColumnIndex(String... colNames) {
+        return this.container.privacySchema.getColumnIndex(colNames);
     }
 }

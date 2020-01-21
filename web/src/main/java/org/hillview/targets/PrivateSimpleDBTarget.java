@@ -122,8 +122,10 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
         ISketch<ITable, Pair<Histogram, Histogram>> sk = new PrecomputedSketch<ITable, Pair<Histogram, Histogram>>(result);
         this.runCompleteSketch(this.table, sk, (e, c) ->
                 new Pair<PrivateHistogram, PrivateHistogram>(
-                        new PrivateHistogram(d0, Converters.checkNull(e.first), epsilon, false, this.wrapper.laplace),
-                        new PrivateHistogram(d1, Converters.checkNull(e.second), epsilon, true, this.wrapper.laplace)),
+                        new PrivateHistogram(this.wrapper.getColumnIndex(cd.name),
+                                d0, Converters.checkNull(e.first), epsilon, false, this.wrapper.laplace),
+                        new PrivateHistogram(this.wrapper.getColumnIndex(cd.name),
+                                d1, Converters.checkNull(e.second), epsilon, true, this.wrapper.laplace)),
                 request, context);
     }
 
@@ -167,7 +169,8 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
         DistinctCountRequestInfo col = request.parseArgs(DistinctCountRequestInfo.class);
         int result = this.database.distinctCount(col.columnName, this.wrapper.columnLimits);
         double epsilon = this.wrapper.getPrivacySchema().epsilon(col.columnName);
-        Noise noise = DPWrapper.computeCountNoise(DPWrapper.SpecialBucket.DistinctCount, epsilon, this.wrapper.laplace);
+        Noise noise = DPWrapper.computeCountNoise(this.wrapper.getColumnIndex(col.columnName),
+                DPWrapper.SpecialBucket.DistinctCount, epsilon, this.wrapper.laplace);
         CountWithConfidence dc = new CountWithConfidence(result).add(noise);
         ISketch<ITable, CountWithConfidence> sk = new PrecomputedSketch<ITable, CountWithConfidence>(dc);
         this.runSketch(this.table, sk, request, context);
@@ -189,7 +192,8 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
         Converters.checkNull(q1);
         IntervalDecomposition d0 = info[0].getDecomposition(q0);
         IntervalDecomposition d1 = info[1].getDecomposition(q1);
-        PrivateHeatmapFactory result = new PrivateHeatmapFactory(d0, d1, heatmap, epsilon, this.wrapper.laplace);
+        PrivateHeatmapFactory result = new PrivateHeatmapFactory(this.wrapper.getColumnIndex(info[0].cd.name, info[1].cd.name),
+                d0, d1, heatmap, epsilon, this.wrapper.laplace);
         ISketch<ITable, Heatmap> sk = new PrecomputedSketch<ITable, Heatmap>(result.heatmap);
         this.runCompleteSketch(this.table, sk, (e, c) -> e, request, context);
     }

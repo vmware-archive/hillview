@@ -22,11 +22,14 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
     // TODO(pratiksha): compute the missing value confidence
     private int missingConfidence;  // Confidence for the missing value
     private final double epsilon;
+    private final int columnIndex;
 
-    public PrivateHistogram(IntervalDecomposition decomposition,
+    public PrivateHistogram(int columnIndex,
+                            IntervalDecomposition decomposition,
                             final Histogram histogram,
                             double epsilon, boolean isCdf, SecureLaplace laplace) {
         super(histogram);
+        this.columnIndex = columnIndex;
         this.epsilon = epsilon;
         this.confidence  = new int[histogram.getBucketCount()];
         this.missingConfidence = 0;
@@ -48,7 +51,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
         List<Pair<Integer, Integer>> intervals = IntervalDecomposition.kadicDecomposition(left, right, IntervalDecomposition.BRANCHING_FACTOR);
         noise.clear();
         for (Pair<Integer, Integer> x : intervals) {
-            noise.add(laplace.sampleLaplace(x, scale), baseVariance);
+            noise.add(laplace.sampleLaplace(this.columnIndex, scale, x), baseVariance);
         }
 
         return intervals.size();
@@ -119,7 +122,7 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
             this.confidence[i] = Utilities.toInt(noise.getConfidence());
         }
 
-        noise = DPWrapper.computeCountNoise(DPWrapper.SpecialBucket.NullCount, epsilon, laplace);
+        noise = DPWrapper.computeCountNoise(this.columnIndex, DPWrapper.SpecialBucket.NullCount, epsilon, laplace);
         missingConfidence = Utilities.toInt(noise.getConfidence());
         return totalIntervals;
     }
