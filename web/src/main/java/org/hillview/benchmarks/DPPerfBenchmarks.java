@@ -241,10 +241,8 @@ public class DPPerfBenchmarks extends Benchmarks {
 
     private void benchmarkHeatmap(ExperimentConfig conf, ColumnDescription col0, ColumnDescription col1) {
         IDataSet<ITable> table = conf.dataset == Dataset.Cloud ? Converters.checkNull(this.cloudFlights).get(conf.machines) : this.flights;
-        Converters.checkNull(table);
 
         Function<Heatmap, PrivateHeatmapFactory> postprocess = x -> null;
-
         PrivacySchema ps = this.flightsWrapper.getPrivacySchema();
         double epsilon = ps.epsilon(col0.name, col1.name);
         ColumnConfig c0 = this.getColumnConfig(col0, conf);
@@ -263,25 +261,25 @@ public class DPPerfBenchmarks extends Benchmarks {
                     c0.buckets, c1.buckets, null, c0.quantization, c1.quantization);
                 finalPostprocess.apply(h);
             };
+            quiet = false;
             runNTimes(r, runCount, bench);
         } else {
+            Converters.checkNull(table);
             ISketch<ITable, Heatmap> hsk = new HeatmapSketch(
                     c0.buckets, c1.buckets, col0.name, col1.name, 1.0, 0, c0.quantization, c1.quantization);
             r = () -> finalPostprocess.apply(table.blockingSketch(hsk));
+            quiet = true;
+            runNTimes(r, 2, bench);  // warm up jit
+            quiet = false;
+            runNTimes(r, runCount, bench);
         }
-        quiet = true;
-        runNTimes(r, 2, bench);  // warm up jit
-        quiet = false;
-        runNTimes(r, runCount, bench);
     }
 
     private void benchmarkHistogram(ExperimentConfig conf, ColumnDescription col) {
         IDataSet<ITable> table = conf.dataset == Dataset.Cloud ?
                 Converters.checkNull(this.cloudFlights).get(conf.machines) : this.flights;
-        Converters.checkNull(table);
 
         Function<Histogram, PrivateHistogram> postprocess = x -> null;
-
         PrivacySchema ps = this.flightsWrapper.getPrivacySchema();
         ColumnConfig c = this.getColumnConfig(col, conf);
         double epsilon = ps.epsilon(col.name);
@@ -299,16 +297,18 @@ public class DPPerfBenchmarks extends Benchmarks {
                     col, c.buckets, null, c.quantization, 0);
                 finalPostprocess.apply(histo);
             };
+            quiet = false;
             runNTimes(r, runCount, bench);
         } else {
+            Converters.checkNull(table);
             ISketch<ITable, Histogram> hsk = new HistogramSketch(
                 c.buckets, col.name, 1.0, 0, c.quantization);
             r = () -> finalPostprocess.apply(table.blockingSketch(hsk));
+            quiet = true;
+            runNTimes(r, 2, bench);  // warm up jit
+            quiet = false;
+            runNTimes(r, runCount, bench);
         }
-        quiet = true;
-        runNTimes(r, 2, bench);  // warm up jit
-        quiet = false;
-        runNTimes(r, runCount, bench);
     }
 
     public void run(HashSet<String> datasets) {
