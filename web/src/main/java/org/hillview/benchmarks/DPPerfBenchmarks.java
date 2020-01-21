@@ -198,7 +198,7 @@ public class DPPerfBenchmarks extends Benchmarks {
         public String toString() {
             String result = "";
             result += this.dataset.toString();
-            result += this.useRawData ? " raw" : " quantized";
+            result += this.useRawData ? " public" : " quantized";
             result += this.usePostProcessing ? " noised" : "";
             result += "," + this.machines;
             return result;

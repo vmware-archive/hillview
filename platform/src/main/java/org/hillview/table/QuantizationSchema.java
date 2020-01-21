@@ -32,9 +32,6 @@ public class QuantizationSchema implements IJson, Serializable {
     // We use a LinkedHashMap for deterministic serialization
     private LinkedHashMap<String, ColumnQuantization> quantization;
 
-    @Nullable
-    private LinkedHashMap<String, Integer> columnIndexes;
-
     public QuantizationSchema() {
         this.quantization = new LinkedHashMap<String, ColumnQuantization>();
     }
@@ -50,24 +47,15 @@ public class QuantizationSchema implements IJson, Serializable {
 
     public void set(String col, ColumnQuantization quantization) {
         this.quantization.put(col, quantization);
-        this.columnIndexes.put(col, columnIndexes.size());
     }
 
     public Integer getIndex(String colName) {
-        initializeColumnIndexes();
-        return columnIndexes.get(colName);
-    }
-
-    public void initializeColumnIndexes() {
-        if (this.columnIndexes.size() > 0) { // Only need to initialize once
-            return;
+        int index = 0;
+        for (String s: quantization.keySet()) {
+            if (s.equals(colName))
+                return index;
+            index++;
         }
-
-        Set<String> colNames = this.getColNames();
-        int i = 0;
-        for (String x : colNames) {
-            columnIndexes.put(x, i);
-            i++;
-        }
+        throw new RuntimeException("Column " + colName + " not found");
     }
 }

@@ -214,7 +214,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
             SecureLaplace laplace = new SecureLaplace(tkl);
             PrivateHistogram ph = new PrivateHistogram(colIndex, 
                                                        dd, hist, epsilon, false, laplace);
-            double acc = computeAccuracy(ph, totalLeaves, laplace);
+            double acc = computeAccuracy(ph, dd, laplace);
             accuracies.add(acc);
             totAccuracy += acc;
         }
@@ -256,7 +256,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
             tkl.setIndex(i);
             SecureLaplace laplace = new SecureLaplace(tkl);
             PrivateHeatmapFactory ph = new PrivateHeatmapFactory(columnsIndex, d0, d1, heatmap, epsilon, laplace);
-            double acc = computeAccuracy(ph, totalXLeaves, totalYLeaves);
+            double acc = computeAccuracy(ph, d0, d1);
             accuracies.add(acc);
             totAccuracy += acc;
         }
