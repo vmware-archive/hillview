@@ -3,9 +3,7 @@ package org.hillview.dataStructures;
 import org.hillview.dataset.api.Pair;
 import org.hillview.security.SecureLaplace;
 import org.hillview.sketches.results.Heatmap;
-import org.hillview.utils.Converters;
-import org.hillview.utils.HillviewLogger;
-import org.hillview.utils.Noise;
+import org.hillview.utils.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,11 +33,8 @@ public class PrivateHeatmapFactory {
         this.dx = d0;
         this.dy = d1;
 
-        long totalLeaves = (1 + d0.getQuantizationIntervalCount()) *
-                (1 + d1.getQuantizationIntervalCount());  // +1 for the NULL bucket
-        this.scale = Math.log(totalLeaves) / Math.log(2);
-        this.scale /= epsilon;
-        this.baseVariance = 2 * (Math.pow(this.scale, 2));
+        this.scale = PrivacyUtils.computeNoiseScale(this.epsilon, d0, d1);
+        this.baseVariance = PrivacyUtils.laplaceVariance(scale);
 
         this.addDyadicLaplaceNoise(d0, d1);
     }

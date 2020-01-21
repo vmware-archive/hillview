@@ -309,6 +309,16 @@ public class Utilities {
         return Utilities.toInt((Math.floor(Math.log(x) / Math.log(2))));
     }
 
+    /**
+     * Returns the base-b log of x.
+     */
+    public static double logb(long x, int base) {
+        if (x <= 0) {
+            throw new RuntimeException("Attempted to take the log of a negative value: " + x);
+        }
+        return Math.log(x) / Math.log(base);
+    }
+
     public static double stdev(ArrayList<Double> values) {
         double tot = 0;
         for ( double x : values ) {

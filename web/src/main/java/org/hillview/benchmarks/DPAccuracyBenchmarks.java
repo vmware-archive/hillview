@@ -47,10 +47,7 @@ import org.hillview.table.columns.ColumnQuantization;
 import org.hillview.table.columns.DoubleColumnQuantization;
 
 import org.hillview.table.columns.StringColumnQuantization;
-import org.hillview.utils.Converters;
-import org.hillview.utils.HillviewLogger;
-import org.hillview.utils.Noise;
-import org.hillview.utils.Utilities;
+import org.hillview.utils.*;
 import org.junit.Assert;
 
 import javax.annotation.Nullable;
@@ -109,14 +106,12 @@ public class DPAccuracyBenchmarks extends Benchmarks {
      * averaged over all possible range queries.
      *
      * @param ph The histogram whose accuracy we want to compute.
-     * @param totalLeaves The "global" number of leaves in case this histogram is computed only on a zoomed-in range.
-     *                    This is needed to correctly compute the amount of noise to add to each leaf.
+     * @param decomposition The leaf specification for the histogram.
      * @return The average per-query absolute error.
      */
-    private double computeAccuracy(PrivateHistogram ph, int totalLeaves, SecureLaplace laplace) {
-        double scale = Math.log(totalLeaves) / Math.log(2);
-        scale /= ph.getEpsilon();
-        double baseVariance = 2 * Math.pow(scale, 2);
+    private double computeAccuracy(PrivateHistogram ph, IntervalDecomposition decomposition, SecureLaplace laplace) {
+        double scale = PrivacyUtils.computeNoiseScale(ph.getEpsilon(), decomposition);
+        double baseVariance = PrivacyUtils.laplaceVariance(scale);
         // Do all-intervals accuracy on leaves.
         int n = 0;
         double sqtot = 0.0;
@@ -144,15 +139,14 @@ public class DPAccuracyBenchmarks extends Benchmarks {
      * averaged over all possible range queries (every rectangle).
      *
      * @param ph The heat map whose accuracy we want to compute.
-     * @param totalXLeaves The "global" number of leaves (in the x-dimension) in case this heat map is computed only on a zoomed-in range.
-     *                    This is needed to correctly compute the amount of noise to add to each leaf.
-     * @param totalYLeaves same as totalXLeaves but for y-axis
+     * @param xd The leaf specification for the x-axis.
+     * @param yd The leaf specification for the y-axis.
      * @return The average per-query absolute error.
      */
-    private Double computeAccuracy(PrivateHeatmapFactory ph, int totalXLeaves, int totalYLeaves) {
-        double scale = Math.log(totalXLeaves * totalYLeaves) / Math.log(2);
-        scale /= ph.getEpsilon();
-        double baseVariance = 2 * Math.pow(scale, 2);
+    private Double computeAccuracy(PrivateHeatmapFactory ph, IntervalDecomposition xd, IntervalDecomposition yd) {
+        double scale = PrivacyUtils.computeNoiseScale(ph.getEpsilon(), xd, yd);
+        double baseVariance = PrivacyUtils.laplaceVariance(scale);
+
         // Do all-intervals accuracy on leaves.
         int n = 0;
         double sqtot = 0.0;
@@ -218,7 +212,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
             tkl.setIndex(i);
             SecureLaplace laplace = new SecureLaplace(tkl);
             PrivateHistogram ph = new PrivateHistogram(dd, hist, epsilon, false, laplace);
-            double acc = computeAccuracy(ph, totalLeaves, laplace);
+            double acc = computeAccuracy(ph, dd, laplace);
             accuracies.add(acc);
             totAccuracy += acc;
         }
@@ -259,7 +253,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
             tkl.setIndex(i);
             SecureLaplace laplace = new SecureLaplace(tkl);
             PrivateHeatmapFactory ph = new PrivateHeatmapFactory(d0, d1, heatmap, epsilon, laplace);
-            double acc = computeAccuracy(ph, totalXLeaves, totalYLeaves);
+            double acc = computeAccuracy(ph, d0, d1);
             accuracies.add(acc);
             totAccuracy += acc;
         }

@@ -7,6 +7,7 @@ import org.hillview.sketches.results.Histogram;
 import org.hillview.targets.DPWrapper;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Noise;
+import org.hillview.utils.PrivacyUtils;
 import org.hillview.utils.Utilities;
 
 import java.util.List;
@@ -82,10 +83,8 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
      * noise for that prefix.
      */
     private void recomputeCDF(IntervalDecomposition decomposition, SecureLaplace laplace) {
-        int totalLeaves = decomposition.getQuantizationIntervalCount();
-        double scale = Math.log(totalLeaves + 1) / Math.log(2);  // +1 leaf for NULL
-        scale /= epsilon;
-        double baseVariance = 2 * Math.pow(scale, 2);
+        double scale = PrivacyUtils.computeNoiseScale(this.epsilon, decomposition);
+        double baseVariance = PrivacyUtils.laplaceVariance(scale);
         Noise noise = new Noise();
         for (int i = 0; i < this.cdfBuckets.length; i++) {
             noise.clear();
@@ -107,10 +106,8 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
      */
     private long addDyadicLaplaceNoise(IntervalDecomposition decomposition, SecureLaplace laplace) {
         HillviewLogger.instance.info("Adding histogram noise with", "epsilon={0}", this.epsilon);
-        int totalLeaves = decomposition.getQuantizationIntervalCount();
-        double scale = Math.log(totalLeaves + 1) / Math.log(2);  // +1 for NULL leaf
-        scale /= epsilon;
-        double baseVariance = 2 * Math.pow(scale, 2);
+        double scale = PrivacyUtils.computeNoiseScale(this.epsilon, decomposition);
+        double baseVariance = PrivacyUtils.laplaceVariance(scale);
 
         Noise noise = new Noise();
         long totalIntervals = 0;
