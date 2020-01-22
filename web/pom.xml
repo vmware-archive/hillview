@@ -43,7 +43,7 @@
                                 <configuration>
                                     <archive>
                                         <manifest>
-                                            <mainClass>org.hillview.benchmarks.DPBenchmarks</mainClass>
+                                            <mainClass>org.hillview.benchmarks.DPPerfBenchmarks</mainClass>
                                         </manifest>
                                     </archive>
                                     <descriptorRefs>

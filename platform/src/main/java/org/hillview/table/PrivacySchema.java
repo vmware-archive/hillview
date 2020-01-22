@@ -17,9 +17,9 @@
 
 package org.hillview.table;
 
-import com.google.gson.internal.LinkedTreeMap;
 import org.hillview.dataset.api.IJson;
 import org.hillview.table.columns.ColumnQuantization;
+import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -27,7 +27,6 @@ import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 
@@ -71,12 +70,20 @@ public class PrivacySchema implements IJson, Serializable {
 
     public String getKeyForColumns(String... colNames) {
         Arrays.sort(colNames);
-        String key = String.join("+", colNames);
-        return key;
+        return String.join("+", colNames);
     }
 
     public Integer getColumnIndex(String... colNames) {
-        return quantization.getIndex(getKeyForColumns(colNames));
+        long ct = quantization.getColumnCount();
+        long index = 0;
+        for (String col: colNames) {
+            int ix = quantization.getIndex(col);
+            long newIndex = index * ct + ix;
+            if (index > newIndex)
+                throw new RuntimeException("Too many columns; index overflow");
+            index = newIndex;
+        }
+        return Utilities.toInt(index);
     }
 
     /**

@@ -49,6 +49,8 @@ public class QuantizationSchema implements IJson, Serializable {
         this.quantization.put(col, quantization);
     }
 
+    public int getColumnCount() { return this.quantization.size(); }
+
     public Integer getIndex(String colName) {
         int index = 0;
         for (String s: quantization.keySet()) {
