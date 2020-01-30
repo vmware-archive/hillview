@@ -47,9 +47,10 @@ public class PrivateHeatmapFactory {
      * Compute noise to add to this bucket using the dyadic decomposition as the PRG seed.
      * If cdfBuckets is true, computes the noise based on the dyadic decomposition of the interval [0, bucket right leaf]
      * rather than [bucket left leaf, bucket right leaf].
-     * Returns the noise and the total variance of the variables used to compute the noise.
+     * Stores the noise and the total variance of the variables used to compute the noise in the `noise` output.
+     * Returns the total number of intervals used to compute the noise.
      */
-    private void noiseForDecomposition(
+    private int noiseForDecomposition(
             List<Pair<Integer, Integer>> xIntervals,
             List<Pair<Integer, Integer>> yIntervals,
             double scale,
@@ -61,14 +62,16 @@ public class PrivateHeatmapFactory {
                 result.add(this.laplace.sampleLaplace(this.columnsIndex, scale, x, y), baseVariance);
             }
         }
+
+        return xIntervals.size() * yIntervals.size();
     }
 
-    public void noiseForRange(int left, int right, int top, int bot,
+    public int noiseForRange(int left, int right, int top, int bot,
                               double scale, double baseVariance, /*out*/Noise result) {
         List<Pair<Integer, Integer>> xIntervals = kadicDecomposition(left, right, IntervalDecomposition.BRANCHING_FACTOR);
         List<Pair<Integer, Integer>> yIntervals = kadicDecomposition(top, bot, IntervalDecomposition.BRANCHING_FACTOR);
 
-        noiseForDecomposition(xIntervals, yIntervals, scale, baseVariance, result);
+        return noiseForDecomposition(xIntervals, yIntervals, scale, baseVariance, result);
     }
 
     /**
@@ -97,9 +100,10 @@ public class PrivateHeatmapFactory {
 
         for (int i = 0; i < this.heatmap.buckets.length; i++) {
             for (int j = 0; j < this.heatmap.buckets[i].length; j++) {
-                this.noiseForDecomposition(xIntervals.get(i), yIntervals.get(j), this.scale, this.baseVariance, noise);
+                int numIntervals = this.noiseForDecomposition(xIntervals.get(i), yIntervals.get(j), this.scale, this.baseVariance, noise);
                 this.heatmap.buckets[i][j] += noise.getNoise();
-                this.heatmap.confidence[i][j] = (int)noise.getConfidence();
+                this.heatmap.confidence[i][j] = Utilities.toInt(PrivacyUtils.laplaceCI(numIntervals, this.scale,
+                        PrivacyUtils.DEFAULT_ALPHA).second);
             }
         }
     }

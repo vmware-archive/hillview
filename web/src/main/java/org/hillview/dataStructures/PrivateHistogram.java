@@ -119,11 +119,13 @@ public class PrivateHistogram extends HistogramPrefixSum implements IJson {
                     i, scale, baseVariance, false, noise, laplace, decomposition);
             totalIntervals += nIntervals;
             this.histogram.buckets[i] += noise.getNoise();
-            this.confidence[i] = Utilities.toInt(noise.getConfidence());
+            Pair<Double, Double> ci = PrivacyUtils.laplaceCI(nIntervals, scale, PrivacyUtils.DEFAULT_ALPHA);
+            confidence[i] = (int)(Utilities.toInt(ci.second)); // just use upper bound as CI is symmetric and zero-centered
         }
 
         noise = DPWrapper.computeCountNoise(this.columnIndex, DPWrapper.SpecialBucket.NullCount, epsilon, laplace);
-        missingConfidence = Utilities.toInt(noise.getConfidence());
+        missingConfidence = Utilities.toInt(PrivacyUtils.laplaceCI(
+                1, 1.0/epsilon, PrivacyUtils.DEFAULT_ALPHA).second);
         return totalIntervals;
     }
 
