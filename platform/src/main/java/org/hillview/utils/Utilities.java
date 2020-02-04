@@ -422,17 +422,6 @@ public class Utilities {
         intToByteArray(p.second, arr, startIndex + INT_SIZE);
     }
 
-    public static void intPairPairToByteArray(Pair<Integer, Integer> p1, Pair<Integer, Integer> p2, /*out*/ byte[] arr, int startIndex) {
-        if (arr.length < 2) {
-            throw new RuntimeException("Not enough bytes allocated for output");
-        }
-
-        Arrays.fill(arr, (byte)0);
-
-        intPairToByteArray(p1, arr, startIndex);
-        intPairToByteArray(p2, arr, startIndex + 2*INT_SIZE);
-    }
-
     public static long byteArrayToLong(byte[] bytes) {
         if (bytes.length < 8) {
             throw new RuntimeException("Not enough bytes to convert to int");

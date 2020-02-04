@@ -27,6 +27,8 @@ def get_metadata(cn):
         (g, gMin, gMax) = (10, 0, 5100)
     elif cn == "FlightDate":
         # cluster values: (86400000, 852076800000, 1561852800000)
+        # 2017 values: (86400000, 1483286400000, 1514736000000)
+        # 2016 values, 2 months: (86400000, 1451635200000, 1456732800000)
         (g, gMin, gMax) = (86400000, 1451635200000, 1456732800000)
     else:
         raise Exception("Unexpected column " + cn)

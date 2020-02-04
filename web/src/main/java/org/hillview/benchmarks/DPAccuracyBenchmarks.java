@@ -53,7 +53,6 @@ import org.junit.Assert;
 import javax.annotation.Nullable;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -204,9 +203,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
         Histogram hist = table.blockingSketch(sk); // Leaf counts.
         Assert.assertNotNull(hist);
 
-        int totalLeaves = dd.getQuantizationIntervalCount();
         TestKeyLoader tkl = new TestKeyLoader();
-
         ArrayList<Double> accuracies = new ArrayList<>();
         double totAccuracy = 0.0;
         for (int i = 0 ; i < iterations; i++) {
@@ -246,10 +243,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
         Heatmap heatmap = table.blockingSketch(sk); // Leaf counts.
         Assert.assertNotNull(heatmap);
 
-        int totalXLeaves = d0.getQuantizationIntervalCount();
-        int totalYLeaves = d1.getQuantizationIntervalCount();
         TestKeyLoader tkl = new TestKeyLoader();
-
         ArrayList<Double> accuracies = new ArrayList<>();
         double totAccuracy = 0.0;
         for (int i = 0 ; i < iterations; i++) {
@@ -356,7 +350,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
         writer.close();
     }
 
-    public static void main(String[] args) throws IOException, SQLException {
+    public static void main(String[] args) throws IOException {
         if (args.length < 1) {
             return;
         }

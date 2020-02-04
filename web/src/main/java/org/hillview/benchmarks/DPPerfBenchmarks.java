@@ -45,6 +45,7 @@ import org.hillview.targets.DPWrapper;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.HostList;
+import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -193,6 +194,7 @@ public class DPPerfBenchmarks extends Benchmarks {
         boolean useRawData;
         boolean usePostProcessing;
         Dataset dataset;
+        int bucketCount = DPPerfBenchmarks.buckets;
         int machines = 1;
 
         public String toString() {
@@ -200,7 +202,7 @@ public class DPPerfBenchmarks extends Benchmarks {
             result += this.dataset.toString();
             result += this.useRawData ? " public" : " quantized";
             result += this.usePostProcessing ? " noised" : "";
-            result += "," + this.machines;
+            result += "," + this.machines + "," + this.bucketCount;
             return result;
         }
     }
@@ -224,13 +226,15 @@ public class DPPerfBenchmarks extends Benchmarks {
         if (col.kind.isNumeric() || col.kind == ContentsKind.Date) {
             DoubleColumnQuantization dq = (DoubleColumnQuantization)q;
             assert dq != null;
-            DoubleHistogramBuckets b = new DoubleHistogramBuckets(dq.globalMin, dq.globalMax, buckets);
+            DoubleHistogramBuckets b = new DoubleHistogramBuckets(dq.globalMin, dq.globalMax, conf.bucketCount);
             result.buckets = b;
             result.decomposition = new NumericIntervalDecomposition(dq, b);
         } else if (col.kind.isString()) {
             StringColumnQuantization sq = (StringColumnQuantization)q;
             assert sq != null;
-            StringHistogramBuckets b = new StringHistogramBuckets(sq.leftBoundaries);
+            List<String> labels = new ArrayList<String>();
+            Utilities.equiSpaced(Arrays.asList(sq.leftBoundaries), conf.bucketCount, labels);
+            StringHistogramBuckets b = new StringHistogramBuckets(labels.toArray(new String[0]));
             result.buckets = b;
             result.decomposition =  new StringIntervalDecomposition(sq, b);
         } else {
@@ -311,10 +315,32 @@ public class DPPerfBenchmarks extends Benchmarks {
         }
     }
 
+    private void allHistograms(ColumnDescription col, ExperimentConfig conf) {
+        conf.useRawData = true;
+        conf.usePostProcessing = false;
+        this.benchmarkHistogram(conf, col);
+        conf.useRawData = false;
+        this.benchmarkHistogram(conf, col);
+        conf.usePostProcessing = true;
+        this.benchmarkHistogram(conf, col);
+    }
+
+    private void allHeatmaps(ColumnDescription col0, ColumnDescription col1, ExperimentConfig conf) {
+        conf.useRawData = true;
+        conf.usePostProcessing = false;
+        this.benchmarkHeatmap(conf, col0, col1);
+        conf.useRawData = false;
+        this.benchmarkHeatmap(conf, col0, col1);
+        conf.usePostProcessing = true;
+        this.benchmarkHeatmap(conf, col0, col1);
+    }
+
     public void run(HashSet<String> datasets) {
         assert this.ontimeSchema != null;
         ExperimentConfig conf = new ExperimentConfig();
-        System.out.println("Measurement,Column(s),Type,Machines,Iteration,Time (ms)");
+        System.out.println("Type,Column(s),Measurements,Machines,Bucket ct,Iteration,Time (ms)");
+        List<ColumnDescription> cols = this.ontimeSchema.getColumnDescriptions();
+
         for (Dataset d: Arrays.asList(Dataset.Cloud, Dataset.Local, Dataset.DB)) {
             if (!datasets.contains(d.toString()))
                 continue;
@@ -325,30 +351,50 @@ public class DPPerfBenchmarks extends Benchmarks {
                 assert this.cloudFlights != null;
                 machines.addAll(this.cloudFlights.keySet());
             } else {
+                // On local datasets this will always have 1 machine
                 machines.add(1);
             }
-            for (int m: machines) {
-                conf.machines = m;
-                List<ColumnDescription> cols = this.ontimeSchema.getColumnDescriptions();
-                for (ColumnDescription col : cols) {
-                    conf.useRawData = true;
-                    conf.usePostProcessing = false;
-                    this.benchmarkHistogram(conf, col);
-                    conf.useRawData = false;
-                    this.benchmarkHistogram(conf, col);
-                    conf.usePostProcessing = true;
-                    this.benchmarkHistogram(conf, col);
+            if (false) {
+                // Vary the columns
+                for (int m : machines) {
+                    conf.machines = m;
+                    for (ColumnDescription col : cols) {
+                        this.allHistograms(col, conf);
+                    }
+                    for (int i = 0; i < cols.size() - 1; i++) {
+                        ColumnDescription col0 = cols.get(i);
+                        ColumnDescription col1 = cols.get(i + 1);
+                        this.allHeatmaps(col0, col1, conf);
+                    }
                 }
-                for (int i = 0; i < cols.size() - 1; i++) {
-                    ColumnDescription col0 = cols.get(i);
-                    ColumnDescription col1 = cols.get(i + 1);
-                    conf.useRawData = true;
-                    conf.usePostProcessing = false;
-                    this.benchmarkHeatmap(conf, col0, col1);
-                    conf.useRawData = false;
-                    this.benchmarkHeatmap(conf, col0, col1);
-                    conf.usePostProcessing = true;
-                    this.benchmarkHeatmap(conf, col0, col1);
+            } else if (false ){
+                // Vary number of buckets for some columns
+                if (d.equals(Dataset.Local)) {
+                    ColumnDescription col = this.ontimeSchema.getDescription("FlightDate");
+                    ColumnDescription col1 = this.ontimeSchema.getDescription("OriginState");
+                    for (int buckets = 1; buckets < 1025; buckets *= 2) {
+                        conf.bucketCount = buckets;
+                        this.allHistograms(col, conf);
+                    }
+
+                    for (int buckets = 1; buckets < 1025; buckets *= 2) {
+                        conf.bucketCount = buckets;
+                        this.allHeatmaps(col, col1, conf);
+                    }
+                }
+            } else {
+                // vary quantization intervals
+                if (d.equals(Dataset.Local)) {
+                    ColumnDescription col = this.ontimeSchema.getDescription("DepTime");
+                    int[] granularity = { 1, 2, 5, 10, 20, 100 };
+                    PrivacySchema ps = this.flightsWrapper.getPrivacySchema();
+                    DoubleColumnQuantization q = (DoubleColumnQuantization)ps.quantization(col.name);
+
+                    for (int i: granularity) {
+                        conf.machines = i; // that's a lie
+                        ps.quantization.set(col.name, new DoubleColumnQuantization(i, q.globalMin, q.globalMax));
+                        this.allHistograms(col, conf);
+                    }
                 }
             }
         }

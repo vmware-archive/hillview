@@ -47,6 +47,19 @@ dataset when using differential privacy.
 
 ## Privacy policy
 
+### Privacy policy location
+
+The root node will treat a dataset as private if it can locate a
+privacy policy file attached to it.  All privacy policy files are
+named `privacy_policy.json`.  The policies are stored as regular files
+on the filesystem of the root node.  For a dataset comprised of files
+(CSV, JSON, ORC, etc.), the privacy policy is located in a directory
+that matches the directory where all the files reside.  For a table
+`table` residing in a JDBC database `database` the policy resides in a
+directory named `database`/`table`.
+
+### File format
+
 The following shows an excerpt from a privacy policy for a table with
 4 columns: `OriginState` (String), `Origin` (String), `DepTime` (Numeric), and
 `DepDelay` (Numeric).
@@ -57,7 +70,7 @@ can be leaked when data in the corresponding set of columns is
 visualized.  In the following example the epsilon for the column
 `Origin` is set to 2, epsilon for zero columns (used when displaying the
 total number of rows) is set to 1, epsilon for any other 1 column is
-set to 1.5, epsilon for any pair of columns is set to 0.1.  (`defaultEpsilons` 
+set to 1.5, epsilon for any pair of columns is set to 0.1.  (`defaultEpsilons`
 maps a column count to a privacy value.)
 
 The privacy policy also specifies for each column a *quantization
@@ -139,12 +152,12 @@ probably exceed the true count almost always.
 
 For private data currently the only charting options are
 histograms/pie charts, heatmaps and Trellis plots of histograms.  This
-functionality can be extended in the future to encompass 
+functionality can be extended in the future to encompass
 2D histograms and the other Trellis plots.
 
 #### Histograms
 
-Histogram plots with private visualizations differ in the following ways from 
+Histogram plots with private visualizations differ in the following ways from
 non-private histograms:
 
 * Counts are displayed as ranges.
@@ -159,15 +172,15 @@ of the number of entries that start with each letter of the alphabet.
 
 #### Pie charts
 
-For pie charts the count and percentage of each slice is shown as a range (however, if 
-all displayed digits of a range are the same -- e.g., 9.3K, 
+For pie charts the count and percentage of each slice is shown as a range (however, if
+all displayed digits of a range are the same -- e.g., 9.3K,
 the range may be displayed as a single value).
 
 #### Heatmaps
 
 For heatmaps the chart will only display the data that has high enough
 confidence (count > threshold * confidence_interval).  The view menu
-offers the ability to change the threshold from it's default value of 2.  
+offers the ability to change the threshold from it's default value of 2.
 
 When mousing-over a cell in a heatmap the value will be displayed
 as a range; simultaneously, the range is shown on the legend above.
