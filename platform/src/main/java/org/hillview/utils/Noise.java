@@ -29,7 +29,7 @@ public class Noise {
         this.set(noise, variance);
     }
 
-    public double getConfidence() {
+    public double get2Stdev() {
         return 2 * Math.sqrt(this.variance);
     }
 
