@@ -488,7 +488,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             th.style.fontWeight = "normal";
         } else if (isSortable) {
             const span = makeSpan("", false);
-            span.innerHTML = this.getSortIndex(cd.name) + this.getSortArrow(cd.name);
+            span.innerHTML = this.getSortIndex(cd.name) + this.getSortArrow(cd.name); // #nosec
             span.style.cursor = "pointer";
             span.onclick = () => this.toggleOrder(cd.name);
             th.appendChild(span);
