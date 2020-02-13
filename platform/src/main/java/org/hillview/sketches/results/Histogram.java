@@ -23,6 +23,7 @@ import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ISampledRowIterator;
 import org.hillview.utils.Utilities;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
 
 /**
@@ -30,10 +31,28 @@ import java.io.Serializable;
  */
 public class Histogram implements Serializable, IJson {
     public long[] buckets;
+    /**
+     * Count of missing (NULL) values.
+     */
     protected long missingData;
+    /**
+     * Confidence intervals of the buckets.  May be null.
+     */
+    @Nullable
+    public int[] confidence;
+    /**
+     * Confidence interval of missingData.
+     */
+    public int  missingConfidence;
+
+    public Histogram(int buckets, boolean allocateConfidence) {
+        this.buckets = new long[buckets];
+        if (allocateConfidence)
+            this.confidence = new int[buckets];
+    }
 
     public Histogram(int buckets) {
-        this.buckets = new long[buckets];
+        this(buckets, false);
     }
 
     public Histogram(long[] data, long missing) {
@@ -108,5 +127,19 @@ public class Histogram implements Serializable, IJson {
             builder.append(" ");
         }
         return builder.toString();
+    }
+
+    /**
+     * Returns a new histogram where each bucket is the prefix sum of the prior buckets.
+     */
+    public Histogram integrate() {
+        Histogram result = new Histogram(this.getBucketCount());
+        long previous = 0;
+        for (int i = 0; i < this.buckets.length; i++) {
+            long next = previous + this.buckets[i];
+            result.buckets[i] = next;
+            previous = next;
+        }
+        return result;
     }
 }

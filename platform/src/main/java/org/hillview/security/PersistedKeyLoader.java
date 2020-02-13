@@ -27,7 +27,7 @@ public class PersistedKeyLoader implements KeyLoader {
                 SecureRandom random = new SecureRandom();
                 byte[] key = new byte[32];
                 random.nextBytes(key);
-                MessageDigest digest = null;
+                MessageDigest digest;
                 digest = MessageDigest.getInstance("SHA-256");
                 byte[] hash = digest.digest(key); // Just in case we got an adversarial input.
                 Key sk = new SecretKeySpec(hash, "AES");

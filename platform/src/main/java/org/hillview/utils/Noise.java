@@ -46,7 +46,6 @@ public class Noise {
         return this.noise;
     }
 
-
     public void set(double noise, double variance) {
         this.noise = noise;
         this.variance = variance;

@@ -17,7 +17,10 @@
 
 package org.hillview.table;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -73,5 +76,38 @@ public class AggregateDescription implements Serializable {
     @Override
     public String toString() {
         return this.cd.toString() + ":" + this.agkind.toString();
+    }
+
+    @Nullable
+    public static AggregateDescription[] getAggregates(@Nullable AggregateDescription[] aggregates) {
+        if (aggregates == null)
+            return null;
+
+        // Replaces Average with a Sum and Count
+        List<AggregateDescription> result = new ArrayList<AggregateDescription>();
+        for (AggregateDescription a: aggregates) {
+            if (a.agkind == AggregateDescription.AggregateKind.Average) {
+                // Search a sum and a count on the same column
+                boolean sumFound = false;
+                boolean countFound = false;
+                for (AggregateDescription o: aggregates) {
+                    if (!o.cd.equals(a.cd))
+                        continue;
+                    if (o.agkind == AggregateDescription.AggregateKind.Sum)
+                        sumFound = true;
+                    else if (o.agkind == AggregateDescription.AggregateKind.Count)
+                        countFound = true;
+                }
+                if (!sumFound)
+                    result.add(new AggregateDescription(
+                            a.cd, AggregateDescription.AggregateKind.Sum, true));
+                if (!countFound)
+                    result.add(new AggregateDescription(
+                            a.cd, AggregateDescription.AggregateKind.Count, true));
+            } else {
+                result.add(a);
+            }
+        }
+        return result.toArray(new AggregateDescription[0]);
     }
 }

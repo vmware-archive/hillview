@@ -246,18 +246,9 @@ export interface ColumnSortOrientation {
 export interface Histogram {
     buckets: number[];
     missingData: number;
-}
-
-// This data structure corresponds to the union of
-// classes that extend AugmentedHistogram, so that any of those classes
-// can be passed into plots that take AugmentedHistograms.
-export interface AugmentedHistogram {
-    histogram: Histogram;
-    /// values of the cdf
-    cdfBuckets?: number[];
     /// confidence interval for each histogram bucket
     confidence?: number[];
-    // Confidence for the missing count
+    /// Confidence for missingData
     missingConfidence?: number;
 }
 

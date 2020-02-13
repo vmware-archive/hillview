@@ -18,7 +18,6 @@
 package org.hillview.dataStructures;
 
 import org.hillview.dataset.api.Pair;
-import org.hillview.sketches.results.IHistogramBuckets;
 import org.hillview.table.columns.ColumnQuantization;
 import org.hillview.utils.Converters;
 import org.hillview.utils.Utilities;
@@ -50,6 +49,10 @@ public abstract class IntervalDecomposition {
     protected IntervalDecomposition(ColumnQuantization quantization, int bucketCount) {
         this.bucketQuantizationIndexes = new int[bucketCount];
         this.quantization = quantization;
+    }
+
+    public int getBucketCount() {
+        return this.bucketQuantizationIndexes.length;
     }
 
     /**
@@ -171,9 +174,4 @@ public abstract class IntervalDecomposition {
         }
         return builder.toString();
     }
-
-    /**
-     * Combine neighboring buckets and return a new coarser-grain interval decomposition.
-     */
-    public abstract IntervalDecomposition mergeNeighbors();
 }

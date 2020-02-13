@@ -312,7 +312,7 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
         @Override
         @SuppressWarnings("unchecked")
         public PartialResult<IDataSet<S>> processResponse(final PartialResponse response) {
-            final OperationResponse op = SerializationUtils.deserialize(response
+            final OperationResponse<?> op = SerializationUtils.deserialize(response
                     .getSerializedOp().toByteArray());
             PartialResult<Integer> pr = Converters.checkNull((PartialResult<Integer>)op.result);
             final IDataSet<S> ids = (pr.deltaValue == null) ? null :
@@ -333,7 +333,7 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
         @Override
         @SuppressWarnings("unchecked")
         public PartialResult<S> processResponse(final PartialResponse response) {
-            final OperationResponse op = SerializationUtils.deserialize(response
+            final OperationResponse<?> op = SerializationUtils.deserialize(response
                     .getSerializedOp().toByteArray());
             assert op.result != null;
             HillviewLogger.instance.info("Receiving partial sketch result", "{0}", op.result);
@@ -347,11 +347,11 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
     private class ManageObserver extends
             OperationObserver<PartialResult<ControlMessage.StatusList>> {
         private final ControlMessage message;
-        private final RemoteDataSet  dataSet;
+        private final RemoteDataSet<?>  dataSet;
 
         ManageObserver(SerializedSubject<PartialResult<ControlMessage.StatusList>,
                 PartialResult<ControlMessage.StatusList>> subject,
-                              ControlMessage message, RemoteDataSet dataSet) {
+                              ControlMessage message, RemoteDataSet<?> dataSet) {
             super(subject);
             this.message = message;
             this.dataSet = dataSet;
@@ -361,13 +361,12 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
         @SuppressWarnings("unchecked")
         public PartialResult<ControlMessage.StatusList> processResponse(
                 final PartialResponse response) {
-            final OperationResponse op = SerializationUtils.deserialize(response
+            final OperationResponse<?> op = SerializationUtils.deserialize(response
                     .getSerializedOp().toByteArray());
             return (PartialResult<ControlMessage.StatusList>)Converters.checkNull(op.result);
         }
 
         @Override
-        @SuppressWarnings("unchecked")
         public void onCompleted() {
             ControlMessage.Status status = this.message.remoteAction(this.dataSet);
             if (status != null) {

@@ -380,6 +380,7 @@ export class SchemaView extends TSViewBase {
         }
     }
 
+    // noinspection JSUnusedLocalSymbols
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return null;  // not used

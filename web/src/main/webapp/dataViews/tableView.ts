@@ -305,6 +305,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         rr.invoke(new FindReceiver(this.getPage(), rr, this, o));
     }
 
+    // noinspection JSUnusedLocalSymbols
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {

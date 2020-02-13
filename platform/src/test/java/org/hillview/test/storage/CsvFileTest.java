@@ -60,7 +60,7 @@ public class CsvFileTest extends BaseTest {
     public void letterPairs() {
         for (char c = 'A'; c <= 'Z'; c++) {
             for (char d = 'a'; d <= 'z'; d++) {
-                System.out.print("\"" + Character.toString(c) + Character.toString(d) + "\",");
+                System.out.print("\"" + c + d + "\",");
             }
         }
     }

@@ -20,13 +20,8 @@ import {SubMenu, TopMenu} from "../ui/menu";
 import {FindBar} from "../ui/findBar";
 import {BaseReceiver, OnNextK, TableTargetAPI} from "../tableTarget";
 import {FullPage} from "../ui/fullPage";
-import {ICancellable, makeMissing, significantDigits, makeSpan, Converters} from "../util";
-import {
-    FindResult, GenericLogs,
-    NextKList,
-    RecordOrder,
-    RemoteObjectId, Schema
-} from "../javaBridge";
+import {Converters, ICancellable, makeMissing, makeSpan, significantDigits} from "../util";
+import {FindResult, GenericLogs, NextKList, RecordOrder, RemoteObjectId, Schema} from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
 import {NextKReceiver} from "./tableView";
 
@@ -195,12 +190,11 @@ export class LogFileView extends TableTargetAPI implements IHtmlElement, OnNextK
             return;
 
         const parent = document.createElement("div");
-        const cols = this.schema.schema;
         for (const row of nextKList.rows) {
             const rowSpan = document.createElement("span");
             let index = 0;
             for (const value of row.values) {
-                const col = cols[index++];
+                const col = (this.schema.schema)[index++];
                 if (this.visibleColumns.has(col.name)) {
                     if (value == null) {
                         rowSpan.appendChild(makeMissing());

@@ -18,7 +18,9 @@
 package org.hillview.benchmarks;
 
 import org.hillview.dataStructures.*;
+import org.hillview.dataset.IdPostProcessedSketch;
 import org.hillview.dataset.LocalDataSet;
+import org.hillview.dataset.PostProcessedSketch;
 import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.*;
 import org.hillview.main.Benchmarks;
@@ -27,6 +29,7 @@ import org.hillview.maps.FindFilesMap;
 import org.hillview.maps.LoadFilesMap;
 import org.hillview.sketches.HeatmapSketch;
 import org.hillview.sketches.HistogramSketch;
+import org.hillview.sketches.PrecomputedSketch;
 import org.hillview.sketches.SummarySketch;
 import org.hillview.sketches.results.*;
 import org.hillview.storage.FileSetDescription;
@@ -52,7 +55,6 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.*;
-import java.util.function.Function;
 import java.util.logging.Level;
 
 /**
@@ -61,7 +63,6 @@ import java.util.logging.Level;
  */
 public class DPPerfBenchmarks extends Benchmarks {
     private static int runCount = 7;
-    @SuppressWarnings("FieldCanBeLocal")
     private static int buckets = 100;
     @Nullable
     private Schema ontimeSchema;
@@ -246,73 +247,83 @@ public class DPPerfBenchmarks extends Benchmarks {
     private void benchmarkHeatmap(ExperimentConfig conf, ColumnDescription col0, ColumnDescription col1) {
         IDataSet<ITable> table = conf.dataset == Dataset.Cloud ? Converters.checkNull(this.cloudFlights).get(conf.machines) : this.flights;
 
-        Function<Heatmap, PrivateHeatmapFactory> postprocess = x -> null;
         PrivacySchema ps = this.flightsWrapper.getPrivacySchema();
         double epsilon = ps.epsilon(col0.name, col1.name);
         ColumnConfig c0 = this.getColumnConfig(col0, conf);
         ColumnConfig c1 = this.getColumnConfig(col1, conf);
-        if (conf.usePostProcessing)
-            postprocess = x -> new PrivateHeatmapFactory(ps.getColumnIndex(col0.name, col1.name),
-                    c0.decomposition, c1.decomposition, x, epsilon, this.flightsWrapper.laplace);
 
         assert this.ontimeSchema != null;
         String bench = "Heatmap," + col0.name + "+" + col1.name + "," + conf.toString();
         Runnable r;
-        Function<Heatmap, PrivateHeatmapFactory> finalPostprocess = postprocess;
         if (conf.dataset == Dataset.DB) {
             r = () -> {
                 Heatmap h = this.database.heatmap(col0, col1,
                     c0.buckets, c1.buckets, null, c0.quantization, c1.quantization);
-                finalPostprocess.apply(h);
+                if (conf.usePostProcessing) {
+                    ISketch<ITable, Heatmap> pre = new PrecomputedSketch<ITable, Heatmap>(h);  // not really used
+                    PostProcessedSketch<ITable, Heatmap, Heatmap> postprocess =
+                            new DPHeatmapSketch(pre, ps.getColumnIndex(col0.name, col1.name),
+                            c0.decomposition, c1.decomposition, epsilon, this.flightsWrapper.laplace);
+                    postprocess.postProcess(h);
+                }
             };
-            quiet = false;
-            runNTimes(r, runCount, bench);
         } else {
             Converters.checkNull(table);
             ISketch<ITable, Heatmap> hsk = new HeatmapSketch(
                     c0.buckets, c1.buckets, col0.name, col1.name, 1.0, 0, c0.quantization, c1.quantization);
-            r = () -> finalPostprocess.apply(table.blockingSketch(hsk));
+            PostProcessedSketch<ITable, Heatmap, Heatmap> pp;
+            if (conf.usePostProcessing)
+                pp = new DPHeatmapSketch(hsk, ps.getColumnIndex(col0.name, col1.name),
+                        c0.decomposition, c1.decomposition, epsilon, this.flightsWrapper.laplace);
+            else
+                pp = new IdPostProcessedSketch<ITable, Heatmap>(hsk);
+            r = () -> table.blockingPostProcessedSketch(pp);
             quiet = true;
             runNTimes(r, 2, bench);  // warm up jit
-            quiet = false;
-            runNTimes(r, runCount, bench);
         }
+        quiet = false;
+        runNTimes(r, runCount, bench);
     }
 
     private void benchmarkHistogram(ExperimentConfig conf, ColumnDescription col) {
         IDataSet<ITable> table = conf.dataset == Dataset.Cloud ?
                 Converters.checkNull(this.cloudFlights).get(conf.machines) : this.flights;
 
-        Function<Histogram, PrivateHistogram> postprocess = x -> null;
         PrivacySchema ps = this.flightsWrapper.getPrivacySchema();
         ColumnConfig c = this.getColumnConfig(col, conf);
         double epsilon = ps.epsilon(col.name);
-        if (conf.usePostProcessing)
-            postprocess = x -> new PrivateHistogram(ps.getColumnIndex(col.name),
-                    c.decomposition, x, epsilon, false, this.flightsWrapper.laplace);
-
         assert this.ontimeSchema != null;
         String bench = "Histogram," + col.name + "," + conf.toString();
         Runnable r;
-        Function<Histogram, PrivateHistogram> finalPostprocess = postprocess;
+
         if (conf.dataset == Dataset.DB) {
             r = () -> {
                 Histogram histo = this.database.histogram(
-                    col, c.buckets, null, c.quantization, 0);
-                finalPostprocess.apply(histo);
+                        col, c.buckets, null, c.quantization, 0);
+                if (conf.usePostProcessing) {
+                    ISketch<ITable, Histogram> pre = new PrecomputedSketch<ITable, Histogram>(histo);  // not really used
+                    PostProcessedSketch<ITable, Histogram, Histogram> post =
+                            new DPHistogram(pre, ps.getColumnIndex(col.name),
+                                c.decomposition, epsilon, false, this.flightsWrapper.laplace);
+                    post.postProcess(histo);
+                }
             };
-            quiet = false;
-            runNTimes(r, runCount, bench);
         } else {
             Converters.checkNull(table);
             ISketch<ITable, Histogram> hsk = new HistogramSketch(
                 c.buckets, col.name, 1.0, 0, c.quantization);
-            r = () -> finalPostprocess.apply(table.blockingSketch(hsk));
+            PostProcessedSketch<ITable, Histogram, Histogram> post;
+            if (conf.usePostProcessing)
+                post = new DPHistogram(hsk, ps.getColumnIndex(col.name),
+                        c.decomposition, epsilon, false, this.flightsWrapper.laplace);
+            else
+                post = new IdPostProcessedSketch<ITable, Histogram>(hsk);
+            r = () -> table.blockingPostProcessedSketch(post);
             quiet = true;
-            runNTimes(r, 2, bench);  // warm up jit
-            quiet = false;
-            runNTimes(r, runCount, bench);
+            runNTimes(r, 1, bench);  // warm up jit
         }
+        quiet = false;
+        runNTimes(r, runCount, bench);
     }
 
     private void allHistograms(ColumnDescription col, ExperimentConfig conf) {
@@ -389,6 +400,7 @@ public class DPPerfBenchmarks extends Benchmarks {
                     int[] granularity = { 1, 2, 5, 10, 20, 100 };
                     PrivacySchema ps = this.flightsWrapper.getPrivacySchema();
                     DoubleColumnQuantization q = (DoubleColumnQuantization)ps.quantization(col.name);
+                    Converters.checkNull(q);
 
                     for (int i: granularity) {
                         conf.machines = i; // that's a lie

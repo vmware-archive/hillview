@@ -17,6 +17,7 @@
 
 package org.hillview;
 
+import org.hillview.dataset.PostProcessedSketch;
 import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.*;
 
@@ -73,13 +74,16 @@ public interface IRpcTarget {
     Id getId();
 
     <T, R, S extends IJson> void
-    runSketchPostprocessing(IDataSet<T> data, ISketch<T, R> sketch,
-                            BiFunction<R, HillviewComputation, S> postprocessing,
-                            RpcRequest request, RpcRequestContext context);
+    runSketch(IDataSet<T> data, PostProcessedSketch<T, R, S> sketch,
+              RpcRequest request, RpcRequestContext context);
 
     <T, R extends IJson> void
     runSketch(IDataSet<T> data, ISketch<T, R> sketch,
               RpcRequest request, RpcRequestContext context);
+
+    <T, R, S extends IJson> void
+    runCompleteSketch(IDataSet<T> data, PostProcessedSketch<T, R, S> sketch,
+                      RpcRequest request, RpcRequestContext context);
 
     <T, R, S extends IJson> void
     runCompleteSketch(IDataSet<T> data, ISketch<T, R> sketch,

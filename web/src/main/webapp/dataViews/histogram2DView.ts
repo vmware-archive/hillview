@@ -18,7 +18,7 @@
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {Histogram2DSerialization, IViewSerialization} from "../datasetView";
 import {
-    AugmentedHistogram,
+    Histogram,
     FilterDescription,
     Heatmap,
     IColumnDescription,
@@ -59,7 +59,7 @@ import {FilterReceiver, DataRangesReceiver} from "./dataRangesCollectors";
  */
 export class Histogram2DView extends HistogramViewBase {
     protected yData: AxisData;
-    protected cdf: AugmentedHistogram;
+    protected cdf: Histogram;
     protected heatMap: Heatmap;
     protected xPoints: number;
     protected yPoints: number;
@@ -164,7 +164,7 @@ export class Histogram2DView extends HistogramViewBase {
         return null;
     }
 
-    public updateView(heatmap: Heatmap, cdf: AugmentedHistogram, maxYAxis: number | null): void {
+    public updateView(heatmap: Heatmap, cdf: Histogram, maxYAxis: number | null): void {
         this.createNewSurfaces();
         if (heatmap == null || heatmap.buckets.length === 0) {
             this.page.reportError("No data to display");
@@ -187,7 +187,7 @@ export class Histogram2DView extends HistogramViewBase {
         const discrete = kindIsString(this.xAxisData.description.kind) ||
             this.xAxisData.description.kind === "Integer";
 
-        this.cdfPlot.setData(cdf.cdfBuckets, discrete);
+        this.cdfPlot.setData(cdf.buckets, discrete);
         this.cdfPlot.draw();
         this.legendPlot.setData(this.yData, this.plot.getMissingDisplayed() > 0, this.schema);
         this.legendPlot.draw();
@@ -557,7 +557,7 @@ export class Histogram2DView extends HistogramViewBase {
  * Receives partial results and renders a 2D histogram.
  * The 2D histogram data and the Heatmap data use the same data structure.
  */
-export class Histogram2DReceiver extends Receiver<Pair<Heatmap, AugmentedHistogram>> {
+export class Histogram2DReceiver extends Receiver<Pair<Heatmap, Histogram>> {
     protected view: Histogram2DView;
 
     constructor(title: PageTitle,
@@ -567,7 +567,7 @@ export class Histogram2DReceiver extends Receiver<Pair<Heatmap, AugmentedHistogr
                 protected schema: SchemaClass,
                 protected axes: AxisData[],
                 protected samplingRate: number,
-                operation: RpcRequest<PartialResult<Pair<Heatmap, AugmentedHistogram>>>,
+                operation: RpcRequest<PartialResult<Pair<Heatmap, Histogram>>>,
                 protected options: ChartOptions) {
         super(options.reusePage ? page : page.dataset.newPage(title, page), operation, "histogram");
         this.view = new Histogram2DView(
@@ -576,7 +576,7 @@ export class Histogram2DReceiver extends Receiver<Pair<Heatmap, AugmentedHistogr
         this.view.setAxes(axes[0], axes[1], options.relative);
     }
 
-    public onNext(value: PartialResult<Pair<Heatmap, AugmentedHistogram>>): void {
+    public onNext(value: PartialResult<Pair<Heatmap, Histogram>>): void {
         super.onNext(value);
         if (value == null)
             return;

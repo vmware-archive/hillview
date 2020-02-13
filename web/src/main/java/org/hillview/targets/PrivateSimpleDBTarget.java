@@ -20,9 +20,9 @@ package org.hillview.targets;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import org.hillview.*;
 import org.hillview.dataStructures.*;
+import org.hillview.dataset.ConcurrentPostprocessedSketch;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.ISketch;
-import org.hillview.dataset.api.Pair;
 import org.hillview.maps.IdMap;
 import org.hillview.sketches.PrecomputedSketch;
 import org.hillview.sketches.results.Heatmap;
@@ -118,15 +118,15 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
                 cd, info[0].getBuckets(quantization), this.wrapper.columnLimits, quantization, this.rowCount);
         Histogram cdf = this.database.histogram(
                 cd, info[1].getBuckets(quantization), this.wrapper.columnLimits, quantization, this.rowCount);
-        Pair<Histogram, Histogram> result = new Pair<Histogram, Histogram>(histo, cdf);
-        ISketch<ITable, Pair<Histogram, Histogram>> sk = new PrecomputedSketch<ITable, Pair<Histogram, Histogram>>(result);
-        this.runCompleteSketch(this.table, sk, (e, c) ->
-                new Pair<PrivateHistogram, PrivateHistogram>(
-                        new PrivateHistogram(this.wrapper.getColumnIndex(cd.name),
-                                d0, Converters.checkNull(e.first), epsilon, false, this.wrapper.laplace),
-                        new PrivateHistogram(this.wrapper.getColumnIndex(cd.name),
-                                d1, Converters.checkNull(e.second), epsilon, true, this.wrapper.laplace)),
-                request, context);
+        ISketch<ITable, Histogram> preHisto = new PrecomputedSketch<ITable, Histogram>(histo);
+        ISketch<ITable, Histogram> preCdf = new PrecomputedSketch<ITable, Histogram>(cdf);
+        int colIindex = this.wrapper.getColumnIndex(cd.name);
+        DPHistogram privateHisto = new DPHistogram(preHisto, colIindex, d0, epsilon, false, this.wrapper.laplace);
+        DPHistogram privateCdf = new DPHistogram(preCdf, colIindex, d1, epsilon, true, this.wrapper.laplace);
+        ConcurrentPostprocessedSketch<ITable, Histogram, Histogram, Histogram, Histogram> cc =
+                new ConcurrentPostprocessedSketch<ITable, Histogram, Histogram, Histogram, Histogram>(
+                        privateHisto, privateCdf);
+        this.runCompleteSketch(this.table, cc, request, context);
     }
 
     @HillviewRpc
@@ -192,10 +192,11 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
         Converters.checkNull(q1);
         IntervalDecomposition d0 = info[0].getDecomposition(q0);
         IntervalDecomposition d1 = info[1].getDecomposition(q1);
-        PrivateHeatmapFactory result = new PrivateHeatmapFactory(this.wrapper.getColumnIndex(info[0].cd.name, info[1].cd.name),
-                d0, d1, heatmap, epsilon, this.wrapper.laplace);
-        ISketch<ITable, Heatmap> sk = new PrecomputedSketch<ITable, Heatmap>(result.heatmap);
-        this.runCompleteSketch(this.table, sk, (e, c) -> e, request, context);
+        ISketch<ITable, Heatmap> sk = new PrecomputedSketch<ITable, Heatmap>(heatmap);
+        DPHeatmapSketch noisyHeatmap = new DPHeatmapSketch(
+                sk,  this.wrapper.getColumnIndex(info[0].cd.name, info[1].cd.name),
+                d0, d1, epsilon, this.wrapper.laplace);
+        this.runSketch(this.table, noisyHeatmap, request, context);
     }
 
     @HillviewRpc

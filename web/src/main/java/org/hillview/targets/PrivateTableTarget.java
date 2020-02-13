@@ -2,9 +2,8 @@ package org.hillview.targets;
 
 import org.hillview.*;
 import org.hillview.dataStructures.*;
-import org.hillview.dataset.ConcurrentSketch;
+import org.hillview.dataset.ConcurrentPostprocessedSketch;
 import org.hillview.dataset.api.IDataSet;
-import org.hillview.dataset.api.Pair;
 import org.hillview.maps.FilterMap;
 import org.hillview.maps.ProjectMap;
 import org.hillview.sketches.*;
@@ -85,15 +84,14 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
         IntervalDecomposition d0 = info[0].getDecomposition(quantization);
         IntervalDecomposition d1 = info[1].getDecomposition(quantization);
         double epsilon = this.getPrivacySchema().epsilon(info[0].cd.name);
-        ConcurrentSketch<ITable, Histogram, Histogram> csk =
-                new ConcurrentSketch<ITable, Histogram, Histogram>(sk, cdf);
-        this.runCompleteSketch(this.table, csk, (e, c) ->
-                new Pair<PrivateHistogram, PrivateHistogram>(
-                        new PrivateHistogram(this.wrapper.getColumnIndex(info[0].cd.name),
-                                d0, Converters.checkNull(e.first), epsilon, false, this.wrapper.laplace),
-                        new PrivateHistogram(this.wrapper.getColumnIndex(info[0].cd.name),
-                                d1, Converters.checkNull(e.second), epsilon, true, this.wrapper.laplace)),
-                request, context);
+        DPHistogram privateHisto = new DPHistogram(sk, this.wrapper.getColumnIndex(info[0].cd.name),
+                d0, epsilon, false, this.wrapper.laplace);
+        DPHistogram privateCdf = new DPHistogram(cdf, this.wrapper.getColumnIndex(info[0].cd.name),
+                d1, epsilon, true, this.wrapper.laplace);
+        ConcurrentPostprocessedSketch<ITable, Histogram, Histogram, Histogram, Histogram> ccp =
+                new ConcurrentPostprocessedSketch<ITable, Histogram, Histogram, Histogram, Histogram>(
+                        privateHisto, privateCdf);
+        this.runCompleteSketch(this.table, ccp, request, context);
     }
 
     @SuppressWarnings("unused")
@@ -134,8 +132,8 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
         double epsilon = this.wrapper.getPrivacySchema().epsilon(col.columnName);
         Noise noise = DPWrapper.computeCountNoise(this.wrapper.getColumnIndex(col.columnName),
                 DPWrapper.SpecialBucket.DistinctCount, epsilon, this.wrapper.laplace);
-        this.runSketchPostprocessing(this.table, sketch,
-                (r, c) -> r.getCount().add(noise), request, context);
+        NoisyHLogLog nhll = new NoisyHLogLog(sketch, noise);
+        this.runCompleteSketch(this.table, nhll, request, context);
     }
 
     @SuppressWarnings("unused")
@@ -165,9 +163,10 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
         IntervalDecomposition d1 = info[1].getDecomposition(q1);
         HeatmapSketch sk = new HeatmapSketch(
                 b0, b1, info[0].cd.name, info[1].cd.name, 1.0, 0, q0, q1);
-        this.runCompleteSketch(this.table, sk, (e, c) ->
-                new PrivateHeatmapFactory(this.wrapper.getColumnIndex(info[0].cd.name, info[1].cd.name),
-                        d0, d1, e, epsilon, this.wrapper.laplace).heatmap, request, context);
+        DPHeatmapSketch hsk = new DPHeatmapSketch(sk,
+                this.wrapper.getColumnIndex(info[0].cd.name, info[1].cd.name),
+                d0, d1, epsilon, this.wrapper.laplace);
+        this.runCompleteSketch(this.table, hsk, request, context);
     }
 
     @HillviewRpc
@@ -183,11 +182,8 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
         double epsilon = this.wrapper.getPrivacySchema().epsilon();
         Noise noise = DPWrapper.computeCountNoise(DPWrapper.TABLE_COLUMN_INDEX, // Computed on entire table
                 DPWrapper.SpecialBucket.TotalCount, epsilon, this.wrapper.laplace);
-        this.runSketchPostprocessing(this.table, nk,
-                (r, c) -> new NextKList(
-                        r.rows, r.aggregates, r.count, r.startPosition,
-                        r.rowsScanned + Utilities.toLong(noise.getNoise())),
-                request, context);
+        NextKSketchNoisy skn = new NextKSketchNoisy(nk, noise);
+        this.runCompleteSketch(this.table, skn, request, context);
     }
 
     @HillviewRpc

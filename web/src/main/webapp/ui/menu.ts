@@ -322,7 +322,7 @@ export class TopMenu extends BaseMenu<TopMenuItem> {
             cell.title = mi.help;
         this.items.push(mi);
         this.cells.push(cell);
-        this.setAction(mi, true);
+        this.setAction(mi, enabled);
         return cell;
     }
 

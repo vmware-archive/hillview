@@ -52,8 +52,9 @@ public class PingSketch<T> implements ISketch<T, JsonList<String>> {
         return result;
     }
 
+    @Nullable
     @Override
-    public JsonList<String> create(T data) {
+    public JsonList<String> create(@Nullable T data) {
         JsonList<String> result = new JsonList<String>(1);
         String host = Utilities.getHostName();
         result.add(host);

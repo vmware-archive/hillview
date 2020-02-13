@@ -252,7 +252,6 @@ public class DPWrapper {
     // The following are methods used in common by various Private targets;
     // technically we should use multiple inheritance to inherit these methods
     // but in Java this is not possible, so we put them here.
-
     void getDataQuantiles1D(RpcRequest request, RpcRequestContext context,
                             IPrivateDataset target) {
         QuantilesArgs[] args = request.parseArgs(QuantilesArgs[].class);

@@ -418,8 +418,8 @@ public class Utilities {
             throw new RuntimeException("Not enough bytes allocated for output");
         }
 
-        intToByteArray(p.first, arr, startIndex);
-        intToByteArray(p.second, arr, startIndex + INT_SIZE);
+        intToByteArray(Converters.checkNull(p.first), arr, startIndex);
+        intToByteArray(Converters.checkNull(p.second), arr, startIndex + INT_SIZE);
     }
 
     public static long byteArrayToLong(byte[] bytes) {

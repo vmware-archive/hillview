@@ -38,10 +38,6 @@ public class HLogLogSketch implements ISketch<ITable, HLogLog> {
     @Nullable
     private final ColumnQuantization quantization;
 
-    public HLogLogSketch(String colName, long seed, @Nullable ColumnQuantization quantization) {
-        this(colName, 12, seed, quantization);
-    }
-
     public HLogLogSketch(String colName, long seed) {
         this(colName, 12, seed, null);
     }

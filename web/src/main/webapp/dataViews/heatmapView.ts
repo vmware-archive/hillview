@@ -18,7 +18,6 @@
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {HeatmapSerialization, IViewSerialization} from "../datasetView";
 import {
-    AugmentedHistogram,
     FilterDescription,
     Heatmap,
     IColumnDescription,
@@ -300,14 +299,7 @@ export class HeatmapView extends ChartView {
         this.colorLegend.draw();
         this.plot.draw();
         if (this.showMissingData) {
-            const augHist: AugmentedHistogram = {
-                histogram: heatmap.histogramMissingX,
-                cdfBuckets: null,
-                confidence: null,
-                missingConfidence: null
-            };
-
-            this.xHistoPlot.setHistogram(augHist, this.samplingRate,
+            this.xHistoPlot.setHistogram(heatmap.histogramMissingX, this.samplingRate,
                 this.xAxisData, null,
                 this.page.dataset.isPrivate());
             this.xHistoPlot.draw();

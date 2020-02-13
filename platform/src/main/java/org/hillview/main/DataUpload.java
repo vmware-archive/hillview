@@ -40,6 +40,7 @@ import org.hillview.table.Table;
 import org.hillview.table.api.*;
 import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.table.rows.GuessSchema;
+import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Utilities;
 import org.apache.commons.cli.*;
@@ -65,11 +66,6 @@ public class DataUpload {
         @Nullable
         String inputSchemaName = null;
         String filename = ""; // the file to be sent
-        @Nullable
-        String directory;
-        /*
-        final ArrayList<String> fileList = new ArrayList<String>();
-         */
         String destinationFolder = ""; // the destination path where the files will be put
         @Nullable
         String cluster = null; // the path to the cluster config json file
@@ -212,7 +208,7 @@ public class DataUpload {
             // Create directories and place the schema
             if (config != null && config.workers != null) {
                 for (String host : config.workers) {
-                    createDir(config.user, host, parameters.destinationFolder);
+                    createDir(Converters.checkNull(config.user), host, parameters.destinationFolder);
                     sendFile(localSchemaFile, config.user, host, parameters.destinationFolder, outputSchemaFile);
                 }
                 if (Utilities.isNullOrEmpty(parameters.inputSchemaName))
@@ -249,7 +245,7 @@ public class DataUpload {
      * @param config configuration file for the parser
      */
     private static Schema guessSchema(String filename, CsvFileLoader.Config config) {
-        Reader file = null;
+        Reader file;
         GuessSchema[] schemaGuesses = null;
         int column = 0;
         try {
@@ -257,7 +253,7 @@ public class DataUpload {
             CsvParser myParser = getParser(config, 50000);
             myParser.beginParsing(file);
             @Nullable
-            String[] line = null;
+            String[] line;
             line = myParser.parseNext();
             if (line == null)
                 throw new RuntimeException("Missing header row " + filename);
@@ -287,7 +283,7 @@ public class DataUpload {
             int progress = 1;
             while (true) {
                 @Nullable
-                String[] nextLine = null;
+                String[] nextLine;
                 nextLine = myParser.parseNext();
                 if (nextLine == null)
                     break;
@@ -389,7 +385,8 @@ public class DataUpload {
                 if (clusterConfig != null) {
                     assert clusterConfig.workers != null;
                     String host = clusterConfig.workers[currentHost];
-                    sendFile(chunkName, clusterConfig.user, host, parameters.destinationFolder, chunkName);
+                    sendFile(chunkName, Converters.checkNull(clusterConfig.user),
+                            host, parameters.destinationFolder, chunkName);
                     currentHost = (currentHost + 1) % clusterConfig.workers.length;
                     Files.deleteIfExists(Paths.get(chunkName));
                 } else {
@@ -464,7 +461,7 @@ public class DataUpload {
     private static void append(String[] data, IAppendableColumn[] columns, boolean allowFewerColumns) {
         try {
             int columnCount = columns.length;
-            int currentColumn = 0;
+            int currentColumn;
             String currentToken;
             if (data.length > columnCount)
                 throw new RuntimeException("Too many columns " + data.length + " vs " + columnCount);

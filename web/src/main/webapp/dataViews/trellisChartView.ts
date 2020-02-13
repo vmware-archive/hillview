@@ -80,6 +80,7 @@ export abstract class TrellisChartView extends ChartView {
         this.surfaces = null;
     }
 
+    // noinspection JSUnusedLocalSymbols
     protected showTrellis(colName: DisplayName): void {}
 
     /**

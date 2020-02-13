@@ -73,8 +73,8 @@ class DemoDataCleaner {
                         writer.writeTable(p);
                     }
 
-                    end = end.replace(".csv", ".orc");
                     /*
+                    end = end.replace(".csv", ".orc");
                     OrcFileWriter owriter = new OrcFileWriter(end);
                     System.out.println("Writing " + end);
                     owriter.writeTable(p);

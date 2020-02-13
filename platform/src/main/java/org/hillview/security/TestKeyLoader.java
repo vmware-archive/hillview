@@ -1,10 +1,6 @@
 package org.hillview.security;
 
-import org.hillview.utils.HillviewLogger;
-
 import javax.crypto.spec.SecretKeySpec;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.security.Key;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -32,7 +28,7 @@ public class TestKeyLoader implements KeyLoader {
     }
 
     public Key getOrCreateKey() {
-        MessageDigest digest = null;
+        MessageDigest digest;
         try {
             digest = MessageDigest.getInstance("SHA-256");
         } catch (NoSuchAlgorithmException e) {
@@ -40,9 +36,7 @@ public class TestKeyLoader implements KeyLoader {
         }
 
         byte[] key = new byte[32];
-        for (int i = 0; i < this.keyBase.length; i++) {
-            key[i] = this.keyBase[i];
-        }
+        System.arraycopy(this.keyBase, 0, key, 0, this.keyBase.length);
 
         // Set the last 4 bytes to the index
         for (int i = INT_SIZE; i >= 0; i--) {
@@ -50,7 +44,6 @@ public class TestKeyLoader implements KeyLoader {
         }
 
         byte[] hash = digest.digest(key); // Just in case we got an adversarial input.
-        Key sk = new SecretKeySpec(hash, "AES");
-        return sk;
+        return new SecretKeySpec(hash, "AES");
     }
 }

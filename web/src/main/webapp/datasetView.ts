@@ -556,6 +556,7 @@ class UploadPrivacyReceiver extends OnCompleteReceiver<string> {
         super(page, operation, "upload privacy");
     }
 
+    // noinspection JSUnusedLocalSymbols
     public run(value: string): void {
         console.log("Privacy policy has been updated.");
         /*

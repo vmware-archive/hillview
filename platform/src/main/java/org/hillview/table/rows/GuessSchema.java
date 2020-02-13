@@ -235,6 +235,7 @@ public class GuessSchema {
                     return CanParse.No;
                 }
             case Json:
+                //noinspection DuplicateBranchesInSwitch
                 return CanParse.No;
                 // TODO: reinstate this
                 /*
