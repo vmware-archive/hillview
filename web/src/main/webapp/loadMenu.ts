@@ -332,10 +332,7 @@ export class LoadMenu extends RemoteObject implements IDataView {
 
     public toggleAdvanced(): void {
         // writing it this way will work with undefined values.
-        if (HillviewToplevel.instance.uiconfig.enableAdvanced)
-            HillviewToplevel.instance.uiconfig.enableAdvanced = false;
-        else
-            HillviewToplevel.instance.uiconfig.enableAdvanced = true;
+        HillviewToplevel.instance.uiconfig.enableAdvanced = !HillviewToplevel.instance.uiconfig.enableAdvanced;
         this.showAdvanced(HillviewToplevel.instance.uiconfig.enableAdvanced);
     }
 

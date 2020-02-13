@@ -70,7 +70,6 @@ public class DoubleListColumn
         this.growMissing();
     }
 
-    @SuppressWarnings("Duplicates")
     public void append(final double value) {
         final int segmentId = this.size >> LogSegmentSize;
         final int localIndex = this.size & SegmentMask;

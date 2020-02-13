@@ -61,6 +61,7 @@ public enum ContentsKind implements Serializable {
     /**
      * True if this kind of information requires a Java Object for storage.
      */
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean isObject() {
         switch (this) {
             case String:

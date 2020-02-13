@@ -18,7 +18,6 @@
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {HistogramSerialization, IViewSerialization} from "../datasetView";
 import {
-    AugmentedHistogram,
     FilterDescription,
     Histogram,
     IColumnDescription,
@@ -58,8 +57,7 @@ import {BaseReceiver} from "../tableTarget";
  * A HistogramView is responsible for showing a one-dimensional histogram on the screen.
  */
 export class HistogramView extends HistogramViewBase /*implements IScrollTarget*/ {
-    protected cdf: AugmentedHistogram;
-    protected augmentedHistogram: AugmentedHistogram;
+    protected cdf: Histogram;
     protected histogram: Histogram;
     protected plot: HistogramPlot | PiePlot;
     protected bucketCount: number;
@@ -186,7 +184,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
             collector.finished();
         } else if (eventKind === "YAxis") {
             // TODO
-            this.updateView(this.cdf, this.augmentedHistogram, sourceRange.max);
+            this.updateView(this.cdf, this.histogram, sourceRange.max);
         }
     }
 
@@ -237,37 +235,34 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
 
     /**
      * @param cdf: Data for the cdf.
-     * @param augmentedHistogram: Data for the histogram buckets.
+     * @param histogram: Data for the histogram buckets.
      * @param maxYAxis: maximum value to use for Y axis if not null
      */
-    public updateView(cdf: AugmentedHistogram, augmentedHistogram: AugmentedHistogram,
+    public updateView(cdf: Histogram, histogram: Histogram,
                       maxYAxis: number | null): void {
         this.createNewSurfaces();
-        if (augmentedHistogram == null) {
+        if (histogram == null) {
             this.page.reportError("No data to display");
             return;
         }
-        this.augmentedHistogram = augmentedHistogram;
-        this.rowCount = augmentedHistogram.histogram.buckets.reduce((a, b) => a + b, 0);
+        this.histogram = histogram;
+        this.rowCount = this.histogram.buckets.reduce((a, b) => a + b, 0);
         if (this.isPrivate()) {
             const cols = [this.xAxisData.description.name];
             const eps = this.dataset.getEpsilon(cols);
             this.page.setEpsilon(eps, cols);
         }
 
-        const h = augmentedHistogram.histogram;
-        this.histogram = h;
         this.cdf = cdf;
-
-        const counts = h.buckets;
+        const counts = this.histogram.buckets;
         this.bucketCount = counts.length;
-        this.plot.setHistogram(augmentedHistogram, this.samplingRate,
+        this.plot.setHistogram(histogram, this.samplingRate,
                                this.xAxisData, maxYAxis, this.page.dataset.isPrivate());
         this.plot.draw();
 
         const discrete = kindIsString(this.xAxisData.description.kind) ||
             this.xAxisData.description.kind === "Integer";
-        this.cdfPlot.setData(cdf.cdfBuckets, discrete);
+        this.cdfPlot.setData(cdf.buckets, discrete);
         this.cdfPlot.draw();
         this.setupMouse();
 
@@ -284,8 +279,8 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
 
         let summary = new HtmlString("");
         const approx = this.isPrivate() ? SpecialChars.approx : "";
-        if (h.missingData !== 0)
-            summary = summary.appendSafeString(approx +formatNumber(h.missingData) + " missing, ");
+        if (histogram.missingData !== 0)
+            summary = summary.appendSafeString(approx +formatNumber(histogram.missingData) + " missing, ");
         summary = summary.appendSafeString(approx + formatNumber(this.rowCount) + " points");
         if (this.xAxisData != null &&
             this.xAxisData.range.stringQuantiles != null &&
@@ -405,7 +400,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
     public resize(): void {
         if (this.cdf == null)
             return;
-        this.updateView(this.cdf, this.augmentedHistogram, this.plot.maxYAxis);
+        this.updateView(this.cdf, this.histogram, this.plot.maxYAxis);
     }
 
     public refresh(): void {
@@ -511,7 +506,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
     }
 }
 
-export class HistogramReceiver extends Receiver<Pair<AugmentedHistogram, AugmentedHistogram>>  {
+export class HistogramReceiver extends Receiver<Pair<Histogram, Histogram>>  {
     private readonly view: HistogramView;
 
     constructor(protected title: PageTitle,
@@ -521,7 +516,7 @@ export class HistogramReceiver extends Receiver<Pair<AugmentedHistogram, Augment
                 protected schema: SchemaClass,
                 protected bucketCount: number,
                 protected xAxisData: AxisData,
-                operation: ICancellable<Pair<AugmentedHistogram, AugmentedHistogram>>,
+                operation: ICancellable<Pair<Histogram, Histogram>>,
                 protected samplingRate: number,
                 protected isPie: boolean,
                 reusePage: boolean) {
@@ -533,7 +528,7 @@ export class HistogramReceiver extends Receiver<Pair<AugmentedHistogram, Augment
         this.page.setDataView(this.view);
     }
 
-    public onNext(value: PartialResult<Pair<AugmentedHistogram, AugmentedHistogram>>): void {
+    public onNext(value: PartialResult<Pair<Histogram, Histogram>>): void {
         super.onNext(value);
         if (value == null || value.data == null || value.data.first == null)
             return;

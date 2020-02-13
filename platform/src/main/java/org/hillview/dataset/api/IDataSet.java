@@ -18,6 +18,7 @@
 package org.hillview.dataset.api;
 
 import org.hillview.dataset.PRDataSetMonoid;
+import org.hillview.dataset.PostProcessedSketch;
 import rx.Observable;
 
 import javax.annotation.Nullable;
@@ -221,11 +222,23 @@ public interface IDataSet<T> {
      * Run a sketch synchronously.
      * @param sketch  Sketch to run.
      * @param <R>     Type of data produced.
-     * @return        An IDataSet containing the final result of the test.
+     * @return        The result produced by the sketch.
      */
     @Nullable
     default <R> R blockingSketch(final ISketch<T, R> sketch) {
         return this.singleSketch(sketch).toBlocking().single();
+    }
+
+    /**
+     * Run a post-processed sketch synchronously.
+     * @param sketch  Post-processed sketch to run.
+     * @param <R>     Type of data produced by sketch.
+     * @param <F>     Type of result produced by postprocessing.
+     * @return        The result produced by the sketch.
+     */
+    @Nullable
+    default <R, F> F blockingPostProcessedSketch(final PostProcessedSketch<T, R, F> sketch) {
+        return sketch.postProcess(this.singleSketch(sketch.sketch).toBlocking().single());
     }
 
     @Nullable

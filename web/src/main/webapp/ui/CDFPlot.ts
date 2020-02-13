@@ -130,6 +130,7 @@ export class CDFPlot extends Plot implements ICDFPlot {
 /**
  * Can substitute for a CDFPlot, but does nothing.
  */
+// noinspection JSUnusedLocalSymbols
 export class NoCDFPlot implements ICDFPlot {
     public setData(cdf: number[], adjust: boolean): void {}
     public draw(): void {}

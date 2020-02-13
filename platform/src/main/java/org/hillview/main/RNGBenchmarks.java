@@ -4,9 +4,9 @@ import org.apache.commons.math3.distribution.LaplaceDistribution;
 import org.hillview.dataset.api.Pair;
 import org.hillview.security.SecureLaplace;
 import org.hillview.security.TestKeyLoader;
+import org.hillview.utils.Converters;
 import org.hillview.utils.HashUtil;
 
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -31,8 +31,8 @@ public class RNGBenchmarks extends Benchmarks {
         LaplaceDistribution dist = new LaplaceDistribution(0, scale);
         int hashCode = 31;
         for (Pair<Integer, Integer> p : pairs) {
-            hashCode = HashUtil.murmurHash3(hashCode, p.first);
-            hashCode = HashUtil.murmurHash3(hashCode, p.second);
+            hashCode = HashUtil.murmurHash3(hashCode, Converters.checkNull(p.first));
+            hashCode = HashUtil.murmurHash3(hashCode, Converters.checkNull(p.second));
             dist.reseedRandomGenerator(hashCode);
             dist.sample();
         }

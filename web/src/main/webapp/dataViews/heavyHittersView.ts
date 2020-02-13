@@ -182,6 +182,7 @@ export class HeavyHittersView extends BigTableView {
     }
 
     public serialize(): IViewSerialization {
+        // noinspection UnnecessaryLocalVariableJS
         const result: HeavyHittersSerialization = {
             ...super.serialize(),
             percent: this.percent,
@@ -429,6 +430,7 @@ export class HeavyHittersView extends BigTableView {
         percentDialog.show();
     }
 
+    // noinspection JSUnusedLocalSymbols
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         // Not used

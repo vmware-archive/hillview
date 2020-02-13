@@ -19,13 +19,8 @@ package org.hillview.dataStructures;
 
 import org.hillview.sketches.results.DoubleHistogramBuckets;
 import org.hillview.table.columns.DoubleColumnQuantization;
-import org.hillview.utils.Utilities;
 
 public class NumericIntervalDecomposition extends IntervalDecomposition {
-    private NumericIntervalDecomposition(DoubleColumnQuantization quantization, int[] indexes) {
-        super(quantization, indexes);
-    }
-
     public NumericIntervalDecomposition(DoubleColumnQuantization quantization, DoubleHistogramBuckets buckets) {
         super(quantization, buckets.bucketCount);
         for (int i = 0; i < buckets.getBucketCount(); i++) {
@@ -33,12 +28,5 @@ public class NumericIntervalDecomposition extends IntervalDecomposition {
             int si = this.quantization.bucketIndex(d);
             this.bucketQuantizationIndexes[i] = si;
         }
-    }
-
-    @Override
-    public IntervalDecomposition mergeNeighbors() {
-        return new NumericIntervalDecomposition(
-                (DoubleColumnQuantization)this.quantization,
-                Utilities.decimate(this.bucketQuantizationIndexes, 2));
     }
 }

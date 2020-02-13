@@ -154,6 +154,7 @@ public class BatchLogAnalysis {
      * @param figDir destination directory to save the CSV files for all bugs
      * @param numOfTimestampBuckets number of timestamp (x-axis) intervals for each heatmap
      */
+    @SuppressWarnings("StringConcatenationInLoop")
     private static void getBugHeatmaps(String logDir, String figDir, int numOfTimestampBuckets) {
         File path = new File(logDir);
         // each subDir in logDir corresponds to one bug
@@ -161,6 +162,7 @@ public class BatchLogAnalysis {
             (current, name) -> new File(current, name).isDirectory());
         // create empty directory for nsx_manager and nsx_edge respectively
         boolean ignored = new File(figDir + "/nsx_manager_syslog/").mkdirs();
+        //noinspection UnusedAssignment
         ignored = new File(figDir + "/nsx_edge_syslog/").mkdirs();
 
         assert bugIDs != null;

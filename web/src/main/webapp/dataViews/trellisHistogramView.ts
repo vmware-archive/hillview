@@ -17,7 +17,6 @@
 
 import {Receiver, RpcRequest} from "../rpc";
 import {
-    AugmentedHistogram,
     FilterDescription,
     Heatmap,
     Histogram,
@@ -341,15 +340,8 @@ export class TrellisHistogramView extends TrellisChartView {
 
         for (let i = 0; i < coarsened.length; i++) {
             const plot = this.hps[i];
-            const coarse = coarsened[i];
-
-            const augHist: AugmentedHistogram = {
-                histogram: coarse,
-                cdfBuckets: null,
-                confidence: data.confidence != null ? data.confidence[i] : null,
-            };
-
-            plot.setHistogram(augHist, this.samplingRate,
+            coarsened[i].confidence = data.confidence != null ? data.confidence[i] : null;
+            plot.setHistogram(coarsened[i], this.samplingRate,
                 this.xAxisData,
                 max, this.page.dataset.isPrivate());
             plot.displayAxes = false;

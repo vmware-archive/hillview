@@ -28,8 +28,6 @@ import org.hillview.test.BaseTest;
 import org.junit.Assert;
 import org.junit.Test;
 
-import javax.management.loading.PrivateClassLoader;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;

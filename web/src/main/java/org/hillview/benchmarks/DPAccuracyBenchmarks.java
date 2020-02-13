@@ -108,7 +108,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
      * @param decomposition The leaf specification for the histogram.
      * @return The average per-query absolute error.
      */
-    private double computeAccuracy(PrivateHistogram ph, IntervalDecomposition decomposition, SecureLaplace laplace) {
+    private double computeAccuracy(DPHistogram ph, IntervalDecomposition decomposition, SecureLaplace laplace) {
         double scale = PrivacyUtils.computeNoiseScale(ph.getEpsilon(), decomposition);
         double baseVariance = PrivacyUtils.laplaceVariance(scale);
         // Do all-intervals accuracy on leaves.
@@ -116,8 +116,9 @@ public class DPAccuracyBenchmarks extends Benchmarks {
         double sqtot = 0.0;
         double abstot = 0.0;
         Noise noise = new Noise();
-        for (int left = 0; left < ph.histogram.getBucketCount(); left++) {
-            for (int right = left; right < ph.histogram.getBucketCount(); right++) {
+        int bucketCount = decomposition.getBucketCount();
+        for (int left = 0; left < bucketCount; left++) {
+            for (int right = left; right < bucketCount; right++) {
                 ph.noiseForRange(left, right, scale, baseVariance, laplace, noise);
                 sqtot += Math.pow(noise.getNoise(), 2);
                 abstot += Math.abs(noise.getNoise());
@@ -125,7 +126,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
             }
         }
 
-        System.out.println("Bucket count: " + ph.histogram.getBucketCount());
+        System.out.println("Bucket count: " + bucketCount);
         System.out.println("Num intervals: " + n);
         System.out.println("Average absolute error: " + abstot / (double) n);
         System.out.println("Average L2 error: " + Math.sqrt(sqtot) / (double) n);
@@ -142,7 +143,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
      * @param yd The leaf specification for the y-axis.
      * @return The average per-query absolute error.
      */
-    private Double computeAccuracy(PrivateHeatmapFactory ph, IntervalDecomposition xd, IntervalDecomposition yd) {
+    private Double computeAccuracy(DPHeatmapSketch ph, IntervalDecomposition xd, IntervalDecomposition yd) {
         double scale = PrivacyUtils.computeNoiseScale(ph.getEpsilon(), xd, yd);
         double baseVariance = PrivacyUtils.laplaceVariance(scale);
 
@@ -151,10 +152,12 @@ public class DPAccuracyBenchmarks extends Benchmarks {
         double sqtot = 0.0;
         double abstot = 0.0;
         Noise noise = new Noise();
-        for (int left = 0; left < ph.heatmap.getXBucketCount(); left++) {
-            for (int right = left; right < ph.heatmap.getXBucketCount(); right++) {
-                for (int top = 0; top < ph.heatmap.getYBucketCount(); top++) {
-                    for (int bot = top; bot < ph.heatmap.getYBucketCount(); bot++) {
+        int xBucketCount = xd.getBucketCount();
+        int yBucketCount = yd.getBucketCount();
+        for (int left = 0; left < xBucketCount; left++) {
+            for (int right = left; right < xBucketCount; right++) {
+                for (int top = 0; top < yBucketCount; top++) {
+                    for (int bot = top; bot < yBucketCount; bot++) {
                         ph.noiseForRange(left, right, top, bot,
                                 scale, baseVariance, noise);
                         sqtot += Math.pow(noise.getNoise(), 2);
@@ -165,7 +168,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
             }
         }
 
-        System.out.println("Bucket count: " + ph.heatmap.getXBucketCount() * ph.heatmap.getYBucketCount());
+        System.out.println("Bucket count: " + xBucketCount * yBucketCount);
         System.out.println("Num intervals: " + n);
         System.out.println("Average absolute error: " + abstot / (double) n);
         System.out.println("Average L2 error: " + Math.sqrt(sqtot) / (double) n);
@@ -209,8 +212,8 @@ public class DPAccuracyBenchmarks extends Benchmarks {
         for (int i = 0 ; i < iterations; i++) {
             tkl.setIndex(i);
             SecureLaplace laplace = new SecureLaplace(tkl);
-            PrivateHistogram ph = new PrivateHistogram(colIndex, 
-                                                       dd, hist, epsilon, false, laplace);
+            @SuppressWarnings("ConstantConditions")
+            DPHistogram ph = new DPHistogram(null, colIndex, dd, epsilon, false, laplace);
             double acc = computeAccuracy(ph, dd, laplace);
             accuracies.add(acc);
             totAccuracy += acc;
@@ -249,7 +252,8 @@ public class DPAccuracyBenchmarks extends Benchmarks {
         for (int i = 0 ; i < iterations; i++) {
             tkl.setIndex(i);
             SecureLaplace laplace = new SecureLaplace(tkl);
-            PrivateHeatmapFactory ph = new PrivateHeatmapFactory(columnsIndex, d0, d1, heatmap, epsilon, laplace);
+            @SuppressWarnings("ConstantConditions")
+            DPHeatmapSketch ph = new DPHeatmapSketch(null, columnsIndex, d0, d1, epsilon, laplace);
             double acc = computeAccuracy(ph, d0, d1);
             accuracies.add(acc);
             totAccuracy += acc;

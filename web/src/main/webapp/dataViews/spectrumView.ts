@@ -17,7 +17,6 @@
 
 import {IViewSerialization, SpectrumSerialization} from "../datasetView";
 import {
-    AugmentedHistogram,
     CombineOperators,
     BucketsInfo,
     EigenVal,
@@ -144,6 +143,7 @@ export class SpectrumView extends ChartView {
         this.topLevel.appendChild(this.summary);
     }
 
+    // noinspection JSUnusedLocalSymbols
     protected showTrellis(colName: DisplayName): void { /* not used */ }
 
     protected createNewSurfaces(): void {
@@ -163,15 +163,7 @@ export class SpectrumView extends ChartView {
         this.axisData = axisData;
         this.title = title;
         this.histogram = h;
-
-        const augHist: AugmentedHistogram = {
-            histogram: h,
-            cdfBuckets: null,
-            confidence: null,
-            missingConfidence: null
-        };
-
-        this.plot.setHistogram(augHist, 1,
+        this.plot.setHistogram(h, 1,
             axisData, null, this.page.dataset.isPrivate());
         this.plot.draw();
 
@@ -207,11 +199,13 @@ export class SpectrumView extends ChartView {
         return new SpectrumView(ser.remoteObjectId, ser.rowCount, colNames, schema, page);
     }
 
+    // noinspection JSUnusedLocalSymbols
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return null;  // not used
     }
 
+    // noinspection JSUnusedLocalSymbols
     public combine(how: CombineOperators): void {
         // not used
     }

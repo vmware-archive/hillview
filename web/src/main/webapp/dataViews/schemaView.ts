@@ -81,7 +81,7 @@ export class SchemaView extends TSViewBase {
         this.nameDialog.addSelectField("action", "Action", actions, "Add",
             "Add to or Remove from current selection");
         this.nameDialog.setAction(() => {
-            const regExp: RegExp = new RegExp(this.nameDialog.getFieldValue("selected"));
+            const regExp: RegExp = new RegExp(this.nameDialog.getFieldValue("selected")); // #nosec
             const action: string = this.nameDialog.getFieldValue("action");
             this.nameAction(regExp, action);
             this.display.highlightSelectedRows();
@@ -380,6 +380,7 @@ export class SchemaView extends TSViewBase {
         }
     }
 
+    // noinspection JSUnusedLocalSymbols
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return null;  // not used

@@ -200,10 +200,9 @@ public class SimpleDBTarget extends RpcTarget {
                 cd, info[0].getBuckets(), this.columnLimits, null, this.rowCount);
         Histogram cdf = this.database.histogram(
                 cd, info[1].getBuckets(), this.columnLimits, null, this.rowCount);
-        Pair<AugmentedHistogram, HistogramPrefixSum> result = new
-                Pair<AugmentedHistogram, HistogramPrefixSum>(
-                        new AugmentedHistogram(histo), new HistogramPrefixSum(cdf));
-        ISketch<ITable, Pair<AugmentedHistogram, HistogramPrefixSum>> sk = new PrecomputedSketch<ITable, Pair<AugmentedHistogram, HistogramPrefixSum>>(result);
+        Pair<Histogram, Histogram> result = new Pair<Histogram, Histogram>(histo, cdf.integrate());
+        ISketch<ITable, Pair<Histogram, Histogram>> sk =
+                new PrecomputedSketch<ITable, Pair<Histogram, Histogram>>(result);
         this.runSketch(this.table, sk, request, context);
     }
 

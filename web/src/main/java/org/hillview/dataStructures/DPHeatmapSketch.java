@@ -1,20 +1,23 @@
 package org.hillview.dataStructures;
 
+import org.hillview.dataset.PostProcessedSketch;
+import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.Pair;
 import org.hillview.security.SecureLaplace;
 import org.hillview.sketches.results.Heatmap;
+import org.hillview.table.api.ITable;
 import org.hillview.utils.*;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.hillview.dataStructures.IntervalDecomposition.kadicDecomposition;
 
 /**
- * This class is used to add noise to a heatmap.
+ * Differentially-private heatmap.
  */
-public class PrivateHeatmapFactory {
-    public Heatmap heatmap;
+public class DPHeatmapSketch extends PostProcessedSketch<ITable, Heatmap, Heatmap> {
     private double epsilon;
     private SecureLaplace laplace;
 
@@ -26,21 +29,19 @@ public class PrivateHeatmapFactory {
 
     private final int columnsIndex;
 
-    public PrivateHeatmapFactory(int columnsIndex,
-            IntervalDecomposition d0, IntervalDecomposition d1, Heatmap heatmap, double epsilon, SecureLaplace laplace) {
+    public DPHeatmapSketch(
+            ISketch<ITable, Heatmap> sketch,
+            int columnsIndex,
+            IntervalDecomposition d0, IntervalDecomposition d1,
+            double epsilon, SecureLaplace laplace) {
+        super(sketch);
         this.columnsIndex = columnsIndex;
-
-        this.heatmap = heatmap;
         this.epsilon = epsilon;
         this.laplace = laplace;
-
         this.dx = d0;
         this.dy = d1;
-
         this.scale = PrivacyUtils.computeNoiseScale(this.epsilon, d0, d1);
         this.baseVariance = PrivacyUtils.laplaceVariance(scale);
-
-        this.addDyadicLaplaceNoise(d0, d1);
     }
 
     /**
@@ -69,9 +70,14 @@ public class PrivateHeatmapFactory {
     public int noiseForRange(int left, int right, int top, int bot,
                               double scale, double baseVariance, /*out*/Noise result) {
         List<Pair<Integer, Integer>> xIntervals = kadicDecomposition(left, right, IntervalDecomposition.BRANCHING_FACTOR);
+        @SuppressWarnings("SuspiciousNameCombination")
         List<Pair<Integer, Integer>> yIntervals = kadicDecomposition(top, bot, IntervalDecomposition.BRANCHING_FACTOR);
 
         return noiseForDecomposition(xIntervals, yIntervals, scale, baseVariance, result);
+    }
+
+    public double getEpsilon() {
+        return this.epsilon;
     }
 
     /**
@@ -81,34 +87,33 @@ public class PrivateHeatmapFactory {
      * Each node in the dyadic interval tree is perturbed by an independent noise variable distributed as Laplace(log T / epsilon).
      * The total noise is the sum of the noise variables in the intervals composing the desired interval or bucket.
      */
-    private void addDyadicLaplaceNoise(IntervalDecomposition dx, IntervalDecomposition dy) {
-        int xSize = this.heatmap.xBucketCount;
-        int ySize = this.heatmap.yBucketCount;
+    @Nullable
+    @Override
+    public Heatmap postProcess(@Nullable Heatmap heatmap) {
+        Converters.checkNull(heatmap);
+        int xSize = heatmap.xBucketCount;
+        int ySize = heatmap.yBucketCount;
+        Heatmap result = new Heatmap(xSize, ySize, true);
+        Converters.checkNull(result.confidence);
 
         HillviewLogger.instance.info("Adding heatmap noise with", "epsilon={0}", this.epsilon);
         List<List<Pair<Integer, Integer>>> xIntervals = new ArrayList<List<Pair<Integer, Integer>>>(xSize);
         List<List<Pair<Integer, Integer>>> yIntervals = new ArrayList<List<Pair<Integer, Integer>>>(ySize);
         for (int i = 0; i < xSize; i++)
-            xIntervals.add(dx.bucketDecomposition(i, false));
+            xIntervals.add(this.dx.bucketDecomposition(i, false));
         for (int i = 0; i < ySize; i++)
-            yIntervals.add(dy.bucketDecomposition(i, false));
+            yIntervals.add(this.dy.bucketDecomposition(i, false));
 
         // Compute the noise.
         Noise noise = new Noise();
-        this.heatmap.allocateConfidence();
-        Converters.checkNull(this.heatmap.confidence);
-
-        for (int i = 0; i < this.heatmap.buckets.length; i++) {
-            for (int j = 0; j < this.heatmap.buckets[i].length; j++) {
-                int numIntervals = this.noiseForDecomposition(xIntervals.get(i), yIntervals.get(j), this.scale, this.baseVariance, noise);
-                this.heatmap.buckets[i][j] += noise.getNoise();
-                this.heatmap.confidence[i][j] = Utilities.toInt(PrivacyUtils.laplaceCI(numIntervals, this.scale,
-                        PrivacyUtils.DEFAULT_ALPHA).second);
+        for (int i = 0; i < heatmap.buckets.length; i++) {
+            for (int j = 0; j < heatmap.buckets[i].length; j++) {
+                long nIntervals = this.noiseForDecomposition(xIntervals.get(i), yIntervals.get(j), this.scale, this.baseVariance, noise);
+                result.buckets[i][j] = Utilities.toLong(heatmap.buckets[i][j] + noise.getNoise());
+                result.confidence[i][j] = Utilities.toInt(
+                        PrivacyUtils.laplaceCI(nIntervals, this.scale, PrivacyUtils.DEFAULT_ALPHA).second);
             }
         }
-    }
-
-    public double getEpsilon() {
-        return this.epsilon;
+        return result;
     }
 }

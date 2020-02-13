@@ -34,6 +34,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * An RPC target is an object that has methods that are invoked from the UI
@@ -236,40 +237,17 @@ public abstract class RpcTarget implements IJson, IRpcTarget {
         }
     }
 
-    static class SketchResultObserver<R extends IJson> extends ResultObserver<R> {
-        SketchResultObserver(String name, RpcTarget target, RpcRequest request,
-                             RpcRequestContext context) {
-            super(name, request, target, context);
-        }
-
-        @Override
-        public void onNext(PartialResult<R> pr) {
-            HillviewLogger.instance.info("Received partial sketch", "from {0}", this.name);
-            Session session = this.context.getSessionIfOpen();
-            if (session == null)
-                return;
-
-            try {
-                RpcReply reply = this.request.createReply(Utilities.toJsonTree(pr));
-                this.sendReply(reply);
-            } catch (Exception ex) {
-                HillviewLogger.instance.error("Exception during serialization to JSON", ex);
-                super.onError(ex);
-            }
-        }
-    }
-
     /**
      * Observes a sketch computation and applies a postprocessing function to intermediate results
      * before returning them.
      * @param <R> Type of data.
      */
-    static class SketchResultObserverPostprocess<R, S extends IJson> extends ResultObserver<R> {
-        private final BiFunction<R, HillviewComputation, S> postprocessing;
+    static class SketchResultObserver<R, S extends IJson> extends ResultObserver<R> {
+        private final Function<R, S> postprocessing;
 
-        SketchResultObserverPostprocess(String name, RpcTarget target, RpcRequest request,
-                                        RpcRequestContext context,
-                                        BiFunction<R, HillviewComputation, S> postprocessing) {
+        SketchResultObserver(String name, RpcTarget target, RpcRequest request,
+                             RpcRequestContext context,
+                             Function<R, S> postprocessing) {
             super(name, request, target, context);
             this.postprocessing = postprocessing;
         }
@@ -283,7 +261,7 @@ public abstract class RpcTarget implements IJson, IRpcTarget {
 
             try {
                 @Nullable
-                S result = this.postprocessing.apply(pr.deltaValue, this.getComputation());
+                S result = this.postprocessing.apply(pr.deltaValue);
                 JsonObject json = new JsonObject();
                 json.addProperty("done", pr.deltaDone);
                 if (result == null)
@@ -428,29 +406,27 @@ public abstract class RpcTarget implements IJson, IRpcTarget {
     }
 
     /**
-     * Runs a sketch and sends the data received directly to the client.
-     * Applies a postprocessing function to each partial result returned.
+     * Runs a sketch with post processing
+     * and sends the data received directly to the client.
      * @param data    Dataset to run the sketch on.
-     * @param sketch  Sketch to run.
-     * @param postprocessing  This function is applied to the sketch results at the end.
+     * @param sketch  Post-processed sketch to run.
      * @param request Web socket request, where replies are sent.
      * @param context Context for the computation.
      */
     @Override
     public <T, R, S extends IJson> void
-    runSketchPostprocessing(IDataSet<T> data, ISketch<T, R> sketch,
-                            BiFunction<R, HillviewComputation, S> postprocessing,
-                            RpcRequest request, RpcRequestContext context) {
+    runSketch(IDataSet<T> data, PostProcessedSketch<T, R, S> sketch,
+              RpcRequest request, RpcRequestContext context) {
         // Run the sketch
-        Observable<PartialResult<R>> sketches = data.sketch(sketch);
+        Observable<PartialResult<R>> sketches = data.sketch(sketch.sketch);
         // Knows how to add partial results
-        PartialResultMonoid<R> prm = new PartialResultMonoid<R>(sketch);
+        PartialResultMonoid<R> prm = new PartialResultMonoid<R>(sketch.sketch);
         // Prefix sum of the partial results
         Observable<PartialResult<R>> add = sketches.scan(prm::add);
         // Send the partial results back
-        SketchResultObserverPostprocess<R, S> robs =
-                new SketchResultObserverPostprocess<R, S>(
-                sketch.asString(), this, request, context, postprocessing);
+        SketchResultObserver<R, S> robs =
+                new SketchResultObserver<R, S>(
+                        sketch.sketch.asString(), this, request, context, sketch::postProcess);
         Subscription sub = add
                 .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
                 .subscribe(robs);
@@ -475,8 +451,26 @@ public abstract class RpcTarget implements IJson, IRpcTarget {
         // Prefix sum of the partial results
         Observable<PartialResult<R>> add = sketches.scan(prm::add);
         // Send the partial results back
-        SketchResultObserver<R> robs = new SketchResultObserver<R>(
-                sketch.asString(), this, request, context);
+        SketchResultObserver<R, R> robs = new SketchResultObserver<R, R>(
+                sketch.asString(), this, request, context, e -> e);
+        Subscription sub = add
+                .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
+                .subscribe(robs);
+        this.saveSubscription(context, sub);
+    }
+
+    @Override
+    public <T, R, S extends IJson> void
+    runCompleteSketch(IDataSet<T> data, PostProcessedSketch<T, R, S> sketch,
+                      RpcRequest request, RpcRequestContext context) {
+        // Run the sketch
+        Observable<PartialResult<R>> sketches = data.sketch(sketch.sketch);
+        // Knows how to add partial results
+        PartialResultMonoid<R> prm = new PartialResultMonoid<R>(sketch.sketch);
+        // Prefix sum of the partial results
+        Observable<PartialResult<R>> add = sketches.scan(prm::add);
+        CompleteSketchResultObserver<R, S> robs = new CompleteSketchResultObserver<R, S>(
+                sketch.sketch.asString(), this, request, context, (e, c) -> sketch.postProcess(e));
         Subscription sub = add
                 .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
                 .subscribe(robs);
@@ -633,9 +627,9 @@ public abstract class RpcTarget implements IJson, IRpcTarget {
         // Prefix sum of the partial results
         Observable<PartialResult<ControlMessage.StatusList>> add = sketches.scan(prm::add);
         // Send the partial results back
-        SketchResultObserver<ControlMessage.StatusList> robs =
-                new SketchResultObserver<ControlMessage.StatusList>(
-                        command.toString(), this, request, context);
+        SketchResultObserver<ControlMessage.StatusList, ControlMessage.StatusList> robs =
+                new SketchResultObserver<ControlMessage.StatusList, ControlMessage.StatusList>(
+                        command.toString(), this, request, context, e -> e);
         Subscription sub = add
                 .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
                 .subscribe(robs);

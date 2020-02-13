@@ -17,7 +17,7 @@
 
 import {pie as d3pie, arc as d3arc} from "d3-shape";
 import {AxisData} from "../dataViews/axisData";
-import {AugmentedHistogram, kindIsString} from "../javaBridge";
+import {Histogram, kindIsString} from "../javaBridge";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {D3Scale, SpecialChars} from "./ui";
@@ -36,7 +36,7 @@ export class PiePlot extends Plot implements IBarPlot {
     /**
      * Histogram that is being drawn.
      */
-    public histogram: AugmentedHistogram;
+    public histogram: Histogram;
     /**
      * Sampling rate that was used to compute the histogram.
      */
@@ -56,7 +56,7 @@ export class PiePlot extends Plot implements IBarPlot {
      * @param maxYAxis      Not used for pie chart.
      * @param isPrivate     True if we are plotting private data.
      */
-    public setHistogram(bars: AugmentedHistogram, samplingRate: number,
+    public setHistogram(bars: Histogram, samplingRate: number,
                         axisData: AxisData, maxYAxis: number | null, isPrivate: boolean): void {
         this.histogram = bars;
         this.samplingRate = samplingRate;
@@ -117,8 +117,8 @@ export class PiePlot extends Plot implements IBarPlot {
     }
 
     private drawPie(): void {
-        const counts = this.histogram.histogram.buckets.map((x) => Math.max(x, 0));
-        counts.push(this.histogram.histogram.missingData);
+        const counts = this.histogram.buckets.map((x) => Math.max(x, 0));
+        counts.push(this.histogram.missingData);
         const pie = d3pie().sort(null);
         const chartWidth = this.getChartWidth();
         const chartHeight = this.getChartHeight();
@@ -131,7 +131,7 @@ export class PiePlot extends Plot implements IBarPlot {
             confidence = cloneArray(this.histogram.confidence);
             confidence.push(this.histogram.missingConfidence);
         } else {
-            confidence = new Array(this.histogram.histogram.buckets.length + 1);
+            confidence = new Array(this.histogram.buckets.length + 1);
         }
 
         const sum = counts.reduce((a,b) => a + b);
@@ -257,6 +257,7 @@ export class PiePlot extends Plot implements IBarPlot {
         return null;
     }
 
+    // noinspection JSUnusedLocalSymbols
     public get(x: number): [number, number] {
         return null;
     }

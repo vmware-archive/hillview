@@ -17,9 +17,7 @@
 
 package org.hillview.sketches.results;
 
-import com.google.gson.JsonElement;
 import net.openhft.hashing.LongHashFunction;
-import org.hillview.dataset.api.IJson;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.IRowIterator;
@@ -31,7 +29,7 @@ import org.hillview.utils.Utilities;
  * are identified via their hashcode. The class uses the HyperLogLog algorithm for large estimates
  * and LinearCounting algorithm for small estimates.
  */
-public class HLogLog implements IJson {
+public class HLogLog {
     private final int regNum; //number of registers
     private final int logRegNum;
     private final byte[] registers;
@@ -136,11 +134,5 @@ public class HLogLog implements IJson {
 
     public CountWithConfidence getCount() {
         return new CountWithConfidence(this.distinctItemCount, this.confidence);
-    }
-
-    @Override
-    public JsonElement toJsonTree() {
-        CountWithConfidence result = this.getCount();
-        return result.toJsonTree();
     }
 }

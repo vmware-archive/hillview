@@ -19,13 +19,8 @@ package org.hillview.dataStructures;
 
 import org.hillview.sketches.results.StringHistogramBuckets;
 import org.hillview.table.columns.StringColumnQuantization;
-import org.hillview.utils.Utilities;
 
 public class StringIntervalDecomposition extends IntervalDecomposition {
-    private StringIntervalDecomposition(StringColumnQuantization quantization, int[] indexes) {
-        super(quantization, indexes);
-    }
-
     public StringIntervalDecomposition(StringColumnQuantization quantization, StringHistogramBuckets buckets) {
         super(quantization, buckets.leftBoundaries.length);
         int previous = 0;
@@ -37,12 +32,5 @@ public class StringIntervalDecomposition extends IntervalDecomposition {
             previous = si;
             this.bucketQuantizationIndexes[i] = si;
         }
-    }
-
-    @Override
-    public IntervalDecomposition mergeNeighbors() {
-        return new StringIntervalDecomposition(
-                (StringColumnQuantization)this.quantization,
-                Utilities.decimate(this.bucketQuantizationIndexes, 2));
     }
 }

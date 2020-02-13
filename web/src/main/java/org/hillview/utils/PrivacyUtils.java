@@ -11,11 +11,10 @@ import java.util.LinkedHashMap;
 public class PrivacyUtils {
 
     /**
-     * Compute the noise scale for a k-dimensional interval decomposition with branching factor as defined in IntervalDecomposition.
-     *
+     * Compute the noise scale for a k-dimensional interval decomposition with branching factor as defined
+     * in IntervalDecomposition.
      * @param epsilon the total budget for the k-d histogram
      * @param decompositions the leaf specification for each tree
-     * @return
      */
     public static double computeNoiseScale(double epsilon,
                                            IntervalDecomposition... decompositions) {
@@ -62,7 +61,8 @@ public class PrivacyUtils {
      * @return lower and upper bounds for the confidence interval
      */
     public static Pair<Double, Double> laplaceCI(long numVariables, double scale, double alpha) {
-        LinkedHashMap<Double, Pair<Double, Double>> cis = CIMemo.get(new Pair(numVariables, scale));
+        LinkedHashMap<Double, Pair<Double, Double>> cis = CIMemo.get(
+                new Pair<Integer, Double>((int)numVariables, scale));
         if (cis != null) {
             Pair<Double, Double> ret = cis.get(alpha);
             if (ret != null) {
@@ -86,12 +86,14 @@ public class PrivacyUtils {
         Arrays.sort(totals);
         int lowerIdx = (int)(CI_SAMPLES * alpha);
         int upperIdx = CI_SAMPLES - lowerIdx;
-        Pair<Double, Double> ret = new Pair(totals[lowerIdx], totals[upperIdx]);
+        Pair<Double, Double> ret = new Pair<Double, Double>(totals[lowerIdx], totals[upperIdx]);
         if (cis != null) {
             cis.put(alpha, ret);
         } else {
-            CIMemo.put(new Pair(numVariables, scale), new LinkedHashMap<Double, Pair<Double, Double>>());
-            LinkedHashMap<Double, Pair<Double, Double>> newCIs = CIMemo.get(new Pair(numVariables, scale));
+            CIMemo.put(new Pair<Integer, Double>((int)numVariables, scale),
+                    new LinkedHashMap<Double, Pair<Double, Double>>());
+            LinkedHashMap<Double, Pair<Double, Double>> newCIs =
+                    CIMemo.get(new Pair<Integer, Double>((int)numVariables, scale));
             newCIs.put(alpha, ret);
         }
 

@@ -38,14 +38,21 @@ public class Heatmap implements Serializable, IJson {
     public final int yBucketCount;
 
     public Heatmap(final int xBucketCount,
-                   final int yBucketCount) {
+                   final int yBucketCount,
+                   boolean allocateConfidence) {
         this.xBucketCount = xBucketCount;
         this.yBucketCount = yBucketCount;
         this.buckets = new long[xBucketCount][yBucketCount];
         // Automatically initialized to 0
-        this.histogramMissingX = new Histogram(yBucketCount);
-        this.histogramMissingY = new Histogram(xBucketCount);
-        this.confidence = null;
+        this.histogramMissingX = new Histogram(yBucketCount, allocateConfidence);
+        this.histogramMissingY = new Histogram(xBucketCount, allocateConfidence);
+        if (allocateConfidence)
+            this.confidence = new int[this.xBucketCount][this.yBucketCount];
+    }
+
+    public Heatmap(final int xBucketCount,
+                   final int yBucketCount) {
+        this(xBucketCount, yBucketCount, false);
     }
 
     public void createHeatmap(final IColumn columnD1, final IColumn columnD2,
@@ -104,32 +111,19 @@ public class Heatmap implements Serializable, IJson {
     public long getCount(final int index1, final int index2) { return this.buckets[index1][index2]; }
 
     /**
-     * @param  otherHeatmap with the same bucketDescriptions
-     * @return a new HeatMap which is the union of this and otherHeatmap
+     * @param  other   A Heatmap with the same bucketDescriptions
+     * @return a new Heatmap which is the union of this and other.
+     * Note: this assumes the confidence is null.
      */
-    public Heatmap union(Heatmap otherHeatmap) {
+    public Heatmap union(Heatmap other) {
         Heatmap unionH = new Heatmap(this.xBucketCount, this.yBucketCount);
         for (int i = 0; i < xBucketCount; i++)
             for (int j = 0; j < this.yBucketCount; j++)
-                unionH.buckets[i][j] = this.buckets[i][j] + otherHeatmap.buckets[i][j];
-        unionH.missingData = this.missingData + otherHeatmap.missingData;
-        unionH.totalSize = this.totalSize + otherHeatmap.totalSize;
-        unionH.histogramMissingX = this.histogramMissingX.union(otherHeatmap.histogramMissingX);
-        unionH.histogramMissingY = this.histogramMissingY.union(otherHeatmap.histogramMissingY);
+                unionH.buckets[i][j] = this.buckets[i][j] + other.buckets[i][j];
+        unionH.missingData = this.missingData + other.missingData;
+        unionH.totalSize = this.totalSize + other.totalSize;
+        unionH.histogramMissingX = this.histogramMissingX.union(other.histogramMissingX);
+        unionH.histogramMissingY = this.histogramMissingY.union(other.histogramMissingY);
         return unionH;
-    }
-
-    public void allocateConfidence() {
-        this.confidence = new int[this.xBucketCount][this.yBucketCount];
-    }
-
-    public int getXBucketCount() {
-        return this.buckets.length;
-    }
-
-    public int getYBucketCount() {
-        if (this.getXBucketCount() == 0) return 0;
-
-        return this.buckets[0].length;
     }
 }

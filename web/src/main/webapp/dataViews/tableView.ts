@@ -305,6 +305,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         rr.invoke(new FindReceiver(this.getPage(), rr, this, o));
     }
 
+    // noinspection JSUnusedLocalSymbols
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
@@ -487,7 +488,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             th.style.fontWeight = "normal";
         } else if (isSortable) {
             const span = makeSpan("", false);
-            span.innerHTML = this.getSortIndex(cd.name) + this.getSortArrow(cd.name);
+            span.innerHTML = this.getSortIndex(cd.name) + this.getSortArrow(cd.name); // #nosec
             span.style.cursor = "pointer";
             span.onclick = () => this.toggleOrder(cd.name);
             th.appendChild(span);
