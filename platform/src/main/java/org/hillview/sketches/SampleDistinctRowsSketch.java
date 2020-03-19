@@ -42,7 +42,8 @@ import java.util.Comparator;
  * specified ordering of the rows.
  */
 public class SampleDistinctRowsSketch implements ISketch<ITable, MinKSet<RowSnapshot>> {
-
+    static final long serialVersionUID = 1;
+    
     private final RecordOrder recordOrder;
     private final int numSamples;
     private final long seed;

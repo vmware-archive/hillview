@@ -24,6 +24,8 @@ import javax.annotation.Nullable;
 
 public class StringArrayColumn extends BaseArrayColumn
         implements IStringColumn, IMutableColumn {
+    static final long serialVersionUID = 1;
+
     private final int[] data;
     private final CategoryEncoding encoding;
 

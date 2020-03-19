@@ -28,6 +28,7 @@ import javax.annotation.Nullable;
  * Useful to prune tables.
  */
 public class EmptyTableMap implements IMap<ITable, Boolean> {
+    static final long serialVersionUID = 1;
     @Nullable
     @Override
     public Boolean apply(@Nullable ITable data) {

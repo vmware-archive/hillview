@@ -21,7 +21,6 @@ import org.hillview.dataset.api.IJson;
 import org.hillview.sketches.results.BucketsInfo;
 
 import javax.annotation.Nullable;
-import java.io.Serializable;
 
 /**
  * This class is used to describe how values used in a column are quantized
@@ -34,7 +33,9 @@ import java.io.Serializable;
  * differentially-private views over data synopses.  Quantization involves
  * placing the value into one of a finite number of sorted buckets.
  */
-public abstract class ColumnQuantization implements IJson, Serializable {
+public abstract class ColumnQuantization implements IJson {
+    static final long serialVersionUID = 1;
+
     /**
      * Quantize a numeric value by rounding down.
      * @param value  Value to quantize.

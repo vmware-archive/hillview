@@ -25,6 +25,8 @@ import java.io.Serializable;
  * @param <T> Return type of the result
  */
 public class OperationResponse<T> implements Serializable {
+    static final long serialVersionUID = 1;
+
     @Nullable public final T result;
 
     public OperationResponse(@Nullable final T result) {

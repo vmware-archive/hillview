@@ -18,6 +18,9 @@
 package org.hillview.sketches.results;
 
 import net.openhft.hashing.LongHashFunction;
+
+import java.io.Serializable;
+
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.IRowIterator;
@@ -29,8 +32,9 @@ import org.hillview.utils.Utilities;
  * are identified via their hashcode. The class uses the HyperLogLog algorithm for large estimates
  * and LinearCounting algorithm for small estimates.
  */
-public class HLogLog {
-    private final int regNum; //number of registers
+public class HLogLog implements Serializable {
+    private static final long serialVersionUID = 1L;
+    private final int regNum; // number of registers
     private final int logRegNum;
     private final byte[] registers;
     private final long seed;

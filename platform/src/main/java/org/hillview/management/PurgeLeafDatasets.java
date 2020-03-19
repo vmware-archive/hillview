@@ -21,6 +21,7 @@ import org.hillview.dataset.api.ControlMessage;
 import org.hillview.dataset.remoting.HillviewServer;
 
 public class PurgeLeafDatasets extends ControlMessage {
+    static final long serialVersionUID = 1;
     public Status remoteServerAction(HillviewServer server) {
         int deleted = server.deleteAllDatasets();
         return new Status(deleted + " datasets purged");

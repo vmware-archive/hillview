@@ -37,6 +37,8 @@ import javax.annotation.Nullable;
  * from the table.
  */
 public class LogFragmentSketch implements ISketch<ITable, NextKList> {
+    static final long serialVersionUID = 1;
+
     private final Schema schema;
     @Nullable
     private final RowSnapshot row;

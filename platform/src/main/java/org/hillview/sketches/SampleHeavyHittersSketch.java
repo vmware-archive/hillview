@@ -24,6 +24,8 @@ import javax.annotation.Nullable;
  * approximately the right relative frequency.
  */
 public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKListSample> {
+    static final long serialVersionUID = 1;
+    
     /**
      * The schema specifies which columns are relevant in determining equality of records.
      */

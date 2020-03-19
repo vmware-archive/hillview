@@ -20,12 +20,12 @@ package org.hillview.table;
 import org.hillview.dataset.api.IJson;
 import org.hillview.table.api.ContentsKind;
 
-import java.io.Serializable;
-
 /**
  * Describes the contents of a column in a local table.
  */
-public class ColumnDescription implements Serializable, IJson {
+public class ColumnDescription implements IJson {
+    static final long serialVersionUID = 1;
+
     public final String name;
     public final ContentsKind kind;
 

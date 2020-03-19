@@ -22,6 +22,8 @@ package org.hillview.utils;
  * exceptions in a nicer way, by looking for this exception.
  */
 public class HillviewException extends RuntimeException {
+    static final long serialVersionUID = 1;
+
     public HillviewException(String message) {
         super(message);
     }

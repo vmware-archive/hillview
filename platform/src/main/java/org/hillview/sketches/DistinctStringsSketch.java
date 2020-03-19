@@ -31,9 +31,11 @@ import java.util.Arrays;
 @Deprecated
 // This class is used just for benckmarking
 public class DistinctStringsSketch implements ISketch<ITable, DistinctStringsSketch.DistinctStrings> {
+    static final long serialVersionUID = 1;
     private String column;
 
     public static class DistinctStrings implements IJson {
+        static final long serialVersionUID = 1;
         private final ObjectOpenHashSet<String> uniqueStrings;
 
         DistinctStrings() {

@@ -26,6 +26,7 @@ import java.text.NumberFormat;
  * This control message returns the memory used in a specific HillviewServer process JVM.
  */
 public class MemoryUse extends ControlMessage {
+    static final long serialVersionUID = 1;
     public Status remoteServerAction(HillviewServer server) {
 
         /*

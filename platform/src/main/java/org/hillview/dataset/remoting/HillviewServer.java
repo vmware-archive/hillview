@@ -201,7 +201,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
      */
     @Nullable
     synchronized private IDataSet<?> getIfValid(final int index,
-                                             final StreamObserver<PartialResponse> observer) {
+                                                final StreamObserver<PartialResponse> observer) {
         if (index < 0)
             return this.initialDatasets.get(index);
         IDataSet<?> ds = this.dataSets.getIfPresent(index);
@@ -242,7 +242,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
         return new Subscriber<PartialResult<IDataSet<?>>>() {
             @Nullable private PartialResponse memoizedResult = null;
             @Nullable private Integer memoizedDatasetIndex = null;
-            private CompletableFuture queue = CompletableFuture.completedFuture(null);
+            private CompletableFuture<?> queue = CompletableFuture.completedFuture(null);
 
             @Override
             public void onCompleted() {
@@ -308,7 +308,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             final Observable<PartialResult<IDataSet<?>>> observable = dataset.prune(mapOp.isEmpty);
 
             final UUID commandId = this.getId(command);
-            Subscriber subscriber = this.createSubscriber(
+            Subscriber<PartialResult<IDataSet<?>>> subscriber = this.createSubscriber(
                     command, commandId, "prune", responseObserver);
             final Subscription sub = observable
                     .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
@@ -414,12 +414,12 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
 
             final byte[] bytes = command.getSerializedOp().toByteArray();
             final SketchOperation sketchOp = SerializationUtils.deserialize(bytes);
-            final Observable<PartialResult> observable = dataset.sketch(sketchOp.sketch);
+            final Observable<PartialResult<?>> observable = dataset.sketch(sketchOp.sketch);
             final UUID commandId = this.getId(command);
-            Subscriber subscriber = new Subscriber<PartialResult>() {
+            Subscriber subscriber = new Subscriber<PartialResult<?>>() {
                 @Nullable private Object sketchResultAccumulator =
                         memoize ? sketchOp.sketch.getZero(): null;
-                private CompletableFuture queue = CompletableFuture.completedFuture(null);
+                CompletableFuture<?> queue = CompletableFuture.completedFuture(null);
 
                 @Override
                 public void onCompleted() {
@@ -428,9 +428,9 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                         try {
                             responseObserver.onCompleted();
                             if (memoize && this.sketchResultAccumulator != null) {
-                                final OperationResponse<PartialResult> res =
-                                        new OperationResponse<PartialResult>(
-                                                new PartialResult(1.0, this.sketchResultAccumulator));
+                                final OperationResponse<PartialResult<?>> res =
+                                        new OperationResponse<PartialResult<?>>(
+                                                new PartialResult<Object>(1.0, this.sketchResultAccumulator));
                                 final byte[] bytes = SerializationUtils.serialize(res);
                                 final PartialResponse memoizedResult = PartialResponse.newBuilder()
                                         .setSerializedOp(ByteString.copyFrom(bytes))
@@ -455,15 +455,15 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                 }
 
                 @Override
-                public void onNext(final PartialResult pr) {
+                public void onNext(final PartialResult<?> pr) {
                     HillviewLogger.instance.info("Partial sketch result");
                     queue = queue.thenRunAsync(() -> {
                         try {
                             if (memoize && this.sketchResultAccumulator != null)
                                 this.sketchResultAccumulator = sketchOp.sketch.add(this
                                         .sketchResultAccumulator, pr.deltaValue);
-                            final OperationResponse<PartialResult> res =
-                                    new OperationResponse<PartialResult>(pr);
+                            final OperationResponse<PartialResult<?>> res =
+                                    new OperationResponse<PartialResult<?>>(pr);
                             final byte[] bytes = SerializationUtils.serialize(res);
                             responseObserver.onNext(PartialResponse.newBuilder()
                                     .setSerializedOp(ByteString.copyFrom(bytes))
@@ -582,7 +582,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                 return;
             }
 
-            final Observable<PartialResult<IDataSet>> observable = left.zip(right);
+            final Observable<PartialResult<IDataSet<Pair<Object, Object>>>> observable = left.zip(right);
             Subscriber subscriber = this.createSubscriber(
                     command, commandId, "zip", responseObserver);
             final Subscription sub = observable

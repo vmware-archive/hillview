@@ -17,9 +17,9 @@
 
 package org.hillview.sketches.results;
 
-import org.hillview.dataset.api.IJson;
-
-public class DataRange extends BucketsInfo implements IJson {
+public class DataRange extends BucketsInfo {
+    static final long serialVersionUID = 1;
+    
     public double min;
     public double max;
 

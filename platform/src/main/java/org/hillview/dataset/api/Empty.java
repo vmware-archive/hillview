@@ -22,6 +22,8 @@ package org.hillview.dataset.api;
  * It is serializable because it is sometimes used as results of sketches.
  */
 public class Empty implements IJson {
+    static final long serialVersionUID = 1;
+    
     private static final Empty instance = new Empty();
     private Empty() {}
 

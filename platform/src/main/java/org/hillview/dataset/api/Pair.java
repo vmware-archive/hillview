@@ -18,7 +18,6 @@
 package org.hillview.dataset.api;
 
 import javax.annotation.Nullable;
-import java.io.Serializable;
 
 /**
  * A simple polymorphic pair with non-nullable components.
@@ -29,7 +28,9 @@ import java.io.Serializable;
  * @param <T>  First element in the pair.
  * @param <S>  Second element in the pair.
  */
-public class Pair<T, S> implements Serializable, IJson {
+public class Pair<T, S> implements IJson /* Serializable implied by IJson */ {
+    static final long serialVersionUID = 1;
+
     @Nullable
     public final T first;
     @Nullable

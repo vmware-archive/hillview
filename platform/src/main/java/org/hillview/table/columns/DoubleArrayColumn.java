@@ -31,6 +31,8 @@ import javax.annotation.Nullable;
 public class DoubleArrayColumn
         extends BaseArrayColumn
         implements IDoubleColumn, IMutableColumn {
+    static final long serialVersionUID = 1;
+
     private final double[] data;
 
     public DoubleArrayColumn(final ColumnDescription description, final int size) {

@@ -29,6 +29,8 @@ import javax.annotation.Nullable;
  * Describes the schema of a table and the number of rows.
  */
 public class TableSummary implements IJson {
+    static final long serialVersionUID = 1;
+    
     // The sketch zero() element can be produced without looking at the data at all.
     // So we need a way to represent a "zero" schema.  An empty schema is in principle
     // legal for a table, so we use a null to represent a yet "unknown" schema.

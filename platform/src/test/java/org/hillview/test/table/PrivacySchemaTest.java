@@ -31,7 +31,6 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.HashMap;
 
 public class PrivacySchemaTest extends BaseTest {
     @Test
@@ -54,7 +53,6 @@ public class PrivacySchemaTest extends BaseTest {
 
     @Test
     public void serializeMetadataTest() {
-        HashMap<String, ColumnQuantization> mdMap = new HashMap<String, ColumnQuantization>();
         ColumnQuantization md1 = new DoubleColumnQuantization(12.345, 0.0, 123.45);
         ColumnQuantization md2 = new StringColumnQuantization(new String[] {"a", "b", "c"}, "d");
         QuantizationSchema qs = new QuantizationSchema();
@@ -70,7 +68,6 @@ public class PrivacySchemaTest extends BaseTest {
 
     @Test
     public void serializeMultipleColumnsTest() {
-        HashMap<String, ColumnQuantization> mdMap = new HashMap<String, ColumnQuantization>();
         ColumnQuantization md1 = new DoubleColumnQuantization(12.345, 0.0, 123.45);
         ColumnQuantization md2 = new DoubleColumnQuantization(0.5, -0.5, 13.0);
         QuantizationSchema qs = new QuantizationSchema();
@@ -99,7 +96,6 @@ public class PrivacySchemaTest extends BaseTest {
 
     @Test
     public void saveTest() throws IOException {
-        HashMap<String, ColumnQuantization> mdMap = new HashMap<String, ColumnQuantization>();
         ColumnQuantization md1 = new DoubleColumnQuantization(12.345, 0.0, 123.45);
         ColumnQuantization md2 = new StringColumnQuantization(new String[] {"a", "b", "c"}, "d");
         QuantizationSchema qs = new QuantizationSchema();

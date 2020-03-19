@@ -27,6 +27,7 @@ import javax.annotation.Nullable;
  * This map creates a new column by applying the function to each element in an input column.
  */
 public abstract class CreateColumnMap extends AppendColumnMap {
+    static final long serialVersionUID = 1;
     private final String inputColName;
     // This is set before calling 'extract'
     protected ContentsKind inputKind;

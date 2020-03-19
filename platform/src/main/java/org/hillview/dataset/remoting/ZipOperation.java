@@ -17,12 +17,11 @@
 
 package org.hillview.dataset.remoting;
 
-import java.io.Serializable;
-
 /**
  * Message type to initiate a zip command against two RemoteDataSets
  */
-public class ZipOperation extends RemoteOperation implements Serializable {
+public class ZipOperation extends RemoteOperation {
+    static final long serialVersionUID = 1;
     public final int datasetIndex;
 
     public ZipOperation(final int datasetIndex) {

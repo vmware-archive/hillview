@@ -23,6 +23,8 @@ import org.hillview.table.api.IColumn;
  * Left endpoints for string buckets.
  */
 public class StringHistogramBuckets extends ExplicitHistogramBuckets<String> {
+    static final long serialVersionUID = 1;
+    
     public StringHistogramBuckets(final String[] leftBoundaries, final String max) {
         super(leftBoundaries, max);
     }

@@ -81,6 +81,8 @@ public class HillviewBenchmarks extends Benchmarks {
     }
 
     public static class GenerateStringColumnMapper implements IMap<Empty, ITable> {
+        static final long serialVersionUID = 1;
+
         private final int distinctValues;
         private final int totalElements;
 

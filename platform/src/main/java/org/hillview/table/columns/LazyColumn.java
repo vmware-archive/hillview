@@ -32,6 +32,8 @@ import java.util.List;
  * The contents of a lazy column is loaded lazily.
  */
 public class LazyColumn extends BaseColumn {
+    static final long serialVersionUID = 1;
+
     @Nullable
     private IColumn data;
     private final IColumnLoader loader;

@@ -31,8 +31,10 @@ import java.util.List;
  *  that hash to the minimum value.
  */
 public class MinKSet<T> extends BucketsInfo {
+    static final long serialVersionUID = 1;
+    
     public final Comparator<T> comp;
-    private final int maxSize;
+    public final int maxSize;
     public final Long2ObjectRBTreeMap<T> data;
     @Nullable public T min;
     @Nullable public T max;

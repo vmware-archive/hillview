@@ -38,6 +38,7 @@ import javax.annotation.Nullable;
  * present, this returns an empty table.
  */
 public class ContainsMap implements IMap<ITable, ITable> {
+    static final long serialVersionUID = 1;
     private final Schema schema;
     private final RowSnapshot row;
 

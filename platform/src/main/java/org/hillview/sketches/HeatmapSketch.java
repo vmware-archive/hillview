@@ -28,6 +28,7 @@ import org.hillview.utils.Converters;
 import javax.annotation.Nullable;
 
 public class HeatmapSketch implements ISketch<ITable, Heatmap> {
+    static final long serialVersionUID = 1;
     private final IHistogramBuckets bucketsD0;
     private final IHistogramBuckets bucketsD1;
     private final String col0;

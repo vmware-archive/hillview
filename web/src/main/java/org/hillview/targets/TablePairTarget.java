@@ -28,6 +28,8 @@ import org.hillview.table.api.ITable;
  */
 // All RpcTarget objects must be public
 public final class TablePairTarget extends RpcTarget {
+    static final long serialVersionUID = 1;
+
     private final IDataSet<Pair<ITable, ITable>> tables;
 
     TablePairTarget(IDataSet<Pair<ITable, ITable>> tables, HillviewComputation computation) {

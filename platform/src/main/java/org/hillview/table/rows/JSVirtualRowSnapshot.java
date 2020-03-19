@@ -33,6 +33,8 @@ import java.util.HashMap;
  * Nashorn engine.  When it retrieves an Instant, it gets a JavaScript date instead.
  */
 public class JSVirtualRowSnapshot extends VirtualRowSnapshot {
+    static final long serialVersionUID = 1;
+
     private final ScriptEngine engine;
 
     public JSVirtualRowSnapshot(

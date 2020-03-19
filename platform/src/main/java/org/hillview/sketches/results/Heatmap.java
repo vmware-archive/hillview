@@ -21,12 +21,13 @@ import org.hillview.table.api.*;
 import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
-import java.io.Serializable;
 
 /**
  * A 2-dimensional histogram.
  */
-public class Heatmap implements Serializable, IJson {
+public class Heatmap implements IJson {
+    static final long serialVersionUID = 1;
+    
     public final long[][] buckets;
     @Nullable
     public int[][] confidence;

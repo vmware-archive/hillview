@@ -32,6 +32,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * coming from the web browser UI.
  */
 public class HillviewComputation implements Serializable {
+    static final long serialVersionUID = 1;
+
     private static final AtomicInteger currentId = new AtomicInteger(0);
     /**
      * Unique Id of this computation.

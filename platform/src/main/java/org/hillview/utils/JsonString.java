@@ -28,6 +28,8 @@ import javax.annotation.Nullable;
  * A string whose value is a JSON object.
  */
 public class JsonString implements IJson {
+    static final long serialVersionUID = 1;
+
     private static JsonParser parser = new JsonParser();
     @Nullable
     private final String value;

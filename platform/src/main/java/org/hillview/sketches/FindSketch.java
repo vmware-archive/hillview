@@ -33,7 +33,9 @@ import org.hillview.table.rows.VirtualRowSnapshot;
 import javax.annotation.Nullable;
 
 public class FindSketch implements ISketch<ITable, FindSketch.Result> {
+    static final long serialVersionUID = 1;
     public static final class Result implements IJson {
+        static final long serialVersionUID = 1;
         /**
          * Number of occurrences of the search string (strictly) above the first row.
          */

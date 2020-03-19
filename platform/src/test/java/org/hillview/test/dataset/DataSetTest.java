@@ -36,6 +36,8 @@ import java.util.List;
 
 public class DataSetTest extends BaseTest {
     private static class Increment implements IMap<Integer, Integer> {
+        static final long serialVersionUID = 1;
+
         @Override
         public Integer apply(final @Nullable Integer data) {
             return Converters.checkNull(data) + 1;
@@ -43,6 +45,8 @@ public class DataSetTest extends BaseTest {
     }
 
     private static class Sketch implements ISketch<Integer, Integer> {
+        static final long serialVersionUID = 1;
+
         @Override
         public Integer zero() {
             return 0;

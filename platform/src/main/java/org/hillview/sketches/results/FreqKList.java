@@ -39,6 +39,8 @@ import java.util.List;
  * of the size of the input and the desired accuracy parameter epsilon.
  */
 public class FreqKList implements Serializable {
+    static final long serialVersionUID = 1;
+    
     /**
      * The size of the input table.
      */

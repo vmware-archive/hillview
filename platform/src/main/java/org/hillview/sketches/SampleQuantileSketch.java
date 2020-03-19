@@ -37,6 +37,8 @@ import static org.hillview.table.columns.ObjectArrayColumn.mergeColumns;
  * Samples a number of rows from a table.
  */
 public class SampleQuantileSketch  implements ISketch<ITable, SampleList> {
+    static final long serialVersionUID = 1;
+    
     private final RecordOrder colSortOrder;
     /**
      * The rate at which we sample the data. It is set to be (resolution)^2/dataSize,

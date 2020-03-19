@@ -25,6 +25,8 @@ import org.hillview.dataset.api.OptionMonoid;
  * @param <S> Type of data in the data set.
  */
 public class PRDataSetMonoid<S> extends PartialResultMonoid<IDataSet<S>> {
+    static final long serialVersionUID = 1;
+    
     public PRDataSetMonoid() {
         super(new OptionMonoid<IDataSet<S>>());
     }

@@ -26,7 +26,8 @@ import org.hillview.table.rows.RowSnapshot;
  * This compute the Misra-Gries sketch for finding Heavy Hitters.
  */
 public class FreqKListMG extends FreqKList {
-
+    static final long serialVersionUID = 1;
+    
     /**
      * The number of counters we store, it is at least 1/epsilon, if the goal is to find all
      * elements with relative frequency epsilon. Increasing K increases the accuracy of the

@@ -29,6 +29,8 @@ import java.util.BitSet;
  */
 public class DoubleListColumn
         extends BaseListColumn implements IDoubleColumn {
+    static final long serialVersionUID = 1;
+
     private final ArrayList<double[]> segments;
 
     public DoubleListColumn(final ColumnDescription desc) {

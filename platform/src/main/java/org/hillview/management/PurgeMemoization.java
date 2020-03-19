@@ -26,6 +26,7 @@ import org.hillview.table.Schema;
  * memoization caches.
  */
 public class PurgeMemoization extends ControlMessage {
+    static final long serialVersionUID = 1;
     public Status remoteServerAction(HillviewServer server) {
         server.purgeMemoized();
         Schema.purgeCache();

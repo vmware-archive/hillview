@@ -37,6 +37,8 @@ import java.util.Map;
  * instance allows easy comparison between the classes mentioned above.
  */
 public abstract class BaseRowSnapshot implements IRow, Serializable {
+    static final long serialVersionUID = 1;
+
     /**
      * Compare this row to the other for equality.
      * Only the fields in the schema are compared.

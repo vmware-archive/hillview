@@ -54,6 +54,8 @@ import java.util.List;
  * they are not expected to scale to billions of rows.
  */
 public class SimpleDBTarget extends RpcTarget {
+    static final long serialVersionUID = 1;
+
     final JdbcConnectionInformation jdbc;
     protected final JdbcDatabase database;
     protected final int rowCount;

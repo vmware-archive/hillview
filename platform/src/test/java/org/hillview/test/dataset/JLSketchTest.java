@@ -67,7 +67,9 @@ public class JLSketchTest extends BaseTest {
         }
         JLSketch jls = new JLSketch(cn, 100, 0);
         JLProjection jlp = jls.add(jls.create(leftTable), jls.create(rightTable));
+        Assert.assertNotNull(jlp);
         SampleCorrelationSketch ip = new SampleCorrelationSketch(cn, 0);
         CorrMatrix cm = ip.add(ip.create(leftTable), ip.create(rightTable));
+        Assert.assertNotNull(cm);
     }
 }

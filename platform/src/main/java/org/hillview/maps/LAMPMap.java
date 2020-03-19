@@ -41,6 +41,7 @@ import java.util.List;
  *   https://doi.org/10.1109/TVCG.2011.220
  */
 public class LAMPMap implements IMap<ITable, ITable> {
+    static final long serialVersionUID = 1;
     private final String[] numColNames;
     private final DoubleMatrix highDimControlPoints;
     private final DoubleMatrix lowDimControlPoints;

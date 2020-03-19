@@ -29,6 +29,8 @@ import java.io.Serializable;
  * are sorted according to some order (this is needed for the getRow method to be meaningful).
  */
 public class SampleList implements Serializable {
+    static final long serialVersionUID = 1;
+    
     /**
      * The table containing the rows.
      */

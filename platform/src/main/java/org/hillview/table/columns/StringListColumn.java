@@ -28,6 +28,7 @@ import java.util.ArrayList;
  * A column of String values that can grow in size.
  */
 public class StringListColumn extends BaseListColumn implements IStringColumn {
+    static final long serialVersionUID = 1;
     /*
      * We use one of two representations for string columns:
      * - for columns that have relatively few distinct values we use a dictionary encoding

@@ -23,6 +23,7 @@ import org.hillview.table.api.IStringConverterDescription;
 import javax.annotation.Nullable;
 
 public class RadixConverter implements IStringConverter, IStringConverterDescription {
+    static final long serialVersionUID = 1;
     // TODO: handle utf-8
     @Override
     public double asDouble(@Nullable String string) {

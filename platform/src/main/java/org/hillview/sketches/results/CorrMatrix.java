@@ -23,7 +23,6 @@ import org.hillview.utils.LinAlg;
 import org.jblas.DoubleMatrix;
 
 import javax.annotation.Nullable;
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
 
@@ -32,7 +31,9 @@ import java.util.HashMap;
  * the ICorrelation interface to compute  norms, correlations and inner-products between columns.
  * See ICorrelation for a precise definition of these quantities.
  */
-public class CorrMatrix implements ICorrelation, Serializable, IJson {
+public class CorrMatrix implements ICorrelation, IJson {
+    static final long serialVersionUID = 1;
+    
     /**
      * The list of columns whose correlation we wish to compute.
      */

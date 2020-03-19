@@ -30,6 +30,8 @@ import java.util.List;
  * A sketch to compute correlations between columns, using sampling.
  */
 public class SampleCorrelationSketch implements ISketch<ITable, CorrMatrix> {
+    static final long serialVersionUID = 1;
+    
     /**
      * The list of columns whose correlations we wish to compute. The columns are must be of type
      * Int or Double.

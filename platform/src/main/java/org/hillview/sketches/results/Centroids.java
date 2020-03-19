@@ -33,6 +33,8 @@ import java.util.function.Function;
  * column over only the non-missing entries.
  */
 public class Centroids<T> implements Serializable {
+    static final long serialVersionUID = 1;
+    
     /**
      * Map from the partition key to the sum of the non-missing values in the partition in every
      * column. Every value is an array of doubles, where the i'th element is the sum of the

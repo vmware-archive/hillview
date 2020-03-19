@@ -31,6 +31,8 @@ import java.util.List;
  * This is a simple table held entirely in RAM.
  */
 public class Table extends BaseTable {
+    static final long serialVersionUID = 1;
+
     /**
      * The table schema: the set of columns.
      */

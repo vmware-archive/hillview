@@ -31,6 +31,8 @@ import java.util.BitSet;
  * items into a bit array. Once enough bits are set the threshold had been crossed and the iterator may stop
  */
 public class NumItemsThreshold implements IJson {
+    static final long serialVersionUID = 1;
+    
     private final int logThreshold;
     @SuppressWarnings("FieldCanBeLocal")
     private final int maxLogThreshold = 15;

@@ -28,7 +28,6 @@ import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.Linq;
 
 import javax.annotation.Nullable;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -38,7 +37,8 @@ import java.util.List;
  * We expect all columns to be serializable.  This means that we should only use
  * ObjectArrayColumns (except in tests); for example, the String*Columns are not serializable.
  */
-public class SmallTable extends BaseTable implements Serializable, IJson {
+public class SmallTable extends BaseTable implements IJson {
+    static final long serialVersionUID = 1;
     final Schema schema;
     private final int rowCount;
 

@@ -34,6 +34,7 @@ import java.util.List;
  * the columns that the given list of column names specifies.
  */
 public class CategoryCentroidsSketch implements ISketch<ITable, Centroids<String>> {
+    static final long serialVersionUID = 1;
     private final String catColName;
     private final String[] columns;
 

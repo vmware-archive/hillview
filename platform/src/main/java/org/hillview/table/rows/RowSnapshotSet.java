@@ -34,6 +34,8 @@ import java.util.function.Consumer;
  * we are using custom equality and hashcode functions.
  */
 public class RowSnapshotSet implements Serializable {
+    static final long serialVersionUID = 1;
+
     private final Schema schema;
     private final ObjectSet<BaseRowSnapshot> rowSet;
 
@@ -80,6 +82,8 @@ public class RowSnapshotSet implements Serializable {
     }
 
     public static class SetTableFilterDescription implements ITableFilterDescription {
+        static final long serialVersionUID = 1;
+
         private final RowSnapshotSet set;
         private final boolean includeSet;
 
@@ -96,6 +100,8 @@ public class RowSnapshotSet implements Serializable {
 
     static class BaseRowSnapshotHashingStrategy implements
             Hash.Strategy<BaseRowSnapshot>, Serializable {
+        static final long serialVersionUID = 1;
+
         private final Schema schema;
 
         BaseRowSnapshotHashingStrategy(final Schema schema) {

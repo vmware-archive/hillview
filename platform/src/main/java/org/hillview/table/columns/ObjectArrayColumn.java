@@ -32,6 +32,8 @@ import java.util.List;
  * Column of objects of any type; only for moving data around. Size of column expected to be small.
  */
 public final class ObjectArrayColumn extends BaseArrayColumn {
+    static final long serialVersionUID = 1;
+
     private final Object[] data;
 
     public ObjectArrayColumn(final ColumnDescription description, final int size) {

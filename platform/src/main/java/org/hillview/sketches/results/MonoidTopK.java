@@ -30,6 +30,8 @@ import java.util.TreeMap;
  * @param <T> Type of items in sorted list.
  */
 public class MonoidTopK<T> implements IMonoid<SortedMap<T, Integer>> {
+    static final long serialVersionUID = 1;
+    
     private final int maxSize;
     private final Comparator<T> greater;
 

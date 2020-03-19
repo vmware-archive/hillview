@@ -29,6 +29,7 @@ import javax.annotation.Nullable;
  * A Sketch that computes basic column statistics for a set of columns.
  */
 public class BasicColStatSketch implements ISketch<ITable, JsonList<BasicColStats>> {
+    static final long serialVersionUID = 1;
     private final String[] cols;
     private final int momentNum;
 

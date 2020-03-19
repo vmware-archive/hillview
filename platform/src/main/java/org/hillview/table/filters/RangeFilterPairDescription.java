@@ -20,9 +20,10 @@ package org.hillview.table.filters;
 import org.hillview.table.api.ITable;
 import org.hillview.table.api.ITableFilter;
 import org.hillview.table.api.ITableFilterDescription;
-import java.io.Serializable;
 
-public final class RangeFilterPairDescription implements ITableFilterDescription, Serializable {
+public final class RangeFilterPairDescription implements ITableFilterDescription {
+    static final long serialVersionUID = 1;
+    
     public final RangeFilterDescription first;
     public final RangeFilterDescription second;
 

@@ -45,6 +45,8 @@ import java.util.function.BiFunction;
  * Almost all operations are triggered from this object.
  */
 public final class TableTarget extends RpcTarget {
+    static final long serialVersionUID = 1;
+
     private final IDataSet<ITable> table;
     TableTarget(IDataSet<ITable> table, HillviewComputation computation) {
         super(computation);
@@ -458,6 +460,8 @@ public final class TableTarget extends RpcTarget {
     }
 
     static class ControlPoints2D implements IJson {
+        static final long serialVersionUID = 1;
+
         Point2D[] points;
         ControlPoints2D(Point2D[] points) {
             this.points = points;

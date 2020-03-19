@@ -28,7 +28,6 @@ import org.hillview.utils.Converters;
 import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
-import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
@@ -40,7 +39,8 @@ import java.util.*;
  * double encoding.
  */
 public class RowSnapshot extends BaseRowSnapshot
-        implements Serializable, IJson  {
+        implements IJson  {
+    static final long serialVersionUID = 1;
     /**
      * Maps a column name to a value.
      */

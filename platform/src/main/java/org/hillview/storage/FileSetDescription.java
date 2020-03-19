@@ -24,7 +24,6 @@ import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.io.File;
-import java.io.Serializable;
 import java.nio.file.Paths;
 
 /**
@@ -32,7 +31,8 @@ import java.nio.file.Paths;
  * This class has no constructor because it is created directly by
  * (de)serialization from JSON.
  */
-public class FileSetDescription implements Serializable, IJson {
+public class FileSetDescription implements IJson {
+    static final long serialVersionUID = 1;
     /**
      * This could probably be an enum.  Supported values are:
      * csv, orc, parquet, json, hillviewlog.

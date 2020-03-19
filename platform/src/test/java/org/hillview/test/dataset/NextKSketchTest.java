@@ -256,7 +256,6 @@ public class NextKSketchTest extends BaseTest {
     @Test
     public void testTopKEmptyPartition() {
         Table t = TestTables.testTable();
-        final int parts = 1;
         List<IDataSet<ITable>> fragments = new ArrayList<IDataSet<ITable>>();
         LocalDataSet<ITable> data = new LocalDataSet<ITable>(t);
         fragments.add(data);

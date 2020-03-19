@@ -89,6 +89,7 @@ public class PCATest extends BaseTest {
             DoubleMatrix eigenVectors = LinAlg.eigenVectors(corrMatrix, 2);
             LinearProjectionMap lpm = new LinearProjectionMap(numericColNames, eigenVectors, "PCA");
             ITable result = lpm.apply(table);
+            Assert.assertNotNull(result);
         } catch (Exception e) {
             System.out.println("Skipped test because MNIST data is not present.");
         }

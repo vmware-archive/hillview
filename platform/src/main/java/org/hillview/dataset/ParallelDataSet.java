@@ -23,6 +23,7 @@ import org.hillview.utils.HillviewLogger;
 import rx.Observable;
 import rx.Subscription;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -304,7 +305,7 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
     }
 
     @Override
-    public <R> Observable<PartialResult<R>> sketch(final ISketch<T, R> sketch) {
+    public <R extends Serializable> Observable<PartialResult<R>> sketch(final ISketch<T, R> sketch) {
         HillviewLogger.instance.info("Invoked sketch", "target={0}", this);
         List<Observable<PartialResult<R>>> obs = new ArrayList<Observable<PartialResult<R>>>();
         final int mySize = this.size();

@@ -85,5 +85,6 @@ class DemoDataCleaner {
                     owriter.writeTable(tbl);
                     */
                 });
+        files.close();
     }
 }

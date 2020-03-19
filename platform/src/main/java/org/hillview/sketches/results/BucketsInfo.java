@@ -19,13 +19,13 @@ package org.hillview.sketches.results;
 
 import org.hillview.dataset.api.IJson;
 
-import java.io.Serializable;
-
 /**
  * This interface is a base class for all sketch results that are
  * used to compute the buckets of a histogram, i.e., various forms of quantiles.
  */
-public abstract class BucketsInfo implements Serializable, IJson {
+public abstract class BucketsInfo implements IJson {
+    static final long serialVersionUID = 1;
+    
     public long presentCount;
     public long missingCount;
 

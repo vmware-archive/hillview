@@ -22,6 +22,8 @@ import org.hillview.dataset.api.IMap;
 import javax.annotation.Nullable;
 
 public class CompositeMap<T, S, V> implements IMap<T, V> {
+    static final long serialVersionUID = 1;
+    
     private final IMap<T, S> first;
     private final IMap<S, V> second;
 

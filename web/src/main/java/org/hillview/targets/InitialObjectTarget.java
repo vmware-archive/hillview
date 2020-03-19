@@ -44,6 +44,8 @@ import java.util.List;
  * RPC requests to create other targets by loading them from storage.
  */
 public class InitialObjectTarget extends RpcTarget {
+    static final long serialVersionUID = 1;
+
     private static final String LOCALHOST = "127.0.0.1";
     private static final String ENV_VARIABLE = "WEB_CLUSTER_DESCRIPTOR";
 

@@ -35,7 +35,6 @@ import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.StringArrayColumn;
 import org.hillview.test.BaseTest;
-import org.hillview.test.storage.CsvFileTest;
 import org.hillview.utils.TestTables;
 import org.junit.Assert;
 import org.junit.Test;

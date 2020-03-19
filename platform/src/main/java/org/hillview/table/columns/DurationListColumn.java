@@ -30,6 +30,8 @@ import java.time.Duration;
  */
 @SuppressWarnings("EmptyMethod")
 class DurationListColumn extends DoubleListColumn implements IDurationColumn {
+    static final long serialVersionUID = 1;
+
     DurationListColumn(final ColumnDescription desc) {
         super(desc);
         this.checkKind(ContentsKind.Duration);

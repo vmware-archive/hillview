@@ -34,6 +34,8 @@ import java.util.HashMap;
 import java.util.Set;
 
 public final class ControlPointsTarget extends RpcTarget {
+    static final long serialVersionUID = 1;
+
     final DoubleMatrix highDimData;
     @Nullable
     private DoubleMatrix lowDimData;

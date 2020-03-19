@@ -34,6 +34,7 @@ import javax.annotation.Nullable;
  * row is in the resulting table.
  */
 public class FilterMap implements IMap<ITable, ITable> {
+    static final long serialVersionUID = 1;
     /**
      * Argument to the rowFilterPredicate.test method is a row index.
      * Returns true if a row has to be preserved

@@ -34,6 +34,8 @@ import java.util.Map;
  * A filter that uses JavaScript to filter data.
  */
 public class JSFilterDescription implements ITableFilterDescription {
+    static final long serialVersionUID = 1;
+    
     private final Schema schema;
     private final String jsCode;
     @Nullable private final Map<String, String> renameMap;

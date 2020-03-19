@@ -30,9 +30,9 @@ import java.time.Instant;
  * Dates are actually stored as doubles.
  */
 @SuppressWarnings("EmptyMethod")
-public final class DateArrayColumn
-        extends DoubleArrayColumn
-        implements IDateColumn, IMutableColumn {
+public final class DateArrayColumn extends DoubleArrayColumn implements IDateColumn {
+    static final long serialVersionUID = 1;
+
     public DateArrayColumn(final ColumnDescription description, final int size) {
         super(description, size);
         this.checkKind(ContentsKind.Date);

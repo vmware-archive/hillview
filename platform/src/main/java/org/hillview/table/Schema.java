@@ -24,7 +24,6 @@ import org.hillview.table.api.IAppendableColumn;
 import org.hillview.table.columns.BaseListColumn;
 
 import javax.annotation.Nullable;
-import java.io.Serializable;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -39,7 +38,8 @@ import java.util.function.Predicate;
  * A schema is an ordering of the columns, plus a map from a column name to a column description.
  * Column names are case-sensitive.
  */
-public final class Schema implements Serializable, IJson {
+public final class Schema implements IJson {
+    static final long serialVersionUID = 1;
     private final LinkedHashMap<String, ColumnDescription> columns;
 
     /*

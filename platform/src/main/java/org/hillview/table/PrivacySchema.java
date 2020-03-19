@@ -23,7 +23,6 @@ import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
-import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -36,7 +35,8 @@ import java.util.LinkedHashMap;
  * Epsilon budgets can be specified for both single-column (1-d) queries
  * as well as for multi-column queries.
  */
-public class PrivacySchema implements IJson, Serializable {
+public class PrivacySchema implements IJson {
+    static final long serialVersionUID = 1;
     final public QuantizationSchema quantization;
     // We use a LinkedHashMap for deterministic serialization
     /**

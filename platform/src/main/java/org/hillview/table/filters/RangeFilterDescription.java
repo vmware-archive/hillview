@@ -28,6 +28,8 @@ import javax.annotation.Nullable;
 
 @SuppressWarnings("CanBeFinal")
 public class RangeFilterDescription implements ITableFilterDescription {
+    static final long serialVersionUID = 1;
+    
     // Instances of this class are created by deserialization from JSON,
     // so these initializers are not useful.
     public ColumnDescription cd = new ColumnDescription();

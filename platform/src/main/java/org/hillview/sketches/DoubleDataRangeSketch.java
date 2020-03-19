@@ -31,6 +31,7 @@ import javax.annotation.Nullable;
  * converted to doubles.
  */
 public class DoubleDataRangeSketch implements ISketch<ITable, DataRange> {
+    static final long serialVersionUID = 1;
     private final String col;
 
     public DoubleDataRangeSketch(String col) {

@@ -22,6 +22,8 @@ import org.hillview.table.ColumnDescription;
 import java.io.Serializable;
 
 public class ColumnSortOrientation implements Serializable {
+    static final long serialVersionUID = 1;
+    
     public final ColumnDescription columnDescription;
     public final boolean isAscending;
 
