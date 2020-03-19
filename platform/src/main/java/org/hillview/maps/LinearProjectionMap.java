@@ -37,6 +37,7 @@ import java.util.List;
  * table, with the additional projected columns added to it. The new columns are named '{newColName}{i}'.
  */
 public class LinearProjectionMap implements IMap<ITable, ITable> {
+    static final long serialVersionUID = 1;
     /**
      * The projection matrix is structured as follows: Every row is a vector
      * that is projected on. The ordering of the columns is the same as the order
@@ -46,7 +47,6 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
     private final String[] colNames;
     private final String[] newColNames;
     private final int numProjections;
-    private static final double threshold = .3;
     // For columns sparser than this use sparse storage.
 
     public LinearProjectionMap(String[] colNames, DoubleMatrix projectionMatrix, String projectionName) {

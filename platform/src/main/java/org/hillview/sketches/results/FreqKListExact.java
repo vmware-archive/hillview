@@ -29,11 +29,12 @@ import java.util.List;
  * fixed sets of RowSnapShots.
  */
 public class FreqKListExact extends FreqKList {
+    static final long serialVersionUID = 1;    
 
     /**
      * The list of RowSnapShots whose frequencies we wish to compute.
      */
-    private final List<RowSnapshot> rssList;
+    public final List<RowSnapshot> rssList;
 
     private static Object2IntOpenHashMap<RowSnapshot> buildHashMap(List<RowSnapshot> rssList) {
         Object2IntOpenHashMap<RowSnapshot> hMap = new Object2IntOpenHashMap<RowSnapshot>();

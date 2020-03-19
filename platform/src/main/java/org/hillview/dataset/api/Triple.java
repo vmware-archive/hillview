@@ -18,9 +18,10 @@
 package org.hillview.dataset.api;
 
 import javax.annotation.Nullable;
-import java.io.Serializable;
 
-public class Triple<T, S, V> implements Serializable, IJson {
+public class Triple<T, S, V> implements IJson /* Serializable implied by IJSon */ {
+    static final long serialVersionUID = 1;
+
     @Nullable
     public final T first;
     @Nullable

@@ -34,6 +34,8 @@ import java.util.BitSet;
 public final class IntListColumn
         extends BaseListColumn
         implements IIntColumn {
+    static final long serialVersionUID = 1;
+
     private final ArrayList<int[]> segments;
 
    public IntListColumn(final ColumnDescription desc) {

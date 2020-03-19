@@ -24,6 +24,7 @@ import org.hillview.table.api.*;
  * containing the specified data converted to a new kind.
  */
 public class ConvertColumnMap extends AppendColumnMap {
+    static final long serialVersionUID = 1;
     private final String inputColName;
     private final ContentsKind newKind;
 

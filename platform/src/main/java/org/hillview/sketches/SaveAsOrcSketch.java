@@ -42,6 +42,8 @@ import java.util.HashMap;
  * If the saving fails this will trigger an exception.
  */
 public class SaveAsOrcSketch implements ISketch<ITable, Empty> {
+    static final long serialVersionUID = 1;
+    
     private final String folder;
     @Nullable
     private final Schema schema;

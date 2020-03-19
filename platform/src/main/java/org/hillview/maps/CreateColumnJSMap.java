@@ -37,6 +37,7 @@ import java.util.HashMap;
  * function over a set of columns.
  */
 public class CreateColumnJSMap extends AppendColumnMap {
+    static final long serialVersionUID = 1;
     /**
      * A JavaScript function named 'map' that computes the value in the new column.
      * It has a single input, which is a row in the table, and it produces a single output,

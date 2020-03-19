@@ -42,6 +42,8 @@ import org.hillview.utils.*;
 import java.sql.SQLException;
 
 public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDataset {
+    static final long serialVersionUID = 1;
+
     // This class inherits columnLimits from SimpleDBTarget and it has another one
     // in the wrapper.  We only use the one in the wrapper.
     private final DPWrapper wrapper;

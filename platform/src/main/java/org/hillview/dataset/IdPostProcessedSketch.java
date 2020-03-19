@@ -1,5 +1,6 @@
 package org.hillview.dataset;
 
+import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.ISketch;
 
 import javax.annotation.Nullable;
@@ -9,7 +10,7 @@ import javax.annotation.Nullable;
  * @param <T>   Input sketch data.
  * @param <R>   Output sketch data.
  */
-public class IdPostProcessedSketch<T, R> extends PostProcessedSketch<T, R, R> {
+public class IdPostProcessedSketch<T, R extends IJson> extends PostProcessedSketch<T, R, R> {
     public IdPostProcessedSketch(ISketch<T, R> sketch) {
         super(sketch);
     }

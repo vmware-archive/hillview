@@ -29,6 +29,8 @@ import org.hillview.utils.Utilities;
  * A subclass of FreqKList that is used by the Sample Heavy Hitters Sketch.
  */
 public class FreqKListSample extends FreqKList {
+    static final long serialVersionUID = 1;
+    
     /**
      * In sampleHeavyHitters, it is used to store the number of samples taken.
      */

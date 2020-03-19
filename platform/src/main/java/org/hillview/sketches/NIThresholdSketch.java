@@ -14,7 +14,8 @@ import javax.annotation.Nullable;
  */
 
 public class NIThresholdSketch implements ISketch<ITable, NumItemsThreshold> {
-
+    static final long serialVersionUID = 1;
+    
     private final String colName;
     /**
      * Seed for the hash function used by NumItemsThreshold

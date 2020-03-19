@@ -17,7 +17,6 @@
 
 package org.hillview.test.dataset;
 
-import com.google.common.collect.ImmutableList;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.PartialResultMonoid;
@@ -39,6 +38,7 @@ import org.hillview.table.api.IndexComparator;
 import org.hillview.test.BaseTest;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HostAndPort;
+import org.hillview.utils.JsonList;
 import org.hillview.utils.TestTables;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -79,6 +79,8 @@ public class RemotingTest extends BaseTest {
     @Nullable private static HillviewServer server;
 
     private static class IncrementMap implements IMap<int[], int[]> {
+        static final long serialVersionUID = 1;
+
         @Override
         public int[] apply(final int[] data) {
             if (data.length == 0) {
@@ -95,6 +97,7 @@ public class RemotingTest extends BaseTest {
     }
 
     private static class SumSketch implements ISketch<int[], Integer> {
+        static final long serialVersionUID = 1;
         @Override @Nullable
         public Integer zero() {
             return 0;
@@ -113,27 +116,32 @@ public class RemotingTest extends BaseTest {
         }
     }
 
-    private static class ImmutableListSketch implements ISketch<int[], List<Integer>> {
+    private static class ImmutableListSketch implements ISketch<int[], JsonList<Integer>> {
+        static final long serialVersionUID = 1;
         @Override @Nullable
-        public List<Integer> zero() {
-            return ImmutableList.of();
+        public JsonList<Integer> zero() {
+            return new JsonList<Integer>();
         }
 
         @Override @Nullable
-        public List<Integer> add(@Nullable final List<Integer> left,
-                                 @Nullable final List<Integer> right) {
-            return ImmutableList.<Integer>builder()
-                                .addAll(Converters.checkNull(left))
-                                .addAll(Converters.checkNull(right)).build();
+        public JsonList<Integer> add(@Nullable final JsonList<Integer> left,
+                                     @Nullable final JsonList<Integer> right) {
+            Converters.checkNull(left);
+            JsonList<Integer> result = new JsonList<Integer>(left);
+            result.addAll(Converters.checkNull(right));
+            return result;
         }
 
         @Override
-        public List<Integer> create(final int[] data) {
-            return ImmutableList.of(1);
+        public JsonList<Integer> create(final int[] data) {
+            JsonList<Integer> result = new JsonList<Integer>();
+            result.add(1);
+            return result;
         }
     }
 
     private static class ErrorSumSketch implements ISketch<int[], Integer> {
+        static final long serialVersionUID = 1;
         @Override @Nullable
         public Integer zero() {
             return 0;
@@ -254,6 +262,8 @@ public class RemotingTest extends BaseTest {
     }
 
     static class MakeEmpty implements IMap<int[], Empty> {
+        static final long serialVersionUID = 1;
+        
         @Nullable
         @Override
         public Empty apply(@Nullable int[] data) {
@@ -262,6 +272,8 @@ public class RemotingTest extends BaseTest {
     }
 
     static class IsEmpty implements IMap<Empty, Boolean> {
+        static final long serialVersionUID = 1;
+
         @Nullable
         @Override
         public Boolean apply(@Nullable Empty data) {
@@ -311,7 +323,7 @@ public class RemotingTest extends BaseTest {
                                                       .toBlocking()
                                                       .last().deltaValue;
         assertNotNull(remoteIdsNew);
-        final Observable<PartialResult<List<Integer>>> resultObs =
+        final Observable<PartialResult<JsonList<Integer>>> resultObs =
                 remoteIdsNew.sketch(new ImmutableListSketch());
         final List<Integer> result = resultObs.map(e -> e.deltaValue)
                                               .toBlocking()
@@ -419,6 +431,7 @@ public class RemotingTest extends BaseTest {
     }
 
     static class SlowSketch implements ISketch<Integer, Integer> {
+        static final long serialVersionUID = 1;
         @Override
         public Integer create(Integer data) {
             print(getTime() + " working " + data);
@@ -444,6 +457,7 @@ public class RemotingTest extends BaseTest {
     }
 
     static class SlowMap implements IMap<Integer, Integer> {
+        static final long serialVersionUID = 1;
         @Override
         public Integer apply(Integer data) {
             print(getTime() + " working " + data);

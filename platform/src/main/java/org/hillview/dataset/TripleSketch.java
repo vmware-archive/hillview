@@ -20,9 +20,13 @@ package org.hillview.dataset;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.Triple;
 
+import java.io.Serializable;
+
 import javax.annotation.Nullable;
 
-public class TripleSketch<T, R1, R2, R3> implements ISketch<T, Triple<R1, R2, R3>> {
+public class TripleSketch<T, R1 extends Serializable, R2 extends Serializable, R3 extends Serializable> 
+                                implements ISketch<T, Triple<R1, R2, R3>> {
+    static final long serialVersionUID = 1;
     private final ISketch<T, R1> first;
     private final ISketch<T, R2> second;
     private final ISketch<T, R3> third;

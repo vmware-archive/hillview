@@ -25,6 +25,7 @@ import org.hillview.utils.Converters;
 import javax.annotation.Nullable;
 
 public class FileSizeSketch implements ISketch<IFileReference, FileSizeInfo> {
+    static final long serialVersionUID = 1;
     @Override
     public FileSizeInfo create(@Nullable IFileReference data) {
         Converters.checkNull(data);

@@ -42,6 +42,8 @@ import java.util.stream.Collectors;
  *          }
  */
 public final class HostList implements IJson {
+    static final long serialVersionUID = 1;
+
     private final List<HostAndPort> serverList;
 
     public int size() { return this.serverList.size(); }

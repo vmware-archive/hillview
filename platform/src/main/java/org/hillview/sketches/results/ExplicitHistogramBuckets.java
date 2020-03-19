@@ -27,6 +27,8 @@ import java.util.Arrays;
  */
 public abstract class ExplicitHistogramBuckets<T extends Comparable<T>>
         implements IHistogramBuckets {
+    static final long serialVersionUID = 1;
+    
     public final T minValue;
     private final T lastBoundary;
     private final int bucketCount;

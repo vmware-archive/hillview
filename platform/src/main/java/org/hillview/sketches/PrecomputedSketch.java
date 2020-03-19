@@ -19,6 +19,8 @@ package org.hillview.sketches;
 
 import org.hillview.dataset.api.ISketch;
 
+import java.io.Serializable;
+
 import javax.annotation.Nullable;
 
 /**
@@ -27,7 +29,9 @@ import javax.annotation.Nullable;
  * @param <T>  Type of the data sketched.
  * @param <R>  Type of result produced.
  */
-public class PrecomputedSketch<T, R> implements ISketch<T, R> {
+public class PrecomputedSketch<T, R extends Serializable> implements ISketch<T, R> {
+    static final long serialVersionUID = 1;
+    
     private final R result;
 
     public PrecomputedSketch(R result) {

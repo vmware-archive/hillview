@@ -19,8 +19,6 @@ package org.hillview.table.api;
 
 import org.hillview.dataset.api.IJson;
 
-import java.io.Serializable;
-
-public interface IStringConverterDescription extends IJson, Serializable {
+public interface IStringConverterDescription extends IJson {
     IStringConverter getConverter();
 }

@@ -71,6 +71,8 @@ class RedoLog {
     }
 
     private static class DestAndRequest implements IJson {
+        static final long serialVersionUID = 1;
+
         final String resultId;
         final RpcRequest request;
 

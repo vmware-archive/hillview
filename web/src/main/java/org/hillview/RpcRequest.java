@@ -26,6 +26,8 @@ import javax.annotation.Nullable;
 import javax.websocket.Session;
 
 public final class RpcRequest implements IJson {
+    static final long serialVersionUID = 1;
+
     /**
      * Each pair request-response uses a matching id.
      */

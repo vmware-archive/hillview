@@ -30,6 +30,8 @@ import java.time.Instant;
 
 public class SparseColumn extends BaseColumn
         implements IMutableColumn, IStringColumn, IDoubleColumn, IIntColumn, IDateColumn, IDurationColumn {
+    static final long serialVersionUID = 1;
+
     private final Int2ObjectMap<Object> data;
     private final int size;
 

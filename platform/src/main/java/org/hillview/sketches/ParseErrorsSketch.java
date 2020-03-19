@@ -24,7 +24,6 @@ import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 
@@ -32,6 +31,7 @@ import java.util.List;
  * A sketch that computes the number of parsing errors in each column.
  */
 public class ParseErrorsSketch implements ISketch<ITable, ParseErrorsSketch.PerColumnErrors> {
+    static final long serialVersionUID = 1;
     @Override
     public PerColumnErrors create(@Nullable ITable data) {
         List<IColumn> columns = Converters.checkNull(data).getColumns(data.getSchema());
@@ -55,7 +55,9 @@ public class ParseErrorsSketch implements ISketch<ITable, ParseErrorsSketch.PerC
         return left.add(right);
     }
 
-    public static class PerColumnErrors implements Serializable, IJson {
+    public static class PerColumnErrors implements IJson {
+        static final long serialVersionUID = 1;
+    
         HashMap<String, Long> errorsPerColumn = new HashMap<String, Long>();
 
         public PerColumnErrors add(PerColumnErrors other) {

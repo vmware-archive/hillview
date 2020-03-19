@@ -20,12 +20,11 @@ package org.hillview.table.api;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
-import java.io.Serializable;
 
 /**
  * Describes the kind of data that is in the column,
  */
-public enum ContentsKind implements Serializable {
+public enum ContentsKind {
     None,     /* Data kind is unknown */
     String,
     Date,  /* java.time.LocalDateTime values */

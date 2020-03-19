@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Heatmap3DSketch implements ISketch<ITable, Heatmap3D> {
+    static final long serialVersionUID = 1;
     private final IHistogramBuckets bucketDescD1;
     private final IHistogramBuckets bucketDescD2;
     private final IHistogramBuckets bucketDescD3;

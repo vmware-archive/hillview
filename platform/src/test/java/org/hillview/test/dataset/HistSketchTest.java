@@ -49,6 +49,7 @@ public class HistSketchTest extends BaseTest {
         int bucketNum = result.getBucketCount();
         for (int i = 0; i < bucketNum; i++)
             size += result.getCount(i);
+        Assert.assertTrue(tableSize > size + result.getMissingData());
     }
 
     @Test
@@ -78,12 +79,12 @@ public class HistSketchTest extends BaseTest {
         int bucketNum = hdl.getBucketCount();
         for (int i = 0; i < bucketNum; i++)
             size += hdl.getCount(i);
+        Assert.assertEquals(bigSize, size);
     }
 
    @Test
     public void HeatmapSketchTest() {
         final int numCols = 2;
-        final int maxSize = 50;
         final int bigSize = 100000;
         final double rate = 0.5;
         final IHistogramBuckets buckets1 = new DoubleHistogramBuckets(1, 50, 10);

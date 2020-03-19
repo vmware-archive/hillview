@@ -26,6 +26,8 @@ import org.hillview.table.api.IIntColumn;
  * A CounterColumn has constant data: row i contains value i + offset.
  */
 public class CounterColumn extends BaseColumn implements IIntColumn {
+    static final long serialVersionUID = 1;
+
     private final int size;
     private final int offset;
 

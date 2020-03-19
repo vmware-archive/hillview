@@ -49,6 +49,7 @@ public class CorrelationTest extends BaseTest {
         Assert.assertNotNull(cm);
         DoubleMatrix corrMatrix = new DoubleMatrix(cm.getCorrelationMatrix());
         DoubleMatrix eigenVectors = LinAlg.eigenVectors(corrMatrix, 2);
+        Assert.assertNotNull(eigenVectors);
         DoubleMatrix actualCorrMatrix = new DoubleMatrix(new double[][]{
                 {1        ,  0.2773501 ,  0.83862787, -0.97655363,  0.81705717},
                 {0.2773501 ,  1        ,  0.75592895, -0.06401844, -0.32732684},

@@ -44,6 +44,8 @@ import java.util.List;
  * rows in the data project onto each entry, and how many rows come before topRow.
  */
 public class NextKSketch implements ISketch<ITable, NextKList> {
+    static final long serialVersionUID = 1;
+
     private final RecordOrder recordOrder;
     @Nullable
     private final AggregateDescription[] aggregates;
@@ -159,6 +161,8 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
                             else
                                 agg[a] = Math.max(agg[a], d);
                             break;
+                        default:
+                            throw new RuntimeException("Unexpected aggregation");
                     }
                 }
             }
@@ -168,7 +172,6 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
             Schema aggTableSchema = NextKList.getSchema(this.aggregates);
             List<ColumnDescription> cds = aggTableSchema.getColumnDescriptions();
             for (int i = 0; i < this.aggregates.length; i++) {
-                AggregateDescription cad = this.aggregates[i];
                 ColumnDescription cd = cds.get(i);
                 DoubleListColumn col = new DoubleListColumn(cd);
                 aggCols.add(col);
@@ -177,7 +180,6 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
             ObjectCollection<Double[]> values = aggregates.values();
             for (Double[] agg: values) {
                 for (int a = 0; a < this.aggregates.length; a++) {
-                    AggregateDescription cad = this.aggregates[a];
                     DoubleListColumn col = aggCols.get(a);
                     col.append(agg[a]);
                 }
@@ -244,6 +246,8 @@ public class NextKSketch implements ISketch<ITable, NextKList> {
                     case Max:
                         merged.set(k, Math.max(right.getDouble(j), left.getDouble(i)));
                         break;
+                    default:
+                        throw new RuntimeException("Unexpected aggregation");
                 }
                 i++;
                 j++;

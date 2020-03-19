@@ -20,6 +20,8 @@ package org.hillview.table.filters;
 import org.hillview.table.api.*;
 
 public class StringColumnFilterDescription implements ITableFilterDescription {
+    static final long serialVersionUID = 1;
+
     /**
      * The name of the column on which the filtering operation is performed.
      */

@@ -27,6 +27,7 @@ import javax.annotation.Nullable;
 import java.sql.SQLException;
 
 public class LoadDatabaseTableMap implements IMap<Empty, ITable> {
+    static final long serialVersionUID = 1;
     private final JdbcConnectionInformation conn;
 
     public LoadDatabaseTableMap(JdbcConnectionInformation conn) {

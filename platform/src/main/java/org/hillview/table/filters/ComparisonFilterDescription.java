@@ -29,6 +29,8 @@ import java.util.function.Predicate;
  * A filter that describes how values in a column should be compared with a constant.
  */
 public class ComparisonFilterDescription implements ITableFilterDescription {
+    static final long serialVersionUID = 1;
+    
     private final ColumnDescription column;
     // Only one of the two below is set, depending on the column kind.
     @Nullable

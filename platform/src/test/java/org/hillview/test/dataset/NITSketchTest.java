@@ -38,8 +38,6 @@ public class NITSketchTest extends BaseTest {
         final int range = 8700;
         final Randomness rn = this.getRandomness();
         final IntArrayColumn col = IntArrayGenerator.getRandIntArray(size, range, "Test", rn);
-        final int accuracy = 14;
-        final long seed = 0; // deterministic seed for testing
         final NumItemsThreshold nit = new NumItemsThreshold(13, 123456);
         final FullMembershipSet memSet = new FullMembershipSet(size);
         nit.createBits(col, memSet);

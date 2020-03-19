@@ -146,6 +146,8 @@ public class DPWrapper {
 
     @SuppressWarnings({"nullable", "NotNullFieldNotInitialized"})
     public static class PrivacySummary implements IJson {
+        static final long serialVersionUID = 1;
+
         @Nullable
         public Schema schema;
         public long rowCount;

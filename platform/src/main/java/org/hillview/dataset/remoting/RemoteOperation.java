@@ -22,4 +22,6 @@ import java.io.Serializable;
 /**
  * Base type for remote operations with a unique ID
  */
-public class RemoteOperation implements Serializable {}
+public class RemoteOperation implements Serializable {
+    static final long serialVersionUID = 1;
+}

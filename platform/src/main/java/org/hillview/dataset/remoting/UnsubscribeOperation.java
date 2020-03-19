@@ -24,6 +24,8 @@ import java.util.UUID;
  * Unsubscribe to a remote Map/Sketch operation
  */
 public class UnsubscribeOperation implements Serializable {
+    static final long serialVersionUID = 1;
+
     public final UUID id;
 
     public UnsubscribeOperation(final UUID id) {

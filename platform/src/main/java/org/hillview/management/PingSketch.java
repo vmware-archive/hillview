@@ -30,6 +30,7 @@ import java.util.HashSet;
  * @param <T>  Unused.
  */
 public class PingSketch<T> implements ISketch<T, JsonList<String>> {
+    static final long serialVersionUID = 1;
     @Nullable
     @Override
     public JsonList<String> zero() {

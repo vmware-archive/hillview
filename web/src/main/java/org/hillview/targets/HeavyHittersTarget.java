@@ -27,6 +27,8 @@ import org.hillview.utils.HillviewLogger;
  * as an argument for other RPC methods.
  */
 final class HeavyHittersTarget extends RpcTarget {
+    static final long serialVersionUID = 1;
+
     final FreqKList heavyHitters;
 
     HeavyHittersTarget(final FreqKList heavyHitters, final HillviewComputation computation) {

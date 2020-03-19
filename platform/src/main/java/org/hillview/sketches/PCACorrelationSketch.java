@@ -35,6 +35,8 @@ import java.util.Arrays;
  */
 
 public class PCACorrelationSketch implements ISketch<ITable, CorrMatrix> {
+    static final long serialVersionUID = 1;
+    
     private final String[] colNames;
     private final long seed;
     private final double samplingRate;

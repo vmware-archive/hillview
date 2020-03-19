@@ -29,6 +29,8 @@ import java.util.function.Function;
  * Wrapper around a list which makes it serializable as JSON.
  */
 public class JsonList<T> implements IJson, List<T> {
+    static final long serialVersionUID = 1;
+
     private final List<T> data;
 
     public JsonList() {
@@ -39,7 +41,7 @@ public class JsonList<T> implements IJson, List<T> {
         this.data = new ArrayList<T>(size);
     }
 
-    protected JsonList(List<T> data) {
+    public JsonList(List<T> data) {
         this.data = data;
     }
 

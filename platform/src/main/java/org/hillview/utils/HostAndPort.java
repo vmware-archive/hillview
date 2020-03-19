@@ -19,12 +19,12 @@ package org.hillview.utils;
 
 import org.hillview.dataset.api.IJson;
 
-import java.io.Serializable;
-
 /**
  * This class represents a hostname and a port.
  */
-public class HostAndPort implements Serializable, IJson {
+public class HostAndPort implements IJson {
+    static final long serialVersionUID = 1;
+
     public String host;
     public int    port;
 

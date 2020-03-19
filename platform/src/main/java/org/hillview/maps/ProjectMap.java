@@ -27,6 +27,7 @@ import javax.annotation.Nullable;
  * A map that preserves only a subset of the columns.
  */
 public class ProjectMap implements IMap<ITable, ITable> {
+    static final long serialVersionUID = 1;
     private final Schema schema;
 
     public ProjectMap(Schema schema) {

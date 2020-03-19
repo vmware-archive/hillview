@@ -36,6 +36,8 @@ import java.util.List;
  * methods assume boundedness for provable guarantees.
  */
 public class JLSketch implements ISketch<ITable, JLProjection>{
+    static final long serialVersionUID = 1;
+
     /**
      * The list of columns that we wish to sketch. Currently, every column is assumed to be of type
      * int or double.

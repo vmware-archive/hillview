@@ -19,7 +19,6 @@ package org.hillview.dataset.remoting;
 
 import org.hillview.dataset.api.IMap;
 
-import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -27,7 +26,9 @@ import java.util.List;
  * @param <T> Input type of the map function
  * @param <S> Output type of the map function
  */
-public class FlatMapOperation<T, S> extends RemoteOperation implements Serializable {
+public class FlatMapOperation<T, S> extends RemoteOperation {
+    static final long serialVersionUID = 1;
+
     public final IMap<T, List<S>> mapper;
 
     public FlatMapOperation(final IMap<T, List<S>> mapper) {

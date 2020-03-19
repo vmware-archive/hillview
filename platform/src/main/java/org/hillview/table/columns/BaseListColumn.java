@@ -30,6 +30,8 @@ import java.util.BitSet;
  * Base class for a column that can grow in size.
  */
 public abstract class BaseListColumn extends BaseColumn implements IAppendableColumn {
+    static final long serialVersionUID = 1;
+
     // These should not be public, but they are made public for simplifying testing.
     static final int LogSegmentSize = 11;
     public static final int SegmentSize = 1 << LogSegmentSize;

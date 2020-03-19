@@ -31,7 +31,9 @@ import java.time.Duration;
  */
 @SuppressWarnings("EmptyMethod")
 public final class DurationArrayColumn extends DoubleArrayColumn
-        implements IDurationColumn, IMutableColumn {
+        implements IDurationColumn {
+    static final long serialVersionUID = 1;
+
     public DurationArrayColumn(final ColumnDescription description, final int size) {
         super(description, size);
         this.checkKind(ContentsKind.Duration);

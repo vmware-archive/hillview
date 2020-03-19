@@ -25,6 +25,7 @@ import javax.annotation.Nullable;
  * An IMap which always returns 'false'.  Useful for prune().
  */
 public class FalseMap<T> implements IMap<T, Boolean> {
+    static final long serialVersionUID = 1;
     @Override
     public Boolean apply(@Nullable T data) {
         return false;

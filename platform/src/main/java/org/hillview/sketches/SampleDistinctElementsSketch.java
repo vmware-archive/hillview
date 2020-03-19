@@ -18,6 +18,8 @@ import java.util.Comparator;
  * returned.
  */
 public class SampleDistinctElementsSketch implements ISketch<ITable, MinKSet<String>> {
+    static final long serialVersionUID = 1;
+    
     private final String colName;
     private final long seed;
     private final int maxSize;

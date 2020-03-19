@@ -26,6 +26,8 @@ import rx.Scheduler;
 import rx.schedulers.Schedulers;
 
 import javax.annotation.Nullable;
+
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -186,7 +188,7 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
     }
 
     @Override
-    public <R> Observable<PartialResult<R>> sketch(final ISketch<T, R> sketch) {
+    public <R extends Serializable> Observable<PartialResult<R>> sketch(final ISketch<T, R> sketch) {
         // Immediately return a zero partial result
         // final Observable<PartialResult<R>> zero = this.zero(sketch::zero);
         final Callable<R> callable = () -> {

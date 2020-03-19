@@ -28,7 +28,9 @@ import java.util.Objects;
  * All aggregates ignore null values.
  */
 public class AggregateDescription implements Serializable {
-    public enum AggregateKind implements Serializable {
+    static final long serialVersionUID = 1;
+
+    public enum AggregateKind {
        Sum,
        Count,
        Min,

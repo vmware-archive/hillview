@@ -30,6 +30,7 @@ import javax.annotation.Nullable;
  * associated with a specified key.
  */
 public class ExtractValueFromKeyMap extends CreateColumnMap {
+    static final long serialVersionUID = 1;
     private final String key;
 
     public ExtractValueFromKeyMap(String key, String inputColumn,

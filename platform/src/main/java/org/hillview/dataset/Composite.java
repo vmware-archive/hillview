@@ -20,9 +20,13 @@ package org.hillview.dataset;
 import org.hillview.dataset.api.IMap;
 import org.hillview.dataset.api.ISketch;
 
+import java.io.Serializable;
+
 import javax.annotation.Nullable;
 
-public class Composite<T, S, R> implements ISketch<T, R> {
+public class Composite<T, S, R extends Serializable> implements ISketch<T, R> {
+    static final long serialVersionUID = 1;
+
     private final IMap<T, S> map;
     private final ISketch<S, R> sketch;
 

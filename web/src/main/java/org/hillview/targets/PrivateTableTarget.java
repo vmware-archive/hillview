@@ -20,6 +20,8 @@ import org.hillview.utils.*;
 import java.util.function.BiFunction;
 
 public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
+    static final long serialVersionUID = 1;
+
     public final IDataSet<ITable> table;
     public final DPWrapper wrapper;
 

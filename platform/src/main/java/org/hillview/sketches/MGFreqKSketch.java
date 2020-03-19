@@ -48,6 +48,8 @@ import java.util.function.IntConsumer;
  * of frequency greater than N/(k+1) appears in the list.
  */
 public class MGFreqKSketch implements ISketch<ITable, FreqKListMG> {
+    static final long serialVersionUID = 1;
+
     /**
      * The schema specifies which columns are relevant in determining equality of records.
      */

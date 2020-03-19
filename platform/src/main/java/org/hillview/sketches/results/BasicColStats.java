@@ -17,7 +17,6 @@
 
 package org.hillview.sketches.results;
 
-import org.hillview.dataset.api.IJson;
 import org.hillview.table.api.*;
 import org.hillview.utils.Converters;
 
@@ -27,7 +26,9 @@ import javax.annotation.Nullable;
  * A class that scans a column and collects basic statistics: maximum, minimum,
  * number of non-empty rows and the moments of asDouble values.
  */
-public class BasicColStats extends DataRange implements IJson {
+public class BasicColStats extends DataRange {
+    static final long serialVersionUID = 1;
+    
     private final int momentCount;
     private final boolean computeStringMax;
     @Nullable

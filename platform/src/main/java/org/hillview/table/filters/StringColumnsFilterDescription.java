@@ -25,6 +25,8 @@ import org.hillview.utils.Utilities;
 import javax.annotation.Nullable;
 
 public class StringColumnsFilterDescription implements ITableFilterDescription {
+    static final long serialVersionUID = 1;
+
     /**
      * The name of the columns on which the filtering operation is performed.
      */

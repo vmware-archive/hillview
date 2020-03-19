@@ -23,6 +23,8 @@ import org.hillview.dataset.api.Pair;
 import javax.annotation.Nullable;
 
 public class ConcurrentMap<T, S1, S2> implements IMap<T, Pair<S1, S2>> {
+    static final long serialVersionUID = 1;
+    
     private final IMap<T, S1> first;
     private final IMap<T, S2> second;
 

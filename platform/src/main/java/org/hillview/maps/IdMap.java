@@ -26,6 +26,7 @@ import javax.annotation.Nullable;
  * @param <T>  Type of data processed.
  */
 public class IdMap<T> implements IMap<T, T> {
+    static final long serialVersionUID = 1;
     @Nullable
     @Override
     public T apply(@Nullable T data) {

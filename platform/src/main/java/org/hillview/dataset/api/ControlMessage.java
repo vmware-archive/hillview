@@ -38,7 +38,10 @@ import java.io.Serializable;
  */
 @SuppressWarnings("SameReturnValue")
 public class ControlMessage implements Serializable {
-    public static class Status implements Serializable, IJson {
+    static final long serialVersionUID = 1;
+
+    public static class Status implements /* Serializable, implied by IJson */ IJson {
+        static final long serialVersionUID = 1;
         /**
          * Host where control message executed.
          */
@@ -77,6 +80,8 @@ public class ControlMessage implements Serializable {
     }
 
     public static class StatusList extends JsonList<Status> {
+        static final long serialVersionUID = 1;
+
         public StatusList() {}
 
         public StatusList(@Nullable Status status) {
@@ -96,6 +101,8 @@ public class ControlMessage implements Serializable {
     }
 
     public static class StatusListMonoid implements IMonoid<StatusList> {
+        static final long serialVersionUID = 1;
+        
         @Nullable
         @Override
         public StatusList zero() {

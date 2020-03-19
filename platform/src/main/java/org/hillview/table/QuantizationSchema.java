@@ -21,14 +21,14 @@ import org.hillview.dataset.api.IJson;
 import org.hillview.table.columns.ColumnQuantization;
 
 import javax.annotation.Nullable;
-import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.Set;
 
 /**
  * A quantization schema has quantization information for each column.
  */
-public class QuantizationSchema implements IJson, Serializable {
+public class QuantizationSchema implements IJson {
+    static final long serialVersionUID = 1;
     // We use a LinkedHashMap for deterministic serialization
     private LinkedHashMap<String, ColumnQuantization> quantization;
 

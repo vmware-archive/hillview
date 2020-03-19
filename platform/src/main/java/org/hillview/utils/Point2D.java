@@ -20,6 +20,8 @@ package org.hillview.utils;
 import org.hillview.dataset.api.IJson;
 
 public class Point2D implements IJson {
+    static final long serialVersionUID = 1;
+
     public Point2D(double x, double y) {
         this.x = x;
         this.y = y;

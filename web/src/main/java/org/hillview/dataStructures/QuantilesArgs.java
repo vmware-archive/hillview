@@ -44,12 +44,14 @@ public class QuantilesArgs {
             ISketch<ITable, MinKSet<String>> s = new SampleDistinctElementsSketch(
                     // We sample stringsToSample squared
                     this.cd.name, this.seed, samples);
-            //noinspection unchecked
-            return (ISketch<ITable, BucketsInfo>)(Object)s;
+            @SuppressWarnings("unchecked")
+            ISketch<ITable, BucketsInfo> result = (ISketch<ITable, BucketsInfo>)(Object)s;
+            return result;
         } else {
             ISketch<ITable, DataRange> s = new DoubleDataRangeSketch(this.cd.name);
-            //noinspection unchecked
-            return (ISketch<ITable, BucketsInfo>)(Object)s;
+            @SuppressWarnings("unchecked")
+            ISketch<ITable, BucketsInfo> result = (ISketch<ITable, BucketsInfo>)(Object)s;
+            return result;
         }
     }
 
@@ -57,7 +59,7 @@ public class QuantilesArgs {
         if (this.cd.kind.isString()) {
             int b = this.stringsToSample;
             return (e, c) -> {
-                //noinspection unchecked
+                @SuppressWarnings("unchecked")
                 MinKSet<String> mks = (MinKSet<String>)e;
                 return new StringQuantiles(
                         mks.getLeftBoundaries(b), mks.max, mks.allStringsKnown(b),

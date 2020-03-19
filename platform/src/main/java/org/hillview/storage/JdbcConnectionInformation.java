@@ -24,6 +24,8 @@ import java.io.Serializable;
  * This information is required to open a database connection.
  */
 public class JdbcConnectionInformation implements Serializable {
+    static final long serialVersionUID = 1;
+
     @Nullable
     public String host;
     @Nullable

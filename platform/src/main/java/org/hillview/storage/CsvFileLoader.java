@@ -38,6 +38,7 @@ import java.nio.file.Paths;
  */
 public class CsvFileLoader extends TextFileLoader {
     public static class Config implements Serializable {
+        static final long serialVersionUID = 1;
         /**
          * Field separator in CSV file.
          */

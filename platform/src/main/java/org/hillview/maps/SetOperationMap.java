@@ -26,6 +26,7 @@ import org.hillview.utils.Converters;
 import javax.annotation.Nullable;
 
 public class SetOperationMap implements IMap<Pair<ITable, ITable>, ITable> {
+    static final long serialVersionUID = 1;
     private final String operation;
 
     public SetOperationMap(String operation) {

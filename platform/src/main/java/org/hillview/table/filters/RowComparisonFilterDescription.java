@@ -29,6 +29,8 @@ import java.util.function.Function;
  * A filter that describes how values in a whole row should be compared with a given row.
  */
 public class RowComparisonFilterDescription implements ITableFilterDescription {
+    static final long serialVersionUID = 1;
+
     private final RowSnapshot row;
     private final RecordOrder order;
     private final String comparison;
@@ -69,7 +71,7 @@ public class RowComparisonFilterDescription implements ITableFilterDescription {
 
     @Override
     public ITableFilter getFilter(ITable table) {
-        VirtualRowSnapshot vrs = new VirtualRowSnapshot(table, this.order.toSchema());
+        new VirtualRowSnapshot(table, this.order.toSchema());
         return new CompareFilter(table);
     }
 }

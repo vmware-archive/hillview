@@ -45,6 +45,8 @@ import java.util.*;
  * }
  */
 public class VirtualRowSnapshot extends BaseRowSnapshot {
+    static final long serialVersionUID = 1;
+
     /**
      * Table where the virtual row resides.
      */

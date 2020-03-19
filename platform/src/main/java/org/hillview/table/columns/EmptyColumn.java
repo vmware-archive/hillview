@@ -27,6 +27,8 @@ import javax.annotation.Nullable;
  * An empty column does not really store any data - all values are null.
  */
 public class EmptyColumn extends BaseColumn implements IAppendableColumn {
+    static final long serialVersionUID = 1;
+
     private int size;
     private boolean sealed;
 

@@ -43,6 +43,8 @@ import java.util.List;
  * the record.
  */
 public class RecordOrder implements Serializable {
+    static final long serialVersionUID = 1;
+
     private final List<ColumnSortOrientation> sortOrientationList;
 
     public RecordOrder() {

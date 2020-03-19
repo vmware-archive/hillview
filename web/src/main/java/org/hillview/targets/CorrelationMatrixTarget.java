@@ -28,6 +28,8 @@ import java.util.Arrays;
 import static org.jblas.Eigen.symmetricEigenvalues;
 
 final class CorrelationMatrixTarget extends RpcTarget {
+    static final long serialVersionUID = 1;
+
     final CorrMatrix corrMatrix;
 
     /**
@@ -35,6 +37,8 @@ final class CorrelationMatrixTarget extends RpcTarget {
      * with some metadata about them.
      */
     public static class EigenVal implements IJson {
+        static final long serialVersionUID = 1;
+
         /**
          * The top few singular values in descending order. The cutoff is (top SV)/100.
          */

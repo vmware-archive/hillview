@@ -19,13 +19,12 @@ package org.hillview.dataset.remoting;
 
 import org.hillview.dataset.api.IMap;
 
-import java.io.Serializable;
-
 /**
  * Wrap an IMap object to be sent to a remote node for a prune operation.
  * @param <T> Input type of the map function
  */
-public class PruneOperation<T> extends RemoteOperation implements Serializable {
+public class PruneOperation<T> extends RemoteOperation {
+    static final long serialVersionUID = 1;
     public final IMap<T, Boolean> isEmpty;
 
     public PruneOperation(final IMap<T, Boolean> isEmpty) {

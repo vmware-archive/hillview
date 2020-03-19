@@ -31,6 +31,7 @@ import javax.annotation.Nullable;
  * One-dimensional histogram
  */
 public class HistogramSketch implements ISketch<ITable, Histogram> {
+    static final long serialVersionUID = 1;
     public final IHistogramBuckets bucketDesc;
     protected final String columnName;
     protected final double rate;

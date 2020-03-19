@@ -21,14 +21,14 @@ import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.IMutableColumn;
 
 import javax.annotation.Nullable;
-import java.io.Serializable;
 import java.security.InvalidParameterException;
 import java.util.BitSet;
 
 /**
  * Adds a missing bit vector to BaseColumn.
  */
-public abstract class BaseArrayColumn extends BaseColumn implements Serializable {
+public abstract class BaseArrayColumn extends BaseColumn {
+    static final long serialVersionUID = 1;
     @Nullable
     private final BitSet missing;
 

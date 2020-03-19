@@ -42,6 +42,7 @@ import java.util.List;
  * loaders that can be invoked to load the actual file data as tables.
  */
 public class FindFilesMap implements IMap<Empty, List<IFileReference>> {
+    static final long serialVersionUID = 1;
     private final FileSetDescription description;
 
     public FindFilesMap(FileSetDescription description) {

@@ -24,6 +24,8 @@ import javax.annotation.Nullable;
  * Represents a set of strings that are quantiles from a sorted set of distinct strings.
  */
 public class StringQuantiles extends BucketsInfo {
+    static final long serialVersionUID = 1;
+    
     public final JsonList<String> stringQuantiles;
     @Nullable
     public final String           maxBoundary;

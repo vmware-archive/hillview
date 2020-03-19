@@ -30,6 +30,8 @@ import org.hillview.table.api.ITable;
  * This is an RpcTarget object which stores a file loader name in each leaf.
  */
 public class FileDescriptionTarget extends RpcTarget {
+    static final long serialVersionUID = 1;
+
     protected final IDataSet<IFileReference> files;
 
     FileDescriptionTarget(IDataSet<IFileReference> files, HillviewComputation computation) {

@@ -25,6 +25,8 @@ import java.io.Serializable;
  * Not all combinations of options make sense.
  */
 public class StringFilterDescription implements Serializable {
+    static final long serialVersionUID = 1;
+
     /**
      * Search pattern to look for.
      */

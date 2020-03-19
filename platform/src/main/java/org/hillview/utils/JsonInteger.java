@@ -8,6 +8,8 @@ import org.hillview.dataset.api.IJson;
  * An integer which can be serialized as Json.
  */
 public class JsonInteger implements IJson {
+    static final long serialVersionUID = 1;
+
     private final int value;
 
     public JsonInteger(int value) {

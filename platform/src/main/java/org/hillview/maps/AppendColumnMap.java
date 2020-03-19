@@ -28,6 +28,7 @@ import javax.annotation.Nullable;
  * a column to a table.
  */
 public abstract class AppendColumnMap implements IMap<ITable, ITable> {
+    static final long serialVersionUID = 1;
     /**
      * Name for the new column.
      */

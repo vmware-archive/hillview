@@ -25,6 +25,7 @@ import org.hillview.utils.Converters;
 import javax.annotation.Nullable;
 
 public class LoadFilesMap implements IMap<IFileReference, ITable> {
+    static final long serialVersionUID = 1;
     public LoadFilesMap() {}
 
     @Override

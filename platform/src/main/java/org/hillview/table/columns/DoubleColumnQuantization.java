@@ -22,6 +22,8 @@ import org.hillview.sketches.results.DataRange;
 import org.hillview.utils.Utilities;
 
 public class DoubleColumnQuantization extends ColumnQuantization {
+    static final long serialVersionUID = 1;
+
     /**
      * Minimum quantization interval: users will only be able to
      * query ranges that are a multiple of this size.

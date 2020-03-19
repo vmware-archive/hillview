@@ -66,8 +66,6 @@ public class VirtualRowSnapshotTest extends BaseTest {
     public void testVrsHashing() {
         final int numCols = 1;
         final int size = 1000;
-        final double base  = 1.1;
-        final int range = 20;
         ITable data = TestTables.getIntTable(size, numCols);
         VirtualRowSnapshot vrs = new VirtualRowSnapshot(data, data.getSchema());
         IRowIterator rowIt = data.getRowIterator();

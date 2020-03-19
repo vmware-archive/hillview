@@ -13,6 +13,8 @@ import org.hillview.storage.IFileReference;
 import org.hillview.table.api.ITable;
 
 public class PrivateFileDescriptionTarget extends FileDescriptionTarget {
+    static final long serialVersionUID = 1;
+
     private PrivacySchema metadata;
     private String schemaFilename;
 

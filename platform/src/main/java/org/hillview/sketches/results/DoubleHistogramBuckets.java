@@ -25,6 +25,8 @@ import org.hillview.utils.Utilities;
  * The last bucket is right-inclusive.
  */
 public class DoubleHistogramBuckets implements IHistogramBuckets {
+    static final long serialVersionUID = 1;
+    
     public final double minValue;
     public final double maxValue;
     public final int bucketCount;

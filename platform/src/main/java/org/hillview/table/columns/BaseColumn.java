@@ -30,6 +30,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Base class for all columns.
  */
 public abstract class BaseColumn implements IColumn {
+    static final long serialVersionUID = 1;
+
     final ColumnDescription description;
     int parsingExceptionCount;
     private static final AtomicInteger uniqueId = new AtomicInteger(0);

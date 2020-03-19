@@ -162,8 +162,8 @@ public class BatchLogAnalysis {
             (current, name) -> new File(current, name).isDirectory());
         // create empty directory for nsx_manager and nsx_edge respectively
         boolean ignored = new File(figDir + "/nsx_manager_syslog/").mkdirs();
-        //noinspection UnusedAssignment
         ignored = new File(figDir + "/nsx_edge_syslog/").mkdirs();
+        assert(ignored);
 
         assert bugIDs != null;
         for (String bugID : bugIDs) {

@@ -29,6 +29,7 @@ import java.util.List;
  * parallelism than an initial one.
  */
 public class ParallelizerMap implements IMap<Empty, List<Empty>> {
+    static final long serialVersionUID = 1;
     private final int cores;
 
     public ParallelizerMap(int cores) {

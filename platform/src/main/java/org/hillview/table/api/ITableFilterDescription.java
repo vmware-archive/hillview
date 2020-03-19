@@ -19,12 +19,10 @@ package org.hillview.table.api;
 
 import org.hillview.dataset.api.IJson;
 
-import java.io.Serializable;
-
 /**
  * Describes a filter that is applied to each row of a table.
  */
-public interface ITableFilterDescription extends Serializable, IJson {
+public interface ITableFilterDescription extends IJson {
     /**
      * Called before the test is applied to each row index.
      * @param table: Table on which the test operates.

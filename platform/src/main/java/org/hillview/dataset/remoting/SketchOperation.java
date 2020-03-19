@@ -17,16 +17,18 @@
 
 package org.hillview.dataset.remoting;
 
-import org.hillview.dataset.api.ISketch;
-
 import java.io.Serializable;
+
+import org.hillview.dataset.api.ISketch;
 
 /**
  * Wrap an ISketch object to be sent to a remote node
  * @param <T> Input type of the sketch function
  * @param <R> Output type of the sketch function
  */
-public class SketchOperation<T, R> extends RemoteOperation implements Serializable {
+public class SketchOperation<T, R extends Serializable> extends RemoteOperation {
+    static final long serialVersionUID = 1;
+
     public final ISketch<T, R> sketch;
 
     public SketchOperation(final ISketch<T, R> sketch) {

@@ -28,6 +28,8 @@ import javax.annotation.Nullable;
  * @param <T> Type of value from a monoid.
  */
 public class PartialResultMonoid<T> implements IMonoid<PartialResult<T>> {
+    static final long serialVersionUID = 1;
+    
     /**
      * Monoid over values of type T.
      */

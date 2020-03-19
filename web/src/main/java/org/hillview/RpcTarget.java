@@ -30,6 +30,7 @@ import rx.exceptions.CompositeException;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
+import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,6 +46,8 @@ import java.util.function.Function;
  * must be public for reflection to work properly.
  */
 public abstract class RpcTarget implements IJson, IRpcTarget {
+    static final long serialVersionUID = 1;
+
     private final IRpcTarget.Id objectId;
     /**
      * Computation that has generated this object.  Can only
@@ -414,7 +417,7 @@ public abstract class RpcTarget implements IJson, IRpcTarget {
      * @param context Context for the computation.
      */
     @Override
-    public <T, R, S extends IJson> void
+    public <T, R extends Serializable, S extends IJson> void
     runSketch(IDataSet<T> data, PostProcessedSketch<T, R, S> sketch,
               RpcRequest request, RpcRequestContext context) {
         // Run the sketch
@@ -460,7 +463,7 @@ public abstract class RpcTarget implements IJson, IRpcTarget {
     }
 
     @Override
-    public <T, R, S extends IJson> void
+    public <T, R extends Serializable, S extends IJson> void
     runCompleteSketch(IDataSet<T> data, PostProcessedSketch<T, R, S> sketch,
                       RpcRequest request, RpcRequestContext context) {
         // Run the sketch
@@ -487,7 +490,7 @@ public abstract class RpcTarget implements IJson, IRpcTarget {
      * @param context Context for the computation.
      */
     @Override
-    public <T, R, S extends IJson> void
+    public <T, R extends Serializable, S extends IJson> void
     runCompleteSketch(IDataSet<T> data, ISketch<T, R> sketch,
                       BiFunction<R, HillviewComputation, S> postprocessing,
                       RpcRequest request, RpcRequestContext context) {

@@ -18,12 +18,13 @@
 package org.hillview.dataset.remoting;
 
 import org.hillview.dataset.api.ControlMessage;
-import java.io.Serializable;
 
 /**
  * Wrap a ControlMessage object to be sent to a remote node
  */
-public class ManageOperation extends RemoteOperation implements Serializable {
+public class ManageOperation extends RemoteOperation {
+    static final long serialVersionUID = 1;
+
     public final ControlMessage message;
     public ManageOperation(final ControlMessage message) {
         this.message = message;

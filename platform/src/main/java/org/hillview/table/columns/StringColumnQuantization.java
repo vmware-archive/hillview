@@ -26,6 +26,8 @@ import javax.annotation.Nullable;
 import java.util.Arrays;
 
 public class StringColumnQuantization extends ColumnQuantization {
+    static final long serialVersionUID = 1;
+
     /**
      * Fixed global maximum value. Should be computable from
      * public information or otherwise uncorrelated with the data.

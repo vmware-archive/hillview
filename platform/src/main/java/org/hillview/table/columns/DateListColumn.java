@@ -33,6 +33,8 @@ import java.time.Instant;
 public class DateListColumn
         extends DoubleListColumn
         implements IDateColumn {
+    static final long serialVersionUID = 1;
+
     @Nullable
     private
     DateParsing dateParser;

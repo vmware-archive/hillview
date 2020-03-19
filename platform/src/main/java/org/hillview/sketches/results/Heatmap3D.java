@@ -19,12 +19,13 @@ package org.hillview.sketches.results;
 
 import org.hillview.dataset.api.IJson;
 import org.hillview.table.api.*;
-import java.io.Serializable;
 
 /**
  * A 3-dimensional histogram.
  */
-public class Heatmap3D implements Serializable, IJson {
+public class Heatmap3D implements IJson {
+    static final long serialVersionUID = 1;
+    
     private final long[][][] buckets;
     private long eitherMissing; // number of items missing in either of the columns
     public final int bucketCount0;

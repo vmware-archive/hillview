@@ -25,6 +25,8 @@ import javax.annotation.Nullable;
  * @param <T> Type of value.
  */
 public class OptionMonoid<T> implements IMonoid<T> {
+    static final long serialVersionUID = 1;
+    
     @Override @Nullable
     public T zero() { return null; }
 

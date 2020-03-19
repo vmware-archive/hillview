@@ -20,6 +20,8 @@ package org.hillview.dataset.api;
 import org.hillview.utils.HostAndPort;
 
 public class DatasetMissing extends RuntimeException {
+    static final long serialVersionUID = 1;
+    
     public DatasetMissing(int index, HostAndPort location) {
         super("Missing dataset_" + index + "@" + location);
     }

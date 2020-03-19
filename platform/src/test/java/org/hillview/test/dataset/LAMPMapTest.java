@@ -61,8 +61,9 @@ public class LAMPMapTest extends BaseTest {
         LAMPMap map = new LAMPMap(ndControlPoints, proj, colNames,
                 Utilities.toArray(newColNames));
         ITable result = map.apply(table);
-        IDataSet<ITable> datasetResult = dataset.blockingMap(map);
         Assert.assertNotNull(result);
+        IDataSet<ITable> datasetResult = dataset.blockingMap(map);
+        Assert.assertNotNull(datasetResult);
         DoubleMatrix lampProjection = BlasConversions.toDoubleMatrix(result, newColNames);
         System.out.println("\nLAMP projection:");
         System.out.println("\tMin x: " + lampProjection.getColumn(0).min());

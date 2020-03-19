@@ -24,12 +24,13 @@ import org.hillview.table.api.ISampledRowIterator;
 import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
-import java.io.Serializable;
 
 /**
  * One dimensional histogram.
  */
-public class Histogram implements Serializable, IJson {
+public class Histogram implements IJson {
+    static final long serialVersionUID = 1;
+    
     public long[] buckets;
     /**
      * Count of missing (NULL) values.

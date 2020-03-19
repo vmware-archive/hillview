@@ -29,6 +29,8 @@ import java.io.Serializable;
  * @param <T>  Type of data in partial result.
  */
 public class PartialResult<T> implements Serializable {
+    static final long serialVersionUID = 1;
+
     /**
      * How much more has been done from the computation
      * since the previous partial result.  A number between 0 and 1.  Even if this

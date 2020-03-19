@@ -21,14 +21,15 @@ import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.*;
 
 import javax.annotation.Nullable;
-import java.io.Serializable;
 
 /**
  * Column of integers, implemented as an array of integers and a BitSet of missing values.
  */
 public final class IntArrayColumn
         extends BaseArrayColumn
-        implements IIntColumn, Serializable, IMutableColumn {
+        implements IIntColumn, IMutableColumn {
+    static final long serialVersionUID = 1;
+
     private final int[] data;
 
     public IntArrayColumn() {

@@ -21,6 +21,8 @@ import org.apache.commons.lang.ArrayUtils;
 import org.hillview.sketches.results.ICorrelation;
 
 import javax.annotation.Nullable;
+
+import java.io.Serializable;
 import java.security.InvalidParameterException;
 import java.util.LinkedHashMap;
 
@@ -29,11 +31,13 @@ import java.util.LinkedHashMap;
  * normalization. It implements the ICorrelation interface and can be used for computing norms,
  * inner products etc, but it is currently rather slow compared to sampling based methods.
  */
-public class JLProjection implements ICorrelation {
+public class JLProjection implements ICorrelation, Serializable {
+    private static final long serialVersionUID = 1L;
     /**
-     * The JL Sketch stores for every column, a vector of doubles of dimension lowDim, which is the
-     * sketch of that column. The sketch is computed by multiplying th column (viewed as a vector of
-     * doubles) by a random matrix of {-1, 1} values.
+     * The JL Sketch stores for every column, a vector of doubles of dimension
+     * lowDim, which is the sketch of that column. The sketch is computed by
+     * multiplying th column (viewed as a vector of doubles) by a random matrix of
+     * {-1, 1} values.
      */
     public final LinkedHashMap<String, double[]> hMap;
     /**

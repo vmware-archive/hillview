@@ -30,6 +30,8 @@ import javax.annotation.Nullable;
  * We use a null to represent a "zero" for the schemas.
  */
 public class SummarySketch implements ISketch<ITable, TableSummary> {
+    static final long serialVersionUID = 1;
+    
     @Override @Nullable
     public TableSummary zero() {
         return new TableSummary();

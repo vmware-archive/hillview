@@ -28,6 +28,8 @@ import org.hillview.utils.Converters;
 import javax.annotation.Nullable;
 
 public class HLogLogSketch implements ISketch<ITable, HLogLog> {
+    static final long serialVersionUID = 1;
+
     private final String colName;
     private final long seed; //seed for the hash function of the HLogLog
     /**

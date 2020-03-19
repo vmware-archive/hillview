@@ -17,14 +17,14 @@
 
 package org.hillview.dataset.api;
 
-import java.io.Serializable;
-
 /**
  * Similar to Pair, but components can never be null.
  * @param <T>  First element in the pair.
  * @param <S>  Second element in the pair.
  */
-public class NonNullPair<T, S> implements Serializable, IJson {
+public class NonNullPair<T, S> implements IJson /* Serializable implied by IJson*/ {
+    static final long serialVersionUID = 1;
+    
     public final T first;
     public final S second;
 

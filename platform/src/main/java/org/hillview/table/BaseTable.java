@@ -33,6 +33,8 @@ import java.util.List;
  * when accessed by the SmallTable.
  */
 public abstract class BaseTable implements ITable, Serializable {
+    static final long serialVersionUID = 1;
+
     /**
      * Maps columns name to an IColumn.
      */

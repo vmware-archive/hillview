@@ -33,6 +33,8 @@ import java.time.Instant;
  * the quantization policy and treated as if it is the lower bound of the bucket.
  */
 public class QuantizedColumn extends BaseColumn {
+    static final long serialVersionUID = 1;
+
     private final IColumn data;
     /**
      * Quantization policy.  If this is null the data is not really quantized.

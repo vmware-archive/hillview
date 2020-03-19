@@ -24,6 +24,8 @@ import org.hillview.sketches.results.NextKList;
  * The result of heavyHitterSketch.
  */
 public class TopList implements IJson {
+    static final long serialVersionUID = 1;
+
     /**
      * The NextKList stores the fields to display and their counts.
      */

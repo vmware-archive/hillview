@@ -40,6 +40,7 @@ import java.util.List;
  * be used right after any approximate sketch for Heavy Hitters to compute their exact frequencies.
  */
 public class ExactFreqSketch implements ISketch<ITable, FreqKListExact> {
+    static final long serialVersionUID = 1;
     /**
      * The schema of the RowSnapshots
      */

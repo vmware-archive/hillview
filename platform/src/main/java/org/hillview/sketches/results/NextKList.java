@@ -33,14 +33,15 @@ import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.VirtualRowSnapshot;
 
 import javax.annotation.Nullable;
-import java.io.Serializable;
 import java.util.List;
 
 /**
  * The data structure used to store the next K rows in a Table from a given starting point (topRow)
  * according to a RecordSortOrder.
  */
-public class NextKList implements Serializable, IJson {
+public class NextKList implements IJson {
+    static final long serialVersionUID = 1;
+    
     /**
      * This table has one row for each row displayed.  Only the visible columns
      * are contained.
