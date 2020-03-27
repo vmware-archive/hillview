@@ -413,11 +413,6 @@ public class Utilities {
 
     /* assumes arr has 2*INT_SIZE space allocated */
     public static void intPairToByteArray(Pair<Integer, Integer> p, /*out*/byte[] arr, int startIndex) {
-        Arrays.fill(arr, (byte)0);
-        if (arr.length < 2) {
-            throw new RuntimeException("Not enough bytes allocated for output");
-        }
-
         intToByteArray(Converters.checkNull(p.first), arr, startIndex);
         intToByteArray(Converters.checkNull(p.second), arr, startIndex + INT_SIZE);
     }
@@ -443,6 +438,16 @@ public class Utilities {
         int[] copy = new int[(data.length + k - 1)/ k];
         for (int i = 0; i < data.length; i += k)
             copy[i / k] = data[i];
+        return copy;
+    }
+
+    /**
+     * Keep every k-th element of a list.
+     */
+    public static <T> List<T> decimate(List<T> data, int k) {
+        List<T> copy = new ArrayList<T>((data.size() + k - 1)/ k);
+        for (int i = 0; i < data.size(); i += k)
+            copy.add(data.get(i));
         return copy;
     }
 
