@@ -269,23 +269,6 @@ div.truncated {
     height: 100%;
 }
 
-.scrollbarOuter {
-    margin: 0;
-    padding: 0;
-    background: white;
-    display: flex;
-    flex-direction: column;
-    flex-wrap: nowrap;
-    justify-content: flex-start;
-    width: 15px;
-    height: 100%;
-}
-
-.scrollBarBefore, .scrollBarAfter {
-    background: lightgray;
-    width: 100%;
-}
-
 .dialog {
     position: fixed;
     margin: auto;
@@ -337,11 +320,6 @@ div.truncated {
 
 .dialog label {
     font-size:small;
-}
-
-.scrollBarInner {
-    background: darkslategrey;
-    width: 100%;
 }
 
 .histogramBoxLabel {

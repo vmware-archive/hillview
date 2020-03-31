@@ -140,7 +140,7 @@ export class HistogramPlot extends Plot implements IBarPlot {
             .attr("y", (d) => this.yLabel(d[0]))
             .attr("text-anchor", "middle")
             .attr("dy", (d) => d[0] <= (9 * displayMax / 10) ? "-.25em" : ".75em")
-            .text((d) => HistogramPlot.boxHeight(
+            .text((d) => Plot.boxHeight(
                 d[0], this.samplingRate, this.xAxisData.range.presentCount))
             .exit();
 

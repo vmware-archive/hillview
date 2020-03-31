@@ -85,7 +85,7 @@ public class DataUpload {
     /**
      * Parses the command line and fills up the parameters data structure
      */
-    private static Params parseCommand(String[] args) {
+    private static Params parseCommand(String[] args) throws Exception {
         Options options = new Options();
         Option o_filename = new Option("f", "filename",  true, "file to distribute");
         o_filename.setRequired(true);
@@ -174,7 +174,7 @@ public class DataUpload {
         return parameters;
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         Params parameters = parseCommand(args);
         try {
             @Nullable
@@ -244,7 +244,7 @@ public class DataUpload {
      * @param filename name of the file containing the table
      * @param config configuration file for the parser
      */
-    private static Schema guessSchema(String filename, CsvFileLoader.Config config) {
+    private static Schema guessSchema(String filename, CsvFileLoader.Config config) throws Exception {
         Reader file;
         GuessSchema[] schemaGuesses = null;
         int column = 0;
@@ -318,7 +318,7 @@ public class DataUpload {
      */
     private static int chopFiles(CsvFileLoader.Config config,
                                  @Nullable ClusterConfig clusterConfig,
-                                 Schema schema, Params parameters) {
+                                 Schema schema, Params parameters) throws Exception {
         Reader file;
         IAppendableColumn[] columns;
         int progress = 0;
@@ -396,7 +396,7 @@ public class DataUpload {
                 columns = schema.createAppendableColumns();
             }
             myParser.stopParsing();
-        } catch(Exception e) {
+        } catch (Exception e) {
             try {
                 Files.deleteIfExists(Paths.get(chunkName));
             } catch (Exception ex) {
@@ -458,7 +458,7 @@ public class DataUpload {
         }
     }
 
-    private static void append(String[] data, IAppendableColumn[] columns, boolean allowFewerColumns) {
+    private static void append(String[] data, IAppendableColumn[] columns, boolean allowFewerColumns) throws Exception {
         try {
             int columnCount = columns.length;
             int currentColumn;
@@ -470,9 +470,10 @@ public class DataUpload {
                 columns[currentColumn].parseAndAppendString(currentToken);
             }
             if (data.length < columnCount) {
-                if (!allowFewerColumns)
-                    throw new RuntimeException("Too few columns " + data.length + " vs " + columnCount);
-                else {
+                if (!allowFewerColumns) {
+                    throw new RuntimeException("Too few columns " + data.length + " vs " + columnCount + " row " +
+                            columns[0].sizeInRows());
+                } else {
                     currentToken = "";
                     for (int i = data.length; i < columnCount; i++)
                         columns[i].parseAndAppendString(currentToken);
@@ -520,8 +521,9 @@ public class DataUpload {
         }
     }
 
-    private static void error(Exception ex) {
+    private static void error(Exception ex) throws Exception {
         // Unfortunately ex.getMessage() is often useless.
         ex.printStackTrace();
+        throw ex;
     }
 }

@@ -130,7 +130,7 @@ public interface ITable {
      */
     List<IColumn> getLoadedColumns(List<String> columns);
 
-    default List<IColumn> getLoadedColumns(String[] columns) {
+    default List<IColumn> getLoadedColumns(String... columns) {
         return this.getLoadedColumns(Arrays.asList(columns));
     }
     /**

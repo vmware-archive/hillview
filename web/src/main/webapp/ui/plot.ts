@@ -145,7 +145,8 @@ export abstract class Plot {
                 return "";
             return significantDigits(barSize);
         }
-        const muS = barSize / rowCount;
+        // Since the bar size is an estimate it could turn out to be larger than the row count
+        const muS = Math.min(barSize / rowCount, 1.0);
         const dev = 2.38 * Math.sqrt(muS * (1 - muS) * rowCount / samplingRate);
         const min = Math.max(barSize - dev, 0);
         const max = barSize + dev;

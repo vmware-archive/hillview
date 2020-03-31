@@ -96,8 +96,8 @@ public class SampleQuantileSketch  implements ISketch<ITable, SampleList> {
             data = new QuantizedTable(data, this.quantization);
         final IMembershipSet sampleSet = data.getMembershipSet().sample(
                 this.samplingRate, this.seed);
-        final IRowOrder rowOrder = new ArrayRowOrder(this.
-                colSortOrder.getSortedRowOrder(data, sampleSet));
+        final IRowOrder rowOrder = new ArrayRowOrder(
+                this.colSortOrder.getSortedRowOrder(data, sampleSet));
         return new SampleList(data.compress(this.colSortOrder.toSchema(), rowOrder));
     }
 

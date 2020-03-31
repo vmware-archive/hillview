@@ -72,10 +72,11 @@ public class EmptyColumn extends BaseColumn implements IAppendableColumn {
 
     @Override
     public void parseAndAppendString(@Nullable String s) {
-        if (s == null)
+        if (s == null || s.isEmpty())
             this.appendMissing();
         else
-            throw new RuntimeException("Appending value to empty column" + s);
+            throw new RuntimeException("Appending value `" + s + "` to empty column " +
+                    this.getName() + " row " + this.sizeInRows());
     }
 
     @Override

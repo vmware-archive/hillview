@@ -20,7 +20,7 @@ import {HistogramSerialization, IViewSerialization} from "../datasetView";
 import {
     FilterDescription,
     Histogram,
-    IColumnDescription,
+    IColumnDescription, kindIsNumeric,
     kindIsString,
     RecordOrder,
     RemoteObjectId,
@@ -115,6 +115,13 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
                     action: () => this.chooseSecondColumn(),
                     help: "Draw a 2-dimensional histogram using this data and another column.",
                 },
+/*
+                {
+                    text: "quantiles...",
+                    action: () => this.chooseQuantilesColumn(),
+                    help: "Draw quantiles of a numeric column for each bucket of this histogram.",
+                },
+*/
                 {
                     text: "group by...",
                     action: () => {
@@ -246,7 +253,8 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
             return;
         }
         this.histogram = histogram;
-        this.rowCount = this.histogram.buckets.reduce((a, b) => a + b, 0);
+        // The following is only an *estimate* of the actual row count
+        // this.rowCount = this.histogram.buckets.reduce((a, b) => a + b, 0);
         if (this.isPrivate()) {
             const cols = [this.xAxisData.description.name];
             const eps = this.dataset.getEpsilon(cols);
@@ -343,6 +351,28 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         dialog.show();
     }
 
+    public chooseQuantilesColumn(): void {
+        const columns: DisplayName[] = [];
+        for (let i = 0; i < this.schema.length; i++) {
+            const col = this.schema.get(i);
+            if (col.name === this.xAxisData.description.name ||
+                !kindIsNumeric(col.kind))
+                continue;
+            columns.push(this.schema.displayName(col.name));
+        }
+        if (columns.length === 0) {
+            this.page.reportError("No other acceptable columns found");
+            return;
+        }
+
+        const dialog = new Dialog("Choose column", "Select a second column to display quantiles.");
+        dialog.addColumnSelectField("column", "column", columns, null,
+            "The second column that will be used in addition to the one displayed here " +
+            "for drawing histogram with quantiles of the second column distributions.");
+        dialog.setAction(() => this.showQuantiles(dialog.getColumnName("column")));
+        dialog.show();
+    }
+
     public export(): void {
         const lines: string[] = this.asCSV();
         const fileName = "histogram.csv";
@@ -378,6 +408,19 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
             chartKind: "2DHistogram",
             exact: true
         }));
+    }
+
+    private showQuantiles(colName: DisplayName): void {
+        const oc = this.schema.findByDisplayName(colName);
+        const cds: IColumnDescription[] = [this.xAxisData.description, oc];
+        const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
+            [this.histogram.buckets.length, 0], cds, null, {
+                reusePage: false,
+                relative: false,
+                chartKind: "2DHistogram",
+                exact: true
+            }));
     }
 
     public changeBuckets(bucketCount: number): void {
