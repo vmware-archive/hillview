@@ -116,30 +116,23 @@ public final class TableTarget extends RpcTarget {
         this.runPrune(this.table, new EmptyTableMap(), TableTarget::new, request, context);
     }
 
-    static class StdDevStats
-            extends PostProcessedSketch<ITable, JsonList<BasicColStats>, JsonList<BasicColStats>> {
-        protected StdDevStats(ISketch<ITable, JsonList<BasicColStats>> sketch) {
-            super(sketch);
-        }
-
-        @Nullable
-        @Override
-        public JsonList<BasicColStats> postProcess(@Nullable JsonList<BasicColStats> stats) {
-            for (BasicColStats s : Converters.checkNull(stats)) {
-                // We mutate in place; this is safe in the root node.
-                if (s.moments.length > 1)
-                    // the value should never be negative, but you can't trust FP
-                    s.moments[1] = Math.sqrt(Math.max(0, s.moments[1] - s.moments[0] * s.moments[0]));
-            }
-            return stats;
-        }
-    }
-
     @HillviewRpc
     public void basicColStats(RpcRequest request, RpcRequestContext context) {
         String[] args = request.parseArgs(String[].class);
         BasicColStatSketch sk = new BasicColStatSketch(args, 2);
-        StdDevStats post = new StdDevStats(sk);
+        PostProcessedSketch<ITable, JsonList<BasicColStats>, JsonList<BasicColStats>> post =
+                new PostProcessedSketch<ITable, JsonList<BasicColStats>, JsonList<BasicColStats>>(sk) {
+                    @Override
+                    public JsonList<BasicColStats> postProcess(@Nullable JsonList<BasicColStats> stats) {
+                        for (BasicColStats s : Converters.checkNull(stats)) {
+                            // We mutate in place; this is safe in the root node.
+                            if (s.moments.length > 1)
+                                // the value should never be negative, but you can't trust FP
+                                s.moments[1] = Math.sqrt(Math.max(0, s.moments[1] - s.moments[0] * s.moments[0]));
+                        }
+                        return stats;
+                    }
+                };
         // If the view has many columns sending partial results to the
         // UI overwhelms the browser, so we only send the final result.
         this.runCompleteSketch(this.table, post, request, context);
