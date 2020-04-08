@@ -81,6 +81,13 @@ export interface HeatmapSerialization extends IViewSerialization {
     yBucketCount: number;
 }
 
+export interface QuantileVectorSerialization extends IViewSerialization {
+    samplingRate: number;
+    columnDescription0: IColumnDescription;
+    columnDescription1: IColumnDescription;
+    xBucketCount: number;
+}
+
 export interface Histogram2DSerialization extends HeatmapSerialization {
     relative: boolean;
 }

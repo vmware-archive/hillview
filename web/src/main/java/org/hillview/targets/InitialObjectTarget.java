@@ -18,7 +18,7 @@
 package org.hillview.targets;
 
 import org.hillview.*;
-import org.hillview.sketches.PrecomputedSketch;
+import org.hillview.dataset.PrecomputedSketch;
 import org.hillview.table.PrivacySchema;
 import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.*;
@@ -96,7 +96,7 @@ public class InitialObjectTarget extends RpcTarget {
         }
         Converters.checkNull(this.emptyDataset);
         PrecomputedSketch<Empty, JsonString> sk = new PrecomputedSketch<Empty, JsonString>(result);
-        this.runCompleteSketch(this.emptyDataset, sk, (e, c) -> e, request, context);
+        this.runCompleteSketch(this.emptyDataset, sk, request, context);
     }
 
     @HillviewRpc

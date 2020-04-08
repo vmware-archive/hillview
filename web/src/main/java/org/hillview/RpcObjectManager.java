@@ -19,7 +19,7 @@ package org.hillview;
 
 import org.hillview.targets.InitialObjectTarget;
 import org.hillview.utils.HillviewLogger;
-import rx.Observer;
+import org.hillview.utils.RpcTargetAction;
 import rx.Subscription;
 
 import javax.annotation.Nullable;
@@ -125,45 +125,44 @@ public final class RpcObjectManager {
     }
 
     /**
-     * Attempt to retrieve the object with the specified id.
-     * @param id           Object id to retrieve.
-     * @param toNotify     An observer notified when the object is retrieved.
-     * @param rebuild      If true attempt to rebuild the object if not found.
+     * Execute the specified action.
      */
-    public void retrieveTarget(RpcTarget.Id id, boolean rebuild, Observer<RpcTarget> toNotify) {
-        RpcTarget target = this.getObject(id);
+    public void executeAction(RpcTargetAction action, boolean rebuild) {
+        RpcTarget target = this.getObject(action.id);
         if (target != null) {
-            // Object found: notify the observer right away.
-            toNotify.onNext(target);
-            toNotify.onCompleted();
+            // Object found
+            action.action(target);
             return;
         }
         // Object not found.
         if (rebuild) {
             // Attempt to rebuild the object.
-            this.rebuild(id, toNotify);
+            this.rebuild(action);
         } else {
-            toNotify.onError(new RuntimeException("Cannot find object " + id));
+            throw new RuntimeException("Cannot find object " + action.id);
         }
     }
 
+    public void executeAction(RpcTargetAction action) {
+        this.executeAction(action, true);
+    }
+
     /**
-     * We have lost the object with the specified id.  Try to reconstruct it
-     * from the history.
-     * @param id  Id of object to reconstruct.
-     * @param toNotify An observer that is notified when the object is available.
+     * We have lost the object specified by the action.  Try to reconstruct it
+     * from the history and then execute the action.
+     * @param action   Action that needs to be executed.
      */
-    private void rebuild(RpcTarget.Id id, Observer<RpcTarget> toNotify) {
-        HillviewLogger.instance.info("Attempt to reconstruct", "{0}", id);
-        HillviewComputation computation = this.objectLog.getComputation(id);
+    private void rebuild(RpcTargetAction action) {
+        HillviewLogger.instance.info("Attempt to reconstruct", "{0}", action.id);
+        HillviewComputation computation = this.objectLog.getComputation(action.id);
         if (computation != null) {
             // The following may trigger a recursive reconstruction.
             HillviewLogger.instance.info("Replaying", "computation={0}", computation);
-            computation.replay(toNotify);
+            computation.replay(action);
         } else {
-            Exception ex = new RuntimeException("Don't know how to reconstruct " + id);
+            RuntimeException ex = new RuntimeException("Don't know how to reconstruct " + action.id);
             HillviewLogger.instance.error("Could not locate computation", ex);
-            toNotify.onError(ex);
+            throw ex;
         }
     }
 

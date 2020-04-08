@@ -20,25 +20,23 @@ package org.hillview.targets;
 import com.google.gson.JsonObject;
 import org.hillview.*;
 import org.hillview.dataStructures.*;
-import org.hillview.dataset.ConcurrentSketch;
-import org.hillview.dataset.TripleSketch;
+import org.hillview.dataset.*;
 import org.hillview.dataset.api.*;
 import org.hillview.maps.*;
 import org.hillview.sketches.*;
 import org.hillview.sketches.results.*;
 import org.hillview.table.*;
 import org.hillview.table.api.ContentsKind;
+import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ITable;
 import org.hillview.table.api.ITableFilterDescription;
 import org.hillview.table.filters.*;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.*;
 import org.jblas.DoubleMatrix;
-import rx.Observer;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
-import java.util.function.BiFunction;
 
 /**
  * This is the most important RpcTarget, representing a remote table.
@@ -110,7 +108,7 @@ public final class TableTarget extends RpcTarget {
             row = RowSnapshot.parseJson(args.rowSchema, args.row, null);
         LogFragmentSketch lfs = new LogFragmentSketch(
                 args.schema, row, args.rowSchema, args.count);
-        this.runCompleteSketch(this.table, lfs, (e, c) -> e, request, context);
+        this.runCompleteSketch(this.table, lfs, request, context);
     }
 
     @HillviewRpc
@@ -118,23 +116,33 @@ public final class TableTarget extends RpcTarget {
         this.runPrune(this.table, new EmptyTableMap(), TableTarget::new, request, context);
     }
 
-    private static JsonList<BasicColStats> computeStdDev(JsonList<BasicColStats> stats) {
-        for (BasicColStats s : stats) {
-            // We mutate in place; this is safe in the root node.
-            if (s.moments.length > 1)
-                // the value should never be negative, but you can't trust FP
-                s.moments[1] = Math.sqrt(Math.max(0, s.moments[1] - s.moments[0] * s.moments[0]));
+    static class StdDevStats
+            extends PostProcessedSketch<ITable, JsonList<BasicColStats>, JsonList<BasicColStats>> {
+        protected StdDevStats(ISketch<ITable, JsonList<BasicColStats>> sketch) {
+            super(sketch);
         }
-        return stats;
+
+        @Nullable
+        @Override
+        public JsonList<BasicColStats> postProcess(@Nullable JsonList<BasicColStats> stats) {
+            for (BasicColStats s : Converters.checkNull(stats)) {
+                // We mutate in place; this is safe in the root node.
+                if (s.moments.length > 1)
+                    // the value should never be negative, but you can't trust FP
+                    s.moments[1] = Math.sqrt(Math.max(0, s.moments[1] - s.moments[0] * s.moments[0]));
+            }
+            return stats;
+        }
     }
 
     @HillviewRpc
     public void basicColStats(RpcRequest request, RpcRequestContext context) {
         String[] args = request.parseArgs(String[].class);
         BasicColStatSketch sk = new BasicColStatSketch(args, 2);
+        StdDevStats post = new StdDevStats(sk);
         // If the view has many columns sending partial results to the
         // UI overwhelms the browser, so we only send the final result.
-        this.runCompleteSketch(this.table, sk, (e, c) -> computeStdDev(e), request, context);
+        this.runCompleteSketch(this.table, post, request, context);
     }
 
     static class ContainsArgs {
@@ -170,7 +178,7 @@ public final class TableTarget extends RpcTarget {
         RowSnapshot rs = TableTarget.asRowSnapshot(args.topRow, args.order, null);
         FindSketch sk = new FindSketch(args.stringFilterDescription, rs, args.order,
                 args.excludeTopRow, args.next);
-        this.runCompleteSketch(this.table, sk, (e, c) -> e, request, context);
+        this.runCompleteSketch(this.table, sk, request, context);
     }
 
     static class SaveAsArgs {
@@ -187,7 +195,17 @@ public final class TableTarget extends RpcTarget {
         SaveAsArgs args = request.parseArgs(SaveAsArgs.class);
         SaveAsOrcSketch sk = new SaveAsOrcSketch(
                 args.folder, args.schema, Utilities.arrayToMap(args.renameMap), true);
-        this.runCompleteSketch(this.table, sk, (e, c) -> e, request, context);
+        this.runCompleteSketch(this.table, sk, request, context);
+    }
+
+    @HillviewRpc
+    public void getQuantilesVector(RpcRequest request, RpcRequestContext context) {
+        // TODO
+        /*
+        ISketch<ITable, QuantilesVector> sk = args[0].getSketch();
+        QuantilesVectorReduce qvr = new QuantilesVectorReduce(sk);
+        this.runSketch(this.table, qvr, request, context);
+         */
     }
 
     // The following functions return lists with subclasses of BucketsInfo: either
@@ -199,11 +217,10 @@ public final class TableTarget extends RpcTarget {
     public void getDataQuantiles1D(RpcRequest request, RpcRequestContext context) {
         QuantilesArgs[] args = request.parseArgs(QuantilesArgs[].class);
         assert args.length == 1;
-        ISketch<ITable, BucketsInfo> sk = args[0].getSketch();
-        BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> post0 = args[0].getPostProcessing();
-        BiFunction<BucketsInfo, HillviewComputation, JsonList<BucketsInfo>> post =
-                (e, c) -> new JsonList<BucketsInfo>(post0.apply(e, c));
-        this.runCompleteSketch(this.table, sk, post, request, context);
+        PostProcessedSketch<ITable, BucketsInfo, BucketsInfo> sk = args[0].getPostSketch();
+        MultiPostprocessedSketch<ITable, BucketsInfo, BucketsInfo> multi =
+                new MultiPostprocessedSketch<ITable, BucketsInfo, BucketsInfo>(sk);
+        this.runCompleteSketch(this.table, multi, request, context);
     }
 
     @SuppressWarnings({"Duplicates", "unused"})
@@ -211,15 +228,11 @@ public final class TableTarget extends RpcTarget {
     public void getDataQuantiles2D(RpcRequest request, RpcRequestContext context) {
         QuantilesArgs[] args = request.parseArgs(QuantilesArgs[].class);
         assert args.length == 2;
-        ISketch<ITable, BucketsInfo> sk0 = args[0].getSketch();
-        ISketch<ITable, BucketsInfo> sk1 = args[1].getSketch();
-        BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> post0 = args[0].getPostProcessing();
-        BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> post1 = args[1].getPostProcessing();
-        ConcurrentSketch<ITable, BucketsInfo, BucketsInfo> csk =
-                new ConcurrentSketch<ITable, BucketsInfo, BucketsInfo>(sk0, sk1);
-        BiFunction<Pair<BucketsInfo, BucketsInfo>, HillviewComputation, JsonList<BucketsInfo>> post =
-                (e, c) -> new JsonList<BucketsInfo>(post0.apply(e.first, c), post1.apply(e.second, c));
-        this.runCompleteSketch(this.table, csk, post, request, context);
+        PostProcessedSketch<ITable, BucketsInfo, BucketsInfo> sk0 = args[0].getPostSketch();
+        PostProcessedSketch<ITable, BucketsInfo, BucketsInfo> sk1 = args[1].getPostSketch();
+        MultiPostprocessedSketch<ITable, BucketsInfo, BucketsInfo> multi =
+                new MultiPostprocessedSketch<ITable, BucketsInfo, BucketsInfo>(sk0, sk1);
+        this.runCompleteSketch(this.table, multi, request, context);
     }
 
     @SuppressWarnings({"Duplicates", "unused"})
@@ -227,21 +240,12 @@ public final class TableTarget extends RpcTarget {
     public void getDataQuantiles3D(RpcRequest request, RpcRequestContext context) {
         QuantilesArgs[] args = request.parseArgs(QuantilesArgs[].class);
         assert args.length == 3;
-        ISketch<ITable, BucketsInfo> sk0 = args[0].getSketch();
-        ISketch<ITable, BucketsInfo> sk1 = args[1].getSketch();
-        ISketch<ITable, BucketsInfo> sk2 = args[2].getSketch();
-        BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> post0 = args[0].getPostProcessing();
-        BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> post1 = args[1].getPostProcessing();
-        BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> post2 = args[2].getPostProcessing();
-        TripleSketch<ITable, BucketsInfo, BucketsInfo, BucketsInfo> csk =
-                new TripleSketch<ITable, BucketsInfo, BucketsInfo, BucketsInfo>(sk0, sk1, sk2);
-        BiFunction<Triple<BucketsInfo, BucketsInfo, BucketsInfo>, HillviewComputation,
-                JsonList<BucketsInfo>> post =
-                (e, c) -> new JsonList<BucketsInfo>(
-                            post0.apply(e.first, c),
-                            post1.apply(e.second, c),
-                            post2.apply(e.third, c));
-        this.runCompleteSketch(this.table, csk, post, request, context);
+        PostProcessedSketch<ITable, BucketsInfo, BucketsInfo> sk0 = args[0].getPostSketch();
+        PostProcessedSketch<ITable, BucketsInfo, BucketsInfo> sk1 = args[1].getPostSketch();
+        PostProcessedSketch<ITable, BucketsInfo, BucketsInfo> sk2 = args[2].getPostSketch();
+        MultiPostprocessedSketch<ITable, BucketsInfo, BucketsInfo> multi =
+                new MultiPostprocessedSketch<ITable, BucketsInfo, BucketsInfo>(sk0, sk1, sk2);
+        this.runCompleteSketch(this.table, multi, request, context);
     }
 
     @HillviewRpc
@@ -378,14 +382,31 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     public void correlationMatrix(RpcRequest request, RpcRequestContext context) {
         PCACorrelationSketch pcaSketch = this.getPCASketch(request);
-        this.runCompleteSketch(this.table, pcaSketch, CorrelationMatrixTarget::new, request, context);
+        PostProcessedSketch<ITable, CorrMatrix, RpcTarget> post = new
+                PostProcessedSketch<ITable, CorrMatrix, RpcTarget>(pcaSketch) {
+                    @Override
+                    public RpcTarget postProcess(@Nullable CorrMatrix result) {
+                        Converters.checkNull(result);
+                        return new CorrelationMatrixTarget(result, context.getComputation(request));
+                    }
+                };
+        this.runCompleteSketch(this.table, post, request, context);
     }
 
     @HillviewRpc
     public void spectrum(RpcRequest request, RpcRequestContext context) {
         PCACorrelationSketch pcaSketch = this.getPCASketch(request);
-        this.runCompleteSketch(this.table, pcaSketch, (x, c) ->
-            new CorrelationMatrixTarget(x, c).eigenValues(), request, context);
+        PostProcessedSketch<ITable, CorrMatrix, CorrelationMatrixTarget.EigenVal> post =
+                new PostProcessedSketch<ITable, CorrMatrix, CorrelationMatrixTarget.EigenVal>(pcaSketch) {
+                    @Override
+                    public CorrelationMatrixTarget.EigenVal postProcess(@Nullable CorrMatrix result) {
+                        Converters.checkNull(result);
+                        HillviewComputation computation = context.getComputation(request);
+                        CorrelationMatrixTarget target = new CorrelationMatrixTarget(result, computation);
+                        return target.eigenValues();
+                    }
+                };
+        this.runCompleteSketch(this.table, post, request, context);
     }
 
     static class ProjectToEigenVectorsInfo {
@@ -397,9 +418,9 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     public void projectToEigenVectors(RpcRequest request, RpcRequestContext context) {
         ProjectToEigenVectorsInfo info = request.parseArgs(ProjectToEigenVectorsInfo.class);
-        Observer<RpcTarget> observer = new SingleObserver<RpcTarget>() {
+        RpcTargetAction observer = new RpcTargetAction(new RpcTarget.Id(info.id)) {
             @Override
-            public void onSuccess(RpcTarget rpcTarget) {
+            public void action(RpcTarget rpcTarget) {
                 CorrelationMatrixTarget cmt = (CorrelationMatrixTarget)rpcTarget;
                 CorrMatrix cm = cmt.corrMatrix;
                 DoubleMatrix[] mats = LinAlg.eigenVectorsVarianceExplained(new DoubleMatrix(cm.getCorrelationMatrix()),
@@ -415,7 +436,7 @@ public final class TableTarget extends RpcTarget {
                 TableTarget.this.runMap(TableTarget.this.table, lpm, TableTarget::new, request, context);
             }
         };
-        RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(info.id), true, observer);
+        RpcObjectManager.instance.executeAction(observer);
     }
 
     static class SampledControlPoints {
@@ -434,10 +455,17 @@ public final class TableTarget extends RpcTarget {
         double samplingRate = ((double) info.numSamples) / info.rowCount;
         RandomSamplingSketch sketch = new RandomSamplingSketch(
                 samplingRate, info.seed, info.columnNames, info.allowMissing);
-        this.runCompleteSketch(this.table, sketch, (sampled, c) -> {
-            sampled = sampled.compress(sampled.getMembershipSet().sample(info.numSamples, info.seed + 1)); // Resample to get the exact number of samples.
-            return new ControlPointsTarget(sampled, info.columnNames, c);
-        }, request, context);
+        PostProcessedSketch<ITable, SmallTable, RpcTarget> post =
+                new PostProcessedSketch<ITable, SmallTable, RpcTarget>(sketch) {
+                    @Override
+                    public RpcTarget postProcess(@Nullable SmallTable sampled) {
+                        Converters.checkNull(sampled);
+                        IMembershipSet sampleRows = sampled.getMembershipSet().sample(info.numSamples, info.seed + 1);
+                        sampled = sampled.compress(sampleRows);
+                        return new ControlPointsTarget(sampled, info.columnNames, context.getComputation(request));
+                    }
+                };
+        this.runCompleteSketch(this.table, post, request, context);
     }
 
     static class CatCentroidControlPoints {
@@ -447,11 +475,20 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    public void categoricalCentroidsControlPoints(RpcRequest request, RpcRequestContext session) {
+    public void categoricalCentroidsControlPoints(RpcRequest request, RpcRequestContext context) {
         CatCentroidControlPoints info = request.parseArgs(CatCentroidControlPoints.class);
         CategoryCentroidsSketch sketch = new CategoryCentroidsSketch(
                 info.categoricalColumnName, info.numericalColumnNames);
-        this.runCompleteSketch(this.table, sketch, ControlPointsTarget::new, request, session);
+        PostProcessedSketch<ITable, Centroids<String>, RpcTarget> post =
+                new PostProcessedSketch<ITable, Centroids<String>, RpcTarget>(sketch) {
+                    @Override
+                    public RpcTarget postProcess(@Nullable Centroids<String> result) {
+                        Converters.checkNull(result);
+                        HillviewComputation computation = context.getComputation(request);
+                        return new ControlPointsTarget(result, computation);
+                    }
+                };
+        this.runCompleteSketch(this.table, post, request, context);
     }
 
     static class MakeMDSProjection {
@@ -471,9 +508,9 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     public void makeMDSProjection(RpcRequest request, RpcRequestContext context) {
         MakeMDSProjection info = request.parseArgs(MakeMDSProjection.class);
-        Observer<RpcTarget> observer = new SingleObserver<RpcTarget>() {
+        RpcTargetAction observer = new RpcTargetAction(new RpcTarget.Id(info.id)) {
             @Override
-            public void onSuccess(RpcTarget rpcTarget) {
+            public void action(RpcTarget rpcTarget) {
                 ControlPointsTarget controlPointsTarget = (ControlPointsTarget)rpcTarget;
                 ControlPoints2D controlPoints2D = controlPointsTarget.mds(info.seed);
                 Session session = context.getSessionIfOpen();
@@ -488,7 +525,7 @@ public final class TableTarget extends RpcTarget {
                 request.syncCloseSession(session);
             }
         };
-        RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(info.id), true, observer);
+        RpcObjectManager.instance.executeAction(observer);
     }
 
     @SuppressWarnings("NotNullFieldNotInitialized")
@@ -502,9 +539,9 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     public void lampMap(RpcRequest request, RpcRequestContext context) {
         LAMPMapInfo info = request.parseArgs(LAMPMapInfo.class);
-        Observer<RpcTarget> observer = new SingleObserver<RpcTarget>() {
+        RpcTargetAction observer = new RpcTargetAction(new RpcTarget.Id(info.controlPointsId)) {
             @Override
-            public void onSuccess(RpcTarget rpcTarget) {
+            public void action(RpcTarget rpcTarget) {
                 ControlPointsTarget controlPointsTarget = (ControlPointsTarget)rpcTarget;
                 DoubleMatrix highDimPoints = controlPointsTarget.highDimData;
                 ControlPoints2D newControlPoints = Converters.checkNull(info.newLowDimControlPoints);
@@ -518,27 +555,22 @@ public final class TableTarget extends RpcTarget {
                 TableTarget.this.runMap(TableTarget.this.table, map, TableTarget::new, request, context);
             }
         };
-        RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(info.controlPointsId), true, observer);
+        RpcObjectManager.instance.executeAction(observer);
     }
+
 
     @HillviewRpc
     public void quantile(RpcRequest request, RpcRequestContext context) {
         QuantileInfo info = request.parseArgs(QuantileInfo.class);
         SampleQuantileSketch sk = new SampleQuantileSketch(info.order, info.precision, info.tableSize, info.seed);
-        BiFunction<SampleList, HillviewComputation, RowSnapshot> getRow = (ql, c) -> ql.getRow(info.position);
-        this.runCompleteSketch(this.table, sk, getRow, request, context);
-    }
-
-    /**
-     * Post-processing method applied to the result of a heavy hitters sketch before displaying the results. It will
-     * discard elements that are too low in (estimated) frequency.
-     * @param fkList The list of candidate heavy hitters
-     * @param schema The schema of the heavy hitters computation.
-     * @return A TopList
-     */
-    static TopList getTopList(FreqKList fkList, Schema schema, HillviewComputation computation) {
-        return new TopList(fkList.getTop(schema),
-                new HeavyHittersTarget(fkList, computation).getId().toString());
+        PostProcessedSketch<ITable, SampleList, RowSnapshot> getQuantile =
+                new PostProcessedSketch<ITable, SampleList, RowSnapshot>(sk) {
+            @Override
+            public RowSnapshot postProcess(@Nullable SampleList result) {
+                return Converters.checkNull(result).getRow(info.position);
+            }
+        };
+        this.runCompleteSketch(this.table, getQuantile, request, context);
     }
 
     /**
@@ -548,8 +580,19 @@ public final class TableTarget extends RpcTarget {
     public void heavyHittersMG(RpcRequest request, RpcRequestContext context) {
         HeavyHittersRequestInfo info = request.parseArgs(HeavyHittersRequestInfo.class);
         MGFreqKSketch sk = new MGFreqKSketch(info.columns, info.amount/100);
-        this.runCompleteSketch(this.table, sk, (x, c) -> TableTarget.getTopList(x, info.columns, c),
-                request, context);
+        PostProcessedSketch<ITable, FreqKListMG, TopList> post =
+                new PostProcessedSketch<ITable, FreqKListMG, TopList>(sk) {
+            @Override
+            public TopList postProcess(@Nullable FreqKListMG result) {
+                Converters.checkNull(result);
+                HillviewComputation computation = context.getComputation(request);
+                // This allocates a new RpcTarget object and registers it.
+                HeavyHittersTarget target = new HeavyHittersTarget(result, computation);
+                NextKList top = result.getTop(info.columns);
+                return new TopList(top, target.getId().toString());
+            }
+        };
+        this.runCompleteSketch(this.table, post, request, context);
     }
 
     /**
@@ -560,8 +603,19 @@ public final class TableTarget extends RpcTarget {
         HeavyHittersRequestInfo info = request.parseArgs(HeavyHittersRequestInfo.class);
         SampleHeavyHittersSketch shh = new SampleHeavyHittersSketch(info.columns,
                 info.amount/100, info.totalRows, info.seed);
-        this.runCompleteSketch(this.table, shh, (x, c) -> TableTarget.getTopList(x, info.columns, c),
-                request, context);
+        PostProcessedSketch<ITable, FreqKListSample, TopList> post = new
+                PostProcessedSketch<ITable, FreqKListSample, TopList>(shh) {
+                    @Override
+                    public TopList postProcess(@Nullable FreqKListSample result) {
+                        Converters.checkNull(result);
+                        HillviewComputation computation = context.getComputation(request);
+                        // This allocates a new RpcTarget object and registers it.
+                        HeavyHittersTarget target = new HeavyHittersTarget(result, computation);
+                        NextKList top = result.getTop(info.columns);
+                        return new TopList(top, target.getId().toString());
+                    }
+                };
+        this.runCompleteSketch(this.table, post, request, context);
     }
 
     static class HeavyHittersFilterInfo {
@@ -577,17 +631,27 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     public void checkHeavy(RpcRequest request, RpcRequestContext context) {
         HeavyHittersFilterInfo hhi = request.parseArgs(HeavyHittersFilterInfo.class);
-        Observer<RpcTarget> observer = new SingleObserver<RpcTarget>() {
+        RpcTargetAction observer = new RpcTargetAction(new RpcTarget.Id(hhi.hittersId)) {
             @Override
-            public void onSuccess(RpcTarget rpcTarget) {
+            public void action(RpcTarget rpcTarget) {
                 HeavyHittersTarget hht = (HeavyHittersTarget)rpcTarget;
                 ExactFreqSketch efSketch = new ExactFreqSketch(hhi.schema, hht.heavyHitters);
-                TableTarget.this.runCompleteSketch(
-                        TableTarget.this.table, efSketch, (x, c) -> TableTarget.getTopList(x, hhi.schema, c),
-                        request, context);
+                PostProcessedSketch<ITable, FreqKListExact, TopList> post =
+                        new PostProcessedSketch<ITable, FreqKListExact, TopList>(efSketch) {
+                            @Override
+                            public TopList postProcess(@Nullable FreqKListExact result) {
+                                Converters.checkNull(result);
+                                HillviewComputation computation = context.getComputation(request);
+                                // This allocates a new RpcTarget object and registers it.
+                                HeavyHittersTarget target = new HeavyHittersTarget(result, computation);
+                                NextKList top = result.getTop(hhi.schema);
+                                return new TopList(top, target.getId().toString());
+                            }
+                        };
+                TableTarget.this.runCompleteSketch(TableTarget.this.table, post, request, context);
             }
         };
-        RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(hhi.hittersId), true, observer);
+        RpcObjectManager.instance.executeAction(observer);
     }
 
     static class HeavyHittersListFilterInfo extends HeavyHittersFilterInfo {
@@ -600,16 +664,16 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     public void filterListHeavy(RpcRequest request, RpcRequestContext context) {
         HeavyHittersListFilterInfo hhl = request.parseArgs(HeavyHittersListFilterInfo.class);
-        Observer<RpcTarget> observer = new SingleObserver<RpcTarget>() {
+        RpcTargetAction observer = new RpcTargetAction(new RpcTarget.Id(hhl.hittersId)) {
             @Override
-            public void onSuccess(RpcTarget rpcTarget) {
+            public void action(RpcTarget rpcTarget) {
                 HeavyHittersTarget hht = (HeavyHittersTarget)rpcTarget;
                 ITableFilterDescription filter = hht.heavyHitters.getFilter(hhl.schema,
                         hhl.includeSet, hhl.rowIndices);
                 TableTarget.this.runFilter(filter, request, context);
             }
         };
-        RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(hhl.hittersId), true, observer);
+        RpcObjectManager.instance.executeAction(observer);
     }
 
     /**
@@ -618,15 +682,15 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     public void filterHeavy(RpcRequest request, RpcRequestContext context) {
         HeavyHittersFilterInfo hhi = request.parseArgs(HeavyHittersFilterInfo.class);
-        Observer<RpcTarget> observer = new SingleObserver<RpcTarget>() {
+        RpcTargetAction observer = new RpcTargetAction(new RpcTarget.Id(hhi.hittersId)) {
             @Override
-            public void onSuccess(RpcTarget rpcTarget) {
+            public void action(RpcTarget rpcTarget) {
                 HeavyHittersTarget hht = (HeavyHittersTarget)rpcTarget;
                 ITableFilterDescription filter = hht.heavyHitters.getFilter(hhi.schema, hhi.includeSet);
                 TableTarget.this.runFilter(filter, request, context);
             }
         };
-        RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(hhi.hittersId), true, observer);
+        RpcObjectManager.instance.executeAction(observer);
     }
 
     @HillviewRpc
@@ -660,15 +724,15 @@ public final class TableTarget extends RpcTarget {
     @HillviewRpc
     public void zip(RpcRequest request, RpcRequestContext context) {
         String otherId = request.parseArgs(String.class);
-        Observer<RpcTarget> observer = new SingleObserver<RpcTarget>() {
+        RpcTargetAction observer = new RpcTargetAction(new RpcTarget.Id(otherId)) {
             @Override
-            public void onSuccess(RpcTarget rpcTarget) {
+            public void action(RpcTarget rpcTarget) {
                 TableTarget otherTable = (TableTarget)rpcTarget;
                 TableTarget.this.runZip(
                         TableTarget.this.table, otherTable.table, TablePairTarget::new, request, context);
             }
         };
-        RpcObjectManager.instance.retrieveTarget(new RpcTarget.Id(otherId), true, observer);
+        RpcObjectManager.instance.executeAction(observer);
     }
 
     @SuppressWarnings("NotNullFieldNotInitialized")

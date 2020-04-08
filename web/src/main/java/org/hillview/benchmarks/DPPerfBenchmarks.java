@@ -29,7 +29,7 @@ import org.hillview.maps.FindFilesMap;
 import org.hillview.maps.LoadFilesMap;
 import org.hillview.sketches.HeatmapSketch;
 import org.hillview.sketches.HistogramSketch;
-import org.hillview.sketches.PrecomputedSketch;
+import org.hillview.dataset.PrecomputedSketch;
 import org.hillview.sketches.SummarySketch;
 import org.hillview.sketches.results.*;
 import org.hillview.storage.FileSetDescription;

@@ -306,21 +306,18 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                         Resolution.maxBucketCount);
                 }
 
-                // The first two represent the resolution for the 2D histogram
-                const xarg = DataRangesReceiver.computeHistogramArgs(
+                const histoArg = DataRangesReceiver.computeHistogramArgs(
                     this.cds[0], ranges[0], maxXBucketCount,
-                    // Relative views cannot sample
-                    this.options.exact || this.options.relative || this.isPrivate(), chartSize);
-                args.push(xarg);
-
+                    this.options.exact || this.isPrivate(), chartSize);
+                args.push(histoArg);
                 const cdfArg = DataRangesReceiver.computeHistogramArgs(
                     this.cds[0], ranges[0], 0,
-                    this.options.exact || this.options.relative || this.isPrivate(), chartSize);
+                    this.options.exact|| this.isPrivate(), chartSize);
                 args.push(cdfArg);
 
                 const rr = this.originator.createHistogramRequest(args);
                 rr.chain(this.operation);
-                const axisData = new AxisData(this.cds[0], ranges[0], xarg.bucketCount);
+                const axisData = new AxisData(this.cds[0], ranges[0], histoArg.bucketCount);
                 if (this.title == null)
                     this.title = new PageTitle(
                         "Histogram of " + this.schema.displayName(this.cds[0].name).toString());

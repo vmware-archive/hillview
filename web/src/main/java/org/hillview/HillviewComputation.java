@@ -17,7 +17,7 @@
 
 package org.hillview;
 import org.hillview.utils.HillviewLogger;
-import rx.Observer;
+import org.hillview.utils.RpcTargetAction;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;
@@ -54,51 +54,44 @@ public class HillviewComputation implements Serializable {
      * Announce these guys when the object with resultId has been created.
      * This field should not be serialized.
      */
-    private List<Observer<RpcTarget>> onCreate;
+    private List<RpcTargetAction> onCreate;
 
     public HillviewComputation(@Nullable RpcTarget.Id resultId, RpcRequest request) {
         this.id = HillviewComputation.currentId.getAndIncrement();
         this.request = request;
         assert resultId != request.objectId;
         this.resultId = resultId == null ? RpcTarget.Id.freshId() : resultId;
-        this.onCreate = new ArrayList<Observer<RpcTarget>>();
+        this.onCreate = new ArrayList<RpcTargetAction>();
     }
 
     private RpcTarget.Id getSourceId() {
         return this.request.objectId;
     }
 
-    private synchronized void registerOnCreate(Observer<RpcTarget> toNotify) {
+    private synchronized void registerOnCreate(RpcTargetAction action) {
         // If the object already exists notify right away
         // Hopefully there is no race which could lose a notification this way.
         RpcTarget target = RpcObjectManager.instance.getObject(this.resultId);
         if (target != null) {
-            toNotify.onNext(target);
-            toNotify.onCompleted();
+            action.action(target);
         } else {
-            this.onCreate.add(toNotify);
+            this.onCreate.add(action);
         }
     }
 
-    synchronized void replay(Observer<RpcTarget> toNotify) {
+    synchronized void replay(RpcTargetAction action) {
         HillviewLogger.instance.info("Attempt to replay", "{0}", this);
         // Tell this guy when the produced object is created
-        this.registerOnCreate(toNotify);
+        this.registerOnCreate(action);
 
         // This observer is notified when the source object for this
         // computation has been recreated.
-        Observer<RpcTarget> sourceNotify = new SingleObserver<RpcTarget>() {
+        RpcTargetAction sourceAction = new RpcTargetAction(this.getSourceId()) {
             @Override
-            public void onError(Throwable throwable) {
-                toNotify.onError(throwable);
-            }
-
-            @Override
-            public void onSuccess(RpcTarget source) {
+            public void action(RpcTarget source) {
                 // Before executing the computation again check if the destination
                 // object has not appeared.  There is a race between multiple
                 // copies of a computation executing.
-
                 if (RpcObjectManager.instance.getObject(HillviewComputation.this.resultId) != null) {
                     HillviewLogger.instance.info("Source retrieved but destination found",
                             "Dest={0}, Request={1}",
@@ -119,7 +112,7 @@ public class HillviewComputation implements Serializable {
 
         // Trigger the computation by retrieving the source; when that's done it will
         // start sourceNotify which will rerun this computation.
-        RpcObjectManager.instance.retrieveTarget(this.getSourceId(), true, sourceNotify);
+        RpcObjectManager.instance.executeAction(sourceAction);
     }
 
     @Override
@@ -149,11 +142,10 @@ public class HillviewComputation implements Serializable {
      * and inserted in the RpcObjectManager.
      */
     void objectCreated(RpcTarget target) {
-        for (Observer<RpcTarget> o: this.onCreate) {
+        for (RpcTargetAction o: this.onCreate) {
             HillviewLogger.instance.info("Notifying observer of new object.",
                     "Computation={0}", this.toString());
-            o.onNext(target);
-            o.onCompleted();
+            o.action(target);
         }
         this.onCreate.clear();
     }

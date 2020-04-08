@@ -19,7 +19,7 @@ import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {HistogramSerialization, IViewSerialization} from "../datasetView";
 import {
     FilterDescription,
-    Histogram,
+    Histogram, HistogramArgs,
     IColumnDescription, kindIsNumeric,
     kindIsString,
     RecordOrder,
@@ -115,13 +115,11 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
                     action: () => this.chooseSecondColumn(),
                     help: "Draw a 2-dimensional histogram using this data and another column.",
                 },
-/*
                 {
                     text: "quantiles...",
                     action: () => this.chooseQuantilesColumn(),
                     help: "Draw quantiles of a numeric column for each bucket of this histogram.",
                 },
-*/
                 {
                     text: "group by...",
                     action: () => {
@@ -413,14 +411,8 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
     private showQuantiles(colName: DisplayName): void {
         const oc = this.schema.findByDisplayName(colName);
         const cds: IColumnDescription[] = [this.xAxisData.description, oc];
-        const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
-        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [this.histogram.buckets.length, 0], cds, null, {
-                reusePage: false,
-                relative: false,
-                chartKind: "2DHistogram",
-                exact: true
-            }));
+        // const rr = this.createQuantilesVectorRequest(cds, this.page, "2DQuantiles");
+        // TODO
     }
 
     public changeBuckets(bucketCount: number): void {

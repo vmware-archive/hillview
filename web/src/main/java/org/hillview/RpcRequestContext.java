@@ -71,4 +71,10 @@ public final class RpcRequestContext {
     public String toString() {
         return "[Id=" + this.id + ", Session=" + this.session + ", Computation=" + this.computation + "]";
     }
+
+    public HillviewComputation getComputation(RpcRequest request) {
+        if (this.computation != null)
+            return this.computation;
+        return new HillviewComputation(null, request);
+    }
 }

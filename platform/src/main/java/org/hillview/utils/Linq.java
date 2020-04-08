@@ -17,6 +17,9 @@
 
 package org.hillview.utils;
 
+import org.hillview.dataset.api.Pair;
+import org.hillview.dataset.api.Triple;
+
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -69,15 +72,15 @@ public class Linq {
         return new MapIterator<T, S>(data, function);
     }
 
-    public static <T, S> List<S> map(List<T> data, Function<T, S> function) {
-        List<S> result = new ArrayList<S>(data.size());
+    public static <T, S> ArrayList<S> map(List<T> data, Function<T, S> function) {
+        ArrayList<S> result = new ArrayList<S>(data.size());
         for (T aData : data)
             result.add(function.apply(aData));
         return result;
     }
 
-    public static <T> List<T> where(List<T> data, Predicate<T> function) {
-        List<T> result = new ArrayList<T>();
+    public static <T> ArrayList<T> where(List<T> data, Predicate<T> function) {
+        ArrayList<T> result = new ArrayList<T>();
         for (T aData : data)
             if (function.test(aData))
                 result.add(aData);
@@ -106,6 +109,49 @@ public class Linq {
         S[] result = (S[])Array.newInstance(sc, data.length);
         for (int i=0; i < data.length; i++)
             result[i] = function.apply(data[i]);
+        return result;
+    }
+
+    public static <T, S> Pair<T, S>[] zip(T[] l, S[] r, Class<Pair<T, S>> sc) {
+        if (l.length != r.length)
+            throw new RuntimeException("Zip vectors with uneven lengths: " +
+                    l.length + " and " + r.length);
+        @SuppressWarnings("unchecked")
+        Pair<T, S>[] result = (Pair<T, S>[])Array.newInstance(sc, l.length);
+        for (int i=0; i < l.length; i++)
+            result[i] = new Pair<T, S>(l[i], r[i]);
+        return result;
+    }
+
+    public static <T, S> ArrayList<Pair<T, S>> zip(List<T> l, List<S> r) {
+        if (l.size() != r.size())
+            throw new RuntimeException("Zip lists with uneven lengths: " +
+                    l.size() + " and " + r.size());
+        ArrayList<Pair<T, S>> result = new ArrayList<Pair<T, S>>(l.size());
+        for (int i=0; i < l.size(); i++)
+            result.add(new Pair<T, S>(l.get(i), r.get(i)));
+        return result;
+    }
+
+    public static <T, S, R> Triple<T, S, R>[] zip3(T[] t, S[] s, R[] r, Class<Triple<T, S, R>> sc) {
+        if (t.length != s.length || s.length != r.length)
+            throw new RuntimeException("Zip3 vectors with uneven lengths: " +
+                    t.length + ", " + s.length + ", and " + r.length);
+        @SuppressWarnings("unchecked")
+        Triple<T, S, R>[] result = (Triple<T, S, R>[])Array.newInstance(sc, t.length);
+        for (int i=0; i < t.length; i++)
+            result[i] = new Triple<T, S, R>(t[i], s[i], r[i]);
+        return result;
+    }
+
+    public static <T, S, R> ArrayList<Triple<T, S, R>> zip3(
+            List<T> t, List<S> s, List<R> r) {
+        if (t.size()  != s.size()  || s.size()  != r.size() )
+            throw new RuntimeException("Zip3 vectors with uneven lengths: " +
+                    t.size()  + ", " + s.size()  + ", and " + r.size() );
+        ArrayList<Triple<T, S, R>> result = new ArrayList<Triple<T, S, R>>(t.size());
+        for (int i=0; i < t.size() ; i++)
+            result.add(new Triple<T, S, R>(t.get(i), s.get(i), r.get(i)));
         return result;
     }
 }

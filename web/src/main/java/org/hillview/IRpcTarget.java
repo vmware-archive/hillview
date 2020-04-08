@@ -17,6 +17,7 @@
 
 package org.hillview;
 
+import org.hillview.dataset.IdPostProcessedSketch;
 import org.hillview.dataset.PostProcessedSketch;
 import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.*;
@@ -74,22 +75,50 @@ public interface IRpcTarget {
 
     Id getId();
 
+    /**
+     * Runs a sketch with post processing
+     * and sends the data received directly to the client.
+     * @param data    Dataset to run the sketch on.
+     * @param sketch  Post-processed sketch to run.
+     * @param request Web socket request, where replies are sent.
+     * @param context Context for the computation.
+     */
     <T, R extends Serializable, S extends IJson> void
     runSketch(IDataSet<T> data, PostProcessedSketch<T, R, S> sketch,
               RpcRequest request, RpcRequestContext context);
 
-    <T, R extends IJson> void
+    /**
+     * Runs a sketch and sends the data received directly to the client.
+     * @param data    Dataset to run the sketch on.
+     * @param sketch  Sketch to run.
+     * @param request Web socket request, where replies are sent.
+     * @param context Context for the computation.
+     */
+    default <T, R extends IJson> void
     runSketch(IDataSet<T> data, ISketch<T, R> sketch,
-              RpcRequest request, RpcRequestContext context);
+              RpcRequest request, RpcRequestContext context) {
+        IdPostProcessedSketch<T, R> id = new IdPostProcessedSketch<T, R>(sketch);
+        this.runSketch(data, id, request, context);
+    }
 
+    /**
+     * Runs a sketch and sends the complete sketch result received directly to the client.
+     * Progress updates are sent to the client, but accompanied by null values.
+     * @param data    Dataset to run the sketch on.
+     * @param sketch  Sketch to run.
+     * @param request Web socket request, where replies are sent.
+     * @param context Context for the computation.
+     */
     <T, R extends Serializable, S extends IJson> void
     runCompleteSketch(IDataSet<T> data, PostProcessedSketch<T, R, S> sketch,
                       RpcRequest request, RpcRequestContext context);
 
-    <T, R extends Serializable, S extends IJson> void
+    default <T, R extends IJson> void
     runCompleteSketch(IDataSet<T> data, ISketch<T, R> sketch,
-                      BiFunction<R, HillviewComputation, S> postprocessing,
-                      RpcRequest request, RpcRequestContext context);
+                      RpcRequest request, RpcRequestContext context) {
+        IdPostProcessedSketch<T, R> post = new IdPostProcessedSketch<T, R>(sketch);
+        this.runCompleteSketch(data, post, request, context);
+    }
 
     <T, S> void
     runMap(IDataSet<T> data, IMap<T, S> map,

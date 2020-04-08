@@ -540,7 +540,8 @@ export abstract class TSViewBase extends BigTableView {
         let o = null;
         if (order != null) {
             o = order.clone();
-            o.addColumn(so);
+            if (!o.find(filter.column))
+                o.addColumn(so);
         }
 
         const rr = this.createFilterComparisonRequest(filter);

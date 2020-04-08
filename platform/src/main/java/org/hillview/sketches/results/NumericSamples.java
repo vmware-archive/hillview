@@ -1,18 +1,18 @@
 package org.hillview.sketches.results;
 
+import org.hillview.dataset.api.IJson;
+import org.hillview.utils.JsonList;
 import org.hillview.utils.Randomness;
 import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
-import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 /**
  * Sample values from a numeric distribution, with the two extrema.
  */
-public class NumericSamples implements Serializable {
+public class NumericSamples implements IJson {
     static final long serialVersionUID = 1;
 
     /**
@@ -31,7 +31,12 @@ public class NumericSamples implements Serializable {
      * A list of samples computed by sampling with the
      * specified rate.
      */
-    public List<Double> samples;
+    public JsonList<Double> samples;
+    /**
+     * Number of missing values.
+     */
+    public long missing;
+
     // Following 2 are only used only during construction.
     /**
      * Sampling rate used when adding an element.
@@ -45,15 +50,17 @@ public class NumericSamples implements Serializable {
 
     public NumericSamples(double samplingRate, long seed) {
         this.samplingRate = samplingRate;
+        this.missing = 0;
         this.random = new Randomness(seed);
         this.empty = true;
-        this.samples = new ArrayList<Double>();
+        this.samples = new JsonList<Double>();
     }
 
-    NumericSamples(List<Double> data) {
+    private NumericSamples(List<Double> data) {
         this.empty = false;
+        this.missing = 0;
         this.samplingRate = 0;
-        this.samples = new ArrayList<Double>(data);
+        this.samples = new JsonList<Double>(data);
     }
 
     public int size() {
@@ -80,6 +87,7 @@ public class NumericSamples implements Serializable {
             result.min = Math.min(this.min, other.min);
             result.max = Math.max(this.max, other.max);
         }
+        result.missing = this.missing + other.missing;
         result.samples.addAll(other.samples);
         return result;
     }
@@ -121,5 +129,9 @@ public class NumericSamples implements Serializable {
         result.min = this.min;
         result.max = this.max;
         return result;
+    }
+
+    public void addMissing() {
+        this.missing++;
     }
 }
