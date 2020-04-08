@@ -308,6 +308,17 @@ export interface RowFilterDescription {
     comparison: string;
 }
 
+export interface NumericSamples {
+    empty: boolean;
+    min: number;
+    max: number;
+    samples: number[];
+}
+
+export interface QuantilesVector {
+    data: NumericSamples[];
+}
+
 export interface HistogramArgs {
     cd: IColumnDescription;
     seed: number;

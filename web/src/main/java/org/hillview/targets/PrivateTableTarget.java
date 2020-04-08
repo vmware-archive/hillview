@@ -3,6 +3,8 @@ package org.hillview.targets;
 import org.hillview.*;
 import org.hillview.dataStructures.*;
 import org.hillview.dataset.ConcurrentPostprocessedSketch;
+import org.hillview.dataset.PostProcessedSketch;
+import org.hillview.dataset.PrecomputedSketch;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.maps.FilterMap;
 import org.hillview.maps.ProjectMap;
@@ -17,6 +19,7 @@ import org.hillview.table.filters.RangeFilterPairDescription;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.*;
 
+import javax.annotation.Nullable;
 import java.util.function.BiFunction;
 
 public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
@@ -52,7 +55,7 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
         HillviewLogger.instance.info("Updated privacy schema");
         PrecomputedSketch<ITable, JsonString> empty =
                 new PrecomputedSketch<ITable, JsonString>(new JsonString("{}"));
-        this.runCompleteSketch(this.table, empty, (d, c) -> d, request, context);
+        this.runCompleteSketch(this.table, empty, request, context);
     }
 
     @HillviewRpc
@@ -61,14 +64,21 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
         HillviewLogger.instance.info("Saved privacy schema");
         PrecomputedSketch<ITable, JsonString> empty =
                 new PrecomputedSketch<ITable, JsonString>(new JsonString("{}"));
-        this.runCompleteSketch(this.table, empty, (d, c) -> d, request, context);
+        this.runCompleteSketch(this.table, empty, request, context);
     }
 
     @HillviewRpc
     public void getSummary(RpcRequest request, RpcRequestContext context) {
         SummarySketch ss = new SummarySketch();
-        this.runCompleteSketch(this.table, ss,
-                (d, c) -> this.wrapper.addPrivateMetadata(d), request, context);
+        PostProcessedSketch<ITable, TableSummary, DPWrapper.PrivacySummary> post =
+                new PostProcessedSketch<ITable, TableSummary, DPWrapper.PrivacySummary>(ss) {
+                    @Nullable
+                    @Override
+                    public DPWrapper.PrivacySummary postProcess(@Nullable TableSummary result) {
+                        return PrivateTableTarget.this.wrapper.addPrivateMetadata(result);
+                    }
+                };
+        this.runCompleteSketch(this.table, post, request, context);
     }
 
     // Returns both the histogram and the precomputed CDF of the data.
@@ -194,15 +204,22 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
         SampleQuantileSketch sk = new SampleQuantileSketch(
                 info.order, info.precision, info.tableSize, info.seed,
                 this.getPrivacySchema().quantization);
-        BiFunction<SampleList, HillviewComputation, RowSnapshot> getRow = (ql, c) -> ql.getRow(info.position);
-        this.runCompleteSketch(this.table, sk, getRow, request, context);
+        PostProcessedSketch<ITable, SampleList, RowSnapshot> post =
+                new PostProcessedSketch<ITable, SampleList, RowSnapshot>(sk) {
+                    @Override
+                    public RowSnapshot postProcess(@Nullable SampleList result) {
+                        Converters.checkNull(result);
+                        return result.getRow(info.position);
+                    }
+                };
+        this.runCompleteSketch(this.table, post, request, context);
     }
 
     @HillviewRpc
     public void project(RpcRequest request, RpcRequestContext context) {
         Schema proj = request.parseArgs(Schema.class);
         ProjectMap map = new ProjectMap(proj);
-        this.runMap(this.table, map, TableTarget::new, request, context);
+        this.runMap(this.table, map, (d, c) -> new PrivateTableTarget(d, c, this.wrapper), request, context);
     }
 
     @Override

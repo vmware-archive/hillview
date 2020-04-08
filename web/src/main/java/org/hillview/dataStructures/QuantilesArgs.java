@@ -18,6 +18,7 @@
 package org.hillview.dataStructures;
 
 import org.hillview.HillviewComputation;
+import org.hillview.dataset.PostProcessedSketch;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.sketches.*;
 import org.hillview.sketches.results.BucketsInfo;
@@ -26,7 +27,9 @@ import org.hillview.sketches.results.MinKSet;
 import org.hillview.sketches.results.StringQuantiles;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.ITable;
+import org.hillview.utils.JsonList;
 
+import javax.annotation.Nullable;
 import java.util.function.BiFunction;
 
 public class QuantilesArgs {
@@ -68,5 +71,25 @@ public class QuantilesArgs {
         } else {
             return (e, c) -> e;
         }
+    }
+
+    public PostProcessedSketch<ITable, BucketsInfo, BucketsInfo> getPostSketch() {
+        ISketch<ITable, BucketsInfo> sketch = this.getSketch();
+        return new PostProcessedSketch<ITable, BucketsInfo, BucketsInfo>(sketch) {
+            @Override
+            public BucketsInfo postProcess(@Nullable BucketsInfo result) {
+                BucketsInfo bi = result;
+                if (QuantilesArgs.this.cd.kind.isString()) {
+                    int b = QuantilesArgs.this.stringsToSample;
+                    @SuppressWarnings("unchecked")
+                    MinKSet<String> mks = (MinKSet<String>) result;
+                    assert mks != null;
+                    bi = new StringQuantiles(
+                            mks.getLeftBoundaries(b), mks.max, mks.allStringsKnown(b),
+                            mks.presentCount, mks.missingCount);
+                }
+                return bi;
+            }
+        };
     }
 }

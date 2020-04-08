@@ -448,7 +448,7 @@ export class Dialog extends DialogBase {
 
         // If we have lots of options use a sorted datalist, otherwise
         // use a select field.
-        if (options.length > 5) {
+        if (options.length > 50) {
             const select = this.createInputElement(fieldName, labelText, toolTip, "string");
             const sortOptions = cloneArray(options);
             sortOptions.sort();

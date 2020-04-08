@@ -21,10 +21,11 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import org.hillview.*;
 import org.hillview.dataStructures.*;
 import org.hillview.dataset.ConcurrentPostprocessedSketch;
+import org.hillview.dataset.PostProcessedSketch;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.maps.IdMap;
-import org.hillview.sketches.PrecomputedSketch;
+import org.hillview.dataset.PrecomputedSketch;
 import org.hillview.sketches.results.Heatmap;
 import org.hillview.sketches.results.Histogram;
 import org.hillview.sketches.results.NextKList;
@@ -39,6 +40,7 @@ import org.hillview.table.filters.RangeFilterDescription;
 import org.hillview.table.filters.RangeFilterPairDescription;
 import org.hillview.utils.*;
 
+import javax.annotation.Nullable;
 import java.sql.SQLException;
 
 public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDataset {
@@ -71,15 +73,22 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
         HillviewLogger.instance.info("Updated privacy schema");
         PrecomputedSketch<ITable, JsonString> empty =
                 new PrecomputedSketch<ITable, JsonString>(new JsonString("{}"));
-        this.runCompleteSketch(this.table, empty, (d, c) -> d, request, context);
+        this.runCompleteSketch(this.table, empty, request, context);
     }
 
     @HillviewRpc
     public void getSummary(RpcRequest request, RpcRequestContext context) {
         TableSummary summary = new TableSummary(this.schema, this.rowCount);
-        this.runCompleteSketch(
-                this.table, new PrecomputedSketch<ITable, TableSummary>(summary),
-                (d, c) -> this.wrapper.addPrivateMetadata(d), request, context);
+        PostProcessedSketch<ITable, TableSummary, DPWrapper.PrivacySummary> post =
+                new PostProcessedSketch<ITable, TableSummary, DPWrapper.PrivacySummary>(
+                        new PrecomputedSketch<ITable, TableSummary>(summary)) {
+                    @Override
+                    public DPWrapper.PrivacySummary postProcess(@Nullable TableSummary result) {
+                        return PrivateSimpleDBTarget.this.wrapper.addPrivateMetadata(
+                                Converters.checkNull(result));
+                    }
+                };
+        this.runCompleteSketch(this.table, post, request, context);
     }
 
     @Override

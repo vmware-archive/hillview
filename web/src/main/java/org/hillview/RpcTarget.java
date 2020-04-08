@@ -192,9 +192,7 @@ public abstract class RpcTarget implements IJson, IRpcTarget {
         }
 
         HillviewComputation getComputation() {
-            if (this.context.computation != null)
-                return this.context.computation;
-            return new HillviewComputation(null, this.request);
+            return this.context.getComputation(this.request);
         }
 
         /**
@@ -293,11 +291,11 @@ public abstract class RpcTarget implements IJson, IRpcTarget {
         private boolean resultReceived;
         @Nullable
         private R last;
-        private final BiFunction<R, HillviewComputation, S> postprocessing;
+        private final Function<R, S> postprocessing;
 
         CompleteSketchResultObserver(String name, RpcTarget target, RpcRequest request,
                                      RpcRequestContext context,
-                                     BiFunction<R, HillviewComputation, S> postprocessing) {
+                                     Function<R, S> postprocessing) {
             super(name, request, target, context);
             this.last = null;
             this.postprocessing = postprocessing;
@@ -337,7 +335,7 @@ public abstract class RpcTarget implements IJson, IRpcTarget {
             JsonObject json = new JsonObject();
             json.addProperty("done", 1.0);
             try {
-                @Nullable S result = this.postprocessing.apply(this.last, this.getComputation());
+                @Nullable S result = this.postprocessing.apply(this.last);
                 HillviewLogger.instance.info("Computation completed", "for {0}", this.name);
                 Session session = this.context.getSessionIfOpen();
                 if (session == null)
@@ -408,105 +406,38 @@ public abstract class RpcTarget implements IJson, IRpcTarget {
         return IJson.gsonInstance.toJsonTree(this.objectId.toString());
     }
 
-    /**
-     * Runs a sketch with post processing
-     * and sends the data received directly to the client.
-     * @param data    Dataset to run the sketch on.
-     * @param sketch  Post-processed sketch to run.
-     * @param request Web socket request, where replies are sent.
-     * @param context Context for the computation.
-     */
-    @Override
-    public <T, R extends Serializable, S extends IJson> void
-    runSketch(IDataSet<T> data, PostProcessedSketch<T, R, S> sketch,
-              RpcRequest request, RpcRequestContext context) {
+    private <T, R extends Serializable, S extends IJson> void
+    runObservedSketch(IDataSet<T> data, PostProcessedSketch<T, R, S> sketch, ResultObserver<R> observer,
+              RpcRequestContext context) {
         // Run the sketch
         Observable<PartialResult<R>> sketches = data.sketch(sketch.sketch);
         // Knows how to add partial results
         PartialResultMonoid<R> prm = new PartialResultMonoid<R>(sketch.sketch);
         // Prefix sum of the partial results
         Observable<PartialResult<R>> add = sketches.scan(prm::add);
-        // Send the partial results back
-        SketchResultObserver<R, S> robs =
-                new SketchResultObserver<R, S>(
-                        sketch.sketch.asString(), this, request, context, sketch::postProcess);
         Subscription sub = add
                 .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
-                .subscribe(robs);
+                .subscribe(observer);
         this.saveSubscription(context, sub);
     }
 
-    /**
-     * Runs a sketch and sends the data received directly to the client.
-     * @param data    Dataset to run the sketch on.
-     * @param sketch  Sketch to run.
-     * @param request Web socket request, where replies are sent.
-     * @param context Context for the computation.
-     */
     @Override
-    public <T, R extends IJson> void
-    runSketch(IDataSet<T> data, ISketch<T, R> sketch,
+    public <T, R extends Serializable, S extends IJson> void
+    runSketch(IDataSet<T> data, PostProcessedSketch<T, R, S> sketch,
               RpcRequest request, RpcRequestContext context) {
-        // Run the sketch
-        Observable<PartialResult<R>> sketches = data.sketch(sketch);
-        // Knows how to add partial results
-        PartialResultMonoid<R> prm = new PartialResultMonoid<R>(sketch);
-        // Prefix sum of the partial results
-        Observable<PartialResult<R>> add = sketches.scan(prm::add);
-        // Send the partial results back
-        SketchResultObserver<R, R> robs = new SketchResultObserver<R, R>(
-                sketch.asString(), this, request, context, e -> e);
-        Subscription sub = add
-                .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
-                .subscribe(robs);
-        this.saveSubscription(context, sub);
+        SketchResultObserver<R, S> robs =
+                new SketchResultObserver<R, S>(
+                        sketch.sketch.asString(), this, request, context, sketch::postProcess);
+        this.runObservedSketch(data, sketch, robs, context);
     }
 
     @Override
     public <T, R extends Serializable, S extends IJson> void
     runCompleteSketch(IDataSet<T> data, PostProcessedSketch<T, R, S> sketch,
                       RpcRequest request, RpcRequestContext context) {
-        // Run the sketch
-        Observable<PartialResult<R>> sketches = data.sketch(sketch.sketch);
-        // Knows how to add partial results
-        PartialResultMonoid<R> prm = new PartialResultMonoid<R>(sketch.sketch);
-        // Prefix sum of the partial results
-        Observable<PartialResult<R>> add = sketches.scan(prm::add);
         CompleteSketchResultObserver<R, S> robs = new CompleteSketchResultObserver<R, S>(
-                sketch.sketch.asString(), this, request, context, (e, c) -> sketch.postProcess(e));
-        Subscription sub = add
-                .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
-                .subscribe(robs);
-        this.saveSubscription(context, sub);
-    }
-
-    /**
-     * Runs a sketch and sends the complete sketch result received directly to the client.
-     * Progress updates are sent to the client, but accompanied by null values.
-     * @param data    Dataset to run the sketch on.
-     * @param sketch  Sketch to run.
-     * @param postprocessing  This function is applied to the sketch results at the end.
-     * @param request Web socket request, where replies are sent.
-     * @param context Context for the computation.
-     */
-    @Override
-    public <T, R extends Serializable, S extends IJson> void
-    runCompleteSketch(IDataSet<T> data, ISketch<T, R> sketch,
-                      BiFunction<R, HillviewComputation, S> postprocessing,
-                      RpcRequest request, RpcRequestContext context) {
-        // Run the sketch
-        Observable<PartialResult<R>> sketches = data.sketch(sketch);
-        // Knows how to add partial results
-        PartialResultMonoid<R> prm = new PartialResultMonoid<R>(sketch);
-        // Prefix sum of the partial results
-        Observable<PartialResult<R>> add = sketches.scan(prm::add);
-        // Send the partial results back
-        CompleteSketchResultObserver<R, S> robs = new CompleteSketchResultObserver<R, S>(
-                sketch.asString(), this, request, context, postprocessing);
-        Subscription sub = add
-                .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
-                .subscribe(robs);
-        this.saveSubscription(context, sub);
+                sketch.sketch.asString(), this, request, context, sketch::postProcess);
+        this.runObservedSketch(data, sketch, robs, context);
     }
 
     /**

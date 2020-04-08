@@ -22,10 +22,9 @@ import org.hillview.utils.*;
 import org.hillview.dataStructures.QuantilesArgs;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.Pair;
-import org.hillview.dataset.api.Triple;
 import org.hillview.security.PersistedKeyLoader;
 import org.hillview.security.SecureLaplace;
-import org.hillview.sketches.PrecomputedSketch;
+import org.hillview.dataset.PrecomputedSketch;
 import org.hillview.sketches.results.BucketsInfo;
 import org.hillview.sketches.results.DataRange;
 import org.hillview.sketches.results.StringQuantiles;
@@ -45,7 +44,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.function.BiFunction;
 
 /**
  * This class offers support for differentially-private queries on a data source.
@@ -259,9 +257,10 @@ public class DPWrapper {
         QuantilesArgs[] args = request.parseArgs(QuantilesArgs[].class);
         assert args.length == 1;
         BucketsInfo retRange = this.getRange(args[0]);
-        ISketch<ITable, BucketsInfo> sk = new PrecomputedSketch<ITable, BucketsInfo>(retRange);
-        target.runCompleteSketch(
-                target.getDataset(), sk, (e, c) -> new JsonList<BucketsInfo>(e), request, context);
+        ISketch<ITable, JsonList<BucketsInfo>> sk =
+                new PrecomputedSketch<ITable, JsonList<BucketsInfo>>(
+                        new JsonList<BucketsInfo>(retRange));
+        target.runCompleteSketch(target.getDataset(), sk, request, context);
     }
 
     void getDataQuantiles2D(RpcRequest request, RpcRequestContext context,
@@ -270,12 +269,10 @@ public class DPWrapper {
         assert args.length == 2;
         BucketsInfo retRange0 = this.getRange(args[0]);
         BucketsInfo retRange1 = this.getRange(args[1]);
-        ISketch<ITable, Pair<BucketsInfo, BucketsInfo>> sk =
-                new PrecomputedSketch<ITable, Pair<BucketsInfo, BucketsInfo>>(
-                        new Pair<BucketsInfo, BucketsInfo>(retRange0, retRange1));
-        BiFunction<Pair<BucketsInfo, BucketsInfo>, HillviewComputation, JsonList<BucketsInfo>> post =
-                (e, c) -> new JsonList<BucketsInfo>(e.first, e.second);
-        target.runCompleteSketch(target.getDataset(), sk, post, request, context);
+        ISketch<ITable, JsonList<BucketsInfo>> sk =
+                new PrecomputedSketch<ITable, JsonList<BucketsInfo>>(
+                        new JsonList<BucketsInfo>(retRange0, retRange1));
+        target.runCompleteSketch(target.getDataset(), sk, request, context);
     }
 
     void getDataQuantiles3D(RpcRequest request, RpcRequestContext context,
@@ -285,12 +282,10 @@ public class DPWrapper {
         BucketsInfo retRange0 = this.getRange(args[0]);
         BucketsInfo retRange1 = this.getRange(args[1]);
         BucketsInfo retRange2 = this.getRange(args[2]);
-        ISketch<ITable, Triple<BucketsInfo, BucketsInfo, BucketsInfo>> sk =
-                new PrecomputedSketch<ITable, Triple<BucketsInfo, BucketsInfo, BucketsInfo>>(
-                        new Triple<BucketsInfo, BucketsInfo, BucketsInfo>(retRange0, retRange1, retRange2));
-        BiFunction<Triple<BucketsInfo, BucketsInfo, BucketsInfo>, HillviewComputation, JsonList<BucketsInfo>> post =
-                (e, c) -> new JsonList<BucketsInfo>(e.first, e.second, e.third);
-        target.runCompleteSketch(target.getDataset(), sk, post, request, context);
+        ISketch<ITable, JsonList<BucketsInfo>> sk =
+                new PrecomputedSketch<ITable, JsonList<BucketsInfo>>(
+                        new JsonList<BucketsInfo>(retRange0, retRange1, retRange2));
+        target.runCompleteSketch(target.getDataset(), sk, request, context);
     }
 
     int getColumnIndex(String... colNames) {

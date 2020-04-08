@@ -22,6 +22,7 @@ import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonReader;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
+import org.hillview.utils.RpcTargetAction;
 import org.hillview.utils.Utilities;
 import rx.Subscription;
 
@@ -122,35 +123,18 @@ public final class RpcServer {
 
     public static void execute(RpcRequest rpcRequest, RpcRequestContext context) {
         HillviewLogger.instance.info("Executing request", "{0}", rpcRequest);
-        /* Observer invoked when the source object has been obtained.
-         * This observer will actually invoke the method on the object. */
-        SingleObserver<RpcTarget> obs = new SingleObserver<RpcTarget>() {
+        RpcTargetAction obs = new RpcTargetAction(rpcRequest.objectId) {
             @Override
-            public void onError(Throwable throwable) {
-                HillviewLogger.instance.error("Return exception", throwable);
-                RpcReply reply = rpcRequest.createReply(throwable);
-                Session session = context.getSessionIfOpen();
-                if (session == null)
-                    return;
-                RpcServer.sendReply(reply, session);
-                rpcRequest.syncCloseSession(session);
-            }
-
-            @Override
-            public void onSuccess(RpcTarget rpcTarget) {
+            public void action(RpcTarget rpcTarget) {
                 if (context.session != null)
                     RpcObjectManager.instance.addSession(context.session, rpcTarget);
-                try {
-                    // This function is responsible for sending the replies and closing the session.
-                    rpcTarget.execute(rpcRequest, context);
-                } catch (Exception ex) {
-                    this.onError(ex);
-                }
+                // This function is responsible for sending the replies and closing the session.
+                rpcTarget.execute(rpcRequest, context);
             }
         };
         // Retrieve the source object on which the operation is executed.
         // This works asynchronously - when the object is retrieved obs is invoked.
-        RpcObjectManager.instance.retrieveTarget(rpcRequest.objectId, true, obs);
+        RpcObjectManager.instance.executeAction(obs);
     }
 
     private void replyWithError(final Throwable th, final Session session) {
