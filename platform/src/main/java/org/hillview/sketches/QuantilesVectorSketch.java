@@ -47,6 +47,8 @@ public class QuantilesVectorSketch implements ISketch<ITable, QuantilesVector> {
         int current = it.getNextRow();
         while (current >= 0) {
             int bucket = this.buckets.indexOf(bucketCol, current);
+            if (bucket < 0)
+                result.outOfBounds();
             if (sampledCol.isMissing(current))
                 result.addMissing(bucket);
             else
@@ -64,7 +66,7 @@ public class QuantilesVectorSketch implements ISketch<ITable, QuantilesVector> {
         for (int i = 0; i < this.samplingRates.length; i++) {
             result[i] = new NumericSamples(this.samplingRates[i], this.seed + i);
         }
-        return new QuantilesVector(result);
+        return new QuantilesVector(result, 0);
     }
 
     @Nullable

@@ -36,7 +36,6 @@ import {
     PartialResult,
     reorder,
     saveAs, significantDigits,
-    significantDigitsHtml,
 } from "../util";
 import {AxisData} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
@@ -50,13 +49,12 @@ import {Quantiles2DPlot} from "../ui/quantiles2DPlot";
  * each interval shows a whisker plot with quantiles of a second column.
  */
 export class Quantiles2DView extends HistogramViewBase {
-    protected yAxisData: AxisData;
     protected xPoints: number;
     protected data: QuantilesVector;
     protected plot: Quantiles2DPlot;
 
     constructor(remoteObjectId: RemoteObjectId, rowCount: number,
-                schema: SchemaClass, protected samplingRate: number, page: FullPage) {
+                schema: SchemaClass, protected qCol: IColumnDescription, page: FullPage) {
         super(remoteObjectId, rowCount, schema, page, "2DQuantiles");
 
         this.menu = new TopMenu( [{
@@ -87,10 +85,6 @@ export class Quantiles2DView extends HistogramViewBase {
         ]);
 
         this.page.setMenu(this.menu);
-        if (this.samplingRate >= 1) {
-            const submenu = this.menu.getSubmenu("View");
-            submenu.enable("exact", false);
-        }
     }
 
     protected showTrellis(colName: DisplayName): void {
@@ -108,17 +102,10 @@ export class Quantiles2DView extends HistogramViewBase {
         switch (event) {
             case "Title":
             case "GAxis":
+            case "YAxis":
                 return null;
             case "XAxis":
                 return this.xAxisData;
-            case "YAxis":
-                const range = {
-                    min: this.plot.min,
-                    max: this.plot.max,
-                    presentCount: this.xAxisData.range.presentCount,
-                    missingCount: this.xAxisData.range.missingCount
-                };
-                return new AxisData(null, range, this.yAxisData.bucketCount);
         }
         return null;
     }
@@ -126,33 +113,16 @@ export class Quantiles2DView extends HistogramViewBase {
     public updateView(qv: QuantilesVector): void {
         this.createNewSurfaces();
         this.data = qv;
-        //this.cdf = cdf;
 
         const bucketCount = this.xPoints;
-        const canvas = this.surface.getCanvas();
-
         this.plot.setData(qv, 1.0, this.schema, this.xAxisData, false);
         this.plot.draw();
-
-        //this.cdfPlot.setData(cdf.buckets, discrete);
-        //this.cdfPlot.draw();
-
         this.setupMouse();
-        this.cdfDot = canvas
-            .append("circle")
-            .attr("r", Resolution.mouseDotRadius)
-            .attr("fill", "blue");
-
         this.pointDescription = new TextOverlay(this.surface.getChart(),
             this.surface.getActualChartSize(),
-            [this.xAxisData.getDisplayNameString(this.schema),
-                this.yAxisData.getDisplayNameString(this.schema),
-                "y", "count", "%", "cdf"], 40);
+            [this.xAxisData.getDisplayNameString(this.schema), "y"], 40);
         this.pointDescription.show(false);
         let summary = new HtmlString(String(bucketCount) + " buckets");
-        if (this.samplingRate < 1.0)
-            summary = summary.appendSafeString(", sampling rate ")
-                .append(significantDigitsHtml(this.samplingRate));
         summary.setInnerHtml(this.summary);
     }
 
@@ -160,25 +130,23 @@ export class Quantiles2DView extends HistogramViewBase {
         // noinspection UnnecessaryLocalVariableJS
         const result: QuantileVectorSerialization = {
             ...super.serialize(),
-            samplingRate: this.samplingRate,
             columnDescription0: this.xAxisData.description,
-            columnDescription1: this.yAxisData.description,
+            columnDescription1: this.qCol,
             xBucketCount: this.xPoints,
         };
         return result;
     }
 
     public static reconstruct(ser: QuantileVectorSerialization, page: FullPage): IDataView {
-        const samplingRate: number = ser.samplingRate;
         const cd0: IColumnDescription = ser.columnDescription0;
         const cd1: IColumnDescription = ser.columnDescription1;
         const xPoints: number = ser.xBucketCount;
         const schema: SchemaClass = new SchemaClass([]).deserialize(ser.schema);
-        if (cd0 === null || cd1 === null || samplingRate === null || schema === null ||
+        if (cd0 === null || cd1 === null || schema === null ||
             xPoints === null)
             return null;
 
-        const hv = new Quantiles2DView(ser.remoteObjectId, ser.rowCount, schema, samplingRate, page);
+        const hv = new Quantiles2DView(ser.remoteObjectId, ser.rowCount, schema, cd1, page);
         hv.setAxis(new AxisData(cd0, null, ser.xBucketCount));
         hv.xPoints = xPoints;
         return hv;
@@ -189,7 +157,7 @@ export class Quantiles2DView extends HistogramViewBase {
     }
 
     public doHeatmap(): void {
-        const cds = [this.xAxisData.description, this.yAxisData.description];
+        const cds = [this.xAxisData.description, this.qCol];
         const rr = this.createDataQuantilesRequest(cds, this.page, "Heatmap");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0], cds, null, {
@@ -211,88 +179,73 @@ export class Quantiles2DView extends HistogramViewBase {
      */
     public asCSV(): string[] {
         const lines: string[] = [];
-        /*
-        TODO
-        let line = "";
-        for (let y = 0; y < this.yAxisData.bucketCount; y++) {
-            const by = this.yAxisData.bucketDescription(y, 0);
-            line += "," + JSON.stringify(this.schema.displayName(this.yAxisData.description.name) + " " + by);
-        }
-        line += ",missing";
-        lines.push(line);
+        let line = ",";
         for (let x = 0; x < this.xAxisData.bucketCount; x++) {
-            const data = this.qv.buckets[x];
             const bx = this.xAxisData.bucketDescription(x, 0);
-            let l = JSON.stringify(this.schema.displayName(this.xAxisData.description.name) + " " + bx);
-            for (const y of data)
-                l += "," + y;
-            l += "," + this.heatMap.histogramMissingY.buckets[x];
-            lines.push(l);
+            const l = JSON.stringify(this.schema.displayName(this.xAxisData.description.name) + " " + bx);
+            line += "," + l;
         }
-        line = "mising";
-        for (const y of this.heatMap.histogramMissingX.buckets)
-            line += "," + y;
         lines.push(line);
-         */
+
+        const data = this.data.data;
+        line = "min,";
+        for (let x = 0; x < this.xAxisData.bucketCount; x++) {
+            line += "," + (data[x].empty) ? "" : data[x].min;
+        }
+        lines.push(line);
+
+        line = "q1,";
+        for (let x = 0; x < this.xAxisData.bucketCount; x++) {
+            line += "," + (data[x].empty) ? "" : (data[x].samples.length > 0 ? data[x].samples[0] : "");
+        }
+        lines.push(line);
+
+        line = "median,";
+        for (let x = 0; x < this.xAxisData.bucketCount; x++) {
+            line += "," + (data[x].empty) ? "" : (data[x].samples.length > 1 ? data[x].samples[1] : "");
+        }
+        lines.push(line);
+
+        line = "q3,";
+        for (let x = 0; x < this.xAxisData.bucketCount; x++) {
+            line += "," + (data[x].empty) ? "" : (data[x].samples.length > 2 ? data[x].samples[2] : "");
+        }
+        lines.push(line);
+
+        line = "max,";
+        for (let x = 0; x < this.xAxisData.bucketCount; x++) {
+            line += "," + (data[x].empty) ? "" : data[x].max;
+        }
+        lines.push(line);
+
+        line = "missing,";
+        for (let x = 0; x < this.xAxisData.bucketCount; x++) {
+            line += "," + data[x].missing;
+        }
+        lines.push(line);
         return lines;
     }
 
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
-            return new FilterReceiver(title, [this.xAxisData.description, this.yAxisData.description],
+            return new FilterReceiver(title, [this.xAxisData.description, this.qCol],
                 this.schema, [0, 0], page, operation, this.dataset, {
-                exact: this.samplingRate >= 1, chartKind: "2DQuantiles",
+                exact: true, chartKind: "2DQuantiles",
                 reusePage: false
             });
         };
     }
 
-    public swapAxes(): void {
-        if (this == null)
-            return;
-        const cds = [this.yAxisData.description, this.xAxisData.description];
-        const rr = this.createDataQuantilesRequest(cds, this.page, "2DQuantiles");
-        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [0, 0], cds, null, {
-            reusePage: true,
-            chartKind: "2DQuantiles", exact: this.samplingRate >= 1.0
-        }));
-    }
-
     public changeBuckets(bucketCount: number): void {
         if (bucketCount == null)
             return;
-        const cds = [this.xAxisData.description, this.yAxisData.description];
+        const cds = [this.xAxisData.description, this.qCol];
         const rr = this.createDataQuantilesRequest(cds, this.page, "2DQuantiles");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [bucketCount], cds, null, {
-            reusePage: true,
-            chartKind: "2DQuantiles",
-            exact: true
+            reusePage: true, chartKind: "2DQuantiles", exact: true
         }));
-    }
-
-    protected replaceAxis(pageId: string, eventKind: DragEventKind): void {
-        if (this.data == null)
-            return;
-
-        const sourceRange = this.getSourceAxisRange(pageId, eventKind);
-        if (sourceRange == null)
-            return;
-
-        if (eventKind === "XAxis") {
-            const collector = new DataRangesReceiver(this,
-                this.page, null, this.schema, [0, 0],  // any number of buckets
-                [this.xAxisData.description, this.yAxisData.description], this.page.title, {
-                    chartKind: "2DHistogram", exact: this.samplingRate >= 1,
-                    reusePage: true,
-                });
-            collector.run([sourceRange, this.yAxisData.dataRange]);
-            collector.finished();
-        } else if (eventKind === "YAxis") {
-            this.updateView(this.data);
-        }
     }
 
     public chooseBuckets(): void {
@@ -311,25 +264,14 @@ export class Quantiles2DView extends HistogramViewBase {
     }
 
     public refresh(): void {
-        const cds = [this.xAxisData.description, this.yAxisData.description];
-        const ranges = [this.xAxisData.dataRange, this.yAxisData.dataRange];
-        const collector = new DataRangesReceiver(this,
-            this.page, null, this.schema, [this.xAxisData.bucketCount, this.yAxisData.bucketCount],
-            cds, this.page.title, {
-                chartKind: "2DHistogram", exact: this.samplingRate >= 1,
-                reusePage: true
-            });
-        collector.run(ranges);
-        collector.finished();
+        /* TODO */
     }
 
     public onMouseEnter(): void {
         super.onMouseEnter();
-        this.cdfDot.attr("visibility", "visible");
     }
 
     public onMouseLeave(): void {
-        this.cdfDot.attr("visibility", "hidden");
         super.onMouseLeave();
     }
 
@@ -347,10 +289,6 @@ export class Quantiles2DView extends HistogramViewBase {
         // one which is used to draw the axis.
         const y = Math.round(this.plot.getYScale().invert(mouseY));
         let ys = significantDigits(y);
-
-        //const pos = this.cdfPlot.getY(mouseX);
-        //this.cdfDot.attr("cx", mouseX + this.surface.leftMargin);
-        //this.cdfDot.attr("cy", (1 - pos) * this.surface.getChartHeight() + this.surface.topMargin);
         this.pointDescription.update([xs, ys], mouseX, mouseY);
     }
 
@@ -393,11 +331,9 @@ export class Quantiles2DView extends HistogramViewBase {
         const rr = this.createFilterRequest(filter);
         const renderer = new FilterReceiver(
             new PageTitle("Filtered on " + this.schema.displayName(selectedAxis.description.name)),
-            [this.xAxisData.description, this.yAxisData.description], this.schema,
+            [this.xAxisData.description, this.qCol], this.schema,
             [this.xPoints], this.page, rr, this.dataset, {
-            exact: this.samplingRate >= 1.0,
-            chartKind: "2DQuantiles",
-            reusePage: false,
+            exact: true, chartKind: "2DQuantiles", reusePage: false,
         });
         rr.invoke(renderer);
     }
@@ -408,7 +344,7 @@ export class Quantiles2DView extends HistogramViewBase {
             columnDescription: this.xAxisData.description,
             isAscending: true,
         }, {
-            columnDescription: this.yAxisData.description,
+            columnDescription: this.qCol,
             isAscending: true,
         } ]);
 
@@ -428,15 +364,15 @@ export class Quantiles2DReceiver extends Receiver<QuantilesVector> {
                 protected remoteObject: TableTargetAPI,
                 protected rowCount: number,
                 protected schema: SchemaClass,
-                protected axes: AxisData[],
-                protected samplingRate: number,
+                protected axis: AxisData,
+                protected quantilesCol: IColumnDescription,
                 operation: RpcRequest<PartialResult<QuantilesVector>>,
                 protected options: ChartOptions) {
         super(options.reusePage ? page : page.dataset.newPage(title, page), operation, "quantiles");
         this.view = new Quantiles2DView(
-            this.remoteObject.remoteObjectId, rowCount, schema, samplingRate, this.page);
+            this.remoteObject.remoteObjectId, rowCount, schema, quantilesCol, this.page);
         this.page.setDataView(this.view);
-        this.view.setAxis(axes[0]);
+        this.view.setAxis(axis);
     }
 
     public onNext(value: PartialResult<QuantilesVector>): void {

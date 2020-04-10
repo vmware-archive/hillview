@@ -1130,13 +1130,16 @@ The "View" menu from a histogram display has the following functions:
   of buckets; the histogram will be redrawn using the specified number
   of buckets.
 
-* group by: select a second column and draw a [Trellis plot of a
-  series of histograms](#trellis-plots-of-1d-histograms) with the data
-  grouped on the values in the second column
-
 * correlate: allows the user to specify a second column and switches
   the display to a [two-dimensional
   histogram](#two-dimensional-histogram-views)
+
+* quartiles: allows the user to plot a histogram view with quartiles of
+  second numeric column
+
+* group by: select a second column and draw a [Trellis plot of a
+  series of histograms](#trellis-plots-of-1d-histograms) with the data
+  grouped on the values in the second column
 
 #### Mouse selection in histogram views
 
@@ -1169,6 +1172,12 @@ The figure above shows a histogram where there are 294 distinct values
 but only 40 buckets.  One can see multiple ticks in each bucket.  Only
 some of the tick labels are displayed.
 
+### Quartiles view for histogram buckets
+
+![Histogram quartiles view](histogram-quartiles-view.png)
+
+*TODO*
+
 ### Two-dimensional histogram views
 
 A 2D histogram is a useful visual tool for estimating whether the
@@ -1179,8 +1188,8 @@ distribution in a second column.
 
 For example, in the following figure we see a 2D histogram where the X
 axis has the airline carriers.  For each carrier the bar is divided
-into sub-bars, each of which corresponding to a range of departure
-delays.  The color legend at the top shows the encoding of values into
+into sub-bars, each of which corresponding to a range of arrival
+delays.  The color legend at the top shows the encoding of arrival delays into
 colors.
 
 ![A two-dimensional histogram](hillview-histogram2d.png)
@@ -1199,28 +1208,32 @@ rate is presented at the bottom.
 
 Next to the mouse an overlay box displays information about the mouse
 position.  Consider the example below, which shows the distribution of
-departure delays for each state (states are on the X axis).
+arrival delays for each UniqueCarrier (carriers are on the X axis).
 
 ![Histogram overlay information](histogram-2d-overlay.png)
 
-The 6 rows represent the following values:
+The 7 rows represent the following values:
 
-* DestState=NY indicates that the the mouse's X coordinate is at the NY value
+* UniqueCarrier=OO indicates that the the mouse's X coordinate is at the OO value
 
-* DepDelay=[-12,2) indicates that the pink color represents a range
-  range of values corresponding to the values -12 to 2.
+* ArrDelay=[-17,17) indicates that the pink color represents a range
+  range of values corresponding to the values -17 to 17.
 
-* y = 2,064,627 indicates the mouse's position on the Y axis
+* bucket = OO indicate the range of data in the bucket pointed by the mouse.
+  In this picture the bucket contains a single value, OO, but a bucket can
+  contain multiple data values as well.
 
-* count = 3,551,093 indicates the size of the pink bar, i.e., the
-  number of flights in NY that have delays between -12 and 2.
+* y = 27K indicates the mouse's position on the Y axis
 
-* % = 64.14% indicates that delays between -12 and 2 represent roughly
-    65% of all delays from NY
+* count = 60.4K indicates the size of the pink bar under the mouse, i.e., the
+  number of flights from OO that have delays between -17 and 17.
 
-* cdf = 71.1%: indicates the value of the CDF function at the current
+* % = 64.8% indicates that delays between -17 and 17 represent roughly
+    65% of all delays from OO
+
+* cdf = 55.9%: indicates the value of the CDF function at the current
   mouse X coordinate, shown by the blue little dot; in other words,
-  the flights from states alphabetically before NY make up 71.1% of the
+  the flights from carriers alphabetically before OO make up 55.9% of the
   flights.
 
 The "view" menu for a 2D histogram offers the following operations:
@@ -1271,6 +1284,12 @@ In a 2D histogram users can select data in two ways:
   contain a color for "missing" data, which cannot be selected.
 
 ![Selecting from a 2D histogram legend](legend-selection.png)
+
+  If the user keeps the shift key pressed while selecting in a colormap
+  the result is to just highlight on the screen the histogrm buckets whose
+  value is in the selected range.
+
+![Highlighting ranges in a 2D histogram](histogram-2d-highlight.png)
 
 ### Heatmap views
 
@@ -1386,7 +1405,29 @@ The following operations are available from the View menu of a Trellis histogram
 
 ### Trellis plots of 2D histograms
 
-*Currently not yet implemented*
+![A Trellis plot of 2D histograms](trellis-histogram2d-array.png)
+
+The following operations are available from the View menu of a Trellish view
+of 2D histograms:
+
+* refresh: will redraw the view
+* table: will display the underlying data in a [tabular view](#table-views).
+* exact: will compute and display the histograms without approximation
+* \#buckets: allows the user to change the number of buckets displayed for each histogram
+* swap axes: swaps the X and Y axes of the histogram plots
+* heatmap: displays the data using a Trellis view of heatmaps
+* \#groups: allows the user to change the number of groups used for displaying the Trellis plot
+* relative/absolute: this is similar to the 2D histogram relative/absolute menu
+
+#### Selection using the colormap
+
+Selection using the colormap is similar to the selection for simple 2D histograms.
+The user can either select a range of data in the colormap to filter the data.
+If the user keeps the shift key pressed while selecting in a colormap
+  the result is to just highlight on the screen the histogrm buckets whose
+  value is in the selected range.
+
+![Highlighting ranges in a Trellis view of 2D histogram](trellis-histogram-2d-highlight.png)
 
 ### Trellis plots of heatmaps
 

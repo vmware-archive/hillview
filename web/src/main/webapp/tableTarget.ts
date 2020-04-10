@@ -49,7 +49,12 @@ import {
     KVCreateColumnInfo,
     BasicColStats,
     AggregateDescription,
-    HeavyHittersFilterInfo, RowFilterDescription, StringColumnsFilterDescription, JSFilterInfo
+    HeavyHittersFilterInfo,
+    RowFilterDescription,
+    StringColumnsFilterDescription,
+    JSFilterInfo,
+    QuantilesVector,
+    QuantileVectorArgs
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
 import {FullPage, PageTitle} from "./ui/fullPage";
@@ -169,6 +174,11 @@ export class TableTargetAPI extends RemoteObject {
         }
         const method = "getDataQuantiles" + cds.length + "D";
         return this.createStreamingRpcRequest<BucketsInfo>(method, args);
+    }
+
+    public createQuantilesVectorRequest(args: QuantileVectorArgs):
+        RpcRequest<PartialResult<QuantilesVector>> {
+        return this.createStreamingRpcRequest<QuantilesVector>("getQuantilesVector", args);
     }
 
     public createContainsRequest(order: RecordOrder, row: any[]): RpcRequest<RemoteObjectId> {

@@ -17,7 +17,6 @@
 
 package org.hillview.dataStructures;
 
-import org.hillview.HillviewComputation;
 import org.hillview.dataset.PostProcessedSketch;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.sketches.*;
@@ -27,10 +26,8 @@ import org.hillview.sketches.results.MinKSet;
 import org.hillview.sketches.results.StringQuantiles;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.ITable;
-import org.hillview.utils.JsonList;
 
 import javax.annotation.Nullable;
-import java.util.function.BiFunction;
 
 public class QuantilesArgs {
     // if this is String, or Json we are sampling strings
@@ -38,10 +35,8 @@ public class QuantilesArgs {
     public long seed;       // only used if sampling strings
     public int stringsToSample;  // only used if sampling strings
 
-    // This class has a bunch of unchecked casts, but the Java
-    // type system is not good enough to express these operations
-    // in a type-safe manner.
-    public ISketch<ITable, BucketsInfo> getSketch() {
+    public PostProcessedSketch<ITable, BucketsInfo, BucketsInfo> getPostSketch() {
+        ISketch<ITable, BucketsInfo> res;
         if (this.cd.kind.isString()) {
             int samples = Math.min(this.stringsToSample * this.stringsToSample, 100000);
             ISketch<ITable, MinKSet<String>> s = new SampleDistinctElementsSketch(
@@ -49,32 +44,14 @@ public class QuantilesArgs {
                     this.cd.name, this.seed, samples);
             @SuppressWarnings("unchecked")
             ISketch<ITable, BucketsInfo> result = (ISketch<ITable, BucketsInfo>)(Object)s;
-            return result;
+            res = result;
         } else {
             ISketch<ITable, DataRange> s = new DoubleDataRangeSketch(this.cd.name);
             @SuppressWarnings("unchecked")
             ISketch<ITable, BucketsInfo> result = (ISketch<ITable, BucketsInfo>)(Object)s;
-            return result;
+            res = result;
         }
-    }
-
-    public BiFunction<BucketsInfo, HillviewComputation, BucketsInfo> getPostProcessing() {
-        if (this.cd.kind.isString()) {
-            int b = this.stringsToSample;
-            return (e, c) -> {
-                @SuppressWarnings("unchecked")
-                MinKSet<String> mks = (MinKSet<String>)e;
-                return new StringQuantiles(
-                        mks.getLeftBoundaries(b), mks.max, mks.allStringsKnown(b),
-                        mks.presentCount, mks.missingCount);
-            };
-        } else {
-            return (e, c) -> e;
-        }
-    }
-
-    public PostProcessedSketch<ITable, BucketsInfo, BucketsInfo> getPostSketch() {
-        ISketch<ITable, BucketsInfo> sketch = this.getSketch();
+        ISketch<ITable, BucketsInfo> sketch = res;
         return new PostProcessedSketch<ITable, BucketsInfo, BucketsInfo>(sketch) {
             @Override
             public BucketsInfo postProcess(@Nullable BucketsInfo result) {

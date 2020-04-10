@@ -3,8 +3,6 @@ package org.hillview.sketches.results;
 import org.hillview.dataset.api.IJson;
 import org.hillview.utils.Linq;
 
-import java.io.Serializable;
-
 /**
  * A quantiles vector is a vector - with one element for each bucket of a
  * histogram - of quantiles.
@@ -12,9 +10,14 @@ import java.io.Serializable;
 public class QuantilesVector implements IJson {
     static final long serialVersionUID = 1;
     public final NumericSamples[] data;
+    /**
+     * Number of values that does not fall in any bucket.
+     */
+    public long outOfBounds;
 
-    public QuantilesVector(NumericSamples[] data) {
+    public QuantilesVector(NumericSamples[] data, long outOfBounds) {
         this.data = data;
+        this.outOfBounds = outOfBounds;
     }
 
     public int size() {
@@ -28,7 +31,7 @@ public class QuantilesVector implements IJson {
         for (int i = 0; i < this.size(); i++) {
             result[i] = this.data[i].add(other.data[i]);
         }
-        return new QuantilesVector(result);
+        return new QuantilesVector(result, this.outOfBounds + other.outOfBounds);
     }
 
     public void seal() {
@@ -41,10 +44,14 @@ public class QuantilesVector implements IJson {
 
     public QuantilesVector quantiles(int expectedCount) {
         NumericSamples[] result = Linq.map(this.data, n -> n.quantiles(expectedCount), NumericSamples.class);
-        return new QuantilesVector(result);
+        return new QuantilesVector(result, this.outOfBounds);
     }
 
     public void addMissing(int bucket) {
         this.data[bucket].addMissing();
+    }
+
+    public void outOfBounds() {
+        this.outOfBounds++;
     }
 }

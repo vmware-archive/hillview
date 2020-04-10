@@ -191,14 +191,42 @@ public final class TableTarget extends RpcTarget {
         this.runCompleteSketch(this.table, sk, request, context);
     }
 
+    static class QuantilesVectorInfo extends HistogramRequestInfo {
+        int quantileCount;
+        /**
+         * Column whose quantiles are being computed.
+         */
+        String quantilesColumn = "";
+        /**
+         * For each bucket the count of non-null elements.
+         */
+        long[] nonNullCounts = new long[0];
+    }
+
+    @SuppressWarnings("unused")
     @HillviewRpc
     public void getQuantilesVector(RpcRequest request, RpcRequestContext context) {
-        // TODO
-        /*
-        ISketch<ITable, QuantilesVector> sk = args[0].getSketch();
-        QuantilesVectorReduce qvr = new QuantilesVectorReduce(sk);
+        QuantilesVectorInfo info = request.parseArgs(QuantilesVectorInfo.class);
+        IHistogramBuckets buckets = info.getBuckets();
+        final double samplesRequired = 100 * info.quantileCount * info.quantileCount;
+        double[] samplingRates = new double[buckets.getBucketCount()];
+        assert buckets.getBucketCount() == info.nonNullCounts.length;
+        for (int i = 0; i < info.nonNullCounts.length; i++) {
+            double ct = info.nonNullCounts[i];
+            double rate = Math.max(samplesRequired / ct, 1.0);
+            samplingRates[i] = rate;
+        }
+        QuantilesVectorSketch qvs = new QuantilesVectorSketch(
+                buckets, info.cd.name, info.quantilesColumn, samplingRates, info.seed);
+        PostProcessedSketch<ITable, QuantilesVector, QuantilesVector> qvr =
+                new PostProcessedSketch<ITable, QuantilesVector, QuantilesVector>(qvs) {
+            @Override
+            public QuantilesVector postProcess(@Nullable QuantilesVector result) {
+                Converters.checkNull(result);
+                return result.quantiles(info.quantileCount);
+            }
+        };
         this.runSketch(this.table, qvr, request, context);
-         */
     }
 
     // The following functions return lists with subclasses of BucketsInfo: either

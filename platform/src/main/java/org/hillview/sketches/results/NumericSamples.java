@@ -142,6 +142,7 @@ public class NumericSamples implements IJson {
         if (this.empty || this.samples.size() < expectedCount)
             return this;
         List<Double> small = Utilities.decimate(this.samples, Math.floorDiv(this.samples.size(), expectedCount));
+        small.remove(0);  // skip 0-th quantile
         NumericSamples result = new NumericSamples(small);
         result.min = this.min;
         result.max = this.max;

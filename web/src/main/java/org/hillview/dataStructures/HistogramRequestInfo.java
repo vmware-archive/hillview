@@ -33,7 +33,7 @@ import javax.annotation.Nullable;
  * Class used to deserialize JSON request from UI for a histogram.
  */
 public class HistogramRequestInfo {
-    public ColumnDescription cd;
+    public ColumnDescription cd = new ColumnDescription();
     public double samplingRate;
     public long seed;
     // Only used when doing string histograms
@@ -43,6 +43,8 @@ public class HistogramRequestInfo {
     private double min;
     private double max;
     private int bucketCount;
+
+    public HistogramRequestInfo() {}
 
     /**
      * Explicit constructors for headless testing.

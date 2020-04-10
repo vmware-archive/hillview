@@ -29,10 +29,10 @@ import {
 import {Receiver, RpcRequest} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
-import {CDFPlot} from "../ui/CDFPlot";
+import {CDFPlot} from "../ui/cdfPlot";
 import {IDataView} from "../ui/dataview";
 import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
-import {Histogram2DPlot} from "../ui/Histogram2DPlot";
+import {Histogram2DPlot} from "../ui/histogram2DPlot";
 import {HistogramLegendPlot} from "../ui/histogramLegendPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface} from "../ui/plottingSurface";
@@ -129,15 +129,19 @@ export class Histogram2DView extends HistogramViewBase {
         }
     }
 
-    protected createNewSurfaces(): void {
+    protected createNewSurfaces(keepColorMap: boolean): void {
         if (this.legendSurface != null)
             this.legendSurface.destroy();
         if (this.surface != null)
             this.surface.destroy();
         this.legendSurface = new HtmlPlottingSurface(this.chartDiv, this.page,
             { height: Resolution.legendSpaceHeight });
-        this.legendPlot = new HistogramLegendPlot(this.legendSurface,
-            (xl, xr) => this.selectionCompleted(xl, xr, true));
+        if (keepColorMap) {
+            this.legendPlot.setSurface(this.legendSurface);
+        } else {
+            this.legendPlot = new HistogramLegendPlot(this.legendSurface,
+                (xl, xr) => this.selectionCompleted(xl, xr, true));
+        }
         this.surface = new HtmlPlottingSurface(this.chartDiv, this.page, {});
         this.plot = new Histogram2DPlot(this.surface);
         this.cdfPlot = new CDFPlot(this.surface);
@@ -164,8 +168,8 @@ export class Histogram2DView extends HistogramViewBase {
         return null;
     }
 
-    public updateView(heatmap: Heatmap, cdf: Histogram, maxYAxis: number | null): void {
-        this.createNewSurfaces();
+    public updateView(heatmap: Heatmap, cdf: Histogram, maxYAxis: number | null, keepColorMap: boolean): void {
+        this.createNewSurfaces(keepColorMap);
         if (heatmap == null || heatmap.buckets.length === 0) {
             this.page.reportError("No data to display");
             return;
@@ -182,7 +186,8 @@ export class Histogram2DView extends HistogramViewBase {
         const bucketCount = this.xPoints;
         const canvas = this.surface.getCanvas();
 
-        this.plot.setData(heatmap, this.xAxisData, this.samplingRate, this.relative, this.schema, maxYAxis);
+        this.plot.setData(heatmap, this.xAxisData, this.samplingRate, this.relative,
+            this.schema, this.legendPlot.colorMap, maxYAxis);
         this.plot.draw();
         const discrete = kindIsString(this.xAxisData.description.kind) ||
             this.xAxisData.description.kind === "Integer";
@@ -202,7 +207,7 @@ export class Histogram2DView extends HistogramViewBase {
             this.surface.getActualChartSize(),
             [this.xAxisData.getDisplayNameString(this.schema),
                 this.yData.getDisplayNameString(this.schema),
-                "y", "count", "%", "cdf"], 40);
+                "bucket", "y", "count", "%", "cdf"], 40);
         this.pointDescription.show(false);
         let summary = new HtmlString(formatNumber(this.plot.getDisplayedPoints()) + " data points");
         if (heatmap.missingData !== 0)
@@ -407,7 +412,7 @@ export class Histogram2DView extends HistogramViewBase {
             collector.finished();
         } else if (eventKind === "YAxis") {
             this.relative = false; // We cannot drag a relative Y axis.
-            this.updateView(this.heatMap, this.cdf, sourceRange.max);
+            this.updateView(this.heatMap, this.cdf, sourceRange.max, true);
         }
     }
 
@@ -423,7 +428,7 @@ export class Histogram2DView extends HistogramViewBase {
     public resize(): void {
         if (this == null)
             return;
-        this.updateView(this.heatMap, this.cdf, this.plot.maxYAxis);
+        this.updateView(this.heatMap, this.cdf, this.plot.maxYAxis, true);
     }
 
     public refresh(): void {
@@ -467,18 +472,26 @@ export class Histogram2DView extends HistogramViewBase {
             ys += "%";
 
         let box = null;
+        let count = "";
+        let colorIndex = null;
+        let value = "";
+        let perc = 0;
+        let bucket = "";
         if (mouseY >= 0 && mouseY < this.surface.getChartHeight())
             box = this.plot.getBoxInfo(mouseX, y);
-        const count = (box == null) ? "" : significantDigits(box.count);
-        const colorIndex = (box == null) ? null : box.yIndex;
-        const value = (box == null) ? "" : this.yData.bucketDescription(colorIndex, 0);
-        const perc = (box == null || box.count === 0) ? 0 : box.count / box.countBelow;
+        if (box != null) {
+            count = significantDigits(box.count);
+            colorIndex = box.yIndex;
+            value = this.yData.bucketDescription(colorIndex, 20);
+            perc = (box.count === 0) ? 0 : box.count / box.countBelow;
+            bucket = this.xAxisData.bucketDescription(box.xIndex, 20);
+        }
 
         const pos = this.cdfPlot.getY(mouseX);
         this.cdfDot.attr("cx", mouseX + this.surface.leftMargin);
         this.cdfDot.attr("cy", (1 - pos) * this.surface.getChartHeight() + this.surface.topMargin);
         const cdf = percent(pos);
-        this.pointDescription.update([xs, value, ys, count, percent(perc), cdf], mouseX, mouseY);
+        this.pointDescription.update([xs, value, bucket, ys, count, percent(perc), cdf], mouseX, mouseY);
         this.legendPlot.highlight(colorIndex);
     }
 
@@ -496,6 +509,7 @@ export class Histogram2DView extends HistogramViewBase {
      * canvas or legend rectangle respectively.
      */
     protected selectionCompleted(xl: number, xr: number, inLegend: boolean): void {
+        const shiftPressed = d3event.sourceEvent.shiftKey;
         let selectedAxis: AxisData;
         [xl, xr] = reorder(xl, xr);
 
@@ -505,6 +519,12 @@ export class Histogram2DView extends HistogramViewBase {
             xl -= this.surface.leftMargin;
             xr -= this.surface.leftMargin;
             selectedAxis = this.xAxisData;
+        }
+
+        if (inLegend && shiftPressed) {
+            this.legendPlot.emphasizeRange(xl / this.legendPlot.width, xr / this.legendPlot.width);
+            this.resize();
+            return;
         }
 
         const x0 = selectedAxis.invertToNumber(xl);
@@ -582,7 +602,7 @@ export class Histogram2DReceiver extends Receiver<Pair<Heatmap, Histogram>> {
             return;
         const heatmap = value.data.first;
         const cdf = value.data.second;
-        this.view.updateView(heatmap, cdf, null);
+        this.view.updateView(heatmap, cdf, null, false);
     }
 
     public onCompleted(): void {

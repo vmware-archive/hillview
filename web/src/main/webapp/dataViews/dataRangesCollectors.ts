@@ -19,7 +19,7 @@ import {OnCompleteReceiver} from "../rpc";
 import {BucketsInfo, HistogramArgs, IColumnDescription, kindIsString, RemoteObjectId,} from "../javaBridge";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {FullPage, PageTitle} from "../ui/fullPage";
-import {ICancellable, Seed} from "../util";
+import {ICancellable, periodicSamples, Seed} from "../util";
 import {SchemaClass} from "../schemaClass";
 import {ChartOptions, Resolution, Size} from "../ui/ui";
 import {PlottingSurface} from "../ui/plottingSurface";
@@ -131,28 +131,6 @@ export class TrellisLayoutComputation {
         }
         return opt;
     }
-}
-
-/**
- * Given some strings returns a subset of them.
- * @param data   A set of strings.
- * @param count  Number of strings to return.
- * @returns      At most count strings equi-spaced.
- */
-function periodicSamples(data: string[], count: number): string[] {
-    if (data == null)
-        return null;
-
-    if (count >= data.length)
-        return data;
-    const boundaries: string[] = [];
-    for (let i = 0; i < count; i++) {
-        // This formula sets the first bucket left boundary at .5 and the last at (data.length - 1)+ .5
-        const index = Math.ceil(i * data.length / count - .5);
-        console.assert(index >= 0 && index < data.length);
-        boundaries.push(data[index]);
-    }
-    return boundaries;
 }
 
 /**

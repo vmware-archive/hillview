@@ -309,7 +309,7 @@ export abstract class TrellisChartView extends ChartView {
         chartX -= xIndex * this.shape.size.width;
         chartY -= yIndex * (this.shape.size.height + this.shape.headerHeight) + this.shape.headerHeight;
 
-        if (xIndex < 0 || plotIndex < 0 || plotIndex >= this.shape.bucketCount)
+        if (xIndex < 0 || plotIndex < 0 || plotIndex >= this.groupByAxisData.bucketCount)
             plotIndex = null;
         return { plotIndex: plotIndex, x: chartX, y: chartY,
             plotXIndex: xIndex, plotYIndex: yIndex };

@@ -92,7 +92,7 @@ class BucketBoundaries {
         let result: string;
 
         if (this.left == null) {
-            return "missing";
+            return "";
         }
 
         if (this.right == null) {
@@ -156,20 +156,19 @@ export class AxisDescription {
  * Contains all information required to build an axis and a d3 scale associated to it.
  */
 export class AxisData {
-    public readonly stringQuantiles: string[];
     public scale: AnyScale;
     public axis: AxisDescription;
-    public range: BucketsInfo; // the range used to draw the data; may be adjusted from BucketsInfo
+    public displayRange: BucketsInfo; // the range used to draw the data; may be adjusted from this.dataRange
 
     public constructor(public description: IColumnDescription | null, // may be null for e.g., the Y col in a histogram
                        // dataRange is the original range of the data
                        public dataRange: BucketsInfo | null,
                        public bucketCount: number) {
-        this.range = dataRange;
+        this.displayRange = dataRange;
         const kind = description == null ? null : description.kind;
         if (dataRange != null) {
             if (kindIsString(kind)) {
-                this.range = {
+                this.displayRange = {
                     min: -.5,
                     max: dataRange.stringQuantiles.length - .5,
                     presentCount: dataRange.presentCount,
@@ -179,7 +178,7 @@ export class AxisData {
                     maxBoundary: dataRange.maxBoundary
                 };
             } else if (kind === "Integer") {
-                this.range = {
+                this.displayRange = {
                     min: dataRange.min - .5,
                     max: dataRange.max + .5,
                     presentCount: dataRange.presentCount,
@@ -187,7 +186,6 @@ export class AxisData {
                 };
             }
         }
-        this.stringQuantiles = this.range !== null ? this.range.stringQuantiles : null;
         // These are set when we know the screen size.
         this.scale = null;
         this.axis = null;
@@ -202,20 +200,20 @@ export class AxisData {
     }
 
     public getString(index: number, clamp: boolean): string {
-        index = Math.floor(index);
+        index = Math.round(index);
         if (clamp) {
             if (index < 0)
                 index = 0;
-            if (index >= this.stringQuantiles.length)
-                index = this.stringQuantiles.length - 1;
+            if (index >= this.dataRange.stringQuantiles.length)
+                index = this.dataRange.stringQuantiles.length - 1;
         }
-        if (index >= 0 && index < this.stringQuantiles.length)
-            return this.stringQuantiles[index];
-        return null;
+        if (index >= 0 && index < this.dataRange.stringQuantiles.length)
+            return this.dataRange.stringQuantiles[index];
+        return "";
     }
 
     private bucketIndexToStringIndex(bucketNumber: number): number {
-        return Math.floor(bucketNumber * this.stringQuantiles.length / this.bucketCount);
+        return Math.floor(bucketNumber * this.dataRange.stringQuantiles.length / this.bucketCount);
     }
 
     private bucketLeftString(bucketNumber: number, clamp: boolean): string {
@@ -232,16 +230,17 @@ export class AxisData {
     public setResolution(pixels: number, axisKind: AxisKind, labelRoom: number): void {
         const bottom = axisKind !== AxisKind.Left;
         const axisCreator = bottom ? d3axisBottom : d3axisLeft;
-        let actualMin = this.range.min;
-        let actualMax = this.range.max;
+        let actualMin = this.displayRange.min;
+        let actualMax = this.displayRange.max;
         let adjust = .5;
+        /*
         if (axisKind === AxisKind.Legend && AxisData.needsAdjustment(this.description.kind)) {
             // These were adjusted, bring them back.
             actualMin += .5;
             actualMax -= .5;
             adjust = 0;
         }
-
+        */
         // on vertical axis the direction is swapped
         const domain = bottom ? [actualMin, actualMax] : [actualMax, actualMin];
 
@@ -259,7 +258,7 @@ export class AxisData {
                 const ticks: number[] = [];
                 const labels: string[] = [];
                 const fullLabels: string[] = [];
-                const tickCount = Math.ceil(this.range.max - this.range.min);
+                const tickCount = Math.ceil(this.displayRange.max - this.displayRange.min);
                 const minLabelSpace = 20;  // We reserve at least this many pixels
                 const maxLabelCount = pixels / minLabelSpace;
                 const labelPeriod = Math.ceil(tickCount / maxLabelCount);
@@ -282,9 +281,7 @@ export class AxisData {
                     ticks.push((i + adjust) * tickSpan);
                     let label = "";
                     if (i % labelPeriod === 0) {
-                        label = this.getString(this.range.min + .5 + i, false);
-                        if (label === null)
-                            label = "";
+                        label = this.getString(this.displayRange.min + .5 + i, false);
                         if (label.length * fontWidth > tickSpan * labelPeriod)
                             rotate = true;
                         if (label.length > maxLabelWidthInChars) {
@@ -338,7 +335,7 @@ export class AxisData {
         if (this.description.kind === "Integer")
             result = formatNumber(Math.round(inv as number));
         else if (kindIsString(this.description.kind))
-            result = this.getString(inv as number, true);
+            result = this.getString(inv as number, false);
         else if (this.description.kind === "Double")
             result = formatNumber(inv as number);
         else if (this.description.kind === "Date")
@@ -362,7 +359,10 @@ export class AxisData {
     }
 
     public bucketBoundaries(bucket: number): BucketBoundaries {
-        if (bucket < 0 || bucket >= this.bucketCount)
+        if (bucket === -1)
+            // The bucket with index -1 represents the missing data.
+            return new BucketBoundaries(new BucketBoundary("missing", "String", true), null);
+        if (bucket === null || bucket < 0 || bucket >= this.bucketCount)
             return new BucketBoundaries(null, null);
 
         const valueKind = this.description.kind;
@@ -370,15 +370,15 @@ export class AxisData {
             const left = this.bucketLeftString(bucket, false);
             const leftBoundary = new BucketBoundary(left, valueKind, true);
             if (bucket === this.bucketCount - 1) {
-                if (left == this.range.maxBoundary)
+                if (left == this.displayRange.maxBoundary)
                     return new BucketBoundaries(leftBoundary, null);
                 return new BucketBoundaries(leftBoundary,
-                    new BucketBoundary(this.range.maxBoundary, valueKind, true));
+                    new BucketBoundary(this.displayRange.maxBoundary, valueKind, true));
             } else {
                 let right = this.bucketLeftString(bucket + 1, false);
                 if (left == right)
                     return new BucketBoundaries(leftBoundary, null);
-                if (this.range.allStringsKnown) {
+                if (this.displayRange.allStringsKnown) {
                     const leftStringIndex = this.bucketIndexToStringIndex(bucket);
                     const nextStringIndex = this.bucketIndexToStringIndex(bucket + 1);
                     if (nextStringIndex === leftStringIndex + 1)
@@ -397,10 +397,10 @@ export class AxisData {
             }
         }
 
-        const interval = (this.range.max - this.range.min) / this.bucketCount;
-        let start = this.range.min + interval * bucket;
+        const interval = (this.displayRange.max - this.displayRange.min) / this.bucketCount;
+        let start = this.displayRange.min + interval * bucket;
         let end = start + interval;
-        const inclusive = end >= this.range.max;
+        const inclusive = end >= this.displayRange.max;
         switch (valueKind) {
             case "Integer":
                 start = Math.ceil(start);
@@ -425,7 +425,7 @@ export class AxisData {
     }
 
     /**
-     * @param bucket   Bucket number.
+     * @param bucket   Bucket number.  -1 for the missing data buckets.
      * @param maxChars Maximum number of characters to use for description; if 0 it is unlimited.
      * @returns  A description of the boundaries of the specified bucket.
      */

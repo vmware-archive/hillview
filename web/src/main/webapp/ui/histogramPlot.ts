@@ -61,7 +61,8 @@ export class HistogramPlot extends Plot implements IBarPlot {
      * Set the histogram that we want to draw.
      * @param bars          Description of the histogram bars.
      * @param samplingRate  Sampling rate used to compute this histogram.
-     * @param axisData      Description of the X axis.
+     * @param axisData      Description of the X axis; can have more buckets than the histogram,
+     *                      since the same data may be used for a CDF plot.
      * @param maxYAxis      If present it is used to scale the maximum value for the Y axis.
      * @param isPrivate     True if we are plotting private data.
      */
@@ -141,7 +142,7 @@ export class HistogramPlot extends Plot implements IBarPlot {
             .attr("text-anchor", "middle")
             .attr("dy", (d) => d[0] <= (9 * displayMax / 10) ? "-.25em" : ".75em")
             .text((d) => Plot.boxHeight(
-                d[0], this.samplingRate, this.xAxisData.range.presentCount))
+                d[0], this.samplingRate, this.xAxisData.displayRange.presentCount))
             .exit();
 
         this.yAxis = d3axisLeft(this.yScale)
@@ -174,10 +175,20 @@ export class HistogramPlot extends Plot implements IBarPlot {
         return this.yScale;
     }
 
-    public get(x: number): [number, number] {
+    /**
+     * The index of the bucket covering the current x position on the X axis.
+     */
+    public getBucketIndex(x: number): number {
         const bucket = Math.floor(x / this.barWidth);
         if (bucket < 0 || this.histogram == null ||
             bucket >= this.histogram.buckets.length)
+            return -1;
+        return bucket;
+    }
+
+    public get(x: number): [number, number] {
+        const bucket = this.getBucketIndex(x);
+        if (bucket < 0)
             return valueWithConfidence(0, null);
         const value = this.histogram.buckets[bucket];
         const conf = this.isPrivate ? this.histogram.confidence[bucket] : null;

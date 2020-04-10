@@ -21,6 +21,7 @@ import {Resolution} from "./ui";
 import {SchemaClass} from "../schemaClass";
 import {LegendPlot} from "./legendPlot";
 import {HtmlPlottingSurface} from "./plottingSurface";
+import {ColorMap, desaturateOutsideRange} from "../util";
 
 /**
  * Displays a legend for a 2D histogram.
@@ -34,11 +35,13 @@ export class HistogramLegendPlot extends LegendPlot {
     protected readonly missingWidth = 20;
     protected colorWidth: number;
     protected schema: SchemaClass;
+    public    colorMap: ColorMap;
 
     public constructor(surface: HtmlPlottingSurface, onSelectionCompleted: (xl: number, xr: number) => void) {
         super(surface, onSelectionCompleted);
         this.y = Resolution.legendSpaceHeight / 3;
         this.createRectangle();
+        this.colorMap = Plot.colorMap;
     }
 
     public draw(): void {
@@ -55,9 +58,9 @@ export class HistogramLegendPlot extends LegendPlot {
         for (let i = 0; i < this.axisData.bucketCount; i++) {
             let color: string;
             if (this.axisData.bucketCount === 1)
-                color = Plot.colorMap(0);
+                color = this.colorMap(0);
             else
-                color = Plot.colorMap(i / (this.axisData.bucketCount - 1));
+                color = this.colorMap(i / (this.axisData.bucketCount - 1));
             canvas.append("rect")
                 .attr("width", this.colorWidth)
                 .attr("height", this.height)
@@ -131,6 +134,24 @@ export class HistogramLegendPlot extends LegendPlot {
         this.axisData = axis;
         this.missingLegend = missingLegend;
         this.schema = schema;
+    }
+
+    /**
+     * Emphasize the colors in the map in range x0 to x1.  These are
+     * two values in the range 0-1.
+     */
+    public emphasizeRange(x0: number, x1: number): void {
+        if (x0 > x1) {
+            const c = x0;
+            x0 = x1;
+            x1 = c;
+        }
+        this.colorMap = desaturateOutsideRange(
+            Plot.colorMap, x0, x1);
+    }
+
+    public setSurface(surface: HtmlPlottingSurface): void {
+        this.plottingSurface = surface;
     }
 }
 
