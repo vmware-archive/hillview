@@ -31,7 +31,7 @@ export interface Pair<T1, T2> {
     second: T2;
 }
 
-export function assert(condition: boolean, message?: string): void {
+export function assert(condition: boolean, message?: string): asserts condition {
     console.assert(condition, message);  // tslint:disable-line
 }
 
@@ -120,10 +120,13 @@ export class Converters {
 /**
  * Retrieves a node from the DOM starting from a CSS selector specification.
  * @param cssselector  Node specification as a CSS selector.
+ * @param allowNull    If true allow null values to be found.  Default is false.
  * @returns The unique selected node.
  */
-export function findElement(cssselector: string): HTMLElement | null {
+export function findElement(cssselector: string, allowNull?: boolean): HTMLElement | null {
     const val = document.querySelector(cssselector);
+    if (allowNull == null || !allowNull)
+        assert(val != null);
     return val as HTMLElement;
 }
 

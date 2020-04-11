@@ -15,12 +15,11 @@
  * limitations under the License.
  */
 
-import {event as d3event, mouse as d3mouse} from "d3-selection";
+import {mouse as d3mouse} from "d3-selection";
 import {HeatmapSerialization, IViewSerialization} from "../datasetView";
 import {
-    FilterDescription,
     Heatmap,
-    IColumnDescription,
+    IColumnDescription, kindIsNumeric,
     RecordOrder,
     RemoteObjectId,
 } from "../javaBridge";
@@ -39,7 +38,6 @@ import {
     formatNumber,
     ICancellable, makeInterval,
     PartialResult,
-    reorder,
     saveAs,
     significantDigitsHtml,
 } from "../util";
@@ -104,6 +102,10 @@ export class HeatmapView extends ChartView {
                 action: () => this.histogram(),
                 help: "Show this data as a two-dimensional histogram.",
             }, {
+                text: "Quartiles vector",
+                action: () => this.quartileView(),
+                help: "Show this data as a vector of quartiles.",
+            }, {
                 text: "group by...",
                 action: () => this.groupBy(),
                 help: "Group data by a third column.",
@@ -134,6 +136,20 @@ export class HeatmapView extends ChartView {
         this.missingDiv = this.makeToplevelDiv();
         this.summary = document.createElement("div");
         this.topLevel.appendChild(this.summary);
+    }
+
+    private quartileView(): void {
+        if (!kindIsNumeric(this.yAxisData.description.kind)) {
+            this.page.reportError("Quartiles require a numeric second column");
+            return;
+        }
+        const cds = [this.xAxisData.description, this.yAxisData.description];
+        const rr = this.createDataQuantilesRequest(cds, this.page, "QuartileVector");
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
+            [0, 0], cds, null, {
+                reusePage: false,
+                chartKind: "QuartileVector",
+            }));
     }
 
     public changeThreshold(): void {
@@ -512,38 +528,11 @@ export class HeatmapView extends ChartView {
      * Selection has been completed.  The mouse coordinates are within the canvas.
      */
     private selectionCompleted(xl: number, xr: number, yl: number, yr: number): void {
-        if (this.xAxisData.axis == null ||
-            this.yAxisData.axis == null) {
+        const rr = this.filterSelectionRectangle(xl, xr, yl, yr, this.xAxisData, this.yAxisData);
+        if (rr == null)
             return;
-        }
-
-        xl -= this.surface.leftMargin;
-        xr -= this.surface.leftMargin;
-        yl -= this.surface.topMargin;
-        yr -= this.surface.topMargin;
-        [xl, xr] = reorder(xl, xr);
-        [yr, yl] = reorder(yl, yr);   // y coordinates are in reverse
-
-        const xRange: FilterDescription = {
-            min: this.xAxisData.invertToNumber(xl),
-            max: this.xAxisData.invertToNumber(xr),
-            minString: this.xAxisData.invert(xl),
-            maxString: this.xAxisData.invert(xr),
-            cd: this.xAxisData.description,
-            complement: d3event.sourceEvent.ctrlKey,
-        };
-        const yRange: FilterDescription = {
-            min: this.yAxisData.invertToNumber(yl),
-            max: this.yAxisData.invertToNumber(yr),
-            minString: this.yAxisData.invert(yl),
-            maxString: this.yAxisData.invert(yr),
-            cd: this.yAxisData.description,
-            complement: d3event.sourceEvent.ctrlKey,
-        };
-        const rr = this.createFilter2DRequest(xRange, yRange);
         const renderer = new FilterReceiver(new PageTitle(
-            "Filtered on " + this.xAxisData.getDisplayNameString(this.schema) + " and " +
-            this.yAxisData.getDisplayNameString(this.schema)),
+            this.page.title + " filtered"),
             [this.xAxisData.description, this.yAxisData.description],
             this.schema, [0, 0], this.page, rr, this.dataset, {
             exact: this.samplingRate >= 1, chartKind: "Heatmap", reusePage: false,

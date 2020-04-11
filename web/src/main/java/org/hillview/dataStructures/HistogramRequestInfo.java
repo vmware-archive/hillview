@@ -87,6 +87,10 @@ public class HistogramRequestInfo {
         return new HistogramSketch(buckets, this.cd.name, this.samplingRate, this.seed, quantization);
     }
 
+    public HistogramSketch getSketch() {
+        return this.getSketch(null);
+    }
+
     public IntervalDecomposition getDecomposition(ColumnQuantization quantization) {
         IHistogramBuckets buckets = this.getBuckets(quantization);
         if (cd.kind.isString()) {

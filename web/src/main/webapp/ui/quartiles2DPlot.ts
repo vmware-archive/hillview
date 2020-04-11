@@ -19,17 +19,17 @@ import {axisLeft as d3axisLeft} from "d3-axis";
 import {format as d3format} from "d3-format";
 import {scaleLinear as d3scaleLinear} from "d3-scale";
 import {AxisData, AxisDescription, AxisKind} from "../dataViews/axisData";
-import {QuantilesVector} from "../javaBridge";
+import {BucketsInfo, QuantilesVector} from "../javaBridge";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {D3Axis, D3Scale} from "./ui";
 import {SchemaClass} from "../schemaClass";
 
 /**
- * A HistogramPlot draws a bar chart where each bar is a whisker plot
+ * A QuartilesPlot draws a vector if whisker plots
  * on a PlottingSurface, including the axes.
  */
-export class Quantiles2DPlot extends Plot {
+export class Quartiles2DPlot extends Plot {
     public qv: QuantilesVector;
     /**
      * Sampling rate that was used to compute the histogram.
@@ -40,6 +40,8 @@ export class Quantiles2DPlot extends Plot {
     protected yAxis: D3Axis;
     public max: number;  // maximum quantile value
     public min: number;
+    protected missingYCount: number;
+    protected rowCount: number;
     public displayAxes: boolean;
     public isPrivate: boolean;
     protected schema: SchemaClass;
@@ -54,23 +56,24 @@ export class Quantiles2DPlot extends Plot {
      * @param qv            Data to plot.
      * @param samplingRate  Sampling rate used to compute this view.
      * @param schema        Table schema.
+     * @param rowCount      Total number of rows in dataset.
      * @param axisData      Description of the X axis.
      * @param isPrivate     True if we are plotting private data.
      */
     public setData(qv: QuantilesVector, samplingRate: number,
-                   schema: SchemaClass,
+                   schema: SchemaClass, rowCount: number,
                    axisData: AxisData, isPrivate: boolean): void {
         this.qv = qv;
+        this.rowCount = rowCount;
         this.samplingRate = samplingRate;
         this.xAxisData = axisData;
         this.schema = schema;
-        const chartWidth = this.getChartWidth();
-        const bucketCount = this.qv.data.length;
-        this.barWidth = chartWidth / bucketCount;
         this.isPrivate = isPrivate;
     }
 
     private drawBars(): void {
+        if (this.qv == null || this.qv.data == null)
+            return;
         const bucketCount = this.qv.data.length;
         const maxes = this.qv.data.map(v => v.max);
         const mins = this.qv.data.map(v => v.min);
@@ -94,8 +97,10 @@ export class Quantiles2DPlot extends Plot {
             .attr("dominant-baseline", "text-before-edge");
 
         const whiskers = [];
+        this.missingYCount = 0;
         for (let x = 0; x < this.qv.data.length; x++) {
             const q = this.qv.data[x];
+            this.missingYCount += q.missing;
             if (q.empty)
                 continue;
             // If we do not have enough samples replicate the existing ones
@@ -190,5 +195,25 @@ export class Quantiles2DPlot extends Plot {
 
     public getYScale(): D3Scale {
         return this.yScale;
+    }
+
+    /**
+     * The index of the bucket covering the current x position on the X axis.
+     */
+    public getBucketIndex(x: number): number {
+        const bucket = Math.floor(x / this.barWidth);
+        if (bucket < 0 || this.qv == null ||
+            bucket >= this.qv.data.length)
+            return -1;
+        return bucket;
+    }
+
+    public yDataRange(): BucketsInfo {
+        return {
+            min: this.min,
+            max: this.max,
+            missingCount: this.missingYCount,
+            presentCount: this.rowCount - this.missingYCount
+        };
     }
 }

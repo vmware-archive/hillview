@@ -42,14 +42,14 @@ export class Grid implements IHtmlElement {
     /*
         This builds a table with this structure:
         <table style="width:253px" id="table">
-            <tr>
-                <td style="width:200px" id="col1">
+           <thead><tr>
+                <td class="header" style="width:200px" data-colname="Date">
                     <div class="resizable">
-                        <div class="truncated">Text to display</div>
+                        <div class="truncated col3"><span>Text to display<span></div> <<< context event here
                         <div class="handle" data-col="col1"></div>
                     </div>
                 </td>
-            </tr>
+            </tr></thead>
             ...
         </table>
      */

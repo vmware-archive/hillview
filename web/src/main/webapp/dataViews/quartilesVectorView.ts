@@ -15,15 +15,18 @@
  * limitations under the License.
  */
 
-import {event as d3event, mouse as d3mouse} from "d3-selection";
+import {mouse as d3mouse} from "d3-selection";
 import {IViewSerialization, QuantileVectorSerialization} from "../datasetView";
 import {
-    FilterDescription,
+    Histogram,
     IColumnDescription,
+    kindIsString,
+    QuantilesVector,
+    QuantileVectorArgs,
     RecordOrder,
-    RemoteObjectId, QuantilesVector,
+    RemoteObjectId,
 } from "../javaBridge";
-import {Receiver, RpcRequest} from "../rpc";
+import {OnCompleteReceiver, Receiver, RpcRequest} from "../rpc";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {IDataView} from "../ui/dataview";
 import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
@@ -31,31 +34,26 @@ import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
 import {ChartOptions, HtmlString, Resolution} from "../ui/ui";
-import {
-    ICancellable,
-    PartialResult,
-    reorder,
-    saveAs, significantDigits,
-} from "../util";
-import {AxisData} from "./axisData";
+import {ICancellable, PartialResult, periodicSamples, saveAs, significantDigits,} from "../util";
+import {AxisData, AxisKind} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
-import {FilterReceiver, DataRangesReceiver} from "./dataRangesCollectors";
+import {DataRangesReceiver, FilterReceiver} from "./dataRangesCollectors";
 import {DisplayName, SchemaClass} from "../schemaClass";
-import {Quantiles2DPlot} from "../ui/quantiles2DPlot";
+import {Quartiles2DPlot} from "../ui/quartiles2DPlot";
 
 /**
- * This class is responsible for rendering a histogram of one colum where
- * each interval shows a whisker plot with quantiles of a second column.
+ * This class is responsible for rendering a vector of quartiles.
+ * Each quartile is for a bucket.
  */
-export class Quantiles2DView extends HistogramViewBase {
-    protected xPoints: number;
+export class QuartilesVectorView extends HistogramViewBase {
     protected data: QuantilesVector;
-    protected plot: Quantiles2DPlot;
+    protected plot: Quartiles2DPlot;
+    protected yAxisData: AxisData;
 
     constructor(remoteObjectId: RemoteObjectId, rowCount: number,
                 schema: SchemaClass, protected qCol: IColumnDescription, page: FullPage) {
-        super(remoteObjectId, rowCount, schema, page, "2DQuantiles");
+        super(remoteObjectId, rowCount, schema, page, "QuartileVector");
 
         this.menu = new TopMenu( [{
            text: "Export",
@@ -95,15 +93,16 @@ export class Quantiles2DView extends HistogramViewBase {
         if (this.surface != null)
             this.surface.destroy();
         this.surface = new HtmlPlottingSurface(this.chartDiv, this.page, {});
-        this.plot = new Quantiles2DPlot(this.surface);
+        this.plot = new Quartiles2DPlot(this.surface);
     }
 
     public getAxisData(event: DragEventKind): AxisData | null {
         switch (event) {
             case "Title":
             case "GAxis":
-            case "YAxis":
                 return null;
+            case "YAxis":
+                return this.yAxisData;
             case "XAxis":
                 return this.xAxisData;
         }
@@ -114,13 +113,16 @@ export class Quantiles2DView extends HistogramViewBase {
         this.createNewSurfaces();
         this.data = qv;
 
-        const bucketCount = this.xPoints;
-        this.plot.setData(qv, 1.0, this.schema, this.xAxisData, false);
+        const bucketCount = this.xAxisData.bucketCount;
+        this.plot.setData(qv, 1.0, this.schema, this.rowCount, this.xAxisData, false);
         this.plot.draw();
         this.setupMouse();
+        this.yAxisData = new AxisData(this.qCol, this.plot.yDataRange(), 0);
+        this.yAxisData.setResolution(this.plot.getChartHeight(), AxisKind.Left, 0);
         this.pointDescription = new TextOverlay(this.surface.getChart(),
             this.surface.getActualChartSize(),
-            [this.xAxisData.getDisplayNameString(this.schema), "y"], 40);
+            [this.xAxisData.getDisplayNameString(this.schema), "bucket",
+                "max", "q3", "median", "q1", "min", "missing"], 40);
         this.pointDescription.show(false);
         let summary = new HtmlString(String(bucketCount) + " buckets");
         summary.setInnerHtml(this.summary);
@@ -132,7 +134,7 @@ export class Quantiles2DView extends HistogramViewBase {
             ...super.serialize(),
             columnDescription0: this.xAxisData.description,
             columnDescription1: this.qCol,
-            xBucketCount: this.xPoints,
+            xBucketCount: this.xAxisData.bucketCount,
         };
         return result;
     }
@@ -146,9 +148,8 @@ export class Quantiles2DView extends HistogramViewBase {
             xPoints === null)
             return null;
 
-        const hv = new Quantiles2DView(ser.remoteObjectId, ser.rowCount, schema, cd1, page);
+        const hv = new QuartilesVectorView(ser.remoteObjectId, ser.rowCount, schema, cd1, page);
         hv.setAxis(new AxisData(cd0, null, ser.xBucketCount));
-        hv.xPoints = xPoints;
         return hv;
     }
 
@@ -231,7 +232,7 @@ export class Quantiles2DView extends HistogramViewBase {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
             return new FilterReceiver(title, [this.xAxisData.description, this.qCol],
                 this.schema, [0, 0], page, operation, this.dataset, {
-                exact: true, chartKind: "2DQuantiles",
+                exact: true, chartKind: "QuartileVector",
                 reusePage: false
             });
         };
@@ -241,18 +242,17 @@ export class Quantiles2DView extends HistogramViewBase {
         if (bucketCount == null)
             return;
         const cds = [this.xAxisData.description, this.qCol];
-        const rr = this.createDataQuantilesRequest(cds, this.page, "2DQuantiles");
+        const rr = this.createDataQuantilesRequest(cds, this.page, "QuartileVector");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [bucketCount], cds, null, {
-            reusePage: true, chartKind: "2DQuantiles", exact: true
+            reusePage: true, chartKind: "QuartileVector"
         }));
     }
 
     public chooseBuckets(): void {
         if (this == null)
             return;
-
-        const bucketDialog = new BucketDialog(this.xPoints);
+        const bucketDialog = new BucketDialog(this.xAxisData.bucketCount);
         bucketDialog.setAction(() => this.changeBuckets(bucketDialog.getBucketCount()));
         bucketDialog.show();
     }
@@ -284,12 +284,32 @@ export class Quantiles2DView extends HistogramViewBase {
         const mouseX = position[0];
         const mouseY = position[1];
 
-        const xs = this.xAxisData.invert(position[0]);
+        let xs = "";
         // Use the plot scale, not the yData to invert.  That's the
         // one which is used to draw the axis.
-        const y = Math.round(this.plot.getYScale().invert(mouseY));
-        let ys = significantDigits(y);
-        this.pointDescription.update([xs, ys], mouseX, mouseY);
+        let bucketDesc = "";
+        let min = "", q1 = "", q2 = "", q3 = "", max = "", missing = "";
+        if (this.xAxisData.scale != null) {
+            xs = this.xAxisData.invert(position[0]);
+            if (this.data != null) {
+                const bucket = this.plot.getBucketIndex(position[0]);
+                if (bucket < 0)
+                    return;
+                bucketDesc = this.xAxisData.bucketDescription(bucket, 20);
+                const qv = this.data.data[bucket];
+                min = significantDigits(qv.min);
+                max = significantDigits(qv.max);
+                q1 = significantDigits(qv.samples[0]);
+                q2 = qv.samples.length > 1 ? significantDigits(qv.samples[1]) : q1;
+                q3 = qv.samples.length > 2 ? significantDigits(qv.samples[2]) : q2;
+                missing = significantDigits(qv.missing);
+            }
+        }
+        this.pointDescription.update([xs, bucketDesc, max, q3, q2, q1, min, missing], mouseX, mouseY);
+    }
+
+    protected dragMove(): boolean {
+        return this.dragMoveRectangle();
     }
 
     protected dragEnd(): boolean {
@@ -297,7 +317,8 @@ export class Quantiles2DView extends HistogramViewBase {
             return false;
         const position = d3mouse(this.surface.getCanvas().node());
         const x = position[0];
-        this.selectionCompleted(this.selectionOrigin.x, x);
+        const y = position[1];
+        this.selectionCompleted(this.selectionOrigin.x, x, this.selectionOrigin.y, y);
         return true;
     }
 
@@ -305,35 +326,15 @@ export class Quantiles2DView extends HistogramViewBase {
      * * xl and xr are coordinates of the mouse position within the
      * canvas or legend rectangle respectively.
      */
-    protected selectionCompleted(xl: number, xr: number): void {
-        let selectedAxis: AxisData;
-        [xl, xr] = reorder(xl, xr);
-
-        xl -= this.surface.leftMargin;
-        xr -= this.surface.leftMargin;
-        selectedAxis = this.xAxisData;
-
-        const x0 = selectedAxis.invertToNumber(xl);
-        const x1 = selectedAxis.invertToNumber(xr);
-        if (x0 > x1) {
-            this.page.reportError("No data selected");
+    protected selectionCompleted(xl: number, xr: number, yl: number, yr: number): void {
+        const rr = this.filterSelectionRectangle(xl, xr, yl, yr, this.xAxisData, this.yAxisData);
+        if (rr == null)
             return;
-        }
-
-        const filter: FilterDescription = {
-            min: x0,
-            max: x1,
-            minString: selectedAxis.invert(xl),
-            maxString: selectedAxis.invert(xr),
-            cd: selectedAxis.description,
-            complement: d3event.sourceEvent.ctrlKey,
-        };
-        const rr = this.createFilterRequest(filter);
         const renderer = new FilterReceiver(
-            new PageTitle("Filtered on " + this.schema.displayName(selectedAxis.description.name)),
+            new PageTitle(this.page.title + " filtered"),
             [this.xAxisData.description, this.qCol], this.schema,
-            [this.xPoints], this.page, rr, this.dataset, {
-            exact: true, chartKind: "2DQuantiles", reusePage: false,
+            [0], this.page, rr, this.dataset, {
+            chartKind: "QuartileVector", reusePage: false,
         });
         rr.invoke(renderer);
     }
@@ -356,8 +357,8 @@ export class Quantiles2DView extends HistogramViewBase {
     }
 }
 
-export class Quantiles2DReceiver extends Receiver<QuantilesVector> {
-    protected view: Quantiles2DView;
+export class QuartilesVectorReceiver extends Receiver<QuantilesVector> {
+    protected view: QuartilesVectorView;
 
     constructor(title: PageTitle,
                 page: FullPage,
@@ -368,8 +369,8 @@ export class Quantiles2DReceiver extends Receiver<QuantilesVector> {
                 protected quantilesCol: IColumnDescription,
                 operation: RpcRequest<PartialResult<QuantilesVector>>,
                 protected options: ChartOptions) {
-        super(options.reusePage ? page : page.dataset.newPage(title, page), operation, "quantiles");
-        this.view = new Quantiles2DView(
+        super(options.reusePage ? page : page.dataset.newPage(title, page), operation, "quartiles");
+        this.view = new QuartilesVectorView(
             this.remoteObject.remoteObjectId, rowCount, schema, quantilesCol, this.page);
         this.page.setDataView(this.view);
         this.view.setAxis(axis);
@@ -385,5 +386,46 @@ export class Quantiles2DReceiver extends Receiver<QuantilesVector> {
     public onCompleted(): void {
         super.onCompleted();
         this.view.updateCompleted(this.elapsedMilliseconds());
+    }
+}
+
+/**
+ * This receiver is invoked once we have computed a histogram of the data on one column
+ * and we are have all the data needed to compute a quartile vector.
+ */
+export class QuartilesHistogramReceiver extends OnCompleteReceiver<Histogram> {
+    constructor(title: PageTitle, page: FullPage, protected remoteObjectId: RemoteObjectId,
+                protected rowCount: number,
+                protected schema: SchemaClass, protected qCol: IColumnDescription,
+                protected bucketCount: number, protected axisData: AxisData,
+                rr: RpcRequest<PartialResult<Histogram>>,
+                protected reusePage: boolean) {
+        super(page, rr, "quartiles");
+    }
+
+    run(value: Histogram): void {
+        const args: QuantileVectorArgs = {
+            quantileCount: 4,  // we display quartiles
+            cd: this.axisData.description,
+            seed: 0,  // scan all data
+            samplingRate: 1.0,
+            bucketCount: this.bucketCount,
+            quantilesColumn: this.qCol.name,
+            nonNullCounts: value.buckets
+        };
+        if (kindIsString(this.axisData.description.kind))
+            args.leftBoundaries = periodicSamples(this.axisData.dataRange.stringQuantiles, this.bucketCount);
+        else {
+            args.min = this.axisData.dataRange.min;
+            args.max = this.axisData.dataRange.max;
+        }
+
+        const title= new PageTitle("Quartiles of " + this.qCol.name + " grouped by " +
+            this.schema.displayName(args.cd.name));
+        const tt = new TableTargetAPI(this.remoteObjectId)
+        const rr = tt.createQuantilesVectorRequest(args);
+        rr.invoke(new QuartilesVectorReceiver(title, this.page, tt, this.rowCount,
+            this.schema, this.axisData, this.qCol, rr,
+            { chartKind: "QuartileVector", reusePage: this.reusePage }));
     }
 }

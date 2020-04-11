@@ -42,7 +42,7 @@ import {TrellisHistogram2DView} from "./dataViews/trellisHistogram2DView";
 import {TrellisHistogramView} from "./dataViews/trellisHistogramView";
 import JSONEditor, {JSONEditorOptions} from "jsoneditor";
 import {OnCompleteReceiver} from "./rpc";
-import {Quantiles2DView} from "./dataViews/quantiles2DView";
+import {QuartilesVectorView} from "./dataViews/quartilesVectorView";
 
 export interface IViewSerialization {
     viewKind: ViewKind;
@@ -462,8 +462,8 @@ export class DatasetView implements IHtmlElement {
             case "Histogram":
                 view = HistogramView.reconstruct(vs as HistogramSerialization, page);
                 break;
-            case "2DQuantiles":
-                view = Quantiles2DView.reconstruct(vs as QuantileVectorSerialization, page);
+            case "QuartileVector":
+                view = QuartilesVectorView.reconstruct(vs as QuantileVectorSerialization, page);
                 break;
             case "2DHistogram":
                 view = Histogram2DView.reconstruct(vs as Histogram2DSerialization, page);

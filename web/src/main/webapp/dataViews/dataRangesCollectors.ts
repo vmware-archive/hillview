@@ -31,6 +31,7 @@ import {AxisData} from "./axisData";
 import {TrellisHeatmapReceiver} from "./trellisHeatmapView";
 import {TrellisHistogram2DReceiver} from "./trellisHistogram2DView";
 import {DatasetView} from "../datasetView";
+import {QuartilesHistogramReceiver} from "./quartilesVectorView";
 
 /**
  * Describes the shape of trellis display.
@@ -269,14 +270,40 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
         }
 
         switch (this.options.chartKind) {
-            case "Histogram": {
-                const args: HistogramArgs[] = [];
-
+            case "QuartileVector": {
                 if (ranges[0].presentCount === 0) {
                     this.page.reportError("All values are missing");
                     return;
                 }
 
+                let maxXBucketCount = this.bucketCounts[0];
+                if (maxXBucketCount === 0) {
+                    maxXBucketCount = Math.min(
+                        Math.floor(chartSize.width / Resolution.minBarWidth),
+                        Resolution.maxBucketCount);
+                }
+
+                const histoArg = DataRangesReceiver.computeHistogramArgs(
+                    this.cds[0], ranges[0], maxXBucketCount,
+                    this.options.exact, chartSize);
+                const rr = this.originator.createHistogramRequest(histoArg);
+                rr.chain(this.operation);
+                const axisData = new AxisData(this.cds[0], ranges[0], histoArg.bucketCount);
+                const rec = new QuartilesHistogramReceiver(this.title, this.page,
+                    this.originator.remoteObjectId, rowCount, this.schema,
+                    this.cds[1],
+                    histoArg.bucketCount,
+                    axisData, rr, this.options.reusePage);
+                rr.invoke(rec);
+                break;
+            }
+            case "Histogram": {
+                if (ranges[0].presentCount === 0) {
+                    this.page.reportError("All values are missing");
+                    return;
+                }
+
+                const args: HistogramArgs[] = [];
                 let maxXBucketCount = this.bucketCounts[0];
                 if (maxXBucketCount === 0) {
                     maxXBucketCount = Math.min(
@@ -293,15 +320,14 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                     this.options.exact|| this.isPrivate(), chartSize);
                 args.push(cdfArg);
 
-                const rr = this.originator.createHistogramRequest(args);
+                const rr = this.originator.createHistogramAndCDFRequest(args);
                 rr.chain(this.operation);
                 const axisData = new AxisData(this.cds[0], ranges[0], histoArg.bucketCount);
                 if (this.title == null)
                     this.title = new PageTitle(
                         "Histogram of " + this.schema.displayName(this.cds[0].name).toString());
                 const renderer = new HistogramReceiver(this.title, this.page,
-                    this.originator.remoteObjectId, rowCount, this.schema, this.bucketCounts[0],
-                    axisData, rr, cdfArg.samplingRate, this.options.pieChart, this.options.reusePage); // TODO sampling rate?
+                    this.originator.remoteObjectId, rowCount, this.schema, axisData, rr, cdfArg.samplingRate, this.options.pieChart, this.options.reusePage); // TODO sampling rate?
                 rr.invoke(renderer);
                 break;
             }

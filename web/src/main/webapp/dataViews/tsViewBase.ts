@@ -29,7 +29,7 @@ import {
     RecordOrder,
     RemoteObjectId,
     StringFilterDescription,
-    StringColumnFilterDescription, AggregateDescription, CountWithConfidence
+    StringColumnFilterDescription, AggregateDescription, CountWithConfidence, kindIsNumeric
 } from "../javaBridge";
 import {OnCompleteReceiver} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
@@ -39,6 +39,7 @@ import {FullPage, PageTitle} from "../ui/fullPage";
 import {SubMenu, TopMenuItem} from "../ui/menu";
 import {SpecialChars, ViewKind} from "../ui/ui";
 import {
+    assert,
     cloneToSet,
     Converters,
     ICancellable,
@@ -325,6 +326,14 @@ export abstract class TSViewBase extends BigTableView {
         this.histogram(this.getSelectedColNames());
     }
 
+    protected quartileVectorSelected(): void {
+        if (this.getSelectedColCount() < 1 || this.getSelectedColCount() > 2) {
+            this.page.reportError("Must select 1 or 2 columns for histogram");
+            return;
+        }
+        this.quartileVector(this.getSelectedColNames());
+    }
+
     protected trellisSelected(heatmap: boolean): void {
         if (this.getSelectedColCount() < 2 || this.getSelectedColCount() > 3) {
             this.page.reportError("Must select 1 or 2 columns for Trellis polots");
@@ -594,6 +603,21 @@ export abstract class TSViewBase extends BigTableView {
         });
         d.setCacheTitle("HeavyHittersDialog");
         d.show();
+    }
+
+    private quartileVector(columns: string[]): void {
+        assert(columns.length === 2);
+        const cds = this.schema.getDescriptions(columns);
+        if (!kindIsNumeric(cds[1].kind)) {
+            this.page.reportError("Quartiles require a numeric second column " + columns[1]);
+            return;
+        }
+        const rr = this.createDataQuantilesRequest(cds, this.page, "QuartileVector");
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
+            [0, 0], cds, null, {
+                reusePage: false,
+                chartKind: "QuartileVector",
+            }));
     }
 }
 

@@ -20,7 +20,7 @@ import {HistogramSerialization, IViewSerialization} from "../datasetView";
 import {
     FilterDescription,
     Histogram, IColumnDescription, kindIsNumeric,
-    kindIsString, QuantileVectorArgs,
+    kindIsString,
     RecordOrder,
     RemoteObjectId,
 } from "../javaBridge";
@@ -41,7 +41,7 @@ import {
     ICancellable, makeInterval,
     Pair,
     PartialResult,
-    percent, periodicSamples,
+    percent,
     reorder,
     saveAs,
     significantDigits, significantDigitsHtml,
@@ -51,7 +51,7 @@ import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
 import {FilterReceiver, DataRangesReceiver} from "./dataRangesCollectors";
 import {BaseReceiver} from "../tableTarget";
-import {Quantiles2DReceiver} from "./quantiles2DView";
+import {QuartilesHistogramReceiver} from "./quartilesVectorView";
 
 /**
  * A HistogramView is responsible for showing a one-dimensional histogram on the screen.
@@ -412,27 +412,12 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
 
     private showQuartiles(colName: DisplayName): void {
         const oc = this.schema.findByDisplayName(colName);
-        const args: QuantileVectorArgs = {
-            quantileCount: 4,  // we display quartiles
-            cd: this.xAxisData.description,
-            seed: 0,  // scan all data
-            samplingRate: 1.0,
-            bucketCount: this.bucketCount,
-            quantilesColumn: oc.name,
-            nonNullCounts: this.histogram.buckets
-        };
-        if (kindIsString(this.xAxisData.description.kind))
-            args.leftBoundaries = periodicSamples(this.xAxisData.dataRange.stringQuantiles, this.bucketCount);
-        else {
-            args.min = this.xAxisData.dataRange.min;
-            args.max = this.xAxisData.dataRange.max;
-        }
-
         const title= new PageTitle("Quartiles of " + colName + " grouped by " +
-            this.schema.displayName(args.cd.name));
-        const rr = this.createQuantilesVectorRequest(args);
-        rr.invoke(new Quantiles2DReceiver(title, this.page, this, this.rowCount,
-            this.schema, this.xAxisData, oc, rr, { chartKind: "2DQuantiles", reusePage: false }));
+            this.schema.displayName(this.xAxisData.description.name));
+        const qhr = new QuartilesHistogramReceiver(title, this.page, this.remoteObjectId,
+            this.rowCount, this.schema, oc, this.bucketCount, this.xAxisData, null, false);
+        qhr.run(this.histogram);
+        qhr.onCompleted();
     }
 
     public changeBuckets(bucketCount: number): void {
@@ -575,7 +560,6 @@ export class HistogramReceiver extends Receiver<Pair<Histogram, Histogram>>  {
                 remoteTableId: string,
                 protected rowCount: number,
                 protected schema: SchemaClass,
-                protected bucketCount: number,
                 protected xAxisData: AxisData,
                 operation: ICancellable<Pair<Histogram, Histogram>>,
                 protected samplingRate: number,

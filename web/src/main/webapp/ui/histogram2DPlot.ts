@@ -19,7 +19,7 @@ import {axisLeft as d3axisLeft} from "d3-axis";
 import {format as d3format} from "d3-format";
 import {scaleLinear as d3scaleLinear} from "d3-scale";
 import {AxisData, AxisDescription, AxisKind} from "../dataViews/axisData";
-import {Heatmap} from "../javaBridge";
+import {Heatmap, Histogram} from "../javaBridge";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {D3Axis, D3Scale} from "./ui";
@@ -65,6 +65,7 @@ export class Histogram2DPlot extends Plot {
     public maxYAxis: number | null; // If not null the maximum value to display
     public max: number; // the maximum value in a stacked bar
     public colorMap: ColorMap;
+    public histogram: Histogram;  //  1D histogram by ignoring the y axis
 
     public constructor(protected plottingSurface: PlottingSurface) {
         super(plottingSurface);
@@ -96,6 +97,12 @@ export class Histogram2DPlot extends Plot {
 
         this.max = 0;
         const rects: Box[] = [];
+        this.histogram = {
+            buckets: [],
+            confidence: null,
+            missingConfidence: 0,
+            missingData: this.heatmap.missingData
+        };
         for (let x = 0; x < this.heatmap.buckets.length; x++) {
             let yTotal = 0;
             for (let y = 0; y < this.heatmap.buckets[x].length; y++) {
@@ -112,6 +119,7 @@ export class Histogram2DPlot extends Plot {
                 }
                 yTotal += vis;
             }
+            this.histogram.buckets.push(yTotal);
             if (this.heatmap.histogramMissingY != null) {
                 const v = this.heatmap.histogramMissingY.buckets[x];
                 const rec: Box = {
