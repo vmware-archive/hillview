@@ -22,13 +22,13 @@
 export const helpUrl = {
     "Table": "(#33-table-views)",
     "Histogram": "(#35-uni-dimensional-histogram-views)",
-    "2DHistogram": "(#36-two-dimensional-histogram-views)",
-    "Heatmap": "(#37-heatmap-views)",
+    "2DHistogram": "(#37-two-dimensional-histogram-views)",
+    "Heatmap": "(#38-heatmap-views)",
     "TrellisHistogram": "(#41-trellis-plots-of-1d-histograms)",
     "TrellisHeatmap": "(#43-trellis-plots-of-heatmaps)",
     "Trellis2DHistogram": "(#42-trellis-plots-of-2d-histograms)",
     "HeavyHitters": "(#34-frequent-elements-views)",
     "Schema": "(#32-schema-views)",
     "Load": "(#23-loading-data)",
-    "SVD Spectrum": "(#38-singular-value-spectrum-views)"
+    "SVD Spectrum": "(#39-singular-value-spectrum-views)"
 };

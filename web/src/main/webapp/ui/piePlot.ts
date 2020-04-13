@@ -20,8 +20,7 @@ import {AxisData} from "../dataViews/axisData";
 import {Histogram, kindIsString} from "../javaBridge";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
-import {D3Scale, SpecialChars} from "./ui";
-import {IBarPlot} from "./IBarPlot";
+import {SpecialChars} from "./ui";
 import {cloneArray, formatNumber, makeInterval, percent, significantDigits, valueWithConfidence} from "../util";
 
 interface ValueAndIndex {
@@ -32,7 +31,7 @@ interface ValueAndIndex {
 /**
  * A PiePlot draws a histogram as a pie chart on a PlottingSurface.
  */
-export class PiePlot extends Plot implements IBarPlot {
+export class PiePlot extends Plot {
     /**
      * Histogram that is being drawn.
      */
@@ -250,15 +249,5 @@ export class PiePlot extends Plot implements IBarPlot {
             return;
 
         this.drawPie();
-    }
-
-    // These should not be called.
-    public getYScale(): D3Scale {
-        return null;
-    }
-
-    // noinspection JSUnusedLocalSymbols
-    public get(x: number): [number, number] {
-        return null;
     }
 }

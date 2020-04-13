@@ -39,7 +39,7 @@ import {IDataView} from "../ui/dataview";
 import {D3SvgElement, Resolution} from "../ui/ui";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
-import {CDFPlot} from "../ui/CDFPlot";
+import {CDFPlot} from "../ui/cdfPlot";
 import {
     FilterReceiver,
     DataRangesReceiver,

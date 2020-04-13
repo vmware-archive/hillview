@@ -593,6 +593,12 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                     "Applies to one or two columns only.",
             }, selectedCount >= 1 && selectedCount <= 2);
             this.contextMenu.addItem({
+                text: "Quartile vector",
+                action: () => this.quartileVectorSelected(),
+                help: "Plot the data in the selected columns as a vector of quartiles. " +
+                    "Applies to one or two columns only.",
+            }, selectedCount == 2);
+            this.contextMenu.addItem({
                 text: "Heatmap",
                 action: () => this.heatmapSelected(),
                 help: "Plot the data in the selected columns as a heatmap. " +

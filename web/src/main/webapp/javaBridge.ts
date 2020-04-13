@@ -312,11 +312,13 @@ export interface NumericSamples {
     empty: boolean;
     min: number;
     max: number;
+    missing: number;
     samples: number[];
 }
 
 export interface QuantilesVector {
     data: NumericSamples[];
+    outOfBounds: number;
 }
 
 export interface HistogramArgs {
@@ -329,6 +331,12 @@ export interface HistogramArgs {
     // only used when doing double histograms
     min?: number;
     max?: number;
+}
+
+export interface QuantileVectorArgs extends HistogramArgs {
+    quantileCount: number,
+    quantilesColumn: string;
+    nonNullCounts: number[];
 }
 
 export interface HeavyHittersFilterInfo {

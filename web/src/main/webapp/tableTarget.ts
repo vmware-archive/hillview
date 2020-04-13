@@ -21,35 +21,40 @@
 
 import {DatasetView, IViewSerialization} from "./datasetView";
 import {
-    CombineOperators,
-    JSCreateColumnInfo,
+    AggregateDescription,
+    BasicColStats,
     BucketsInfo,
-    FilterDescription,
-    Heatmap,
-    HistogramArgs,
-    Histogram,
+    CombineOperators,
+    ComparisonFilterDescription,
+    ContainsArgs,
     CountWithConfidence,
+    EigenVal,
+    FilterDescription,
+    FindResult,
+    Heatmap,
+    Heatmap3D,
+    HeavyHittersFilterInfo,
+    Histogram,
+    HistogramArgs,
     IColumnDescription,
+    JSCreateColumnInfo,
+    JSFilterInfo,
     kindIsString,
+    KVCreateColumnInfo,
+    NextKArgs,
     NextKList,
+    QuantilesVector,
+    QuantileVectorArgs,
     RangeArgs,
     RecordOrder,
     RemoteObjectId,
+    RowFilterDescription,
     Schema,
-    TableSummary,
-    TopList,
-    NextKArgs,
-    ComparisonFilterDescription,
-    EigenVal,
     StringColumnFilterDescription,
-    FindResult,
-    Heatmap3D,
+    StringColumnsFilterDescription,
     StringFilterDescription,
-    ContainsArgs,
-    KVCreateColumnInfo,
-    BasicColStats,
-    AggregateDescription,
-    HeavyHittersFilterInfo, RowFilterDescription, StringColumnsFilterDescription, JSFilterInfo
+    TableSummary,
+    TopList
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
 import {FullPage, PageTitle} from "./ui/fullPage";
@@ -124,6 +129,8 @@ export class TableTargetAPI extends RemoteObject {
         const maxWindows = Math.floor(width / Resolution.minTrellisWindowSize) *
             Math.floor(size.height / Resolution.minTrellisWindowSize);
         switch (viewKind) {
+            case "QuartileVector":
+                return [Resolution.maxBucketCount, Resolution.maxBucketCount];
             case "Histogram":
                 // Always get the window size; we integrate the CDF to draw the actual histogram.
                 return [size.width];
@@ -169,6 +176,11 @@ export class TableTargetAPI extends RemoteObject {
         }
         const method = "getDataQuantiles" + cds.length + "D";
         return this.createStreamingRpcRequest<BucketsInfo>(method, args);
+    }
+
+    public createQuantilesVectorRequest(args: QuantileVectorArgs):
+        RpcRequest<PartialResult<QuantilesVector>> {
+        return this.createStreamingRpcRequest<QuantilesVector>("getQuantilesVector", args);
     }
 
     public createContainsRequest(order: RecordOrder, row: any[]): RpcRequest<RemoteObjectId> {
@@ -361,10 +373,16 @@ RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<Heatmap3D>("heatmap3D", info);
     }
 
-    public createHistogramRequest(info: HistogramArgs[]):
+    public createHistogramRequest(info: HistogramArgs):
+        RpcRequest<PartialResult<Histogram>> {
+        return this.createStreamingRpcRequest<Histogram>(
+            "histogram", info);
+    }
+
+    public createHistogramAndCDFRequest(info: HistogramArgs[]):
     RpcRequest<PartialResult<Pair<Histogram, Histogram>>> {
         return this.createStreamingRpcRequest<Pair<Histogram, Histogram>>(
-            "histogram", info);
+            "histogramAndCDF", info);
     }
 
     public createSetOperationRequest(setOp: CombineOperators): RpcRequest<PartialResult<RemoteObjectId>> {

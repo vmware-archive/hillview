@@ -14,7 +14,7 @@ export abstract class LegendPlot extends Plot {
     protected drawn: boolean;
     protected dragging: boolean;
     protected dragMoved: boolean;
-    protected width: number;
+    public readonly width: number;
     protected x: number;
     protected y: number;
     protected selectionCompleted: (xl: number, xr: number) => void;

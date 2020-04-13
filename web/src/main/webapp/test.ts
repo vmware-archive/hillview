@@ -16,7 +16,7 @@
  */
 
 import {NotifyDialog} from "./ui/dialog";
-import {findElement} from "./util";
+import {assert, findElement} from "./util";
 
 interface TestOperation {
     /**
@@ -122,6 +122,10 @@ export class Test {
         this.createTestProgram();
         this.runNext();
     }
+    
+    private static existsElement(cssselector: string): boolean {
+        return findElement(cssselector, true) != null;
+    }
 
     public createTestProgram(): void {
         /*
@@ -143,12 +147,33 @@ export class Test {
             cont: () => findElement("#hillviewPage0 .topMenu #Flights__15_columns__CSV_").click(),
         }, {
             description: "Show no columns",
-            cond: () => findElement("#hillviewPage1 .idle") != null,
+            cond: () => Test.existsElement("#hillviewPage1 .idle"),
             cont: () => findElement("#hillviewPage1 .topMenu #No_columns").click(),
         }, {
-            description: "show column 0",
+            description: "rename column FlightDate to Date; drop column Cancelled",
             cond: () => true,
             cont: () => {
+                const date = findElement("#hillviewPage1 thead td[data-colname=FlightDate] .truncated");
+                const evt = contextMenuEvent();
+                date.dispatchEvent(evt);
+                const rename = findElement("#hillviewPage1 .dropdown #Rename___");
+                rename.click();
+                const formField = findElement(".dialog #name");
+                (formField as HTMLInputElement).value = "Date";
+                const confirm = findElement(".dialog .confirm");
+                confirm.click(); // synchronous -- fall into next test
+                // Drop column cancelled
+                const cancCol = findElement("#hillviewPage1 thead td[data-colname=Cancelled] .truncated");
+                cancCol.dispatchEvent(evt);
+                const item = findElement("#hillviewPage1 .dropdown #Drop");
+                item.click();
+            },
+        }, {
+            description: "show column 0",
+            cond: () => Test.existsElement("#hillviewPage1 .idle"),
+            cont: () => {
+                // Check that Cancelled column does not exist
+                assert(!Test.existsElement("#hillviewPage1 thead td[data-colname=Cancelled]"));
                 const col0 = findElement("#hillviewPage1 thead .col0");
                 const evt = contextMenuEvent();
                 col0.dispatchEvent(evt);
@@ -201,7 +226,7 @@ export class Test {
             },
         }, {
             description: "Show a categorical histogram",
-            cond: () => findElement("#hillviewPage4 .idle") != null,
+            cond: () => Test.existsElement("#hillviewPage4 .idle"),
             cont: () => {
                 // Show a histogram
                 const col2 = findElement("#hillviewPage1 thead .col2");
@@ -212,7 +237,7 @@ export class Test {
             },
         }, {
             description: "Show a 2D histogram",
-            cond: () => findElement("#hillviewPage5 .idle") != null,
+            cond: () => Test.existsElement("#hillviewPage5 .idle"),
             cont: () => {
                 // Show a histogram
                 findElement("#hillviewPage1 thead .col8").click();
@@ -226,7 +251,7 @@ export class Test {
             },
         }, {
             description: "Scroll",
-            cond: () => findElement("#hillviewPage1 .idle") != null,
+            cond: () => Test.existsElement("#hillviewPage1 .idle"),
             cont: () => {
                 const evt = keyboardEvent("PageDown");
                 const tableHead = findElement("#hillviewPage1 #tableContainer");
@@ -234,7 +259,7 @@ export class Test {
             },
         }, {
             description: "Filter",
-            cond: () => findElement("#hillviewPage1 .idle") != null,
+            cond: () => Test.existsElement("#hillviewPage1 .idle"),
             cont: () => {
                 // Show a histogram
                 const col2 = findElement("#hillviewPage1 thead .col2");
@@ -247,7 +272,7 @@ export class Test {
             },
         }, {
            description: "Trellis histogram plot",
-           cond: () => findElement("#hillviewPage6 .idle") != null,
+           cond: () => Test.existsElement("#hillviewPage6 .idle"),
            cont: () => {
                findElement("#hillviewPage6 .topMenu #View #group_by___").click();
                // Produces hillviewPage8
@@ -255,7 +280,7 @@ export class Test {
            }
         }, {
             description: "Trellis 2d histogram plot",
-            cond: () => findElement("#hillviewPage8 .idle") != null,
+            cond: () => Test.existsElement("#hillviewPage8 .idle"),
             cont: () => {
                 findElement("#hillviewPage5 .topMenu #View #group_by___").click();
                 // Produces hillviewPage9
@@ -263,14 +288,14 @@ export class Test {
             }
         }, {
             description: "Trellis heatmap plot",
-            cond: () => findElement("#hillviewPage9 .idle") != null,
+            cond: () => Test.existsElement("#hillviewPage9 .idle"),
             cont: () => {
                 // Produces hillviewPage10
                 findElement("#hillviewPage8 .topMenu #View #heatmap").click();
             }
         }, {
             description: "Change buckets",
-            cond: () => findElement("#hillviewPage10 .idle") != null,
+            cond: () => Test.existsElement("#hillviewPage10 .idle"),
             cont: () => {
                 const el2 = findElement("#hillviewPage6 .topMenu #View #__buckets___");
                 el2.click();
@@ -280,15 +305,15 @@ export class Test {
             },
         }, {
             description: "Close some windows",
-            cond: () => findElement("#hillviewPage10 .idle") != null,
+            cond: () => Test.existsElement("#hillviewPage10 .idle"),
             cont: () => {
-                if (false) {
+                /*
                     for (let i = 2; i < 8; i++) {
                         const el = findElement("#hillviewPage" + i.toString() + " .close");
                         if (el != null)
                             el.click();
                     }
-                }
+                */
                 const dialog = new NotifyDialog("Tests are completed", null, "Done.");
                 dialog.show();
             },

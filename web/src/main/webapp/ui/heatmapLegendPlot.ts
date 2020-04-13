@@ -22,7 +22,7 @@ import {
 import {D3Axis, D3Scale, D3SvgElement, Resolution} from "./ui";
 import {ContextMenu} from "./menu";
 import {HtmlPlottingSurface, PlottingSurface} from "./plottingSurface";
-import {assert, Color} from "../util";
+import {assert, desaturateOutsideRange} from "../util";
 import {scaleLinear as d3scaleLinear, scaleLog as d3scaleLog} from "d3-scale";
 import {axisBottom as d3axisBottom} from "d3-axis";
 import {AxisDescription} from "../dataViews/axisData";
@@ -38,15 +38,10 @@ class HeatmapColormap {
      */
     public static logThreshold = 50;
     public logScale: boolean;
-    private minSaturated: number;
-    private maxSaturated: number;
     protected map: (x: number) => string;
 
     constructor(public readonly min: number, public readonly max: number) {
         this.setMap(d3interpolateWarm);
-        // out of range
-        this.minSaturated = -1;
-        this.maxSaturated = 2;
     }
 
     public setLogScale(logScale: boolean): void {
@@ -66,16 +61,7 @@ class HeatmapColormap {
             x = this.applyLog(x);
         else
             x = this.applyLinear(x);
-        return this.desaturate(x, this.map(x));
-    }
-
-    private desaturate(x: number, c: string): string {
-        if (x < this.minSaturated || x > this.maxSaturated) {
-            const color = Color.parse(c);
-            const b = color.brighten(4);
-            return b.toString();
-        }
-        return c;
+        return this.map(x);
     }
 
     private applyLinear(x: number): number {
@@ -90,8 +76,7 @@ class HeatmapColormap {
 
     // Colors outside the specified range are de-saturated.
     public desaturateOutsideRange(min: number, max: number): void {
-        this.minSaturated = min;
-        this.maxSaturated = max;
+        this.setMap(desaturateOutsideRange(d3interpolateWarm, min, max));
     }
 }
 

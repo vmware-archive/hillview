@@ -31,7 +31,7 @@ export interface Pair<T1, T2> {
     second: T2;
 }
 
-export function assert(condition: boolean, message?: string): void {
+export function assert(condition: boolean, message?: string): asserts condition {
     console.assert(condition, message);  // tslint:disable-line
 }
 
@@ -120,10 +120,13 @@ export class Converters {
 /**
  * Retrieves a node from the DOM starting from a CSS selector specification.
  * @param cssselector  Node specification as a CSS selector.
+ * @param allowNull    If true allow null values to be found.  Default is false.
  * @returns The unique selected node.
  */
-export function findElement(cssselector: string): HTMLElement | null {
+export function findElement(cssselector: string, allowNull?: boolean): HTMLElement | null {
     const val = document.querySelector(cssselector);
+    if (allowNull == null || !allowNull)
+        assert(val != null);
     return val as HTMLElement;
 }
 
@@ -673,5 +676,41 @@ export class Color {
             (this.r + (amount - 1)) / amount,
             (this.g + (amount - 1)) / amount,
             (this.b + (amount - 1)) / amount);
+    }
+}
+
+/**
+ * Given some strings returns a subset of them.
+ * @param data   A set of strings.
+ * @param count  Number of strings to return.
+ * @returns      At most count strings equi-spaced.
+ */
+export function periodicSamples(data: string[], count: number): string[] {
+    if (data == null)
+        return null;
+
+    if (count >= data.length)
+        return data;
+    const boundaries: string[] = [];
+    for (let i = 0; i < count; i++) {
+        // This formula sets the first bucket left boundary at .5 and the last at (data.length - 1)+ .5
+        const index = Math.ceil(i * data.length / count - .5);
+        console.assert(index >= 0 && index < data.length);
+        boundaries.push(data[index]);
+    }
+    return boundaries;
+}
+
+export type ColorMap = (d: number) => string;
+
+export function desaturateOutsideRange(c: ColorMap, min: number, max: number): ColorMap {
+    return (value) => {
+        const color = c(value);
+        if (value < min || value > max) {
+            const cValue = Color.parse(color);
+            const b = cValue.brighten(4);
+            return b.toString();
+        }
+        return color;
     }
 }

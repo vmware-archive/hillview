@@ -191,14 +191,42 @@ public final class TableTarget extends RpcTarget {
         this.runCompleteSketch(this.table, sk, request, context);
     }
 
+    static class QuantilesVectorInfo extends HistogramRequestInfo {
+        int quantileCount;
+        /**
+         * Column whose quantiles are being computed.
+         */
+        String quantilesColumn = "";
+        /**
+         * For each bucket the count of non-null elements.
+         */
+        long[] nonNullCounts = new long[0];
+    }
+
+    @SuppressWarnings("unused")
     @HillviewRpc
     public void getQuantilesVector(RpcRequest request, RpcRequestContext context) {
-        // TODO
-        /*
-        ISketch<ITable, QuantilesVector> sk = args[0].getSketch();
-        QuantilesVectorReduce qvr = new QuantilesVectorReduce(sk);
+        QuantilesVectorInfo info = request.parseArgs(QuantilesVectorInfo.class);
+        IHistogramBuckets buckets = info.getBuckets();
+        final double samplesRequired = 100 * info.quantileCount * info.quantileCount;
+        double[] samplingRates = new double[buckets.getBucketCount()];
+        assert buckets.getBucketCount() == info.nonNullCounts.length;
+        for (int i = 0; i < info.nonNullCounts.length; i++) {
+            double ct = info.nonNullCounts[i];
+            double rate = Math.max(samplesRequired / ct, 1.0);
+            samplingRates[i] = rate;
+        }
+        QuantilesVectorSketch qvs = new QuantilesVectorSketch(
+                buckets, info.cd.name, info.quantilesColumn, samplingRates, info.seed);
+        PostProcessedSketch<ITable, QuantilesVector, QuantilesVector> qvr =
+                new PostProcessedSketch<ITable, QuantilesVector, QuantilesVector>(qvs) {
+            @Override
+            public QuantilesVector postProcess(@Nullable QuantilesVector result) {
+                Converters.checkNull(result);
+                return result.quantiles(info.quantileCount);
+            }
+        };
         this.runSketch(this.table, qvr, request, context);
-         */
     }
 
     // The following functions return lists with subclasses of BucketsInfo: either
@@ -243,10 +271,18 @@ public final class TableTarget extends RpcTarget {
 
     @HillviewRpc
     public void histogram(RpcRequest request, RpcRequestContext context) {
+        HistogramRequestInfo info = request.parseArgs(HistogramRequestInfo.class);
+        HistogramSketch sk = info.getSketch();
+        this.runSketch(this.table, sk, request, context);
+    }
+
+    @SuppressWarnings("unused")
+    @HillviewRpc
+    public void histogramAndCDF(RpcRequest request, RpcRequestContext context) {
         HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
         assert info.length == 2;
-        HistogramSketch sk = info[0].getSketch(null); // Histogram
-        HistogramSketch cdf = info[1].getSketch(null); // CDF: also histogram but at finer granularity
+        HistogramSketch sk = info[0].getSketch(); // Histogram
+        HistogramSketch cdf = info[1].getSketch(); // CDF: also histogram but at finer granularity
         ConcurrentSketch<ITable, Histogram, Histogram> csk =
                 new ConcurrentSketch<ITable, Histogram, Histogram>(sk, cdf);
         DataWithCDF<Histogram> post = new DataWithCDF<Histogram>(csk);
@@ -275,7 +311,7 @@ public final class TableTarget extends RpcTarget {
                 info[0].cd.name,
                 info[1].cd.name,
                 info[0].samplingRate, info[0].seed);
-        HistogramSketch cdf = info[2].getSketch(null);
+        HistogramSketch cdf = info[2].getSketch();
         ConcurrentSketch<ITable, Heatmap, Histogram> csk =
                 new ConcurrentSketch<ITable, Heatmap, Histogram>(sk, cdf);
         DataWithCDF<Heatmap> dwc = new DataWithCDF<Heatmap>(csk);

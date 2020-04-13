@@ -19,23 +19,25 @@ import {axisLeft as d3axisLeft} from "d3-axis";
 import {format as d3format} from "d3-format";
 import {scaleLinear as d3scaleLinear} from "d3-scale";
 import {AxisData, AxisDescription, AxisKind} from "../dataViews/axisData";
-import {Heatmap} from "../javaBridge";
+import {Heatmap, Histogram} from "../javaBridge";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {D3Axis, D3Scale} from "./ui";
 import {SchemaClass} from "../schemaClass";
 import {symbol, symbolTriangle} from "d3-shape";
+import {ColorMap} from "../util";
 
 /**
  * Represents an SVG rectangle drawn on the screen.
  */
 interface Box {
     /**
-     * Bucket index on the X axis.
+     * Bucket index on the X axis.  null if out of range.
      */
-    xIndex: number;
+    xIndex: number | null;
     /**
-     * Bucket index on the Y axis.
+     * Bucket index on the Y axis.  null if out of range.
+     * -1 for "missing" data.
      */
     yIndex: number;
     /**
@@ -62,6 +64,8 @@ export class Histogram2DPlot extends Plot {
     protected schema: SchemaClass;
     public maxYAxis: number | null; // If not null the maximum value to display
     public max: number; // the maximum value in a stacked bar
+    public colorMap: ColorMap;
+    public histogram: Histogram;  //  1D histogram by ignoring the y axis
 
     public constructor(protected plottingSurface: PlottingSurface) {
         super(plottingSurface);
@@ -72,6 +76,7 @@ export class Histogram2DPlot extends Plot {
                    samplingRate: number,
                    normalized: boolean,
                    schema: SchemaClass,
+                   colorMap: ColorMap,
                    max: number | null): void {
         this.heatmap = heatmap;
         this.xAxisData = xAxisData;
@@ -79,6 +84,7 @@ export class Histogram2DPlot extends Plot {
         this.normalized = normalized;
         this.schema = schema;
         this.maxYAxis = max;
+        this.colorMap = colorMap;
     }
 
     public draw(): void {
@@ -91,6 +97,12 @@ export class Histogram2DPlot extends Plot {
 
         this.max = 0;
         const rects: Box[] = [];
+        this.histogram = {
+            buckets: [],
+            confidence: null,
+            missingConfidence: 0,
+            missingData: this.heatmap.missingData
+        };
         for (let x = 0; x < this.heatmap.buckets.length; x++) {
             let yTotal = 0;
             for (let y = 0; y < this.heatmap.buckets[x].length; y++) {
@@ -107,12 +119,13 @@ export class Histogram2DPlot extends Plot {
                 }
                 yTotal += vis;
             }
+            this.histogram.buckets.push(yTotal);
             if (this.heatmap.histogramMissingY != null) {
                 const v = this.heatmap.histogramMissingY.buckets[x];
                 const rec: Box = {
                     xIndex: x,
                     countBelow: yTotal,
-                    yIndex: this.heatmap.buckets[x].length,
+                    yIndex: -1,
                     count: v
                 };
                 rects.push(rec);
@@ -158,7 +171,7 @@ export class Histogram2DPlot extends Plot {
             .attr("width", this.barWidth - 1)
             .attr("fill", (d: Box) => this.color(d.yIndex, yPoints - 1))
             .attr("stroke", "black")
-            .attr("stroke-width", (d: Box) => d.yIndex > yPoints - 1 ? 1 : 0)
+            .attr("stroke-width", (d: Box) => d.yIndex < 0 ? 1 : 0)
             .exit()
             // overflow signs if necessary
             .data(counts)
@@ -263,7 +276,7 @@ export class Histogram2DPlot extends Plot {
         // Find out the rectangle where the mouse is
         const xIndex = Math.floor(x / this.getBarWidth());
         let perc: number = 0;
-        let colorIndex: number = null;
+        let yIndex: number = null;
         let found = false;
         if (xIndex < 0 || xIndex >= this.heatmap.buckets.length)
             return null;
@@ -289,7 +302,7 @@ export class Histogram2DPlot extends Plot {
             yTotal += values[i];
             if (yTotalScaled >= yScaled && !found) {
                 perc = values[i];
-                colorIndex = i;
+                yIndex = i;
                 found = true;
             }
         }
@@ -300,24 +313,24 @@ export class Histogram2DPlot extends Plot {
             yTotalScaled += missing * scale;
             if (!found && yTotalScaled >= yScaled) {
                 perc = missing;
-                colorIndex = -1;
+                yIndex = -1;  // missing
             }
         }
         return {
             xIndex: xIndex,
-            yIndex: colorIndex,
+            yIndex: yIndex,
             count: perc,
             countBelow: yTotal
         };
     }
 
     // noinspection JSMethodCanBeStatic
-    public color(d: number, max: number): string {
-        if (d > max)
-        // This is for the "missing" data
+    private color(d: number, max: number): string {
+        if (d < 0 || d > max)
+            // This is for the "missing" data
             return "none";
         if (max === 0)
-            return Plot.colorMap(0);
-        return Plot.colorMap(d / max);
+            return this.colorMap(0);
+        return this.colorMap(d / max);
     }
 }

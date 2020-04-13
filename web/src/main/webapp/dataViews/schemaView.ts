@@ -259,6 +259,12 @@ export class SchemaView extends TSViewBase {
             help: "Plot the data in the selected columns as a histogram.  Applies to one or two columns only."
         }, selectedCount >= 1 && selectedCount <= 2);
         this.contextMenu.addItem({
+            text: "Quartile vector",
+            action: () => this.quartileVectorSelected(),
+            help: "Plot the data in the selected columns as vector of quartiles. " +
+                "Applies to two columns only.",
+        }, selectedCount === 2);
+        this.contextMenu.addItem({
             text: "Heatmap",
             action: () => this.heatmapSelected(),
             help: "Plot the data in the selected columns as a heatmap or as a Trellis plot of heatmaps. " +

@@ -34,7 +34,7 @@ import {
 import {IDataView} from "../ui/dataview";
 import {ChartOptions, Resolution} from "../ui/ui";
 import {SubMenu, TopMenu} from "../ui/menu";
-import {Histogram2DPlot} from "../ui/Histogram2DPlot";
+import {Histogram2DPlot} from "../ui/histogram2DPlot";
 import {
     FilterReceiver,
     DataRangesReceiver,
@@ -121,7 +121,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
         this.legendDiv = this.makeToplevelDiv();
     }
 
-    protected createNewSurfaces(): void {
+    protected createNewSurfaces(keepColorMap: boolean): void {
         if (this.surface != null)
             this.surface.destroy();
         if (this.legendSurface != null)
@@ -129,7 +129,10 @@ export class TrellisHistogram2DView extends TrellisChartView {
         this.hps = [];
         this.legendSurface = new HtmlPlottingSurface(this.legendDiv, this.page, {
             height: Resolution.legendSpaceHeight });
-        this.legendPlot = new HistogramLegendPlot(this.legendSurface,
+        if (keepColorMap)
+            this.legendPlot.setSurface(this.legendSurface);
+        else
+            this.legendPlot = new HistogramLegendPlot(this.legendSurface,
             (xl, xr) => { this.legendSelectionCompleted(xl, xr); });
         this.createAllSurfaces( (surface) => {
             const hp = new Histogram2DPlot(surface);
@@ -287,7 +290,8 @@ export class TrellisHistogram2DView extends TrellisChartView {
         bucketDialog.setAction(() => {
             const ct = bucketDialog.getBucketCount();
             if (ct != null)
-                this.updateView(this.data, [ct, this.legendAxisData.bucketCount], this.maxYAxis)
+                this.updateView(this.data, [ct, this.legendAxisData.bucketCount],
+                    this.maxYAxis, true)
         });
         bucketDialog.show();
     }
@@ -339,7 +343,8 @@ export class TrellisHistogram2DView extends TrellisChartView {
     public resize(): void {
         const chartSize = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
         this.shape = TrellisLayoutComputation.resize(chartSize.width, chartSize.height, this.shape);
-        this.updateView(this.data, [this.xAxisData.bucketCount, this.legendAxisData.bucketCount], this.maxYAxis);
+        this.updateView(this.data, [this.xAxisData.bucketCount, this.legendAxisData.bucketCount],
+            this.maxYAxis, true);
     }
 
     public refresh(): void {
@@ -390,8 +395,8 @@ export class TrellisHistogram2DView extends TrellisChartView {
         return view;
     }
 
-    public updateView(data: Heatmap3D, bucketCount: number[], maxYAxis: number | null): void {
-        this.createNewSurfaces();
+    public updateView(data: Heatmap3D, bucketCount: number[], maxYAxis: number | null, keepColorMap: boolean): void {
+        this.createNewSurfaces(keepColorMap);
         this.data = data;
         let max = maxYAxis;
         if (maxYAxis == null) {
@@ -416,7 +421,8 @@ export class TrellisHistogram2DView extends TrellisChartView {
                 totalSize: data.eitherMissing + data.totalPresent
             };
             const plot = this.hps[i];
-            plot.setData(heatmap, this.xAxisData, this.samplingRate, this.relative, this.schema, max);
+            plot.setData(heatmap, this.xAxisData, this.samplingRate, this.relative,
+                this.schema, this.legendPlot.colorMap, max);
             plot.draw();
         }
 
@@ -480,6 +486,12 @@ export class TrellisHistogram2DView extends TrellisChartView {
         const x1 = this.legendAxisData.invertToNumber(xr);
         if (x0 > x1) {
             this.page.reportError("No data selected");
+            return;
+        }
+
+        if (d3event.sourceEvent.shiftKey) {
+            this.legendPlot.emphasizeRange(xl / this.legendPlot.width, xr / this.legendPlot.width);
+            this.resize();
             return;
         }
 
@@ -549,7 +561,8 @@ export class TrellisHistogram2DReceiver extends Receiver<Heatmap3D> {
             return;
         }
 
-        this.trellisView.updateView(value.data, [this.axes[0].bucketCount, this.axes[1].bucketCount], null);
+        this.trellisView.updateView(value.data, [this.axes[0].bucketCount,
+            this.axes[1].bucketCount], null, false);
     }
 
     public onCompleted(): void {

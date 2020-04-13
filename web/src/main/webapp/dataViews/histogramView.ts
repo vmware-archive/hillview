@@ -19,15 +19,14 @@ import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {HistogramSerialization, IViewSerialization} from "../datasetView";
 import {
     FilterDescription,
-    Histogram, HistogramArgs,
-    IColumnDescription, kindIsNumeric,
+    Histogram, IColumnDescription, kindIsNumeric,
     kindIsString,
     RecordOrder,
     RemoteObjectId,
 } from "../javaBridge";
 import {Receiver} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
-import {CDFPlot, NoCDFPlot} from "../ui/CDFPlot";
+import {CDFPlot, NoCDFPlot} from "../ui/cdfPlot";
 import {IDataView} from "../ui/dataview";
 import {Dialog} from "../ui/dialog";
 import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
@@ -52,6 +51,7 @@ import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
 import {FilterReceiver, DataRangesReceiver} from "./dataRangesCollectors";
 import {BaseReceiver} from "../tableTarget";
+import {QuartilesHistogramReceiver} from "./quartilesVectorView";
 
 /**
  * A HistogramView is responsible for showing a one-dimensional histogram on the screen.
@@ -116,9 +116,9 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
                     help: "Draw a 2-dimensional histogram using this data and another column.",
                 },
                 {
-                    text: "quantiles...",
-                    action: () => this.chooseQuantilesColumn(),
-                    help: "Draw quantiles of a numeric column for each bucket of this histogram.",
+                    text: "quartiles...",
+                    action: () => this.chooseQuartilesColumn(),
+                    help: "Draw quartiles of a numeric column for each bucket of this histogram.",
                 },
                 {
                     text: "group by...",
@@ -226,12 +226,14 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
 
         const hv = new HistogramView(
             ser.remoteObjectId, ser.rowCount, schema, ser.samplingRate, ser.isPie, page);
-        hv.setAxes(new AxisData(ser.columnDescription, null, ser.bucketCount));
+        hv.setAxis(new AxisData(ser.columnDescription, null, ser.bucketCount));
         hv.bucketCount = ser.bucketCount;
         return hv;
     }
 
-    public setAxes(xAxisData: AxisData): void {
+    public setAxis(xAxisData: AxisData): void {
+        // Note that the axis data has all information for the CDF plot, so the number
+        // of buckets/labels in the axisData is not the same as in the histogram.
         this.xAxisData = xAxisData;
         const submenu = this.menu.getSubmenu("View");
         submenu.enable("pie chart/histogram", kindIsString(this.xAxisData.description.kind) ||
@@ -278,7 +280,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
                 .attr("r", Resolution.mouseDotRadius)
                 .attr("fill", "blue");
 
-        const pointDesc = ["x", "y", "count"];
+        const pointDesc = ["x", "bucket", "y", "count"];
         pointDesc.push("cdf");
         this.pointDescription = new TextOverlay(this.surface.getChart(),
             this.surface.getActualChartSize(), pointDesc, 40);
@@ -289,10 +291,10 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
             summary = summary.appendSafeString(approx +formatNumber(histogram.missingData) + " missing, ");
         summary = summary.appendSafeString(approx + formatNumber(this.rowCount) + " points");
         if (this.xAxisData != null &&
-            this.xAxisData.range.stringQuantiles != null &&
-            this.xAxisData.range.allStringsKnown)
+            this.xAxisData.displayRange.stringQuantiles != null &&
+            this.xAxisData.displayRange.allStringsKnown)
             summary = summary.appendSafeString(
-                ", " + this.xAxisData.range.stringQuantiles.length + " distinct values");
+                ", " + this.xAxisData.displayRange.stringQuantiles.length + " distinct values");
         summary = summary.appendSafeString(
             ", " + String(this.bucketCount) + " buckets");
         if (this.samplingRate < 1.0)
@@ -349,7 +351,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         dialog.show();
     }
 
-    public chooseQuantilesColumn(): void {
+    public chooseQuartilesColumn(): void {
         const columns: DisplayName[] = [];
         for (let i = 0; i < this.schema.length; i++) {
             const col = this.schema.get(i);
@@ -363,11 +365,11 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
             return;
         }
 
-        const dialog = new Dialog("Choose column", "Select a second column to display quantiles.");
+        const dialog = new Dialog("Choose column", "Select a second column to display quartiles.");
         dialog.addColumnSelectField("column", "column", columns, null,
             "The second column that will be used in addition to the one displayed here " +
             "for drawing histogram with quantiles of the second column distributions.");
-        dialog.setAction(() => this.showQuantiles(dialog.getColumnName("column")));
+        dialog.setAction(() => this.showQuartiles(dialog.getColumnName("column")));
         dialog.show();
     }
 
@@ -408,11 +410,14 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         }));
     }
 
-    private showQuantiles(colName: DisplayName): void {
+    private showQuartiles(colName: DisplayName): void {
         const oc = this.schema.findByDisplayName(colName);
-        const cds: IColumnDescription[] = [this.xAxisData.description, oc];
-        // const rr = this.createQuantilesVectorRequest(cds, this.page, "2DQuantiles");
-        // TODO
+        const title= new PageTitle("Quartiles of " + colName + " grouped by " +
+            this.schema.displayName(this.xAxisData.description.name));
+        const qhr = new QuartilesHistogramReceiver(title, this.page, this.remoteObjectId,
+            this.rowCount, this.schema, oc, this.bucketCount, this.xAxisData, null, false);
+        qhr.run(this.histogram);
+        qhr.onCompleted();
     }
 
     public changeBuckets(bucketCount: number): void {
@@ -461,17 +466,23 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         if (this.pie) {
             // TODO
         } else {
+            const hp = this.plot as HistogramPlot;
+
             const position = d3mouse(this.surface.getChart().node());
             const mouseX = position[0];
             const mouseY = position[1];
 
             let xs = "";
-            if (this.xAxisData.scale != null)
+            let bucketDesc = "";
+            if (this.xAxisData.scale != null) {
                 xs = this.xAxisData.invert(position[0]);
-            const y = Math.round(this.plot.getYScale().invert(position[1]));
+                const bucket = hp.getBucketIndex(position[0]);
+                bucketDesc = this.xAxisData.bucketDescription(bucket, 20);
+            }
+            const y = Math.round(hp.getYScale().invert(position[1]));
             const ys = significantDigits(y);
-            const size = this.plot.get(mouseX);
-            const pointDesc = [xs, ys, makeInterval(size)];
+            const size = hp.get(mouseX);
+            const pointDesc = [xs, bucketDesc, ys, makeInterval(size)];
             const cdfPos = this.cdfPlot.getY(mouseX);
             this.cdfDot.attr("cx", mouseX);
             this.cdfDot.attr("cy", (1 - cdfPos) * this.surface.getChartHeight());
@@ -549,7 +560,6 @@ export class HistogramReceiver extends Receiver<Pair<Histogram, Histogram>>  {
                 remoteTableId: string,
                 protected rowCount: number,
                 protected schema: SchemaClass,
-                protected bucketCount: number,
                 protected xAxisData: AxisData,
                 operation: ICancellable<Pair<Histogram, Histogram>>,
                 protected samplingRate: number,
@@ -559,7 +569,7 @@ export class HistogramReceiver extends Receiver<Pair<Histogram, Histogram>>  {
             operation, "histogram");
         this.view = new HistogramView(
             remoteTableId, rowCount, schema, this.samplingRate, this.isPie, this.page);
-        this.view.setAxes(xAxisData);
+        this.view.setAxis(xAxisData);
         this.page.setDataView(this.view);
     }
 

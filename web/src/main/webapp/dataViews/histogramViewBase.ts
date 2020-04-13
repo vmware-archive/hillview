@@ -18,7 +18,7 @@
 import {mouse as d3mouse} from "d3-selection";
 import {RemoteObjectId} from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
-import {ICDFPlot} from "../ui/CDFPlot";
+import {ICDFPlot} from "../ui/cdfPlot";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
 import {D3SvgElement, Resolution, ViewKind} from "../ui/ui";

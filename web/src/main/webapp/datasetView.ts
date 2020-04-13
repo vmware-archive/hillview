@@ -42,6 +42,7 @@ import {TrellisHistogram2DView} from "./dataViews/trellisHistogram2DView";
 import {TrellisHistogramView} from "./dataViews/trellisHistogramView";
 import JSONEditor, {JSONEditorOptions} from "jsoneditor";
 import {OnCompleteReceiver} from "./rpc";
+import {QuartilesVectorView} from "./dataViews/quartilesVectorView";
 
 export interface IViewSerialization {
     viewKind: ViewKind;
@@ -82,7 +83,6 @@ export interface HeatmapSerialization extends IViewSerialization {
 }
 
 export interface QuantileVectorSerialization extends IViewSerialization {
-    samplingRate: number;
     columnDescription0: IColumnDescription;
     columnDescription1: IColumnDescription;
     xBucketCount: number;
@@ -462,6 +462,9 @@ export class DatasetView implements IHtmlElement {
             case "Histogram":
                 view = HistogramView.reconstruct(vs as HistogramSerialization, page);
                 break;
+            case "QuartileVector":
+                view = QuartilesVectorView.reconstruct(vs as QuantileVectorSerialization, page);
+                break;
             case "2DHistogram":
                 view = Histogram2DView.reconstruct(vs as Histogram2DSerialization, page);
                 break;
@@ -566,12 +569,6 @@ class UploadPrivacyReceiver extends OnCompleteReceiver<string> {
     // noinspection JSUnusedLocalSymbols
     public run(value: string): void {
         console.log("Privacy policy has been updated.");
-        /*
-        if (this.rebuild)
-            this.dataset.rebuild();
-        else
-            this.dataset.refresh();
-         */
         this.dataset.refresh();
     }
 }

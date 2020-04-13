@@ -413,6 +413,7 @@ export class FullPage implements IHtmlElement {
                 case "Histogram":
                 case "2DHistogram":
                 case "Heatmap":
+                case "QuartileVector":
                     this.xDrag.style.visibility = "visible";
                     this.yDrag.style.visibility = "visible";
                     break;
