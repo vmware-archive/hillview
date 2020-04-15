@@ -78,6 +78,14 @@ export class QuartilesVectorView extends HistogramViewBase {
                 text: "heatmap",
                 action: () => { this.doHeatmap(); },
                 help: "Plot this data as a heatmap view.",
+            }, {
+                text: "2D histogram",
+                action: () => { this.do2DHistogram(); },
+                help: "Plot this data as a 2D histogram.",
+            }, {
+                text: "1D histogram",
+                action: () => { this.doHistogram(); },
+                help: "Plot the X column as 1 D histogam.",
             }]) },
             page.dataset.combineMenu(this, page.pageId),
         ]);
@@ -166,6 +174,26 @@ export class QuartilesVectorView extends HistogramViewBase {
             chartKind: "Heatmap",
             exact: true
         }));
+    }
+
+    public doHistogram(): void {
+        const cds = [this.xAxisData.description];
+        const rr = this.createDataQuantilesRequest(cds, this.page, "Histogram");
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
+            [this.xAxisData.bucketCount], cds, null, {
+                reusePage: false,
+                chartKind: "Histogram"
+            }));
+    }
+
+    public do2DHistogram(): void {
+        const cds = [this.xAxisData.description, this.qCol];
+        const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
+            [this.xAxisData.bucketCount, 0], cds, null, {
+                reusePage: false,
+                chartKind: "2DHistogram"
+            }));
     }
 
     public export(): void {

@@ -53,6 +53,10 @@ public class NumericSamples implements IJson {
      * Number of missing values.
      */
     public long missing;
+    /**
+     * Number of elements scanned.
+     */
+    public long count;
 
     // Following 2 are only used only during construction.
     /**
@@ -64,6 +68,10 @@ public class NumericSamples implements IJson {
      */
     @Nullable
     private Randomness random;
+    /**
+     * Used during construction: insert a row only when skipRows is 0.
+     */
+    private int skipRows;
 
     public NumericSamples(double samplingRate, long seed) {
         this.samplingRate = samplingRate;
@@ -71,13 +79,17 @@ public class NumericSamples implements IJson {
         this.random = new Randomness(seed);
         this.empty = true;
         this.samples = new JsonList<Double>();
+        this.skipRows = 0;
+        this.count = 0;
     }
 
-    private NumericSamples(List<Double> data) {
+    private NumericSamples(List<Double> data, long count, double samplingRate) {
         this.empty = false;
         this.missing = 0;
-        this.samplingRate = 0;
+        this.samplingRate = samplingRate;
+        this.skipRows = 0;
         this.samples = new JsonList<Double>(data);
+        this.count = count;
     }
 
     public int size() {
@@ -92,7 +104,9 @@ public class NumericSamples implements IJson {
      * Combine two sets of numeric samples.  It just concatenates the lists.
      */
     NumericSamples add(NumericSamples other) {
-        NumericSamples result = new NumericSamples(this.samples);
+        NumericSamples result = new NumericSamples(this.samples, this.count + other.count,
+                Utilities.div(this.samplingRate * this.count + other.samplingRate * other.count,
+                        (this.count + other.count)));
         if (this.empty()) {
             result.min = other.min;
             result.max = other.max;
@@ -113,6 +127,7 @@ public class NumericSamples implements IJson {
      * Here is a number from the distribution; sample it.
      */
     public void add(double d) {
+        this.count++;
         if (this.empty) {
             this.empty = false;
             this.min = d;
@@ -121,9 +136,15 @@ public class NumericSamples implements IJson {
             this.min = Math.min(this.min, d);
             this.max = Math.max(this.max, d);
         }
-        assert this.random != null;
-        if (this.random.nextDouble() <= this.samplingRate)
+        if (this.skipRows == 0) {
             this.samples.add(d);
+            assert this.random != null;
+            this.skipRows = this.random.nextGeometric(this.samplingRate);
+            if (this.skipRows > 0)
+                this.skipRows--;
+        } else {
+            this.skipRows--;
+        }
     }
 
     /**
@@ -143,7 +164,7 @@ public class NumericSamples implements IJson {
             return this;
         List<Double> small = Utilities.decimate(this.samples, Math.floorDiv(this.samples.size(), expectedCount));
         small.remove(0);  // skip 0-th quantile
-        NumericSamples result = new NumericSamples(small);
+        NumericSamples result = new NumericSamples(small, this.count, this.samplingRate);
         result.min = this.min;
         result.max = this.max;
         return result;

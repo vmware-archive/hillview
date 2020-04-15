@@ -213,7 +213,7 @@ public final class TableTarget extends RpcTarget {
         assert buckets.getBucketCount() == info.nonNullCounts.length;
         for (int i = 0; i < info.nonNullCounts.length; i++) {
             double ct = info.nonNullCounts[i];
-            double rate = Math.max(samplesRequired / ct, 1.0);
+            double rate = Math.min(samplesRequired / ct, 1.0);
             samplingRates[i] = rate;
         }
         QuantilesVectorSketch qvs = new QuantilesVectorSketch(

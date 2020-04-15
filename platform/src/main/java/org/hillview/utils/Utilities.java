@@ -48,6 +48,12 @@ public class Utilities {
                         ") are not in sorted order.");
     }
 
+    public static double div(double value, long count) {
+        if (count == 0)
+            return value;  // probably also 0
+        return value / count;
+    }
+
     public static long toLong(double value) {
         if (value < Long.MIN_VALUE || value > Long.MAX_VALUE)
             throw new RuntimeException("Cannot convert to long " + value);

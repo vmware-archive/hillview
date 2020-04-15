@@ -49,7 +49,7 @@ public class QuantilesVectorSketch implements ISketch<ITable, QuantilesVector> {
             int bucket = this.buckets.indexOf(bucketCol, current);
             if (bucket < 0)
                 result.outOfBounds();
-            if (sampledCol.isMissing(current))
+            else if (sampledCol.isMissing(current))
                 result.addMissing(bucket);
             else
                 result.add(bucket, sampledCol.asDouble(current));
