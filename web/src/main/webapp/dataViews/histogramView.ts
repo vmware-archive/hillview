@@ -370,6 +370,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
             "The second column that will be used in addition to the one displayed here " +
             "for drawing histogram with quantiles of the second column distributions.");
         dialog.setAction(() => this.showQuartiles(dialog.getColumnName("column")));
+        dialog.setCacheTitle("HistogramQuartiles");
         dialog.show();
     }
 

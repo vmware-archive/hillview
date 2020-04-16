@@ -335,7 +335,7 @@ export class AxisData {
         if (this.description.kind === "Integer")
             result = formatNumber(Math.round(inv as number));
         else if (kindIsString(this.description.kind))
-            result = this.getString(inv as number, false);
+            result = this.getString(inv as number, true);
         else if (this.description.kind === "Double")
             result = formatNumber(inv as number);
         else if (this.description.kind === "Date")
