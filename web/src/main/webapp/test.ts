@@ -62,6 +62,10 @@ function mouseClickEvent(shift: boolean, control: boolean): Event {
     return evt;
 }
 
+function controlClickEvent(): Event {
+    return mouseClickEvent(false, true);
+}
+
 function keyboardEvent(code: string): Event {
     return new KeyboardEvent("keydown",
         { code: code, altKey: false, bubbles: true, cancelable: true, ctrlKey: false });
@@ -106,25 +110,31 @@ export class Test {
         if (op == null)
             return;
 
+        console.log("Evaluating condition for " + this.programCounter + ". " + op.description);
         if (op.cond()) {
-            console.log("Running test " + op.description);
+            console.log("Running test " + this.programCounter + ". " + op.description);
             op.cont();
+            console.log("Test completed " + this.programCounter + ". " + op.description);
             this.programCounter++;
+            console.log("Incremented: " + this.programCounter);
         }
     }
 
     private next(): void {
-        this.programCounter++;
-        this.runNext();
+        // Trigger a request to the remote site using a "ping" request
+        findElement("#hillviewPage0 .topMenu #Manage #List_machines").click();
     }
 
     public runTests(): void {
         this.createTestProgram();
+        this.programCounter = 0;
         this.runNext();
     }
     
     private static existsElement(cssselector: string): boolean {
-        return findElement(cssselector, true) != null;
+        const result = findElement(cssselector, true) != null;
+        console.log("Checking element existence: " + cssselector + "=" + result);
+        return result;
     }
 
     public createTestProgram(): void {
@@ -140,6 +150,7 @@ export class Test {
             8: Trellis 2D histograms (DepTime, DepDelay) grouped by ActualElapsedTime
             9: Trellis Histograms of UniqueCarrier grouped by ActualElapsedTime
             10: Trellis heatmap plot
+            11: Quartiles vector plot
          */
         this.addProgram([{
             description: "Load all flights",
@@ -150,8 +161,8 @@ export class Test {
             cond: () => Test.existsElement("#hillviewPage1 .idle"),
             cont: () => findElement("#hillviewPage1 .topMenu #No_columns").click(),
         }, {
-            description: "rename column FlightDate to Date; drop column Cancelled",
-            cond: () => true,
+            description: "rename column FlightDate to Date",
+            cond: () => Test.existsElement("#hillviewPage1 .idle"),
             cont: () => {
                 const date = findElement("#hillviewPage1 thead td[data-colname=FlightDate] .truncated");
                 const evt = contextMenuEvent();
@@ -161,9 +172,16 @@ export class Test {
                 const formField = findElement(".dialog #name");
                 (formField as HTMLInputElement).value = "Date";
                 const confirm = findElement(".dialog .confirm");
-                confirm.click(); // synchronous -- fall into next test
+                confirm.click();
+                this.next(); // synchronous -- fall into next test
+            }
+        }, {
+            description: "drop column Cancelled",
+            cond: () => true,
+            cont: () => {
                 // Drop column cancelled
                 const cancCol = findElement("#hillviewPage1 thead td[data-colname=Cancelled] .truncated");
+                const evt = contextMenuEvent();
                 cancCol.dispatchEvent(evt);
                 const item = findElement("#hillviewPage1 .dropdown #Drop");
                 item.click();
@@ -181,7 +199,7 @@ export class Test {
             },
         }, {
             description: "Show column 1",
-            cond: () => true,
+            cond: () => Test.existsElement("#hillviewPage1 .idle"),
             cont: () => {
                 const col1 = findElement("#hillviewPage1 thead .col1");
                 const evt = contextMenuEvent();
@@ -190,7 +208,7 @@ export class Test {
             },
         }, {
             description: "Hide column 0",
-            cond: () => true,
+            cond: () => Test.existsElement("#hillviewPage1 .idle"),
             cont: () => {
                 const col0 = findElement("#hillviewPage1 thead .col0");
                 const evt = contextMenuEvent();
@@ -209,15 +227,19 @@ export class Test {
                 row0.click();
                 // Add row 1
                 const row1 = findElement("#hillviewPage2 #row1");
-                const evt = mouseClickEvent(false, true);
-                row1.dispatchEvent(evt);  // control-click
+                const evt = controlClickEvent();
+                row1.dispatchEvent(evt);
                 // Add row 3
                 const row3 = findElement("#hillviewPage2 #row3");
                 row3.dispatchEvent(evt);
                 // Select menu item to show the associated table
                 findElement("#hillviewPage2 .topMenu #Selected_columns").click();
-                // No RPC.  It produces hillviewPage3
-                // Show a histogram
+                this.next(); // no rpc
+            }
+        }, {
+            description: "Show histogram from schema view",
+            cond: () => true,
+            cont: () => {
                 const col1 = findElement("#hillviewPage1 thead .col1");
                 const revt = contextMenuEvent();
                 col1.dispatchEvent(revt);
@@ -241,9 +263,9 @@ export class Test {
             cont: () => {
                 // Show a histogram
                 findElement("#hillviewPage1 thead .col8").click();
-                const evt = mouseClickEvent(false, true);
+                const evt = controlClickEvent();
                 const col9 = findElement("#hillviewPage1 thead .col9");
-                col9.dispatchEvent(evt); // control-click
+                col9.dispatchEvent(evt);
                 const revt = contextMenuEvent();
                 col9.dispatchEvent(revt);
                 // Produces hillviewPage6
@@ -304,8 +326,22 @@ export class Test {
                 this.next(); // changing buckets does not involve an RPC
             },
         }, {
-            description: "Close some windows",
+            description: "Quartiles vector",
             cond: () => Test.existsElement("#hillviewPage10 .idle"),
+            cont: () => {
+                const dest = findElement("#hillviewPage1 thead td[data-colname=Dest] .truncated");
+                dest.click();
+                const arrTime = findElement("#hillviewPage1 thead td[data-colname=ArrTime] .truncated");
+                const ctrl = controlClickEvent();
+                arrTime.dispatchEvent(ctrl);
+                const evt = contextMenuEvent();
+                arrTime.dispatchEvent(evt);
+                const qv = findElement("#hillviewPage1 .dropdown #Quartile_vector");
+                qv.click();
+            }
+        }, {
+            description: "Close some windows",
+            cond: () => Test.existsElement("#hillviewPage11 .idle"),
             cont: () => {
                 /*
                     for (let i = 2; i < 8; i++) {
@@ -317,7 +353,7 @@ export class Test {
                 const dialog = new NotifyDialog("Tests are completed", null, "Done.");
                 dialog.show();
             },
-        },
+        }
         ]);
     }
 }

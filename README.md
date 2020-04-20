@@ -33,7 +33,7 @@ Documentation for the [internal APIs](docs/hillview-apis.pdf).
 * clone this github repository
 * run the script `bin/install-dependencies.sh`
 * Download the Hillview release [zip
-file](https://github.com/vmware/hillview/releases/download/v0.7-alpha/hillview-bin.zip).
+file](https://github.com/vmware/hillview/releases/download/v0.8-alpha/hillview-bin.zip).
   Save it in the top directory of Hillview.
 * Unzip the release `unzip hillview-bin.zip`
 
