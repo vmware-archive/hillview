@@ -193,7 +193,7 @@ public class SimpleDBTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    public void histogram(RpcRequest request, RpcRequestContext context) {
+    public void histogramAndCDF(RpcRequest request, RpcRequestContext context) {
         HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
         assert info.length == 2;
         ColumnDescription cd = info[0].cd;  // both args should be on the same column

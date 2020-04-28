@@ -342,20 +342,19 @@ export abstract class TSViewBase extends BigTableView {
         this.trellis(this.getSelectedColNames(), heatmap);
     }
 
-    public twoDHistogramMenu(heatmap: boolean): void {
+    public two2ChartMenu(viewKind: ViewKind): void {
         if (this.schema.length < 2) {
             this.page.reportError("Could not find two columns that can be charted.");
             return;
         }
 
         const allColumns = this.schema.allDisplayNames();
-        const label = heatmap ? "heatmap" : "2D histogram";
-        const dia = new Dialog(label,
-                        "Display a " + label + " of the data in two columns");
+        const dia = new Dialog(viewKind,
+                        "Display a " + viewKind + " of the data in two columns");
         dia.addColumnSelectField("columnName0", "First column", allColumns, allColumns[0],
                     "First column (X axis)");
         dia.addColumnSelectField("columnName1", "Second column", allColumns, allColumns[1],
-                    "Second column " + (heatmap ? "(Y axis)" : "(color)"));
+                    "Second column " + (viewKind === "2DHistogram" ? "(Y axis)" : "(color)"));
         dia.setAction(
             () => {
                 const c0 = dia.getColumnName("columnName0");
@@ -366,10 +365,18 @@ export abstract class TSViewBase extends BigTableView {
                     this.page.reportError("The two columns must be distinct");
                     return;
                 }
-                if (heatmap)
-                    this.heatmap([col0, col1]);
-                else
-                    this.histogram([col0, col1]);
+                switch (viewKind) {
+                    case "2DHistogram":
+                        this.histogram([col0, col1]);
+                        break;
+                    case "Heatmap":
+                        this.heatmap([col0, col1]);
+                        break;
+                    case "QuartileVector":
+                        this.quartileVector([col0, col1]);
+                        break;
+
+                }
             },
         );
         dia.show();
@@ -462,9 +469,11 @@ export abstract class TSViewBase extends BigTableView {
             text: "Chart", help: "Draw a chart", subMenu: new SubMenu([
                 { text: "1D Histogram...", action: () => this.oneDHistogramMenu(),
                     help: "Draw a histogram of the data in one column."},
-                { text: "2D Histogram...", action: () => this.twoDHistogramMenu(false),
+                { text: "2D Histogram...", action: () => this.two2ChartMenu("2DHistogram"),
                     help: "Draw a histogram of the data in two columns."},
-                { text: "Heatmap...", action: () => this.twoDHistogramMenu(true),
+                { text: "Quartile vector plot...", action: () => this.two2ChartMenu("QuartileVector"),
+                    help: "Draw a vector of quartiles."},
+                { text: "Heatmap...", action: () => this.two2ChartMenu("Heatmap"),
                     help: "Draw a heatmap of the data in two columns."},
                 { text: "Trellis histograms...", action: () => this.trellisMenu(true, false),
                     help: "Draw a Trellis plot of histograms."},

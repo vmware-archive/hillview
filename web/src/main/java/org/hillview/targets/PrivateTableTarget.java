@@ -86,7 +86,7 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
     // but we still compute two of them for one request because the histogram buckets and CDF
     // are computed at different bucket granularities.
     @HillviewRpc
-    public void histogram(RpcRequest request, RpcRequestContext context) {
+    public void histogramAndCDF(RpcRequest request, RpcRequestContext context) {
         HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
         assert info.length == 2;
         ColumnQuantization quantization = this.getPrivacySchema().quantization(info[0].cd.name);

@@ -113,7 +113,7 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
     }
 
     @HillviewRpc
-    public void histogram(RpcRequest request, RpcRequestContext context) {
+    public void histogramAndCDF(RpcRequest request, RpcRequestContext context) {
         HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
         assert info.length == 2;
 
