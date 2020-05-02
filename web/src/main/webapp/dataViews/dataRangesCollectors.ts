@@ -458,7 +458,10 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                         Math.floor(chartSize.width / Resolution.minBarWidth),
                         Resolution.maxBucketCount);
                 }
-                const maxYBucketCount = Resolution.maxBucketCount;
+                let maxYBucketCount = this.bucketCounts[1];
+                if (maxYBucketCount === 0) {
+                    maxYBucketCount = Resolution.maxBucketCount;
+                }
 
                 // The first two represent the resolution for the 2D histogram
                 const xarg = DataRangesReceiver.computeHistogramArgs(

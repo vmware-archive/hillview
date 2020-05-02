@@ -49,10 +49,13 @@ import {
     significantDigitsHtml,
 } from "../util";
 import {AxisData} from "./axisData";
-import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
+import {HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
 import {FilterReceiver, DataRangesReceiver} from "./dataRangesCollectors";
 import {QuartilesHistogramReceiver} from "./quartilesVectorView";
+import {Histogram2DBarsPlot} from "../ui/histogram2DBarsPlot";
+import {Histogram2DBase} from "../ui/histogram2DBase";
+import {Dialog, FieldKind} from "../ui/dialog";
 
 /**
  * This class is responsible for rendering a 2D histogram.
@@ -65,7 +68,8 @@ export class Histogram2DView extends HistogramViewBase {
     protected xPoints: number;
     protected yPoints: number;
     protected relative: boolean;  // true when bars are normalized to 100%
-    protected plot: Histogram2DPlot;
+    protected stacked: boolean;
+    protected plot: Histogram2DBase;
     protected legendPlot: HistogramLegendPlot;
     protected legendSurface: HtmlPlottingSurface;
     protected viewMenu: SubMenu;
@@ -99,10 +103,15 @@ export class Histogram2DView extends HistogramViewBase {
             action: () => { this.showQuartiles(); },
             help: "Plot this data as a vector of quartiles view.",
         }, {
+            text: "stacked/parallel",
+            action: () => { this.toggleStacked(); },
+            help: "Plot this data either as stacked bars or as parallel bars.",
+        }, {
             text: "heatmap",
             action: () => { this.doHeatmap(); },
             help: "Plot this data as a heatmap view.",
-        }, { text: "group by...",
+        }, {
+            text: "group by...",
             action: () => {
                 this.trellis();
             },
@@ -130,6 +139,7 @@ export class Histogram2DView extends HistogramViewBase {
         ]);
 
         this.relative = false;
+        this.stacked = true;
         this.page.setMenu(this.menu);
         if (this.samplingRate >= 1) {
             const submenu = this.menu.getSubmenu("View");
@@ -161,7 +171,10 @@ export class Histogram2DView extends HistogramViewBase {
                 (xl, xr) => this.selectionCompleted(xl, xr, true));
         }
         this.surface = new HtmlPlottingSurface(this.chartDiv, this.page, {});
-        this.plot = new Histogram2DPlot(this.surface);
+        if (this.stacked)
+            this.plot = new Histogram2DPlot(this.surface);
+        else
+            this.plot = new Histogram2DBarsPlot(this.surface);
         this.cdfPlot = new CDFPlot(this.surface);
     }
 
@@ -283,6 +296,10 @@ export class Histogram2DView extends HistogramViewBase {
         this.xAxisData = xAxisData;
         this.yAxisData = yAxisData;
         this.viewMenu.enable("quartiles", kindIsNumeric(this.yAxisData.description.kind));
+        this.viewMenu.enable("stacked/parallel",
+            kindIsString(this.yAxisData.description.kind) ||
+            this.yAxisData.description.kind === "Integer"
+        )
     }
 
     public trellis(): void {
@@ -303,6 +320,11 @@ export class Histogram2DView extends HistogramViewBase {
             reusePage: false, relative: this.relative,
             chartKind: "Trellis2DHistogram", exact: this.samplingRate >= 1.0
         }));
+    }
+
+    protected toggleStacked(): void {
+        this.stacked = !this.stacked;
+        this.resize();
     }
 
     protected toggleNormalize(): void {
@@ -398,13 +420,13 @@ export class Histogram2DView extends HistogramViewBase {
         }));
     }
 
-    public changeBuckets(bucketCount: number): void {
-        if (bucketCount == null)
+    public changeBuckets(xBuckets: number, yBuckets: number): void {
+        if (xBuckets == null || yBuckets == null)
             return;
         const cds = [this.xAxisData.description, this.yAxisData.description];
         const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [bucketCount, this.yPoints], cds, null, {
+            [xBuckets, yBuckets], cds, null, {
             reusePage: true,
             relative: this.relative,
             chartKind: "2DHistogram",
@@ -439,9 +461,28 @@ export class Histogram2DView extends HistogramViewBase {
         if (this == null)
             return;
 
-        const bucketDialog = new BucketDialog(this.xPoints);
-        bucketDialog.setAction(() => this.changeBuckets(bucketDialog.getBucketCount()));
-        bucketDialog.show();
+        const dialog = new Dialog("Set buckets", "Change the number of buckets.");
+        let input = dialog.addTextField(
+            "x_buckets", "Number of X buckets:", FieldKind.Integer,
+            this.xPoints.toString(),
+            "Buckets on " + this.xAxisData.description.name);
+        input.min = "1";
+        input.max = Resolution.maxBucketCount.toString();
+        input.required = true;
+
+        input = dialog.addTextField(
+            "y_buckets", "Number of Y buckets:", FieldKind.Integer,
+            this.yPoints.toString(),
+            "Buckets on " + this.yAxisData.description.name);
+        input.min = "1";
+        input.max = Resolution.maxBucketCount.toString();
+        input.required = true;
+        dialog.setCacheTitle("2DBucketDialog");
+
+        dialog.setAction(() => this.changeBuckets(
+            dialog.getFieldValueAsInt("x_buckets"),
+            dialog.getFieldValueAsInt("y_buckets")));
+        dialog.show();
     }
 
     public resize(): void {
@@ -496,14 +537,18 @@ export class Histogram2DView extends HistogramViewBase {
         let value = "";
         let perc = 0;
         let bucket = "";
-        if (mouseY >= 0 && mouseY < this.surface.getChartHeight())
-            box = this.plot.getBoxInfo(mouseX, y);
-        if (box != null) {
-            count = significantDigits(box.count);
-            colorIndex = box.yIndex;
-            value = this.yAxisData.bucketDescription(colorIndex, 20);
-            perc = (box.count === 0) ? 0 : box.count / box.countBelow;
-            bucket = this.xAxisData.bucketDescription(box.xIndex, 20);
+        if (this.stacked) {
+            if (mouseY >= 0 && mouseY < this.surface.getChartHeight())
+                box = (this.plot as Histogram2DPlot).getBoxInfo(mouseX, y);
+            if (box != null) {
+                count = significantDigits(box.count);
+                colorIndex = box.yIndex;
+                value = this.yAxisData.bucketDescription(colorIndex, 20);
+                perc = (box.count === 0) ? 0 : box.count / box.countBelow;
+                bucket = this.xAxisData.bucketDescription(box.xIndex, 20);
+            }
+        } else {
+            // TODO
         }
 
         const pos = this.cdfPlot.getY(mouseX);

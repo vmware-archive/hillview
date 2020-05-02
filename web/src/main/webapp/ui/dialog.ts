@@ -181,6 +181,7 @@ export class Dialog extends DialogBase {
      */
     private line: Map<string, HTMLElement>;
     private readonly confirmButton: HTMLInputElement;
+    private readonly cancelButton: HTMLButtonElement;
     /**
      * Optional string which is used as an index in the dialogValueCache to
      * populate a dialog with its previous values.
@@ -211,12 +212,12 @@ export class Dialog extends DialogBase {
         const nodrag = d3drag()
             .on("start", () => this.dragEnd());
 
-        const cancelButton = document.createElement("button");
-        cancelButton.onclick = () => this.cancelAction();
-        cancelButton.textContent = "Cancel";
-        cancelButton.classList.add("cancel");
-        d3select(cancelButton).call(nodrag);
-        this.buttonsDiv.appendChild(cancelButton);
+        this.cancelButton = document.createElement("button");
+        this.cancelButton.onclick = () => this.cancelAction();
+        this.cancelButton.textContent = "Cancel";
+        this.cancelButton.classList.add("cancel");
+        d3select(this.cancelButton).call(nodrag);
+        this.buttonsDiv.appendChild(this.cancelButton);
 
         this.confirmButton = document.createElement("input");
         this.confirmButton.type = "submit";
@@ -293,6 +294,8 @@ export class Dialog extends DialogBase {
      */
     public show(): void {
         super.show();
+        this.confirmButton.tabIndex = this.tabIndex++;
+        this.cancelButton.tabIndex = this.tabIndex++;
         if (this.fieldsDiv.childElementCount === 0) {
             // If there are somehow no fields, focus on the container.
             this.topLevel.setAttribute("tabindex", "10");
