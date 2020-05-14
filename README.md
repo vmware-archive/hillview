@@ -25,6 +25,8 @@ for big data, in PVLDB 2019, 12(11).
 
 Documentation for the [internal APIs](docs/hillview-apis.pdf).
 
+Experimental use of Hillview using [differential privacy](privacy.md).
+
 # Installing Hillview on a local machine
 
 ## Ubuntu or MacOS machines.
