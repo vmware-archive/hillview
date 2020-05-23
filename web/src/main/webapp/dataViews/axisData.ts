@@ -152,6 +152,11 @@ export class AxisDescription {
     }
 }
 
+// This value represents the index of the bucket with missing data.
+export const MissingBucketIndex = -1;
+// This value indicates that some data does not fall within a bucket.
+export const NoBucketIndex = null;
+
 /**
  * Contains all information required to build an axis and a d3 scale associated to it.
  */
@@ -233,14 +238,12 @@ export class AxisData {
         let actualMin = this.displayRange.min;
         let actualMax = this.displayRange.max;
         let adjust = .5;
-        /*
         if (axisKind === AxisKind.Legend && AxisData.needsAdjustment(this.description.kind)) {
             // These were adjusted, bring them back.
             actualMin += .5;
             actualMax -= .5;
             adjust = 0;
         }
-        */
         // on vertical axis the direction is swapped
         const domain = bottom ? [actualMin, actualMax] : [actualMax, actualMin];
 
@@ -359,8 +362,7 @@ export class AxisData {
     }
 
     public bucketBoundaries(bucket: number): BucketBoundaries {
-        if (bucket === -1)
-            // The bucket with index -1 represents the missing data.
+        if (bucket === MissingBucketIndex)
             return new BucketBoundaries(new BucketBoundary("missing", "String", true), null);
         if (bucket === null || bucket < 0 || bucket >= this.bucketCount)
             return new BucketBoundaries(null, null);
@@ -425,11 +427,11 @@ export class AxisData {
     }
 
     /**
-     * @param bucket   Bucket number.  -1 for the missing data buckets.
+     * @param bucket   Bucket number.  MissingBucketIndex for the missing data buckets.
      * @param maxChars Maximum number of characters to use for description; if 0 it is unlimited.
      * @returns  A description of the boundaries of the specified bucket.
      */
-    public bucketDescription(bucket: number, maxChars: number): string {
+    public bucketDescription(bucket: number | null, maxChars: number): string {
         return this.bucketBoundaries(bucket).toString(maxChars);
     }
 }

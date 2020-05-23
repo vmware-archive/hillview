@@ -18,10 +18,11 @@
 import {axisLeft as d3axisLeft} from "d3-axis";
 import {format as d3format} from "d3-format";
 import {scaleLinear as d3scaleLinear} from "d3-scale";
-import {AxisDescription} from "../dataViews/axisData";
+import {AxisDescription, MissingBucketIndex, NoBucketIndex} from "../dataViews/axisData";
 import {PlottingSurface} from "./plottingSurface";
 import {D3Scale} from "./ui";
 import {Histogram2DBase} from "./histogram2DBase";
+import {add} from "../util";
 
 /**
  * Represents an SVG rectangle drawn on the screen.
@@ -35,20 +36,38 @@ interface Box {
     count: number;
 }
 
+export interface BarInfo {
+    colorIndex: number;
+    count: number;
+    bucketIndex: number;
+}
+
 /**
  * Draws the same data as a Histogram2DPlot but the bars are not stacked.
  */
 export class Histogram2DBarsPlot extends Histogram2DBase {
+    // The following are only set when drawing
+    protected xPoints: number;
+    protected yPoints: number;
+    protected showMissing: boolean;
+
     public constructor(protected plottingSurface: PlottingSurface) {
         super(plottingSurface);
     }
 
     public draw(): void {
         super.draw();
-        let xPoints = this.heatmap.buckets.length;
-        let yPoints = this.heatmap.buckets[0].length;
+        this.xPoints = null;
+        this.yPoints = null;
+        this.showMissing = false;
+        this.xPoints = this.heatmap.buckets.length;
+        this.yPoints = this.heatmap.buckets[0].length;
         if (this.heatmap.histogramMissingY != null) {
-            yPoints++;
+            const missingYSum = this.heatmap.histogramMissingY.buckets.reduce(add, 0);
+            if (missingYSum > 0) {
+                this.showMissing = true;
+                this.yPoints++;
+            }
         }
         this.missingDisplayed = 0;
         this.visiblePoints = 0;
@@ -61,14 +80,14 @@ export class Histogram2DBarsPlot extends Histogram2DBase {
             missingConfidence: 0,
             missingData: this.heatmap.missingData
         };
-        for (let x = 0; x < xPoints; x++) {
+        for (let x = 0; x < this.xPoints; x++) {
             let yTotal = 0;
-            for (let y = 0; y < yPoints; y++) {
+            for (let y = 0; y < this.yPoints; y++) {
                 const vis = this.heatmap.buckets[x][y];
                 this.visiblePoints += vis;
                 if (vis !== 0) {
                     const rect: Box = {
-                        xCoordinate: x * (yPoints + 1) + y, // +1 for a space
+                        xCoordinate: x * (this.yPoints + 1) + y, // +1 for a space
                         color: y,
                         count: vis
                     };
@@ -82,7 +101,7 @@ export class Histogram2DBarsPlot extends Histogram2DBase {
             if (this.heatmap.histogramMissingY != null) {
                 const vis = this.heatmap.histogramMissingY.buckets[x];
                 const rec: Box = {
-                    xCoordinate: x * (yPoints + 1) + yPoints - 1,
+                    xCoordinate: x * (this.yPoints + 1) + this.yPoints - 1,
                     color: -1,
                     count: vis
                 };
@@ -117,7 +136,7 @@ export class Histogram2DBarsPlot extends Histogram2DBase {
         this.yAxis = new AxisDescription(
             d3axisLeft(this.yScale).tickFormat(d3format(".2s")), 1, false, null);
 
-        const bucketCount = xPoints * (yPoints + 1); // + 1 for a space between groups
+        const bucketCount = this.xPoints * (this.yPoints + 1); // + 1 for a space between groups
         this.barWidth = this.getChartWidth() / bucketCount;
         const scale = displayMax <= 0 ? 1 : this.getChartHeight() / displayMax;
 
@@ -167,5 +186,27 @@ export class Histogram2DBarsPlot extends Histogram2DBase {
 
     protected rectHeight(d: Box, scale: number): number {
         return d.count * scale;
+    }
+
+    public getBarInfo(mouseX: number, y: number): BarInfo {
+        const bucketWidth = this.getChartWidth() / this.xPoints;
+        const bucketIndex = Math.floor(mouseX / bucketWidth);
+        const withinBucketOffset = mouseX - bucketIndex * bucketWidth;
+        let colorIndex = Math.floor(withinBucketOffset / this.barWidth);
+        let count = null;
+        if (colorIndex == this.yPoints) {
+            colorIndex = NoBucketIndex;
+        } else if (this.showMissing && colorIndex == this.yPoints - 1) {
+            colorIndex = MissingBucketIndex;
+            count = this.heatmap.histogramMissingY.buckets[bucketIndex];
+        } else {
+            if (bucketIndex >= 0 && bucketIndex < this.xPoints)
+                count = this.heatmap.buckets[bucketIndex][colorIndex];
+        }
+        return {
+            colorIndex: colorIndex, // This could be null for the space between buckets
+            bucketIndex: bucketIndex,
+            count: count
+        };
     }
 }

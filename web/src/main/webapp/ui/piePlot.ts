@@ -21,7 +21,7 @@ import {Histogram, kindIsString} from "../javaBridge";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {SpecialChars} from "./ui";
-import {cloneArray, formatNumber, makeInterval, percent, significantDigits, valueWithConfidence} from "../util";
+import {add, cloneArray, formatNumber, makeInterval, percent, significantDigits, valueWithConfidence} from "../util";
 
 interface ValueAndIndex {
     value: number;
@@ -133,7 +133,7 @@ export class PiePlot extends Plot {
             confidence = new Array(this.histogram.buckets.length + 1);
         }
 
-        const sum = counts.reduce((a,b) => a + b);
+        const sum = counts.reduce(add, 0);
         const sum2 = sum / 2;   // sum2 is the half of the total count
 
         const tr = 'translate(' + (chartWidth / 2) + "," + (chartHeight / 2) + ')';

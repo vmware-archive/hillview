@@ -25,7 +25,7 @@ import {
 import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {SchemaClass} from "../schemaClass";
-import {ICancellable, PartialResult, percent, reorder, significantDigits} from "../util";
+import {add, ICancellable, PartialResult, percent, reorder, significantDigits} from "../util";
 import {AxisData, AxisKind} from "./axisData";
 import {
     IViewSerialization,
@@ -403,7 +403,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
             for (let i = 0; i < data.buckets.length; i++) {
                 const buckets = data.buckets[i];
                 for (let j = 0; j < buckets.length; j++) {
-                    const total = buckets[j].reduce((a, b) => a + b, 0);
+                    const total = buckets[j].reduce(add, 0);
                     if (total > max)
                         max = total;
                 }
