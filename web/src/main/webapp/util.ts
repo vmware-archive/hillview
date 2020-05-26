@@ -327,6 +327,8 @@ export function makeId(text: string): string {
  * and adding a suffix.
  */
 export function significantDigitsHtml(n: number): HtmlString {
+    if (n === null)
+        return null;
     let suffix = "";
     if (n === 0)
         return new HtmlString("0");
@@ -357,6 +359,10 @@ export function significantDigitsHtml(n: number): HtmlString {
     else
         n = Math.round(n * 1000) / 1000;
     return new HtmlString(String(n)).appendSafeString(suffix);
+}
+
+export function add(a: number, b: number): number {
+    return a + b;
 }
 
 /**

@@ -254,7 +254,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         }
         this.histogram = histogram;
         // The following is only an *estimate* of the actual row count
-        // this.rowCount = this.histogram.buckets.reduce((a, b) => a + b, 0);
+        // this.rowCount = this.histogram.buckets.reduce(add, 0);
         if (this.isPrivate()) {
             const cols = [this.xAxisData.description.name];
             const eps = this.dataset.getEpsilon(cols);

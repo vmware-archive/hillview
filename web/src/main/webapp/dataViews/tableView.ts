@@ -54,7 +54,7 @@ import {
     saveAs,
     significantDigitsHtml,
     truncate,
-    Converters, sameAggregate, find, significantDigits
+    Converters, sameAggregate, find, significantDigits, add
 } from "../util";
 import {SchemaView} from "./schemaView";
 import {SpectrumReceiver} from "./spectrumView";
@@ -758,7 +758,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             let rowsDisplayed = 0;
             if (nextKList.rows != null) {
                 nextKList.rows.reverse();
-                rowsDisplayed = nextKList.rows.map((r) => r.count).reduce((a, b) => a + b, 0);
+                rowsDisplayed = nextKList.rows.map((r) => r.count).reduce(add, 0);
             }
             this.startPosition = this.rowCount - this.startPosition - rowsDisplayed;
             this.order = this.order.invert();

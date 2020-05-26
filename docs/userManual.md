@@ -21,7 +21,7 @@ performs all operations using a class of very efficient algorithms,
 called “sketches”, which are constrained to compute with bounded
 memory over distributed data.
 
-Updated on 2020 Apr 09.
+Updated on 2020 May 26.
 
 # Contents
 |Section|Reference|
@@ -66,23 +66,24 @@ Updated on 2020 Apr 09.
 |3.4.|[Frequent elements views](#34-frequent-elements-views)|
 |3.4.1.|[View as a Table](#341-view-as-a-table)|
 |3.4.2.|[Modify](#342-modify)|
-|3.5.|[Uni-dimensional histogram views](#35-uni-dimensional-histogram-views)|
-|3.5.1.|[The histogram menu](#351-the-histogram-menu)|
-|3.5.2.|[The histogram view menu](#352-the-histogram-view-menu)|
-|3.5.3.|[Mouse selection in histogram views](#353-mouse-selection-in-histogram-views)|
-|3.5.4.|[String histograms](#354-string-histograms)|
-|3.6.|[Quartiles view for histogram buckets](#36-quartiles-view-for-histogram-buckets)|
-|3.7.|[Two-dimensional histogram views](#37-two-dimensional-histogram-views)|
-|3.7.1.|[Selection in 2D histograms](#371-selection-in-2d-histograms)|
-|3.8.|[Heatmap views](#38-heatmap-views)|
-|3.8.1.|[Selection from a heatmap](#381-selection-from-a-heatmap)|
-|3.9.|[Singular value spectrum views](#39-singular-value-spectrum-views)|
-|4.|[Trellis plots](#4-trellis-plots)|
-|4.1.|[Trellis plots of 1D histograms](#41-trellis-plots-of-1d-histograms)|
-|4.2.|[Trellis plots of 2D histograms](#42-trellis-plots-of-2d-histograms)|
-|4.2.1.|[Selection using the colormap](#421-selection-using-the-colormap)|
-|4.3.|[Trellis plots of heatmaps](#43-trellis-plots-of-heatmaps)|
-|4.4.|[Combining two views](#44-combining-two-views)|
+|4.|[Charts](#4-charts)|
+|4.1.|[Uni-dimensional histogram views](#41-uni-dimensional-histogram-views)|
+|4.1.1.|[The histogram menu](#411-the-histogram-menu)|
+|4.1.2.|[The histogram view menu](#412-the-histogram-view-menu)|
+|4.1.3.|[Mouse selection in histogram views](#413-mouse-selection-in-histogram-views)|
+|4.1.4.|[String histograms](#414-string-histograms)|
+|4.2.|[Quartiles view for histogram buckets](#42-quartiles-view-for-histogram-buckets)|
+|4.3.|[Two-dimensional histogram views](#43-two-dimensional-histogram-views)|
+|4.3.1.|[Selection in 2D histograms](#431-selection-in-2d-histograms)|
+|4.4.|[Heatmap views](#44-heatmap-views)|
+|4.4.1.|[Selection from a heatmap](#441-selection-from-a-heatmap)|
+|4.5.|[Singular value spectrum views](#45-singular-value-spectrum-views)|
+|5.|[Trellis plots](#5-trellis-plots)|
+|5.1.|[Trellis plots of 1D histograms](#51-trellis-plots-of-1d-histograms)|
+|5.2.|[Trellis plots of 2D histograms](#52-trellis-plots-of-2d-histograms)|
+|5.2.1.|[Selection using the colormap](#521-selection-using-the-colormap)|
+|5.3.|[Trellis plots of heatmaps](#53-trellis-plots-of-heatmaps)|
+|5.4.|[Combining two views](#54-combining-two-views)|
 ## 1. Basic concepts
 
 ### 1.1. System architecture
@@ -551,7 +552,7 @@ menu with the following options:
   colums
 
 * Combine: allows users to [combine data in two
-  views](#44-combining-two-views)
+  views](#54-combining-two-views)
 
 #### 3.2.1. Selecting columns
 
@@ -597,18 +598,18 @@ The following operations can be invoked through the context menu:
 * Show as table: this displays a [table view](#33-table-views) of the
   data restricted to the selected columns.
 
-* Histogram: draws a [1D](#35-uni-dimensional-histogram-views) or
-  [2D](#37-two-dimensional-histogram-views) histogram of the selected
+* Histogram: draws a [1D](#41-uni-dimensional-histogram-views) or
+  [2D](#43-two-dimensional-histogram-views) histogram of the selected
   columns
 
-* Heatmap: draws a [heatmap](#38-heatmap-views) view of the selected columns.
+* Heatmap: draws a [heatmap](#44-heatmap-views) view of the selected columns.
 
 * Trellis histogram: draw the selected columns using a Trellis view of
-  [1D](#41-trellis-plots-of-1d-histograms) or
-  [2D](#42-trellis-plots-of-2d-histograms) histograms
+  [1D](#51-trellis-plots-of-1d-histograms) or
+  [2D](#52-trellis-plots-of-2d-histograms) histograms
 
 * Trellis heatmaps: draw the selected columns using a [Trellis
-  view](#43-trellis-plots-of-heatmaps) of heatmaps
+  view](#53-trellis-plots-of-heatmaps) of heatmaps
 
 * Estimate distinct elements: estimate the number of distinct values in this column
 
@@ -646,29 +647,29 @@ of columns using the chart menu:
 
 * 1D Histogram...: presents a dialog allowing the user to
   select a column whose data will be drawn as a
-  [uni-dimensional histogram view](#35-uni-dimensional-histogram-views).
+  [uni-dimensional histogram view](#41-uni-dimensional-histogram-views).
 
 ![1D histogram dialog](1d-histogram-dialog.png)
 
 * 2D Histogram...: presents a dialog allowing the
   user to select two columns whose data will be drawn as a
-  [two-dimensional histogram view](#37-two-dimensional-histogram-views).
+  [two-dimensional histogram view](#43-two-dimensional-histogram-views).
 
 ![2D histogram dialog](2d-histogram-dialog.png)
 
 * Heatmap...:  presents a dialog allowing the user to
-  select two columns whose data will be drawn as a [heatmap](#38-heatmap-views).
+  select two columns whose data will be drawn as a [heatmap](#44-heatmap-views).
 
 ![Heatmap dialog](heatmap-dialog.png)
 
 * Trellis histograms...: presents a dialog allowing the user to
-  select two columns to use to display a [Trellis histogram view](#41-trellis-plots-of-1d-histograms).
+  select two columns to use to display a [Trellis histogram view](#51-trellis-plots-of-1d-histograms).
 
 * Trellis 2D histograms...: presents a dialog allowing the user to select three columns
-  to use to display a [Trellis 2D histogram view](#42-trellis-plots-of-2d-histograms).
+  to use to display a [Trellis 2D histogram view](#52-trellis-plots-of-2d-histograms).
 
 * Trellis heatmaps...: presents a dialog allowing the user to select three columns to use
-  to display a [Trellish plot of heatmaps](#43-trellis-plots-of-heatmaps).
+  to display a [Trellish plot of heatmaps](#53-trellis-plots-of-heatmaps).
 
 #### 3.2.4. Saving data
 
@@ -831,29 +832,29 @@ the current state of the display.
 * Histogram: this option requires exactly one or two columns to be
   selected.  If one column is selected, this operation will draw a
   histogram of the data in the selected column.  See
-  [Uni dimensional histogram views](#35-uni-dimensional-histogram-views).
+  [Uni dimensional histogram views](#41-uni-dimensional-histogram-views).
   If two columns are selected this menu will draw a two-dimensional
   histogram of the data in the selected columns.  For two-dimensional
   histograms see [Two-dimensional
-  histograms](#37-two-dimensional-histogram-views).
+  histograms](#43-two-dimensional-histogram-views).
 
 * Heatmap: this option requires exactly two columns to be selected.
   This displays the data in these columns as a [Heatmap
-  view](#38-heatmap-views).
+  view](#44-heatmap-views).
 
 * Trellis histograms: this option requires exactly two or three
   columns to be selected.  If two columns are selected, this operation
   will draw a trellis plot of 1-dimensional histogram of the data in
   the first selected column grouped by the second column.  See
-  [Trellis plots of 1D histograms](#41-trellis-plots-of-1d-histograms).
+  [Trellis plots of 1D histograms](#51-trellis-plots-of-1d-histograms).
   If two columns are selected this menu will draw a two-dimensional
   histogram of the data in the selected columns.  For two-dimensional
   histograms see [Two-dimensional
-  histograms](#37-two-dimensional-histogram-views).
+  histograms](#43-two-dimensional-histogram-views).
 
 * Trellis heatmaps: this options requires exactly 3 columns to be
   selected.  This displays the data as a [Trellis plot
-  view](#43-trellis-plots-of-heatmaps).
+  view](#53-trellis-plots-of-heatmaps).
 
 * Rename...: this operation requires exactly one column to be selected.
   The user can type a new name for this column.  The new name will be
@@ -892,7 +893,7 @@ the current state of the display.
 
 * Plot singular value spectrum.  This operation requires a set of
   numeric columns.  This will display the singular values of the matrix formed
-  from these columns as a [Singular value spectrum view](#39-singular-value-spectrum-views).
+  from these columns as a [Singular value spectrum view](#45-singular-value-spectrum-views).
 
 * Filter...: this option will pop-up a dialog window that allows the user
   to filter the data in the selected column (this option requires only
@@ -998,7 +999,7 @@ The table view has a menu that offers the following options:
 * Filter: allows the user [to filter data](#338-the-table-filter-menu) according
   to various criteria.
 
-* Combine: allows the user to [combine the data in two views](#44-combining-two-views).
+* Combine: allows the user to [combine the data in two views](#54-combining-two-views).
 
 #### 3.3.7. The table view menu
 
@@ -1102,10 +1103,26 @@ only displays the 200 most frequent elements results, and alerts the user to the
 of further frequent elements. These can be viewed using the All frequent elements option from the
  [View as a table](#341-view-as-a-table) menu option.
 
-### 3.5. Uni-dimensional histogram views
+## 4. Charts
+
+Hillview supports many types of charts; these are described in the following sections:
+
+[![One dimensional histogram](hillview-histogram-small.png)](#41-uni-dimensional-histogram-views)
+[![Pie charts](pie-chart.png)](#41-uni-dimensional-histogram-views)
+[![Histograms of quartiles](histogram-quartiles-view-small.png)](#42-quartiles-view-for-histogram-buckets)
+[![Stacked two dimensional histograms](hillview-histogram2d-small.png)](#43-two-dimensional-histogram-views)
+[![Non-stacked two dimensional histograms](non-stacked-2d-histogram-small.png)](#43-two-dimensional-histogram-views)
+[![Normalized stacked two dimensional histograms](hillview-histogram-normalized-small.png)](#43-two-dimensional-histogram-views)
+[![Heatmaps](hillview-heatmap-small.png)](#44-heatmap-views)
+[![Singular value spectrum](singular-value-spectrum-small.png)](#45-singular-value-spectrum-views)
+[![Trellis plots of 1D histograms](hillview-histogram-array-small.png)](#51-trellis-plots-of-1d-histograms)
+[![Trellis plots of 2D histograms](trellis-histogram2d-array-small.png)](#52-trellis-plots-of-2d-histograms)
+[![Trellis plots of heatmaps](hillview-heatmap-array-small.png)](#53-trellis-plots-of-heatmaps)
+
+### 4.1. Uni-dimensional histogram views
 
 A uni-dimensional (1D) histogram is a succinct representation of the
-data in a column.  See [below](#354-string-histograms) for a
+data in a column.  See [below](#414-string-histograms) for a
 description of string histograms.  A histogram is computed in two
 phases:
 
@@ -1139,6 +1156,7 @@ how many of the data points in the displayed column are smaller than X.
 
 Next to the mouse an overlay box displays the following values:
 * the mouse's position on the X axis
+* the description of the histogram bucket where the mouse is
 * the mouse's position on the Y axis
 * the size of the histogram bar at the current X coordinate
 * the value of the CDF function at the current X coordinate of the mouse, in percents
@@ -1151,7 +1169,7 @@ triangle on top:
 
 ![Truncated histogram](truncated-histogram.png)
 
-#### 3.5.1. The histogram menu
+#### 4.1.1. The histogram menu
 
 Histogram views have a menu that offers to the users several operations:
 
@@ -1163,12 +1181,12 @@ Histogram views have a menu that offers to the users several operations:
   second describing the bucket size.  This data can be used to plot
   the same histogram using a tool like Excel.
 
-* View: [changing parameters](#352-the-histogram-view-menu) of the current view.
+* View: [changing parameters](#412-the-histogram-view-menu) of the current view.
 
-* Combine: [combining the data](#44-combining-two-views) in the current view with
+* Combine: [combining the data](#54-combining-two-views) in the current view with
   another one.
 
-#### 3.5.2. The histogram view menu
+#### 4.1.2. The histogram view menu
 
 ![View menu](histogram-view-menu.png)
 
@@ -1195,16 +1213,16 @@ The "View" menu from a histogram display has the following functions:
 
 * correlate: allows the user to specify a second column and switches
   the display to a [two-dimensional
-  histogram](#37-two-dimensional-histogram-views)
+  histogram](#43-two-dimensional-histogram-views)
 
 * quartiles: allows the user to plot a histogram view with quartiles of
   second numeric column
 
 * group by: select a second column and draw a [Trellis plot of a
-  series of histograms](#41-trellis-plots-of-1d-histograms) with the data
+  series of histograms](#51-trellis-plots-of-1d-histograms) with the data
   grouped on the values in the second column
 
-#### 3.5.3. Mouse selection in histogram views
+#### 4.1.3. Mouse selection in histogram views
 
 The mouse can be used to select a portion of the data in a histogram.
 The user can click-and-drag to select a subset of the data.  The
@@ -1218,7 +1236,7 @@ can be complemented by pressing the CONTROL at the time the selection
 is released (this will eliminate all the data that has been
 selected).
 
-#### 3.5.4. String histograms
+#### 4.1.4. String histograms
 
 When drawing a histogram of string data it is possible to have
 more values on the X axis than there are buckets.  In this case
@@ -1235,13 +1253,34 @@ The figure above shows a histogram where there are 294 distinct values
 but only 40 buckets.  One can see multiple ticks in each bucket.  Only
 some of the tick labels are displayed.
 
-### 3.6. Quartiles view for histogram buckets
+### 4.2. Quartiles view for histogram buckets
 
 ![Histogram quartiles view](histogram-quartiles-view.png)
 
-*TODO*
+This view displays data from two columns:
 
-### 3.7. Two-dimensional histogram views
+* one column is used to define the buckets on the X axis, as in a histogram view
+* the second column must be a numeric or date column; the range of the data in the
+  second column is displayed using a whisker box for each bucket.  The following image describes how to read a whisker box.
+
+![How to read a whisker box](quartile-labeled.png)
+
+The "view" menu for a quartile plot offers the following operations:
+
+![View menu](quartile-view-menu.png)
+
+* refresh: redraw the plot
+* table: display the data in the plot as an image
+* heatmap: show the data in the two columns as a heatmap
+* histogram: show the histogram of the data on the X axis buckets
+* 2D histogram: show the data in the two columns as a 2D histogram
+
+In addition, users can select a rectangular portion of the plot to filter
+the data only to the selected region:
+
+![Selecting from a quartile view](quartiles-selection.png)
+
+### 4.3. Two-dimensional histogram views
 
 A 2D histogram is a useful visual tool for estimating whether the
 values in two columns are independent of each other.  Neither of the
@@ -1252,8 +1291,8 @@ distribution in a second column.
 For example, in the following figure we see a 2D histogram where the X
 axis has the airline carriers.  For each carrier the bar is divided
 into sub-bars, each of which corresponding to a range of arrival
-delays.  The color legend at the top shows the encoding of arrival delays into
-colors.
+delays.  The color legend at the top shows the encoding of arrival
+delays into colors.
 
 ![A two-dimensional histogram](hillview-histogram2d.png)
 
@@ -1316,7 +1355,20 @@ The "view" menu for a 2D histogram offers the following operations:
 * swap axes: Draws a new 2D histogram where the two columns are
   swapped.
 
-* heatmap: Displays a [heat map](#38-heatmap-views) of the data using the
+* quartiles: Display the data as a [histogram of
+  quartiles](#42-quartiles-view-for-histogram-buckets)
+
+* stacked/parallel: Alternate between stacked bars and non-stacked
+  bars.  For this option to be enabled the number of drawn bars has to
+  be small enough to fit on the screen; the user may have
+  to change the number of buckets to enable this menu item.
+
+![2D histogram display without stacked bars](non-stacked-2d-histogram.png)
+
+  Note that selection in non-stacked histograms will only select whole
+  buckets on the X axis.
+
+* heatmap: Displays a [heat map](#44-heatmap-views) of the data using the
   same two columns as in the current histogram.
 
 * relative/absolute: This toggles between displaying the 2D histogram
@@ -1325,13 +1377,13 @@ The "view" menu for a 2D histogram offers the following operations:
 
 * group by: choose a third column and group the data into a set of 2D
   histograms displayed as a [Trellis plot of 2D
-  histograms](#42-trellis-plots-of-2d-histograms).
+  histograms](#52-trellis-plots-of-2d-histograms).
 
 ![A normalized two-dimensional histogram](hillview-histogram-normalized.png)
 
-For a description of the combine menu see [combining two views](#44-combining-two-views).
+For a description of the combine menu see [combining two views](#54-combining-two-views).
 
-#### 3.7.1. Selection in 2D histograms
+#### 4.3.1. Selection in 2D histograms
 
 In a 2D histogram users can select data in two ways:
 
@@ -1354,7 +1406,7 @@ In a 2D histogram users can select data in two ways:
 
 ![Highlighting ranges in a 2D histogram](histogram-2d-highlight.png)
 
-### 3.8. Heatmap views
+### 4.4. Heatmap views
 
 A heatmap view displays the data in two columns.  Neither of the two
 columns can be a string column.  The two columns are mapped to the two
@@ -1398,22 +1450,22 @@ The heatmap view menu has the following operations:
 
 * table: Displays the data in the current heatmap in a tabular form.
 
-* histogram: Draws a [2D histogram](#37-two-dimensional-histogram-views)
+* histogram: Draws a [2D histogram](#43-two-dimensional-histogram-views)
   of the data in the two columns that are used for the heatmap
   display.
 
 * group by: Groups data by a third column creating a [Trellis plot]
-  (#43-trellis-plots-of-heatmaps).
+  (#53-trellis-plots-of-heatmaps).
 
-For a description of the combine menu see [combining two views](#44-combining-two-views).
+For a description of the combine menu see [combining two views](#54-combining-two-views).
 
-#### 3.8.1. Selection from a heatmap
+#### 4.4.1. Selection from a heatmap
 
 Users can select a rectangular area from a heatmap with the mouse.
 
 ![Selection from a heatmap](heatmap-selection.png)
 
-### 3.9. Singular value spectrum views
+### 4.5. Singular value spectrum views
 
 The view display the [singular-value
 decomposition](https://en.wikipedia.org/wiki/Singular-value_decomposition)
@@ -1427,7 +1479,7 @@ choose how many values to use in a principal component analysis
 (PCA), as described below.  In the picture above the first 3
 singular values explain most of the variance of the data.
 
-## 4. Trellis plots
+## 5. Trellis plots
 
 Hillview can display multiple histograms or heatmaps in a grid view
 called a Trellis plot.  Each plot corresponds to a contiguous range of
@@ -1447,7 +1499,7 @@ Selection in a Trellis plot can be done in several ways:
 
 ![Selection across multiple plots](trellis-complex-selection.png)
 
-### 4.1. Trellis plots of 1D histograms
+### 5.1. Trellis plots of 1D histograms
 
 Hillview can display multiple histograms in a grid, using a so-called
 Trellis plot view.
@@ -1466,7 +1518,7 @@ The following operations are available from the View menu of a Trellis histogram
 * correlate...: allows the user to specify a second column that is used for displaying a Trellis plot
   of 2D histograms
 
-### 4.2. Trellis plots of 2D histograms
+### 5.2. Trellis plots of 2D histograms
 
 ![A Trellis plot of 2D histograms](trellis-histogram2d-array.png)
 
@@ -1482,7 +1534,7 @@ of 2D histograms:
 * \#groups: allows the user to change the number of groups used for displaying the Trellis plot
 * relative/absolute: this is similar to the 2D histogram relative/absolute menu
 
-#### 4.2.1. Selection using the colormap
+#### 5.2.1. Selection using the colormap
 
 Selection using the colormap is similar to the selection for simple 2D histograms.
 The user can either select a range of data in the colormap to filter the data.
@@ -1492,7 +1544,7 @@ If the user keeps the shift key pressed while selecting in a colormap
 
 ![Highlighting ranges in a Trellis view of 2D histogram](trellis-histogram-2d-highlight.png)
 
-### 4.3. Trellis plots of heatmaps
+### 5.3. Trellis plots of heatmaps
 
 ![A Trellis plot of heatmap views](hillview-heatmap-array.png)
 
@@ -1500,7 +1552,7 @@ A Trellis plot is an array of heatmaps, grouped by a third column.
 Each heatmap displays data that corresponds to a range of values in
 the grouping column.
 
-### 4.4. Combining two views
+### 5.4. Combining two views
 
 Any view represents logically a subset of rows from an original table.
 Two different views can be combined by performing a set operation

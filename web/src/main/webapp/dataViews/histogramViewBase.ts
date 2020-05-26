@@ -59,7 +59,7 @@ export abstract class HistogramViewBase extends ChartView {
     /**
      * Dragging started in the canvas.
      */
-    public dragStart(): void {
+    protected dragStart(): void {
         super.dragStart();
         const position = d3mouse(this.surface.getCanvas().node());
         this.selectionOrigin = {

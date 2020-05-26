@@ -21,14 +21,15 @@
  */
 export const helpUrl = {
     "Table": "(#33-table-views)",
-    "Histogram": "(#35-uni-dimensional-histogram-views)",
-    "2DHistogram": "(#37-two-dimensional-histogram-views)",
-    "Heatmap": "(#38-heatmap-views)",
-    "TrellisHistogram": "(#41-trellis-plots-of-1d-histograms)",
-    "TrellisHeatmap": "(#43-trellis-plots-of-heatmaps)",
-    "Trellis2DHistogram": "(#42-trellis-plots-of-2d-histograms)",
+    "Histogram": "(#41-uni-dimensional-histogram-views)",
+    "2DHistogram": "(#43-two-dimensional-histogram-views)",
+    "Heatmap": "(#44-heatmap-views)",
+    "QuartileVector": "(#42-quartiles-view-for-histogram-buckets)",
+    "TrellisHistogram": "(#51-trellis-plots-of-1d-histograms)",
+    "TrellisHeatmap": "(#53-trellis-plots-of-heatmaps)",
+    "Trellis2DHistogram": "(#52-trellis-plots-of-2d-histograms)",
     "HeavyHitters": "(#34-frequent-elements-views)",
     "Schema": "(#32-schema-views)",
     "Load": "(#23-loading-data)",
-    "SVD Spectrum": "(#39-singular-value-spectrum-views)"
+    "SVD Spectrum": "(#45-singular-value-spectrum-views)"
 };

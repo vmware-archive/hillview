@@ -18,14 +18,12 @@
 import {axisLeft as d3axisLeft} from "d3-axis";
 import {format as d3format} from "d3-format";
 import {scaleLinear as d3scaleLinear} from "d3-scale";
-import {AxisData, AxisDescription, AxisKind} from "../dataViews/axisData";
-import {Heatmap, Histogram} from "../javaBridge";
+import {AxisDescription} from "../dataViews/axisData";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
-import {D3Axis, D3Scale} from "./ui";
-import {SchemaClass} from "../schemaClass";
+import {D3Scale} from "./ui";
 import {symbol, symbolTriangle} from "d3-shape";
-import {ColorMap} from "../util";
+import {Histogram2DBase} from "./histogram2DBase";
 
 /**
  * Represents an SVG rectangle drawn on the screen.
@@ -51,43 +49,16 @@ interface Box {
     countBelow: number;
 }
 
-export class Histogram2DPlot extends Plot {
-    protected heatmap: Heatmap;
-    protected xAxisData: AxisData;
-    protected samplingRate: number;
-    protected normalized: boolean;
-    protected missingDisplayed: number;
-    protected visiblePoints: number;
-    protected barWidth: number;
-    protected yScale: D3Scale;
-    protected yAxis: D3Axis;
-    protected schema: SchemaClass;
-    public maxYAxis: number | null; // If not null the maximum value to display
-    public max: number; // the maximum value in a stacked bar
-    public colorMap: ColorMap;
-    public histogram: Histogram;  //  1D histogram by ignoring the y axis
-
+/**
+ * Draws a histogram with stacked bars.
+ */
+export class Histogram2DPlot extends Histogram2DBase {
     public constructor(protected plottingSurface: PlottingSurface) {
         super(plottingSurface);
     }
 
-    public setData(heatmap: Heatmap,
-                   xAxisData: AxisData,
-                   samplingRate: number,
-                   normalized: boolean,
-                   schema: SchemaClass,
-                   colorMap: ColorMap,
-                   max: number | null): void {
-        this.heatmap = heatmap;
-        this.xAxisData = xAxisData;
-        this.samplingRate = samplingRate;
-        this.normalized = normalized;
-        this.schema = schema;
-        this.maxYAxis = max;
-        this.colorMap = colorMap;
-    }
-
     public draw(): void {
+        super.draw();
         const xPoints = this.heatmap.buckets.length;
         const yPoints = this.heatmap.buckets[0].length;
 
@@ -103,9 +74,9 @@ export class Histogram2DPlot extends Plot {
             missingConfidence: 0,
             missingData: this.heatmap.missingData
         };
-        for (let x = 0; x < this.heatmap.buckets.length; x++) {
+        for (let x = 0; x < xPoints; x++) {
             let yTotal = 0;
-            for (let y = 0; y < this.heatmap.buckets[x].length; y++) {
+            for (let y = 0; y < yPoints; y++) {
                 const vis = this.heatmap.buckets[x][y];
                 this.visiblePoints += vis;
                 if (vis !== 0) {
@@ -147,17 +118,7 @@ export class Histogram2DPlot extends Plot {
         this.yAxis = new AxisDescription(
             d3axisLeft(this.yScale).tickFormat(d3format(".2s")), 1, false, null);
 
-        const bucketCount = xPoints;
-        this.xAxisData.setResolution(this.getChartWidth(), AxisKind.Bottom, PlottingSurface.bottomMargin);
-
-        this.plottingSurface.getCanvas().append("text")
-            .text(this.xAxisData.getDisplayNameString(this.schema))
-            .attr("transform", `translate(${this.getChartWidth() / 2},
-            ${this.getChartHeight() + this.plottingSurface.topMargin + this.plottingSurface.bottomMargin / 2})`)
-            .attr("text-anchor", "middle")
-            .attr("dominant-baseline", "text-before-edge");
-
-        this.barWidth = this.getChartWidth() / bucketCount;
+        this.barWidth = this.getChartWidth() / xPoints;
         const scale = displayMax <= 0 ? 1 : this.getChartHeight() / displayMax;
 
         this.plottingSurface.getChart()
@@ -168,11 +129,10 @@ export class Histogram2DPlot extends Plot {
             .attr("x", (d: Box) => d.xIndex * this.barWidth)
             .attr("y", (d: Box) => this.rectPosition(d, counts, scale))
             .attr("height", (d: Box) => this.rectHeight(d, counts, scale))
-            .attr("width", this.barWidth - 1)
+            .attr("width", this.barWidth)
             .attr("fill", (d: Box) => this.color(d.yIndex, yPoints - 1))
             .attr("stroke", "black")
             .attr("stroke-width", (d: Box) => d.yIndex < 0 ? 1 : 0)
-            .exit()
             // overflow signs if necessary
             .data(counts)
             .enter()
@@ -186,7 +146,6 @@ export class Histogram2DPlot extends Plot {
             .style("fill", "red")
             .append("svg:title")
             .text("Bar is truncated")
-            .exit()
             // label bars
             .data(counts)
             .enter()
@@ -198,8 +157,7 @@ export class Histogram2DPlot extends Plot {
                 this.getChartHeight() - (d * scale) : 0)
             .attr("text-anchor", "middle")
             .attr("dy", (d: number) => this.normalized ? 0 : d <= (9 * displayMax / 10) ? "-.25em" : ".75em")
-            .text((d: number) => Plot.boxHeight(d, this.samplingRate, this.getDisplayedPoints()))
-            .exit();
+            .text((d: number) => Plot.boxHeight(d, this.samplingRate, this.getDisplayedPoints()));
 
         let noX = 0;
         if (this.heatmap.histogramMissingX != null) {
@@ -322,15 +280,5 @@ export class Histogram2DPlot extends Plot {
             count: perc,
             countBelow: yTotal
         };
-    }
-
-    // noinspection JSMethodCanBeStatic
-    private color(d: number, max: number): string {
-        if (d < 0 || d > max)
-            // This is for the "missing" data
-            return "none";
-        if (max === 0)
-            return this.colorMap(0);
-        return this.colorMap(d / max);
     }
 }
