@@ -1039,6 +1039,22 @@ only displays the 200 most frequent elements results, and alerts the user to the
 of further frequent elements. These can be viewed using the All frequent elements option from the
  [View as a table](#view-as-a-table) menu option.
 
+## Charts
+
+Hillview supports many types of charts; these are described in the following sections:
+
+[![One dimensional histogram](hillview-histogram-small.png)](#uni-dimensional-histogram-views)
+[![Pie charts](pie-chart.png)](#uni-dimensional-histogram-views)
+[![Histograms of quartiles](histogram-quartiles-view-small.png)](#quartiles-view-for-histogram-buckets)
+[![Stacked two dimensional histograms](hillview-histogram2d-small.png)](#two-dimensional-histogram-views)
+[![Non-stacked two dimensional histograms](non-stacked-2d-histogram-small.png)](#two-dimensional-histogram-views)
+[![Normalized stacked two dimensional histograms](hillview-histogram-normalized-small.png)](#two-dimensional-histogram-views)
+[![Heatmaps](hillview-heatmap-small.png)](#heatmap-views)
+[![Singular value spectrum](singular-value-spectrum-small.png)](#singular-value-spectrum-views)
+[![Trellis plots of 1D histograms](hillview-histogram-array-small.png)](#trellis-plots-of-1d-histograms)
+[![Trellis plots of 2D histograms](trellis-histogram2d-array-small.png)](#trellis-plots-of-2d-histograms)
+[![Trellis plots of heatmaps](hillview-heatmap-array-small.png)](#trellis-plots-of-heatmaps)
+
 ### Uni-dimensional histogram views
 
 A uni-dimensional (1D) histogram is a succinct representation of the
@@ -1076,6 +1092,7 @@ how many of the data points in the displayed column are smaller than X.
 
 Next to the mouse an overlay box displays the following values:
 * the mouse's position on the X axis
+* the description of the histogram bucket where the mouse is
 * the mouse's position on the Y axis
 * the size of the histogram bar at the current X coordinate
 * the value of the CDF function at the current X coordinate of the mouse, in percents
@@ -1176,7 +1193,28 @@ some of the tick labels are displayed.
 
 ![Histogram quartiles view](histogram-quartiles-view.png)
 
-*TODO*
+This view displays data from two columns:
+
+* one column is used to define the buckets on the X axis, as in a histogram view
+* the second column must be a numeric or date column; the range of the data in the
+  second column is displayed using a whisker box for each bucket.  The following image describes how to read a whisker box.
+
+![How to read a whisker box](quartile-labeled.png)
+
+The "view" menu for a quartile plot offers the following operations:
+
+![View menu](quartile-view-menu.png)
+
+* refresh: redraw the plot
+* table: display the data in the plot as an image
+* heatmap: show the data in the two columns as a heatmap
+* histogram: show the histogram of the data on the X axis buckets
+* 2D histogram: show the data in the two columns as a 2D histogram
+
+In addition, users can select a rectangular portion of the plot to filter
+the data only to the selected region:
+
+![Selecting from a quartile view](quartiles-selection.png)
 
 ### Two-dimensional histogram views
 
@@ -1189,8 +1227,8 @@ distribution in a second column.
 For example, in the following figure we see a 2D histogram where the X
 axis has the airline carriers.  For each carrier the bar is divided
 into sub-bars, each of which corresponding to a range of arrival
-delays.  The color legend at the top shows the encoding of arrival delays into
-colors.
+delays.  The color legend at the top shows the encoding of arrival
+delays into colors.
 
 ![A two-dimensional histogram](hillview-histogram2d.png)
 
@@ -1252,6 +1290,19 @@ The "view" menu for a 2D histogram offers the following operations:
 
 * swap axes: Draws a new 2D histogram where the two columns are
   swapped.
+
+* quartiles: Display the data as a [histogram of
+  quartiles](#quartiles-view-for-histogram-buckets)
+
+* stacked/parallel: Alternate between stacked bars and non-stacked
+  bars.  For this option to be enabled the number of drawn bars has to
+  be small enough to fit on the screen; the user may have
+  to change the number of buckets to enable this menu item.
+
+![2D histogram display without stacked bars](non-stacked-2d-histogram.png)
+
+  Note that selection in non-stacked histograms will only select whole
+  buckets on the X axis.
 
 * heatmap: Displays a [heat map](#heatmap-views) of the data using the
   same two columns as in the current histogram.

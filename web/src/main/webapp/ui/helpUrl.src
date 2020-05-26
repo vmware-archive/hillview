@@ -23,6 +23,7 @@ export const helpUrl = {
     "Histogram": "(#uni-dimensional-histogram-views)",
     "2DHistogram": "(#two-dimensional-histogram-views)",
     "Heatmap": "(#heatmap-views)",
+    "QuartileVector": "(#quartiles-view-for-histogram-buckets)",
     "TrellisHistogram": "(#trellis-plots-of-1d-histograms)",
     "TrellisHeatmap": "(#trellis-plots-of-heatmaps)",
     "Trellis2DHistogram": "(#trellis-plots-of-2d-histograms)",
