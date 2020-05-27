@@ -35,7 +35,7 @@ import java.util.HashMap;
  */
 public class GuessSchema {
     public String name;
-    private SchemaInfo myInfo;
+    private final SchemaInfo myInfo;
 
     public ColumnDescription getColumnDesc() {
             return new ColumnDescription(this.name, myInfo.kind);

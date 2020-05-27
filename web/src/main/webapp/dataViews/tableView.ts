@@ -94,6 +94,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         schema: SchemaClass,
         page: FullPage) {
         super(remoteObjectId, rowCount, schema, page, "Table");
+        this.defaultProvenance = "Table";
         this.selectedColumns = new SelectionStateMachine();
         this.tableRowsDesired = Resolution.tableRowsOnScreen;
         this.order = new RecordOrder([]);
@@ -223,7 +224,8 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         const rr = this.createFilterColumnsRequest(
             { colNames: columns, stringFilterDescription: filter });
         const title = "Filtered on: " + filter.compareValue;
-        const newPage = this.dataset.newPage(new PageTitle(title), this.page);
+        const newPage = this.dataset.newPage(new PageTitle(title,
+            Converters.stringFilterDescription(filter)), this.page);
         rr.invoke(new TableOperationCompleted(newPage, rr, this.rowCount, this.schema,
             this.order, this.tableRowsDesired, this.aggregates));
     }
@@ -709,7 +711,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             };
             const rr = this.createJSFilterRequest(arg);
             const title = "Filtered using JS";
-            const newPage = this.dataset.newPage(new PageTitle(title), this.page);
+            const newPage = this.dataset.newPage(new PageTitle(title, "Filter using JavaScript code\n" + fun), this.page);
             const rec = new TableOperationCompleted(
                 newPage, rr, this.rowCount, this.schema, this.order, this.tableRowsDesired, this.aggregates);
             rr.invoke(rec);
@@ -929,7 +931,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         };
         const rr = this.createRowFilterRequest(filter);
         const title = "Filtered: " + filter.comparison + " to row.";
-        const newPage = this.dataset.newPage(new PageTitle(title), this.page);
+        const newPage = this.dataset.newPage(new PageTitle(title, Converters.rowFilterDescription(filter)), this.page);
         rr.invoke(new TableOperationCompleted(newPage, rr, this.rowCount, this.schema,
             this.order, this.tableRowsDesired, this.aggregates));
     }
@@ -1134,7 +1136,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
     }
 
     public viewSchema(): void {
-        const newPage = this.dataset.newPage(new PageTitle("Schema"), this.page);
+        const newPage = this.dataset.newPage(new PageTitle("Schema", this.defaultProvenance), this.page);
         const sv = new SchemaView(this.remoteObjectId, newPage, this.rowCount, this.schema);
         newPage.setDataView(sv);
         sv.show(0);

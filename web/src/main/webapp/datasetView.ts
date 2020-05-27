@@ -49,6 +49,7 @@ export interface IViewSerialization {
     pageId: number;
     sourcePageId: number;
     title: string;
+    provenance: string;
     remoteObjectId: RemoteObjectId;
     rowCount: number;
     schema: SchemaClassSerialization;
@@ -449,10 +450,11 @@ export class DatasetView implements IHtmlElement {
         if (vs.pageId == null ||
             vs.remoteObjectId == null ||
             vs.rowCount == null ||
+            vs.provenance == null ||
             vs.title == null ||
             vs.viewKind == null)  // sourcePageId can be null
             return false;
-        const page = this.reconstructPage(new PageTitle(vs.title),
+        const page = this.reconstructPage(new PageTitle(vs.title, vs.provenance),
             vs.pageId, vs.sourcePageId);
         let view: IDataView = null;
         switch (vs.viewKind) {
@@ -539,7 +541,7 @@ export class DatasetView implements IHtmlElement {
     public redisplay(): void {
         const rr = this.remoteObject.createGetSummaryRequest();
         const title = getDescription(this.loaded);
-        const newPage = this.newPage(new PageTitle(title), null);
+        const newPage = this.newPage(title, null);
         rr.invoke(new SchemaReceiver(newPage, rr, this.remoteObject, this, null, null));
     }
 

@@ -23,8 +23,15 @@ import * as FileSaver from "file-saver";
 import {ErrorReporter} from "./ui/errReporter";
 import {NotifyDialog} from "./ui/dialog";
 import {HtmlString, Size} from "./ui/ui";
-import {AggregateDescription, ContentsKind, kindIsNumeric, kindIsString} from "./javaBridge";
-import {PageTitle} from "./ui/fullPage";
+import {
+    AggregateDescription, ComparisonFilterDescription,
+    ContentsKind,
+    FilterDescription,
+    kindIsNumeric,
+    kindIsString, RowFilterDescription, StringColumnFilterDescription,
+    StringFilterDescription
+} from "./javaBridge";
+import {DragEventKind, PageTitle} from "./ui/fullPage";
 
 export interface Pair<T1, T2> {
     first: T1;
@@ -105,7 +112,8 @@ export class Converters {
      */
     public static valueToString(val: any, kind: ContentsKind): string {
         if (val == null)
-            return PageTitle.missingFormat;
+            // This should probably not happen
+            return "missing";
         if (kindIsNumeric(kind))
             return String(val);
         else if (kind === "Date")
@@ -114,6 +122,72 @@ export class Converters {
             return val as string;
         else
             return val.toString();  // TODO
+    }
+
+    /**
+     * Human-readable description of a filter.
+     * @param f: filter to describe
+     */
+    public static filterDescription(f: FilterDescription): string {
+        const min = kindIsNumeric(f.cd.kind) ? f.min : f.minString;
+        const max = kindIsNumeric(f.cd.kind) ? f.max : f.maxString;
+        return "Filtered on " + f.cd.name + " in range " +
+            Converters.valueToString(min, f.cd.kind) + " - " + Converters.valueToString(max, f.cd.kind);
+    }
+
+    public static stringFilterDescription(f: StringFilterDescription): string {
+        let result = "";
+        if ((f.asSubString || f.asRegEx) && !f.complement)
+            result += " contains ";
+        else if ((f.asSubString || f.asRegEx) && f.complement)
+            result += " does not contain ";
+        else if (!(f.asSubString || f.asRegEx) && !f.complement)
+            result += " equals ";
+        else if (!(f.asSubString || f.asRegEx) && f.complement)
+            result += " does not equal ";
+        result += f.compareValue;
+        return result;
+    }
+
+    public static rowFilterDescription(f: RowFilterDescription): string {
+        let result = "Filter rows that are " + f.comparison + " than [";
+        result += f.data.join(",");
+        result += "]";
+        result += " compared " +
+            f.order.sortOrientationList.map(c => c.isAscending ? "asc" : "desc").join(",");
+        return result;
+    }
+
+    /**
+     * Human-readable description of a drag event.
+     * @param pageId  Page where drag event originated.
+     * @param event   Event kind.
+     */
+    public static eventToString(pageId: string, event: DragEventKind): string {
+        let result = "Drag-and-drop ";
+        switch (event) {
+            case "Title":
+                result + " contents ";
+                break;
+            case "XAxis":
+                result += " X axis ";
+                break;
+            case "YAxis":
+                result += " Y axis ";
+                break;
+            case "GAxis":
+                result += " Grouping "
+                break;
+        }
+        return result + " from " + PageTitle.pageReferenceFormat(pageId);
+    }
+
+    static comparisonFilterDescription(filter: ComparisonFilterDescription): string {
+        const kind = filter.column.kind;
+        let result = "Compare " + filter.column.name + " " + filter.comparison +
+            (kindIsNumeric(kind) ? this.valueToString(filter.doubleValue, kind) :
+                    this.valueToString(filter.stringValue, kind));
+        return result;
     }
 }
 

@@ -34,7 +34,7 @@ import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
 import {ChartOptions, HtmlString, Resolution} from "../ui/ui";
-import {ICancellable, PartialResult, periodicSamples, saveAs, significantDigits,} from "../util";
+import {Converters, ICancellable, PartialResult, periodicSamples, saveAs, significantDigits,} from "../util";
 import {AxisData, AxisKind} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
@@ -50,6 +50,7 @@ export class QuartilesVectorView extends HistogramViewBase {
     protected data: QuantilesVector;
     protected plot: Quartiles2DPlot;
     protected yAxisData: AxisData;
+    private readonly defaultProvenance = "From quartile histogram";
 
     constructor(remoteObjectId: RemoteObjectId, rowCount: number,
                 schema: SchemaClass, protected qCol: IColumnDescription, page: FullPage) {
@@ -169,7 +170,7 @@ export class QuartilesVectorView extends HistogramViewBase {
         const cds = [this.xAxisData.description, this.qCol];
         const rr = this.createDataQuantilesRequest(cds, this.page, "Heatmap");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [0, 0], cds, null, {
+            [0, 0], cds, null, this.defaultProvenance,{
             reusePage: false,
             chartKind: "Heatmap",
             exact: true
@@ -180,7 +181,7 @@ export class QuartilesVectorView extends HistogramViewBase {
         const cds = [this.xAxisData.description];
         const rr = this.createDataQuantilesRequest(cds, this.page, "Histogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [this.xAxisData.bucketCount], cds, null, {
+            [this.xAxisData.bucketCount], cds, null, this.defaultProvenance, {
                 reusePage: false,
                 chartKind: "Histogram"
             }));
@@ -190,7 +191,7 @@ export class QuartilesVectorView extends HistogramViewBase {
         const cds = [this.xAxisData.description, this.qCol];
         const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [this.xAxisData.bucketCount, 0], cds, null, {
+            [this.xAxisData.bucketCount, 0], cds, null, this.defaultProvenance, {
                 reusePage: false,
                 chartKind: "2DHistogram"
             }));
@@ -272,7 +273,7 @@ export class QuartilesVectorView extends HistogramViewBase {
         const cds = [this.xAxisData.description, this.qCol];
         const rr = this.createDataQuantilesRequest(cds, this.page, "QuartileVector");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [bucketCount], cds, null, {
+            [bucketCount], cds, null, "changed buckets",{
             reusePage: true, chartKind: "QuartileVector"
         }));
     }
@@ -355,11 +356,12 @@ export class QuartilesVectorView extends HistogramViewBase {
      * canvas or legend rectangle respectively.
      */
     protected selectionCompleted(xl: number, xr: number, yl: number, yr: number): void {
-        const rr = this.filterSelectionRectangle(xl, xr, yl, yr, this.xAxisData, this.yAxisData);
+        const [rr, f0, f1] = this.filterSelectionRectangle(xl, xr, yl, yr, this.xAxisData, this.yAxisData);
         if (rr == null)
             return;
         const renderer = new FilterReceiver(
-            new PageTitle(this.page.title + " filtered"),
+            new PageTitle(this.page.title.format,
+                Converters.filterDescription(f0) + " and " + Converters.filterDescription(f1)),
             [this.xAxisData.description, this.qCol], this.schema,
             [0], this.page, rr, this.dataset, {
             chartKind: "QuartileVector", reusePage: false,
@@ -377,7 +379,7 @@ export class QuartilesVectorView extends HistogramViewBase {
             isAscending: true,
         } ]);
 
-        const page = this.dataset.newPage(new PageTitle("Table"), this.page);
+        const page = this.dataset.newPage(new PageTitle("Table", this.defaultProvenance), this.page);
         const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, page);
         const rr = table.createNextKRequest(order, null, Resolution.tableRowsOnScreen);
         page.setDataView(table);
@@ -422,7 +424,7 @@ export class QuartilesVectorReceiver extends Receiver<QuantilesVector> {
  * and we are have all the data needed to compute a quartile vector.
  */
 export class QuartilesHistogramReceiver extends OnCompleteReceiver<Histogram> {
-    constructor(title: PageTitle, page: FullPage, protected remoteObjectId: RemoteObjectId,
+    constructor(protected title: PageTitle, page: FullPage, protected remoteObjectId: RemoteObjectId,
                 protected rowCount: number,
                 protected schema: SchemaClass, protected qCol: IColumnDescription,
                 protected bucketCount: number, protected axisData: AxisData,
@@ -448,11 +450,9 @@ export class QuartilesHistogramReceiver extends OnCompleteReceiver<Histogram> {
             args.max = this.axisData.dataRange.max;
         }
 
-        const title= new PageTitle("Quartiles of " + this.qCol.name + " grouped by " +
-            this.schema.displayName(args.cd.name));
         const tt = new TableTargetAPI(this.remoteObjectId)
         const rr = tt.createQuantilesVectorRequest(args);
-        rr.invoke(new QuartilesVectorReceiver(title, this.page, tt, this.rowCount,
+        rr.invoke(new QuartilesVectorReceiver(this.title, this.page, tt, this.rowCount,
             this.schema, this.axisData, this.qCol, rr,
             { chartKind: "QuartileVector", reusePage: this.reusePage }));
     }

@@ -305,10 +305,10 @@ export abstract class ChartView extends BigTableView {
      */
     protected filterSelectionRectangle(xl: number, xr: number, yl: number, yr: number,
                                        xAxisData: AxisData, yAxisData: AxisData):
-        RpcRequest<PartialResult<RemoteObjectId>> {
+        [RpcRequest<PartialResult<RemoteObjectId>>, FilterDescription, FilterDescription] {
         if (xAxisData.axis == null ||
             yAxisData.axis == null) {
-            return null;
+            return [null, null, null];
         }
 
         xl -= this.surface.leftMargin;
@@ -334,6 +334,6 @@ export abstract class ChartView extends BigTableView {
             cd: yAxisData.description,
             complement: d3event.sourceEvent.ctrlKey,
         };
-        return this.createFilter2DRequest(xRange, yRange);
+        return [this.createFilter2DRequest(xRange, yRange), xRange, yRange];
     }
 }

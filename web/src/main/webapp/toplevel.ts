@@ -46,7 +46,8 @@ export class HillviewToplevel implements IHtmlElement {
         this.datasetCounter = 0;
         this.current = null;
         this.topLevel = document.createElement("div");
-        const page = new FullPage(0, new PageTitle("Load data"), null, null);
+        const page = new FullPage(0, new PageTitle("Load data", ""),
+            null, null);
 
         this.topLevel.appendChild(page.getHTMLRepresentation());
         const menu = new LoadMenu(InitialObject.instance, page);

@@ -35,6 +35,7 @@ import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
 import {HtmlString, Resolution} from "../ui/ui";
 import {
+    Converters,
     formatNumber,
     ICancellable, makeInterval,
     PartialResult,
@@ -69,6 +70,7 @@ export class HeatmapView extends ChartView {
     protected heatmapDiv: HTMLDivElement;
     protected missingDiv: HTMLDivElement;
     protected confThreshold: number;
+    private readonly defaultProvenance: string = "Fron heatmap";
 
     constructor(remoteObjectId: RemoteObjectId,
                 rowCount: number,
@@ -146,7 +148,7 @@ export class HeatmapView extends ChartView {
         const cds = [this.xAxisData.description, this.yAxisData.description];
         const rr = this.createDataQuantilesRequest(cds, this.page, "QuartileVector");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [0, 0], cds, null, {
+            [0, 0], cds, null, this.defaultProvenance,{
                 reusePage: false,
                 chartKind: "QuartileVector",
             }));
@@ -205,7 +207,7 @@ export class HeatmapView extends ChartView {
         rr.invoke(new DataRangesReceiver(
             this, this.page, rr, this.schema, [x, y],
             [this.xAxisData.description, this.yAxisData.description], null,
-            { chartKind: "Heatmap", exact: true, reusePage: true }));
+            this.defaultProvenance, { chartKind: "Heatmap", exact: true, reusePage: true }));
     }
 
     protected createNewSurfaces(keepColorMap: boolean): void {
@@ -278,7 +280,8 @@ export class HeatmapView extends ChartView {
 
         const collector = new DataRangesReceiver(this,
             this.page, null, this.schema, [0, 0],  // any number of buckets
-            [this.xAxisData.description, this.yAxisData.description], this.page.title, {
+            [this.xAxisData.description, this.yAxisData.description], null,
+            Converters.eventToString(pageId, eventKind), {
                 chartKind: "Heatmap", exact: this.samplingRate >= 1,
                 relative: false, pieChart: false, reusePage: true
             });
@@ -378,7 +381,7 @@ export class HeatmapView extends ChartView {
         const cds = [this.xAxisData.description, this.yAxisData.description];
         const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [0, 0], cds, null, {
+            [0, 0], cds, null, this.defaultProvenance, {
             reusePage: false,
             chartKind: "2DHistogram",
             exact: true
@@ -428,7 +431,7 @@ export class HeatmapView extends ChartView {
                                            this.yAxisData.description, groupBy];
         const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisHeatmap");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [0, 0, 0], cds, null, {
+            [0, 0, 0], cds, null, this.defaultProvenance,{
             reusePage: false, chartKind: "TrellisHeatmap", exact: true
         }));
     }
@@ -452,7 +455,7 @@ export class HeatmapView extends ChartView {
             columnDescription: this.yAxisData.description,
             isAscending: true,
         }]);
-        const page = this.dataset.newPage(new PageTitle("Table"), this.page);
+        const page = this.dataset.newPage(new PageTitle("Table", "from heatmap"), this.page);
         const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, page);
         page.setDataView(table);
         table.schema = this.schema;
@@ -465,7 +468,7 @@ export class HeatmapView extends ChartView {
             this.yAxisData.description, this.xAxisData.description];
         const rr = this.createDataQuantilesRequest(cds, this.page, "Heatmap");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [0, 0], cds, null, {
+            [0, 0], cds, null, "swap axes",{
             chartKind: "Heatmap",
             exact: this.samplingRate >= 1,
             reusePage: true
@@ -476,7 +479,7 @@ export class HeatmapView extends ChartView {
         const ranges = [this.xAxisData.dataRange, this.yAxisData.dataRange];
         const collector = new DataRangesReceiver(this,
             this.page, null, this.schema, [this.xAxisData.bucketCount, this.yAxisData.bucketCount],
-            [this.xAxisData.description, this.yAxisData.description], this.page.title, {
+            [this.xAxisData.description, this.yAxisData.description], this.page.title, null,{
                 chartKind: "Heatmap", exact: this.samplingRate >= 1, reusePage: true,
             });
         collector.run(ranges);
@@ -528,11 +531,11 @@ export class HeatmapView extends ChartView {
      * Selection has been completed.  The mouse coordinates are within the canvas.
      */
     private selectionCompleted(xl: number, xr: number, yl: number, yr: number): void {
-        const rr = this.filterSelectionRectangle(xl, xr, yl, yr, this.xAxisData, this.yAxisData);
+        const [rr, f0, f1] = this.filterSelectionRectangle(xl, xr, yl, yr, this.xAxisData, this.yAxisData);
         if (rr == null)
             return;
-        const renderer = new FilterReceiver(new PageTitle(
-            this.page.title + " filtered"),
+        const renderer = new FilterReceiver(new PageTitle(this.page.title.format,
+            Converters.filterDescription(f0) + " and " + Converters.filterDescription(f1)),
             [this.xAxisData.description, this.yAxisData.description],
             this.schema, [0, 0], this.page, rr, this.dataset, {
             exact: this.samplingRate >= 1, chartKind: "Heatmap", reusePage: false,

@@ -25,7 +25,7 @@ import {
 import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {SchemaClass} from "../schemaClass";
-import {add, ICancellable, PartialResult, percent, reorder, significantDigits} from "../util";
+import {add, Converters, ICancellable, PartialResult, percent, reorder, significantDigits} from "../util";
 import {AxisData, AxisKind} from "./axisData";
 import {
     IViewSerialization,
@@ -60,6 +60,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
     protected relative: boolean;
     protected data: Heatmap3D;
     protected maxYAxis: number | null;  // maximum value to use for Y axis; if null - derive from data
+    private readonly defaultProvenance: string = "Trellis 2D histograms";
 
     public constructor(
         remoteObjectId: RemoteObjectId,
@@ -193,7 +194,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
         const collector = new DataRangesReceiver(this,
             this.page, null, this.schema, [0, 0, 0],  // any number of buckets
             [this.xAxisData.description, this.legendAxisData.description, this.groupByAxisData.description],
-            this.page.title, {
+            this.page.title, Converters.eventToString(pageId, eventKind), {
                 chartKind: "Trellis2DHistogram", exact: this.samplingRate >= 1,
                 relative: this.relative, reusePage: true
             });
@@ -207,7 +208,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
         const rr = this.createDataQuantilesRequest(cds, this.page, "Trellis2DHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [this.legendAxisData.bucketCount, this.buckets, this.shape.bucketCount],
-            cds, null, {
+            cds, null, "swap axes",{
                 reusePage: true, relative: this.relative,
                 chartKind: "Trellis2DHistogram", exact: true
             }));
@@ -254,7 +255,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
     }
 
     protected showTable(): void {
-        const newPage = this.dataset.newPage(new PageTitle("Table"), this.page);
+        const newPage = this.dataset.newPage(new PageTitle("Table", this.defaultProvenance), this.page);
         const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newPage);
         newPage.setDataView(table);
         table.schema = this.schema;
@@ -279,7 +280,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
         const rr = this.createDataQuantilesRequest(cds, this.page, "Trellis2DHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [this.buckets, this.legendAxisData.bucketCount, this.shape.bucketCount],
-                cds, null, {
+                cds, null, "exact",{
                 reusePage: true, relative: this.relative,
                 chartKind: "Trellis2DHistogram", exact: true
             }));
@@ -307,7 +308,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
             const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
             rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
                 [0, 0],
-                cds, null, {
+                cds, null, "change groups",{
                     reusePage: true, relative: this.relative,
                     chartKind: "2DHistogram", exact: this.samplingRate >= 1
                 }));
@@ -317,7 +318,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
             const rr = this.createDataQuantilesRequest(cds, this.page, "Trellis2DHistogram");
             rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
                 [0, 0, groupCount],
-                cds, null, {
+                cds, null, "change groups",{
                     reusePage: true, relative: this.relative,
                     chartKind: "Trellis2DHistogram", exact: this.samplingRate >= 1
                 }));
@@ -330,7 +331,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
         const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisHeatmap");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [this.buckets, this.legendAxisData.bucketCount, this.shape.bucketCount],
-            cds, null, {
+            cds, null, this.defaultProvenance,{
                 reusePage: false, relative: this.relative,
                 chartKind: "TrellisHeatmap", exact: true
             }));
@@ -353,7 +354,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
         const collector = new DataRangesReceiver(this,
             this.page, null, this.schema,
             [this.xAxisData.bucketCount, this.legendAxisData.bucketCount, this.groupByAxisData.bucketCount],
-            cds, this.page.title, {
+            cds, this.page.title, null,{
                 chartKind: "Trellis2DHistogram", exact: this.samplingRate >= 1,
                 relative: this.relative, reusePage: true
             });
@@ -471,7 +472,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
         if (filter == null)
             return;
         const rr = this.createFilterRequest(filter);
-        const title = new PageTitle("Filtered on " + this.schema.displayName(filter.cd.name));
+        const title = new PageTitle(this.page.title.format, Converters.filterDescription(filter));
         const renderer = new FilterReceiver(title, [this.xAxisData.description, this.legendAxisData.description,
             this.groupByAxisData.description], this.schema, [0, 0, 0], this.page, rr, this.dataset, {
             chartKind: "Trellis2DHistogram", relative: this.relative,

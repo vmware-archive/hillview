@@ -33,14 +33,16 @@ public class DateParsing {
      */
     @Nullable
     private DateTimeFormatter parserFormatter;
-    /**
-     * Used in conjunction with the parseFormatter.  If true
-     * parse the strings as LocalDate. Java is really stupid in this respect,
-     * and the spec is unclear about this.
-     * @see <a href="http://stackoverflow.com/questions/27454025/unable-to-obtain-localdatetime-from-temporalaccessor-when-parsing-localdatetime">Parsing LocalDateTime</a>
-     */
-    private boolean parseAsDate;
-
+    
+    enum ParseKind {
+        DateNoZone,   // No time component
+        DateWithZone, // No time component, but with time zone
+        DateTimeNoZone,  // Date-time, no time zone component
+        DateTimeWithZone // Date-time with time zone
+    }
+    
+    ParseKind kind;
+    
     private static final LinkedHashMap<String, String> DATE_FORMAT_REGEXPS =
             new LinkedHashMap<String, String>() {{
                 // Note that the regexp used as the key is used against the lowercased string
@@ -50,6 +52,11 @@ public class DateParsing {
                 put("^\\d{1,2}\\s+[a-z]{3}\\s+\\d{4}$", "d MMM yyyy");
                 put("^\\d{1,2}\\s+[a-z]{4,}\\s+\\d{4}$", "d MMMM yyyy");
                 put("^\\d{4}-\\d{1,2}-\\d{1,2}$", "yyyy-M-d");
+            }};
+    // These format expressions contain timezone information
+    private static final LinkedHashMap<String, String> TIMEZOME_FORMAT_REGEXPS =
+            new LinkedHashMap<String, String>() {{
+                put("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2} [+-]\\d{4} \\w+", "yyyy-M-dd HH:mm:ss Z z");
             }};
     private static final LinkedHashMap<String, String> DATETIME_FORMAT_REGEXPS =
             new LinkedHashMap<String, String>() {{
@@ -88,64 +95,80 @@ public class DateParsing {
                 put("^\\d{1,2}\\s+[a-z]{4,}\\s+\\d{4}\\s\\d{1,2}:\\d{2}$", "d MMMM yyyy H:mm");
                 put("^[a-z]{3}\\s+\\d{1,2}\\s+\\d{1,2}:\\d{2}$", "MMM d H:mm");
                 put("^[a-z]{3}\\s+\\d{1,2}\\s+\\d{1,2}:\\d{2}:\\d{2}$", "MMM d H:mm:ss");
-                put("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{6}", "yyyy-mm-ddTHH:mm:ss.SSSSSS");
+                put("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.\\d{6}", "yyyy-M-ddTHH:mm:ss.SSSSSS");
             }};
 
-    private static final DateTimeFormatter[] toTry = {
-            DateTimeFormatter.BASIC_ISO_DATE,
-            DateTimeFormatter.ISO_LOCAL_DATE,
-            DateTimeFormatter.ISO_OFFSET_DATE,
-            DateTimeFormatter.ISO_DATE,
-            DateTimeFormatter.ISO_LOCAL_TIME,
-            DateTimeFormatter.ISO_OFFSET_TIME,
-            DateTimeFormatter.ISO_TIME,
-            DateTimeFormatter.ISO_LOCAL_DATE_TIME,
-            DateTimeFormatter.ISO_OFFSET_DATE_TIME,
-            DateTimeFormatter.ISO_ZONED_DATE_TIME,
-            DateTimeFormatter.ISO_DATE_TIME,
-            DateTimeFormatter.ISO_ORDINAL_DATE,
-            DateTimeFormatter.ISO_INSTANT,
-            DateTimeFormatter.RFC_1123_DATE_TIME
-    };
+    private static final LinkedHashMap<DateTimeFormatter, ParseKind> standardFormats =
+            new LinkedHashMap<DateTimeFormatter, ParseKind>() {{
+                put(DateTimeFormatter.BASIC_ISO_DATE, ParseKind.DateNoZone);
+                put(DateTimeFormatter.ISO_LOCAL_DATE, ParseKind.DateNoZone);
+                put(DateTimeFormatter.ISO_OFFSET_DATE, ParseKind.DateWithZone);
+                put(DateTimeFormatter.ISO_DATE, ParseKind.DateWithZone);
+                put(DateTimeFormatter.ISO_LOCAL_DATE_TIME, ParseKind.DateTimeNoZone);
+                put(DateTimeFormatter.ISO_OFFSET_DATE_TIME, ParseKind.DateTimeNoZone);
+                put(DateTimeFormatter.ISO_ZONED_DATE_TIME, ParseKind.DateTimeWithZone);
+                put(DateTimeFormatter.ISO_DATE_TIME, ParseKind.DateTimeWithZone);
+                put(DateTimeFormatter.ISO_ORDINAL_DATE, ParseKind.DateNoZone);
+                put(DateTimeFormatter.ISO_INSTANT, ParseKind.DateTimeNoZone);
+                put(DateTimeFormatter.RFC_1123_DATE_TIME, ParseKind.DateTimeWithZone);
+            }};
 
     @SuppressWarnings("UnnecessaryContinue")
     public DateParsing(String s) {
         s = Utilities.singleSpaced(s);
-        boolean[] asDate = {false, true};
-
-        for (boolean b : asDate) {
-            this.parseAsDate = b;
-            //noinspection ForLoopReplaceableByForEach
-            for (int i=0; i < toTry.length; i++) {
-                DateTimeFormatter d = toTry[i];
-                try {
-                    if (b)
+        for (Map.Entry<DateTimeFormatter, ParseKind> f : standardFormats.entrySet()) {
+            DateTimeFormatter d = f.getKey();
+            try {
+                switch (f.getValue()) {
+                    case DateNoZone:
+                    case DateWithZone:
                         LocalDate.parse(s, d);
-                    else
+                        break;
+                    case DateTimeNoZone:
+                    case DateTimeWithZone:
                         LocalDateTime.parse(s, d);
-                    HillviewLogger.instance.info("Guessed date format", "{0}", d);
-                    this.parserFormatter = d;
-                    return;
-                } catch (DateTimeParseException ex) {
-                    continue;
+                        break;
                 }
+                HillviewLogger.instance.info("Guessed date format", "{0}", d);
+                this.parserFormatter = d;
+                this.kind = f.getValue();
+                return;
+            } catch (DateTimeParseException ex) {
+                continue;
             }
         }
 
-        for (boolean b : asDate) {
-            this.parseAsDate = b;
-            LinkedHashMap<String, String> map = b ? DATE_FORMAT_REGEXPS : DATETIME_FORMAT_REGEXPS;
-            // none of the standard formats worked, let's try some custom ones
+        // none of the standard formats worked, let's try some custom ones
+        // First we try formats that specify a timezone
+        this.kind = ParseKind.DateTimeWithZone;
+        for (Map.Entry<String, String> regexpEntry : TIMEZOME_FORMAT_REGEXPS.entrySet()) {
+            if (s.toLowerCase().matches(regexpEntry.getKey())) {
+                String format = regexpEntry.getValue();
+                this.parserFormatter = new DateTimeFormatterBuilder()
+                        .appendPattern(format)
+                        .parseDefaulting(ChronoField.YEAR_OF_ERA, ZonedDateTime.now().getYear())
+                        .toFormatter();
+                HillviewLogger.instance.info("Guessed date format", "{0}", regexpEntry.getKey());
+                return;
+            }
+        }
+
+        for (ParseKind b : Utilities.list(ParseKind.DateNoZone, ParseKind.DateTimeNoZone)) {
+            this.kind = b;
+            LinkedHashMap<String, String> map;
+            if (b == ParseKind.DateNoZone)
+                map = DATE_FORMAT_REGEXPS;
+            else
+                map = DATETIME_FORMAT_REGEXPS;
             for (Map.Entry<String, String> regexpEntry : map.entrySet()) {
                 if (s.toLowerCase().matches(regexpEntry.getKey())) {
                     String format = regexpEntry.getValue();
-                    this.parserFormatter = //DateTimeFormatter.ofPattern(format);
-                            new DateTimeFormatterBuilder()
-                                    .appendPattern(format)
-                                    // We need this because some patterns have no year.
-                                    .parseDefaulting(ChronoField.YEAR_OF_ERA, ZonedDateTime.now().getYear())
-                                    .toFormatter()
-                                    .withZone(ZoneId.systemDefault());
+                    this.parserFormatter = new DateTimeFormatterBuilder()
+                            .appendPattern(format)
+                            // We need this because some patterns have no year.
+                            .parseDefaulting(ChronoField.YEAR_OF_ERA, ZonedDateTime.now().getYear())
+                            .toFormatter()
+                            .withZone(ZoneId.systemDefault());
                     HillviewLogger.instance.info("Guessed date format", "{0}", regexpEntry.getKey());
                     return;
                 }
@@ -158,14 +181,21 @@ public class DateParsing {
     public Instant parse(String s) {
         s = Utilities.singleSpaced(s);
         Converters.checkNull(this.parserFormatter);
-        if (this.parseAsDate) {
-            return LocalDate.parse(s, this.parserFormatter)
-                    .atStartOfDay(ZoneId.systemDefault())
-                    .toInstant();
-        } else {
-            return LocalDateTime.parse(s, this.parserFormatter)
-                    .atZone(ZoneId.systemDefault())
-                    .toInstant();
+        switch (this.kind) {
+            case DateNoZone:
+            case DateWithZone: // TODO we are ingnoring the offset for this case.
+                return LocalDate.parse(s, this.parserFormatter)
+                        .atStartOfDay(ZoneId.systemDefault())
+                        .toInstant();
+            case DateTimeNoZone:
+                return LocalDateTime.parse(s, this.parserFormatter)
+                        .atZone(ZoneId.systemDefault())
+                        .toInstant();
+            case DateTimeWithZone:
+                return ZonedDateTime.parse(s, this.parserFormatter)
+                        .toInstant();
+            default:
+                throw new HillviewException("Unexpected datetime format" + this.kind);
         }
     }
 }

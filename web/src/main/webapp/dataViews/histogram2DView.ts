@@ -39,6 +39,7 @@ import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
 import {ChartOptions, HtmlString, Resolution} from "../ui/ui";
 import {
+    Converters,
     formatNumber,
     ICancellable,
     Pair,
@@ -73,6 +74,7 @@ export class Histogram2DView extends HistogramViewBase {
     protected legendPlot: HistogramLegendPlot;
     protected legendSurface: HtmlPlottingSurface;
     protected viewMenu: SubMenu;
+    protected readonly defaultProvenance = "From 2D histogram";
 
     constructor(remoteObjectId: RemoteObjectId, rowCount: number,
                 schema: SchemaClass, protected samplingRate: number, page: FullPage) {
@@ -149,7 +151,7 @@ export class Histogram2DView extends HistogramViewBase {
 
     private showQuartiles(): void {
         const title= new PageTitle("Quartiles of " + this.yAxisData.description.name + " grouped by " +
-            this.schema.displayName(this.xAxisData.description.name));
+            this.schema.displayName(this.xAxisData.description.name), "From 2D histogram view");
         const qhr = new QuartilesHistogramReceiver(title, this.page, this.remoteObjectId,
             this.rowCount, this.schema, this.yAxisData.description,
             this.xPoints, this.xAxisData, null, false);
@@ -327,7 +329,7 @@ export class Histogram2DView extends HistogramViewBase {
             groupBy];
         const rr = this.createDataQuantilesRequest(cds, this.page, "Trellis2DHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [0, 0, 0], cds, null, {
+            [0, 0, 0], cds, null, this.defaultProvenance,{
             reusePage: false, relative: this.relative,
             chartKind: "Trellis2DHistogram", exact: this.samplingRate >= 1.0
         }));
@@ -361,7 +363,7 @@ export class Histogram2DView extends HistogramViewBase {
         const cds = [this.xAxisData.description, this.yAxisData.description];
         const rr = this.createDataQuantilesRequest(cds, this.page, "Heatmap");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [0, 0], cds, null, {
+            [0, 0], cds, null, this.defaultProvenance, {
             reusePage: false,
             chartKind: "Heatmap",
             exact: true
@@ -420,7 +422,7 @@ export class Histogram2DView extends HistogramViewBase {
         const cds = [this.yAxisData.description, this.xAxisData.description];
         const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [0, 0], cds, null, {
+            [0, 0], cds, null, "swapped axes", {
             reusePage: true, relative: this.relative,
             chartKind: "2DHistogram", exact: this.samplingRate >= 1.0
         }));
@@ -432,7 +434,8 @@ export class Histogram2DView extends HistogramViewBase {
         const cds = [this.xAxisData.description, this.yAxisData.description];
         const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [this.xPoints, this.yPoints], cds, this.page.title, {
+            [this.xPoints, this.yPoints], cds, this.page.title,
+            "requested exact computation", {
             reusePage: true,
             relative: this.relative,
             chartKind: "2DHistogram",
@@ -446,7 +449,7 @@ export class Histogram2DView extends HistogramViewBase {
         const cds = [this.xAxisData.description, this.yAxisData.description];
         const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [xBuckets, yBuckets], cds, null, {
+            [xBuckets, yBuckets], cds, null, "changed buckets", {
             reusePage: true,
             relative: this.relative,
             chartKind: "2DHistogram",
@@ -465,7 +468,8 @@ export class Histogram2DView extends HistogramViewBase {
         if (eventKind === "XAxis") {
             const collector = new DataRangesReceiver(this,
                 this.page, null, this.schema, [0, 0],  // any number of buckets
-                [this.xAxisData.description, this.yAxisData.description], this.page.title, {
+                [this.xAxisData.description, this.yAxisData.description], this.page.title,
+                    Converters.eventToString(pageId, eventKind), {
                     chartKind: "2DHistogram", exact: this.samplingRate >= 1,
                     relative: this.relative, reusePage: true,
                 });
@@ -516,7 +520,7 @@ export class Histogram2DView extends HistogramViewBase {
         const ranges = [this.xAxisData.dataRange, this.yAxisData.dataRange];
         const collector = new DataRangesReceiver(this,
             this.page, null, this.schema, [this.xAxisData.bucketCount, this.yAxisData.bucketCount],
-            cds, this.page.title, {
+            cds, this.page.title, null,{
                 chartKind: "2DHistogram", exact: this.samplingRate >= 1,
                 relative: this.relative, reusePage: true
             });
@@ -692,7 +696,7 @@ export class Histogram2DView extends HistogramViewBase {
         };
         const rr = this.createFilterRequest(filter);
         const renderer = new FilterReceiver(
-            new PageTitle("Filtered on " + this.schema.displayName(selectedAxis.description.name)),
+            new PageTitle(this.page.title.format, Converters.filterDescription(filter)),
             [this.xAxisData.description, this.yAxisData.description], this.schema,
             [inLegend ? this.xPoints : 0, this.yPoints], this.page, rr, this.dataset, {
             exact: this.samplingRate >= 1.0,
@@ -713,7 +717,7 @@ export class Histogram2DView extends HistogramViewBase {
             isAscending: true,
         } ]);
 
-        const page = this.dataset.newPage(new PageTitle("Table"), this.page);
+        const page = this.dataset.newPage(new PageTitle("Table", this.defaultProvenance), this.page);
         const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, page);
         const rr = table.createNextKRequest(order, null, Resolution.tableRowsOnScreen);
         page.setDataView(table);

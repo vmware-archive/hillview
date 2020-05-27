@@ -37,7 +37,7 @@ import {
     TrellisLayoutComputation
 } from "./dataRangesCollectors";
 import {Receiver, RpcRequest} from "../rpc";
-import {ICancellable, makeInterval, PartialResult, reorder} from "../util";
+import {Converters, ICancellable, makeInterval, PartialResult, reorder} from "../util";
 import {HeatmapPlot} from "../ui/heatmapPlot";
 import {IViewSerialization, TrellisHeatmapSerialization} from "../datasetView";
 import {IDataView} from "../ui/dataview";
@@ -58,6 +58,7 @@ export class TrellisHeatmapView extends TrellisChartView {
     protected yAxisData: AxisData;
     protected hps: HeatmapPlot[];
     protected heatmaps: Heatmap3D;
+    protected readonly defaultProvenance = "Trellis heatmaps";
 
     constructor(remoteObjectId: RemoteObjectId,
                 rowCount: number,
@@ -197,7 +198,7 @@ export class TrellisHeatmapView extends TrellisChartView {
         const collector = new DataRangesReceiver(this,
             this.page, null, this.schema, [0, 0, 0],  // any number of buckets
             [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description],
-            this.page.title, {
+            this.page.title, this.defaultProvenance, {
                 chartKind: "TrellisHeatmap", exact: this.samplingRate >= 1,
                 relative: false, reusePage: true
             });
@@ -211,7 +212,7 @@ export class TrellisHeatmapView extends TrellisChartView {
         const collector = new DataRangesReceiver(this,
             this.page, null, this.schema,
             [this.xAxisData.bucketCount, this.yAxisData.bucketCount, this.groupByAxisData.bucketCount],
-            cds, this.page.title, {
+            cds, this.page.title, null,{
                 chartKind: "TrellisHeatmap", exact: this.samplingRate >= 1,
                 relative: false, reusePage: true
             });
@@ -234,7 +235,7 @@ export class TrellisHeatmapView extends TrellisChartView {
             const cds = [this.xAxisData.description, this.yAxisData.description];
             const rr = this.createDataQuantilesRequest(cds, this.page, "Heatmap");
             rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-                [0], cds, null, {
+                [0], cds, null, "change groups",{
                     reusePage: true, relative: false,
                     chartKind: "Heatmap", exact: this.samplingRate >= 1
                 }));
@@ -242,7 +243,7 @@ export class TrellisHeatmapView extends TrellisChartView {
             const cds = [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description];
             const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisHeatmap");
             rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-                [0, 0, groupCount], cds, null, {
+                [0, 0, groupCount], cds, null, "change groups", {
                     reusePage: true, relative: false,
                     chartKind: "TrellisHeatmap", exact: this.samplingRate >= 1
                 }));
@@ -254,7 +255,7 @@ export class TrellisHeatmapView extends TrellisChartView {
             this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description];
         const rr = this.createDataQuantilesRequest(cds, this.page, "Trellis2DHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [0, 0, 0], cds, null, {
+            [0, 0, 0], cds, null, this.defaultProvenance, {
                 chartKind: "Trellis2DHistogram",
                 exact: true,
                 relative: false,
@@ -267,7 +268,7 @@ export class TrellisHeatmapView extends TrellisChartView {
             this.yAxisData.description, this.xAxisData.description, this.groupByAxisData.description];
         const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisHeatmap");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [0, 0], cds, null, {
+            [0, 0], cds, null, "swap axes", {
                 chartKind: "TrellisHeatmap",
                 exact: true,
                 relative: true,
@@ -276,7 +277,7 @@ export class TrellisHeatmapView extends TrellisChartView {
     }
 
     public showTable(): void {
-        const newPage = this.dataset.newPage(new PageTitle("Table"), this.page);
+        const newPage = this.dataset.newPage(new PageTitle("Table", this.defaultProvenance), this.page);
         const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newPage);
         newPage.setDataView(table);
         table.schema = this.schema;
@@ -417,9 +418,8 @@ export class TrellisHeatmapView extends TrellisChartView {
                 complement: d3event.sourceEvent.ctrlKey,
             };
             rr = this.createFilter2DRequest(xRange, yRange);
-            title = new PageTitle("Filtered on " +
-                this.schema.displayName(this.xAxisData.description.name) +
-                " and " + this.schema.displayName(this.yAxisData.description.name));
+            title = new PageTitle(this.page.title.format,
+                Converters.filterDescription(xRange) + " and " + Converters.filterDescription(yRange));
             const renderer = new FilterReceiver(title,
                 [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description],
                 this.schema, [0, 0, 0], this.page, rr, this.dataset, {
@@ -432,8 +432,7 @@ export class TrellisHeatmapView extends TrellisChartView {
             if (filter == null)
                 return;
             rr = this.createFilterRequest(filter);
-            title = new PageTitle(
-                "Filtered on " + this.groupByAxisData.getDisplayNameString(this.schema));
+            title = new PageTitle(this.page.title.format, Converters.filterDescription(filter));
             const renderer = new FilterReceiver(title,
                 [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description],
                 this.schema, [0, 0, 0], this.page, rr, this.dataset, {

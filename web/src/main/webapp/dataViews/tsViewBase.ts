@@ -54,6 +54,8 @@ import {ErrorReporter} from "../ui/errReporter";
  * A base class for TableView and SchemaView.
  */
 export abstract class TSViewBase extends BigTableView {
+    protected defaultProvenance;
+
     protected constructor(
         remoteObjectId: RemoteObjectId,
         rowCount: number,
@@ -240,6 +242,7 @@ export abstract class TSViewBase extends BigTableView {
         const exact = this.isPrivate(); // If private, do not sample
         rr.invoke(new DataRangesReceiver(
             this, this.page, rr, this.schema, [0], [cd], null,
+            this.defaultProvenance,
             { chartKind: "Histogram", relative: false, exact: exact, reusePage: false, pieChart: false }));
     }
 
@@ -247,7 +250,7 @@ export abstract class TSViewBase extends BigTableView {
         const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
         const exact = this.isPrivate(); // If private, do not sample
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [0, 0], cds, null, {
+            [0, 0], cds, null, this.defaultProvenance,{
             reusePage: false, relative: false,
             chartKind: "2DHistogram", exact: exact
         }));
@@ -257,7 +260,7 @@ export abstract class TSViewBase extends BigTableView {
         const exact = this.isPrivate(); // If private, do not sample
         const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [0, 0], cds, null, {
+            [0, 0], cds, null, this.defaultProvenance, {
             reusePage: false, relative: false,
             chartKind: "TrellisHistogram", exact: exact
         }));
@@ -273,7 +276,7 @@ export abstract class TSViewBase extends BigTableView {
         const exact = this.isPrivate(); // If private, do not sample
         const rr = this.createDataQuantilesRequest(cds, this.page, chartKind);
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [0, 0, 0], cds, null, {
+            [0, 0, 0], cds, null, this.defaultProvenance, {
             reusePage: false, relative: false,
             chartKind: chartKind, exact: exact
         }));
@@ -302,7 +305,7 @@ export abstract class TSViewBase extends BigTableView {
         const cds = this.schema.getDescriptions(columns);
         const rr = this.createDataQuantilesRequest(cds, this.page, "Heatmap");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [0, 0], cds, null, {
+            [0, 0], cds, null, this.defaultProvenance, {
             reusePage: false,
             relative: false,
             chartKind: "Heatmap",
@@ -511,17 +514,8 @@ export abstract class TSViewBase extends BigTableView {
                 o.addColumn(so);
             }
             const rr = this.createFilterColumnRequest(rowFilter);
-            let title = "Filtered: " + rowFilter.colName;
-            if ((strFilter.asSubString || strFilter.asRegEx) && !strFilter.complement)
-                title += " contains ";
-            else if ((strFilter.asSubString || strFilter.asRegEx) && strFilter.complement)
-                title += " does not contain ";
-            else if (!(strFilter.asSubString || strFilter.asRegEx) && !strFilter.complement)
-                title += " equals ";
-            else if (!(strFilter.asSubString || strFilter.asRegEx) && strFilter.complement)
-                title += " does not equal ";
-            title += strFilter.compareValue;
-            const newPage = this.dataset.newPage(new PageTitle(title), this.page);
+            let provenance = "Filtered " + rowFilter.colName + Converters.stringFilterDescription(strFilter);
+            const newPage = this.dataset.newPage(new PageTitle(this.page.title.format, provenance), this.page);
             rr.invoke(new TableOperationCompleted(newPage, rr, this.rowCount, this.schema,
                 o, tableRowsDesired, aggregates));
         });
@@ -551,7 +545,6 @@ export abstract class TSViewBase extends BigTableView {
             // Some error occurred
             return;
 
-        const kind = filter.column.kind;
         const so: ColumnSortOrientation = {
             columnDescription: filter.column, isAscending: true,
         };
@@ -563,10 +556,8 @@ export abstract class TSViewBase extends BigTableView {
         }
 
         const rr = this.createFilterComparisonRequest(filter);
-        const value = kindIsString(kind) ? filter.stringValue : filter.doubleValue;
-        const title = "Filtered: " + Converters.valueToString(value, kind) +
-                    " " + filter.comparison + " " + this.schema.displayName(filter.column.name);
-        const newPage = this.dataset.newPage(new PageTitle(title), this.page);
+        const provenance = Converters.comparisonFilterDescription(filter);
+        const newPage = this.dataset.newPage(new PageTitle(this.page.title.format, provenance), this.page);
         rr.invoke(new TableOperationCompleted(newPage, rr, this.rowCount, this.schema,
             o, tableRowsDesired, aggregates));
     }
@@ -623,7 +614,7 @@ export abstract class TSViewBase extends BigTableView {
         }
         const rr = this.createDataQuantilesRequest(cds, this.page, "QuartileVector");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [0, 0], cds, null, {
+            [0, 0], cds, null, this.defaultProvenance,{
                 reusePage: false,
                 chartKind: "QuartileVector",
             }));

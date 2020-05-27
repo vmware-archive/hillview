@@ -37,14 +37,20 @@ const plus = "+";
 
 export class PageTitle {
     public static readonly missingFormat = "%m";
+    public static pageReferenceFormat(page: string): string {
+        return "%p(" + page + ")";
+    }
 
     /**
      * A title is described by a format string.
-     * @param format  Format string, described below.
+     * @param format  Format string, containing the following special sequences.
      * %m represents a "missing" value.
      * %p(n) represents a link to page numbered n.
+     * @param provenance A human-readable description of how this page was produced.
+     *                   Shown on mouse-over.
      */
-    constructor(public readonly format: string) {}
+    constructor(public readonly format: string,
+                public readonly provenance: string) {}
 
     public getHTMLRepresentation(parentPage: FullPage): HTMLElement {
         const result = document.createElement("span");
@@ -76,6 +82,7 @@ export class PageTitle {
                 break;
             }
         }
+        result.title = this.provenance;
         return result;
     }
 }
@@ -163,7 +170,7 @@ export class FullPage implements IHtmlElement {
             h2.style.cursor = "grab";
             h2.draggable = true;
             h2.ondragstart = (e) => this.setDragPayload(e, "Title");
-            h2.title = "View title.  Can be dragged to replace data in another view.";
+            h2.title = "Drag-and-drop to copy this data to another view.";
         }
         h2.style.textOverflow = "ellipsis";
         h2.style.textAlign = "center";
