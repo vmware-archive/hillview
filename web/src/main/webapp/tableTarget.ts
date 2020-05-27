@@ -458,6 +458,7 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
             pageId: this.page.pageId,
             sourcePageId: this.page.sourcePageId,
             title: this.page.title.format,
+            provenance: this.page.title.provenance,
             remoteObjectId: this.remoteObjectId,
             rowCount: this.rowCount,
             schema: this.schema.serialize(),
@@ -512,7 +513,8 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
         const view = this.dataset.findPage(pageId).dataView;
         const rr = this.createZipRequest(view as BigTableView);
         const renderer = this.getCombineRenderer(
-            new PageTitle(" %p(" + pageId + ") " + CombineOperators[how]));
+            new PageTitle(this.page.title.format,
+                CombineOperators[how] + " between " + this.page.pageId + " and " + pageId));
         rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.dataset, renderer));
     }
 

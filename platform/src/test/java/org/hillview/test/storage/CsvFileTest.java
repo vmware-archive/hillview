@@ -23,6 +23,7 @@ import com.univocity.parsers.csv.CsvWriterSettings;
 import org.hillview.storage.CsvFileLoader;
 import org.hillview.storage.CsvFileWriter;
 import org.hillview.table.ColumnDescription;
+import org.hillview.table.Schema;
 import org.hillview.table.Table;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
@@ -48,13 +49,15 @@ import java.util.UUID;
  * Test read/write access to CSV files.
  */
 public class CsvFileTest extends BaseTest {
-    static final String ontimeFolder = "../data/ontime";
-    private static final String criteoFolder = "../data/criteo";
+    private static final String dataFolder = ".." + File.separator + "data";
+    static final String ontimeFolder = dataFolder + File.separator + "ontime";
+    private static final String criteoFolder = dataFolder + File.separator + "criteo";
     static final String csvFile = "On_Time_Sample.csv";
     private static final String schemaFile = "On_Time.schema";
     private static final String criteoFile = "criteoTab.csv";
     private static final String criteoSchema = "criteo.schema";
     private static final String criteoCompressed = "criteoTab.gz";
+    private static final String weatherFile = "weather.csv";
 
     @Test
     public void letterPairs() {
@@ -65,11 +68,11 @@ public class CsvFileTest extends BaseTest {
         }
     }
 
-    private ITable readTable(String folder, String file) {
+    private ITable readTable(String folder, String file, boolean header) {
         Path path = Paths.get(folder, file);
         CsvFileLoader.Config config = new CsvFileLoader.Config();
         config.allowFewerColumns = false;
-        config.hasHeaderRow = false;
+        config.hasHeaderRow = header;
         CsvFileLoader r = new CsvFileLoader(path.toString(), config, null);
         return r.load();
     }
@@ -97,8 +100,16 @@ public class CsvFileTest extends BaseTest {
     }
 
     @Test
+    public void readWeatherData() {
+        ITable table = this.readTable(dataFolder, weatherFile, true);
+        Assert.assertNotNull(table);
+        Schema s = table.getSchema();
+        Assert.assertEquals(25, s.getColumnCount());
+    }
+
+    @Test
     public void readCsvFileTest() {
-        ITable t = this.readTable(ontimeFolder, csvFile);
+        ITable t = this.readTable(ontimeFolder, csvFile, false);
         Assert.assertNotNull(t);
     }
 
@@ -217,7 +228,7 @@ public class CsvFileTest extends BaseTest {
 
     @Test
     public void writeCsvFileTest() throws IOException {
-        ITable tbl = this.readTable(ontimeFolder, csvFile);
+        ITable tbl = this.readTable(ontimeFolder, csvFile, false);
         Assert.assertNotNull(tbl);
         writeReadTable(tbl);
     }

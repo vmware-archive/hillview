@@ -57,7 +57,7 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
             this.newPage = this.page;
         else
             this.newPage = this.page.dataset.newPage(
-                new PageTitle("Singular Value Spectrum"), this.page);
+                new PageTitle("Singular Value Spectrum", page.title.format), this.page);
     }
 
     public run(eVals: EigenVal): void {
@@ -112,7 +112,7 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
                 return;
             }
             const rr = this.originator.createCorrelationMatrixRequest(this.colNames, this.rowCount, true);
-            const newestPage = this.newPage.dataset.newPage(new PageTitle("Table"), this.newPage);
+            const newestPage = this.newPage.dataset.newPage(new PageTitle("Table", "Spectrum view"), this.newPage);
             const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newestPage);
             newestPage.setDataView(table);
             const order  = new RecordOrder([]);

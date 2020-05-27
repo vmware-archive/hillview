@@ -321,9 +321,8 @@ export class Test {
             cont: () => {
                 const el2 = findElement("#hillviewPage6 .topMenu #View #__buckets___");
                 el2.click();
-                (findElement(".dialog #n_buckets") as HTMLInputElement).value = "10";
+                (findElement(".dialog #x_buckets") as HTMLInputElement).value = "10";
                 findElement(".dialog .confirm").click();
-                this.next(); // changing buckets does not involve an RPC
             },
         }, {
             description: "Quartiles vector",

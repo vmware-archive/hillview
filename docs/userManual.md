@@ -1108,7 +1108,7 @@ of further frequent elements. These can be viewed using the All frequent element
 Hillview supports many types of charts; these are described in the following sections:
 
 [![One dimensional histogram](hillview-histogram-small.png)](#41-uni-dimensional-histogram-views)
-[![Pie charts](pie-chart.png)](#41-uni-dimensional-histogram-views)
+[![Pie charts](pie-chart-small.png)](#41-uni-dimensional-histogram-views)
 [![Histograms of quartiles](histogram-quartiles-view-small.png)](#42-quartiles-view-for-histogram-buckets)
 [![Stacked two dimensional histograms](hillview-histogram2d-small.png)](#43-two-dimensional-histogram-views)
 [![Non-stacked two dimensional histograms](non-stacked-2d-histogram-small.png)](#43-two-dimensional-histogram-views)

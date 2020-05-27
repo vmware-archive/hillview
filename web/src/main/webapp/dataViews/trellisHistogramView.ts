@@ -28,6 +28,7 @@ import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {DisplayName, SchemaClass} from "../schemaClass";
 import {
+    Converters,
     ICancellable, makeInterval,
     PartialResult,
     percent, prefixSum,
@@ -61,6 +62,7 @@ export class TrellisHistogramView extends TrellisChartView {
     protected xAxisData: AxisData;
     protected data: Heatmap;
     protected cdfDot: D3SvgElement;
+    private readonly defaultProvenance: string = "Trellis histograms";
 
     public constructor(
         remoteObjectId: RemoteObjectId,
@@ -140,7 +142,7 @@ export class TrellisHistogramView extends TrellisChartView {
             const cds = [this.xAxisData.description];
             const rr = this.createDataQuantilesRequest(cds, this.page, "Histogram");
             rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-                [0], cds, null, {
+                [0], cds, null, "change groups",{
                     reusePage: true, relative: false,
                     chartKind: "Histogram", exact: this.samplingRate >= 1, pieChart: false
                 }));
@@ -148,7 +150,7 @@ export class TrellisHistogramView extends TrellisChartView {
             const cds = [this.xAxisData.description, this.groupByAxisData.description];
             const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisHistogram");
             rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-                [0, groupCount], cds, null, {
+                [0, groupCount], cds, null, "change groups", {
                     reusePage: true, relative: false,
                     chartKind: "TrellisHistogram", exact: this.samplingRate >= 1
                 }));
@@ -156,7 +158,7 @@ export class TrellisHistogramView extends TrellisChartView {
     }
 
     protected showTable(): void {
-        const newPage = this.dataset.newPage(new PageTitle("Table"), this.page);
+        const newPage = this.dataset.newPage(new PageTitle("Table", this.defaultProvenance), this.page);
         const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newPage);
         newPage.setDataView(table);
         table.schema = this.schema;
@@ -176,7 +178,7 @@ export class TrellisHistogramView extends TrellisChartView {
         const cds = [this.xAxisData.description, this.groupByAxisData.description];
         const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [this.bucketCount, this.shape.bucketCount], cds, null, {
+            [this.bucketCount, this.shape.bucketCount], cds, null, "exact counts",{
                 reusePage: true, relative: false,
                 chartKind: "TrellisHistogram", exact: true
             }));
@@ -220,7 +222,7 @@ export class TrellisHistogramView extends TrellisChartView {
         const cds = [this.xAxisData.description, col, this.groupByAxisData.description];
         const rr = this.createDataQuantilesRequest(cds, this.page, "Trellis2DHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [this.bucketCount, 0, this.shape.bucketCount], cds, null, {
+            [this.bucketCount, 0, this.shape.bucketCount], cds, null, this.defaultProvenance,{
                 reusePage: true, relative: false,
                 chartKind: "Trellis2DHistogram", exact: this.samplingRate >= 1
             }));
@@ -242,7 +244,7 @@ export class TrellisHistogramView extends TrellisChartView {
         const collector = new DataRangesReceiver(this,
             this.page, null, this.schema,
             [this.bucketCount, this.groupByAxisData.bucketCount],
-            cds, this.page.title, {
+            cds, this.page.title, null,{
                 chartKind: "TrellisHistogram", exact: this.samplingRate >= 1,
                 relative: false, reusePage: true
             });
@@ -451,13 +453,13 @@ export class TrellisHistogramView extends TrellisChartView {
                 complement: d3event.sourceEvent.ctrlKey,
             };
             rr = this.createFilterRequest(filter);
-            title = new PageTitle("Filtered on " + this.schema.displayName(this.xAxisData.description.name));
+            title = new PageTitle(this.page.title.format, Converters.filterDescription(filter));
         } else {
             filter = this.getGroupBySelectionFilter();
             if (filter == null)
                 return;
             rr = this.createFilterRequest(filter);
-            title = new PageTitle("Filtered on " + this.schema.displayName(this.groupByAxisData.description.name));
+            title = new PageTitle(this.page.title.format, Converters.filterDescription(filter));
         }
         const renderer = new FilterReceiver(title, [this.xAxisData.description, this.groupByAxisData.description],
             this.schema, [0, 0], this.page, rr, this.dataset, {

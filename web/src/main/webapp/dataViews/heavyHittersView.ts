@@ -67,7 +67,7 @@ export class HeavyHittersReceiver extends OnCompleteReceiver<TopList> {
             let newPage = this.page;
             if (!this.reusePage)
                 newPage = this.page.dataset.newPage(
-                    new PageTitle("Frequent Elements in " + names), this.page);
+                    new PageTitle(this.page.title.format,"Frequent Elements in " + names), this.page);
             const hhv = new HeavyHittersView(
                 data.heavyHittersId, newPage, this.remoteTableObject, this.rowCount, this.schema,
                 this.isApprox, this.percent, this.columnsShown);
@@ -117,14 +117,13 @@ export class HeavyHittersView extends BigTableView {
     public static minString: string = "0.01%";
     public static switchToMG: number = 0.9;
     public static maxDisplay: number = 200; // Should match parameter maxDisplay in FreqKList.java
-    public static csBuckets = 500;
-    public static csTrials = 50;
 
     public contextMenu: ContextMenu;
     protected table: TabularDisplay;
     protected restCount: number;
     protected restPos: number;
     private nextKList: NextKList = null;
+    private readonly defaultProvenance: string = "Heavy hitters";
 
     constructor(public heavyHittersId: RemoteObjectId,
                 public page: FullPage,
@@ -255,7 +254,7 @@ export class HeavyHittersView extends BigTableView {
             rr.invoke(new HeavyHittersReceiver3(this, rr, includeSet));
         } else {
             const newPage = this.dataset.newPage(
-                new PageTitle("All frequent elements"), this.page);
+                new PageTitle(this.page.title.format, "Frequent elements"), this.page);
             const rr = this.remoteTableObject.createFilterHeavyRequest(
                 this.heavyHittersId, this.columnsShown, includeSet);
             rr.invoke(new TableOperationCompleted(
@@ -268,7 +267,7 @@ export class HeavyHittersView extends BigTableView {
         if (this.table.getSelectedRows().size === 0)
             return;
         const title: string = includeSet ? "Selected frequent elements" : "All other elements";
-        const newPage = this.dataset.newPage(new PageTitle(title), this.page);
+        const newPage = this.dataset.newPage(new PageTitle(title, this.defaultProvenance), this.page);
         const rr = this.remoteTableObject.createFilterListHeavy(
             this.heavyHittersId, this.columnsShown, includeSet, this.getSelectedRows());
         rr.invoke(new TableOperationCompleted(
@@ -467,14 +466,13 @@ export class HeavyHittersReceiver2 extends OnCompleteReceiver<TopList> {
 export class HeavyHittersReceiver3 extends OnCompleteReceiver<TopList> {
     public constructor(public hhv: HeavyHittersView,
                        public operation: ICancellable<TopList>,
-                       public includeSet: boolean
-                       ) {
+                       public includeSet: boolean) {
         super(hhv.page, operation, "Computing exact frequencies");
     }
 
     public run(exactList: TopList): void {
-        const title = (this.includeSet) ? "Frequent Elements" : "Infrequent Elements";
-        const newPage = this.hhv.dataset.newPage(new PageTitle(title), this.hhv.page);
+        const provenance = (this.includeSet) ? "Frequent Elements" : "Infrequent Elements";
+        const newPage = this.hhv.dataset.newPage(new PageTitle(this.hhv.page.title.format, provenance), this.hhv.page);
         const rr = this.hhv.remoteTableObject.createFilterHeavyRequest(
             exactList.heavyHittersId, this.hhv.columnsShown, this.includeSet);
         rr.invoke(new TableOperationCompleted(

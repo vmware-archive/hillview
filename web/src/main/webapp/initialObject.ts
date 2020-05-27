@@ -44,19 +44,20 @@ export interface HillviewLogs {
 
 export type DataLoaded = FilesLoaded | TablesLoaded | HillviewLogs | IDatasetSerialization;
 
-export function getDescription(data: DataLoaded): string {
+export function getDescription(data: DataLoaded): PageTitle {
     switch (data.kind) {
         case "Saved dataset":
-            return "saved";
+            return new PageTitle("saved", "");
         case "Files":
             if (data.description.name != null)
-                return data.description.name;
+                return new PageTitle(data.description.name, "loaded from files");
             else
-                return data.description.fileNamePattern;
+                return new PageTitle(data.description.fileNamePattern, "loaded from files");
         case "DB":
-            return data.description.database + "/" + data.description.table;
+            return new PageTitle(data.description.database + "/" + data.description.table,
+                "loaded from database");
         case "Hillview logs":
-            return "logs";
+            return new PageTitle("logs", "Hillview installation logs");
     }
 }
 
@@ -91,7 +92,7 @@ class FileSizeReceiver extends OnCompleteReceiver<FileSizeSketchInfo> {
 
     public run(size: FileSizeSketchInfo): void {
         if (size.fileCount === 0) {
-            this.page.reportError("No files matching " + getDescription(this.data));
+            this.page.reportError("No files matching " + getDescription(this.data).format);
             return;
         }
 
@@ -153,8 +154,8 @@ export class RemoteTableReceiver extends BaseReceiver {
         const rr = this.remoteObject.createGetSummaryRequest();
         rr.chain(this.operation);
         const title = getDescription(this.data);
-        const dataset = new DatasetView(this.remoteObject.remoteObjectId, title, this.data, this.page);
-        const newPage = dataset.newPage(new PageTitle(title), null);
+        const dataset = new DatasetView(this.remoteObject.remoteObjectId, title.format, this.data, this.page);
+        const newPage = dataset.newPage(title, null);
         rr.invoke(new SchemaReceiver(newPage, rr, this.remoteObject, dataset, null, null));
     }
 }

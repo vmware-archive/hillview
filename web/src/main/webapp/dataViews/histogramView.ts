@@ -37,6 +37,7 @@ import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
 import {HtmlString, Resolution, SpecialChars} from "../ui/ui";
 import {
+    Converters,
     formatNumber,
     ICancellable, makeInterval,
     Pair,
@@ -61,6 +62,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
     protected histogram: Histogram;
     protected plot: HistogramPlot | PiePlot;
     protected bucketCount: number;
+    readonly defaultProvenance = "from histogram";
 
     constructor(
         remoteObjectId: RemoteObjectId,
@@ -181,7 +183,8 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         if (eventKind === "XAxis") {
             const collector = new DataRangesReceiver(this,
                 this.page, null, this.schema, [0],  // any number of buckets
-                [this.xAxisData.description], this.page.title, {
+                [this.xAxisData.description], this.page.title,
+                Converters.eventToString(pageId, eventKind), {
                     chartKind: "Histogram", exact: this.samplingRate >= 1,
                     relative: false, reusePage: true, pieChart: this.pie
                 });
@@ -313,7 +316,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         const cds: IColumnDescription[] = [this.xAxisData.description, groupBy];
         const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [0, 0], cds, null, {
+            [0, 0], cds, null, this.defaultProvenance, {
             reusePage: false, relative: false, pieChart: false,
             chartKind: "TrellisHistogram", exact: false
         }));
@@ -403,7 +406,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         const cds: IColumnDescription[] = [this.xAxisData.description, oc];
         const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [this.histogram.buckets.length, 0], cds, null, {
+            [this.histogram.buckets.length, 0], cds, null, this.defaultProvenance,{
             reusePage: false,
             relative: false,
             chartKind: "2DHistogram",
@@ -414,7 +417,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
     private showQuartiles(colName: DisplayName): void {
         const oc = this.schema.findByDisplayName(colName);
         const title= new PageTitle("Quartiles of " + colName + " grouped by " +
-            this.schema.displayName(this.xAxisData.description.name));
+            this.schema.displayName(this.xAxisData.description.name), this.defaultProvenance);
         const qhr = new QuartilesHistogramReceiver(title, this.page, this.remoteObjectId,
             this.rowCount, this.schema, oc, this.bucketCount, this.xAxisData, null, false);
         qhr.run(this.histogram);
@@ -429,7 +432,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         const exact = this.isPrivate() || this.samplingRate >= 1;
         rr.invoke(new DataRangesReceiver(
             this, this.page, rr, this.schema, [bucketCount], [this.xAxisData.description], null,
-            { chartKind: "Histogram", relative: false, exact: exact, reusePage: true, pieChart: this.pie }));
+            "changed buckes", { chartKind: "Histogram", relative: false, exact: exact, reusePage: true, pieChart: this.pie }));
     }
 
     public chooseBuckets(): void {
@@ -448,7 +451,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         const ranges = [this.xAxisData.dataRange];
         const collector = new DataRangesReceiver(this,
             this.page, null, this.schema, [this.xAxisData.bucketCount],
-            [this.xAxisData.description], this.page.title, {
+            [this.xAxisData.description], this.page.title, null,{
                 chartKind: "Histogram", exact: this.samplingRate >= 1,
                 relative: false, reusePage: true, pieChart: this.pie
             });
@@ -504,7 +507,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
     // show the table corresponding to the data in the histogram
     protected showTable(): void {
         const newPage = this.dataset.newPage(
-            new PageTitle("Table"), this.page);
+            new PageTitle("Table", this.defaultProvenance), this.page);
         const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newPage);
         newPage.setDataView(table);
         table.schema = this.schema;
@@ -541,7 +544,8 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
             complement: d3event.sourceEvent.ctrlKey,
         };
         const rr = this.createFilterRequest(filter);
-        const title = new PageTitle("Filtered " + this.schema.displayName(this.xAxisData.description.name));
+        const title = new PageTitle(this.page.title.format,
+            Converters.filterDescription(filter));
         const renderer = new FilterReceiver(title, [this.xAxisData.description], this.schema,
             [0], this.page, rr, this.dataset, {
             exact: this.samplingRate >= 1,

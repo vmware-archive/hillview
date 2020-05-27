@@ -32,9 +32,16 @@ import java.time.*;
 public final class DateTests extends BaseTest {
     @Test
     public void parseDates() {
-        DateParsing parsing = new DateParsing("2017-01-01");
-        Instant instant = parsing.parse("2017-01-01");
-        Instant expected = LocalDate.of(2017, 1, 1)
+        DateParsing parsing = new DateParsing("1979-01-01 00:00:00 +0000 UTC");
+        Instant instant = parsing.parse("1979-01-01 00:00:00 +0000 UTC");
+        Instant expected = LocalDate.of(1979, 1, 1)
+                .atStartOfDay(ZoneOffset.UTC)
+                .toInstant();
+        Assert.assertEquals(instant, expected);
+
+        parsing = new DateParsing("2017-01-01");
+        instant = parsing.parse("2017-01-01");
+        expected = LocalDate.of(2017, 1, 1)
                 .atStartOfDay(ZoneOffset.systemDefault())
                 .toInstant();
         Assert.assertEquals(instant, expected);
