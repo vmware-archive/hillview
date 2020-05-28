@@ -229,6 +229,56 @@ public final class TableTarget extends RpcTarget {
         this.runSketch(this.table, qvr, request, context);
     }
 
+    static class QuantilesMatrixInfo {
+        long seed;
+        HistogramRequestInfo xColumn;
+        HistogramRequestInfo groupByColumn;
+        int quantileCount;
+        /**
+         * Column whose quantiles are being computed.
+         */
+        String quantilesColumn = "";
+        /**
+         * For each bucket the count of non-null elements.
+         */
+        long[][] nonNullCounts = new long[0][0];
+    }
+
+    @SuppressWarnings("unused")
+    @HillviewRpc
+    public void getQuantilesMatrix(RpcRequest request, RpcRequestContext context) {
+        QuantilesMatrixInfo info = request.parseArgs(QuantilesMatrixInfo.class);
+        IHistogramBuckets xBuckets = info.xColumn.getBuckets();
+        IHistogramBuckets gBuckets = info.groupByColumn.getBuckets();
+
+        final double samplesRequired = 100 * info.quantileCount * info.quantileCount;
+        double[][] samplingRates = new double[xBuckets.getBucketCount()][gBuckets.getBucketCount()];
+        assert xBuckets.getBucketCount() == info.nonNullCounts.length;
+        assert info.nonNullCounts.length > 0;
+        assert gBuckets.getBucketCount() == info.nonNullCounts[0].length;
+        for (int i = 0; i < info.nonNullCounts.length; i++) {
+            long[] cts = info.nonNullCounts[i];
+            for (int j = 0; j < cts.length; j++) {
+                double ct = cts[j];
+                double rate = Math.min(samplesRequired / ct, 1.0);
+                samplingRates[i][j] = rate;
+            }
+        }
+        QuantilesMatrixSketch qvs = new QuantilesMatrixSketch(
+                xBuckets, info.xColumn.cd.name,
+                gBuckets, info.groupByColumn.cd.name,
+                info.quantilesColumn, samplingRates, info.seed);
+        PostProcessedSketch<ITable, QuantilesMatrix, QuantilesMatrix> qvr =
+                new PostProcessedSketch<ITable, QuantilesMatrix, QuantilesMatrix>(qvs) {
+                    @Override
+                    public QuantilesMatrix postProcess(@Nullable QuantilesMatrix result) {
+                        Converters.checkNull(result);
+                        return result.quantiles(info.quantileCount);
+                    }
+                };
+        this.runSketch(this.table, qvr, request, context);
+    }
+
     // The following functions return lists with subclasses of BucketsInfo: either
     // StringBucketBoundaries or DataRange.
 

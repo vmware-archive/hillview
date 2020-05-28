@@ -20,6 +20,14 @@ public class QuantilesVector implements IJson {
         this.outOfBounds = outOfBounds;
     }
 
+    public static QuantilesVector zero(double[] samplingRates, long seed) {
+        NumericSamples[] result = new NumericSamples[samplingRates.length];
+        for (int i = 0; i < samplingRates.length; i++) {
+            result[i] = new NumericSamples(samplingRates[i], seed + i);
+        }
+        return new QuantilesVector(result, 0);
+    }
+
     public int size() {
         return this.data.length;
     }

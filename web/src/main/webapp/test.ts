@@ -144,7 +144,7 @@ export class Test {
             2: schema view
             3: table view with 3 columns
             4: Histogram of the FlightDate column
-            5: Histogram of UniqueCarrier
+            5: Histogram of UniqueCarrier, shown as pie chart
             6: 2dHistogram of DepTime, Depdelay
             7: Table view, filtered flights
             8: Trellis 2D histograms (DepTime, DepDelay) grouped by ActualElapsedTime
@@ -256,6 +256,15 @@ export class Test {
                 col2.dispatchEvent(evt);
                 // Produces hillviewPage5
                 findElement("#hillviewPage1 .dropdown #Histogram").click();
+            },
+        }, {
+            description: "Show a pie chart",
+            cond: () => Test.existsElement("#hillviewPage5 .idle"),
+            cont: () => {
+                // Show a histogram
+                const pie = findElement("#hillviewPage5 .topMenu #View #pie_chart_histogram");
+                pie.click();
+                this.next();
             },
         }, {
             description: "Show a 2D histogram",

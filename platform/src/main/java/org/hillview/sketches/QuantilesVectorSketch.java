@@ -62,11 +62,7 @@ public class QuantilesVectorSketch implements ISketch<ITable, QuantilesVector> {
     @Nullable
     @Override
     public QuantilesVector zero() {
-        NumericSamples[] result = new NumericSamples[this.samplingRates.length];
-        for (int i = 0; i < this.samplingRates.length; i++) {
-            result[i] = new NumericSamples(this.samplingRates[i], this.seed + i);
-        }
-        return new QuantilesVector(result, 0);
+        return QuantilesVector.zero(this.samplingRates, this.seed);
     }
 
     @Nullable

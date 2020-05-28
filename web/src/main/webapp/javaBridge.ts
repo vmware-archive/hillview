@@ -321,7 +321,7 @@ export interface QuantilesVector {
     outOfBounds: number;
 }
 
-export interface HistogramArgs {
+export interface HistogramRequestInfo {
     cd: IColumnDescription;
     seed: number;
     samplingRate: number;
@@ -333,10 +333,24 @@ export interface HistogramArgs {
     max?: number;
 }
 
-export interface QuantileVectorArgs extends HistogramArgs {
+export interface QuantilesVectorInfo extends HistogramRequestInfo {
     quantileCount: number,
     quantilesColumn: string;
     nonNullCounts: number[];
+}
+
+export interface QuantilesMatrix {
+    data: QuantilesVector[];
+    outOfBounds: number;
+}
+
+export interface QuantilesMatrixInfo {
+    seed: number;
+    xColumn: HistogramRequestInfo;
+    groupByColumn: HistogramRequestInfo;
+    quantileCount: number;
+    quantilesColumn: string;
+    nonNullCounts: number[][];
 }
 
 export interface HeavyHittersFilterInfo {

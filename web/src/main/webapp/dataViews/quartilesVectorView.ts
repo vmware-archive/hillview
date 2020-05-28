@@ -22,7 +22,7 @@ import {
     IColumnDescription,
     kindIsString,
     QuantilesVector,
-    QuantileVectorArgs,
+    QuantilesVectorInfo,
     RecordOrder,
     RemoteObjectId,
 } from "../javaBridge";
@@ -87,6 +87,12 @@ export class QuartilesVectorView extends HistogramViewBase {
                 text: "1D histogram",
                 action: () => { this.doHistogram(); },
                 help: "Plot the X column as 1 D histogam.",
+            }, {
+                text: "group by...",
+                action: () => {
+                    this.trellis();
+                },
+                help: "Group data by a third column.",
             }]) },
             page.dataset.combineMenu(this, page.pageId),
         ]);
@@ -94,8 +100,23 @@ export class QuartilesVectorView extends HistogramViewBase {
         this.page.setMenu(this.menu);
     }
 
+    public trellis(): void {
+        const columns: DisplayName[] = this.schema.displayNamesExcluding(
+            [this.xAxisData.description.name, this.yAxisData.description.name]);
+        this.chooseTrellis(columns);
+    }
+
     protected showTrellis(colName: DisplayName): void {
-        throw new Error("Method not implemented.");
+        const groupBy = this.schema.findByDisplayName(colName);
+        const cds: IColumnDescription[] = [
+            this.xAxisData.description,
+            this.yAxisData.description,
+            groupBy];
+        const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisQuartiles");
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
+            [0, 0, 0], cds, null, this.defaultProvenance,{
+                reusePage: false, chartKind: "TrellisQuartiles",
+            }));
     }
 
     protected createNewSurfaces(): void {
@@ -421,7 +442,7 @@ export class QuartilesVectorReceiver extends Receiver<QuantilesVector> {
 
 /**
  * This receiver is invoked once we have computed a histogram of the data on one column
- * and we are have all the data needed to compute a quartile vector.
+ * and we are have all the data needed to invoke a quartile vector computation.
  */
 export class QuartilesHistogramReceiver extends OnCompleteReceiver<Histogram> {
     constructor(protected title: PageTitle, page: FullPage, protected remoteObjectId: RemoteObjectId,
@@ -434,7 +455,7 @@ export class QuartilesHistogramReceiver extends OnCompleteReceiver<Histogram> {
     }
 
     run(value: Histogram): void {
-        const args: QuantileVectorArgs = {
+        const args: QuantilesVectorInfo = {
             quantileCount: 4,  // we display quartiles
             cd: this.axisData.description,
             seed: 0,  // scan all data

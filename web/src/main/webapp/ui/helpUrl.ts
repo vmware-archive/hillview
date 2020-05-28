@@ -28,6 +28,7 @@ export const helpUrl = {
     "TrellisHistogram": "(#51-trellis-plots-of-1d-histograms)",
     "TrellisHeatmap": "(#53-trellis-plots-of-heatmaps)",
     "Trellis2DHistogram": "(#52-trellis-plots-of-2d-histograms)",
+    "TrellisQuartiles": "(#54-trellis-plots-of-quartiles)",
     "HeavyHitters": "(#34-frequent-elements-views)",
     "Schema": "(#32-schema-views)",
     "Load": "(#23-loading-data)",
