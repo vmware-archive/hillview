@@ -18,9 +18,9 @@
 import {mouse as d3mouse} from "d3-selection";
 import {IViewSerialization, QuantileVectorSerialization} from "../datasetView";
 import {
-    Histogram,
+    BucketsInfo,
+    Histogram, HistogramRequestInfo,
     IColumnDescription,
-    kindIsString,
     QuantilesVector,
     QuantilesVectorInfo,
     RecordOrder,
@@ -34,7 +34,7 @@ import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
 import {ChartOptions, HtmlString, Resolution} from "../ui/ui";
-import {Converters, ICancellable, PartialResult, periodicSamples, saveAs, significantDigits,} from "../util";
+import {Converters, ICancellable, PartialResult, saveAs, significantDigits,} from "../util";
 import {AxisData, AxisKind} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
@@ -416,7 +416,8 @@ export class QuartilesVectorReceiver extends Receiver<QuantilesVector> {
                 protected remoteObject: TableTargetAPI,
                 protected rowCount: number,
                 protected schema: SchemaClass,
-                protected axis: AxisData,
+                protected histoArgs: HistogramRequestInfo,
+                protected range: BucketsInfo,
                 protected quantilesCol: IColumnDescription,
                 operation: RpcRequest<PartialResult<QuantilesVector>>,
                 protected options: ChartOptions) {
@@ -424,7 +425,8 @@ export class QuartilesVectorReceiver extends Receiver<QuantilesVector> {
         this.view = new QuartilesVectorView(
             this.remoteObject.remoteObjectId, rowCount, schema, quantilesCol, this.page);
         this.page.setDataView(this.view);
-        this.view.setAxis(axis);
+        const axisData = new AxisData(histoArgs.cd, range, histoArgs.bucketCount);
+        this.view.setAxis(axisData);
     }
 
     public onNext(value: PartialResult<QuantilesVector>): void {
@@ -444,11 +446,13 @@ export class QuartilesVectorReceiver extends Receiver<QuantilesVector> {
  * This receiver is invoked once we have computed a histogram of the data on one column
  * and we are have all the data needed to invoke a quartile vector computation.
  */
-export class QuartilesHistogramReceiver extends OnCompleteReceiver<Histogram> {
+export class QuartilesCountsReceiver extends OnCompleteReceiver<Histogram> {
     constructor(protected title: PageTitle, page: FullPage, protected remoteObjectId: RemoteObjectId,
                 protected rowCount: number,
-                protected schema: SchemaClass, protected qCol: IColumnDescription,
-                protected bucketCount: number, protected axisData: AxisData,
+                protected schema: SchemaClass,
+                protected cds: IColumnDescription[],
+                protected histoArgs: HistogramRequestInfo,
+                protected range: BucketsInfo,
                 rr: RpcRequest<PartialResult<Histogram>>,
                 protected reusePage: boolean) {
         super(page, rr, "quartiles");
@@ -457,24 +461,15 @@ export class QuartilesHistogramReceiver extends OnCompleteReceiver<Histogram> {
     run(value: Histogram): void {
         const args: QuantilesVectorInfo = {
             quantileCount: 4,  // we display quartiles
-            cd: this.axisData.description,
-            seed: 0,  // scan all data
-            samplingRate: 1.0,
-            bucketCount: this.bucketCount,
-            quantilesColumn: this.qCol.name,
-            nonNullCounts: value.buckets
+            quantilesColumn: this.cds[1].name,
+            nonNullCounts: value.buckets,
+            ...this.histoArgs
         };
-        if (kindIsString(this.axisData.description.kind))
-            args.leftBoundaries = periodicSamples(this.axisData.dataRange.stringQuantiles, this.bucketCount);
-        else {
-            args.min = this.axisData.dataRange.min;
-            args.max = this.axisData.dataRange.max;
-        }
 
         const tt = new TableTargetAPI(this.remoteObjectId)
         const rr = tt.createQuantilesVectorRequest(args);
         rr.invoke(new QuartilesVectorReceiver(this.title, this.page, tt, this.rowCount,
-            this.schema, this.axisData, this.qCol, rr,
+            this.schema, this.histoArgs, this.range, this.cds[1], rr,
             { chartKind: "QuartileVector", reusePage: this.reusePage }));
     }
 }

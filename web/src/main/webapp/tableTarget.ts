@@ -42,7 +42,7 @@ import {
     kindIsString,
     KVCreateColumnInfo,
     NextKArgs,
-    NextKList,
+    NextKList, QuantilesMatrix, QuantilesMatrixInfo,
     QuantilesVector,
     QuantilesVectorInfo,
     RangeArgs,
@@ -183,6 +183,11 @@ export class TableTargetAPI extends RemoteObject {
     public createQuantilesVectorRequest(args: QuantilesVectorInfo):
         RpcRequest<PartialResult<QuantilesVector>> {
         return this.createStreamingRpcRequest<QuantilesVector>("getQuantilesVector", args);
+    }
+
+    public createQuantilesMatrixRequest(args: QuantilesMatrixInfo):
+        RpcRequest<PartialResult<QuantilesMatrix>> {
+        return this.createStreamingRpcRequest<QuantilesMatrix>("getQuantilesMatrix", args);
     }
 
     public createContainsRequest(order: RecordOrder, row: any[]): RpcRequest<RemoteObjectId> {

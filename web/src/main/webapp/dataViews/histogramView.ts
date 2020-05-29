@@ -52,7 +52,6 @@ import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
 import {FilterReceiver, DataRangesReceiver} from "./dataRangesCollectors";
 import {BaseReceiver} from "../tableTarget";
-import {QuartilesHistogramReceiver} from "./quartilesVectorView";
 
 /**
  * A HistogramView is responsible for showing a one-dimensional histogram on the screen.
@@ -416,11 +415,13 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
 
     private showQuartiles(colName: DisplayName): void {
         const oc = this.schema.findByDisplayName(colName);
-        const title= new PageTitle("Quartiles of " + colName + " grouped by " +
-            this.schema.displayName(this.xAxisData.description.name), this.defaultProvenance);
-        const qhr = new QuartilesHistogramReceiver(title, this.page, this.remoteObjectId,
-            this.rowCount, this.schema, oc, this.bucketCount, this.xAxisData, null, false);
-        qhr.run(this.histogram);
+        const qhr = new DataRangesReceiver(this, this.page, null,
+            this.schema, [this.xAxisData.bucketCount],
+            [this.xAxisData.description, oc],
+            null, this.defaultProvenance, {
+                reusePage: false, chartKind: "QuartileVector"
+            });
+        qhr.run([this.xAxisData.dataRange]);
         qhr.onCompleted();
     }
 

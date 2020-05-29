@@ -38,8 +38,8 @@ import {AxisData} from "./axisData";
 import {TrellisHeatmapReceiver} from "./trellisHeatmapView";
 import {TrellisHistogram2DReceiver} from "./trellisHistogram2DView";
 import {DatasetView} from "../datasetView";
-import {QuartilesHistogramReceiver} from "./quartilesVectorView";
-import {TrellisHistogramQuartilesReceiver, TrellisQuartilesHeatmapReceiver} from "./trellisHistogramQuartilesView";
+import {QuartilesCountsReceiver} from "./quartilesVectorView";
+import {TrellisQuartilesCountsReceiver} from "./trellisHistogramQuartilesView";
 
 /**
  * Describes the shape of trellis display.
@@ -309,12 +309,12 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 // We do a histogram first, to compute the counts in each bucket
                 const rr = this.originator.createHistogramRequest(histoArg);
                 rr.chain(this.operation);
-                const axisData = new AxisData(this.cds[0], ranges[0], histoArg.bucketCount);
-                const rec = new QuartilesHistogramReceiver(this.title, this.page,
+                const rec = new QuartilesCountsReceiver(this.title, this.page,
                     this.originator.remoteObjectId, rowCount, this.schema,
-                    this.cds[1],
-                    histoArg.bucketCount,
-                    axisData, rr, this.options.reusePage);
+                    this.cds,
+                    histoArg,
+                    ranges[0],
+                    rr, this.options.reusePage);
                 rr.invoke(rec);
                 break;
             }
@@ -397,6 +397,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 }
                 let maxGBucketCount = this.bucketCounts[2];
                 if (maxGBucketCount === 0)
+                    // noinspection JSObjectNullOrUndefined
                     maxGBucketCount = trellisShape.bucketCount;
 
                 if (this.title == null)
@@ -413,9 +414,18 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                     this.options.exact, chartSize);
                 const rr = this.originator.createHeatmapRequest([histoArg0, histoArg2]);
                 rr.chain(this.operation);
-                const rec = new TrellisQuartilesHeatmapReceiver(this.title, this.page,
-                    this.originator.remoteObjectId, rowCount, this.schema,
-                    trellisShape, rr, this.options.reusePage);
+                const rec = new TrellisQuartilesCountsReceiver(
+                    this.title,
+                    this.page,
+                    this.originator.remoteObjectId,
+                    rowCount,
+                    this.schema,
+                    this.cds,
+                    [histoArg0, histoArg2],
+                    ranges,
+                    trellisShape,
+                    rr,
+                    this.options.reusePage);
                 rr.invoke(rec);
                 break;
             }

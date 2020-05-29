@@ -2,7 +2,6 @@ package org.hillview.sketches;
 
 import org.hillview.dataset.api.ISketch;
 import org.hillview.sketches.results.IHistogramBuckets;
-import org.hillview.sketches.results.NumericSamples;
 import org.hillview.sketches.results.QuantilesVector;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IRowIterator;

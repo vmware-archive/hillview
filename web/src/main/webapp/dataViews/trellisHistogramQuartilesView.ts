@@ -17,8 +17,13 @@
 
 import {OnCompleteReceiver, Receiver, RpcRequest} from "../rpc";
 import {
+    BucketsInfo,
     FilterDescription,
-    Heatmap, Heatmap3D, Histogram, IColumnDescription, kindIsString, QuantilesMatrix, QuantilesVectorInfo,
+    Heatmap,
+    HistogramRequestInfo,
+    IColumnDescription,
+    QuantilesMatrix,
+    QuantilesMatrixInfo,
     RecordOrder,
     RemoteObjectId
 } from "../javaBridge";
@@ -26,16 +31,12 @@ import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {SchemaClass} from "../schemaClass";
 import {
-    add,
     Converters,
     ICancellable,
     PartialResult,
-    percent,
-    periodicSamples,
     reorder,
-    significantDigits
 } from "../util";
-import {AxisData, AxisKind} from "./axisData";
+import {AxisData} from "./axisData";
 import {
     IViewSerialization,
     TrellisQuartilesSerialization
@@ -47,21 +48,15 @@ import {
     FilterReceiver,
     DataRangesReceiver,
     TrellisShape,
-    TrellisLayoutComputation
 } from "./dataRangesCollectors";
 import {TrellisChartView} from "./trellisChartView";
 import {NextKReceiver, TableView} from "./tableView";
-import {BucketDialog} from "./histogramViewBase";
-import {TextOverlay} from "../ui/textOverlay";
-import {PlottingSurface} from "../ui/plottingSurface";
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {Quartiles2DPlot} from "../ui/quartiles2DPlot";
-import {QuartilesVectorReceiver} from "./quartilesVectorView";
 
 export class TrellisHistogramQuartilesView extends TrellisChartView {
     protected hps: Quartiles2DPlot[];
     protected xAxisData: AxisData;
-    protected yAxisData: AxisData;
     protected data: QuantilesMatrix;
     private readonly defaultProvenance: string = "Trellis Quartiles";
 
@@ -69,6 +64,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView {
         remoteObjectId: RemoteObjectId,
         rowCount: number,
         schema: SchemaClass,
+        protected qCol: IColumnDescription,
         protected shape: TrellisShape,
         page: FullPage) {
         super(remoteObjectId, rowCount, schema, shape, page, "TrellisQuartiles");
@@ -121,10 +117,8 @@ export class TrellisHistogramQuartilesView extends TrellisChartView {
     }
 
     public setAxes(xAxisData: AxisData,
-                   yAxisData: AxisData,
                    groupByAxisData: AxisData): void {
         this.xAxisData = xAxisData;
-        this.yAxisData = yAxisData;
         this.groupByAxisData = groupByAxisData;
     }
 
@@ -151,7 +145,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView {
 
         let ranges = [];
         if (eventKind === "XAxis") {
-            ranges = [sourceRange, this.yAxisData.dataRange, this.groupByAxisData.dataRange];
+            ranges = [sourceRange, this.groupByAxisData.dataRange];
         } else if (eventKind === "YAxis") {
             // TODO
             return;
@@ -161,14 +155,14 @@ export class TrellisHistogramQuartilesView extends TrellisChartView {
             return;
              */
         } else if (eventKind === "GAxis") {
-            ranges = [this.xAxisData.dataRange, this.yAxisData.dataRange, sourceRange];
+            ranges = [this.xAxisData.dataRange, sourceRange];
         } else {
             return;
         }
 
         const collector = new DataRangesReceiver(this,
             this.page, null, this.schema, [0, 0, 0],  // any number of buckets
-            [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description],
+            [this.xAxisData.description, this.qCol, this.groupByAxisData.description],
             this.page.title, Converters.eventToString(pageId, eventKind), {
                 chartKind: "TrellisQuartiles", 
                 reusePage: true
@@ -217,7 +211,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView {
             columnDescription: this.xAxisData.description,
             isAscending: true
         }, {
-            columnDescription: this.yAxisData.description,
+            columnDescription: this.qCol,
             isAscending: true
         }, {
             columnDescription: this.groupByAxisData.description,
@@ -247,7 +241,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView {
         }
         if (groupCount === 1) {
             const cds = [this.xAxisData.description,
-                this.yAxisData.description];
+                this.qCol];
             const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
             rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
                 [0, 0],
@@ -256,7 +250,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView {
                 }));
         } else {
             const cds = [this.xAxisData.description,
-                this.yAxisData.description, this.groupByAxisData.description];
+                this.qCol, this.groupByAxisData.description];
             const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisQuartiles");
             rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
                 [0, 0, groupCount],
@@ -295,11 +289,11 @@ export class TrellisHistogramQuartilesView extends TrellisChartView {
     }
 
     public refresh(): void {
-        const cds = [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description];
-        const ranges = [this.xAxisData.dataRange, this.yAxisData.dataRange, this.groupByAxisData.dataRange];
+        const cds = [this.xAxisData.description, this.qCol, this.groupByAxisData.description];
+        const ranges = [this.xAxisData.dataRange, this.groupByAxisData.dataRange];
         const collector = new DataRangesReceiver(this,
             this.page, null, this.schema,
-            [this.xAxisData.bucketCount, this.yAxisData.bucketCount, this.groupByAxisData.bucketCount],
+            [this.xAxisData.bucketCount, this.groupByAxisData.bucketCount],
             cds, this.page.title, null,{
                 chartKind: "TrellisQuartiles", reusePage: true
             });
@@ -312,7 +306,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView {
         const ser: TrellisQuartilesSerialization = {
             ...super.serialize(),
             columnDescription0: this.xAxisData.description,
-            columnDescription1: this.yAxisData.description,
+            columnDescription1: this.qCol,
             xBucketCount: this.xAxisData.bucketCount,
             groupByColumn: this.groupByAxisData.description,
             xWindows: this.shape.xNum,
@@ -330,9 +324,8 @@ export class TrellisHistogramQuartilesView extends TrellisChartView {
         const schema = new SchemaClass([]).deserialize(ser.schema);
         const shape = TrellisChartView.deserializeShape(ser, page);
         const view = new TrellisHistogramQuartilesView(ser.remoteObjectId, ser.rowCount,
-            schema, shape, page);
+            schema, ser.columnDescription1, shape, page);
         view.setAxes(new AxisData(ser.columnDescription0, null, ser.xBucketCount),
-            new AxisData(ser.columnDescription1, null, 0),
             new AxisData(ser.groupByColumn, null, ser.groupByBucketCount));
         return view;
     }
@@ -399,7 +392,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView {
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
-            return new FilterReceiver(title, [this.xAxisData.description, this.yAxisData.description,
+            return new FilterReceiver(title, [this.xAxisData.description, this.qCol,
                 this.groupByAxisData.description], this.schema, [0, 0, 0], page, operation, this.dataset, {
                 chartKind: "TrellisQuartiles", reusePage: false,
             });
@@ -411,7 +404,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView {
             return;
         const rr = this.createFilterRequest(filter);
         const title = new PageTitle(this.page.title.format, Converters.filterDescription(filter));
-        const renderer = new FilterReceiver(title, [this.xAxisData.description, this.yAxisData.description,
+        const renderer = new FilterReceiver(title, [this.xAxisData.description, this.qCol,
             this.groupByAxisData.description], this.schema, [0, 0, 0], this.page, rr, this.dataset, {
             chartKind: "TrellisQuartiles",
             reusePage: false,
@@ -455,15 +448,18 @@ export class TrellisHistogramQuartilesReceiver extends Receiver<QuantilesMatrix>
                 remoteTable: TableTargetAPI,
                 protected rowCount: number,
                 protected schema: SchemaClass,
-                protected axes: AxisData[],
+                protected histoArgs: HistogramRequestInfo[],
+                protected range: BucketsInfo[],
                 protected shape: TrellisShape,
                 operation: ICancellable<Heatmap[]>,
                 protected options: ChartOptions) {
         super(options.reusePage ? page : page.dataset.newPage(title, page), operation, "quartiles");
         this.trellisView = new TrellisHistogramQuartilesView(
-            remoteTable.remoteObjectId, rowCount, schema,
+            remoteTable.remoteObjectId, rowCount, schema, this.histoArgs[0].cd,
             this.shape, this.page);
-        this.trellisView.setAxes(axes[0], axes[1], axes[2]);
+        const xAxis = new AxisData(histoArgs[0].cd, range[0], histoArgs[0].bucketCount);
+        const groupByAxis = new AxisData(histoArgs[1].cd, range[1], histoArgs[1].bucketCount);
+        this.trellisView.setAxes(xAxis, groupByAxis);
         this.page.setDataView(this.trellisView);
     }
 
@@ -473,8 +469,8 @@ export class TrellisHistogramQuartilesReceiver extends Receiver<QuantilesMatrix>
             return;
         }
 
-        this.trellisView.updateView(value.data, [this.axes[0].bucketCount,
-            this.axes[1].bucketCount], null);
+        this.trellisView.updateView(value.data, [this.histoArgs[0].bucketCount,
+            this.histoArgs[1].bucketCount], null);
     }
 
     public onCompleted(): void {
@@ -487,39 +483,34 @@ export class TrellisHistogramQuartilesReceiver extends Receiver<QuantilesMatrix>
  * This receiver is invoked once we have computed a histogram of the data on one column
  * and we are have all the data needed to invoke a quartile vector computation.
  */
-export class TrellisQuartilesHeatmapReceiver extends OnCompleteReceiver<Heatmap> {
-    constructor(protected title: PageTitle, page: FullPage, protected remoteObjectId: RemoteObjectId,
+export class TrellisQuartilesCountsReceiver extends OnCompleteReceiver<Heatmap> {
+    constructor(protected title: PageTitle,
+                page: FullPage,
+                protected remoteObjectId: RemoteObjectId,
                 protected rowCount: number,
                 protected schema: SchemaClass,
-                shape: TrellisShape,
+                protected cds: IColumnDescription[],
+                protected histoArgs: HistogramRequestInfo[],
+                protected range: BucketsInfo[],
+                protected shape: TrellisShape,
                 rr: RpcRequest<PartialResult<Heatmap>>,
                 protected reusePage: boolean) {
         super(page, rr, "quartiles");
     }
 
     run(value: Heatmap): void {
-        /*
-        const args: QuantileVectorArgs = {
+        const args: QuantilesMatrixInfo = {
             quantileCount: 4,  // we display quartiles
-            cd: this.axisData.description,
             seed: 0,  // scan all data
-            samplingRate: 1.0,
-            bucketCount: this.bucketCount,
-            quantilesColumn: this.qCol.name,
-            nonNullCounts: value.buckets
+            quantilesColumn: this.cds[1].name,
+            nonNullCounts: value.buckets,
+            xColumn: this.histoArgs[0],
+            groupByColumn: this.histoArgs[1]
         };
-        if (kindIsString(this.axisData.description.kind))
-            args.leftBoundaries = periodicSamples(this.axisData.dataRange.stringQuantiles, this.bucketCount);
-        else {
-            args.min = this.axisData.dataRange.min;
-            args.max = this.axisData.dataRange.max;
-        }
-
         const tt = new TableTargetAPI(this.remoteObjectId)
-        const rr = tt.createQuantilesVectorRequest(args);
-        rr.invoke(new QuartilesVectorReceiver(this.title, this.page, tt, this.rowCount,
-            this.schema, this.axisData, this.qCol, rr,
-            { chartKind: "QuartileVector", reusePage: this.reusePage }));
-         */
+        const rr = tt.createQuantilesMatrixRequest(args);
+        rr.invoke(new TrellisHistogramQuartilesReceiver(this.title, this.page, tt, this.rowCount,
+            this.schema, this.histoArgs, this.range, this.shape, rr,
+            { chartKind: "TrellisQuartiles", reusePage: this.reusePage }));
     }
 }

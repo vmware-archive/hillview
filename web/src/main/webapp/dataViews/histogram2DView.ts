@@ -53,7 +53,7 @@ import {AxisData} from "./axisData";
 import {HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
 import {FilterReceiver, DataRangesReceiver} from "./dataRangesCollectors";
-import {QuartilesHistogramReceiver} from "./quartilesVectorView";
+import {QuartilesCountsReceiver} from "./quartilesVectorView";
 import {Histogram2DBarsPlot} from "../ui/histogram2DBarsPlot";
 import {Histogram2DBase} from "../ui/histogram2DBase";
 import {Dialog, FieldKind} from "../ui/dialog";
@@ -150,12 +150,13 @@ export class Histogram2DView extends HistogramViewBase {
     }
 
     private showQuartiles(): void {
-        const title= new PageTitle("Quartiles of " + this.yAxisData.description.name + " grouped by " +
-            this.schema.displayName(this.xAxisData.description.name), "From 2D histogram view");
-        const qhr = new QuartilesHistogramReceiver(title, this.page, this.remoteObjectId,
-            this.rowCount, this.schema, this.yAxisData.description,
-            this.xPoints, this.xAxisData, null, false);
-        qhr.run(this.plot.histogram);
+       const qhr = new DataRangesReceiver(this, this.page, null,
+            this.schema, [this.xPoints],
+            [this.xAxisData.description, this.yAxisData.description],
+            null, this.defaultProvenance, {
+               reusePage: false, chartKind: "QuartileVector"
+           });
+        qhr.run([this.xAxisData.dataRange]);
         qhr.onCompleted();
     }
 

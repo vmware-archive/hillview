@@ -19,7 +19,6 @@ import java.util.List;
 public class QuantilesMatrixSketch implements ISketch<ITable, QuantilesMatrix> {
     private final IHistogramBuckets xBuckets;
     private final IHistogramBuckets gBuckets;
-
     private final String bucketsColumn;
     private final String groupByColumn;
     private final String column;
@@ -48,7 +47,7 @@ public class QuantilesMatrixSketch implements ISketch<ITable, QuantilesMatrix> {
         List<IColumn> cols = Converters.checkNull(data).getLoadedColumns(
                 this.bucketsColumn, this.groupByColumn, this.column);
         IColumn xBucketCol = cols.get(0);
-        IColumn gBucketCol = cols.get(0);
+        IColumn gBucketCol = cols.get(1);
         IColumn sampledCol = cols.get(2);
         IRowIterator it = data.getRowIterator();
 
