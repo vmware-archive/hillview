@@ -17,71 +17,65 @@
 
 package org.hillview.test;
 
-import jdk.nashorn.api.scripting.ScriptObjectMirror;
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Value;
+import org.graalvm.polyglot.proxy.ProxyObject;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.maps.CreateColumnJSMap;
 import org.hillview.maps.FilterMap;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
-import org.hillview.table.api.*;
+import org.hillview.table.api.ContentsKind;
+import org.hillview.table.api.IColumn;
+import org.hillview.table.api.IRowIterator;
+import org.hillview.table.api.ITable;
 import org.hillview.table.filters.JSFilterDescription;
 import org.hillview.table.membership.SparseMembershipSet;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.VirtualRowSnapshot;
-import org.hillview.utils.Converters;
 import org.hillview.utils.DateParsing;
 import org.hillview.utils.TestTables;
 import org.junit.Assert;
 import org.junit.Test;
 
-import javax.script.*;
 import java.time.Instant;
 import java.util.HashMap;
 
 /**
- * Test the Javascript Nashorn engine.
+ * Test the Graal Javascript engine.
  */
-public class JavascriptNashornTest extends BaseTest {
+public class JavascriptTest extends BaseTest {
     @Test
-    public void helloWorldTest() throws ScriptException {
-        ScriptEngineManager factory = new ScriptEngineManager();
-        ScriptEngine engine = factory.getEngineByName("nashorn");
-        engine.eval("print('Hello, World from Nashorn JavaScript!');");
+    public void helloWorldTest() {
+        Context context = Context.create();
+        context.eval("js", "print('Hello, World from Graal JavaScript!')");
     }
 
     @Test
-    public void testJSDate() throws ScriptException {
-        ScriptEngineManager factory = new ScriptEngineManager();
-        ScriptEngine engine = factory.getEngineByName("nashorn");
-        Object obj = engine.eval("new Date(2010, 1, 2);");
-        ScriptObjectMirror jsDate = (ScriptObjectMirror)obj;
-        double timestampLocal = (double)jsDate.callMember("getTime");
-        Instant instant = Converters.toDate(timestampLocal);
-        String someDate = "2010-02-02";
-        DateParsing parsing = new DateParsing(someDate);
-        Instant expected = parsing.parse(someDate);
-        Assert.assertEquals(expected, instant);
+    public void testJSDate() {
+        Context context = Context.create();
+        Value result = context.eval("js", "new Date(2010, 1, 2);");
+        Assert.assertEquals("2010-02-02", result.asDate().toString());
     }
 
     @Test
-    public void testFunctionAccess() throws ScriptException, NoSuchMethodException {
+    public void testFunctionAccess() {
         ITable table = TestTables.testRepTable();
         RowSnapshot row = new RowSnapshot(table, 0);
-        ScriptEngineManager factory = new ScriptEngineManager();
-        ScriptEngine engine = factory.getEngineByName("nashorn");
-        engine.eval("function getField(row, col) { return row[col]; }");
-        Invocable invocable = (Invocable)engine;
-        Object value = invocable.invokeFunction("getField", row, "Name");
-        Assert.assertEquals(value, "Mike");
+        Context context = Context.newBuilder().allowAllAccess(true).build();
+        Value function = context.eval("js", "(row, col) => row[col]");
+        String value = function.execute(ProxyObject.fromMap(row), "Name").asString();
+        Assert.assertEquals("Mike", value);
 
         VirtualRowSnapshot vrs = new VirtualRowSnapshot(table, table.getSchema());
+        ProxyObject vrsProxyObject = ProxyObject.fromMap(vrs);
         IRowIterator it = table.getMembershipSet().getIterator();
         int r = it.getNextRow();
         while (r >= 0) {
             vrs.setRow(r);
             int age = vrs.getInt("Age");
-            Object jsAge = invocable.invokeFunction("getField", vrs, "Age");
+            int jsAge = function.execute(vrsProxyObject, "Age").asInt();
             Assert.assertEquals(age, jsAge);
             r = it.getNextRow();
         }

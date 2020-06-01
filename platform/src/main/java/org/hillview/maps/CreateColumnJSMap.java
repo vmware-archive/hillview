@@ -18,6 +18,9 @@
 package org.hillview.maps;
 
 import jdk.nashorn.api.scripting.ScriptObjectMirror;
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Value;
+import org.graalvm.polyglot.proxy.ProxyObject;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.api.*;
@@ -30,6 +33,8 @@ import javax.script.Invocable;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.HashMap;
 
 /**
@@ -74,11 +79,9 @@ public class CreateColumnJSMap extends AppendColumnMap {
     @Override
     IColumn createColumn(ITable table) {
         try {
-            ScriptEngineManager factory = new ScriptEngineManager();
-            ScriptEngine engine = factory.getEngineByName("nashorn");
+            Context context = Context.newBuilder().allowAllAccess(true).build();
             // Compiles the JS function
-            engine.eval(this.jsFunction);
-            Invocable invocable = (Invocable)engine;
+            context.eval("js", this.jsFunction);
 
             IMutableColumn col = BaseColumn.create(this.outputColumn,
                     table.getMembershipSet().getMax(),
@@ -87,12 +90,15 @@ public class CreateColumnJSMap extends AppendColumnMap {
             ContentsKind kind = this.outputColumn.kind;
 
             JSVirtualRowSnapshot vrs = new JSVirtualRowSnapshot(
-                    table, this.inputColumns, this.columnRenameMap, engine);
+                    table, this.inputColumns, this.columnRenameMap, context);
+            ProxyObject vrsProxy = ProxyObject.fromMap(vrs);
             IRowIterator it = table.getMembershipSet().getIterator();
             int r = it.getNextRow();
+            Value function = context.eval("js", "vrs => map(vrs)");
+            assert function.canExecute();
             while (r >= 0) {
                 vrs.setRow(r);
-                Object value = invocable.invokeFunction("map", vrs);
+                Value value = function.execute(vrsProxy);
                 if (value == null)
                     col.setMissing(r);
                 else {
@@ -104,28 +110,15 @@ public class CreateColumnJSMap extends AppendColumnMap {
                             col.set(r, value.toString());
                             break;
                         case Date:
-                            ScriptObjectMirror jsDate = (ScriptObjectMirror)value;
-                            double timestampLocal = (double)jsDate.callMember("getTime");
+                            double timestampLocal = value.invokeMember("getTime").asDouble();
                             Instant instant = Converters.toDate(timestampLocal);
                             col.set(r, instant);
                             break;
                         case Integer:
-                            if (value instanceof Double)
-                                col.set(r, (int)(double)value);
-                            else if (value instanceof Integer)
-                                col.set(r, (int)value);
-                            else
-                                throw new RuntimeException("Expected a number for Javascript not " +
-                                        value.getClass().toString());
+                            col.set(r, value.asInt());
                             break;
                         case Double:
-                            if (value instanceof Double)
-                                col.set(r, (double)value);
-                            else if (value instanceof Integer)
-                                col.set(r, (double)(int)value);
-                            else
-                                throw new RuntimeException("Expected a number for Javascript not " +
-                                        value.getClass().toString());
+                            col.set(r, value);
                             break;
                         case Duration:
                             // TODO

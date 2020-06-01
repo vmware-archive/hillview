@@ -300,7 +300,13 @@
             <groupId>io.krakens</groupId>
             <artifactId>java-grok</artifactId>
             <version>0.1.9</version>
-            </dependency>
+        </dependency>
+        <!-- GraalJS for Javascript-on-JVM support -->
+        <dependency>
+            <groupId>org.graalvm.js</groupId>
+            <artifactId>js</artifactId>
+            <version>20.1.0</version>
+        </dependency>
     </dependencies>
     <build>
         <extensions>
