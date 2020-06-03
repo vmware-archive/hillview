@@ -32,7 +32,6 @@ import {
     FilterDescription,
     FindResult, Groups,
     Heatmap,
-    Heatmap3D,
     HeavyHittersFilterInfo,
     Histogram,
     HistogramRequestInfo,
@@ -362,7 +361,7 @@ RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<RemoteObjectId>("filter2DRange", { first: xRange, second: yRange } );
     }
 
-    public createHistogram2DRequest(info: HistogramRequestInfo[]):
+    public createHistogram2DandCDFRequest(info: HistogramRequestInfo[]):
         RpcRequest<PartialResult<Pair<Heatmap, Histogram>>> {
         return this.createStreamingRpcRequest<Pair<Heatmap, Histogram>>("histogram2D", info);
     }
@@ -375,12 +374,8 @@ RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<Heatmap>("trellisQuartiles", info);
     }
 
-    public createTrellis2DHistogramRequest(info: HistogramRequestInfo[]): RpcRequest<PartialResult<Heatmap3D>> {
-        return this.createStreamingRpcRequest<Heatmap>("heatmap3D", info);
-    }
-
-    public createHeatmap3DRequest(info: HistogramRequestInfo[]): RpcRequest<PartialResult<Heatmap3D>> {
-        return this.createStreamingRpcRequest<Heatmap3D>("heatmap3D", info);
+    public createHeatmap3DRequest(info: HistogramRequestInfo[]): RpcRequest<PartialResult<Groups<Groups<Groups<number>>>>> {
+        return this.createStreamingRpcRequest<Groups<Groups<Groups<number>>>>("histogram3D", info);
     }
 
     public createHistogramRequest(info: HistogramRequestInfo):

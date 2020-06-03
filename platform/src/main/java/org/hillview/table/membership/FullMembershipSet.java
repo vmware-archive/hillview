@@ -21,8 +21,8 @@ import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.IMutableMembershipSet;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ISampledRowIterator;
+import org.hillview.utils.Converters;
 import org.hillview.utils.Randomness;
-import org.hillview.utils.Utilities;
 
 /**
  * A IMembershipSet which contains all rows.
@@ -77,7 +77,7 @@ public class FullMembershipSet implements IMembershipSet {
 
     private IMembershipSet sampleUtil(final Randomness randomGenerator, final int k) {
         int l = k;
-        if (k > Utilities.toInt(this.rowCount * 0.7)) // sample the items that are not returned
+        if (k > Converters.toInt(this.rowCount * 0.7)) // sample the items that are not returned
             l = this.rowCount - k;
         IMutableMembershipSet s = MembershipSetFactory.create(this.getMax(), k);
         for (int i=0; i < l; i++)

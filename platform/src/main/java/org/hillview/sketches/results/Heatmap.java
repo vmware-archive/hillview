@@ -21,7 +21,7 @@ import org.hillview.dataset.api.IJsonSketchResult;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ISampledRowIterator;
-import org.hillview.utils.Utilities;
+import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 
@@ -94,10 +94,10 @@ public class Heatmap implements IJsonSketchResult {
         if (samplingRate < 1) {
             this.histogramMissingX.rescale(myIter.rate());
             this.histogramMissingY.rescale(myIter.rate());
-            this.missingData = Utilities.toLong(((double) this.missingData / samplingRate));
+            this.missingData = Converters.toLong(((double) this.missingData / samplingRate));
             for (int i = 0; i < this.buckets.length; i++)
                 for (int j = 0; j < this.buckets[i].length; j++)
-                    this.buckets[i][j] = Utilities.toLong(((double) this.buckets[i][j] / samplingRate));
+                    this.buckets[i][j] = Converters.toLong(((double) this.buckets[i][j] / samplingRate));
         }
     }
 

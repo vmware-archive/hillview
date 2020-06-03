@@ -186,12 +186,6 @@ export interface Heatmap {
     totalSize: number;
 }
 
-export interface Heatmap3D {
-    buckets: number[][][];
-    eitherMissing: number;
-    totalPresent: number;
-}
-
 export type AggregateKind = "Sum" | "Count" | "Min" | "Max" | "Average";
 export const allAggregateKind: AggregateKind[] = ["Sum", "Count", "Min", "Max", "Average"];
 

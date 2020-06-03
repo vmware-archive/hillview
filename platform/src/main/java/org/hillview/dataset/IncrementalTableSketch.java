@@ -17,6 +17,7 @@
 
 package org.hillview.dataset;
 
+import org.hillview.dataset.api.IScalable;
 import org.hillview.dataset.api.ISketchResult;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ISketchWorkspace;
@@ -30,7 +31,8 @@ import javax.annotation.Nullable;
  * @param <R>  Result produced by the sketch.
  */
 public abstract class IncrementalTableSketch<
-        R extends ISketchResult, W extends ISketchWorkspace>
+        R extends ISketchResult & IScalable<R>,
+        W extends ISketchWorkspace>
         implements TableSketch<R> {
     /**
      * Add to the result the data in the specified row number.
@@ -45,6 +47,16 @@ public abstract class IncrementalTableSketch<
      * @param data  Data that will be processed.
      */
     public abstract W initialize(ITable data);
+
+    /**
+     * This function is invoked after computing a sketch over a sampled data
+     * source to adjust the estimated counts.
+     * @param samplingRate  Sampling rate that was used; between 0 and 1.
+     * @param result        Sketch result that has to be scaled.
+     */
+    public R rescale(R result, double samplingRate) {
+        return result.rescale(samplingRate);
+    }
 
     @Override
     public R create(@Nullable ITable data) {

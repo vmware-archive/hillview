@@ -1,7 +1,6 @@
 package org.hillview.dataStructures;
 
 import org.hillview.dataset.PostProcessedSketch;
-import org.hillview.dataset.TableSketch;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.Pair;
 import org.hillview.security.SecureLaplace;
@@ -110,8 +109,8 @@ public class DPHeatmapSketch extends PostProcessedSketch<ITable, Heatmap, Heatma
         for (int i = 0; i < heatmap.buckets.length; i++) {
             for (int j = 0; j < heatmap.buckets[i].length; j++) {
                 long nIntervals = this.noiseForDecomposition(xIntervals.get(i), yIntervals.get(j), this.scale, this.baseVariance, noise);
-                result.buckets[i][j] = Utilities.toLong(heatmap.buckets[i][j] + noise.getNoise());
-                result.confidence[i][j] = Utilities.toInt(
+                result.buckets[i][j] = Converters.toLong(heatmap.buckets[i][j] + noise.getNoise());
+                result.confidence[i][j] = Converters.toInt(
                         PrivacyUtils.laplaceCI(nIntervals, this.scale, PrivacyUtils.DEFAULT_ALPHA).second);
             }
         }

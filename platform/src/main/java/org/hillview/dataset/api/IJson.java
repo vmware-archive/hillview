@@ -18,6 +18,7 @@
 package org.hillview.dataset.api;
 
 import com.google.gson.*;
+import org.hillview.sketches.results.Count;
 import org.hillview.table.columns.ColumnQuantization;
 import org.hillview.table.columns.DoubleColumnQuantization;
 import org.hillview.table.columns.StringColumnQuantization;
@@ -36,6 +37,13 @@ import java.time.Instant;
 // to register various type adaptors.
 
 public interface IJson extends Serializable {
+    class CountSerializer implements JsonSerializer<Count> {
+        @Override
+        public JsonElement serialize(Count count, Type type, JsonSerializationContext jsonSerializationContext) {
+            return count.toJsonTree();
+        }
+    }
+
     class DateSerializer implements JsonSerializer<Instant> {
         public JsonElement serialize(Instant data, Type typeOfSchema, JsonSerializationContext
                 unused) {
@@ -65,6 +73,7 @@ public interface IJson extends Serializable {
             .registerTypeAdapter(Schema.class, new Schema.Deserializer())
             .registerTypeAdapter(NextKList.class, new NextKSerializer())
             .registerTypeAdapter(Instant.class, new DateSerializer())
+            .registerTypeAdapter(Count.class, new CountSerializer())
             .registerTypeAdapter(HostAndPort.class, new HostList.HostAndPortSerializer())
             .registerTypeAdapter(HostAndPort.class, new HostList.HostAndPortDeserializer())
             .registerTypeAdapterFactory(

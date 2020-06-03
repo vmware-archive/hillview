@@ -15,10 +15,12 @@
  * limitations under the License.
  */
 
-package org.hillview.dataset.api;
+package org.hillview.dataset;
 
 import org.hillview.dataset.IncrementalTableSketch;
 import org.hillview.dataset.TableSketch;
+import org.hillview.dataset.api.IScalable;
+import org.hillview.dataset.api.ISketchResult;
 import org.hillview.table.api.ISampledRowIterator;
 import org.hillview.table.api.ISketchWorkspace;
 import org.hillview.table.api.ITable;
@@ -33,7 +35,7 @@ import javax.annotation.Nullable;
  */
 public class SamplingTableSketch<
         SW extends ISketchWorkspace,
-        R extends ISketchResult,
+        R extends ISketchResult & IScalable<R>,
         S extends IncrementalTableSketch<R, SW>>
     implements TableSketch<R> {
     protected final double samplingRate;
@@ -58,7 +60,7 @@ public class SamplingTableSketch<
             this.actualSketch.add(workspace, result, row);
             row = it.getNextRow();
         }
-        return result;
+        return result.rescale(this.samplingRate);
     }
 
     @Nullable

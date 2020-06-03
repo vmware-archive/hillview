@@ -18,7 +18,7 @@
 package org.hillview.table.api;
 
 import net.openhft.hashing.LongHashFunction;
-import org.hillview.utils.Utilities;
+import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.util.function.BiFunction;
@@ -74,7 +74,7 @@ public interface IDoubleColumn extends IColumn {
                 this.convert(newColumn, set, row -> Double.toString(this.getDouble(row)));
                 break;
             case Integer:
-                this.convert(newColumn, set, row -> Utilities.toInt(this.getDouble(row)));
+                this.convert(newColumn, set, row -> Converters.toInt(this.getDouble(row)));
                 break;
             case Double:
                 this.convert(newColumn, set, this::getDouble);

@@ -212,7 +212,7 @@ public final class TableTarget extends RpcTarget {
             @Override
             public JsonGroups<SampleSet> postProcess(@Nullable Groups<SampleSet> result) {
                 Converters.checkNull(result);
-                return result.map(v -> v.quantiles(info.quantileCount));
+                return result.toSerializable(v -> v.quantiles(info.quantileCount));
             }
         };
         this.runSketch(this.table, qvr, request, context);
@@ -237,7 +237,7 @@ public final class TableTarget extends RpcTarget {
                     @Override
                     public JsonGroups<JsonGroups<SampleSet>> postProcess(@Nullable Groups<Groups<SampleSet>> result) {
                         Converters.checkNull(result);
-                        return result.map(q -> q.map(i -> i.quantiles(info.quantileCount)));
+                        return result.toSerializable(q -> q.toSerializable(i -> i.quantiles(info.quantileCount)));
                     }
                 };
         this.runSketch(this.table, qvr, request, context);
@@ -328,18 +328,32 @@ public final class TableTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    public void heatmap3D(RpcRequest request, RpcRequestContext context) {
+    public void histogram3D(RpcRequest request, RpcRequestContext context) {
         HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
         assert info.length == 3;
-        Heatmap3DSketch sk = new Heatmap3DSketch(
-                info[0].getBuckets(),
-                info[1].getBuckets(),
+        Histogram3DSketch sk = new Histogram3DSketch(
                 info[2].getBuckets(),
-                info[0].cd.name,
-                info[1].cd.name,
-                info[2].cd.name,
-                info[0].samplingRate, info[0].seed);
-        this.runSketch(this.table, sk, request, context);
+                info[1].getBuckets(),
+                info[0].getBuckets());
+        SamplingTableSketch<GroupByWorkspace<GroupByWorkspace<GroupByWorkspace<EmptyWorkspace>>>,
+                Groups<Groups<Groups<Count>>>, Histogram3DSketch> sts =
+                new SamplingTableSketch<GroupByWorkspace<GroupByWorkspace<GroupByWorkspace<EmptyWorkspace>>>,
+                        Groups<Groups<Groups<Count>>>, Histogram3DSketch>(
+                                info[0].samplingRate, info[0].seed, sk);
+        PostProcessedSketch<
+                ITable,
+                Groups<Groups<Groups<Count>>>,
+                JsonGroups<JsonGroups<JsonGroups<Count>>>> pps =
+                new PostProcessedSketch<ITable, Groups<Groups<Groups<Count>>>,
+                        JsonGroups<JsonGroups<JsonGroups<Count>>>>(sts) {
+            @Override
+            public JsonGroups<JsonGroups<JsonGroups<Count>>> postProcess(@Nullable Groups<Groups<Groups<Count>>> result) {
+                return Converters.checkNull(result).toSerializable(
+                        r -> r.toSerializable(
+                                s -> s.toSerializable(c -> c)));
+            }
+        };
+        this.runSketch(this.table, pps, request, context);
     }
 
     private void runFilter(
@@ -467,7 +481,7 @@ public final class TableTarget extends RpcTarget {
                 DoubleMatrix varianceExplained = mats[1];
                 String[] newColNames = new String[projectionMatrix.rows];
                 for (int i = 0; i < projectionMatrix.rows; i++) {
-                    int perc = Utilities.toInt(Math.round(varianceExplained.get(i) * 100));
+                    int perc = Converters.toInt(Math.round(varianceExplained.get(i) * 100));
                     newColNames[i] = String.format("%s%d (%d%%)", info.projectionName, i, perc);
                 }
                 LinearProjectionMap lpm = new LinearProjectionMap(cm.columnNames, projectionMatrix, newColNames);

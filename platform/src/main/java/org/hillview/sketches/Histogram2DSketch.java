@@ -19,6 +19,7 @@ package org.hillview.sketches;
 
 import org.hillview.sketches.results.Count;
 import org.hillview.sketches.results.IHistogramBuckets;
+import org.hillview.table.api.ITable;
 
 /**
  * Standard 2D histogram computed using 2 nested group-by operators.
@@ -26,13 +27,17 @@ import org.hillview.sketches.results.IHistogramBuckets;
 public class Histogram2DSketch extends GroupBySketch<
         Groups<Count>,
         GroupByWorkspace<EmptyWorkspace>,
-        GenericHistogramSketch,
-        Groups<Groups<Count>>> {
+        GenericHistogramSketch> {
 
     public Histogram2DSketch(
             IHistogramBuckets buckets0,
             IHistogramBuckets buckets1) {
-        super(buckets1, Groups::new,
-                new GenericHistogramSketch(buckets0));
+        super(buckets1, new GenericHistogramSketch(buckets0));
+    }
+
+    @Override
+    public GroupByWorkspace<GroupByWorkspace<EmptyWorkspace>> initialize(ITable data) {
+        data.getLoadedColumns(this.buckets.getColumn(), super.buckets.getColumn());
+        return super.initialize(data);
     }
 }

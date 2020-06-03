@@ -18,6 +18,7 @@
 package org.hillview.sketches;
 
 import org.hillview.dataset.api.IJson;
+import org.hillview.dataset.api.IScalable;
 import org.hillview.dataset.api.ISketchResult;
 import org.hillview.utils.JsonGroups;
 import org.hillview.utils.JsonList;
@@ -33,7 +34,8 @@ import java.util.function.Function;
  * one result for "missing" data.
  * @param <R>  Type of sketch result that is grouped.
  */
-public class Groups<R extends ISketchResult> implements ISketchResult {
+public class Groups<R extends ISketchResult & IScalable<R>>
+        implements ISketchResult, IScalable<Groups<R>> {
     /**
      * For each bucket one result.
      */
@@ -85,12 +87,22 @@ public class Groups<R extends ISketchResult> implements ISketchResult {
                 this.outOfRange.equals(groups.outOfRange) */;
     }
 
+    public Groups<R> rescale(double samplingRate) {
+        return this.map(r -> r.rescale(samplingRate));
+    }
+
     @Override
     public int hashCode() {
         return Objects.hash(perBucket, perMissing /*, outOfRange */);
     }
 
-    public <J extends IJson> JsonGroups<J> map(Function<R, J> map) {
+    public <S extends ISketchResult & IScalable<S>> Groups<S> map(Function<R, S> map) {
+        S missing = map.apply(this.perMissing);
+        JsonList<S> perBucket = Linq.map(this.perBucket, map);
+        return new Groups<S>(perBucket, missing);
+    }
+
+    public <J extends IJson> JsonGroups<J> toSerializable(Function<R, J> map) {
         J missing = map.apply(this.perMissing);
         JsonList<J> perBucket = Linq.map(this.perBucket, map);
         return new JsonGroups<J>(perBucket, missing);

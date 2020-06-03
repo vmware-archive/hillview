@@ -159,8 +159,8 @@ public class DPWrapper {
         pSumm.metadata = this.container.privacySchema;
         double epsilon = this.getPrivacySchema().epsilon();
         Noise noise = DPWrapper.computeCountNoise(TABLE_COLUMN_INDEX, SpecialBucket.TotalCount, epsilon, this.laplace);
-        pSumm.rowCount = summary.rowCount + Utilities.toLong(noise.getNoise());
-        pSumm.rowCountConfidence = Utilities.toLong(PrivacyUtils.laplaceCI(
+        pSumm.rowCount = summary.rowCount + Converters.toLong(noise.getNoise());
+        pSumm.rowCountConfidence = Converters.toLong(PrivacyUtils.laplaceCI(
                 1, 1.0/epsilon, PrivacyUtils.DEFAULT_ALPHA).second);
         return pSumm;
     }

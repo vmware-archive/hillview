@@ -26,12 +26,47 @@ import {HtmlString, Size} from "./ui/ui";
 import {
     AggregateDescription, ComparisonFilterDescription,
     ContentsKind,
-    FilterDescription,
+    FilterDescription, Groups, Heatmap, Histogram,
     kindIsNumeric,
     kindIsString, RowFilterDescription, StringColumnFilterDescription,
     StringFilterDescription
 } from "./javaBridge";
 import {DragEventKind, PageTitle} from "./ui/fullPage";
+
+// TODO: delete this function
+export function toHistogram(data: Groups<number>): Histogram {
+    return {
+        buckets: data.perBucket,
+        missingCount: data.perMissing,
+        confidence: null,
+        missingConfidence: null
+    };
+}
+
+// TODO: delete this function
+export function toHeatmap(data: Groups<Groups<number>>): Heatmap {
+    const b: number[][] = [];
+    const my: number[] = [];
+    let total = 0;
+    for (const i of data.perBucket) {
+        b.push(i.perBucket);
+        total += i.perBucket.reduce(add, 0);
+        my.push(i.perMissing);
+    }
+
+    const d: Heatmap = {
+        buckets: b,
+        confidence: null,
+        missingData: data.perMissing.perMissing,
+        histogramMissingX: toHistogram(data.perMissing),
+        histogramMissingY: {
+            buckets: my,
+            missingCount: data.perMissing.perMissing
+        },
+        totalSize: total
+    };
+    return d;
+}
 
 export interface Pair<T1, T2> {
     first: T1;

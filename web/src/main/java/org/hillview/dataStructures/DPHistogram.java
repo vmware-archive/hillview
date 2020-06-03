@@ -1,7 +1,6 @@
 package org.hillview.dataStructures;
 
 import org.hillview.dataset.PostProcessedSketch;
-import org.hillview.dataset.TableSketch;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.Pair;
 import org.hillview.security.SecureLaplace;
@@ -106,17 +105,17 @@ public class DPHistogram extends PostProcessedSketch<ITable, Histogram, Histogra
             } else {
                 current = histogram.buckets[i];
             }
-            result.buckets[i] = Utilities.toLong(current + noise.getNoise());
+            result.buckets[i] = Converters.toLong(current + noise.getNoise());
             if (isCdf && i > 0) {
                 // Ensure they are monotonically increasing
                 result.buckets[i] = Math.max(result.buckets[i-1], result.buckets[i]);
             }
-            result.confidence[i] = Utilities.toInt(
+            result.confidence[i] = Converters.toInt(
                     PrivacyUtils.laplaceCI(nIntervals, scale, PrivacyUtils.DEFAULT_ALPHA).second);
             totalIntervals += nIntervals;
         }
         noise = DPWrapper.computeCountNoise(this.columnIndex, DPWrapper.SpecialBucket.NullCount, epsilon, laplace);
-        result.missingConfidence = Utilities.toInt(
+        result.missingConfidence = Converters.toInt(
                 PrivacyUtils.laplaceCI(1, 1.0/epsilon, PrivacyUtils.DEFAULT_ALPHA).second);
         HillviewLogger.instance.info("RNG calls", "{0}", totalIntervals);
         return result;

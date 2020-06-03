@@ -212,9 +212,6 @@ public class HistSketchTest extends BaseTest {
         Assert.assertNotNull(h0);
         Groups<Groups<Groups<Count>>> h1 = data1.blockingSketch(s);
         Assert.assertNotNull(h1);
-        Heatmap3D h = data0.blockingSketch(
-                new Heatmap3DSketch(buckets3, buckets2, buckets1, colName3, colName2, colName1, 1.0, 0));
-        Assert.assertNotNull(h);
         Assert.assertEquals(h0, h1);
     }
 }

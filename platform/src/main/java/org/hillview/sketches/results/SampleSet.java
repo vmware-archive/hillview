@@ -18,6 +18,7 @@
 package org.hillview.sketches.results;
 
 import org.hillview.dataset.api.IJsonSketchResult;
+import org.hillview.dataset.api.IScalable;
 import org.hillview.sketches.ReservoirSampleWorkspace;
 import org.hillview.utils.Randomness;
 import org.hillview.utils.Utilities;
@@ -28,7 +29,7 @@ import java.util.Arrays;
  * A set of samples from a numeric distribution extracted using
  * reservoir sampling.  Also maintains the min and the max.
  */
-public class SampleSet implements IJsonSketchResult {
+public class SampleSet implements IJsonSketchResult, IScalable<SampleSet> {
     static final long serialVersionUID = 1;
 
     /**
@@ -111,6 +112,12 @@ public class SampleSet implements IJsonSketchResult {
             }
         }
         return result;
+    }
+
+    @Override
+    public SampleSet rescale(double samplingRate) {
+        // Nothing to do
+        return this;
     }
 
     private static void copyAndMerge(Randomness random, double[] dest, double[] smallArray, long smallCount,

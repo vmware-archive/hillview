@@ -60,7 +60,7 @@ public class Converters {
     }
 
     public static Duration toDuration(final double d) {
-        return Duration.ofMillis(Utilities.toLong(d));
+        return Duration.ofMillis(toLong(d));
     }
 
     /**
@@ -128,5 +128,23 @@ public class Converters {
         if (x >= 0)
             return left;
         return right;
+    }
+
+    public static long toLong(double value) {
+        if (value < Long.MIN_VALUE || value > Long.MAX_VALUE)
+            throw new RuntimeException("Cannot convert to long " + value);
+        return (long)value;
+    }
+
+    public static int toInt(double value) {
+        if (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE)
+            throw new RuntimeException("Cannot convert to int " + value);
+        return (int)value;
+    }
+
+    public static int toInt(long value) {
+        if (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE)
+            throw new RuntimeException("Cannot convert to int " + value);
+        return (int)value;
     }
 }

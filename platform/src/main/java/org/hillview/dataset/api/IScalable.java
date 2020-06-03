@@ -15,20 +15,11 @@
  * limitations under the License.
  */
 
-package org.hillview.sketches;
-
-import org.hillview.sketches.results.Count;
-import org.hillview.sketches.results.IHistogramBuckets;
+package org.hillview.dataset.api;
 
 /**
- * This sketch computes a histogram over the specified buckets.
+ * This interface denotes a value computed over sampled data.
  */
-public class GenericHistogramSketch
-        extends GroupBySketch<Count,
-                              EmptyWorkspace,
-                              CounterSketch> {
-    public GenericHistogramSketch(
-            IHistogramBuckets buckets) {
-        super(buckets, new CounterSketch());
-    }
+public interface IScalable<R> {
+    R rescale(double samplingRate);
 }

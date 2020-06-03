@@ -19,6 +19,7 @@ package org.hillview.sketches;
 
 import org.hillview.sketches.results.Count;
 import org.hillview.sketches.results.IHistogramBuckets;
+import org.hillview.table.api.ITable;
 
 /**
  * 3D histogram computed using 3 nested GroupBy sketches.
@@ -26,14 +27,21 @@ import org.hillview.sketches.results.IHistogramBuckets;
 public class Histogram3DSketch extends GroupBySketch<
         Groups<Groups<Count>>,
         GroupByWorkspace<GroupByWorkspace<EmptyWorkspace>>,
-        Histogram2DSketch,
-        Groups<Groups<Groups<Count>>>> {
+        Histogram2DSketch> {
+
+    private final IHistogramBuckets superSuperBuckets;
 
     public Histogram3DSketch(
             IHistogramBuckets buckets0,
             IHistogramBuckets buckets1,
             IHistogramBuckets buckets2) {
-        super(buckets2, Groups::new,
-                new Histogram2DSketch(buckets0, buckets1));
+        super(buckets2, new Histogram2DSketch(buckets0, buckets1));
+        this.superSuperBuckets = buckets0;
+    }
+
+    @Override
+    public GroupByWorkspace<GroupByWorkspace<GroupByWorkspace<EmptyWorkspace>>> initialize(ITable data) {
+        data.getLoadedColumns(buckets.getColumn(), super.buckets.getColumn(), this.superSuperBuckets.getColumn());
+        return super.initialize(data);
     }
 }

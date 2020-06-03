@@ -27,7 +27,6 @@ import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.RowSnapshotSet;
 import org.hillview.utils.Converters;
 import org.hillview.utils.MutableInteger;
-import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -110,7 +109,7 @@ public class FreqKList implements ISketchResult {
         IntList listCounts = new IntArrayList(maxSize);
         for (int i = 0; i < maxSize; i++) {
             listRows.add(pList.get(i).first);
-            listCounts.add(Utilities.toInt(Converters.checkNull(pList.get(i).second)));
+            listCounts.add(Converters.toInt(Converters.checkNull(pList.get(i).second)));
         }
         return new NextKList(listRows, listCounts, schema, this.totalRows);
     }

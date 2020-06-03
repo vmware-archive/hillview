@@ -22,7 +22,6 @@ import org.hillview.*;
 import org.hillview.dataStructures.*;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.PrecomputedSketch;
-import org.hillview.dataset.TableSketch;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.Pair;
@@ -39,10 +38,7 @@ import org.hillview.table.api.ITable;
 import org.hillview.table.filters.RangeFilterDescription;
 import org.hillview.table.filters.RangeFilterPairDescription;
 import org.hillview.table.rows.RowSnapshot;
-import org.hillview.utils.CountWithConfidence;
-import org.hillview.utils.HillviewException;
-import org.hillview.utils.JsonList;
-import org.hillview.utils.Utilities;
+import org.hillview.utils.*;
 
 import javax.annotation.Nullable;
 import java.sql.DriverManager;
@@ -117,7 +113,7 @@ public class SimpleDBTarget extends RpcTarget {
     private void heavyHitters(RpcRequest request, RpcRequestContext context) {
         HeavyHittersRequestInfo info = request.parseArgs(HeavyHittersRequestInfo.class);
         SmallTable tbl = this.database.topFreq(
-                info.columns, Utilities.toInt(Math.ceil(info.amount * info.totalRows / 100)),
+                info.columns, Converters.toInt(Math.ceil(info.amount * info.totalRows / 100)),
                 this.columnLimits);
         List<String> cols = tbl.getSchema().getColumnNames();
         String lastCol = cols.get(cols.size() - 1);
@@ -125,7 +121,7 @@ public class SimpleDBTarget extends RpcTarget {
         for (int i = 0; i < tbl.getNumOfRows(); i++) {
             RowSnapshot rs = new RowSnapshot(tbl, i);
             RowSnapshot proj = new RowSnapshot(rs, info.columns);
-            map.put(proj, Utilities.toInt(rs.getDouble(lastCol)));
+            map.put(proj, Converters.toInt(rs.getDouble(lastCol)));
         }
         FreqKList fkList = new FreqKList(info.totalRows, 0, map);
         fkList.sortList();

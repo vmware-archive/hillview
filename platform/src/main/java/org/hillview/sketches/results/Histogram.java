@@ -21,7 +21,7 @@ import org.hillview.dataset.api.IJsonSketchResult;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ISampledRowIterator;
-import org.hillview.utils.Utilities;
+import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 
@@ -64,9 +64,9 @@ public class Histogram implements IJsonSketchResult, IHistogram {
     public void rescale(double sampleRate) {
         if (sampleRate >= 1)
             return;
-        this.missingCount = Utilities.toLong((double) this.missingCount / sampleRate);
+        this.missingCount = Converters.toLong((double) this.missingCount / sampleRate);
         for (int i = 0; i < this.buckets.length; i++) {
-            this.buckets[i] = Utilities.toLong((double) this.buckets[i] / sampleRate);
+            this.buckets[i] = Converters.toLong((double) this.buckets[i] / sampleRate);
         }
     }
 

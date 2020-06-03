@@ -18,13 +18,11 @@
 package org.hillview.sketches.results;
 
 import net.openhft.hashing.LongHashFunction;
-import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.IJsonSketchResult;
-import org.hillview.dataset.api.ISketchResult;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.IRowIterator;
-import org.hillview.utils.Utilities;
+import org.hillview.utils.Converters;
 
 import java.util.BitSet;
 
@@ -60,12 +58,12 @@ public class NumItemsThreshold implements IJsonSketchResult {
             bits = new BitSet(threshold);
             // When the number of bits is equal to the threshold we expect 1-1/e = 0.6322 of the bits to be set. On top
             // of that we add sqrt of the threshold for a high probability bound.
-            bitThreshold = Utilities.toInt(Math.round(0.6322 * threshold + Math.sqrt(threshold)));
+            bitThreshold = Converters.toInt(Math.round(0.6322 * threshold + Math.sqrt(threshold)));
         } else {  // if the threshold is small we want the bitSet still to be large enough to provide sufficient accuracy
             logSize = 10;
             bits = new BitSet(1024);
             double expo = -threshold / 1024.0;
-            bitThreshold = Utilities.toInt(Math.round(((1 - Math.pow(2.7182, expo)) * 1024) + Math.sqrt(threshold)));
+            bitThreshold = Converters.toInt(Math.round(((1 - Math.pow(2.7182, expo)) * 1024) + Math.sqrt(threshold)));
         }
     }
 
