@@ -17,8 +17,6 @@
 
 package org.hillview.dataset.remoting;
 
-import org.hillview.dataset.api.ISketchResult;
-
 import java.io.Serializable;
 
 /**
