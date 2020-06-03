@@ -16,8 +16,11 @@
  */
 
 package org.hillview.sketches.results;
-import org.hillview.dataset.api.IJson;
-import org.hillview.table.api.*;
+
+import org.hillview.dataset.api.IJsonSketchResult;
+import org.hillview.table.api.IColumn;
+import org.hillview.table.api.IMembershipSet;
+import org.hillview.table.api.ISampledRowIterator;
 import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
@@ -25,7 +28,7 @@ import javax.annotation.Nullable;
 /**
  * A 2-dimensional histogram.
  */
-public class Heatmap implements IJson {
+public class Heatmap implements IJsonSketchResult {
     static final long serialVersionUID = 1;
     
     public final long[][] buckets;
@@ -126,5 +129,53 @@ public class Heatmap implements IJson {
         unionH.histogramMissingX = this.histogramMissingX.union(other.histogramMissingX);
         unionH.histogramMissingY = this.histogramMissingY.union(other.histogramMissingY);
         return unionH;
+    }
+
+    public boolean same(Heatmap other) {
+        if (this.buckets.length != other.buckets.length)
+            return false;
+        for (int i = 0; i < this.buckets.length; i++) {
+            int len = this.buckets[i].length;
+            if (len != other.buckets[i].length)
+                return false;
+            for (int j = 0; j < len; j++)
+                if (this.buckets[i][j] != other.buckets[i][j])
+                    return false;
+        }
+        if (!this.histogramMissingX.same(other.histogramMissingX))
+            return false;
+        if (!this.histogramMissingY.same(other.histogramMissingY))
+            return false;
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < this.buckets.length; i++) {
+            builder.append(i);
+            builder.append(" => ");
+            int len = this.buckets[i].length;
+            for (int j = 0; j < len; j++) {
+                builder.append(j);
+                builder.append(" => ");
+                builder.append(this.buckets[i][j]);
+                builder.append(System.lineSeparator());
+            }
+            builder.append("missing => ");
+            builder.append(this.histogramMissingY.buckets[i]);
+            builder.append(System.lineSeparator());
+        }
+
+        builder.append("missing => ");
+        for (int j = 0; j < this.histogramMissingX.buckets.length; j++) {
+            builder.append(j);
+            builder.append(" => ");
+            builder.append(this.histogramMissingX.buckets[j]);
+            builder.append(System.lineSeparator());
+        }
+        builder.append("missing => ");
+        builder.append(this.missingData);
+        return builder.toString();
     }
 }

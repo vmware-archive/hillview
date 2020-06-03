@@ -31,6 +31,11 @@ public interface IHistogramBuckets extends Serializable {
     int getBucketCount();
 
     /**
+     * Name of the column.
+     */
+    String getColumn();
+
+    /**
      * @param column Column holding the data.
      * @param rowIndex  Index of the row in the column.
      * @return the index of the bucket in which the item should be placed.

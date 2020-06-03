@@ -21,6 +21,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.hillview.dataset.api.IJson;
+import org.hillview.dataset.api.IJsonSketchResult;
+import org.hillview.dataset.api.ISketchResult;
 import org.hillview.table.api.*;
 import org.hillview.table.columns.ObjectArrayColumn;
 import org.hillview.table.membership.FullMembershipSet;
@@ -37,7 +39,7 @@ import java.util.List;
  * We expect all columns to be serializable.  This means that we should only use
  * ObjectArrayColumns (except in tests); for example, the String*Columns are not serializable.
  */
-public class SmallTable extends BaseTable implements IJson {
+public class SmallTable extends BaseTable implements IJsonSketchResult {
     static final long serialVersionUID = 1;
     final Schema schema;
     private final int rowCount;

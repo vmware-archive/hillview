@@ -53,7 +53,6 @@ import {AxisData} from "./axisData";
 import {HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
 import {FilterReceiver, DataRangesReceiver} from "./dataRangesCollectors";
-import {QuartilesHistogramReceiver} from "./quartilesVectorView";
 import {Histogram2DBarsPlot} from "../ui/histogram2DBarsPlot";
 import {Histogram2DBase} from "../ui/histogram2DBase";
 import {Dialog, FieldKind} from "../ui/dialog";
@@ -150,12 +149,13 @@ export class Histogram2DView extends HistogramViewBase {
     }
 
     private showQuartiles(): void {
-        const title= new PageTitle("Quartiles of " + this.yAxisData.description.name + " grouped by " +
-            this.schema.displayName(this.xAxisData.description.name), "From 2D histogram view");
-        const qhr = new QuartilesHistogramReceiver(title, this.page, this.remoteObjectId,
-            this.rowCount, this.schema, this.yAxisData.description,
-            this.xPoints, this.xAxisData, null, false);
-        qhr.run(this.plot.histogram);
+       const qhr = new DataRangesReceiver(this, this.page, null,
+            this.schema, [this.xPoints],
+            [this.xAxisData.description, this.yAxisData.description],
+            null, this.defaultProvenance, {
+               reusePage: false, chartKind: "QuartileVector"
+           });
+        qhr.run([this.xAxisData.dataRange]);
         qhr.onCompleted();
     }
 
@@ -257,12 +257,12 @@ export class Histogram2DView extends HistogramViewBase {
         if (heatmap.missingData !== 0)
             summary = summary.appendSafeString(
                 ", " + formatNumber(heatmap.missingData) + " missing both coordinates");
-        if (heatmap.histogramMissingX.missingData !== 0)
+        if (heatmap.histogramMissingX.missingCount !== 0)
             summary = summary.appendSafeString(
-                ", " + formatNumber(heatmap.histogramMissingX.missingData) + " missing Y coordinate");
-        if (heatmap.histogramMissingY.missingData !== 0)
+                ", " + formatNumber(heatmap.histogramMissingX.missingCount) + " missing Y coordinate");
+        if (heatmap.histogramMissingY.missingCount !== 0)
             summary = summary.appendSafeString(
-                ", " + formatNumber(heatmap.histogramMissingY.missingData) + " missing X coordinate");
+                ", " + formatNumber(heatmap.histogramMissingY.missingCount) + " missing X coordinate");
         summary = summary.appendSafeString(", " + String(bucketCount) + " buckets");
         if (this.samplingRate < 1.0)
             summary = summary.appendSafeString(", sampling rate ")

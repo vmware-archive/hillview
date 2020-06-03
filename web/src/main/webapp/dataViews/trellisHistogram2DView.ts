@@ -332,8 +332,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [this.buckets, this.legendAxisData.bucketCount, this.shape.bucketCount],
             cds, null, this.defaultProvenance,{
-                reusePage: false, relative: this.relative,
-                chartKind: "TrellisHeatmap", exact: true
+                reusePage: false, chartKind: "TrellisHeatmap", exact: true
             }));
     }
 

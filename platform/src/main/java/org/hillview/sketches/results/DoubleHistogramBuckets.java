@@ -26,17 +26,19 @@ import org.hillview.utils.Utilities;
  */
 public class DoubleHistogramBuckets implements IHistogramBuckets {
     static final long serialVersionUID = 1;
-    
+
+    public final String column;
     public final double minValue;
     public final double maxValue;
     public final int bucketCount;
     public final double range;
 
-    public DoubleHistogramBuckets(final double minValue, final double maxValue, final int bucketCount) {
+    public DoubleHistogramBuckets(String column, final double minValue, final double maxValue, final int bucketCount) {
         if (maxValue < minValue || bucketCount <= 0)
             throw new IllegalArgumentException("Negative range or number of buckets");
         this.minValue = minValue;
         this.maxValue = maxValue;
+        this.column = column;
         this.range = this.maxValue - this.minValue;
         if (this.range <= 0)
             this.bucketCount = 1;  // ignore specified number of buckets
@@ -59,6 +61,11 @@ public class DoubleHistogramBuckets implements IHistogramBuckets {
 
     @Override
     public int getBucketCount() { return this.bucketCount; }
+
+    @Override
+    public String getColumn() {
+        return this.column;
+    }
 
     public double leftMargin(int bucketIndex) {
         return this.minValue + (bucketIndex * this.range / this.bucketCount);

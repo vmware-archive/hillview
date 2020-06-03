@@ -117,7 +117,7 @@ export class PiePlot extends Plot {
 
     private drawPie(): void {
         const counts = this.histogram.buckets.map((x) => Math.max(x, 0));
-        counts.push(this.histogram.missingData);
+        counts.push(this.histogram.missingCount);
         const pie = d3pie().sort(null);
         const chartWidth = this.getChartWidth();
         const chartHeight = this.getChartHeight();

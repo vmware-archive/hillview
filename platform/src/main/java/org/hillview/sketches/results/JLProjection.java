@@ -18,6 +18,7 @@
 package org.hillview.sketches.results;
 
 import org.apache.commons.lang.ArrayUtils;
+import org.hillview.dataset.api.ISketchResult;
 import org.hillview.sketches.results.ICorrelation;
 
 import javax.annotation.Nullable;
@@ -31,7 +32,7 @@ import java.util.LinkedHashMap;
  * normalization. It implements the ICorrelation interface and can be used for computing norms,
  * inner products etc, but it is currently rather slow compared to sampling based methods.
  */
-public class JLProjection implements ICorrelation, Serializable {
+public class JLProjection implements ICorrelation, ISketchResult {
     private static final long serialVersionUID = 1L;
     /**
      * The JL Sketch stores for every column, a vector of doubles of dimension

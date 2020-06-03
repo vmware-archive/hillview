@@ -18,15 +18,13 @@
 import {mouse as d3mouse} from "d3-selection";
 import {IViewSerialization, QuantileVectorSerialization} from "../datasetView";
 import {
-    Histogram,
+    BucketsInfo, Groups,
+    HistogramRequestInfo,
     IColumnDescription,
-    kindIsString,
-    QuantilesVector,
-    QuantileVectorArgs,
     RecordOrder,
-    RemoteObjectId,
+    RemoteObjectId, SampleSet,
 } from "../javaBridge";
-import {OnCompleteReceiver, Receiver, RpcRequest} from "../rpc";
+import {Receiver, RpcRequest} from "../rpc";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {IDataView} from "../ui/dataview";
 import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
@@ -34,7 +32,7 @@ import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
 import {ChartOptions, HtmlString, Resolution} from "../ui/ui";
-import {Converters, ICancellable, PartialResult, periodicSamples, saveAs, significantDigits,} from "../util";
+import {Converters, ICancellable, PartialResult, saveAs, significantDigits,} from "../util";
 import {AxisData, AxisKind} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
@@ -47,7 +45,7 @@ import {Quartiles2DPlot} from "../ui/quartiles2DPlot";
  * Each quartile is for a bucket.
  */
 export class QuartilesVectorView extends HistogramViewBase {
-    protected data: QuantilesVector;
+    protected data: Groups<SampleSet>;
     protected plot: Quartiles2DPlot;
     protected yAxisData: AxisData;
     private readonly defaultProvenance = "From quartile histogram";
@@ -87,6 +85,12 @@ export class QuartilesVectorView extends HistogramViewBase {
                 text: "1D histogram",
                 action: () => { this.doHistogram(); },
                 help: "Plot the X column as 1 D histogam.",
+            }, {
+                text: "group by...",
+                action: () => {
+                    this.trellis();
+                },
+                help: "Group data by a third column.",
             }]) },
             page.dataset.combineMenu(this, page.pageId),
         ]);
@@ -94,8 +98,23 @@ export class QuartilesVectorView extends HistogramViewBase {
         this.page.setMenu(this.menu);
     }
 
+    public trellis(): void {
+        const columns: DisplayName[] = this.schema.displayNamesExcluding(
+            [this.xAxisData.description.name, this.yAxisData.description.name]);
+        this.chooseTrellis(columns);
+    }
+
     protected showTrellis(colName: DisplayName): void {
-        throw new Error("Method not implemented.");
+        const groupBy = this.schema.findByDisplayName(colName);
+        const cds: IColumnDescription[] = [
+            this.xAxisData.description,
+            this.yAxisData.description,
+            groupBy];
+        const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisQuartiles");
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
+            [0, 0, 0], cds, null, this.defaultProvenance,{
+                reusePage: false, chartKind: "TrellisQuartiles",
+            }));
     }
 
     protected createNewSurfaces(): void {
@@ -118,7 +137,7 @@ export class QuartilesVectorView extends HistogramViewBase {
         return null;
     }
 
-    public updateView(qv: QuantilesVector): void {
+    public updateView(qv: Groups<SampleSet>): void {
         this.createNewSurfaces();
         this.data = qv;
 
@@ -217,34 +236,34 @@ export class QuartilesVectorView extends HistogramViewBase {
         }
         lines.push(line);
 
-        const data = this.data.data;
+        const data = this.data.perBucket;
         line = "min,";
         for (let x = 0; x < this.xAxisData.bucketCount; x++) {
-            line += "," + (data[x].empty) ? "" : data[x].min;
+            line += "," + (data[x].count === 0) ? "" : data[x].min;
         }
         lines.push(line);
 
         line = "q1,";
         for (let x = 0; x < this.xAxisData.bucketCount; x++) {
-            line += "," + (data[x].empty) ? "" : (data[x].samples.length > 0 ? data[x].samples[0] : "");
+            line += "," + (data[x].count === 0) ? "" : (data[x].samples.length > 0 ? data[x].samples[0] : "");
         }
         lines.push(line);
 
         line = "median,";
         for (let x = 0; x < this.xAxisData.bucketCount; x++) {
-            line += "," + (data[x].empty) ? "" : (data[x].samples.length > 1 ? data[x].samples[1] : "");
+            line += "," + (data[x].count === 0) ? "" : (data[x].samples.length > 1 ? data[x].samples[1] : "");
         }
         lines.push(line);
 
         line = "q3,";
         for (let x = 0; x < this.xAxisData.bucketCount; x++) {
-            line += "," + (data[x].empty) ? "" : (data[x].samples.length > 2 ? data[x].samples[2] : "");
+            line += "," + (data[x].count === 0) ? "" : (data[x].samples.length > 2 ? data[x].samples[2] : "");
         }
         lines.push(line);
 
         line = "max,";
         for (let x = 0; x < this.xAxisData.bucketCount; x++) {
-            line += "," + (data[x].empty) ? "" : data[x].max;
+            line += "," + (data[x].count === 0) ? "" : data[x].max;
         }
         lines.push(line);
 
@@ -325,7 +344,7 @@ export class QuartilesVectorView extends HistogramViewBase {
                 if (bucket < 0)
                     return;
                 bucketDesc = this.xAxisData.bucketDescription(bucket, 20);
-                const qv = this.data.data[bucket];
+                const qv = this.data.perBucket[bucket];
                 min = significantDigits(qv.min);
                 max = significantDigits(qv.max);
                 q1 = significantDigits(qv.samples[0]);
@@ -387,7 +406,7 @@ export class QuartilesVectorView extends HistogramViewBase {
     }
 }
 
-export class QuartilesVectorReceiver extends Receiver<QuantilesVector> {
+export class QuartilesVectorReceiver extends Receiver<Groups<SampleSet>> {
     protected view: QuartilesVectorView;
 
     constructor(title: PageTitle,
@@ -395,18 +414,20 @@ export class QuartilesVectorReceiver extends Receiver<QuantilesVector> {
                 protected remoteObject: TableTargetAPI,
                 protected rowCount: number,
                 protected schema: SchemaClass,
-                protected axis: AxisData,
+                protected histoArgs: HistogramRequestInfo,
+                protected range: BucketsInfo,
                 protected quantilesCol: IColumnDescription,
-                operation: RpcRequest<PartialResult<QuantilesVector>>,
+                operation: RpcRequest<PartialResult<Groups<SampleSet>>>,
                 protected options: ChartOptions) {
         super(options.reusePage ? page : page.dataset.newPage(title, page), operation, "quartiles");
         this.view = new QuartilesVectorView(
             this.remoteObject.remoteObjectId, rowCount, schema, quantilesCol, this.page);
         this.page.setDataView(this.view);
-        this.view.setAxis(axis);
+        const axisData = new AxisData(histoArgs.cd, range, histoArgs.bucketCount);
+        this.view.setAxis(axisData);
     }
 
-    public onNext(value: PartialResult<QuantilesVector>): void {
+    public onNext(value: PartialResult<Groups<SampleSet>>): void {
         super.onNext(value);
         if (value == null)
             return;
@@ -416,44 +437,5 @@ export class QuartilesVectorReceiver extends Receiver<QuantilesVector> {
     public onCompleted(): void {
         super.onCompleted();
         this.view.updateCompleted(this.elapsedMilliseconds());
-    }
-}
-
-/**
- * This receiver is invoked once we have computed a histogram of the data on one column
- * and we are have all the data needed to compute a quartile vector.
- */
-export class QuartilesHistogramReceiver extends OnCompleteReceiver<Histogram> {
-    constructor(protected title: PageTitle, page: FullPage, protected remoteObjectId: RemoteObjectId,
-                protected rowCount: number,
-                protected schema: SchemaClass, protected qCol: IColumnDescription,
-                protected bucketCount: number, protected axisData: AxisData,
-                rr: RpcRequest<PartialResult<Histogram>>,
-                protected reusePage: boolean) {
-        super(page, rr, "quartiles");
-    }
-
-    run(value: Histogram): void {
-        const args: QuantileVectorArgs = {
-            quantileCount: 4,  // we display quartiles
-            cd: this.axisData.description,
-            seed: 0,  // scan all data
-            samplingRate: 1.0,
-            bucketCount: this.bucketCount,
-            quantilesColumn: this.qCol.name,
-            nonNullCounts: value.buckets
-        };
-        if (kindIsString(this.axisData.description.kind))
-            args.leftBoundaries = periodicSamples(this.axisData.dataRange.stringQuantiles, this.bucketCount);
-        else {
-            args.min = this.axisData.dataRange.min;
-            args.max = this.axisData.dataRange.max;
-        }
-
-        const tt = new TableTargetAPI(this.remoteObjectId)
-        const rr = tt.createQuantilesVectorRequest(args);
-        rr.invoke(new QuartilesVectorReceiver(this.title, this.page, tt, this.rowCount,
-            this.schema, this.axisData, this.qCol, rr,
-            { chartKind: "QuartileVector", reusePage: this.reusePage }));
     }
 }

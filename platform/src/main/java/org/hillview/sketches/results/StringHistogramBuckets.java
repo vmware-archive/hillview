@@ -25,12 +25,12 @@ import org.hillview.table.api.IColumn;
 public class StringHistogramBuckets extends ExplicitHistogramBuckets<String> {
     static final long serialVersionUID = 1;
     
-    public StringHistogramBuckets(final String[] leftBoundaries, final String max) {
-        super(leftBoundaries, max);
+    public StringHistogramBuckets(String column, String[] leftBoundaries, final String max) {
+        super(column, leftBoundaries, max);
     }
 
-    public StringHistogramBuckets(final String[] leftBoundaries) {
-        super(leftBoundaries);
+    public StringHistogramBuckets(String column, final String[] leftBoundaries) {
+        super(column, leftBoundaries);
     }
 
     @Override

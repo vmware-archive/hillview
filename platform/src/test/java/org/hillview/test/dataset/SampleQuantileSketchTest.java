@@ -50,7 +50,8 @@ public class SampleQuantileSketchTest extends BaseTest {
         final SampleList leftQ = sqSketch.create(leftTable);
         Assert.assertNotNull(leftQ);
         RankInTable rLT = new RankInTable(leftTable, rso);
-        System.out.println(Arrays.toString(rLT.getRank(leftQ.getQuantiles(9))));
+        if (toPrint)
+            System.out.println(Arrays.toString(rLT.getRank(leftQ.getQuantiles(9))));
         /*
         final SmallTable rightTable = TestTables.getIntTable(rightSize, numCols);
         final SampleList rightQ = sqSketch.create(rightTable);
@@ -79,6 +80,7 @@ public class SampleQuantileSketchTest extends BaseTest {
         for (int i =0; i < 10; i++)
             System.out.printf("Element of rank i: %s\n", sl.getRow(0.1*i).toString());*/
         RankInTable rIT = new RankInTable(Table, rso);
-        System.out.println(Arrays.toString(rIT.getRank(sl.getQuantiles(19))));
+        if (toPrint)
+            System.out.println(Arrays.toString(rIT.getRank(sl.getQuantiles(19))));
     }
 }

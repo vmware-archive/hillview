@@ -43,6 +43,7 @@ import {TrellisHistogramView} from "./dataViews/trellisHistogramView";
 import JSONEditor, {JSONEditorOptions} from "jsoneditor";
 import {OnCompleteReceiver} from "./rpc";
 import {QuartilesVectorView} from "./dataViews/quartilesVectorView";
+import {TrellisHistogramQuartilesView} from "./dataViews/trellisHistogramQuartilesView";
 
 export interface IViewSerialization {
     viewKind: ViewKind;
@@ -105,16 +106,16 @@ export interface TrellisShapeSerialization {
 }
 
 export interface TrellisHistogramSerialization extends
-    HistogramSerialization, TrellisShapeSerialization {
-}
+    HistogramSerialization, TrellisShapeSerialization {}
 
 export interface TrellisHistogram2DSerialization extends
-    Histogram2DSerialization, TrellisShapeSerialization {
-}
+    Histogram2DSerialization, TrellisShapeSerialization {}
 
 export interface TrellisHeatmapSerialization extends
-    HeatmapSerialization, TrellisShapeSerialization {
-}
+    HeatmapSerialization, TrellisShapeSerialization {}
+
+export interface TrellisQuartilesSerialization extends
+    QuantileVectorSerialization, TrellisShapeSerialization {}
 
 export interface IDatasetSerialization {
     kind: "Saved dataset";
@@ -484,6 +485,9 @@ export class DatasetView implements IHtmlElement {
                 break;
             case "TrellisHeatmap":
                 view = TrellisHeatmapView.reconstruct(vs as TrellisHeatmapSerialization, page);
+                break;
+            case "TrellisQuartiles":
+                view = TrellisHistogramQuartilesView.reconstruct(vs as TrellisQuartilesSerialization, page);
                 break;
             case "HeavyHitters":
                 view = HeavyHittersView.reconstruct(vs as HeavyHittersSerialization, page);

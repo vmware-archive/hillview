@@ -1488,6 +1488,10 @@ A Trellis plot is an array of heatmaps, grouped by a third column.
 Each heatmap displays data that corresponds to a range of values in
 the grouping column.
 
+### Trellis plots of quartiles
+
+TODO
+
 ### Combining two views
 
 Any view represents logically a subset of rows from an original table.

@@ -30,25 +30,24 @@ import {
     CountWithConfidence,
     EigenVal,
     FilterDescription,
-    FindResult,
+    FindResult, Groups,
     Heatmap,
     Heatmap3D,
     HeavyHittersFilterInfo,
     Histogram,
-    HistogramArgs,
+    HistogramRequestInfo,
     IColumnDescription,
     JSCreateColumnInfo,
     JSFilterInfo,
     kindIsString,
     KVCreateColumnInfo,
     NextKArgs,
-    NextKList,
-    QuantilesVector,
-    QuantileVectorArgs,
+    NextKList, QuantilesMatrixInfo,
+    QuantilesVectorInfo,
     RangeArgs,
     RecordOrder,
     RemoteObjectId,
-    RowFilterDescription,
+    RowFilterDescription, SampleSet,
     Schema,
     StringColumnFilterDescription,
     StringColumnsFilterDescription,
@@ -144,6 +143,8 @@ export class TableTargetAPI extends RemoteObject {
             case "Trellis2DHistogram":
             case "TrellisHeatmap":
                 return [width, Resolution.maxBucketCount, maxWindows];
+            case "TrellisQuartiles":
+                return [Resolution.maxBucketCount, Resolution.maxBucketCount, maxWindows];
             case "TrellisHistogram":
                 return [width, maxWindows];
             default:
@@ -178,9 +179,14 @@ export class TableTargetAPI extends RemoteObject {
         return this.createStreamingRpcRequest<BucketsInfo>(method, args);
     }
 
-    public createQuantilesVectorRequest(args: QuantileVectorArgs):
-        RpcRequest<PartialResult<QuantilesVector>> {
-        return this.createStreamingRpcRequest<QuantilesVector>("getQuantilesVector", args);
+    public createQuantilesVectorRequest(args: QuantilesVectorInfo):
+        RpcRequest<PartialResult<Groups<SampleSet>>> {
+        return this.createStreamingRpcRequest<Groups<SampleSet>>("getQuantilesVector", args);
+    }
+
+    public createQuantilesMatrixRequest(args: QuantilesMatrixInfo):
+        RpcRequest<PartialResult<Groups<Groups<SampleSet>>>> {
+        return this.createStreamingRpcRequest<Groups<Groups<SampleSet>>>("getQuantilesMatrix", args);
     }
 
     public createContainsRequest(order: RecordOrder, row: any[]): RpcRequest<RemoteObjectId> {
@@ -356,30 +362,34 @@ RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<RemoteObjectId>("filter2DRange", { first: xRange, second: yRange } );
     }
 
-    public createHistogram2DRequest(info: HistogramArgs[]):
+    public createHistogram2DRequest(info: HistogramRequestInfo[]):
         RpcRequest<PartialResult<Pair<Heatmap, Histogram>>> {
         return this.createStreamingRpcRequest<Pair<Heatmap, Histogram>>("histogram2D", info);
     }
 
-    public createHeatmapRequest(info: HistogramArgs[]): RpcRequest<PartialResult<Heatmap>> {
+    public createHeatmapRequest(info: HistogramRequestInfo[]): RpcRequest<PartialResult<Heatmap>> {
         return this.createStreamingRpcRequest<Heatmap>("heatmap", info);
     }
 
-    public createTrellis2DHistogramRequest(info: HistogramArgs[]): RpcRequest<PartialResult<Heatmap3D>> {
+    public createTrellisQuartilesRequest(info: HistogramRequestInfo[]): RpcRequest<PartialResult<Heatmap>> {
+        return this.createStreamingRpcRequest<Heatmap>("trellisQuartiles", info);
+    }
+
+    public createTrellis2DHistogramRequest(info: HistogramRequestInfo[]): RpcRequest<PartialResult<Heatmap3D>> {
         return this.createStreamingRpcRequest<Heatmap>("heatmap3D", info);
     }
 
-    public createHeatmap3DRequest(info: HistogramArgs[]): RpcRequest<PartialResult<Heatmap3D>> {
+    public createHeatmap3DRequest(info: HistogramRequestInfo[]): RpcRequest<PartialResult<Heatmap3D>> {
         return this.createStreamingRpcRequest<Heatmap3D>("heatmap3D", info);
     }
 
-    public createHistogramRequest(info: HistogramArgs):
+    public createHistogramRequest(info: HistogramRequestInfo):
         RpcRequest<PartialResult<Histogram>> {
         return this.createStreamingRpcRequest<Histogram>(
             "histogram", info);
     }
 
-    public createHistogramAndCDFRequest(info: HistogramArgs[]):
+    public createHistogramAndCDFRequest(info: HistogramRequestInfo[]):
     RpcRequest<PartialResult<Pair<Histogram, Histogram>>> {
         return this.createStreamingRpcRequest<Pair<Histogram, Histogram>>(
             "histogramAndCDF", info);

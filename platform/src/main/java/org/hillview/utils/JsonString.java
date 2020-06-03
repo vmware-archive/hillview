@@ -21,13 +21,14 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonParser;
 import org.hillview.dataset.api.IJson;
+import org.hillview.dataset.api.IJsonSketchResult;
 
 import javax.annotation.Nullable;
 
 /**
  * A string whose value is a JSON object.
  */
-public class JsonString implements IJson {
+public class JsonString implements IJsonSketchResult {
     static final long serialVersionUID = 1;
 
     private static JsonParser parser = new JsonParser();

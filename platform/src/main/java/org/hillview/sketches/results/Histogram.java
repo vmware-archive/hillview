@@ -17,7 +17,7 @@
 
 package org.hillview.sketches.results;
 
-import org.hillview.dataset.api.IJson;
+import org.hillview.dataset.api.IJsonSketchResult;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ISampledRowIterator;
@@ -28,14 +28,14 @@ import javax.annotation.Nullable;
 /**
  * One dimensional histogram.
  */
-public class Histogram implements IJson {
+public class Histogram implements IJsonSketchResult, IHistogram {
     static final long serialVersionUID = 1;
     
     public long[] buckets;
     /**
      * Count of missing (NULL) values.
      */
-    protected long missingData;
+    protected long missingCount;
     /**
      * Confidence intervals of the buckets.  May be null.
      */
@@ -58,13 +58,13 @@ public class Histogram implements IJson {
 
     public Histogram(long[] data, long missing) {
         this.buckets = data;
-        this.missingData = missing;
+        this.missingCount = missing;
     }
 
     public void rescale(double sampleRate) {
         if (sampleRate >= 1)
             return;
-        this.missingData = Utilities.toLong((double) this.missingData / sampleRate);
+        this.missingCount = Utilities.toLong((double) this.missingCount / sampleRate);
         for (int i = 0; i < this.buckets.length; i++) {
             this.buckets[i] = Utilities.toLong((double) this.buckets[i] / sampleRate);
         }
@@ -72,7 +72,7 @@ public class Histogram implements IJson {
 
     public void add(IColumn column, int currRow, IHistogramBuckets buckets) {
         if (column.isMissing(currRow))
-            this.missingData++;
+            this.missingCount++;
         else {
             int index = buckets.indexOf(column, currRow);
             if (index >= 0)
@@ -95,7 +95,7 @@ public class Histogram implements IJson {
         this.rescale(myIter.rate());
     }
 
-    public long getMissingData() { return this.missingData; }
+    public long getMissingCount() { return this.missingCount; }
 
     /**
      * @return the index's bucket count
@@ -111,7 +111,7 @@ public class Histogram implements IJson {
         for (int i = 0; i < unionH.getBucketCount(); i++) {
             unionH.buckets[i] = this.buckets[i] + otherHistogram.buckets[i];
         }
-        unionH.missingData = this.missingData + otherHistogram.missingData;
+        unionH.missingCount = this.missingCount + otherHistogram.missingCount;
         return unionH;
     }
 
@@ -142,5 +142,16 @@ public class Histogram implements IJson {
             previous = next;
         }
         return result;
+    }
+
+    public boolean same(Histogram other) {
+        if (this.missingCount != other.missingCount)
+            return false;
+        if (this.buckets.length != other.buckets.length)
+            return false;
+        for (int i = 0; i < this.buckets.length; i++)
+            if (this.buckets[i] != other.buckets[i])
+                return false;
+        return true;
     }
 }

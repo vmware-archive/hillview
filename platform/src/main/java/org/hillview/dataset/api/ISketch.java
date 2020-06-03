@@ -30,7 +30,7 @@ import javax.annotation.Nullable;
  * @param <T> Input data type.
  * @param <R> Output data type.
  */
-public interface ISketch<T, R extends Serializable> extends IDataSetComputation, IMonoid<R> {
+public interface ISketch<T, R extends ISketchResult> extends IDataSetComputation, IMonoid<R> {
     /**
      * Sketch computation on some dataset T.
      * @param data  Data to sketch.

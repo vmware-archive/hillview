@@ -17,13 +17,15 @@
 
 package org.hillview.sketches.results;
 
-import org.hillview.dataset.api.IJson;
-import org.hillview.table.api.*;
+import org.hillview.dataset.api.IJsonSketchResult;
+import org.hillview.table.api.IColumn;
+import org.hillview.table.api.IMembershipSet;
+import org.hillview.table.api.IRowIterator;
 
 /**
  * A 3-dimensional histogram.
  */
-public class Heatmap3D implements IJson {
+public class Heatmap3D implements IJsonSketchResult {
     static final long serialVersionUID = 1;
     
     private final long[][][] buckets;

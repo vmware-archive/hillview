@@ -56,11 +56,12 @@ public class PCATest extends BaseTest {
         DoubleMatrix corrMatrix2 = new DoubleMatrix(cm2.getCorrelationMatrix());
         DoubleMatrix eigenVectors2 = LinAlg.eigenVectors(corrMatrix2, 1);
 
-        System.out.println(cm1.toString());
-        System.out.println(cm2.toString());
-        eigenVectors1.print();
-        eigenVectors2.print();
-
+        if (toPrint) {
+            System.out.println(cm1.toString());
+            System.out.println(cm2.toString());
+            eigenVectors1.print();
+            eigenVectors2.print();
+        }
         for (int i = 2; i < eigenVectors1.columns; i++) {
             // The eigenvector should have reasonably large components in the first two columns, compared to the
             // other components in the eigenvector.
@@ -91,7 +92,8 @@ public class PCATest extends BaseTest {
             ITable result = lpm.apply(table);
             Assert.assertNotNull(result);
         } catch (Exception e) {
-            System.out.println("Skipped test because MNIST data is not present.");
+            if (toPrint)
+                System.out.println("Skipped test because MNIST data is not present.");
         }
     }
 }

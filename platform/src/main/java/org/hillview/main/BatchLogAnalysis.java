@@ -77,17 +77,17 @@ public class BatchLogAnalysis {
         DoubleDataRangeSketch rangeSketch = new DoubleDataRangeSketch("Timestamp");
         DataRange dataRange = table1.blockingSketch(rangeSketch);
         assert dataRange != null;
-        DoubleHistogramBuckets bucketsTimestamp = new DoubleHistogramBuckets(dataRange.min, dataRange.max, numOfTimestampBuckets);
+        DoubleHistogramBuckets bucketsTimestamp = new DoubleHistogramBuckets("Timestamp", dataRange.min, dataRange.max, numOfTimestampBuckets);
 
         /* Find errorCode (y-axis) buckets for the heatmap */
         SampleDistinctElementsSketch sampleSketch = new SampleDistinctElementsSketch("errorCode", 0, 500);
         MinKSet<String> samples = table1.blockingSketch(sampleSketch);
         assert samples != null;
         JsonList<String> leftBoundaries = samples.getLeftBoundaries(500);
-        StringHistogramBuckets bucketsErrorCode = new StringHistogramBuckets(leftBoundaries.toArray(new String[0]));
+        StringHistogramBuckets bucketsErrorCode = new StringHistogramBuckets("errorCode", leftBoundaries.toArray(new String[0]));
 
         /* Generate heatmap based on Timestamp buckets and errorCode buckets, and get the count in each bucket */
-        HeatmapSketch heatmapSketch = new HeatmapSketch(bucketsTimestamp, bucketsErrorCode, "Timestamp", "errorCode", 1.0, 0);
+        HeatmapSketch heatmapSketch = new HeatmapSketch(bucketsTimestamp, bucketsErrorCode, 1.0, 0);
         Heatmap heatmap = table1.blockingSketch(heatmapSketch);
         assert heatmap != null;
         HeatmapData heatmapData = new HeatmapData();

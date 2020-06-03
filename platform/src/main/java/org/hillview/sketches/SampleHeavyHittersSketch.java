@@ -2,6 +2,7 @@ package org.hillview.sketches;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenCustomHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import org.hillview.dataset.TableSketch;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.sketches.results.FreqKList;
 import org.hillview.sketches.results.FreqKListSample;
@@ -23,7 +24,7 @@ import javax.annotation.Nullable;
  * expect every element with relative frequency at least epsilon to appear in the sample with
  * approximately the right relative frequency.
  */
-public class SampleHeavyHittersSketch implements ISketch<ITable, FreqKListSample> {
+public class SampleHeavyHittersSketch implements TableSketch<FreqKListSample> {
     static final long serialVersionUID = 1;
     
     /**

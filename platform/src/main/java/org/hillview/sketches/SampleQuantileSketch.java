@@ -17,6 +17,7 @@
 
 package org.hillview.sketches;
 
+import org.hillview.dataset.TableSketch;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.sketches.results.SampleList;
 import org.hillview.table.*;
@@ -36,7 +37,7 @@ import static org.hillview.table.columns.ObjectArrayColumn.mergeColumns;
 /**
  * Samples a number of rows from a table.
  */
-public class SampleQuantileSketch  implements ISketch<ITable, SampleList> {
+public class SampleQuantileSketch  implements TableSketch<SampleList> {
     static final long serialVersionUID = 1;
     
     private final RecordOrder colSortOrder;

@@ -29,7 +29,7 @@ import {
     RecordOrder,
     RemoteObjectId,
     StringFilterDescription,
-    StringColumnFilterDescription, AggregateDescription, CountWithConfidence, kindIsNumeric
+    StringColumnFilterDescription, AggregateDescription, CountWithConfidence
 } from "../javaBridge";
 import {OnCompleteReceiver} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
@@ -39,7 +39,6 @@ import {FullPage, PageTitle} from "../ui/fullPage";
 import {SubMenu, TopMenuItem} from "../ui/menu";
 import {SpecialChars, ViewKind} from "../ui/ui";
 import {
-    assert,
     cloneToSet,
     Converters,
     ICancellable,
@@ -237,112 +236,15 @@ export abstract class TSViewBase extends BigTableView {
         rr.invoke(rec);
     }
 
-    protected histogram1D(cd: IColumnDescription): void {
-        const rr = this.createDataQuantilesRequest([cd], this.page, "Histogram");
-        const exact = this.isPrivate(); // If private, do not sample
-        rr.invoke(new DataRangesReceiver(
-            this, this.page, rr, this.schema, [0], [cd], null,
-            this.defaultProvenance,
-            { chartKind: "Histogram", relative: false, exact: exact, reusePage: false, pieChart: false }));
-    }
-
-    protected histogram2D(cds: IColumnDescription[]): void {
-        const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
-        const exact = this.isPrivate(); // If private, do not sample
-        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [0, 0], cds, null, this.defaultProvenance,{
-            reusePage: false, relative: false,
-            chartKind: "2DHistogram", exact: exact
-        }));
-    }
-
-    protected trellis2D(cds: IColumnDescription[]): void {
-        const exact = this.isPrivate(); // If private, do not sample
-        const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisHistogram");
-        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [0, 0], cds, null, this.defaultProvenance, {
-            reusePage: false, relative: false,
-            chartKind: "TrellisHistogram", exact: exact
-        }));
-    }
-
-    protected trellis3D(cds: IColumnDescription[], heatmap: boolean): void {
-        let chartKind: ViewKind;
-        if (heatmap)
-            chartKind = "TrellisHeatmap";
-        else {
-            chartKind = "Trellis2DHistogram";
-        }
+    protected chart(cds: IColumnDescription[], chartKind: ViewKind): void {
         const exact = this.isPrivate(); // If private, do not sample
         const rr = this.createDataQuantilesRequest(cds, this.page, chartKind);
+        const buckets = cds.map(_ => 0);
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [0, 0, 0], cds, null, this.defaultProvenance, {
+            buckets, cds, null, this.defaultProvenance, {
             reusePage: false, relative: false,
             chartKind: chartKind, exact: exact
         }));
-    }
-
-    protected histogram(columns: string[]): void {
-        const cds = this.schema.getDescriptions(columns);
-        if (cds.length === 1) {
-            this.histogram1D(cds[0]);
-        } else {
-            this.histogram2D(cds);
-        }
-    }
-
-    protected trellis(columns: string[], heatmap: boolean): void {
-        const cds = this.schema.getDescriptions(columns);
-        if (cds.length === 2) {
-            console.assert(!heatmap);
-            this.trellis2D(cds);
-        } else {
-            this.trellis3D(cds, heatmap);
-        }
-    }
-
-    protected heatmap(columns: string[]): void {
-        const cds = this.schema.getDescriptions(columns);
-        const rr = this.createDataQuantilesRequest(cds, this.page, "Heatmap");
-        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [0, 0], cds, null, this.defaultProvenance, {
-            reusePage: false,
-            relative: false,
-            chartKind: "Heatmap",
-            exact: true
-        }));
-    }
-
-    protected heatmapSelected(): void {
-        if (this.getSelectedColCount() !== 2) {
-            this.page.reportError("Must select 2 columns for heatmap");
-            return;
-        }
-        this.heatmap(this.getSelectedColNames());
-    }
-
-    protected histogramSelected(): void {
-        if (this.getSelectedColCount() < 1 || this.getSelectedColCount() > 2) {
-            this.page.reportError("Must select 1 or 2 columns for histogram");
-            return;
-        }
-        this.histogram(this.getSelectedColNames());
-    }
-
-    protected quartileVectorSelected(): void {
-        if (this.getSelectedColCount() < 1 || this.getSelectedColCount() > 2) {
-            this.page.reportError("Must select 1 or 2 columns for histogram");
-            return;
-        }
-        this.quartileVector(this.getSelectedColNames());
-    }
-
-    protected trellisSelected(heatmap: boolean): void {
-        if (this.getSelectedColCount() < 2 || this.getSelectedColCount() > 3) {
-            this.page.reportError("Must select 1 or 2 columns for Trellis polots");
-            return;
-        }
-        this.trellis(this.getSelectedColNames(), heatmap);
     }
 
     public two2ChartMenu(viewKind: ViewKind): void {
@@ -368,38 +270,21 @@ export abstract class TSViewBase extends BigTableView {
                     this.page.reportError("The two columns must be distinct");
                     return;
                 }
-                switch (viewKind) {
-                    case "2DHistogram":
-                        this.histogram([col0, col1]);
-                        break;
-                    case "Heatmap":
-                        this.heatmap([col0, col1]);
-                        break;
-                    case "QuartileVector":
-                        this.quartileVector([col0, col1]);
-                        break;
-
-                }
+                const colDesc = this.schema.getDescriptions([col0, col1]);
+                this.chart(colDesc, viewKind);
             },
         );
         dia.show();
     }
 
-    public trellisMenu(twoD: boolean, heatmap: boolean): void {
-        const count = twoD ? 2 : 3;
-        if (this.schema.length < count) {
-            this.page.reportError("Could not find enough columns that can be charted.");
-            return;
-        }
-
+    public trellisMenu(chartKind: ViewKind): void {
+        const count = chartKind == "TrellisHistogram" ? 2 : 3;
         const allColumns = this.schema.allDisplayNames();
-        const label = heatmap ? "heatmap" : "2D histogram";
-        const dia = new Dialog(label,
-            "Display a Trellis plot of " + label + "s");
+        const dia = new Dialog(chartKind,
+            "Display a " + chartKind);
         dia.addColumnSelectField("columnName0", "First column", allColumns, allColumns[0],
             "First column (X axis)");
-        const secCol = count === 2 ? "Column to group by" :
-            "Second column " + (heatmap ? "(Y axis)" : "(color)");
+        const secCol = count === 2 ? "Column to group by" : "Second column ";
         dia.addColumnSelectField("columnName1", secCol, allColumns, allColumns[1], secCol);
         if (count === 3)
             dia.addColumnSelectField("columnName2", "Column to group by", allColumns, allColumns[2],
@@ -427,7 +312,9 @@ export abstract class TSViewBase extends BigTableView {
                     }
                     colNames.push(col2);
                 }
-                this.trellis(colNames, heatmap);
+
+                const columnDescriptions = this.schema.getDescriptions(colNames);
+                this.chart(columnDescriptions, chartKind);
             },
         );
         dia.show();
@@ -449,7 +336,8 @@ export abstract class TSViewBase extends BigTableView {
         dia.setAction(
             () => {
                 const col = this.schema.fromDisplayName(dia.getColumn());
-                this.histogram([col]);
+                const cds = this.schema.getDescriptions([col]);
+                this.chart(cds, "Histogram");
             },
         );
         dia.show();
@@ -478,12 +366,14 @@ export abstract class TSViewBase extends BigTableView {
                     help: "Draw a vector of quartiles."},
                 { text: "Heatmap...", action: () => this.two2ChartMenu("Heatmap"),
                     help: "Draw a heatmap of the data in two columns."},
-                { text: "Trellis histograms...", action: () => this.trellisMenu(true, false),
+                { text: "Trellis histograms...", action: () => this.trellisMenu("TrellisHistogram"),
                     help: "Draw a Trellis plot of histograms."},
-                { text: "Trellis 2D histograms...", action: () => this.trellisMenu(false, false),
+                { text: "Trellis 2D histograms...", action: () => this.trellisMenu("Trellis2DHistogram"),
                     help: "Draw a Trellis plot of 2D histograms."},
-                { text: "Trellis heatmaps...", action: () => this.trellisMenu(false, true),
+                { text: "Trellis heatmaps...", action: () => this.trellisMenu("TrellisHeatmap"),
                     help: "Draw a Trellis plot of heatmaps."},
+                { text: "Trellis quartiles...", action: () => this.trellisMenu("TrellisQuartiles"),
+                    help: "Draw a Trellis plot of quartile vectors."},
             ]),
         };
     }
@@ -603,21 +493,6 @@ export abstract class TSViewBase extends BigTableView {
         });
         d.setCacheTitle("HeavyHittersDialog");
         d.show();
-    }
-
-    private quartileVector(columns: string[]): void {
-        assert(columns.length === 2);
-        const cds = this.schema.getDescriptions(columns);
-        if (!kindIsNumeric(cds[1].kind)) {
-            this.page.reportError("Quartiles require a numeric second column " + columns[1]);
-            return;
-        }
-        const rr = this.createDataQuantilesRequest(cds, this.page, "QuartileVector");
-        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [0, 0], cds, null, this.defaultProvenance,{
-                reusePage: false,
-                chartKind: "QuartileVector",
-            }));
     }
 }
 

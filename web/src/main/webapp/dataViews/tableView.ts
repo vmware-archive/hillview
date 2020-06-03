@@ -590,31 +590,33 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             }, !this.isPrivate());
             this.contextMenu.addItem({
                 text: "Histogram",
-                action: () => this.histogramSelected(),
+                action: () => this.chart(this.schema.getDescriptions(this.getSelectedColNames()),
+                    this.getSelectedColCount() === 1 ? "Histogram" : "2DHistogram"),
                 help: "Plot the data in the selected columns as a histogram. " +
                     "Applies to one or two columns only.",
             }, selectedCount >= 1 && selectedCount <= 2);
             this.contextMenu.addItem({
                 text: "Quartile vector",
-                action: () => this.quartileVectorSelected(),
+                action: () => this.chart(this.schema.getDescriptions(this.getSelectedColNames()), "QuartileVector"),
                 help: "Plot the data in the selected columns as a vector of quartiles. " +
                     "Applies to one or two columns only.",
             }, selectedCount == 2);
             this.contextMenu.addItem({
                 text: "Heatmap",
-                action: () => this.heatmapSelected(),
+                action: () => this.chart(this.schema.getDescriptions(this.getSelectedColNames()), "Heatmap"),
                 help: "Plot the data in the selected columns as a heatmap. " +
                     "Applies to two columns only.",
             }, selectedCount === 2);
             this.contextMenu.addItem({
                 text: "Trellis histograms",
-                action: () => this.trellisSelected(false),
+                action: () => this.chart(this.schema.getDescriptions(this.getSelectedColNames()),
+                    selectedCount > 2 ? "Trellis2DHistogram" : "TrellisHistogram"),
                 help: "Plot the data in the selected columns as a Trellis plot of histograms. " +
                     "Applies to two or three columns only.",
             }, selectedCount >= 2 && selectedCount <= 3);
             this.contextMenu.addItem({
                 text: "Trellis heatmaps",
-                action: () => this.trellisSelected(true),
+                action: () => this.chart(this.schema.getDescriptions(this.getSelectedColNames()), "TrellisHeatmap"),
                 help: "Plot the data in the selected columns as a Trellis plot of heatmaps. " +
                     "Applies to three columns only.",
             }, selectedCount === 3 && !this.isPrivate());

@@ -17,7 +17,8 @@
 
 package org.hillview.sketches;
 
-import org.hillview.dataset.api.IJson;
+import org.hillview.dataset.TableSketch;
+import org.hillview.dataset.api.IJsonSketchResult;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
@@ -30,7 +31,7 @@ import java.util.List;
 /**
  * A sketch that computes the number of parsing errors in each column.
  */
-public class ParseErrorsSketch implements ISketch<ITable, ParseErrorsSketch.PerColumnErrors> {
+public class ParseErrorsSketch implements TableSketch<ParseErrorsSketch.PerColumnErrors> {
     static final long serialVersionUID = 1;
     @Override
     public PerColumnErrors create(@Nullable ITable data) {
@@ -55,7 +56,7 @@ public class ParseErrorsSketch implements ISketch<ITable, ParseErrorsSketch.PerC
         return left.add(right);
     }
 
-    public static class PerColumnErrors implements IJson {
+    public static class PerColumnErrors implements IJsonSketchResult {
         static final long serialVersionUID = 1;
     
         HashMap<String, Long> errorsPerColumn = new HashMap<String, Long>();

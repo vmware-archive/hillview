@@ -17,13 +17,13 @@
 
 package org.hillview.sketches.results;
 
-import org.hillview.dataset.api.IJson;
+import org.hillview.dataset.api.IJsonSketchResult;
 
 /**
  * This interface is a base class for all sketch results that are
  * used to compute the buckets of a histogram, i.e., various forms of quantiles.
  */
-public abstract class BucketsInfo implements IJson {
+public abstract class BucketsInfo implements IJsonSketchResult {
     static final long serialVersionUID = 1;
     
     public long presentCount;

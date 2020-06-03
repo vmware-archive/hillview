@@ -96,23 +96,23 @@ public class RemotingTest extends BaseTest {
         }
     }
 
-    private static class SumSketch implements ISketch<int[], Integer> {
+    private static class SumSketch implements ISketch<int[], DataSetTest.IntegerWrapper> {
         static final long serialVersionUID = 1;
         @Override @Nullable
-        public Integer zero() {
-            return 0;
+        public DataSetTest.IntegerWrapper zero() {
+            return new DataSetTest.IntegerWrapper(0);
         }
 
         @Override @Nullable
-        public Integer add(@Nullable final Integer left, @Nullable final Integer right) {
-            return Converters.checkNull(left) + Converters.checkNull(right);
+        public DataSetTest.IntegerWrapper add(@Nullable final DataSetTest.IntegerWrapper left, @Nullable final DataSetTest.IntegerWrapper right) {
+            return new DataSetTest.IntegerWrapper(Converters.checkNull(left).value + Converters.checkNull(right).value);
         }
 
         @Override
-        public Integer create(final int[] data) {
+        public DataSetTest.IntegerWrapper create(final int[] data) {
             int sum = 0;
             for (int d : data) sum += d;
-            return sum;
+            return new DataSetTest.IntegerWrapper(sum);
         }
     }
 
@@ -140,20 +140,20 @@ public class RemotingTest extends BaseTest {
         }
     }
 
-    private static class ErrorSumSketch implements ISketch<int[], Integer> {
+    private static class ErrorSumSketch implements ISketch<int[], DataSetTest.IntegerWrapper> {
         static final long serialVersionUID = 1;
         @Override @Nullable
-        public Integer zero() {
-            return 0;
+        public DataSetTest.IntegerWrapper zero() {
+            return new DataSetTest.IntegerWrapper(0);
         }
 
         @Override @Nullable
-        public Integer add(@Nullable final Integer left, @Nullable final Integer right) {
-            return Converters.checkNull(left) + Converters.checkNull(right);
+        public DataSetTest.IntegerWrapper add(@Nullable final DataSetTest.IntegerWrapper left, @Nullable final DataSetTest.IntegerWrapper right) {
+            return new DataSetTest.IntegerWrapper(Converters.checkNull(left).value + Converters.checkNull(right).value);
         }
 
         @Override
-        public Integer create(final int[] data) {
+        public DataSetTest.IntegerWrapper create(final int[] data) {
             throw new RuntimeException("ErrorSumSketch");
         }
     }
@@ -188,7 +188,7 @@ public class RemotingTest extends BaseTest {
                                                       .last().deltaValue;
         assertNotNull(remoteIdsNew);
         final int result = remoteIdsNew.sketch(new SumSketch())
-                                       .map(e -> e.deltaValue)
+                                       .map(e -> Converters.checkNull(e.deltaValue).value)
                                        .reduce(Integer::sum)
                                        .toBlocking()
                                        .last();
@@ -242,7 +242,7 @@ public class RemotingTest extends BaseTest {
                 .last().deltaValue;
         assertNotNull(remoteIdsNew);
         final int result = remoteIdsNew.sketch(new SumSketch())
-                .map(e -> e.deltaValue)
+                .map(e -> Converters.checkNull(e.deltaValue).value)
                 .reduce(Integer::sum)
                 .toBlocking()
                 .last();
@@ -254,7 +254,7 @@ public class RemotingTest extends BaseTest {
                 .last().deltaValue;
         assertNotNull(remoteIdsNewMem);
         final int memoizedResult = remoteIdsNew.sketch(new SumSketch())
-                .map(e -> e.deltaValue)
+                .map(e -> Converters.checkNull(e.deltaValue).value)
                 .reduce(Integer::sum)
                 .toBlocking()
                 .last();
@@ -309,9 +309,9 @@ public class RemotingTest extends BaseTest {
                                                       .toBlocking()
                                                       .last().deltaValue;
         assertNotNull(remoteIdsNew);
-        final Observable<PartialResult<Integer>> resultObs =
+        final Observable<PartialResult<DataSetTest.IntegerWrapper>> resultObs =
                 remoteIdsNew.sketch(new ErrorSumSketch());
-        TestSubscriber<PartialResult<Integer>> ts = new TestSubscriber<PartialResult<Integer>>();
+        TestSubscriber<PartialResult<DataSetTest.IntegerWrapper>> ts = new TestSubscriber<PartialResult<DataSetTest.IntegerWrapper>>();
         resultObs.toBlocking().subscribe(ts);
         ts.assertError(RuntimeException.class);
     }
@@ -333,12 +333,12 @@ public class RemotingTest extends BaseTest {
         }
     }
 
-    private static TestSubscriber<PartialResult<Integer>> createUnsubscribeSubscriber(int count) {
-        return new TestSubscriber<PartialResult<Integer>>() {
+    private static TestSubscriber<PartialResult<DataSetTest.IntegerWrapper>> createUnsubscribeSubscriber(int count) {
+        return new TestSubscriber<PartialResult<DataSetTest.IntegerWrapper>>() {
             private int counter = 0;
 
             @Override
-            public void onNext(final PartialResult<Integer> pr) {
+            public void onNext(final PartialResult<DataSetTest.IntegerWrapper> pr) {
                 this.counter++;
                 super.onNext(pr);
                 if (this.counter == count)
@@ -350,8 +350,8 @@ public class RemotingTest extends BaseTest {
     @Test
     public void testUnsubscribe() {
         final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(serverAddress);
-        final Observable<PartialResult<Integer>> resultObs = remoteIds.sketch(new SumSketch());
-        TestSubscriber<PartialResult<Integer>> ts = createUnsubscribeSubscriber(1);
+        final Observable<PartialResult<DataSetTest.IntegerWrapper>> resultObs = remoteIds.sketch(new SumSketch());
+        TestSubscriber<PartialResult<DataSetTest.IntegerWrapper>> ts = createUnsubscribeSubscriber(1);
         resultObs.toBlocking().subscribe(ts);
         ts.assertValueCount(1);
         ts.assertNotCompleted();
@@ -361,9 +361,9 @@ public class RemotingTest extends BaseTest {
     public void testDoOnUnsubscribeByCaller() {
         final IDataSet<int[]> remoteIds = new RemoteDataSet<int[]>(serverAddress);
         final AtomicInteger count = new AtomicInteger(0);
-        final Observable<PartialResult<Integer>> resultObs =
+        final Observable<PartialResult<DataSetTest.IntegerWrapper>> resultObs =
                 remoteIds.sketch(new SumSketch()).doOnUnsubscribe(count::incrementAndGet);
-        TestSubscriber<PartialResult<Integer>> ts = createUnsubscribeSubscriber(3);
+        TestSubscriber<PartialResult<DataSetTest.IntegerWrapper>> ts = createUnsubscribeSubscriber(3);
         resultObs.toBlocking().subscribe(ts);
         ts.assertValueCount(3);
         ts.assertNotCompleted();
@@ -430,29 +430,29 @@ public class RemotingTest extends BaseTest {
         System.out.println(s);
     }
 
-    static class SlowSketch implements ISketch<Integer, Integer> {
+    static class SlowSketch implements ISketch<Integer, DataSetTest.IntegerWrapper> {
         static final long serialVersionUID = 1;
         @Override
-        public Integer create(Integer data) {
+        public DataSetTest.IntegerWrapper create(Integer data) {
             print(getTime() + " working " + data);
             int sum = 0;
             for (int i = 0; i < 10000000; i++)
                 sum = (sum + i) % 43;
             print(getTime() + " ready " + data + ": " + sum);
             completedLocals.getAndIncrement();
-            return 0;
+            return new DataSetTest.IntegerWrapper(0);
         }
 
         @Nullable
         @Override
-        public Integer zero() {
-            return 0;
+        public DataSetTest.IntegerWrapper zero() {
+            return new DataSetTest.IntegerWrapper(0);
         }
 
         @Nullable
         @Override
-        public Integer add(@Nullable Integer left, @Nullable Integer right) {
-            return 0;
+        public DataSetTest.IntegerWrapper add(@Nullable DataSetTest.IntegerWrapper left, @Nullable DataSetTest.IntegerWrapper right) {
+            return new DataSetTest.IntegerWrapper(0);
         }
     }
 
@@ -490,13 +490,13 @@ public class RemotingTest extends BaseTest {
         IDataSet<Integer> remote = new RemoteDataSet<Integer>(serverAddress);
 
         SlowSketch sketch = new SlowSketch();
-        PartialResultMonoid<Integer> prm = new PartialResultMonoid<Integer>(sketch);
+        PartialResultMonoid<DataSetTest.IntegerWrapper> prm = new PartialResultMonoid<DataSetTest.IntegerWrapper>(sketch);
 
         for (int i = 0; i < 2; i++) {
             completedLocals.set(0);
             IDataSet<Integer> toTest = i == 0 ? ld : remote;
-            Observable<PartialResult<Integer>> src = toTest.sketch(sketch).scan(prm::add);
-            Observer<PartialResult<Integer>> obs = new Observer<PartialResult<Integer>>() {
+            Observable<PartialResult<DataSetTest.IntegerWrapper>> src = toTest.sketch(sketch).scan(prm::add);
+            Observer<PartialResult<DataSetTest.IntegerWrapper>> obs = new Observer<PartialResult<DataSetTest.IntegerWrapper>>() {
                 @Override
                 public void onCompleted() {
                 }
@@ -506,7 +506,7 @@ public class RemotingTest extends BaseTest {
                 }
 
                 @Override
-                public void onNext(PartialResult<Integer> i) {
+                public void onNext(PartialResult<DataSetTest.IntegerWrapper> i) {
                 }
             };
             src = src.doOnUnsubscribe(() -> print(getTime() + " unsubscribed"));

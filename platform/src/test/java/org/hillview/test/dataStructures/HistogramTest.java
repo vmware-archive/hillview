@@ -36,7 +36,7 @@ public class HistogramTest extends BaseTest {
     public void testHistogram() {
         final int bucketNum = 110;
         final int colSize = 10000;
-        DoubleHistogramBuckets buckDes = new DoubleHistogramBuckets(0, 100, bucketNum);
+        DoubleHistogramBuckets buckDes = new DoubleHistogramBuckets("",0, 100, bucketNum);
         Histogram hist = new Histogram(buckDes.getBucketCount());
         DoubleArrayColumn col = DoubleArrayTest.generateDoubleArray(colSize, 100);
         FullMembershipSet fMap = new FullMembershipSet(colSize);
@@ -63,8 +63,8 @@ public class HistogramTest extends BaseTest {
     public void testHeatmap() {
         final int bucketNum = 110;
         final int colSize = 10000;
-        DoubleHistogramBuckets buckDes1 = new DoubleHistogramBuckets(0, 100, bucketNum);
-        DoubleHistogramBuckets buckDes2 = new DoubleHistogramBuckets(0, 100, bucketNum);
+        DoubleHistogramBuckets buckDes1 = new DoubleHistogramBuckets("",0, 100, bucketNum);
+        DoubleHistogramBuckets buckDes2 = new DoubleHistogramBuckets("",0, 100, bucketNum);
         Heatmap hm = new Heatmap(bucketNum, bucketNum);
         DoubleArrayColumn col1 = DoubleArrayTest.generateDoubleArray(colSize, 5);
         DoubleArrayColumn col2 = DoubleArrayTest.generateDoubleArray(colSize, 3);
@@ -98,8 +98,8 @@ public class HistogramTest extends BaseTest {
         for (int i = 0; i < 4; i++)
             col1.appendMissing();
 
-        DoubleHistogramBuckets buckDes1 = new DoubleHistogramBuckets(0, 2, 3);
-        DoubleHistogramBuckets buckDes2 = new DoubleHistogramBuckets(0, 1, 2);
+        DoubleHistogramBuckets buckDes1 = new DoubleHistogramBuckets("",0, 2, 3);
+        DoubleHistogramBuckets buckDes2 = new DoubleHistogramBuckets("", 0, 1, 2);
         Heatmap hm = new Heatmap(buckDes1.bucketCount, buckDes2.bucketCount);
         hm.createHeatmap(col0, col1, buckDes1, buckDes2, new
                 FullMembershipSet(col0.sizeInRows()), 1.0, 0, false);

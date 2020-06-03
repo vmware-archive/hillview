@@ -38,6 +38,18 @@ import java.util.function.Function;
 public class Utilities {
     public static final int INT_SIZE = 4;
 
+    @FunctionalInterface
+    public
+    interface TriFunction<A, B, C, R> {
+        R apply(A a, B b, C c);
+
+        default <V> TriFunction<A, B, C, V> andThen(
+                Function<? super R, ? extends V> after) {
+            Objects.requireNonNull(after);
+            return (A a, B b, C c) -> after.apply(apply(a, b, c));
+        }
+    }
+
     /**
      * Checks that an array is sorted.
      */
@@ -442,6 +454,16 @@ public class Utilities {
      */
     public static int[] decimate(int[] data, int k) {
         int[] copy = new int[(data.length + k - 1)/ k];
+        for (int i = 0; i < data.length; i += k)
+            copy[i / k] = data[i];
+        return copy;
+    }
+
+    /**
+     * Keep every k-th element of an array.
+     */
+    public static double[] decimate(double[] data, int k) {
+        double[] copy = new double[(data.length + k - 1)/ k];
         for (int i = 0; i < data.length; i += k)
             copy[i / k] = data[i];
         return copy;

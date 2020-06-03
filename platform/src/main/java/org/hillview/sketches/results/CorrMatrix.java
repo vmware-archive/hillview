@@ -17,7 +17,7 @@
 
 package org.hillview.sketches.results;
 
-import org.hillview.dataset.api.IJson;
+import org.hillview.dataset.api.IJsonSketchResult;
 import org.hillview.maps.LinearProjectionMap;
 import org.hillview.utils.LinAlg;
 import org.jblas.DoubleMatrix;
@@ -31,7 +31,7 @@ import java.util.HashMap;
  * the ICorrelation interface to compute  norms, correlations and inner-products between columns.
  * See ICorrelation for a precise definition of these quantities.
  */
-public class CorrMatrix implements ICorrelation, IJson {
+public class CorrMatrix implements ICorrelation, IJsonSketchResult {
     static final long serialVersionUID = 1;
     
     /**

@@ -1,5 +1,6 @@
 package org.hillview.sketches;
 
+import org.hillview.dataset.TableSketch;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.sketches.results.NumItemsThreshold;
 import org.hillview.table.api.IColumn;
@@ -13,7 +14,7 @@ import javax.annotation.Nullable;
  * NumItemsThreshold class.
  */
 
-public class NIThresholdSketch implements ISketch<ITable, NumItemsThreshold> {
+public class NIThresholdSketch implements TableSketch<NumItemsThreshold> {
     static final long serialVersionUID = 1;
     
     private final String colName;

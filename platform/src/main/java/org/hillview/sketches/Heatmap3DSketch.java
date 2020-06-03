@@ -16,6 +16,7 @@
  */
 
 package org.hillview.sketches;
+import org.hillview.dataset.TableSketch;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.sketches.results.Heatmap3D;
 import org.hillview.sketches.results.IHistogramBuckets;
@@ -27,7 +28,7 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Heatmap3DSketch implements ISketch<ITable, Heatmap3D> {
+public class Heatmap3DSketch implements TableSketch<Heatmap3D> {
     static final long serialVersionUID = 1;
     private final IHistogramBuckets bucketDescD1;
     private final IHistogramBuckets bucketDescD2;

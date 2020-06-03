@@ -17,18 +17,17 @@
 
 package org.hillview.sketches.results;
 
+import org.hillview.dataset.api.ISketchResult;
 import org.hillview.table.ArrayRowOrder;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.SmallTable;
 import org.hillview.utils.Utilities;
 
-import java.io.Serializable;
-
 /**
  * A sample of rows from a large table, stored in a small table. The expectation is that the rows
  * are sorted according to some order (this is needed for the getRow method to be meaningful).
  */
-public class SampleList implements Serializable {
+public class SampleList implements ISketchResult {
     static final long serialVersionUID = 1;
     
     /**

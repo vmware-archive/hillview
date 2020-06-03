@@ -21,6 +21,7 @@ import it.unimi.dsi.fastutil.ints.*;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
+import org.hillview.dataset.TableSketch;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.sketches.results.FreqKList;
 import org.hillview.sketches.results.FreqKListMG;
@@ -47,7 +48,7 @@ import java.util.function.IntConsumer;
  * Agarwal et al., which gives a non-trivial error bound. The algorithm ensures that every element
  * of frequency greater than N/(k+1) appears in the list.
  */
-public class MGFreqKSketch implements ISketch<ITable, FreqKListMG> {
+public class MGFreqKSketch implements TableSketch<FreqKListMG> {
     static final long serialVersionUID = 1;
 
     /**

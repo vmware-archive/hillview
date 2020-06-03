@@ -1,8 +1,8 @@
 package org.hillview.table;
 
-import org.hillview.dataset.api.IJson;
+import org.hillview.dataset.api.IJsonSketchResult;
 
-public class FileSizeInfo implements IJson {
+public class FileSizeInfo implements IJsonSketchResult {
     /**
      * Total number of files.
      */

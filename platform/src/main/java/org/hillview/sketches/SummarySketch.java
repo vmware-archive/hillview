@@ -17,6 +17,7 @@
 
 package org.hillview.sketches;
 
+import org.hillview.dataset.TableSketch;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.sketches.results.TableSummary;
 import org.hillview.table.api.ITable;
@@ -29,7 +30,7 @@ import javax.annotation.Nullable;
  * Two schemas can be added only if they are identical.
  * We use a null to represent a "zero" for the schemas.
  */
-public class SummarySketch implements ISketch<ITable, TableSummary> {
+public class SummarySketch implements TableSketch<TableSummary> {
     static final long serialVersionUID = 1;
     
     @Override @Nullable

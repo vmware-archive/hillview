@@ -84,8 +84,8 @@ public class QuantizationTest extends BaseTest {
         QuantizedColumn pcname = new QuantizedColumn(name, cpm);
         IColumn[] cols = new IColumn[] { pcage, pcname };
         Table quantizedTable = new Table(cols, null, null);
-        DoubleHistogramBuckets hb = new DoubleHistogramBuckets(0, 100, 4);
-        HistogramSketch sk = new HistogramSketch(hb, "Age", 1.0, 0, null);
+        DoubleHistogramBuckets hb = new DoubleHistogramBuckets("Age", 0, 100, 4);
+        HistogramSketch sk = new HistogramSketch(hb, 1.0, 0, null);
         LocalDataSet<ITable> local = new LocalDataSet<ITable>(quantizedTable);
         Histogram histo = local.blockingSketch(sk);
         Assert.assertNotNull(histo);
@@ -118,8 +118,8 @@ public class QuantizationTest extends BaseTest {
         Table quantizedTable = new Table(cols, null, null);
         LocalDataSet<ITable> local = new LocalDataSet<ITable>(quantizedTable);
 
-        DoubleHistogramBuckets hb = new DoubleHistogramBuckets(0, 100, 4);
-        HistogramSketch sk = new HistogramSketch(hb, "Age", 1.0, 0, null);
+        DoubleHistogramBuckets hb = new DoubleHistogramBuckets("Age", 0, 100, 4);
+        HistogramSketch sk = new HistogramSketch(hb, 1.0, 0, null);
         Histogram histo = local.blockingSketch(sk);
         Assert.assertNotNull(histo);
         Assert.assertEquals(4, histo.getBucketCount());
@@ -129,15 +129,15 @@ public class QuantizationTest extends BaseTest {
         }
         Assert.assertEquals(table.getNumOfRows(), count);
 
-        HistogramSketch psk = new HistogramSketch(hb, "Age", 1.0, 0, cpmage);
+        HistogramSketch psk = new HistogramSketch(hb, 1.0, 0, cpmage);
         Histogram oh = pub.blockingSketch(psk);
         Assert.assertNotNull(oh);
         Assert.assertEquals(histo.getBucketCount(), oh.getBucketCount());
         for (int i = 0; i < histo.getBucketCount(); i++)
             Assert.assertEquals(histo.buckets[i], oh.buckets[i]);
 
-        StringHistogramBuckets sb = new StringHistogramBuckets(new String[] { "A", "F", "M", "W" });
-        HistogramSketch ssk = new HistogramSketch(sb, "Name", 1.0, 0, null);
+        StringHistogramBuckets sb = new StringHistogramBuckets("Name", new String[] { "A", "F", "M", "W" });
+        HistogramSketch ssk = new HistogramSketch(sb, 1.0, 0, null);
         Histogram shisto = local.blockingSketch(ssk);
         Assert.assertNotNull(shisto);
         Assert.assertEquals(4, shisto.getBucketCount());
@@ -147,7 +147,7 @@ public class QuantizationTest extends BaseTest {
         }
         Assert.assertEquals(table.getNumOfRows(), count);
 
-        HistogramSketch spsk = new HistogramSketch(sb, "Name", 1.0, 0, cpmname);
+        HistogramSketch spsk = new HistogramSketch(sb, 1.0, 0, cpmname);
         Histogram ohs = pub.blockingSketch(spsk);
         Assert.assertNotNull(ohs);
         Assert.assertEquals(shisto.getBucketCount(), ohs.getBucketCount());

@@ -427,6 +427,7 @@ export class FullPage implements IHtmlElement {
                 case "TrellisHistogram":
                 case "Trellis2DHistogram":
                 case "TrellisHeatmap":
+                case "TrellisQuartiles":
                     this.xDrag.style.visibility = "visible";
                     this.yDrag.style.visibility = "visible";
                     this.gDrag.style.visibility = "visible";

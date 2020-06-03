@@ -17,6 +17,7 @@
 
 package org.hillview.sketches;
 
+import org.hillview.dataset.TableSketch;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.sketches.results.DataRange;
 import org.hillview.table.api.IColumn;
@@ -30,7 +31,7 @@ import javax.annotation.Nullable;
  * A sketch that computes the range of data in a column where values can be
  * converted to doubles.
  */
-public class DoubleDataRangeSketch implements ISketch<ITable, DataRange> {
+public class DoubleDataRangeSketch implements TableSketch<DataRange> {
     static final long serialVersionUID = 1;
     private final String col;
 

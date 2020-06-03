@@ -59,9 +59,8 @@ import java.util.List;
 import java.util.logging.Level;
 
 public class DPAccuracyBenchmarks extends Benchmarks {
-    private static String ontime_directory = "../data/ontime_private/";
-    private static String privacy_metadata_name = "privacy_metadata.json";
-
+    private final static String ontime_directory = "../data/ontime_private/";
+    private final static String privacy_metadata_name = "privacy_metadata.json";
     private static final String histogram_results_filename = "../results/ontime_private_histogram.json";
     private static final String heatmap_results_filename = "../results/ontime_private_heatmap.json";
 
@@ -235,10 +234,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
                 };
 
         HeatmapSketch sk = new HeatmapSketch(
-                info[0].getBuckets(),
-                info[1].getBuckets(),
-                info[0].cd.name,
-                info[1].cd.name, 1.0, 0);
+                info[0].getBuckets(), info[1].getBuckets(), 1.0, 0);
         IntervalDecomposition d0 = info[0].getDecomposition(cq1);
         IntervalDecomposition d1 = info[1].getDecomposition(cq2);
 

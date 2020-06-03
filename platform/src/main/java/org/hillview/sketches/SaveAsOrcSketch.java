@@ -17,6 +17,7 @@
 
 package org.hillview.sketches;
 
+import org.hillview.dataset.TableSketch;
 import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.storage.OrcFileWriter;
@@ -41,7 +42,7 @@ import java.util.HashMap;
  * This does not return anything really.
  * If the saving fails this will trigger an exception.
  */
-public class SaveAsOrcSketch implements ISketch<ITable, Empty> {
+public class SaveAsOrcSketch implements TableSketch<Empty> {
     static final long serialVersionUID = 1;
     
     private final String folder;

@@ -16,7 +16,14 @@
  */
 
 import {OnCompleteReceiver} from "../rpc";
-import {BucketsInfo, HistogramArgs, IColumnDescription, kindIsString, RemoteObjectId,} from "../javaBridge";
+import {
+    BucketsInfo,
+    HistogramRequestInfo,
+    IColumnDescription,
+    kindIsNumeric,
+    kindIsString, QuantilesMatrixInfo, QuantilesVectorInfo,
+    RemoteObjectId,
+} from "../javaBridge";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {ICancellable, periodicSamples, Seed} from "../util";
@@ -31,7 +38,8 @@ import {AxisData} from "./axisData";
 import {TrellisHeatmapReceiver} from "./trellisHeatmapView";
 import {TrellisHistogram2DReceiver} from "./trellisHistogram2DView";
 import {DatasetView} from "../datasetView";
-import {QuartilesHistogramReceiver} from "./quartilesVectorView";
+import {QuartilesVectorReceiver} from "./quartilesVectorView";
+import {TrellisHistogramQuartilesReceiver} from "./trellisHistogramQuartilesView";
 
 /**
  * Describes the shape of trellis display.
@@ -178,7 +186,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
         range: BucketsInfo,
         bucketCount: number,
         exact: boolean,
-        chartSize: Size): HistogramArgs {
+        chartSize: Size): HistogramRequestInfo {
         if (kindIsString(cd.kind)) {
             const cdfBucketCount = range.stringQuantiles.length;
             let samplingRate = DataRangesReceiver.samplingRate(
@@ -212,7 +220,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 samplingRate = DataRangesReceiver.samplingRate(
                     cdfCount, range.presentCount, chartSize);
             // noinspection UnnecessaryLocalVariableJS
-            const args: HistogramArgs = {
+            const args: HistogramRequestInfo = {
                 cd: cd,
                 min: range.min - adjust,
                 max: range.max + adjust,
@@ -252,7 +260,9 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
         let windows: number = null;  // number of Trellis windows
         if (this.options.chartKind === "TrellisHeatmap" ||
             this.options.chartKind === "TrellisHistogram" ||
-            this.options.chartKind === "Trellis2DHistogram") {
+            this.options.chartKind === "Trellis2DHistogram" ||
+            this.options.chartKind === "TrellisQuartiles"
+        ) {
             const groupByIndex = ranges.length === 3 ? 2 : 1;
             if (this.bucketCounts[groupByIndex] !== 0) {
                 windows = this.bucketCounts[groupByIndex];
@@ -277,6 +287,10 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                     this.page.reportError("All values are missing");
                     return;
                 }
+                if (!kindIsNumeric(this.cds[1].kind)) {
+                    this.page.reportError("Quartiles require a numeric second column " + this.cds[1].name);
+                    return;
+                }
 
                 let maxXBucketCount = this.bucketCounts[0];
                 if (maxXBucketCount === 0) {
@@ -284,19 +298,23 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                         Math.floor(chartSize.width / Resolution.minBarWidth),
                         Resolution.maxBucketCount);
                 }
+                if (this.title == null)
+                    this.title = new PageTitle(
+                        "Quartiles of " + this.schema.displayName(this.cds[1].name).toString() +
+                        " bucketed by " + this.schema.displayName(this.cds[0].name).toString(), this.provenance);
 
                 const histoArg = DataRangesReceiver.computeHistogramArgs(
                     this.cds[0], ranges[0], maxXBucketCount,
                     this.options.exact, chartSize);
-                const rr = this.originator.createHistogramRequest(histoArg);
-                rr.chain(this.operation);
-                const axisData = new AxisData(this.cds[0], ranges[0], histoArg.bucketCount);
-                const rec = new QuartilesHistogramReceiver(this.title, this.page,
-                    this.originator.remoteObjectId, rowCount, this.schema,
-                    this.cds[1],
-                    histoArg.bucketCount,
-                    axisData, rr, this.options.reusePage);
-                rr.invoke(rec);
+                const args: QuantilesVectorInfo = {
+                    quantileCount: 4,  // we display quartiles
+                    quantilesColumn: this.cds[1].name,
+                    ...histoArg
+                };
+                const rr = this.originator.createQuantilesVectorRequest(args);
+                rr.invoke(new QuartilesVectorReceiver(this.title, this.page, this.originator, rowCount,
+                    this.schema, histoArg, ranges[0], this.cds[1], rr,
+                    this.options));
                 break;
             }
             case "Histogram": {
@@ -305,7 +323,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                     return;
                 }
 
-                const args: HistogramArgs[] = [];
+                const args: HistogramRequestInfo[] = [];
                 let maxXBucketCount = this.bucketCounts[0];
                 if (maxXBucketCount === 0) {
                     maxXBucketCount = Math.min(
@@ -360,8 +378,54 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 rr.invoke(renderer);
                 break;
             }
+            case "TrellisQuartiles": {
+                if (ranges[0].presentCount === 0) {
+                    this.page.reportError("All values are missing");
+                    return;
+                }
+                if (!kindIsNumeric(this.cds[1].kind)) {
+                    this.page.reportError("Quartiles require a numeric second column " + this.cds[1].name);
+                    return;
+                }
+
+                let maxXBucketCount = this.bucketCounts[0];
+                if (maxXBucketCount === 0) {
+                    maxXBucketCount = Math.min(
+                        Math.floor(chartSize.width / Resolution.minBarWidth),
+                        Resolution.maxBucketCount);
+                }
+                let maxGBucketCount = this.bucketCounts[2];
+                if (maxGBucketCount === 0)
+                    // noinspection JSObjectNullOrUndefined
+                    maxGBucketCount = trellisShape.bucketCount;
+
+                if (this.title == null)
+                    this.title = new PageTitle(
+                        "Trellis quartiles of " + this.schema.displayName(this.cds[1].name).toString() +
+                        " bucketed by " + this.schema.displayName(this.cds[0].name).toString() +
+                        " grouped by " + this.schema.displayName(this.cds[2].name).toString(), this.provenance);
+
+                const histoArg0 = DataRangesReceiver.computeHistogramArgs(
+                    this.cds[0], ranges[0], maxXBucketCount,
+                    this.options.exact, chartSize);
+                const histoArg2 = DataRangesReceiver.computeHistogramArgs(
+                    this.cds[2], ranges[2], maxGBucketCount,
+                    this.options.exact, chartSize);
+                const args: QuantilesMatrixInfo = {
+                    quantileCount: 4,  // we display quartiles
+                    seed: 0,  // scan all data
+                    quantilesColumn: this.cds[1].name,
+                    xColumn: histoArg0,
+                    ...histoArg2
+                };
+                const rr = this.originator.createQuantilesMatrixRequest(args);
+                rr.invoke(new TrellisHistogramQuartilesReceiver(this.title, this.page, this.originator,
+                    rowCount, this.schema, [histoArg0, histoArg2], ranges, trellisShape, rr,
+                    this.options));
+                break;
+            }
             case "Trellis2DHistogram": {
-                const args: HistogramArgs[] = [];
+                const args: HistogramRequestInfo[] = [];
                 // noinspection JSObjectNullOrUndefined
                 const maxXBucketCount = Math.floor(trellisShape.size.width / Resolution.minBarWidth);
                 const maxYBucketCount = Resolution.maxBucketCount;
@@ -392,7 +456,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 break;
             }
             case "TrellisHeatmap": {
-                const args: HistogramArgs[] = [];
+                const args: HistogramRequestInfo[] = [];
                 // noinspection JSObjectNullOrUndefined
                 const maxXBucketCount = Math.floor(trellisShape.size.width / Resolution.minDotSize);
                 const maxYBucketCount = Math.floor(trellisShape.size.height / Resolution.minDotSize);
@@ -424,7 +488,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 break;
             }
             case "Heatmap": {
-                const args: HistogramArgs[] = [];
+                const args: HistogramRequestInfo[] = [];
                 let maxXBucketCount = this.bucketCounts[0];
                 if (maxXBucketCount === 0)
                     maxXBucketCount = Math.floor(chartSize.width / Resolution.minDotSize);
@@ -453,7 +517,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 break;
             }
             case "2DHistogram": {
-                const args: HistogramArgs[] = [];
+                const args: HistogramRequestInfo[] = [];
                 let maxXBucketCount = this.bucketCounts[0];
                 if (maxXBucketCount === 0) {
                     maxXBucketCount = Math.min(

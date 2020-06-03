@@ -18,13 +18,14 @@
 package org.hillview.dataset;
 
 import org.hillview.dataset.api.ISketch;
+import org.hillview.dataset.api.ISketchResult;
 import org.hillview.dataset.api.Pair;
 
 import java.io.Serializable;
 
 import javax.annotation.Nullable;
 
-public class ConcurrentSketch<T, R1 extends Serializable, R2 extends Serializable> 
+public class ConcurrentSketch<T, R1 extends ISketchResult, R2 extends ISketchResult>
                                     implements ISketch<T, Pair<R1, R2>> {
     static final long serialVersionUID = 1;
     

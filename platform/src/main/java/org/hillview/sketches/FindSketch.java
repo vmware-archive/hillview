@@ -19,8 +19,8 @@ package org.hillview.sketches;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import org.hillview.dataset.api.IJson;
-import org.hillview.dataset.api.ISketch;
+import org.hillview.dataset.TableSketch;
+import org.hillview.dataset.api.IJsonSketchResult;
 import org.hillview.table.RecordOrder;
 import org.hillview.table.Schema;
 import org.hillview.table.api.IRowIterator;
@@ -30,11 +30,12 @@ import org.hillview.table.filters.StringFilterDescription;
 import org.hillview.table.filters.StringFilterFactory;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.VirtualRowSnapshot;
+
 import javax.annotation.Nullable;
 
-public class FindSketch implements ISketch<ITable, FindSketch.Result> {
+public class FindSketch implements TableSketch<FindSketch.Result> {
     static final long serialVersionUID = 1;
-    public static final class Result implements IJson {
+    public static final class Result implements IJsonSketchResult {
         static final long serialVersionUID = 1;
         /**
          * Number of occurrences of the search string (strictly) above the first row.

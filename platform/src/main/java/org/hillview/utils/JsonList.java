@@ -17,7 +17,7 @@
 
 package org.hillview.utils;
 
-import org.hillview.dataset.api.IJson;
+import org.hillview.dataset.api.IJsonSketchResult;
 import org.hillview.dataset.api.Pair;
 
 import javax.annotation.Nullable;
@@ -28,7 +28,7 @@ import java.util.function.Function;
 /**
  * Wrapper around a list which makes it serializable as JSON.
  */
-public class JsonList<T> implements IJson, List<T> {
+public class JsonList<T> implements List<T>, IJsonSketchResult {
     static final long serialVersionUID = 1;
 
     private final List<T> data;
@@ -208,6 +208,19 @@ public class JsonList<T> implements IJson, List<T> {
         for (int i=0; i < this.size(); i++)
             result.add(func.apply(this.get(i)));
         return result;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        JsonList<?> jsonList = (JsonList<?>) o;
+        return data.equals(jsonList.data);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(data);
     }
 
     @Override

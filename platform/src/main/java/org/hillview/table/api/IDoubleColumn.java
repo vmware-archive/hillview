@@ -21,6 +21,7 @@ import net.openhft.hashing.LongHashFunction;
 import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
+import java.util.function.BiFunction;
 
 public interface IDoubleColumn extends IColumn {
     @Override
@@ -86,5 +87,32 @@ public interface IDoubleColumn extends IColumn {
                 throw new RuntimeException("Unexpected column kind " + this.getKind());
         }
         return newColumn;
+    }
+
+    default double reduceDouble(BiFunction<Double, Double, Double> reducer) {
+        boolean first = true;
+        double result = 0;
+        for (int i = 0; i < this.sizeInRows(); i++) {
+            if (this.isMissing(i))
+                continue;
+            double row = this.getDouble(i);
+            if (first) {
+                result = row;
+                first = false;
+            } else {
+                result = reducer.apply(result, row);
+            }
+        }
+        if (first)
+            throw new RuntimeException("No data");
+        return result;
+    }
+
+    default double minDouble() {
+        return this.reduceDouble(Math::min);
+    }
+
+    default double maxDouble() {
+        return this.reduceDouble(Math::max);
     }
 }

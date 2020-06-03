@@ -235,7 +235,7 @@ public class MysqlTest extends JdbcTest {
         }
         Instant first = parseOneDate("1952/02/01");
         Instant last = parseOneDate("1965/02/01");
-        DoubleHistogramBuckets buckets = new DoubleHistogramBuckets(
+        DoubleHistogramBuckets buckets = new DoubleHistogramBuckets("birth_date",
                 Converters.toDouble(first), Converters.toDouble(last), 10);
         Histogram histogram = db.histogram(
                 new ColumnDescription("birth_date", ContentsKind.Date), buckets,
@@ -263,7 +263,7 @@ public class MysqlTest extends JdbcTest {
         }
         Instant first = parseOneDate("1952/02/01");
         Instant last = parseOneDate("1965/02/01");
-        DoubleHistogramBuckets buckets = new DoubleHistogramBuckets(
+        DoubleHistogramBuckets buckets = new DoubleHistogramBuckets("birth_date",
                 Converters.toDouble(first), Converters.toDouble(last), 10);
         DoubleColumnQuantization quantization = new DoubleColumnQuantization(
                 86400, Converters.toDouble(first), Converters.toDouble(last));
@@ -293,7 +293,7 @@ public class MysqlTest extends JdbcTest {
         }
         Instant first = parseOneDate("1955/01/01");
         Instant last = parseOneDate("1965/02/01");
-        DoubleHistogramBuckets buckets = new DoubleHistogramBuckets(
+        DoubleHistogramBuckets buckets = new DoubleHistogramBuckets("birth_date",
                 Converters.toDouble(first), Converters.toDouble(last), 10);
         Instant firstQ = parseOneDate("1952/02/01");
         Instant lastQ = parseOneDate("1965/02/01");
@@ -350,12 +350,12 @@ public class MysqlTest extends JdbcTest {
             this.ignoringException("Cannot connect to database", e);
             return;
         }
-        DoubleHistogramBuckets buckets = new DoubleHistogramBuckets(0, 200000, 8);
+        DoubleHistogramBuckets buckets = new DoubleHistogramBuckets("salary", 0, 200000, 8);
         Histogram histogram = db.histogram(
                 new ColumnDescription("salary", ContentsKind.Integer), buckets, null, null, 2844047);
         Assert.assertNotNull(histogram);
         Assert.assertEquals(8, histogram.getBucketCount());
-        Assert.assertEquals(0, histogram.getMissingData());
+        Assert.assertEquals(0, histogram.getMissingCount());
         Assert.assertEquals(0, histogram.getCount(0));
         Assert.assertEquals(0, histogram.getCount(7));
         long total = 0;
@@ -376,8 +376,8 @@ public class MysqlTest extends JdbcTest {
             this.ignoringException("Cannot connect to database", e);
             return;
         }
-        DoubleHistogramBuckets buckets0 = new DoubleHistogramBuckets(0, 200000, 8);
-        DoubleHistogramBuckets buckets1 = new DoubleHistogramBuckets(0, 500000, 4);
+        DoubleHistogramBuckets buckets0 = new DoubleHistogramBuckets("salary", 0, 200000, 8);
+        DoubleHistogramBuckets buckets1 = new DoubleHistogramBuckets("emp_no", 0, 500000, 4);
         Heatmap heatmap = db.heatmap(
                 new ColumnDescription("salary", ContentsKind.Integer),
                 new ColumnDescription("emp_no", ContentsKind.Integer),
@@ -404,8 +404,8 @@ public class MysqlTest extends JdbcTest {
             this.ignoringException("Cannot connect to database", e);
             return;
         }
-        DoubleHistogramBuckets buckets0 = new DoubleHistogramBuckets(0, 200000, 8);
-        DoubleHistogramBuckets buckets1 = new DoubleHistogramBuckets(0, 150000, 4);
+        DoubleHistogramBuckets buckets0 = new DoubleHistogramBuckets("salary", 0, 200000, 8);
+        DoubleHistogramBuckets buckets1 = new DoubleHistogramBuckets("emp_no", 0, 150000, 4);
         Heatmap heatmap = db.heatmap(
                 new ColumnDescription("salary", ContentsKind.Integer),
                 new ColumnDescription("emp_no", ContentsKind.Integer),
@@ -434,8 +434,8 @@ public class MysqlTest extends JdbcTest {
         }
         DoubleColumnQuantization q0 = new DoubleColumnQuantization(100, 0, 200000);
         DoubleColumnQuantization q1 = new DoubleColumnQuantization(100, 0, 500000);
-        DoubleHistogramBuckets buckets0 = new DoubleHistogramBuckets(0, 200000, 8);
-        DoubleHistogramBuckets buckets1 = new DoubleHistogramBuckets(0, 150000, 4);
+        DoubleHistogramBuckets buckets0 = new DoubleHistogramBuckets("salary", 0, 200000, 8);
+        DoubleHistogramBuckets buckets1 = new DoubleHistogramBuckets("emp_no", 0, 150000, 4);
         Heatmap heatmap = db.heatmap(
                 new ColumnDescription("salary", ContentsKind.Integer),
                 new ColumnDescription("emp_no", ContentsKind.Integer),
@@ -462,14 +462,14 @@ public class MysqlTest extends JdbcTest {
             this.ignoringException("Cannot connect to database", e);
             return;
         }
-        DoubleHistogramBuckets buckets = new DoubleHistogramBuckets(0, 200000, 8);
+        DoubleHistogramBuckets buckets = new DoubleHistogramBuckets("salary", 0, 200000, 8);
         DoubleColumnQuantization quantization = new DoubleColumnQuantization(5, 0, 200000);
         Histogram histogram = db.histogram(
                 new ColumnDescription("salary", ContentsKind.Integer), buckets,
                 null, quantization, 2844047);
         Assert.assertNotNull(histogram);
         Assert.assertEquals(8, histogram.getBucketCount());
-        Assert.assertEquals(0, histogram.getMissingData());
+        Assert.assertEquals(0, histogram.getMissingCount());
         Assert.assertEquals(0, histogram.getCount(0));
         Assert.assertEquals(0, histogram.getCount(7));
         long total = 0;
@@ -492,7 +492,7 @@ public class MysqlTest extends JdbcTest {
             return;
         }
         String[] boundaries = new String[] { "A", "F", "K", "P", "T", "X" };
-        StringHistogramBuckets buckets = new StringHistogramBuckets(boundaries);
+        StringHistogramBuckets buckets = new StringHistogramBuckets("first_name", boundaries);
         Histogram histogram = db.histogram(
                 new ColumnDescription("first_name", ContentsKind.String), buckets, null, null, 300024);
         Assert.assertNotNull(histogram);
@@ -518,7 +518,7 @@ public class MysqlTest extends JdbcTest {
             return;
         }
         String[] boundaries = new String[] { "A", "F", "K", "P", "T", "X" };
-        StringHistogramBuckets buckets = new StringHistogramBuckets(boundaries);
+        StringHistogramBuckets buckets = new StringHistogramBuckets("first_name", boundaries);
         String[] letters = new String[26];
         for (char c = 'A'; c <= 'Z'; c++)
             letters[c - 'A'] = Character.toString(c);

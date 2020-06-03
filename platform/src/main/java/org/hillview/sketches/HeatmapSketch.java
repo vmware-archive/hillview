@@ -16,7 +16,7 @@
  */
 
 package org.hillview.sketches;
-import org.hillview.dataset.api.ISketch;
+import org.hillview.dataset.TableSketch;
 import org.hillview.sketches.results.Heatmap;
 import org.hillview.sketches.results.IHistogramBuckets;
 import org.hillview.table.api.IColumn;
@@ -26,13 +26,12 @@ import org.hillview.table.columns.QuantizedColumn;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
+import java.util.List;
 
-public class HeatmapSketch implements ISketch<ITable, Heatmap> {
+public class HeatmapSketch implements TableSketch<Heatmap> {
     static final long serialVersionUID = 1;
     private final IHistogramBuckets bucketsD0;
     private final IHistogramBuckets bucketsD1;
-    private final String col0;
-    private final String col1;
     private final double samplingRate;
     private final long seed;
     @Nullable
@@ -41,13 +40,10 @@ public class HeatmapSketch implements ISketch<ITable, Heatmap> {
     private final ColumnQuantization q1;
 
     public HeatmapSketch(IHistogramBuckets buckets0, IHistogramBuckets buckets1,
-                         String col0, String col1,
                          double samplingRate, long seed,
                          @Nullable ColumnQuantization q0, @Nullable ColumnQuantization q1) {
         this.bucketsD0 = buckets0;
         this.bucketsD1 = buckets1;
-        this.col0 = col0;
-        this.col1 = col1;
         this.samplingRate = samplingRate;
         this.seed = seed;
         this.q0 = q0;
@@ -55,9 +51,8 @@ public class HeatmapSketch implements ISketch<ITable, Heatmap> {
     }
 
     public HeatmapSketch(IHistogramBuckets bucketDesc1, IHistogramBuckets bucketDesc2,
-                         String col0, String col1,
                          double samplingRate, long seed) {
-        this(bucketDesc1, bucketDesc2, col0, col1, samplingRate, seed, null, null);
+        this(bucketDesc1, bucketDesc2, samplingRate, seed, null, null);
     }
 
     @Override
@@ -65,8 +60,9 @@ public class HeatmapSketch implements ISketch<ITable, Heatmap> {
         Heatmap result = this.getZero();
         Converters.checkNull(data);
         Converters.checkNull(result);
-        IColumn c0  = data.getLoadedColumn(this.col0);
-        IColumn c1  = data.getLoadedColumn(this.col1);
+        List<IColumn> cols  = data.getLoadedColumns(this.bucketsD0.getColumn(), this.bucketsD1.getColumn());
+        IColumn c0 = cols.get(0);
+        IColumn c1  = cols.get(1);
         if (this.q0 != null)
             c0 = new QuantizedColumn(c0, this.q0);
         if (this.q1 != null)

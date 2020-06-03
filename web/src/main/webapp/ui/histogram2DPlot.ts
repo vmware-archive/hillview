@@ -72,7 +72,7 @@ export class Histogram2DPlot extends Histogram2DBase {
             buckets: [],
             confidence: null,
             missingConfidence: 0,
-            missingData: this.heatmap.missingData
+            missingCount: this.heatmap.missingData
         };
         for (let x = 0; x < xPoints; x++) {
             let yTotal = 0;

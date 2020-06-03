@@ -62,8 +62,8 @@ import java.util.logging.Level;
  * The measurements are run headless.
  */
 public class DPPerfBenchmarks extends Benchmarks {
-    private static int runCount = 7;
-    private static int buckets = 100;
+    private static final int runCount = 7;
+    private static final int buckets = 100;
     @Nullable
     private Schema ontimeSchema;
 
@@ -227,7 +227,7 @@ public class DPPerfBenchmarks extends Benchmarks {
         if (col.kind.isNumeric() || col.kind == ContentsKind.Date) {
             DoubleColumnQuantization dq = (DoubleColumnQuantization)q;
             assert dq != null;
-            DoubleHistogramBuckets b = new DoubleHistogramBuckets(dq.globalMin, dq.globalMax, conf.bucketCount);
+            DoubleHistogramBuckets b = new DoubleHistogramBuckets(col.name, dq.globalMin, dq.globalMax, conf.bucketCount);
             result.buckets = b;
             result.decomposition = new NumericIntervalDecomposition(dq, b);
         } else if (col.kind.isString()) {
@@ -235,7 +235,7 @@ public class DPPerfBenchmarks extends Benchmarks {
             assert sq != null;
             List<String> labels = new ArrayList<String>();
             Utilities.equiSpaced(Arrays.asList(sq.leftBoundaries), conf.bucketCount, labels);
-            StringHistogramBuckets b = new StringHistogramBuckets(labels.toArray(new String[0]));
+            StringHistogramBuckets b = new StringHistogramBuckets(col.name, labels.toArray(new String[0]));
             result.buckets = b;
             result.decomposition =  new StringIntervalDecomposition(sq, b);
         } else {
@@ -270,7 +270,7 @@ public class DPPerfBenchmarks extends Benchmarks {
         } else {
             Converters.checkNull(table);
             ISketch<ITable, Heatmap> hsk = new HeatmapSketch(
-                    c0.buckets, c1.buckets, col0.name, col1.name, 1.0, 0, c0.quantization, c1.quantization);
+                    c0.buckets, c1.buckets, 1.0, 0, c0.quantization, c1.quantization);
             PostProcessedSketch<ITable, Heatmap, Heatmap> pp;
             if (conf.usePostProcessing)
                 pp = new DPHeatmapSketch(hsk, ps.getColumnIndex(col0.name, col1.name),
@@ -311,7 +311,7 @@ public class DPPerfBenchmarks extends Benchmarks {
         } else {
             Converters.checkNull(table);
             ISketch<ITable, Histogram> hsk = new HistogramSketch(
-                c.buckets, col.name, 1.0, 0, c.quantization);
+                c.buckets, 1.0, 0, c.quantization);
             PostProcessedSketch<ITable, Histogram, Histogram> post;
             if (conf.usePostProcessing)
                 post = new DPHistogram(hsk, ps.getColumnIndex(col.name),

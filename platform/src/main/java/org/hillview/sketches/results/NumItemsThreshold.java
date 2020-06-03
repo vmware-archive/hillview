@@ -19,6 +19,8 @@ package org.hillview.sketches.results;
 
 import net.openhft.hashing.LongHashFunction;
 import org.hillview.dataset.api.IJson;
+import org.hillview.dataset.api.IJsonSketchResult;
+import org.hillview.dataset.api.ISketchResult;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.IRowIterator;
@@ -30,7 +32,7 @@ import java.util.BitSet;
  * A class that estimates whether the number of distinct items in a column is smaller than a threshold. Implemented by hashing
  * items into a bit array. Once enough bits are set the threshold had been crossed and the iterator may stop
  */
-public class NumItemsThreshold implements IJson {
+public class NumItemsThreshold implements IJsonSketchResult {
     static final long serialVersionUID = 1;
     
     private final int logThreshold;

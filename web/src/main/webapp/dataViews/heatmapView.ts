@@ -333,13 +333,13 @@ export class HeatmapView extends ChartView {
         if (heatmap.missingData !== 0) {
             summary = summary.appendSafeString(", " + formatNumber(heatmap.missingData) + " missing");
         }
-        if (heatmap.histogramMissingX.missingData !== 0) {
+        if (heatmap.histogramMissingX.missingCount !== 0) {
             summary = summary.appendSafeString(
-                ", " + formatNumber(heatmap.histogramMissingX.missingData) + " missing Y coordinate");
+                ", " + formatNumber(heatmap.histogramMissingX.missingCount) + " missing Y coordinate");
         }
-        if (heatmap.histogramMissingY.missingData !== 0) {
+        if (heatmap.histogramMissingY.missingCount !== 0) {
             summary = summary.appendSafeString(
-                ", " + formatNumber(heatmap.histogramMissingY.missingData) + " missing X coordinate");
+                ", " + formatNumber(heatmap.histogramMissingY.missingCount) + " missing X coordinate");
         }
         summary = summary.appendSafeString(", " + formatNumber(this.plot.getDistinct()) + " distinct dots");
         if (this.samplingRate < 1.0) {

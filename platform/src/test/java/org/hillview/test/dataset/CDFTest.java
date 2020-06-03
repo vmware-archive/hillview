@@ -53,27 +53,27 @@ public class CDFTest extends BaseTest {
 
     private void prepareCDF(int width, int height, boolean useSampling) {
         IHistogramBuckets bDec  =
-                new DoubleHistogramBuckets(this.colStat.getMin(), this.colStat.getMax(), width);
+                new DoubleHistogramBuckets(this.colName, this.colStat.getMin(), this.colStat.getMax(), width);
         double sampleSize  =  2 * height * height * width;
         double rate = sampleSize / (double)this.colStat.getPresentCount();
         if ((rate > 0.1) || (!useSampling))
             rate = 1.0; // no performance gains in sampling
         HistogramSketch sk = new HistogramSketch(
-                bDec, this.colName, rate, 0, null);
+                bDec, rate, 0, null);
         this.dataSet.blockingSketch(sk);
     }
 
     private void prepareHist(int width, int height, int barWidth, boolean useSampling) {
         int bucketNum = width / barWidth;
         IHistogramBuckets bDec  =
-                new DoubleHistogramBuckets(this.colStat.getMin(), this.colStat.getMax(), bucketNum);
+                new DoubleHistogramBuckets(this.colName, this.colStat.getMin(), this.colStat.getMax(), bucketNum);
         // approximately what is needed to have error smaller than a single pixel
         double sampleSize  =  2 * height * height * bucketNum;
         double rate = sampleSize / this.colStat.getPresentCount();
         if ((rate > 0.1) || (!useSampling))
             rate = 1.0; // no use in sampling
         this.dataSet.blockingSketch(
-                new HistogramSketch(bDec, this.colName, rate, 0, null));
+                new HistogramSketch(bDec, rate, 0, null));
     }
 
     @Test

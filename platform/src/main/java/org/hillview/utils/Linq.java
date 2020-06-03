@@ -24,6 +24,7 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -72,8 +73,8 @@ public class Linq {
         return new MapIterator<T, S>(data, function);
     }
 
-    public static <T, S> ArrayList<S> map(List<T> data, Function<T, S> function) {
-        ArrayList<S> result = new ArrayList<S>(data.size());
+    public static <T, S> JsonList<S> map(List<T> data, Function<T, S> function) {
+        JsonList<S> result = new JsonList<S>(data.size());
         for (T aData : data)
             result.add(function.apply(aData));
         return result;
@@ -130,6 +131,26 @@ public class Linq {
         ArrayList<Pair<T, S>> result = new ArrayList<Pair<T, S>>(l.size());
         for (int i=0; i < l.size(); i++)
             result.add(new Pair<T, S>(l.get(i), r.get(i)));
+        return result;
+    }
+
+    public static <T, S, R> JsonList<R> zipMap(List<T> l, List<S> r, BiFunction<T, S, R> f) {
+        if (l.size() != r.size())
+            throw new RuntimeException("Zip lists with uneven lengths: " +
+                    l.size() + " and " + r.size());
+        JsonList<R> result = new JsonList<R>(l.size());
+        for (int i=0; i < l.size(); i++)
+            result.add(f.apply(l.get(i), r.get(i)));
+        return result;
+    }
+
+    public static <T, S, R> JsonList<R> zipMap(List<T> l, List<S> r, List<BiFunction<T, S, R>> f) {
+        if (l.size() != r.size())
+            throw new RuntimeException("Zip lists with uneven lengths: " +
+                    l.size() + " and " + r.size());
+        JsonList<R> result = new JsonList<R>(l.size());
+        for (int i=0; i < l.size(); i++)
+            result.add(f.get(i).apply(l.get(i), r.get(i)));
         return result;
     }
 

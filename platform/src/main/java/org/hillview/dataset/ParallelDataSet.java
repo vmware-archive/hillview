@@ -23,7 +23,6 @@ import org.hillview.utils.HillviewLogger;
 import rx.Observable;
 import rx.Subscription;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -85,7 +84,7 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
         this.children = children;
     }
 
-    private int size() { return this.children.size(); }
+    public int size() { return this.children.size(); }
 
     /**
      * Can be used to change the time interval in which partial results are aggregated.
@@ -305,7 +304,7 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
     }
 
     @Override
-    public <R extends Serializable> Observable<PartialResult<R>> sketch(final ISketch<T, R> sketch) {
+    public <R extends ISketchResult> Observable<PartialResult<R>> sketch(final ISketch<T, R> sketch) {
         HillviewLogger.instance.info("Invoked sketch", "target={0}", this);
         List<Observable<PartialResult<R>>> obs = new ArrayList<Observable<PartialResult<R>>>();
         final int mySize = this.size();

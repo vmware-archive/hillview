@@ -144,7 +144,7 @@ export class Test {
             2: schema view
             3: table view with 3 columns
             4: Histogram of the FlightDate column
-            5: Histogram of UniqueCarrier
+            5: Histogram of UniqueCarrier, shown as pie chart
             6: 2dHistogram of DepTime, Depdelay
             7: Table view, filtered flights
             8: Trellis 2D histograms (DepTime, DepDelay) grouped by ActualElapsedTime
@@ -216,8 +216,22 @@ export class Test {
                 findElement("#hillviewPage1 .dropdown #Hide").click();
             },
         }, {
+            description: "Create column in JavaScript",
+            cond: () => Test.existsElement("#hillviewPage1 .idle"),
+            cont: () => {
+                const cancCol = findElement("#hillviewPage1 thead td[data-colname=OriginCityName] .truncated");
+                const evt = contextMenuEvent();
+                cancCol.dispatchEvent(evt);
+                const item = findElement("#hillviewPage1 .dropdown #Create_column_in_JS___");
+                item.click();
+                (findElement(".dialog #outColName") as HTMLInputElement).value = "O";
+                (findElement(".dialog #outColKind") as HTMLInputElement).value = "String";
+                (findElement(".dialog #function") as HTMLInputElement).value = "return row['OriginCityName'][0];";
+                findElement(".dialog .confirm").click();
+            },
+        }, {
             description: "Show schema view",
-            cond: () => true,
+            cond: () => Test.existsElement("#hillviewPage1 .idle"),
             cont: () => {
                 findElement("#hillviewPage1 .topMenu #View #Schema").click();
                 // This does not involve an RPC; the result is available right away.
@@ -256,6 +270,15 @@ export class Test {
                 col2.dispatchEvent(evt);
                 // Produces hillviewPage5
                 findElement("#hillviewPage1 .dropdown #Histogram").click();
+            },
+        }, {
+            description: "Show a pie chart",
+            cond: () => Test.existsElement("#hillviewPage5 .idle"),
+            cont: () => {
+                // Show a histogram
+                const pie = findElement("#hillviewPage5 .topMenu #View #pie_chart_histogram");
+                pie.click();
+                this.next();
             },
         }, {
             description: "Show a 2D histogram",

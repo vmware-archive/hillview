@@ -17,6 +17,7 @@
 
 package org.hillview.sketches;
 
+import org.hillview.dataset.TableSketch;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.sketches.results.JLProjection;
 import org.hillview.table.api.*;
@@ -35,7 +36,7 @@ import java.util.List;
  * the JL sketch gives a guarantee even if the entries are not bounded, whereas the sampling based
  * methods assume boundedness for provable guarantees.
  */
-public class JLSketch implements ISketch<ITable, JLProjection>{
+public class JLSketch implements TableSketch<JLProjection> {
     static final long serialVersionUID = 1;
 
     /**

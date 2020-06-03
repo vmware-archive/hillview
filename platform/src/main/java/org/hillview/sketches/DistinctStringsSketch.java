@@ -18,8 +18,8 @@
 package org.hillview.sketches;
 
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import org.hillview.dataset.api.IJson;
-import org.hillview.dataset.api.ISketch;
+import org.hillview.dataset.TableSketch;
+import org.hillview.dataset.api.IJsonSketchResult;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;
@@ -30,11 +30,11 @@ import java.util.Arrays;
 
 @Deprecated
 // This class is used just for benckmarking
-public class DistinctStringsSketch implements ISketch<ITable, DistinctStringsSketch.DistinctStrings> {
+public class DistinctStringsSketch implements TableSketch<DistinctStringsSketch.DistinctStrings> {
     static final long serialVersionUID = 1;
     private String column;
 
-    public static class DistinctStrings implements IJson {
+    public static class DistinctStrings implements IJsonSketchResult {
         static final long serialVersionUID = 1;
         private final ObjectOpenHashSet<String> uniqueStrings;
 

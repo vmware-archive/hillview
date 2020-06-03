@@ -44,24 +44,32 @@ public class DataSetTest extends BaseTest {
         }
     }
 
-    private static class Sketch implements ISketch<Integer, Integer> {
+    public static class IntegerWrapper implements ISketchResult {
+        public Integer value;
+
+        public IntegerWrapper(int v) { this.value = v; }
+
+        public int intValue() { return this.value; }
+    }
+
+    private static class Sketch implements ISketch<Integer, IntegerWrapper> {
         static final long serialVersionUID = 1;
 
         @Override
-        public Integer zero() {
-            return 0;
+        public IntegerWrapper zero() {
+            return new IntegerWrapper(0);
         }
 
         @Override
-        public Integer add(@Nullable final Integer left, @Nullable final Integer right) {
+        public IntegerWrapper add(@Nullable IntegerWrapper left, @Nullable final IntegerWrapper right) {
             Assert.assertNotNull(left);
             Assert.assertNotNull(right);
-            return left + right;
+            return new IntegerWrapper(left.value + right.value);
         }
 
         @Override
-        public Integer create(@Nullable final Integer data) {
-            return Converters.checkNull(data);
+        public IntegerWrapper create(@Nullable final Integer data) {
+            return new IntegerWrapper(Converters.checkNull(data));
         }
     }
 
@@ -72,7 +80,7 @@ public class DataSetTest extends BaseTest {
 
         IDataSet<Integer> r = ld.blockingMap(increment);
         Sketch sketch = new Sketch();
-        Integer result = r.blockingSketch(sketch);
+        IntegerWrapper result = r.blockingSketch(sketch);
         Assert.assertNotNull(result);
         Assert.assertEquals(result.intValue(), 5);
     }
@@ -129,12 +137,12 @@ public class DataSetTest extends BaseTest {
 
         final IDataSet<Integer> r1 = par.blockingMap(increment);
         final Sketch sketch = new Sketch();
-        final Integer result = r1.blockingSketch(sketch);
+        final IntegerWrapper result = r1.blockingSketch(sketch);
         Assert.assertNotNull(result);
         Assert.assertEquals(result.intValue(), 11);
 
         final IDataSet<Integer> r2 = r1.blockingMap(increment);
-        final Integer result1 = r2.blockingSketch(sketch);
+        final IntegerWrapper result1 = r2.blockingSketch(sketch);
         Assert.assertNotNull(result1);
         Assert.assertEquals(result1.intValue(), 13);
     }
@@ -178,22 +186,22 @@ public class DataSetTest extends BaseTest {
         flat.toBlocking().subscribe(obs);
     }
 
-    private static class Sum implements ISketch<int[], Integer> {
+    private static class Sum implements ISketch<int[], IntegerWrapper> {
         @Override
-        public Integer zero() {
-            return 0;
+        public IntegerWrapper zero() {
+            return new IntegerWrapper(0);
         }
 
         @Override
-        public Integer add(@Nullable final Integer left, @Nullable final Integer right) {
-            return Converters.checkNull(left) + Converters.checkNull(right);
+        public IntegerWrapper add(@Nullable final IntegerWrapper left, @Nullable final IntegerWrapper right) {
+            return new IntegerWrapper(Converters.checkNull(left).value + Converters.checkNull(right).value);
         }
 
         @Override
-        public Integer create(@Nullable final int[] data) {
+        public IntegerWrapper create(@Nullable final int[] data) {
             int sum = 0;
             for (int aData : Converters.checkNull(data)) sum += aData;
-            return sum;
+            return new IntegerWrapper(sum);
         }
     }
 
@@ -219,7 +227,7 @@ public class DataSetTest extends BaseTest {
     @Test
     public void largeDataSetTest() {
         ParallelDataSet<int[]> ld = this.createLargeDataset(false);
-        Integer result = ld.blockingSketch(new Sum());
+        IntegerWrapper result = ld.blockingSketch(new Sum());
         Assert.assertNotNull(result);
         int sum = 0;
         for (int i = 0; i < this.largeSize; i++)
@@ -241,7 +249,7 @@ public class DataSetTest extends BaseTest {
     @Test
     public void separateThreadDataSetTest() {
         IDataSet<int[]> ld = this.createLargeDataset(true);
-        Integer result = ld.blockingSketch(new Sum());
+        IntegerWrapper result = ld.blockingSketch(new Sum());
         Assert.assertNotNull(result);
         int sum = 0;
         for (int i = 0; i < this.largeSize; i++)
@@ -253,13 +261,13 @@ public class DataSetTest extends BaseTest {
     public void unsubscriptionTest() {
         ParallelDataSet<int[]> ld = this.createLargeDataset(true);
         ld.setBundleInterval(0);  // important for this test
-        Observable<PartialResult<Integer>> pr = ld.sketch(new Sum());
-        TestSubscriber<PartialResult<Integer>> ts =
-                new TestSubscriber<PartialResult<Integer>>() {
+        Observable<PartialResult<IntegerWrapper>> pr = ld.sketch(new Sum());
+        TestSubscriber<PartialResult<IntegerWrapper>> ts =
+                new TestSubscriber<PartialResult<IntegerWrapper>>() {
                     private int count = 0;
 
                     @Override
-                    public void onNext(final PartialResult<Integer> pr) {
+                    public void onNext(final PartialResult<IntegerWrapper> pr) {
                         super.onNext(pr);
                         this.count++;
                         if (this.count == 3)
