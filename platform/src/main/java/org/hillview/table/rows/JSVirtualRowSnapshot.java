@@ -17,15 +17,13 @@
 
 package org.hillview.table.rows;
 
-import jdk.nashorn.api.scripting.JSObject;
+import org.graalvm.polyglot.Context;
 import org.hillview.table.Schema;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 
 import javax.annotation.Nullable;
-import javax.script.ScriptEngine;
-import javax.script.ScriptException;
 import java.util.HashMap;
 
 /**
@@ -35,13 +33,13 @@ import java.util.HashMap;
 public class JSVirtualRowSnapshot extends VirtualRowSnapshot {
     static final long serialVersionUID = 1;
 
-    private final ScriptEngine engine;
+    private final Context engine;
 
     public JSVirtualRowSnapshot(
             ITable table, Schema schema,
             @Nullable
             HashMap<String, String> columnRenameMap,
-            ScriptEngine engine) {
+            Context engine) {
         super(table, schema, columnRenameMap);
         this.engine = engine;
     }
@@ -53,12 +51,7 @@ public class JSVirtualRowSnapshot extends VirtualRowSnapshot {
         if (col.getDescription().kind == ContentsKind.Date) {
             double dateEncoding = super.getDouble((String)key);
             // https://stackoverflow.com/questions/33110942/supply-javascript-date-to-nashorn-script
-            try {
-                //noinspection RedundantCast
-                return (JSObject) this.engine.eval("new Date(" + dateEncoding + ")");
-            } catch (ScriptException e) {
-                throw new RuntimeException(e);
-            }
+            return this.engine.eval("js","new Date(" + dateEncoding + ")");
         }
 
         return super.get(key);
