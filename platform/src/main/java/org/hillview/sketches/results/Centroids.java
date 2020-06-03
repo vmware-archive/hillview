@@ -17,6 +17,7 @@
 
 package org.hillview.sketches.results;
 
+import org.hillview.dataset.api.ISketchResult;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.IRowIterator;
@@ -32,7 +33,7 @@ import java.util.function.Function;
  * only counted if the row is present in the column, it essentially computes the mean of each
  * column over only the non-missing entries.
  */
-public class Centroids<T> implements Serializable {
+public class Centroids<T> implements ISketchResult {
     static final long serialVersionUID = 1;
     
     /**

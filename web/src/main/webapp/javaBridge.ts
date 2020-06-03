@@ -245,7 +245,7 @@ export interface ColumnSortOrientation {
 
 export interface Histogram {
     buckets: number[];
-    missingData: number;
+    missingCount: number;
     /// confidence interval for each histogram bucket
     confidence?: number[];
     /// Confidence for missingData
@@ -308,17 +308,17 @@ export interface RowFilterDescription {
     comparison: string;
 }
 
-export interface NumericSamples {
-    empty: boolean;
+export interface SampleSet {
     min: number;
     max: number;
+    count: number;
     missing: number;
     samples: number[];
 }
 
-export interface QuantilesVector {
-    data: NumericSamples[];
-    outOfBounds: number;
+export interface Groups<R> {
+    perBucket: R[];
+    perMissing: R;
 }
 
 export interface HistogramRequestInfo {
@@ -334,23 +334,13 @@ export interface HistogramRequestInfo {
 }
 
 export interface QuantilesVectorInfo extends HistogramRequestInfo {
+    seed: number;
     quantileCount: number,
     quantilesColumn: string;
-    nonNullCounts: number[];
 }
 
-export interface QuantilesMatrix {
-    data: QuantilesVector[];
-    outOfBounds: number;
-}
-
-export interface QuantilesMatrixInfo {
-    seed: number;
+export interface QuantilesMatrixInfo extends QuantilesVectorInfo {
     xColumn: HistogramRequestInfo;
-    groupByColumn: HistogramRequestInfo;
-    quantileCount: number;
-    quantilesColumn: string;
-    nonNullCounts: number[][];
 }
 
 export interface HeavyHittersFilterInfo {

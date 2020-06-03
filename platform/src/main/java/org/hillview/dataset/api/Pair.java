@@ -28,7 +28,7 @@ import javax.annotation.Nullable;
  * @param <T>  First element in the pair.
  * @param <S>  Second element in the pair.
  */
-public class Pair<T, S> implements IJson /* Serializable implied by IJson */ {
+public class Pair<T, S> implements IJsonSketchResult {
     static final long serialVersionUID = 1;
 
     @Nullable

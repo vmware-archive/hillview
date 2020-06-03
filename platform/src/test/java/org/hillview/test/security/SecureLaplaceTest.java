@@ -14,6 +14,7 @@ public class SecureLaplaceTest extends BaseTest {
         double scale = 10;
         Pair<Integer, Integer> idx = new Pair<>(10, 11);
         double noise = sl.sampleLaplace(-1, scale, idx);
-        System.out.println(noise);
+        if (toPrint)
+            System.out.println(noise);
     }
 }

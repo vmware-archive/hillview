@@ -1,10 +1,9 @@
 package org.hillview.dataset;
 
 import org.hillview.dataset.api.IJson;
+import org.hillview.dataset.api.ISketchResult;
 import org.hillview.dataset.api.Pair;
 import org.hillview.utils.Converters;
-
-import java.io.Serializable;
 
 import javax.annotation.Nullable;
 
@@ -16,7 +15,7 @@ import javax.annotation.Nullable;
  * @param <F1>  First post-processed result type.
  * @param <F2>  Second post-processed result type.
  */
-public class ConcurrentPostprocessedSketch<T, R1 extends Serializable, R2 extends Serializable, 
+public class ConcurrentPostprocessedSketch<T, R1 extends ISketchResult, R2 extends ISketchResult,
                                             F1 extends IJson, F2 extends IJson>
         extends PostProcessedSketch<T, Pair<R1, R2>, Pair<F1, F2>> {
     private final PostProcessedSketch<T, R1, F1> first;

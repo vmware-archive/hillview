@@ -20,6 +20,7 @@ package org.hillview.table.api;
 import net.openhft.hashing.LongHashFunction;
 
 import javax.annotation.Nullable;
+import java.util.function.BiFunction;
 
 public interface IIntColumn extends IColumn {
     @Override
@@ -91,5 +92,32 @@ public interface IIntColumn extends IColumn {
                 throw new RuntimeException("Unexpected column kind " + this.getKind());
         }
         return newColumn;
+    }
+
+    default int reduceInt(BiFunction<Integer, Integer, Integer> reducer) {
+        boolean first = true;
+        int result = 0;
+        for (int i = 0; i < this.sizeInRows(); i++) {
+            if (this.isMissing(i))
+                continue;
+            int row = this.getInt(i);
+            if (first) {
+                result = row;
+                first = false;
+            } else {
+                result = reducer.apply(result, row);
+            }
+        }
+        if (first)
+            throw new RuntimeException("No data");
+        return result;
+    }
+
+    default int minInt() {
+        return this.reduceInt(Math::min);
+    }
+
+    default int maxInt() {
+        return this.reduceInt(Math::max);
     }
 }

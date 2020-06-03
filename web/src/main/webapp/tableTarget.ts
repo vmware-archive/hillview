@@ -30,7 +30,7 @@ import {
     CountWithConfidence,
     EigenVal,
     FilterDescription,
-    FindResult,
+    FindResult, Groups,
     Heatmap,
     Heatmap3D,
     HeavyHittersFilterInfo,
@@ -42,13 +42,12 @@ import {
     kindIsString,
     KVCreateColumnInfo,
     NextKArgs,
-    NextKList, QuantilesMatrix, QuantilesMatrixInfo,
-    QuantilesVector,
+    NextKList, QuantilesMatrixInfo,
     QuantilesVectorInfo,
     RangeArgs,
     RecordOrder,
     RemoteObjectId,
-    RowFilterDescription,
+    RowFilterDescription, SampleSet,
     Schema,
     StringColumnFilterDescription,
     StringColumnsFilterDescription,
@@ -181,13 +180,13 @@ export class TableTargetAPI extends RemoteObject {
     }
 
     public createQuantilesVectorRequest(args: QuantilesVectorInfo):
-        RpcRequest<PartialResult<QuantilesVector>> {
-        return this.createStreamingRpcRequest<QuantilesVector>("getQuantilesVector", args);
+        RpcRequest<PartialResult<Groups<SampleSet>>> {
+        return this.createStreamingRpcRequest<Groups<SampleSet>>("getQuantilesVector", args);
     }
 
     public createQuantilesMatrixRequest(args: QuantilesMatrixInfo):
-        RpcRequest<PartialResult<QuantilesMatrix>> {
-        return this.createStreamingRpcRequest<QuantilesMatrix>("getQuantilesMatrix", args);
+        RpcRequest<PartialResult<Groups<Groups<SampleSet>>>> {
+        return this.createStreamingRpcRequest<Groups<Groups<SampleSet>>>("getQuantilesMatrix", args);
     }
 
     public createContainsRequest(order: RecordOrder, row: any[]): RpcRequest<RemoteObjectId> {

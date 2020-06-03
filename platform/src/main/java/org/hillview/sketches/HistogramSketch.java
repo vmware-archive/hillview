@@ -16,7 +16,7 @@
  */
 
 package org.hillview.sketches;
-import org.hillview.dataset.api.ISketch;
+import org.hillview.dataset.TableSketch;
 import org.hillview.sketches.results.Histogram;
 import org.hillview.sketches.results.IHistogramBuckets;
 import org.hillview.table.api.IColumn;
@@ -30,19 +30,17 @@ import javax.annotation.Nullable;
 /**
  * One-dimensional histogram
  */
-public class HistogramSketch implements ISketch<ITable, Histogram> {
+public class HistogramSketch implements TableSketch<Histogram> {
     static final long serialVersionUID = 1;
     public final IHistogramBuckets bucketDesc;
-    protected final String columnName;
     protected final double rate;
     protected final long seed;
     @Nullable
     protected ColumnQuantization cpm;
 
-    public HistogramSketch(IHistogramBuckets bucketDesc, String columnName,
+    public HistogramSketch(IHistogramBuckets bucketDesc,
                            double rate, long seed, @Nullable ColumnQuantization cpm) {
         this.bucketDesc = bucketDesc;
-        this.columnName = columnName;
         this.rate = rate;
         this.seed = seed;
         this.cpm = cpm;
@@ -53,7 +51,7 @@ public class HistogramSketch implements ISketch<ITable, Histogram> {
         Converters.checkNull(data);
         Histogram result = this.getZero();
         Converters.checkNull(result);
-        IColumn column = data.getLoadedColumn(this.columnName);
+        IColumn column = data.getLoadedColumn(this.bucketDesc.getColumn());
         if (this.cpm != null)
             column = new QuantizedColumn(column, this.cpm);
         result.create(column, data.getMembershipSet(), this.bucketDesc, this.rate, this.seed, false);

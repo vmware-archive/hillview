@@ -75,7 +75,7 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
                     @Nullable
                     @Override
                     public DPWrapper.PrivacySummary postProcess(@Nullable TableSummary result) {
-                        return PrivateTableTarget.this.wrapper.addPrivateMetadata(result);
+                        return PrivateTableTarget.this.wrapper.addPrivateMetadata(Converters.checkNull(result));
                     }
                 };
         this.runCompleteSketch(this.table, post, request, context);
@@ -174,7 +174,7 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
         IntervalDecomposition d0 = info[0].getDecomposition(q0);
         IntervalDecomposition d1 = info[1].getDecomposition(q1);
         HeatmapSketch sk = new HeatmapSketch(
-                b0, b1, info[0].cd.name, info[1].cd.name, 1.0, 0, q0, q1);
+                b0, b1, 1.0, 0, q0, q1);
         DPHeatmapSketch hsk = new DPHeatmapSketch(sk,
                 this.wrapper.getColumnIndex(info[0].cd.name, info[1].cd.name),
                 d0, d1, epsilon, this.wrapper.laplace);

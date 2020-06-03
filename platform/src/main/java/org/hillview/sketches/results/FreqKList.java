@@ -20,6 +20,7 @@ package org.hillview.sketches.results;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.objects.*;
+import org.hillview.dataset.api.ISketchResult;
 import org.hillview.dataset.api.Pair;
 import org.hillview.table.Schema;
 import org.hillview.table.rows.RowSnapshot;
@@ -29,7 +30,6 @@ import org.hillview.utils.MutableInteger;
 import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,7 +38,7 @@ import java.util.List;
  * It stores a hash-map which contains the elements and their counts, along with counts
  * of the size of the input and the desired accuracy parameter epsilon.
  */
-public class FreqKList implements Serializable {
+public class FreqKList implements ISketchResult {
     static final long serialVersionUID = 1;
     
     /**

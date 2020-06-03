@@ -20,6 +20,7 @@ package org.hillview.main;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.RemoteDataSet;
+import org.hillview.dataset.TableSketch;
 import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IMap;
@@ -120,10 +121,10 @@ public class HillviewBenchmarks extends Benchmarks {
         final int colSize = 100 * mega / datasetScalingParameter;
         final DoubleArrayColumn col = generateDoubleArray(colSize, 100);
 
-        IHistogramBuckets buckDes = new DoubleHistogramBuckets(0, 100, bucketNum);
+        IHistogramBuckets buckDes = new DoubleHistogramBuckets(col.getName(), 0, 100, bucketNum);
         ITable table = createTable(colSize, col);
-        ISketch<ITable, Histogram> sk = new HistogramSketch(
-                        buckDes, col.getName(), rateParameter, 0, null);
+        TableSketch<Histogram> sk = new HistogramSketch(
+                        buckDes, rateParameter, 0, null);
 
         System.out.println("Bench,Time (ms),Melems/s,Percent slower");
         if (args[0].equals("noseparatethread")) {
@@ -252,7 +253,7 @@ public class HillviewBenchmarks extends Benchmarks {
             assert s != null;
             assert s.schema != null;
             String colName = s.schema.getColumnNames().get(0);
-            ISketch<ITable, DistinctStringsSketch.DistinctStrings> sk =
+            TableSketch<DistinctStringsSketch.DistinctStrings> sk =
                     new DistinctStringsSketch(colName);
             Runnable r = () -> data.blockingSketch(sk).getQuantiles(quantiles);
             runNTimes(r, runCount, "Naive " + distinct + " distinct", elementsPerPartition);
@@ -296,7 +297,7 @@ public class HillviewBenchmarks extends Benchmarks {
             assert s.schema != null;
             System.out.println("Table has " + s.rowCount + " rows");
             String colName = s.schema.getColumnNames().get(0);
-            ISketch<ITable, DistinctStringsSketch.DistinctStrings> sk =
+            TableSketch<DistinctStringsSketch.DistinctStrings> sk =
                     new DistinctStringsSketch(colName);
             DistinctStringsSketch.DistinctStrings strings = data.blockingSketch(sk);
             assert strings != null;
@@ -330,7 +331,7 @@ public class HillviewBenchmarks extends Benchmarks {
             assert s != null;
             assert s.schema != null;
             String colName = s.schema.getColumnNames().get(0);
-            ISketch<ITable, DistinctStringsSketch.DistinctStrings> sk =
+            TableSketch<DistinctStringsSketch.DistinctStrings> sk =
                     new DistinctStringsSketch(colName);
             DistinctStringsSketch.DistinctStrings strings = data.blockingSketch(sk);
             List<String> uniqueStrings = new ArrayList<String>();

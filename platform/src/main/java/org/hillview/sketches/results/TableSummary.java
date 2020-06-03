@@ -20,7 +20,7 @@ package org.hillview.sketches.results;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
-import org.hillview.dataset.api.IJson;
+import org.hillview.dataset.api.IJsonSketchResult;
 import org.hillview.table.Schema;
 
 import javax.annotation.Nullable;
@@ -28,7 +28,7 @@ import javax.annotation.Nullable;
 /**
  * Describes the schema of a table and the number of rows.
  */
-public class TableSummary implements IJson {
+public class TableSummary implements IJsonSketchResult {
     static final long serialVersionUID = 1;
     
     // The sketch zero() element can be produced without looking at the data at all.

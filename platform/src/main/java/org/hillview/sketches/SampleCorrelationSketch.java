@@ -17,6 +17,7 @@
 
 package org.hillview.sketches;
 
+import org.hillview.dataset.TableSketch;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.sketches.results.CorrMatrix;
 import org.hillview.table.api.*;
@@ -29,7 +30,7 @@ import java.util.List;
 /**
  * A sketch to compute correlations between columns, using sampling.
  */
-public class SampleCorrelationSketch implements ISketch<ITable, CorrMatrix> {
+public class SampleCorrelationSketch implements TableSketch<CorrMatrix> {
     static final long serialVersionUID = 1;
     
     /**

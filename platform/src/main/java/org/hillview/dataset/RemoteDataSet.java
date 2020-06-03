@@ -36,7 +36,6 @@ import rx.subjects.SerializedSubject;
 
 import javax.annotation.Nullable;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -190,7 +189,7 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
      * Sketch operation that streams partial results from the server to the caller.
      */
     @Override
-    public <R extends Serializable> Observable<PartialResult<R>> sketch(final ISketch<T, R> sketch) {
+    public <R extends ISketchResult> Observable<PartialResult<R>> sketch(final ISketch<T, R> sketch) {
         final SketchOperation<T, R> sketchOp = new SketchOperation<T, R>(sketch);
         CommandWrapper<R> wrap = new CommandWrapper<R>(sketchOp);
         StreamObserver<PartialResponse> responseObserver = new SketchObserver<R>(wrap.subject);

@@ -19,6 +19,7 @@ package org.hillview.main;
 
 import org.hillview.storage.CsvFileLoader;
 import org.hillview.storage.CsvFileWriter;
+import org.hillview.storage.OrcFileWriter;
 import org.hillview.table.Schema;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.HillviewLogger;
@@ -73,7 +74,6 @@ class DemoDataCleaner {
                         writer.writeTable(p);
                     }
 
-                    /*
                     end = end.replace(".csv", ".orc");
                     OrcFileWriter owriter = new OrcFileWriter(end);
                     System.out.println("Writing " + end);
@@ -83,7 +83,6 @@ class DemoDataCleaner {
                     owriter = new OrcFileWriter(big);
                     System.out.println("Writing " + big);
                     owriter.writeTable(tbl);
-                    */
                 });
         files.close();
     }

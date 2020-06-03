@@ -19,6 +19,7 @@ package org.hillview.sketches;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectRBTreeMap;
 import net.openhft.hashing.LongHashFunction;
+import org.hillview.dataset.TableSketch;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.sketches.results.MinKRows;
 import org.hillview.sketches.results.MinKSet;
@@ -41,7 +42,7 @@ import java.util.Comparator;
  * them are returned. In addition, we also return the minimum and maximum values, according to a
  * specified ordering of the rows.
  */
-public class SampleDistinctRowsSketch implements ISketch<ITable, MinKSet<RowSnapshot>> {
+public class SampleDistinctRowsSketch implements TableSketch<MinKSet<RowSnapshot>> {
     static final long serialVersionUID = 1;
     
     private final RecordOrder recordOrder;

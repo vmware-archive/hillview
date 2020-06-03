@@ -78,7 +78,7 @@ export class Histogram2DBarsPlot extends Histogram2DBase {
             buckets: [],
             confidence: null,
             missingConfidence: 0,
-            missingData: this.heatmap.missingData
+            missingCount: this.heatmap.missingData
         };
         for (let x = 0; x < this.xPoints; x++) {
             let yTotal = 0;

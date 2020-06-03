@@ -1,6 +1,7 @@
 package org.hillview.sketches;
 
 import org.hillview.dataset.PostProcessedSketch;
+import org.hillview.dataset.TableSketch;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.Pair;
 import org.hillview.sketches.results.Histogram;

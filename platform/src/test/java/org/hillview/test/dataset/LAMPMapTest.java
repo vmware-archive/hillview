@@ -49,11 +49,13 @@ public class LAMPMapTest extends BaseTest {
         MetricMDS mds = new MetricMDS(ndControlPoints);
         DoubleMatrix proj = mds.computeEmbedding(3);
 
-        System.out.println("\nMDS projection:");
-        System.out.println("\tMin x: " + proj.getColumn(0).min());
-        System.out.println("\tMax x: " + proj.getColumn(0).max());
-        System.out.println("\tMin y: " + proj.getColumn(1).min());
-        System.out.println("\tMax y: " + proj.getColumn(1).max());
+        if (toPrint) {
+            System.out.println("\nMDS projection:");
+            System.out.println("\tMin x: " + proj.getColumn(0).min());
+            System.out.println("\tMax x: " + proj.getColumn(0).max());
+            System.out.println("\tMin y: " + proj.getColumn(1).min());
+            System.out.println("\tMax y: " + proj.getColumn(1).max());
+        }
 
         List<String> newColNames = new ArrayList<String>(2);
         newColNames.add("LAMP1");
@@ -65,12 +67,14 @@ public class LAMPMapTest extends BaseTest {
         IDataSet<ITable> datasetResult = dataset.blockingMap(map);
         Assert.assertNotNull(datasetResult);
         DoubleMatrix lampProjection = BlasConversions.toDoubleMatrix(result, newColNames);
-        System.out.println("\nLAMP projection:");
-        System.out.println("\tMin x: " + lampProjection.getColumn(0).min());
-        System.out.println("\tMax x: " + lampProjection.getColumn(0).max());
-        System.out.println("\tMin y: " + lampProjection.getColumn(1).min());
-        System.out.println("\tMax y: " + lampProjection.getColumn(1).max());
-        System.out.println("Number of NaNs: " + lampProjection.isNaN().sum());
+        if (toPrint) {
+            System.out.println("\nLAMP projection:");
+            System.out.println("\tMin x: " + lampProjection.getColumn(0).min());
+            System.out.println("\tMax x: " + lampProjection.getColumn(0).max());
+            System.out.println("\tMin y: " + lampProjection.getColumn(1).min());
+            System.out.println("\tMax y: " + lampProjection.getColumn(1).max());
+            System.out.println("Number of NaNs: " + lampProjection.isNaN().sum());
+        }
     }
 
     @Test
@@ -85,7 +89,8 @@ public class LAMPMapTest extends BaseTest {
             ITable table = TestUtils.loadTableFromCSV("../data", "mnist.csv", "mnist.schema");
             this.testLAMPMap(table, 20, 5000);
         } catch (Exception e) {
-            System.out.println("Skipping test because MNIST data is not present.");
+            if (toPrint)
+                System.out.println("Skipping test because MNIST data is not present.");
         }
     }
 
@@ -95,7 +100,8 @@ public class LAMPMapTest extends BaseTest {
             ITable table = TestUtils.loadTableFromCSV("../data", "segmentation.csv", "segmentation.schema");
             this.testLAMPMap(table, 20, 200);
         } catch (Exception e) {
-            System.out.println("Skipping test because MNIST data is not present.");
+            if (toPrint)
+                System.out.println("Skipping test because MNIST data is not present.");
         }
     }
 }

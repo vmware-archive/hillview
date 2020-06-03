@@ -28,7 +28,8 @@ import java.util.Arrays;
 public abstract class ExplicitHistogramBuckets<T extends Comparable<T>>
         implements IHistogramBuckets {
     static final long serialVersionUID = 1;
-    
+
+    public final String column;
     public final T minValue;
     private final T lastBoundary;
     private final int bucketCount;
@@ -39,11 +40,12 @@ public abstract class ExplicitHistogramBuckets<T extends Comparable<T>>
      */
     public final T[] leftBoundaries;
 
-    ExplicitHistogramBuckets(final T[] leftBoundaries) {
+    ExplicitHistogramBuckets(String column, final T[] leftBoundaries) {
         // We don't make this protected so users can instantiate it explicitly
         if (leftBoundaries.length == 0)
             throw new IllegalArgumentException("Boundaries of buckets can't be empty");
         Utilities.checkSorted(leftBoundaries);
+        this.column = column;
         this.leftBoundaries = leftBoundaries;
         this.bucketCount = leftBoundaries.length;
         this.minValue = this.leftBoundaries[0];
@@ -51,15 +53,21 @@ public abstract class ExplicitHistogramBuckets<T extends Comparable<T>>
         this.lastBoundary = this.leftBoundaries[this.leftBoundaries.length - 1];
     }
 
-    ExplicitHistogramBuckets(final T[] leftBoundaries, T maxValue) {
+    ExplicitHistogramBuckets(String column, T[] leftBoundaries, T maxValue) {
         if (leftBoundaries.length == 0)
             throw new IllegalArgumentException("Boundaries of buckets can't be empty");
         Utilities.checkSorted(leftBoundaries);
+        this.column = column;
         this.leftBoundaries = leftBoundaries;
         this.bucketCount = leftBoundaries.length;
         this.minValue = this.leftBoundaries[0];
         this.maxValue = maxValue;
         this.lastBoundary = this.leftBoundaries[this.leftBoundaries.length - 1];
+    }
+
+    @Override
+    public String getColumn() {
+        return this.column;
     }
 
     public int indexOf(T item) {

@@ -23,7 +23,6 @@ import rx.Observable;
 
 import javax.annotation.Nullable;
 
-import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -59,7 +58,7 @@ public interface IDataSet<T> {
      * @return        A stream of partial results, all of type R.  Adding these partial results
      *                will produce the correct final result.  The sketch itself has an 'add' method.
      */
-    <R extends Serializable> Observable<PartialResult<R>> sketch(ISketch<T, R> sketch);
+    <R extends ISketchResult> Observable<PartialResult<R>> sketch(ISketch<T, R> sketch);
 
     /**
      * Combine two datasets that have the exact same topology by pairing the values in the
@@ -170,7 +169,7 @@ public interface IDataSet<T> {
      * @param <R>     Type of data in the result.
      * @return        An observable with a single element.
      */
-    default <R extends Serializable> Observable<R> singleSketch(
+    default <R extends ISketchResult> Observable<R> singleSketch(
             final ISketch<T, R> sketch) {
         return reduce(getValues(this.sketch(sketch)), sketch);
     }
@@ -227,7 +226,7 @@ public interface IDataSet<T> {
      * @return        The result produced by the sketch.
      */
     @Nullable
-    default <R extends Serializable> R blockingSketch(final ISketch<T, R> sketch) {
+    default <R extends ISketchResult> R blockingSketch(final ISketch<T, R> sketch) {
         return this.singleSketch(sketch).toBlocking().single();
     }
 
@@ -239,7 +238,7 @@ public interface IDataSet<T> {
      * @return        The result produced by the sketch.
      */
     @Nullable
-    default <R extends Serializable, F extends IJson> F 
+    default <R extends ISketchResult, F extends IJson> F
     blockingPostProcessedSketch(final PostProcessedSketch<T, R, F> sketch) {
         return sketch.postProcess(this.singleSketch(sketch.sketch).toBlocking().single());
     }

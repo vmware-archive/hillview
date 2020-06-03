@@ -15,17 +15,15 @@
  * limitations under the License.
  */
 
-import {OnCompleteReceiver, Receiver, RpcRequest} from "../rpc";
+import {Receiver} from "../rpc";
 import {
     BucketsInfo,
-    FilterDescription,
+    FilterDescription, Groups,
     Heatmap,
     HistogramRequestInfo,
     IColumnDescription,
-    QuantilesMatrix,
-    QuantilesMatrixInfo,
     RecordOrder,
-    RemoteObjectId
+    RemoteObjectId, SampleSet
 } from "../javaBridge";
 import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
@@ -57,7 +55,7 @@ import {Quartiles2DPlot} from "../ui/quartiles2DPlot";
 export class TrellisHistogramQuartilesView extends TrellisChartView {
     protected hps: Quartiles2DPlot[];
     protected xAxisData: AxisData;
-    protected data: QuantilesMatrix;
+    protected data: Groups<Groups<SampleSet>>;
     private readonly defaultProvenance: string = "Trellis Quartiles";
 
     public constructor(
@@ -330,7 +328,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView {
         return view;
     }
 
-    public updateView(data: QuantilesMatrix, bucketCount: number[], maxYAxis: number | null): void {
+    public updateView(data: Groups<Groups<SampleSet>>, bucketCount: number[], maxYAxis: number | null): void {
         this.createNewSurfaces();
         this.data = data;
         let max = maxYAxis;
@@ -440,7 +438,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView {
 /**
  * Renders a Trellis plot of quartile vectors
  */
-export class TrellisHistogramQuartilesReceiver extends Receiver<QuantilesMatrix> {
+export class TrellisHistogramQuartilesReceiver extends Receiver<Groups<Groups<SampleSet>>> {
     protected trellisView: TrellisHistogramQuartilesView;
 
     constructor(title: PageTitle,
@@ -463,7 +461,7 @@ export class TrellisHistogramQuartilesReceiver extends Receiver<QuantilesMatrix>
         this.page.setDataView(this.trellisView);
     }
 
-    public onNext(value: PartialResult<QuantilesMatrix>): void {
+    public onNext(value: PartialResult<Groups<Groups<SampleSet>>>): void {
         super.onNext(value);
         if (value == null) {
             return;
@@ -476,41 +474,5 @@ export class TrellisHistogramQuartilesReceiver extends Receiver<QuantilesMatrix>
     public onCompleted(): void {
         super.onCompleted();
         this.trellisView.updateCompleted(this.elapsedMilliseconds());
-    }
-}
-
-/**
- * This receiver is invoked once we have computed a histogram of the data on one column
- * and we are have all the data needed to invoke a quartile vector computation.
- */
-export class TrellisQuartilesCountsReceiver extends OnCompleteReceiver<Heatmap> {
-    constructor(protected title: PageTitle,
-                page: FullPage,
-                protected remoteObjectId: RemoteObjectId,
-                protected rowCount: number,
-                protected schema: SchemaClass,
-                protected cds: IColumnDescription[],
-                protected histoArgs: HistogramRequestInfo[],
-                protected range: BucketsInfo[],
-                protected shape: TrellisShape,
-                rr: RpcRequest<PartialResult<Heatmap>>,
-                protected reusePage: boolean) {
-        super(page, rr, "quartiles");
-    }
-
-    run(value: Heatmap): void {
-        const args: QuantilesMatrixInfo = {
-            quantileCount: 4,  // we display quartiles
-            seed: 0,  // scan all data
-            quantilesColumn: this.cds[1].name,
-            nonNullCounts: value.buckets,
-            xColumn: this.histoArgs[0],
-            groupByColumn: this.histoArgs[1]
-        };
-        const tt = new TableTargetAPI(this.remoteObjectId)
-        const rr = tt.createQuantilesMatrixRequest(args);
-        rr.invoke(new TrellisHistogramQuartilesReceiver(this.title, this.page, tt, this.rowCount,
-            this.schema, this.histoArgs, this.range, this.shape, rr,
-            { chartKind: "TrellisQuartiles", reusePage: this.reusePage }));
     }
 }

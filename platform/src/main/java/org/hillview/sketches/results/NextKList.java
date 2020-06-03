@@ -22,7 +22,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.ints.IntLists;
-import org.hillview.dataset.api.IJson;
+import org.hillview.dataset.api.IJsonSketchResult;
 import org.hillview.table.AggregateDescription;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
@@ -39,7 +39,7 @@ import java.util.List;
  * The data structure used to store the next K rows in a Table from a given starting point (topRow)
  * according to a RecordSortOrder.
  */
-public class NextKList implements IJson {
+public class NextKList implements IJsonSketchResult {
     static final long serialVersionUID = 1;
     
     /**

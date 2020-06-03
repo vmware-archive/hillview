@@ -69,12 +69,12 @@ public class HistogramRequestInfo {
         if (cd.kind.isString()) {
             Converters.checkNull(this.leftBoundaries);
             if (quantization != null)
-                return new StringHistogramBuckets(this.leftBoundaries,
+                return new StringHistogramBuckets(this.cd.name, this.leftBoundaries,
                         ((StringColumnQuantization)quantization).globalMax);
             else
-                return new StringHistogramBuckets(this.leftBoundaries);
+                return new StringHistogramBuckets(this.cd.name, this.leftBoundaries);
         } else {
-            return new DoubleHistogramBuckets(this.min, this.max, this.bucketCount);
+            return new DoubleHistogramBuckets(this.cd.name, this.min, this.max, this.bucketCount);
         }
     }
 
@@ -84,7 +84,7 @@ public class HistogramRequestInfo {
 
     public HistogramSketch getSketch(@Nullable ColumnQuantization quantization) {
         IHistogramBuckets buckets = this.getBuckets(quantization);
-        return new HistogramSketch(buckets, this.cd.name, this.samplingRate, this.seed, quantization);
+        return new HistogramSketch(buckets, this.samplingRate, this.seed, quantization);
     }
 
     public HistogramSketch getSketch() {

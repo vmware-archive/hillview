@@ -19,6 +19,7 @@ package org.hillview.sketches;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
+import org.hillview.dataset.TableSketch;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.sketches.results.NextKList;
 import org.hillview.table.Schema;
@@ -36,7 +37,7 @@ import javax.annotation.Nullable;
  * and thus have a specific schema.  It returns a number of rows
  * from the table.
  */
-public class LogFragmentSketch implements ISketch<ITable, NextKList> {
+public class LogFragmentSketch implements TableSketch<NextKList> {
     static final long serialVersionUID = 1;
 
     private final Schema schema;

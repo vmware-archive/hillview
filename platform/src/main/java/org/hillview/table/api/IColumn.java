@@ -26,6 +26,7 @@ import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -199,4 +200,27 @@ public interface IColumn extends Serializable {
     long hashCode64(int rowIndex, LongHashFunction hash);
 
     long MISSING_HASH_VALUE = 0;
+
+    @Nullable
+    default <T> T as(Class<T> clazz) {
+        try {
+            return clazz.cast(this);
+        } catch (ClassCastException e) {
+            return null;
+        }
+    }
+
+    default <T> T as(Class<T> clazz, @Nullable String failureMessage) {
+        T result = this.as(clazz);
+        if (result == null) {
+            if (failureMessage == null)
+                failureMessage = this.getClass().getName() + " is not an instance of " + clazz.toString();
+            throw new RuntimeException(failureMessage);
+        }
+        return result;
+    }
+
+    default <T> T to(Class<T> clazz) {
+        return this.as(clazz, null);
+    }
 }

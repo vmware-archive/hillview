@@ -18,13 +18,12 @@
 package org.hillview.dataset;
 
 import org.hillview.dataset.api.IJson;
+import org.hillview.dataset.api.ISketchResult;
 import org.hillview.utils.Converters;
 import org.hillview.utils.JsonList;
 import org.hillview.utils.Linq;
 
 import javax.annotation.Nullable;
-import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
@@ -35,8 +34,8 @@ import java.util.function.Function;
  * @param <R>   Sketch result type.
  * @param <F>   Post-processed result type.
  */
-public class MultiPostprocessedSketch<T, R extends Serializable, F extends IJson>
-        extends PostProcessedSketch<T, ArrayList<R>, JsonList<F>> {
+public class MultiPostprocessedSketch<T, R extends ISketchResult, F extends IJson>
+        extends PostProcessedSketch<T, JsonList<R>, JsonList<F>> {
 
     private final List<Function<R, F>> post;
 
@@ -53,7 +52,7 @@ public class MultiPostprocessedSketch<T, R extends Serializable, F extends IJson
 
     @Nullable
     @Override
-    public JsonList<F> postProcess(@Nullable ArrayList<R> result) {
+    public JsonList<F> postProcess(@Nullable JsonList<R> result) {
         Converters.checkNull(result);
         return new JsonList<F>(Linq.map(Linq.zip(result, post),
                 p -> Converters.checkNull(p.second).apply(p.first)));

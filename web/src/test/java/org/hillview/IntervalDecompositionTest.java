@@ -78,7 +78,6 @@ public class IntervalDecompositionTest {
         ArrayList<Pair<Integer, Integer>> ret =
                 NumericIntervalDecomposition.kadicDecomposition(leftLeafIdx, rightLeafIdx, 10);
         Assert.assertNotNull(ret);
-        System.out.println(ret.size());
         assert(ret.size() == 10);
         Pair<Integer, Integer> e = ret.get(0);
         Assert.assertNotNull(e);

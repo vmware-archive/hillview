@@ -17,6 +17,7 @@
 
 package org.hillview.sketches;
 
+import org.hillview.dataset.TableSketch;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.sketches.results.HLogLog;
 import org.hillview.table.api.IColumn;
@@ -27,7 +28,7 @@ import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 
-public class HLogLogSketch implements ISketch<ITable, HLogLog> {
+public class HLogLogSketch implements TableSketch<HLogLog> {
     static final long serialVersionUID = 1;
 
     private final String colName;

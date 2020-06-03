@@ -22,6 +22,7 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectRBTreeMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.objects.ObjectCollection;
+import org.hillview.dataset.TableSketch;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.sketches.results.IntTopK;
 import org.hillview.sketches.results.IntTreeTopK;
@@ -43,7 +44,7 @@ import java.util.List;
  * RecordOrder) starting from a specified rowSnapShot (topRow). It also computes counts for how many
  * rows in the data project onto each entry, and how many rows come before topRow.
  */
-public class NextKSketch implements ISketch<ITable, NextKList> {
+public class NextKSketch implements TableSketch<NextKList> {
     static final long serialVersionUID = 1;
 
     private final RecordOrder recordOrder;

@@ -2,6 +2,8 @@ package org.hillview.dataset;
 
 import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.ISketch;
+import org.hillview.dataset.api.ISketchResult;
+
 import java.io.Serializable;
 import javax.annotation.Nullable;
 
@@ -11,7 +13,7 @@ import javax.annotation.Nullable;
  * @param <R>  Sketch output data.
  * @param <F>  Data produced after postprocessing.
  */
-public abstract class PostProcessedSketch<T, R extends Serializable, F extends IJson> {
+public abstract class PostProcessedSketch<T, R extends ISketchResult, F extends IJson> {
     public final ISketch<T, R> sketch;
 
     protected PostProcessedSketch(ISketch<T, R> sketch) {

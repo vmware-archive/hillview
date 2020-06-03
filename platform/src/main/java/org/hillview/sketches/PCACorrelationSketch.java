@@ -17,6 +17,7 @@
 
 package org.hillview.sketches;
 
+import org.hillview.dataset.TableSketch;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.sketches.results.CorrMatrix;
 import org.hillview.table.api.*;
@@ -34,7 +35,7 @@ import java.util.Arrays;
  * carefully (it does not include them while computing expectations).
  */
 
-public class PCACorrelationSketch implements ISketch<ITable, CorrMatrix> {
+public class PCACorrelationSketch implements TableSketch<CorrMatrix> {
     static final long serialVersionUID = 1;
     
     private final String[] colNames;

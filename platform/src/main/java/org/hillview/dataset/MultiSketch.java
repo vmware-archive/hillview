@@ -19,11 +19,12 @@ package org.hillview.dataset;
 
 import org.hillview.dataset.api.IMonoid;
 import org.hillview.dataset.api.ISketch;
+import org.hillview.dataset.api.ISketchResult;
 import org.hillview.utils.Converters;
+import org.hillview.utils.JsonList;
 import org.hillview.utils.Linq;
 
 import javax.annotation.Nullable;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -33,28 +34,28 @@ import java.util.List;
  * @param <T>  Input data type.
  * @param <R>  Output sketch type.
  */
-public class MultiSketch<T, R extends Serializable>
-                            implements ISketch<T, ArrayList<R>> {
+public class MultiSketch<T, R extends ISketchResult>
+                            implements ISketch<T, JsonList<R>> {
     static final long serialVersionUID = 1;
-    private final List<ISketch<T, R>> sketches;
+    private final JsonList<ISketch<T, R>> sketches;
 
-    public MultiSketch(List<ISketch<T, R>> sketches) {
+    public MultiSketch(JsonList<ISketch<T, R>> sketches) {
         this.sketches = sketches;
     }
 
     public MultiSketch(ISketch<T, R>... sketches) {
-        this.sketches = Arrays.asList(sketches);
+        this.sketches = new JsonList<ISketch<T, R>>(sketches);
     }
 
     @Nullable
     @Override
-    public ArrayList<R> zero() {
+    public JsonList<R> zero() {
         return Linq.map(this.sketches, IMonoid::zero);
     }
 
     @Nullable
     @Override
-    public ArrayList<R> add(@Nullable ArrayList<R> left, @Nullable ArrayList<R> right) {
+    public JsonList<R> add(@Nullable JsonList<R> left, @Nullable JsonList<R> right) {
         assert left != null;
         assert right != null;
         return Linq.map(Linq.zip3(left, right, this.sketches),
@@ -62,7 +63,7 @@ public class MultiSketch<T, R extends Serializable>
     }
 
     @Override
-    public ArrayList<R> create(@Nullable T data) {
+    public JsonList<R> create(@Nullable T data) {
         return Linq.map(this.sketches, s -> s.create(data));
     }
 }

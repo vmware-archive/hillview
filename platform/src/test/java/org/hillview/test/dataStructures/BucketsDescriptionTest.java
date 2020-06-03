@@ -27,7 +27,7 @@ import static org.junit.Assert.assertEquals;
 public class BucketsDescriptionTest extends BaseTest {
     @Test
     public void testEqSize() {
-        DoubleHistogramBuckets bdEqSize = new DoubleHistogramBuckets(0.5, 100.5, 100);
+        DoubleHistogramBuckets bdEqSize = new DoubleHistogramBuckets("",0.5, 100.5, 100);
         assertEquals(bdEqSize.getBucketCount(), 100);
         assertEquals(bdEqSize.indexOf(0.5), 0);
         assertEquals(bdEqSize.indexOf(0.6), 0);
@@ -40,7 +40,7 @@ public class BucketsDescriptionTest extends BaseTest {
     @Test
     public void testGeneric1D() {
         String[] boundaries = { "Apple", "Bad", "China", "Rome", "Zetta" };
-        StringHistogramBuckets b = new StringHistogramBuckets(boundaries);
+        StringHistogramBuckets b = new StringHistogramBuckets("", boundaries);
         assertEquals(5, b.getBucketCount());
         assertEquals(-1, b.indexOf("Aardwark"));
         assertEquals(0, b.indexOf("Apple"));

@@ -1,11 +1,11 @@
 package org.hillview.utils;
 
-import org.hillview.dataset.api.IJson;
+import org.hillview.dataset.api.IJsonSketchResult;
 
 /**
  * A count and confidence around the counted value.
  */
-public class CountWithConfidence implements IJson {
+public class CountWithConfidence implements IJsonSketchResult {
     static final long serialVersionUID = 1;
 
     public final long count;

@@ -25,6 +25,7 @@ import java.sql.SQLException;
 public class ImpalaTest extends JdbcTest {
     @Test
     public void testImpalaConnection() throws SQLException {
+        // This test will fail if there is no impala driver installed
         JdbcConnectionInformation conn = new JdbcConnectionInformation();
         conn.databaseKind = "impala";
         conn.host = "localhost";

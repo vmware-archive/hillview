@@ -17,6 +17,7 @@
 
 package org.hillview.sketches;
 
+import org.hillview.dataset.TableSketch;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.table.SmallTable;
 import org.hillview.table.api.*;
@@ -30,7 +31,7 @@ import java.util.List;
  * the randomly selected rows, and the columns are the numeric columns specified in the constructor. The number of
  * samples is specified in the constructor too.
  */
-public class RandomSamplingSketch implements ISketch<ITable, SmallTable> {
+public class RandomSamplingSketch implements TableSketch<SmallTable> {
     static final long serialVersionUID = 1;
     
     private static final double overSampling = 1.5;

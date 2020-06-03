@@ -197,10 +197,6 @@ public final class TableTarget extends RpcTarget {
          * Column whose quantiles are being computed.
          */
         String quantilesColumn = "";
-        /**
-         * For each bucket the count of non-null elements.
-         */
-        long[] nonNullCounts = new long[0];
     }
 
     @SuppressWarnings("unused")
@@ -208,40 +204,22 @@ public final class TableTarget extends RpcTarget {
     public void getQuantilesVector(RpcRequest request, RpcRequestContext context) {
         QuantilesVectorInfo info = request.parseArgs(QuantilesVectorInfo.class);
         IHistogramBuckets buckets = info.getBuckets();
-        final double samplesRequired = 100 * info.quantileCount * info.quantileCount;
-        double[] samplingRates = new double[buckets.getBucketCount()];
-        assert buckets.getBucketCount() == info.nonNullCounts.length;
-        for (int i = 0; i < info.nonNullCounts.length; i++) {
-            double ct = info.nonNullCounts[i];
-            double rate = Math.min(samplesRequired / ct, 1.0);
-            samplingRates[i] = rate;
-        }
-        QuantilesVectorSketch qvs = new QuantilesVectorSketch(
-                buckets, info.cd.name, info.quantilesColumn, samplingRates, info.seed);
-        PostProcessedSketch<ITable, QuantilesVector, QuantilesVector> qvr =
-                new PostProcessedSketch<ITable, QuantilesVector, QuantilesVector>(qvs) {
+        int samplesRequired = 10 * info.quantileCount * info.quantileCount;
+        HistogramQuantilesSketch qvs = new HistogramQuantilesSketch(
+                info.quantilesColumn, samplesRequired, info.seed, buckets);
+        PostProcessedSketch<ITable, Groups<SampleSet>, JsonGroups<SampleSet>> qvr =
+                new PostProcessedSketch<ITable, Groups<SampleSet>, JsonGroups<SampleSet>>(qvs) {
             @Override
-            public QuantilesVector postProcess(@Nullable QuantilesVector result) {
+            public JsonGroups<SampleSet> postProcess(@Nullable Groups<SampleSet> result) {
                 Converters.checkNull(result);
-                return result.quantiles(info.quantileCount);
+                return result.map(v -> v.quantiles(info.quantileCount));
             }
         };
         this.runSketch(this.table, qvr, request, context);
     }
 
-    static class QuantilesMatrixInfo {
-        long seed;
+    static class QuantilesMatrixInfo extends QuantilesVectorInfo {
         HistogramRequestInfo xColumn;
-        HistogramRequestInfo groupByColumn;
-        int quantileCount;
-        /**
-         * Column whose quantiles are being computed.
-         */
-        String quantilesColumn = "";
-        /**
-         * For each bucket the count of non-null elements.
-         */
-        long[][] nonNullCounts = new long[0][0];
     }
 
     @SuppressWarnings("unused")
@@ -249,31 +227,17 @@ public final class TableTarget extends RpcTarget {
     public void getQuantilesMatrix(RpcRequest request, RpcRequestContext context) {
         QuantilesMatrixInfo info = request.parseArgs(QuantilesMatrixInfo.class);
         IHistogramBuckets xBuckets = info.xColumn.getBuckets();
-        IHistogramBuckets gBuckets = info.groupByColumn.getBuckets();
+        IHistogramBuckets gBuckets = info.getBuckets();
 
-        final double samplesRequired = 100 * info.quantileCount * info.quantileCount;
-        double[][] samplingRates = new double[xBuckets.getBucketCount()][gBuckets.getBucketCount()];
-        assert xBuckets.getBucketCount() == info.nonNullCounts.length;
-        assert info.nonNullCounts.length > 0;
-        assert gBuckets.getBucketCount() == info.nonNullCounts[0].length;
-        for (int i = 0; i < info.nonNullCounts.length; i++) {
-            long[] cts = info.nonNullCounts[i];
-            for (int j = 0; j < cts.length; j++) {
-                double ct = cts[j];
-                double rate = Math.min(samplesRequired / ct, 1.0);
-                samplingRates[i][j] = rate;
-            }
-        }
-        QuantilesMatrixSketch qvs = new QuantilesMatrixSketch(
-                xBuckets, info.xColumn.cd.name,
-                gBuckets, info.groupByColumn.cd.name,
-                info.quantilesColumn, samplingRates, info.seed);
-        PostProcessedSketch<ITable, QuantilesMatrix, QuantilesMatrix> qvr =
-                new PostProcessedSketch<ITable, QuantilesMatrix, QuantilesMatrix>(qvs) {
+        final int samplesRequired = 10 * info.quantileCount * info.quantileCount;
+        Histogram2DQuantilesSketch qvs = new Histogram2DQuantilesSketch(info.quantilesColumn,
+                samplesRequired, info.seed, xBuckets, gBuckets);
+        PostProcessedSketch<ITable, Groups<Groups<SampleSet>>, JsonGroups<JsonGroups<SampleSet>>> qvr =
+                new PostProcessedSketch<ITable, Groups<Groups<SampleSet>>, JsonGroups<JsonGroups<SampleSet>>>(qvs) {
                     @Override
-                    public QuantilesMatrix postProcess(@Nullable QuantilesMatrix result) {
+                    public JsonGroups<JsonGroups<SampleSet>> postProcess(@Nullable Groups<Groups<SampleSet>> result) {
                         Converters.checkNull(result);
-                        return result.quantiles(info.quantileCount);
+                        return result.map(q -> q.map(i -> i.quantiles(info.quantileCount)));
                     }
                 };
         this.runSketch(this.table, qvr, request, context);
@@ -344,10 +308,7 @@ public final class TableTarget extends RpcTarget {
         HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
         assert info.length == 2;
         HeatmapSketch sk = new HeatmapSketch(
-                info[0].getBuckets(),
-                info[1].getBuckets(),
-                info[0].cd.name,
-                info[1].cd.name, 1.0, 0);
+                info[0].getBuckets(), info[1].getBuckets(), 1.0, 0);
         this.runSketch(this.table, sk, request, context);
     }
 
@@ -358,8 +319,6 @@ public final class TableTarget extends RpcTarget {
         HeatmapSketch sk = new HeatmapSketch(
                 info[0].getBuckets(),
                 info[1].getBuckets(),
-                info[0].cd.name,
-                info[1].cd.name,
                 info[0].samplingRate, info[0].seed);
         HistogramSketch cdf = info[2].getSketch();
         ConcurrentSketch<ITable, Heatmap, Histogram> csk =

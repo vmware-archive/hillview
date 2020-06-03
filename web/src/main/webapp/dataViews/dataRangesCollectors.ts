@@ -21,7 +21,7 @@ import {
     HistogramRequestInfo,
     IColumnDescription,
     kindIsNumeric,
-    kindIsString,
+    kindIsString, QuantilesMatrixInfo, QuantilesVectorInfo,
     RemoteObjectId,
 } from "../javaBridge";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
@@ -38,8 +38,8 @@ import {AxisData} from "./axisData";
 import {TrellisHeatmapReceiver} from "./trellisHeatmapView";
 import {TrellisHistogram2DReceiver} from "./trellisHistogram2DView";
 import {DatasetView} from "../datasetView";
-import {QuartilesCountsReceiver} from "./quartilesVectorView";
-import {TrellisQuartilesCountsReceiver} from "./trellisHistogramQuartilesView";
+import {QuartilesVectorReceiver} from "./quartilesVectorView";
+import {TrellisHistogramQuartilesReceiver} from "./trellisHistogramQuartilesView";
 
 /**
  * Describes the shape of trellis display.
@@ -306,16 +306,15 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 const histoArg = DataRangesReceiver.computeHistogramArgs(
                     this.cds[0], ranges[0], maxXBucketCount,
                     this.options.exact, chartSize);
-                // We do a histogram first, to compute the counts in each bucket
-                const rr = this.originator.createHistogramRequest(histoArg);
-                rr.chain(this.operation);
-                const rec = new QuartilesCountsReceiver(this.title, this.page,
-                    this.originator.remoteObjectId, rowCount, this.schema,
-                    this.cds,
-                    histoArg,
-                    ranges[0],
-                    rr, this.options.reusePage);
-                rr.invoke(rec);
+                const args: QuantilesVectorInfo = {
+                    quantileCount: 4,  // we display quartiles
+                    quantilesColumn: this.cds[1].name,
+                    ...histoArg
+                };
+                const rr = this.originator.createQuantilesVectorRequest(args);
+                rr.invoke(new QuartilesVectorReceiver(this.title, this.page, this.originator, rowCount,
+                    this.schema, histoArg, ranges[0], this.cds[1], rr,
+                    this.options));
                 break;
             }
             case "Histogram": {
@@ -412,21 +411,17 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 const histoArg2 = DataRangesReceiver.computeHistogramArgs(
                     this.cds[2], ranges[2], maxGBucketCount,
                     this.options.exact, chartSize);
-                const rr = this.originator.createHeatmapRequest([histoArg0, histoArg2]);
-                rr.chain(this.operation);
-                const rec = new TrellisQuartilesCountsReceiver(
-                    this.title,
-                    this.page,
-                    this.originator.remoteObjectId,
-                    rowCount,
-                    this.schema,
-                    this.cds,
-                    [histoArg0, histoArg2],
-                    ranges,
-                    trellisShape,
-                    rr,
-                    this.options.reusePage);
-                rr.invoke(rec);
+                const args: QuantilesMatrixInfo = {
+                    quantileCount: 4,  // we display quartiles
+                    seed: 0,  // scan all data
+                    quantilesColumn: this.cds[1].name,
+                    xColumn: histoArg0,
+                    ...histoArg2
+                };
+                const rr = this.originator.createQuantilesMatrixRequest(args);
+                rr.invoke(new TrellisHistogramQuartilesReceiver(this.title, this.page, this.originator,
+                    rowCount, this.schema, [histoArg0, histoArg2], ranges, trellisShape, rr,
+                    this.options));
                 break;
             }
             case "Trellis2DHistogram": {

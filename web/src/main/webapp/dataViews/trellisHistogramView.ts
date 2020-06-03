@@ -302,7 +302,7 @@ export class TrellisHistogramView extends TrellisChartView {
 
         // noinspection UnnecessaryLocalVariableJS
         const hist: Histogram = { buckets: buckets,
-            missingData: cdf.missingData };
+            missingCount: cdf.missingCount };
         return hist;
     }
 
@@ -329,7 +329,7 @@ export class TrellisHistogramView extends TrellisChartView {
             const bucketData = data.buckets[i];
             const histo: Histogram = {
                 buckets: bucketData,
-                missingData: data.histogramMissingX.buckets[i],
+                missingCount: data.histogramMissingX.buckets[i],
             };
 
             const cdfp = this.cdfs[i];

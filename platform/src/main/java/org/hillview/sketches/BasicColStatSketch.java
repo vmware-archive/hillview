@@ -17,6 +17,7 @@
 
 package org.hillview.sketches;
 
+import org.hillview.dataset.TableSketch;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.sketches.results.BasicColStats;
 import org.hillview.table.api.ITable;
@@ -28,7 +29,7 @@ import javax.annotation.Nullable;
 /**
  * A Sketch that computes basic column statistics for a set of columns.
  */
-public class BasicColStatSketch implements ISketch<ITable, JsonList<BasicColStats>> {
+public class BasicColStatSketch implements TableSketch<JsonList<BasicColStats>> {
     static final long serialVersionUID = 1;
     private final String[] cols;
     private final int momentNum;

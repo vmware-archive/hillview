@@ -30,7 +30,6 @@ import rx.exceptions.CompositeException;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
-import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -136,6 +135,9 @@ public abstract class RpcTarget implements IJson, IRpcTarget {
             method.invoke(this, request, context);
         } catch (Exception ex) {
             HillviewLogger.instance.error("Exception while invoking method", ex);
+            RpcReply reply = request.createReply(ex);
+            if (context.session != null)
+                RpcServer.sendReply(reply, context.session);
             throw new RuntimeException(ex);
         }
     }
@@ -406,7 +408,7 @@ public abstract class RpcTarget implements IJson, IRpcTarget {
         return IJson.gsonInstance.toJsonTree(this.objectId.toString());
     }
 
-    private <T, R extends Serializable, S extends IJson> void
+    private <T, R extends ISketchResult, S extends IJson> void
     runObservedSketch(IDataSet<T> data, PostProcessedSketch<T, R, S> sketch, ResultObserver<R> observer,
               RpcRequestContext context) {
         // Run the sketch
@@ -422,7 +424,7 @@ public abstract class RpcTarget implements IJson, IRpcTarget {
     }
 
     @Override
-    public <T, R extends Serializable, S extends IJson> void
+    public <T, R extends ISketchResult, S extends IJson> void
     runSketch(IDataSet<T> data, PostProcessedSketch<T, R, S> sketch,
               RpcRequest request, RpcRequestContext context) {
         SketchResultObserver<R, S> robs =
@@ -432,7 +434,7 @@ public abstract class RpcTarget implements IJson, IRpcTarget {
     }
 
     @Override
-    public <T, R extends Serializable, S extends IJson> void
+    public <T, R extends ISketchResult, S extends IJson> void
     runCompleteSketch(IDataSet<T> data, PostProcessedSketch<T, R, S> sketch,
                       RpcRequest request, RpcRequestContext context) {
         CompleteSketchResultObserver<R, S> robs = new CompleteSketchResultObserver<R, S>(

@@ -18,12 +18,13 @@
 package org.hillview.dataStructures;
 
 import org.hillview.dataset.api.IJson;
+import org.hillview.dataset.api.IJsonSketchResult;
 import org.hillview.sketches.results.NextKList;
 
 /**
  * The result of heavyHitterSketch.
  */
-public class TopList implements IJson {
+public class TopList implements IJsonSketchResult {
     static final long serialVersionUID = 1;
 
     /**

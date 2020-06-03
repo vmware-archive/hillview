@@ -19,7 +19,7 @@ import {axisLeft as d3axisLeft} from "d3-axis";
 import {format as d3format} from "d3-format";
 import {scaleLinear as d3scaleLinear} from "d3-scale";
 import {AxisData, AxisDescription, AxisKind} from "../dataViews/axisData";
-import {BucketsInfo, QuantilesVector} from "../javaBridge";
+import {BucketsInfo, Groups, SampleSet} from "../javaBridge";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {D3Axis, D3Scale} from "./ui";
@@ -30,7 +30,7 @@ import {SchemaClass} from "../schemaClass";
  * on a PlottingSurface, including the axes.
  */
 export class Quartiles2DPlot extends Plot {
-    public qv: QuantilesVector;
+    public qv: Groups<SampleSet>;
     /**
      * Sampling rate that was used to compute the histogram.
      */
@@ -60,7 +60,7 @@ export class Quartiles2DPlot extends Plot {
      * @param axisData      Description of the X axis.
      * @param isPrivate     True if we are plotting private data.
      */
-    public setData(qv: QuantilesVector, samplingRate: number,
+    public setData(qv: Groups<SampleSet>, samplingRate: number,
                    schema: SchemaClass, rowCount: number,
                    axisData: AxisData, isPrivate: boolean): void {
         this.qv = qv;
@@ -72,11 +72,11 @@ export class Quartiles2DPlot extends Plot {
     }
 
     private drawBars(): void {
-        if (this.qv == null || this.qv.data == null)
+        if (this.qv == null || this.qv.perBucket == null)
             return;
-        const bucketCount = this.qv.data.length;
-        const maxes = this.qv.data.map(v => v.max);
-        const mins = this.qv.data.map(v => v.min);
+        const bucketCount = this.qv.perBucket.length;
+        const maxes = this.qv.perBucket.map(v => v.max);
+        const mins = this.qv.perBucket.map(v => v.min);
         this.max = Math.max(...maxes);
         this.min = Math.min(...mins);
         const chartWidth = this.getChartWidth();
@@ -98,10 +98,10 @@ export class Quartiles2DPlot extends Plot {
 
         const whiskers = [];
         this.missingYCount = 0;
-        for (let x = 0; x < this.qv.data.length; x++) {
-            const q = this.qv.data[x];
+        for (let x = 0; x < this.qv.perBucket.length; x++) {
+            const q = this.qv.perBucket[x];
             this.missingYCount += q.missing;
-            if (q.empty)
+            if (q.count === 0)
                 continue;
             // If we do not have enough samples replicate the existing ones
             const extra = q.samples;
@@ -203,7 +203,7 @@ export class Quartiles2DPlot extends Plot {
     public getBucketIndex(x: number): number {
         const bucket = Math.floor(x / this.barWidth);
         if (bucket < 0 || this.qv == null ||
-            bucket >= this.qv.data.length)
+            bucket >= this.qv.perBucket.length)
             return -1;
         return bucket;
     }

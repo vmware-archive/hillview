@@ -21,6 +21,7 @@ import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenCustomHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import org.hillview.dataset.TableSketch;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.sketches.results.FreqKList;
 import org.hillview.sketches.results.FreqKListExact;
@@ -39,7 +40,7 @@ import java.util.List;
  * This sketch computes the true frequencies of a list of rowSnapshots in a data set. It can
  * be used right after any approximate sketch for Heavy Hitters to compute their exact frequencies.
  */
-public class ExactFreqSketch implements ISketch<ITable, FreqKListExact> {
+public class ExactFreqSketch implements TableSketch<FreqKListExact> {
     static final long serialVersionUID = 1;
     /**
      * The schema of the RowSnapshots

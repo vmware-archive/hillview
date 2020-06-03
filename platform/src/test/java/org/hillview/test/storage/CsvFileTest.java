@@ -59,7 +59,7 @@ public class CsvFileTest extends BaseTest {
     private static final String criteoCompressed = "criteoTab.gz";
     private static final String weatherFile = "weather.csv";
 
-    @Test
+    //@Test
     public void letterPairs() {
         for (char c = 'A'; c <= 'Z'; c++) {
             for (char d = 'a'; d <= 'z'; d++) {

@@ -53,7 +53,6 @@ import {AxisData} from "./axisData";
 import {HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
 import {FilterReceiver, DataRangesReceiver} from "./dataRangesCollectors";
-import {QuartilesCountsReceiver} from "./quartilesVectorView";
 import {Histogram2DBarsPlot} from "../ui/histogram2DBarsPlot";
 import {Histogram2DBase} from "../ui/histogram2DBase";
 import {Dialog, FieldKind} from "../ui/dialog";
@@ -258,12 +257,12 @@ export class Histogram2DView extends HistogramViewBase {
         if (heatmap.missingData !== 0)
             summary = summary.appendSafeString(
                 ", " + formatNumber(heatmap.missingData) + " missing both coordinates");
-        if (heatmap.histogramMissingX.missingData !== 0)
+        if (heatmap.histogramMissingX.missingCount !== 0)
             summary = summary.appendSafeString(
-                ", " + formatNumber(heatmap.histogramMissingX.missingData) + " missing Y coordinate");
-        if (heatmap.histogramMissingY.missingData !== 0)
+                ", " + formatNumber(heatmap.histogramMissingX.missingCount) + " missing Y coordinate");
+        if (heatmap.histogramMissingY.missingCount !== 0)
             summary = summary.appendSafeString(
-                ", " + formatNumber(heatmap.histogramMissingY.missingData) + " missing X coordinate");
+                ", " + formatNumber(heatmap.histogramMissingY.missingCount) + " missing X coordinate");
         summary = summary.appendSafeString(", " + String(bucketCount) + " buckets");
         if (this.samplingRate < 1.0)
             summary = summary.appendSafeString(", sampling rate ")
