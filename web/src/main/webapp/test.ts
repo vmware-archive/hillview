@@ -216,8 +216,22 @@ export class Test {
                 findElement("#hillviewPage1 .dropdown #Hide").click();
             },
         }, {
+            description: "Create column in JavaScript",
+            cond: () => Test.existsElement("#hillviewPage1 .idle"),
+            cont: () => {
+                const cancCol = findElement("#hillviewPage1 thead td[data-colname=OriginCityName] .truncated");
+                const evt = contextMenuEvent();
+                cancCol.dispatchEvent(evt);
+                const item = findElement("#hillviewPage1 .dropdown #Create_column_in_JS___");
+                item.click();
+                (findElement(".dialog #outColName") as HTMLInputElement).value = "O";
+                (findElement(".dialog #outColKind") as HTMLInputElement).value = "String";
+                (findElement(".dialog #function") as HTMLInputElement).value = "return row['OriginCityName'][0];";
+                findElement(".dialog .confirm").click();
+            },
+        }, {
             description: "Show schema view",
-            cond: () => true,
+            cond: () => Test.existsElement("#hillviewPage1 .idle"),
             cont: () => {
                 findElement("#hillviewPage1 .topMenu #View #Schema").click();
                 // This does not involve an RPC; the result is available right away.
