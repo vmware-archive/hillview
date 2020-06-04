@@ -15,26 +15,16 @@
  * limitations under the License.
  */
 
-package org.hillview.dataset;
+/**
+ * Package that doesn't allow null values as method parameters.
+ */
 
-import org.hillview.dataset.api.IMap;
+@ParametersAreNonnullByDefault
+@FieldsAreNonnullByDefault
+@MethodsAreNonnullByDefault
+package org.hillview.sketches.highorder;
 
-import javax.annotation.Nullable;
+import org.hillview.utils.FieldsAreNonnullByDefault;
+import org.hillview.utils.MethodsAreNonnullByDefault;
 
-public class CompositeMap<T, S, V> implements IMap<T, V> {
-    static final long serialVersionUID = 1;
-    
-    private final IMap<T, S> first;
-    private final IMap<S, V> second;
-
-    public CompositeMap(IMap<T, S> first, IMap<S, V> second) {
-        this.first = first;
-        this.second = second;
-    }
-
-    @Override
-    public V apply(@Nullable T data) {
-        S second = this.first.apply(data);
-        return this.second.apply(second);
-    }
-}
+import javax.annotation.ParametersAreNonnullByDefault;

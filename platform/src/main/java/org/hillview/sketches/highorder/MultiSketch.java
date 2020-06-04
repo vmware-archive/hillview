@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.hillview.dataset;
+package org.hillview.sketches.highorder;
 
 import org.hillview.dataset.api.IMonoid;
 import org.hillview.dataset.api.ISketch;

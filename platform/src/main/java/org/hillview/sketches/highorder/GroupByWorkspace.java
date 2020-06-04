@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.hillview.sketches;
+package org.hillview.sketches.highorder;
 
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ISketchWorkspace;

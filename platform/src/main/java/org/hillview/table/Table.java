@@ -159,7 +159,7 @@ public class Table extends BaseTable {
         for (String name : columns) {
             IColumn col = this.columns.get(name);
             if (col == null)
-                throw new RuntimeException("No column named " + name);
+                throw new RuntimeException("No column named '" + name + "'");
             if (!col.isLoaded())
                 toLoad.add(name);
         }

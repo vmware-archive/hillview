@@ -18,7 +18,7 @@
 package org.hillview;
 
 import org.hillview.dataStructures.NumericIntervalDecomposition;
-import org.hillview.dataset.api.Pair;
+import org.hillview.utils.Pair;
 import org.junit.Assert;
 import org.junit.Test;
 

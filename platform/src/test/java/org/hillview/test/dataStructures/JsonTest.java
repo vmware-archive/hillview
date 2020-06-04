@@ -121,7 +121,7 @@ public class JsonTest extends BaseTest {
 
     @Test
     public void testHierarchySerialization() {
-        DoubleColumnQuantization md1 = new DoubleColumnQuantization(12.345, 0.0, 123.45);
+        DoubleColumnQuantization md1 = new DoubleColumnQuantization("name", 12.345, 0.0, 123.45);
         String s = IJson.gsonInstance.toJson(md1);
         ColumnQuantization des = IJson.gsonInstance.fromJson(s, ColumnQuantization.class);
         Assert.assertTrue(des instanceof DoubleColumnQuantization);

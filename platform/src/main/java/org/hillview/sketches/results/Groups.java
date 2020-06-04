@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 
-package org.hillview.sketches;
+package org.hillview.sketches.results;
 
 import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.IScalable;
 import org.hillview.dataset.api.ISketchResult;
+import org.hillview.utils.IGroup;
 import org.hillview.utils.JsonGroups;
 import org.hillview.utils.JsonList;
 import org.hillview.utils.Linq;
@@ -35,7 +36,7 @@ import java.util.function.Function;
  * @param <R>  Type of sketch result that is grouped.
  */
 public class Groups<R extends ISketchResult & IScalable<R>>
-        implements ISketchResult, IScalable<Groups<R>> {
+        implements ISketchResult, IScalable<Groups<R>>, IGroup<R> {
     /**
      * For each bucket one result.
      */
@@ -106,5 +107,20 @@ public class Groups<R extends ISketchResult & IScalable<R>>
         J missing = map.apply(this.perMissing);
         JsonList<J> perBucket = Linq.map(this.perBucket, map);
         return new JsonGroups<J>(perBucket, missing);
+    }
+
+    @Override
+    public R getMissing() {
+        return this.perMissing;
+    }
+
+    @Override
+    public int size() {
+        return this.perBucket.size();
+    }
+
+    @Override
+    public R getBucket(int index) {
+        return this.perBucket.get(index);
     }
 }

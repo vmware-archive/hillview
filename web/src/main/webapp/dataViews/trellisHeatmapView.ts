@@ -306,7 +306,7 @@ export class TrellisHeatmapView extends TrellisChartView {
         let max = 0;
         for (let i = 0; i < histogram3d.perBucket.length; i++) {
             const buckets = histogram3d.perBucket[i];
-            const heatmap: Heatmap = toHeatmap(buckets);
+            const heatmap: Heatmap = toHeatmap({ first: buckets, second: null });
             const plot = this.hps[i];
             // The order of these operations is important
             plot.setData(heatmap, this.xAxisData, this.yAxisData, this.schema, 2, this.isPrivate());

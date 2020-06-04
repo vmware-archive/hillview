@@ -20,10 +20,10 @@ package org.hillview.targets;
 import com.google.gson.JsonObject;
 import org.hillview.*;
 import org.hillview.dataStructures.*;
-import org.hillview.dataset.*;
 import org.hillview.dataset.api.*;
 import org.hillview.maps.*;
 import org.hillview.sketches.*;
+import org.hillview.sketches.highorder.*;
 import org.hillview.sketches.results.*;
 import org.hillview.table.*;
 import org.hillview.table.api.ContentsKind;
@@ -283,13 +283,6 @@ public final class TableTarget extends RpcTarget {
         this.runCompleteSketch(this.table, multi, request, context);
     }
 
-    @HillviewRpc
-    public void histogram(RpcRequest request, RpcRequestContext context) {
-        HistogramRequestInfo info = request.parseArgs(HistogramRequestInfo.class);
-        HistogramSketch sk = info.getSketch();
-        this.runSketch(this.table, sk, request, context);
-    }
-
     @SuppressWarnings("unused")
     @HillviewRpc
     public void histogramAndCDF(RpcRequest request, RpcRequestContext context) {
@@ -299,31 +292,43 @@ public final class TableTarget extends RpcTarget {
         HistogramSketch cdf = info[1].getSketch(); // CDF: also histogram but at finer granularity
         ConcurrentSketch<ITable, Histogram, Histogram> csk =
                 new ConcurrentSketch<ITable, Histogram, Histogram>(sk, cdf);
-        DataWithCDF<Histogram> post = new DataWithCDF<Histogram>(csk);
+        DataWithCDFSketch<Histogram> post = new DataWithCDFSketch<Histogram>(csk);
         this.runSketch(this.table, post, request, context);
-    }
-
-    @HillviewRpc
-    public void heatmap(RpcRequest request, RpcRequestContext context) {
-        HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
-        assert info.length == 2;
-        HeatmapSketch sk = new HeatmapSketch(
-                info[0].getBuckets(), info[1].getBuckets(), 1.0, 0);
-        this.runSketch(this.table, sk, request, context);
     }
 
     @HillviewRpc
     public void histogram2D(RpcRequest request, RpcRequestContext context) {
         HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
-        assert info.length == 3;
-        HeatmapSketch sk = new HeatmapSketch(
-                info[0].getBuckets(),
+        assert info.length == 2;
+        Histogram2DSketch sk = new Histogram2DSketch(
                 info[1].getBuckets(),
-                info[0].samplingRate, info[0].seed);
+                info[0].getBuckets());
+        PostProcessedSketch<
+                ITable,
+                Groups<Groups<Count>>,
+                Two<JsonGroups<JsonGroups<Count>>>> pps =
+                new PostProcessedSketch<ITable, Groups<Groups<Count>>,
+                        Two<JsonGroups<JsonGroups<Count>>>>(sk.sampled(info[0].samplingRate, info[0].seed)) {
+                    @Override
+                    public Two<JsonGroups<JsonGroups<Count>>> postProcess(@Nullable Groups<Groups<Count>> result) {
+                        return new Two<>(Converters.checkNull(result).toSerializable(
+                                s -> s.toSerializable(c -> c)), null);
+                    }
+                };
+        this.runSketch(this.table, pps, request, context);
+    }
+
+    @HillviewRpc
+    public void histogram2DAndCDF(RpcRequest request, RpcRequestContext context) {
+        HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
+        assert info.length == 3;
+        TableSketch<Groups<Groups<Count>>> sk = new Histogram2DSketch(
+                info[1].getBuckets(),
+                info[0].getBuckets()).sampled(info[0].samplingRate, info[0].seed);
         HistogramSketch cdf = info[2].getSketch();
-        ConcurrentSketch<ITable, Heatmap, Histogram> csk =
-                new ConcurrentSketch<ITable, Heatmap, Histogram>(sk, cdf);
-        DataWithCDF<Heatmap> dwc = new DataWithCDF<Heatmap>(csk);
+        ConcurrentSketch<ITable, Groups<Groups<Count>>, Histogram> csk =
+                new ConcurrentSketch<ITable, Groups<Groups<Count>>, Histogram>(sk, cdf);
+        DataWithCDFSketch<Groups<Groups<Count>>> dwc = new DataWithCDFSketch<Groups<Groups<Count>>>(csk);
         this.runSketch(this.table, dwc, request, context);
     }
 
@@ -335,11 +340,7 @@ public final class TableTarget extends RpcTarget {
                 info[2].getBuckets(),
                 info[1].getBuckets(),
                 info[0].getBuckets());
-        SamplingTableSketch<GroupByWorkspace<GroupByWorkspace<GroupByWorkspace<EmptyWorkspace>>>,
-                Groups<Groups<Groups<Count>>>, Histogram3DSketch> sts =
-                new SamplingTableSketch<GroupByWorkspace<GroupByWorkspace<GroupByWorkspace<EmptyWorkspace>>>,
-                        Groups<Groups<Groups<Count>>>, Histogram3DSketch>(
-                                info[0].samplingRate, info[0].seed, sk);
+        TableSketch<Groups<Groups<Groups<Count>>>> sts = sk.sampled(info[0].samplingRate, info[0].seed);
         PostProcessedSketch<
                 ITable,
                 Groups<Groups<Groups<Count>>>,
@@ -347,7 +348,8 @@ public final class TableTarget extends RpcTarget {
                 new PostProcessedSketch<ITable, Groups<Groups<Groups<Count>>>,
                         JsonGroups<JsonGroups<JsonGroups<Count>>>>(sts) {
             @Override
-            public JsonGroups<JsonGroups<JsonGroups<Count>>> postProcess(@Nullable Groups<Groups<Groups<Count>>> result) {
+            public JsonGroups<JsonGroups<JsonGroups<Count>>> postProcess(
+                    @Nullable Groups<Groups<Groups<Count>>> result) {
                 return Converters.checkNull(result).toSerializable(
                         r -> r.toSerializable(
                                 s -> s.toSerializable(c -> c)));

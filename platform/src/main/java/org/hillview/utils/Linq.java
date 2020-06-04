@@ -17,9 +17,6 @@
 
 package org.hillview.utils;
 
-import org.hillview.dataset.api.Pair;
-import org.hillview.dataset.api.Triple;
-
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Iterator;

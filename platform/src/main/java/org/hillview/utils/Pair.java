@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2020 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,24 +15,33 @@
  * limitations under the License.
  */
 
-package org.hillview.dataset.api;
+package org.hillview.utils;
+
+import org.hillview.dataset.api.IJsonSketchResult;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 
-public class Triple<T, S, V> implements IJson /* Serializable implied by IJSon */ {
+/**
+ * A simple polymorphic pair with non-nullable components.
+ * (How come Java does not have such a class built-in?)
+ * Technically this class is serializable only if both T and S are, but there is no simple
+ * way to check it statically, and we don't want a separate SerializablePair class.
+ * (Same observation applies for the for IJson interface).
+ * @param <T>  First element in the pair.
+ * @param <S>  Second element in the pair.
+ */
+public class Pair<T, S> implements IJsonSketchResult {
     static final long serialVersionUID = 1;
 
     @Nullable
     public final T first;
     @Nullable
     public final S second;
-    @Nullable
-    public final V third;
 
-    public Triple(@Nullable final T first, @Nullable final S second, @Nullable final V third) {
+    public Pair(@Nullable final T first, @Nullable final S second) {
         this.first = first;
         this.second = second;
-        this.third = third;
     }
 
     @Override
@@ -40,18 +49,15 @@ public class Triple<T, S, V> implements IJson /* Serializable implied by IJSon *
         if (this == o) return true;
         if ((o == null) || (getClass() != o.getClass())) return false;
 
-        Triple<?, ?, ?> triple = (Triple<?, ?, ?>) o;
-
-        if ((this.first != null) ? !this.first.equals(triple.first) : (triple.first != null)) return false;
-        if ((this.second != null) ? !this.second.equals(triple.second) : (triple.second != null)) return false;
-        return (this.third != null) ? this.third.equals(triple.third) : (triple.third == null);
+        Pair<?, ?> pair = (Pair<?, ?>) o;
+        if (!Objects.equals(this.first, pair.first)) return false;
+        return Objects.equals(this.second, pair.second);
     }
 
     @Override
     public int hashCode() {
         int result = (this.first != null) ? this.first.hashCode() : 0;
         result = (31 * result) + ((this.second != null) ? this.second.hashCode() : 0);
-        result = (31 * result) + ((this.third != null) ? this.third.hashCode() : 0);
         return result;
     }
 }

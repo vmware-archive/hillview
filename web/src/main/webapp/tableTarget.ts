@@ -57,7 +57,7 @@ import {
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
 import {FullPage, PageTitle} from "./ui/fullPage";
 import {PointSet, Resolution, ViewKind} from "./ui/ui";
-import {assert, ICancellable, Pair, PartialResult, Seed} from "./util";
+import {assert, ICancellable, Pair, PartialResult, Seed, Two} from "./util";
 import {IDataView} from "./ui/dataview";
 import {SchemaClass} from "./schemaClass";
 import {PlottingSurface} from "./ui/plottingSurface";
@@ -361,27 +361,17 @@ RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<RemoteObjectId>("filter2DRange", { first: xRange, second: yRange } );
     }
 
-    public createHistogram2DandCDFRequest(info: HistogramRequestInfo[]):
-        RpcRequest<PartialResult<Pair<Heatmap, Histogram>>> {
-        return this.createStreamingRpcRequest<Pair<Heatmap, Histogram>>("histogram2D", info);
+    public createHistogram2DAndCDFRequest(info: HistogramRequestInfo[]):
+        RpcRequest<PartialResult<Pair<Groups<Groups<number>>, Histogram>>> {
+        return this.createStreamingRpcRequest<Pair<Groups<Groups<number>>, Histogram>>("histogram2DAndCDF", info);
     }
 
-    public createHeatmapRequest(info: HistogramRequestInfo[]): RpcRequest<PartialResult<Heatmap>> {
-        return this.createStreamingRpcRequest<Heatmap>("heatmap", info);
+    public createHistogram2DRequest(info: HistogramRequestInfo[]): RpcRequest<PartialResult<Two<Groups<Groups<number>>>>> {
+        return this.createStreamingRpcRequest<Two<Groups<Groups<number>>>>("histogram2D", info);
     }
 
-    public createTrellisQuartilesRequest(info: HistogramRequestInfo[]): RpcRequest<PartialResult<Heatmap>> {
-        return this.createStreamingRpcRequest<Heatmap>("trellisQuartiles", info);
-    }
-
-    public createHeatmap3DRequest(info: HistogramRequestInfo[]): RpcRequest<PartialResult<Groups<Groups<Groups<number>>>>> {
+    public createHistogram3DRequest(info: HistogramRequestInfo[]): RpcRequest<PartialResult<Groups<Groups<Groups<number>>>>> {
         return this.createStreamingRpcRequest<Groups<Groups<Groups<number>>>>("histogram3D", info);
-    }
-
-    public createHistogramRequest(info: HistogramRequestInfo):
-        RpcRequest<PartialResult<Histogram>> {
-        return this.createStreamingRpcRequest<Histogram>(
-            "histogram", info);
     }
 
     public createHistogramAndCDFRequest(info: HistogramRequestInfo[]):

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2020 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,28 +15,26 @@
  * limitations under the License.
  */
 
-package org.hillview.dataset;
+package org.hillview.maps.highorder;
 
 import org.hillview.dataset.api.IMap;
-import org.hillview.dataset.api.Pair;
 
 import javax.annotation.Nullable;
 
-public class ConcurrentMap<T, S1, S2> implements IMap<T, Pair<S1, S2>> {
+public class CompositeMap<T, S, V> implements IMap<T, V> {
     static final long serialVersionUID = 1;
     
-    private final IMap<T, S1> first;
-    private final IMap<T, S2> second;
+    private final IMap<T, S> first;
+    private final IMap<S, V> second;
 
-    public ConcurrentMap(IMap<T, S1> first, IMap<T, S2> second) {
+    public CompositeMap(IMap<T, S> first, IMap<S, V> second) {
         this.first = first;
         this.second = second;
     }
 
     @Override
-    public Pair<S1, S2> apply(@Nullable T data) {
-        S1 first = this.first.apply(data);
-        S2 second = this.second.apply(data);
-        return new Pair<S1, S2>(first, second);
+    public V apply(@Nullable T data) {
+        S second = this.first.apply(data);
+        return this.second.apply(second);
     }
 }

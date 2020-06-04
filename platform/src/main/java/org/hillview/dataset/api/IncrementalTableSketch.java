@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
-package org.hillview.dataset;
+package org.hillview.dataset.api;
 
-import org.hillview.dataset.api.IScalable;
-import org.hillview.dataset.api.ISketchResult;
+import org.hillview.sketches.highorder.SamplingTableSketch;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ISketchWorkspace;
 import org.hillview.table.api.ITable;
@@ -69,5 +68,15 @@ public abstract class IncrementalTableSketch<
             row = it.getNextRow();
         }
         return result;
+    }
+
+    /**
+     * A sampled version of this sketch.
+     * @param samplingRate  Sampling rate.
+     * @param seed          Seed for sampling.
+     * @return              This sketch running over sampled data.
+     */
+    public TableSketch<R> sampled(double samplingRate, long seed) {
+        return new SamplingTableSketch<>(Converters.checkRate(samplingRate), seed, this);
     }
 }

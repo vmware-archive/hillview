@@ -1,7 +1,6 @@
 package org.hillview.sketches;
 
-import org.hillview.dataset.TableSketch;
-import org.hillview.dataset.api.ISketch;
+import org.hillview.dataset.api.TableSketch;
 import org.hillview.sketches.results.NumItemsThreshold;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;

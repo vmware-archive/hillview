@@ -18,8 +18,11 @@
 package org.hillview.dataset;
 
 import org.hillview.dataset.api.*;
+import org.hillview.dataset.monoids.PRDataSetMonoid;
+import org.hillview.dataset.monoids.PartialResultMonoid;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
+import org.hillview.utils.Pair;
 import rx.Observable;
 import rx.Subscription;
 

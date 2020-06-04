@@ -37,10 +37,12 @@ public class StringColumnQuantization extends ColumnQuantization {
 
     /**
      * Create a privacy metadata for a string-type column.
+     * @param column       Name of column that is quantized.
      * @param leftBoundaries  Left boundaries of the string buckets.
      * @param globalMax    Maximum value expected in column.
      */
-    public StringColumnQuantization(String[] leftBoundaries, String globalMax) {
+    public StringColumnQuantization(String column, String[] leftBoundaries, String globalMax) {
+        super(column);
         this.globalMax = globalMax;
         this.leftBoundaries = leftBoundaries;
         if (leftBoundaries.length == 0)

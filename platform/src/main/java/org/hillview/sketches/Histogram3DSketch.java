@@ -17,7 +17,10 @@
 
 package org.hillview.sketches;
 
+import org.hillview.sketches.highorder.GroupBySketch;
+import org.hillview.sketches.highorder.GroupByWorkspace;
 import org.hillview.sketches.results.Count;
+import org.hillview.sketches.results.Groups;
 import org.hillview.sketches.results.IHistogramBuckets;
 import org.hillview.table.api.ITable;
 

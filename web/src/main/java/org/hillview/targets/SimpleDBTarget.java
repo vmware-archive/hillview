@@ -21,11 +21,11 @@ import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import org.hillview.*;
 import org.hillview.dataStructures.*;
 import org.hillview.dataset.LocalDataSet;
-import org.hillview.dataset.PrecomputedSketch;
+import org.hillview.sketches.PrecomputedSketch;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.ISketch;
-import org.hillview.dataset.api.Pair;
-import org.hillview.maps.IdMap;
+import org.hillview.utils.Pair;
+import org.hillview.maps.highorder.IdMap;
 import org.hillview.sketches.results.*;
 import org.hillview.storage.ColumnLimits;
 import org.hillview.storage.JdbcConnectionInformation;
@@ -206,15 +206,16 @@ public class SimpleDBTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    public void heatmap(RpcRequest request, RpcRequestContext context) {
+    public void histogram2D(RpcRequest request, RpcRequestContext context) {
         HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
         assert info.length == 2;
-        Heatmap heatmap = this.database.heatmap(
+        JsonGroups<JsonGroups<Count>> heatmap = this.database.histogram2D(
                 info[0].cd, info[1].cd,
                 info[0].getBuckets(), info[1].getBuckets(),
                 this.columnLimits,
                 null, null);
-        ISketch<ITable, Heatmap> sk = new PrecomputedSketch<ITable, Heatmap>(heatmap);
+        ISketch<ITable, JsonGroups<JsonGroups<Count>>> sk =
+                new PrecomputedSketch<ITable, JsonGroups<JsonGroups<Count>>>(heatmap);
         this.runSketch(this.table, sk, request, context);
     }
 

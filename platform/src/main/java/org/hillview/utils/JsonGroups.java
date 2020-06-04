@@ -18,15 +18,18 @@
 package org.hillview.utils;
 
 import org.hillview.dataset.api.IJson;
+import org.hillview.dataset.api.IJsonSketchResult;
 import org.hillview.dataset.api.ISketchResult;
+import org.hillview.sketches.results.Count;
 
 import java.util.Objects;
+import java.util.function.Function;
 
 /**
  * This is a version of Group which is serializable as JSON.
  * @param <R>  Type of data that is grouped.
  */
-public class JsonGroups<R extends IJson> implements IJson {
+public class JsonGroups<R extends IJson> implements IJsonSketchResult, IGroup<R> {
     /**
      * For each bucket one result.
      */
@@ -36,8 +39,71 @@ public class JsonGroups<R extends IJson> implements IJson {
      */
     public final R           perMissing;
 
+    /**
+     * Create groups using a function generator.
+     * @param size          Size of the groups.
+     * @param constructor   Function that generates contents.  Invoked with index, -1 for missing.
+     */
+    public JsonGroups(int size, Function<Integer, R> constructor) {
+        this.perMissing = constructor.apply(-1);
+        this.perBucket = new JsonList<R>(size);
+        for (int i = 0; i < size; i++)
+            this.perBucket.add(constructor.apply(i));
+    }
+
+    /**
+     * Create groups filled with a specific value.
+     * @param size    Size of the group.
+     * @param value   Value of contents.
+     */
+    public JsonGroups(int size, R value) {
+        this.perMissing = value;
+        this.perBucket = new JsonList<R>(size);
+        for (int i = 0; i < size; i++)
+            this.perBucket.add(value);
+    }
+
     public JsonGroups(JsonList<R> perBucket, R perMissing) {
         this.perBucket = perBucket;
         this.perMissing = perMissing;
+    }
+
+    @Override
+    public R getMissing() {
+        return this.perMissing;
+    }
+
+    public int size() {
+        return this.perBucket.size();
+    }
+
+    @Override
+    public R getBucket(int index) {
+        if (index < 0)
+            return this.perMissing;
+        else
+            return this.perBucket.get(index);
+    }
+
+    public static JsonGroups<Count> fromArray(long[] data) {
+        return new JsonGroups<Count>(data.length, index -> index < 0 ? new Count(0) : new Count(data[index]));
+    }
+
+    public static JsonGroups<JsonGroups<Count>> fromArray(long[][] data) {
+        return new JsonGroups<JsonGroups<Count>>(data.length,
+                index -> index < 0 ?
+                        new JsonGroups<Count>(data[0].length, new Count(0)):
+                        fromArray(data[index]));
+    }
+
+    public static JsonGroups<Count> fromArray(int[] data) {
+        return new JsonGroups<Count>(data.length, index -> index < 0 ? new Count(0) : new Count(data[index]));
+    }
+
+    public static JsonGroups<JsonGroups<Count>> fromArray(int[][] data) {
+        return new JsonGroups<JsonGroups<Count>>(data.length,
+                index -> index < 0 ?
+                        new JsonGroups<Count>(data[0].length, new Count(0)):
+                        fromArray(data[index]));
     }
 }

@@ -23,18 +23,16 @@ import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IMap;
-import org.hillview.dataset.api.Pair;
+import org.hillview.sketches.Histogram2DSketch;
+import org.hillview.sketches.results.*;
+import org.hillview.utils.Pair;
 import org.hillview.main.Benchmarks;
 import org.hillview.maps.FindFilesMap;
 import org.hillview.maps.LoadFilesMap;
 import org.hillview.security.SecureLaplace;
 import org.hillview.security.TestKeyLoader;
-import org.hillview.sketches.HeatmapSketch;
 import org.hillview.sketches.HistogramSketch;
 import org.hillview.sketches.SummarySketch;
-import org.hillview.sketches.results.Heatmap;
-import org.hillview.sketches.results.Histogram;
-import org.hillview.sketches.results.TableSummary;
 import org.hillview.storage.FileSetDescription;
 import org.hillview.storage.IFileReference;
 import org.hillview.table.ColumnDescription;
@@ -142,7 +140,8 @@ public class DPAccuracyBenchmarks extends Benchmarks {
      * @param yd The leaf specification for the y-axis.
      * @return The average per-query absolute error.
      */
-    private Double computeAccuracy(DPHeatmapSketch ph, IntervalDecomposition xd, IntervalDecomposition yd) {
+    private Double computeAccuracy(DPHeatmapSketch<IGroup<Count>, IGroup<IGroup<Count>>> ph,
+                                   IntervalDecomposition xd, IntervalDecomposition yd) {
         double scale = PrivacyUtils.computeNoiseScale(ph.getEpsilon(), xd, yd);
         double baseVariance = PrivacyUtils.laplaceVariance(scale);
 
@@ -233,13 +232,13 @@ public class DPAccuracyBenchmarks extends Benchmarks {
                         createHistogramRequest(col2, cq2)
                 };
 
-        HeatmapSketch sk = new HeatmapSketch(
-                info[0].getBuckets(), info[1].getBuckets(), 1.0, 0);
+        Histogram2DSketch sk = new Histogram2DSketch(
+                info[0].getBuckets(), info[1].getBuckets());
         IntervalDecomposition d0 = info[0].getDecomposition(cq1);
         IntervalDecomposition d1 = info[1].getDecomposition(cq2);
 
         System.out.println("Epsilon: " + epsilon);
-        Heatmap heatmap = table.blockingSketch(sk); // Leaf counts.
+        Groups<Groups<Count>> heatmap = table.blockingSketch(sk); // Leaf counts.
         Assert.assertNotNull(heatmap);
 
         TestKeyLoader tkl = new TestKeyLoader();
@@ -249,7 +248,8 @@ public class DPAccuracyBenchmarks extends Benchmarks {
             tkl.setIndex(i);
             SecureLaplace laplace = new SecureLaplace(tkl);
             @SuppressWarnings("ConstantConditions")
-            DPHeatmapSketch ph = new DPHeatmapSketch(null, columnsIndex, d0, d1, epsilon, laplace);
+            DPHeatmapSketch<IGroup<Count>, IGroup<IGroup<Count>>> ph =
+                    new DPHeatmapSketch<>(null, columnsIndex, d0, d1, epsilon, laplace);
             double acc = computeAccuracy(ph, d0, d1);
             accuracies.add(acc);
             totAccuracy += acc;

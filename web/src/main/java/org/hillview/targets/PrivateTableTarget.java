@@ -2,15 +2,15 @@ package org.hillview.targets;
 
 import org.hillview.*;
 import org.hillview.dataStructures.*;
-import org.hillview.dataset.ConcurrentPostprocessedSketch;
-import org.hillview.dataset.PostProcessedSketch;
-import org.hillview.dataset.PrecomputedSketch;
+import org.hillview.sketches.highorder.*;
+import org.hillview.sketches.PrecomputedSketch;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.maps.FilterMap;
 import org.hillview.maps.ProjectMap;
 import org.hillview.sketches.*;
 import org.hillview.sketches.results.*;
 import org.hillview.table.PrivacySchema;
+import org.hillview.table.QuantizationSchema;
 import org.hillview.table.Schema;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.ColumnQuantization;
@@ -161,24 +161,29 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
     }
 
     @HillviewRpc
-    public void heatmap(RpcRequest request, RpcRequestContext context) {
+    public void histogram2D(RpcRequest request, RpcRequestContext context) {
         HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
         assert info.length == 2;
+        Histogram2DSketch sk = new Histogram2DSketch(
+                info[1].getBuckets(),
+                info[0].getBuckets());
         ColumnQuantization q0 = this.getPrivacySchema().quantization(info[0].cd.name);
         ColumnQuantization q1 = this.getPrivacySchema().quantization(info[1].cd.name);
         Converters.checkNull(q0);
         Converters.checkNull(q1);
-        double epsilon = this.getPrivacySchema().epsilon(info[0].cd.name, info[1].cd.name);
-        IHistogramBuckets b0 = info[0].getBuckets(q0);
-        IHistogramBuckets b1 = info[1].getBuckets(q1);
+        QuantizedTableSketch<
+                Groups<Groups<Count>>,
+                Histogram2DSketch,
+                GroupByWorkspace<GroupByWorkspace<EmptyWorkspace>>>
+                qts = new QuantizedTableSketch<>(sk, new QuantizationSchema(q0, q1));
         IntervalDecomposition d0 = info[0].getDecomposition(q0);
         IntervalDecomposition d1 = info[1].getDecomposition(q1);
-        HeatmapSketch sk = new HeatmapSketch(
-                b0, b1, 1.0, 0, q0, q1);
-        DPHeatmapSketch hsk = new DPHeatmapSketch(sk,
+        double epsilon = this.getPrivacySchema().epsilon(info[0].cd.name, info[1].cd.name);
+        DPHeatmapSketch<Groups<Count>, Groups<Groups<Count>>> hsk = new DPHeatmapSketch<>(
+                qts.sampled(info[0].samplingRate, info[0].seed),
                 this.wrapper.getColumnIndex(info[0].cd.name, info[1].cd.name),
                 d0, d1, epsilon, this.wrapper.laplace);
-        this.runCompleteSketch(this.table, hsk, request, context);
+        this.runSketch(this.table, hsk, request, context);
     }
 
     @HillviewRpc

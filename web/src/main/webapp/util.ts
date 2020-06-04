@@ -44,24 +44,28 @@ export function toHistogram(data: Groups<number>): Histogram {
 }
 
 // TODO: delete this function
-export function toHeatmap(data: Groups<Groups<number>>): Heatmap {
+export function toHeatmap(data: Two<Groups<Groups<number>>>): Heatmap {
     const b: number[][] = [];
+    const conf: number[][] = data.second != null ? [] : null;
     const my: number[] = [];
     let total = 0;
-    for (const i of data.perBucket) {
-        b.push(i.perBucket);
-        total += i.perBucket.reduce(add, 0);
-        my.push(i.perMissing);
+    for (let i = 0; i < data.first.perBucket.length; i++) {
+        const row = data.first.perBucket[i];
+        b.push(row.perBucket);
+        total += row.perBucket.reduce(add, 0);
+        my.push(row.perMissing);
+        if (data.second != null)
+            conf.push(data.second.perBucket[i].perBucket)
     }
 
     const d: Heatmap = {
         buckets: b,
-        confidence: null,
-        missingData: data.perMissing.perMissing,
-        histogramMissingX: toHistogram(data.perMissing),
+        confidence: conf,
+        missingData: data.first.perMissing.perMissing,
+        histogramMissingX: toHistogram(data.first.perMissing),
         histogramMissingY: {
             buckets: my,
-            missingCount: data.perMissing.perMissing
+            missingCount: data.first.perMissing.perMissing
         },
         totalSize: total
     };
@@ -72,6 +76,8 @@ export interface Pair<T1, T2> {
     first: T1;
     second: T2;
 }
+
+export interface Two<T> extends Pair<T, T> {}
 
 export function assert(condition: boolean, message?: string): asserts condition {
     console.assert(condition, message);  // tslint:disable-line

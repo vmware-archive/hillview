@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 
-package org.hillview.sketches;
+package org.hillview.sketches.highorder;
 
-import org.hillview.dataset.IncrementalTableSketch;
+import org.hillview.dataset.api.IncrementalTableSketch;
 import org.hillview.dataset.api.IScalable;
 import org.hillview.dataset.api.ISketchResult;
+import org.hillview.sketches.results.Groups;
 import org.hillview.sketches.results.IHistogramBuckets;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ISketchWorkspace;

@@ -2,7 +2,7 @@ package org.hillview.test.dataset;
 
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.api.IDataSet;
-import org.hillview.sketches.Groups;
+import org.hillview.sketches.results.Groups;
 import org.hillview.sketches.HistogramQuantilesSketch;
 import org.hillview.sketches.HistogramSketch;
 import org.hillview.sketches.results.*;

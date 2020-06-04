@@ -362,8 +362,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                     this.cds[1], ranges[1], groups, this.options.exact || this.isPrivate(), trellisShape.size);
                 // Window argument comes first
                 const args = [wArg, xArg];
-                // Trellis histograms are computed by heatmap requests
-                const rr = this.originator.createHeatmapRequest(args);
+                const rr = this.originator.createHistogram2DRequest(args);
                 const xAxisData = new AxisData(this.cds[0], ranges[0], xArg.bucketCount);
                 const groupByAxis = new AxisData(this.cds[1], ranges[1], wArg.bucketCount);
                 if (this.title == null)
@@ -439,7 +438,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 args.push(wArg);
                 args.push(xArg);
                 args.push(yArg);
-                const rr = this.originator.createHeatmap3DRequest(args);
+                const rr = this.originator.createHistogram3DRequest(args);
                 const xAxis = new AxisData(this.cds[0], ranges[0], xArg.bucketCount);
                 const yAxis = new AxisData(this.cds[1], ranges[1], yArg.bucketCount);
                 const groupByAxis = new AxisData(this.cds[2], ranges[2], wArg.bucketCount);
@@ -471,7 +470,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 args.push(xArg);
                 args.push(yArg);
 
-                const rr = this.originator.createHeatmap3DRequest(args);
+                const rr = this.originator.createHistogram3DRequest(args);
                 const xAxis = new AxisData(this.cds[0], ranges[0], xArg.bucketCount);
                 const yAxis = new AxisData(this.cds[1], ranges[1], yArg.bucketCount);
                 const groupByAxis = new AxisData(this.cds[2], ranges[2], wArg.bucketCount);
@@ -502,7 +501,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                     this.cds[1], ranges[1], maxYBucketCount, this.options.exact || this.isPrivate(), chartSize);
                 args.push(yArg);
 
-                const rr = this.originator.createHeatmapRequest(args);
+                const rr = this.originator.createHistogram2DRequest(args);
                 const xAxis = new AxisData(this.cds[0], ranges[0], xArg.bucketCount);
                 const yAxis = new AxisData(this.cds[1], ranges[1], yArg.bucketCount);
                 if (this.title == null)
@@ -544,7 +543,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                     this.cds[0], ranges[0], 0,
                     this.options.exact || this.isPrivate(), chartSize);
                 args.push(cdfArg);
-                const rr = this.originator.createHistogram2DandCDFRequest(args);
+                const rr = this.originator.createHistogram2DAndCDFRequest(args);
                 const xAxis = new AxisData(this.cds[0], ranges[0], xarg.bucketCount);
                 const yData = new AxisData(this.cds[1], ranges[1], yarg.bucketCount);
                 if (this.title == null)

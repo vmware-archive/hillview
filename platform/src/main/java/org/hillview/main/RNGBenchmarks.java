@@ -1,7 +1,7 @@
 package org.hillview.main;
 
 import org.apache.commons.math3.distribution.LaplaceDistribution;
-import org.hillview.dataset.api.Pair;
+import org.hillview.utils.Pair;
 import org.hillview.security.SecureLaplace;
 import org.hillview.security.TestKeyLoader;
 import org.hillview.utils.Converters;

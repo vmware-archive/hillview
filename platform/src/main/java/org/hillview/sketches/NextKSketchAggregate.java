@@ -1,6 +1,6 @@
 package org.hillview.sketches;
 
-import org.hillview.dataset.PostProcessedSketch;
+import org.hillview.sketches.highorder.PostProcessedSketch;
 import org.hillview.sketches.results.NextKList;
 import org.hillview.table.AggregateDescription;
 import org.hillview.table.ColumnDescription;

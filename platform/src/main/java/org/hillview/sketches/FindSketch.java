@@ -19,7 +19,7 @@ package org.hillview.sketches;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import org.hillview.dataset.TableSketch;
+import org.hillview.dataset.api.TableSketch;
 import org.hillview.dataset.api.IJsonSketchResult;
 import org.hillview.table.RecordOrder;
 import org.hillview.table.Schema;

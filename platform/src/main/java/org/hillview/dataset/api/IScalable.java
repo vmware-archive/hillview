@@ -18,7 +18,9 @@
 package org.hillview.dataset.api;
 
 /**
- * This interface denotes a value computed over sampled data.
+ * This interface denotes a value computed over sampled data
+ * that may need to be scaled to account for the whole data.
+ * Usually a class C will implement IScalable[C]
  */
 public interface IScalable<R> {
     R rescale(double samplingRate);

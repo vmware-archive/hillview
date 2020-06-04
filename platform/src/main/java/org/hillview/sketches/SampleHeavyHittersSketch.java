@@ -2,8 +2,7 @@ package org.hillview.sketches;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenCustomHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-import org.hillview.dataset.TableSketch;
-import org.hillview.dataset.api.ISketch;
+import org.hillview.dataset.api.TableSketch;
 import org.hillview.sketches.results.FreqKList;
 import org.hillview.sketches.results.FreqKListSample;
 import org.hillview.table.Schema;

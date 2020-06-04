@@ -17,7 +17,7 @@
 
 package org.hillview.sketches;
 
-import org.hillview.dataset.IncrementalTableSketch;
+import org.hillview.dataset.api.IncrementalTableSketch;
 import org.hillview.sketches.results.Count;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;

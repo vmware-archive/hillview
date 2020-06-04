@@ -17,12 +17,14 @@
 
 package org.hillview.test.dataStructures;
 
-import org.hillview.sketches.results.DoubleHistogramBuckets;
-import org.hillview.sketches.results.Heatmap;
-import org.hillview.sketches.results.Histogram;
+import org.hillview.sketches.Histogram2DSketch;
+import org.hillview.sketches.results.*;
 import org.hillview.table.ColumnDescription;
+import org.hillview.table.Table;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IAppendableColumn;
+import org.hillview.table.api.IColumn;
+import org.hillview.table.api.ITable;
 import org.hillview.table.columns.BaseListColumn;
 import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.table.columns.DoubleArrayColumn;
@@ -60,25 +62,6 @@ public class HistogramTest extends BaseTest {
     }
 
     @Test
-    public void testHeatmap() {
-        final int bucketNum = 110;
-        final int colSize = 10000;
-        DoubleHistogramBuckets buckDes1 = new DoubleHistogramBuckets("",0, 100, bucketNum);
-        DoubleHistogramBuckets buckDes2 = new DoubleHistogramBuckets("",0, 100, bucketNum);
-        Heatmap hm = new Heatmap(bucketNum, bucketNum);
-        DoubleArrayColumn col1 = DoubleArrayTest.generateDoubleArray(colSize, 5);
-        DoubleArrayColumn col2 = DoubleArrayTest.generateDoubleArray(colSize, 3);
-        FullMembershipSet fMap = new FullMembershipSet(colSize);
-        hm.createHeatmap(col1, col2, buckDes1, buckDes2, fMap, 1.0, 0, false);
-        Heatmap hm1 = new Heatmap(bucketNum, bucketNum);
-        DoubleArrayColumn col3 = DoubleArrayTest.generateDoubleArray(2 * colSize, 100);
-        DoubleArrayColumn col4 = DoubleArrayTest.generateDoubleArray(2 * colSize, 100);
-        FullMembershipSet fMap1 = new FullMembershipSet(2 * colSize);
-        hm1.createHeatmap(col3, col4, buckDes1, buckDes2, fMap1, 0.1, 0, false);
-        hm.union(hm1);
-    }
-
-    @Test
     public void testMissing() {
         ColumnDescription c0 = new ColumnDescription("col0", ContentsKind.Double);
         ColumnDescription c1 = new ColumnDescription("col1", ContentsKind.Double);
@@ -98,26 +81,27 @@ public class HistogramTest extends BaseTest {
         for (int i = 0; i < 4; i++)
             col1.appendMissing();
 
-        DoubleHistogramBuckets buckDes1 = new DoubleHistogramBuckets("",0, 2, 3);
-        DoubleHistogramBuckets buckDes2 = new DoubleHistogramBuckets("", 0, 1, 2);
-        Heatmap hm = new Heatmap(buckDes1.bucketCount, buckDes2.bucketCount);
-        hm.createHeatmap(col0, col1, buckDes1, buckDes2, new
-                FullMembershipSet(col0.sizeInRows()), 1.0, 0, false);
-        Histogram h1 = hm.getMissingHistogramD1();
-        Histogram h2 = hm.getMissingHistogramD2();
-        Assert.assertEquals(1, hm.getCount(0, 0));
-        Assert.assertEquals(1, hm.getCount(0, 1));
-        Assert.assertEquals(1, hm.getCount(1, 0));
-        Assert.assertEquals(1, hm.getCount(1, 1));
-        Assert.assertEquals(1, hm.getCount(2, 1));
-        Assert.assertEquals(1, hm.getCount(2, 1));
-        Assert.assertEquals(3, h2.getBucketCount());
-        Assert.assertEquals(1, h2.getCount(0));
-        Assert.assertEquals(1, h2.getCount(1));
-        Assert.assertEquals(1, h2.getCount(2));
-        Assert.assertEquals(2, h1.getBucketCount());
-        Assert.assertEquals(1, h1.getCount(0));
-        Assert.assertEquals(1, h1.getCount(1));
-        Assert.assertEquals(1, hm.getMissingData());
+        ITable table = new Table(new IColumn[] { col0, col1 }, null, null);
+        DoubleHistogramBuckets buckDes1 = new DoubleHistogramBuckets("col0",0, 2, 3);
+        DoubleHistogramBuckets buckDes2 = new DoubleHistogramBuckets("col1", 0, 1, 2);
+        Histogram2DSketch sketch = new Histogram2DSketch(buckDes2, buckDes1);
+        Groups<Groups<Count>> hm = sketch.create(table);
+        Assert.assertNotNull(hm);
+        Assert.assertEquals(1, hm.getBucket(0).getBucket(0).count);
+        Assert.assertEquals(1, hm.getBucket(0).getBucket(1).count);
+        Assert.assertEquals(1, hm.getBucket(1).getBucket(0).count);
+        Assert.assertEquals(1, hm.getBucket(1).getBucket(1).count);
+        Assert.assertEquals(1, hm.getBucket(2).getBucket(1).count);
+        Assert.assertEquals(1, hm.getBucket(2).getBucket(1).count);
+        Assert.assertEquals(1, hm.getMissing().getMissing().count);
+
+        Groups<Count> h1 = hm.getMissing();
+        Assert.assertEquals(2, h1.size());
+        Assert.assertEquals(1, h1.getBucket(0).count);
+        Assert.assertEquals(1, h1.getBucket(1).count);
+
+        Assert.assertEquals(1, hm.getBucket(0).getMissing().count);
+        Assert.assertEquals(1, hm.getBucket(1).getMissing().count);
+        Assert.assertEquals(1, hm.getBucket(2).getMissing().count);
     }
 }

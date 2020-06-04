@@ -20,16 +20,13 @@ package org.hillview.targets;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import org.hillview.*;
 import org.hillview.dataStructures.*;
-import org.hillview.dataset.ConcurrentPostprocessedSketch;
-import org.hillview.dataset.PostProcessedSketch;
+import org.hillview.sketches.highorder.ConcurrentPostprocessedSketch;
+import org.hillview.sketches.highorder.PostProcessedSketch;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.ISketch;
-import org.hillview.maps.IdMap;
-import org.hillview.dataset.PrecomputedSketch;
-import org.hillview.sketches.results.Heatmap;
-import org.hillview.sketches.results.Histogram;
-import org.hillview.sketches.results.NextKList;
-import org.hillview.sketches.results.TableSummary;
+import org.hillview.maps.highorder.IdMap;
+import org.hillview.sketches.PrecomputedSketch;
+import org.hillview.sketches.results.*;
 import org.hillview.storage.JdbcConnectionInformation;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.PrivacySchema;
@@ -191,7 +188,7 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
     public void heatmap(RpcRequest request, RpcRequestContext context) {
         HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
         assert info.length == 2;
-        Heatmap heatmap = this.database.heatmap(
+        JsonGroups<JsonGroups<Count>> heatmap = this.database.histogram2D(
                 info[0].cd, info[1].cd,
                 info[0].getBuckets(), info[1].getBuckets(),
                 this.wrapper.columnLimits,
@@ -203,7 +200,7 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
         Converters.checkNull(q1);
         IntervalDecomposition d0 = info[0].getDecomposition(q0);
         IntervalDecomposition d1 = info[1].getDecomposition(q1);
-        ISketch<ITable, Heatmap> sk = new PrecomputedSketch<ITable, Heatmap>(heatmap);
+        ISketch<ITable, JsonGroups<JsonGroups<Count>>> sk = new PrecomputedSketch<>(heatmap);
         DPHeatmapSketch noisyHeatmap = new DPHeatmapSketch(
                 sk,  this.wrapper.getColumnIndex(info[0].cd.name, info[1].cd.name),
                 d0, d1, epsilon, this.wrapper.laplace);

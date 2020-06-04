@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2020 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +15,9 @@
  * limitations under the License.
  */
 
-package org.hillview.dataset.api;
+package org.hillview.dataset.monoids;
+
+import org.hillview.dataset.api.IMonoid;
 
 import javax.annotation.Nullable;
 

@@ -17,7 +17,7 @@
 
 package org.hillview.dataStructures;
 
-import org.hillview.dataset.PostProcessedSketch;
+import org.hillview.sketches.highorder.PostProcessedSketch;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.sketches.*;
 import org.hillview.sketches.results.BucketsInfo;

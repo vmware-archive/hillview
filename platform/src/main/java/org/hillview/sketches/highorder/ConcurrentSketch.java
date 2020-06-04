@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2020 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,13 +15,11 @@
  * limitations under the License.
  */
 
-package org.hillview.dataset;
+package org.hillview.sketches.highorder;
 
 import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.ISketchResult;
-import org.hillview.dataset.api.Pair;
-
-import java.io.Serializable;
+import org.hillview.utils.Pair;
 
 import javax.annotation.Nullable;
 

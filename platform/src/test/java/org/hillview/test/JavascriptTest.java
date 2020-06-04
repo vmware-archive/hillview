@@ -99,6 +99,40 @@ public class JavascriptTest extends BaseTest {
     }
 
     @Test
+    public void testMap1() {
+        ITable table = TestTables.testRepTable();
+        LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);
+        ColumnDescription outCol = new ColumnDescription("Range", ContentsKind.Double);
+        String function = "function map(row) { return Math.round(row['Age'] / 10) * 10; }";
+        CreateColumnJSMap map = new CreateColumnJSMap(function, table.getSchema(), null, outCol);
+        IDataSet<ITable> mapped = lds.blockingMap(map);
+        ITable outTable = ((LocalDataSet<ITable>)mapped).data;
+        Assert.assertNotNull(outTable);
+        String data = outTable.toLongString(3);
+        Assert.assertEquals("Table[3x15]\n" +
+                "Mike,20,20.0\n" +
+                "John,30,30.0\n" +
+                "Tom,10,10.0\n", data);
+    }
+
+    @Test
+    public void testMap2() {
+        ITable table = TestTables.testRepTable();
+        LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);
+        ColumnDescription outCol = new ColumnDescription("Range", ContentsKind.Integer);
+        String function = "function map(row) { return Math.round(row['Age'] / 10) * 10; }";
+        CreateColumnJSMap map = new CreateColumnJSMap(function, table.getSchema(), null, outCol);
+        IDataSet<ITable> mapped = lds.blockingMap(map);
+        ITable outTable = ((LocalDataSet<ITable>)mapped).data;
+        Assert.assertNotNull(outTable);
+        String data = outTable.toLongString(3);
+        Assert.assertEquals("Table[3x15]\n" +
+                "Mike,20,20\n" +
+                "John,30,30\n" +
+                "Tom,10,10\n", data);
+    }
+
+    @Test
     public void testFilter() {
         ITable table = TestTables.testRepTable();
         LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);

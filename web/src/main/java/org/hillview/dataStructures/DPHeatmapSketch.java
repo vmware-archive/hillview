@@ -1,10 +1,10 @@
 package org.hillview.dataStructures;
 
-import org.hillview.dataset.PostProcessedSketch;
+import org.hillview.sketches.highorder.PostProcessedSketch;
 import org.hillview.dataset.api.ISketch;
-import org.hillview.dataset.api.Pair;
+import org.hillview.utils.Pair;
 import org.hillview.security.SecureLaplace;
-import org.hillview.sketches.results.Heatmap;
+import org.hillview.sketches.results.Count;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.*;
 
@@ -17,9 +17,10 @@ import static org.hillview.dataStructures.IntervalDecomposition.kadicDecompositi
 /**
  * Differentially-private heatmap.
  */
-public class DPHeatmapSketch extends PostProcessedSketch<ITable, Heatmap, Heatmap> {
-    private double epsilon;
-    private SecureLaplace laplace;
+public class DPHeatmapSketch<IG extends IGroup<Count>, OG extends IGroup<IG>>
+        extends PostProcessedSketch<ITable, OG, Two<JsonGroups<JsonGroups<Count>>>> {
+    private final double epsilon;
+    private final SecureLaplace laplace;
 
     double scale;
     double baseVariance;
@@ -30,7 +31,7 @@ public class DPHeatmapSketch extends PostProcessedSketch<ITable, Heatmap, Heatma
     private final int columnsIndex;
 
     public DPHeatmapSketch(
-            ISketch<ITable, Heatmap> sketch,
+            ISketch<ITable, OG> sketch,
             int columnsIndex,
             IntervalDecomposition d0, IntervalDecomposition d1,
             double epsilon, SecureLaplace laplace) {
@@ -84,17 +85,20 @@ public class DPHeatmapSketch extends PostProcessedSketch<ITable, Heatmap, Heatma
      * Add Laplace noise compatible with the binary mechanism to each bucket.
      * Noise is added as follows:
      * Let T := (globalMax - globalMin) / granularity, the total number of leaves in the data overall.
-     * Each node in the dyadic interval tree is perturbed by an independent noise variable distributed as Laplace(log T / epsilon).
+     * Each node in the dyadic interval tree is perturbed by an independent noise variable
+     * distributed as Laplace(log T / epsilon).
      * The total noise is the sum of the noise variables in the intervals composing the desired interval or bucket.
+     * @return Two heatmaps: one is the actual heatmap with the noise added,
+     * and the second one is the confidence interval for each bucket.
      */
     @Nullable
     @Override
-    public Heatmap postProcess(@Nullable Heatmap heatmap) {
+    public Two<JsonGroups<JsonGroups<Count>>> postProcess(@Nullable OG heatmap) {
         Converters.checkNull(heatmap);
-        int xSize = heatmap.xBucketCount;
-        int ySize = heatmap.yBucketCount;
-        Heatmap result = new Heatmap(xSize, ySize, true);
-        Converters.checkNull(result.confidence);
+        int xSize = heatmap.size();
+        int ySize = heatmap.getBucket(0).size();
+        long[][] counts = new long[xSize][ySize];
+        int[][] confidences = new int[xSize][ySize];
 
         HillviewLogger.instance.info("Adding heatmap noise with", "epsilon={0}", this.epsilon);
         List<List<Pair<Integer, Integer>>> xIntervals = new ArrayList<List<Pair<Integer, Integer>>>(xSize);
@@ -106,14 +110,18 @@ public class DPHeatmapSketch extends PostProcessedSketch<ITable, Heatmap, Heatma
 
         // Compute the noise.
         Noise noise = new Noise();
-        for (int i = 0; i < heatmap.buckets.length; i++) {
-            for (int j = 0; j < heatmap.buckets[i].length; j++) {
+        for (int i = 0; i < xSize; i++) {
+            for (int j = 0; j < ySize; j++) {
                 long nIntervals = this.noiseForDecomposition(xIntervals.get(i), yIntervals.get(j), this.scale, this.baseVariance, noise);
-                result.buckets[i][j] = Converters.toLong(heatmap.buckets[i][j] + noise.getNoise());
-                result.confidence[i][j] = Converters.toInt(
+                counts[i][j] = Converters.toLong(heatmap.getBucket(i).getBucket(j).count + noise.getNoise());
+                confidences[i][j] = Converters.toInt(
                         PrivacyUtils.laplaceCI(nIntervals, this.scale, PrivacyUtils.DEFAULT_ALPHA).second);
             }
         }
-        return result;
+
+        // TODO: this does not add noise for the "missing" counts
+        JsonGroups<JsonGroups<Count>> cts = JsonGroups.fromArray(counts);
+        JsonGroups<JsonGroups<Count>> conf = JsonGroups.fromArray(confidences);
+        return new Two<>(cts, conf);
     }
 }

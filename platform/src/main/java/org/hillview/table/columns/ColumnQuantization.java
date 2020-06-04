@@ -36,6 +36,17 @@ import javax.annotation.Nullable;
 public abstract class ColumnQuantization implements IJson {
     static final long serialVersionUID = 1;
 
+    private final String column;
+
+    protected ColumnQuantization(String column) {
+        this.column = column;
+    }
+
+    /**
+     * Name of column that is quantized.
+     */
+    public String getColumn() { return this.column; }
+
     /**
      * Quantize a numeric value by rounding down.
      * @param value  Value to quantize.

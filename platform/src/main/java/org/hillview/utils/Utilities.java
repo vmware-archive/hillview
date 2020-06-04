@@ -23,7 +23,6 @@ import com.google.gson.reflect.TypeToken;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hillview.dataset.api.IJson;
-import org.hillview.dataset.api.Pair;
 import org.hillview.dataset.api.PartialResult;
 
 import javax.annotation.Nullable;

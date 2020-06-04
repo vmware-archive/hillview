@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2020 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,42 +15,28 @@
  * limitations under the License.
  */
 
-package org.hillview.dataset;
+package org.hillview.sketches.highorder;
 
-import org.hillview.dataset.api.IMap;
+import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.ISketchResult;
 
 import java.io.Serializable;
-
 import javax.annotation.Nullable;
 
-public class Composite<T, S, R extends ISketchResult> implements ISketch<T, R> {
-    static final long serialVersionUID = 1;
+/**
+ * A sketch bundled with a post-processing function.
+ * @param <T>  Sketch input data.
+ * @param <R>  Sketch output data.
+ * @param <F>  Data produced after postprocessing.
+ */
+public abstract class PostProcessedSketch<T, R extends ISketchResult, F extends IJson> {
+    public final ISketch<T, R> sketch;
 
-    private final IMap<T, S> map;
-    private final ISketch<S, R> sketch;
-
-    public Composite(IMap<T, S> map, ISketch<S, R> sketch) {
-        this.map = map;
+    protected PostProcessedSketch(ISketch<T, R> sketch) {
         this.sketch = sketch;
     }
 
     @Nullable
-    @Override
-    public R zero() {
-        return this.sketch.zero();
-    }
-
-    @Nullable
-    @Override
-    public R add(@Nullable R left, @Nullable R right) {
-        return this.sketch.add(left, right);
-    }
-
-    @Override
-    public R create(@Nullable T data) {
-        S first = this.map.apply(data);
-        return this.sketch.create(first);
-    }
+    public abstract F postProcess(@Nullable R result);
 }

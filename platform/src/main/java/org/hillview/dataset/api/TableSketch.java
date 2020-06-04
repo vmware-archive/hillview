@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.hillview.dataset;
+package org.hillview.dataset.api;
 
 import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.ISketchResult;

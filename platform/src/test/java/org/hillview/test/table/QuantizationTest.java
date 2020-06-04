@@ -39,7 +39,7 @@ public class QuantizationTest extends BaseTest {
     public void testPrivateColumn() {
         Table table = TestTables.testTable();
         IColumn age = table.getLoadedColumn("Age");
-        ColumnQuantization cpm = new DoubleColumnQuantization(5, 0, 100);
+        ColumnQuantization cpm = new DoubleColumnQuantization("Age", 5, 0, 100);
         QuantizedColumn pc = new QuantizedColumn(age, cpm);
         for (int i = 0; i < pc.sizeInRows(); i++) {
             int v = pc.getInt(i);
@@ -55,7 +55,7 @@ public class QuantizationTest extends BaseTest {
             boundaries[index] = Character.toString(c);
             index++;
         }
-        cpm = new StringColumnQuantization(boundaries, "a");
+        cpm = new StringColumnQuantization("Name", boundaries, "a");
         pc = new QuantizedColumn(name, cpm);
         for (int i = 0; i < pc.sizeInRows(); i++) {
             String s = pc.getString(i);
@@ -71,7 +71,7 @@ public class QuantizationTest extends BaseTest {
     public void testQuantizedHistogram() {
         Table table = TestTables.testTable();
         IColumn age = table.getLoadedColumn("Age");
-        ColumnQuantization cpm = new DoubleColumnQuantization(5, 0, 100);
+        ColumnQuantization cpm = new DoubleColumnQuantization("Age", 5, 0, 100);
         QuantizedColumn pcage = new QuantizedColumn(age, cpm);
         IColumn name = table.getLoadedColumn("Name");
         String[] boundaries = new String[26];
@@ -80,7 +80,7 @@ public class QuantizationTest extends BaseTest {
             boundaries[index] = Character.toString(c);
             index++;
         }
-        cpm = new StringColumnQuantization(boundaries, "a");
+        cpm = new StringColumnQuantization("Name", boundaries, "a");
         QuantizedColumn pcname = new QuantizedColumn(name, cpm);
         IColumn[] cols = new IColumn[] { pcage, pcname };
         Table quantizedTable = new Table(cols, null, null);
@@ -103,7 +103,7 @@ public class QuantizationTest extends BaseTest {
         LocalDataSet<ITable> pub = new LocalDataSet<ITable>(table);
 
         IColumn age = table.getLoadedColumn("Age");
-        ColumnQuantization cpmage = new DoubleColumnQuantization(5, 0, 100);
+        ColumnQuantization cpmage = new DoubleColumnQuantization("Age",5, 0, 100);
         QuantizedColumn pcage = new QuantizedColumn(age, cpmage);
         IColumn name = table.getLoadedColumn("Name");
         String[] boundaries = new String[26];
@@ -112,7 +112,7 @@ public class QuantizationTest extends BaseTest {
             boundaries[index] = Character.toString(c);
             index++;
         }
-        ColumnQuantization cpmname = new StringColumnQuantization(boundaries, "a");
+        ColumnQuantization cpmname = new StringColumnQuantization("Name", boundaries, "a");
         QuantizedColumn pcname = new QuantizedColumn(name, cpmname);
         IColumn[] cols = new IColumn[] { pcage, pcname };
         Table quantizedTable = new Table(cols, null, null);

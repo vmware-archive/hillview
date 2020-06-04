@@ -194,11 +194,12 @@ public class JdbcDatabase {
         return new Histogram(data, nulls);
     }
 
-    public Heatmap heatmap(ColumnDescription cd0, ColumnDescription cd1,
-                           IHistogramBuckets buckets0, IHistogramBuckets buckets1,
-                           @Nullable ColumnLimits columnLimits,
-                           @Nullable ColumnQuantization quantization0,
-                           @Nullable ColumnQuantization quantization1) {
+    public JsonGroups<JsonGroups<Count>>
+    histogram2D(ColumnDescription cd0, ColumnDescription cd1,
+                IHistogramBuckets buckets0, IHistogramBuckets buckets1,
+                @Nullable ColumnLimits columnLimits,
+                @Nullable ColumnQuantization quantization0,
+                @Nullable ColumnQuantization quantization1) {
         // TODO: this does not currently compute nulls
         String query = this.conn.getQueryForHeatmap(cd0, cd1,
                 columnLimits,
@@ -212,7 +213,8 @@ public class JdbcDatabase {
         boolean isDouble = bucketNr.getDescription().kind == ContentsKind.Double;
         int b0 = buckets0.getBucketCount();
         int b1 = buckets1.getBucketCount();
-        Heatmap result = new Heatmap(b0, b1);
+
+        long[][] buckets = new long[b0][b1];
         for (int i = 0; i < bucketNr.sizeInRows(); i++) {
             int index = isDouble ? Converters.toInt(bucketNr.getDouble(i)) : bucketNr.getInt(i);
             long count = Converters.toLong(bucketSize.getDouble(i));
@@ -225,9 +227,12 @@ public class JdbcDatabase {
             int y0 = index & 0xFFFF;
             if (y0 == b1)
                 y0--;
-            result.buckets[x0][y0] += count;
+            buckets[x0][y0] += count;
         }
-        return result;
+        Count z = new Count(0);
+        return new JsonGroups<JsonGroups<Count>>(
+                b0, i -> i < 0 ? new JsonGroups<Count>(b1, z) :
+                new JsonGroups<Count>(b1, j -> j < 0 ? z : new Count(buckets[i][j])));
     }
 
     /**

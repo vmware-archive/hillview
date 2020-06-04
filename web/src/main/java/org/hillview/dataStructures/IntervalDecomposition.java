@@ -17,7 +17,7 @@
 
 package org.hillview.dataStructures;
 
-import org.hillview.dataset.api.Pair;
+import org.hillview.utils.Pair;
 import org.hillview.table.columns.ColumnQuantization;
 import org.hillview.utils.Converters;
 import org.hillview.utils.Utilities;

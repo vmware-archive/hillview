@@ -17,6 +17,7 @@
 
 package org.hillview.sketches;
 
+import org.hillview.sketches.highorder.GroupBySketch;
 import org.hillview.sketches.results.Count;
 import org.hillview.sketches.results.IHistogramBuckets;
 
@@ -25,8 +26,8 @@ import org.hillview.sketches.results.IHistogramBuckets;
  */
 public class GenericHistogramSketch
         extends GroupBySketch<Count,
-                              EmptyWorkspace,
-                              CounterSketch> {
+                                      EmptyWorkspace,
+                                      CounterSketch> {
     public GenericHistogramSketch(
             IHistogramBuckets buckets) {
         super(buckets, new CounterSketch());

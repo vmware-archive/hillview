@@ -147,4 +147,10 @@ public class Converters {
             throw new RuntimeException("Cannot convert to int " + value);
         return (int)value;
     }
+
+    public static double checkRate(double samplingRate) {
+        if (samplingRate <= 0 || samplingRate > 1)
+            throw new RuntimeException("Invalid sampling rate " + samplingRate);
+        return samplingRate;
+    }
 }

@@ -1,7 +1,7 @@
 package org.hillview.security;
 
 
-import org.hillview.dataset.api.Pair;
+import org.hillview.utils.Pair;
 import org.hillview.utils.Utilities;
 
 import javax.crypto.BadPaddingException;

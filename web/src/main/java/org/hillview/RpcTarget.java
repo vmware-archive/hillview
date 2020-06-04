@@ -21,7 +21,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.grpc.StatusRuntimeException;
 import org.hillview.dataset.api.*;
-import org.hillview.dataset.*;
+import org.hillview.dataset.monoids.PRDataSetMonoid;
+import org.hillview.dataset.monoids.PartialResultMonoid;
+import org.hillview.sketches.highorder.PostProcessedSketch;
 import org.hillview.utils.*;
 import rx.Observable;
 import rx.Observer;
@@ -410,7 +412,7 @@ public abstract class RpcTarget implements IJson, IRpcTarget {
 
     private <T, R extends ISketchResult, S extends IJson> void
     runObservedSketch(IDataSet<T> data, PostProcessedSketch<T, R, S> sketch, ResultObserver<R> observer,
-              RpcRequestContext context) {
+                      RpcRequestContext context) {
         // Run the sketch
         Observable<PartialResult<R>> sketches = data.sketch(sketch.sketch);
         // Knows how to add partial results

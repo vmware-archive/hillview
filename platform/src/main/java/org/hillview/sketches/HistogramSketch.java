@@ -16,7 +16,7 @@
  */
 
 package org.hillview.sketches;
-import org.hillview.dataset.TableSketch;
+import org.hillview.dataset.api.TableSketch;
 import org.hillview.sketches.results.Histogram;
 import org.hillview.sketches.results.IHistogramBuckets;
 import org.hillview.table.api.IColumn;

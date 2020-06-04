@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2020 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,21 +15,21 @@
  * limitations under the License.
  */
 
-package org.hillview.maps;
+package org.hillview.utils;
 
-import org.hillview.dataset.api.IMap;
-
-import javax.annotation.Nullable;
+import org.hillview.dataset.api.ISketchResult;
 
 /**
- * The identity map.
- * @param <T>  Type of data processed.
+ * A group of values: one per bucket, plus one per missing bucket.
+ * @param <R>  R values in group.
  */
-public class IdMap<T> implements IMap<T, T> {
-    static final long serialVersionUID = 1;
-    @Nullable
-    @Override
-    public T apply(@Nullable T data) {
-        return data;
-    }
+public interface IGroup<R> extends ISketchResult {
+    R getMissing();
+    int size();
+    /**
+     * Get the bucket with the specified index.
+     * @param index  Index. -1 for missing data.
+     * @return       The data in the specified bucket.
+     */
+    R getBucket(int index);
 }

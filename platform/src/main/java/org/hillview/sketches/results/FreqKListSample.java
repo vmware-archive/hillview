@@ -20,7 +20,7 @@ package org.hillview.sketches.results;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
-import org.hillview.dataset.api.Pair;
+import org.hillview.utils.Pair;
 import org.hillview.table.Schema;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.Converters;

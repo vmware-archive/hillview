@@ -1,6 +1,6 @@
 package org.hillview.sketches.results;
 
-import org.hillview.dataset.PostProcessedSketch;
+import org.hillview.sketches.highorder.PostProcessedSketch;
 import org.hillview.sketches.NextKSketch;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;

@@ -17,9 +17,8 @@
 
 package org.hillview.sketches;
 
-import org.hillview.dataset.TableSketch;
+import org.hillview.dataset.api.TableSketch;
 import org.hillview.dataset.api.IJsonSketchResult;
-import org.hillview.dataset.api.ISketch;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;

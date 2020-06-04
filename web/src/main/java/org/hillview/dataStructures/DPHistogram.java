@@ -1,8 +1,8 @@
 package org.hillview.dataStructures;
 
-import org.hillview.dataset.PostProcessedSketch;
+import org.hillview.sketches.highorder.PostProcessedSketch;
 import org.hillview.dataset.api.ISketch;
-import org.hillview.dataset.api.Pair;
+import org.hillview.utils.Pair;
 import org.hillview.security.SecureLaplace;
 import org.hillview.sketches.results.Histogram;
 import org.hillview.table.api.ITable;

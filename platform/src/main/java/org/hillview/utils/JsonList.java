@@ -18,7 +18,6 @@
 package org.hillview.utils;
 
 import org.hillview.dataset.api.IJsonSketchResult;
-import org.hillview.dataset.api.Pair;
 
 import javax.annotation.Nullable;
 import java.util.*;

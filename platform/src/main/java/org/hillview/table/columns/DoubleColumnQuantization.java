@@ -40,12 +40,13 @@ public class DoubleColumnQuantization extends ColumnQuantization {
 
     /**
      * Create a privacy metadata for a numeric-type column.
-     *
+     * @param column      Name of quantized column.
      * @param granularity Size of a bucket for quantized data.
      * @param globalMin   Minimum value expected in the column.  The minimum is inclusive.
      * @param globalMax   Maximum value expected in column.  The maximum is exclusive.
      */
-    public DoubleColumnQuantization(double granularity, double globalMin, double globalMax) {
+    public DoubleColumnQuantization(String column, double granularity, double globalMin, double globalMax) {
+        super(column);
         this.granularity = granularity;
         this.globalMin = globalMin;
         this.globalMax = globalMax;
