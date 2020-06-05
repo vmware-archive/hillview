@@ -31,9 +31,7 @@ import {
     EigenVal,
     FilterDescription,
     FindResult, Groups,
-    Heatmap,
     HeavyHittersFilterInfo,
-    Histogram,
     HistogramRequestInfo,
     IColumnDescription,
     JSCreateColumnInfo,
@@ -362,8 +360,8 @@ RpcRequest<PartialResult<RemoteObjectId>> {
     }
 
     public createHistogram2DAndCDFRequest(info: HistogramRequestInfo[]):
-        RpcRequest<PartialResult<Pair<Groups<Groups<number>>, Histogram>>> {
-        return this.createStreamingRpcRequest<Pair<Groups<Groups<number>>, Histogram>>("histogram2DAndCDF", info);
+        RpcRequest<PartialResult<Pair<Groups<Groups<number>>, Groups<number>>>> {
+        return this.createStreamingRpcRequest<Pair<Groups<Groups<number>>, Groups<number>>>("histogram2DAndCDF", info);
     }
 
     public createHistogram2DRequest(info: HistogramRequestInfo[]): RpcRequest<PartialResult<Two<Groups<Groups<number>>>>> {
@@ -375,8 +373,8 @@ RpcRequest<PartialResult<RemoteObjectId>> {
     }
 
     public createHistogramAndCDFRequest(info: HistogramRequestInfo[]):
-    RpcRequest<PartialResult<Pair<Histogram, Histogram>>> {
-        return this.createStreamingRpcRequest<Pair<Histogram, Histogram>>(
+    RpcRequest<PartialResult<Pair<Groups<number>, Groups<number>>>> {
+        return this.createStreamingRpcRequest<Pair<Groups<number>, Groups<number>>>(
             "histogramAndCDF", info);
     }
 

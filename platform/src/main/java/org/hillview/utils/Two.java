@@ -26,5 +26,9 @@ public class Two<R> extends Pair<R, R> {
     public Two(@Nullable R first, @Nullable R second) {
         super(first, second);
     }
+
+    public Two(@Nullable R first) {
+        this(first, null);
+    }
 }
 

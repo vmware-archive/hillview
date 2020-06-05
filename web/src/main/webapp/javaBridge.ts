@@ -237,13 +237,10 @@ export interface ColumnSortOrientation {
     isAscending: boolean;
 }
 
+// TODO: delete this class
 export interface Histogram {
     buckets: number[];
     missingCount: number;
-    /// confidence interval for each histogram bucket
-    confidence?: number[];
-    /// Confidence for missingData
-    missingConfidence?: number;
 }
 
 // This is actually a union of two java classes

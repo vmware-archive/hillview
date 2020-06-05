@@ -64,6 +64,10 @@ public class Count implements IJsonSketchResult, IScalable<Count> {
     @Override
     public JsonElement toJsonTree() { return new JsonPrimitive(this.count); }
 
+    public Count add(Count other) {
+        return new Count(this.count + other.count);
+    }
+
     @Override
     public Count rescale(double samplingRate) {
         if (samplingRate >= 1.0)

@@ -70,8 +70,6 @@ export class Histogram2DPlot extends Histogram2DBase {
         const rects: Box[] = [];
         this.histogram = {
             buckets: [],
-            confidence: null,
-            missingConfidence: 0,
             missingCount: this.heatmap.missingData
         };
         for (let x = 0; x < xPoints; x++) {

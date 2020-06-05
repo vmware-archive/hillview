@@ -20,7 +20,6 @@ package org.hillview.benchmarks;
 import org.hillview.dataStructures.*;
 import org.hillview.sketches.*;
 import org.hillview.sketches.highorder.GroupByWorkspace;
-import org.hillview.sketches.highorder.IdPostProcessedSketch;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.sketches.highorder.PostProcessedSketch;
 import org.hillview.dataset.RemoteDataSet;
@@ -299,26 +298,32 @@ public class DPPerfBenchmarks extends Benchmarks {
 
         if (conf.dataset == Dataset.DB) {
             r = () -> {
-                Histogram histo = this.database.histogram(
+                JsonGroups<Count> histo = this.database.histogram(
                         col, c.buckets, null, c.quantization, 0);
                 if (conf.usePostProcessing) {
-                    ISketch<ITable, Histogram> pre = new PrecomputedSketch<ITable, Histogram>(histo);  // not really used
-                    PostProcessedSketch<ITable, Histogram, Histogram> post =
-                            new DPHistogram(pre, ps.getColumnIndex(col.name),
+                    ISketch<ITable, JsonGroups<Count>> pre = new PrecomputedSketch<>(histo);  // not really used
+                    PostProcessedSketch<ITable, JsonGroups<Count>, Two<JsonGroups<Count>>> post =
+                            new DPHistogram<>(pre, ps.getColumnIndex(col.name),
                                 c.decomposition, epsilon, false, this.flightsWrapper.laplace);
                     post.postProcess(histo);
                 }
             };
         } else {
             Converters.checkNull(table);
-            ISketch<ITable, Histogram> hsk = new HistogramSketch(
-                c.buckets, 1.0, 0, c.quantization);
-            PostProcessedSketch<ITable, Histogram, Histogram> post;
+            TableSketch<Groups<Count>> hsk = new HistogramSketch(
+                c.buckets).quantized(new QuantizationSchema(c.quantization));
+            PostProcessedSketch<ITable, Groups<Count>, Two<JsonGroups<Count>>> post;
             if (conf.usePostProcessing)
-                post = new DPHistogram(hsk, ps.getColumnIndex(col.name),
+                post = new DPHistogram<>(hsk, ps.getColumnIndex(col.name),
                         c.decomposition, epsilon, false, this.flightsWrapper.laplace);
             else
-                post = new IdPostProcessedSketch<ITable, Histogram>(hsk);
+                post = new PostProcessedSketch<ITable, Groups<Count>, Two<JsonGroups<Count>>>(hsk) {
+                    @Override
+                    public Two<JsonGroups<Count>> postProcess(@Nullable Groups<Count> result) {
+                        Converters.checkNull(result);
+                        return new Two<>(result.toSerializable(c -> c));
+                    }
+                };
             r = () -> table.blockingPostProcessedSketch(post);
             quiet = true;
             runNTimes(r, 1, bench);  // warm up jit

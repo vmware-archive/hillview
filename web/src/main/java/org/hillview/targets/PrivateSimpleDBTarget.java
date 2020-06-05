@@ -122,18 +122,17 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
 
         IntervalDecomposition d0 = info[0].getDecomposition(quantization);
         IntervalDecomposition d1 = info[1].getDecomposition(quantization);
-        Histogram histo = this.database.histogram(
+        JsonGroups<Count> histo = this.database.histogram(
                 cd, info[0].getBuckets(quantization), this.wrapper.columnLimits, quantization, this.rowCount);
-        Histogram cdf = this.database.histogram(
+        JsonGroups<Count> cdf = this.database.histogram(
                 cd, info[1].getBuckets(quantization), this.wrapper.columnLimits, quantization, this.rowCount);
-        ISketch<ITable, Histogram> preHisto = new PrecomputedSketch<ITable, Histogram>(histo);
-        ISketch<ITable, Histogram> preCdf = new PrecomputedSketch<ITable, Histogram>(cdf);
+        ISketch<ITable, JsonGroups<Count>> preHisto = new PrecomputedSketch<>(histo);
+        ISketch<ITable, JsonGroups<Count>> preCdf = new PrecomputedSketch<>(cdf);
         int colIindex = this.wrapper.getColumnIndex(cd.name);
-        DPHistogram privateHisto = new DPHistogram(preHisto, colIindex, d0, epsilon, false, this.wrapper.laplace);
-        DPHistogram privateCdf = new DPHistogram(preCdf, colIindex, d1, epsilon, true, this.wrapper.laplace);
-        ConcurrentPostprocessedSketch<ITable, Histogram, Histogram, Histogram, Histogram> cc =
-                new ConcurrentPostprocessedSketch<ITable, Histogram, Histogram, Histogram, Histogram>(
-                        privateHisto, privateCdf);
+        DPHistogram<JsonGroups<Count>> privateHisto = new DPHistogram<>(preHisto, colIindex, d0, epsilon, false, this.wrapper.laplace);
+        DPHistogram<JsonGroups<Count>> privateCdf = new DPHistogram<>(preCdf, colIindex, d1, epsilon, true, this.wrapper.laplace);
+        ConcurrentPostprocessedSketch<ITable, JsonGroups<Count>, JsonGroups<Count>, Two<JsonGroups<Count>>, Two<JsonGroups<Count>>> cc =
+                new ConcurrentPostprocessedSketch<>(privateHisto, privateCdf);
         this.runCompleteSketch(this.table, cc, request, context);
     }
 

@@ -18,6 +18,7 @@
 package org.hillview.sketches.results;
 
 import org.hillview.dataset.api.IJson;
+import org.hillview.dataset.api.IJsonSketchResult;
 import org.hillview.dataset.api.IScalable;
 import org.hillview.dataset.api.ISketchResult;
 import org.hillview.utils.IGroup;
@@ -26,6 +27,7 @@ import org.hillview.utils.JsonList;
 import org.hillview.utils.Linq;
 
 import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -103,7 +105,7 @@ public class Groups<R extends ISketchResult & IScalable<R>>
         return new Groups<S>(perBucket, missing);
     }
 
-    public <J extends IJson> JsonGroups<J> toSerializable(Function<R, J> map) {
+    public <J extends IJsonSketchResult> JsonGroups<J> toSerializable(Function<R, J> map) {
         J missing = map.apply(this.perMissing);
         JsonList<J> perBucket = Linq.map(this.perBucket, map);
         return new JsonGroups<J>(perBucket, missing);

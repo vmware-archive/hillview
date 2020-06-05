@@ -122,8 +122,7 @@ public class HillviewBenchmarks extends Benchmarks {
 
         IHistogramBuckets buckDes = new DoubleHistogramBuckets(col.getName(), 0, 100, bucketNum);
         ITable table = createTable(colSize, col);
-        TableSketch<Histogram> sk = new HistogramSketch(
-                        buckDes, rateParameter, 0, null);
+        TableSketch<Groups<Count>> sk = new HistogramSketch(buckDes).sampled(rateParameter, 0);
 
         System.out.println("Bench,Time (ms),Melems/s,Percent slower");
         if (args[0].equals("noseparatethread")) {

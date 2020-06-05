@@ -33,8 +33,6 @@ import java.util.Arrays;
 import java.util.function.Consumer;
 
 public class TestUtil {
-    private static final boolean silent = true;
-
     /**
      * Provides access to private members in classes for testing.
      */
@@ -56,7 +54,7 @@ public class TestUtil {
 
     private static void Percentiles(final long[] R1) {
         Arrays.sort(R1);
-        if (!silent) {
+        if (BaseTest.toPrint) {
             System.out.println("Percentiles: 0,10,20,50,90,99 ");
             System.out.println(R1[0] + " , " + R1[R1.length / 10] + " , " + R1[R1.length / 5] + " , "
                     + R1[R1.length / 2] + " , " + R1[(9 * R1.length) / 10] + " , " + R1[R1.length - 1]);
@@ -68,7 +66,7 @@ public class TestUtil {
      * then prints a percentiles report.  TODO: should check for regressions automatically.
      **/
     public static void runPerfTest(String test, final Consumer<Integer> testing, final int num) {
-        if (!silent)
+        if (BaseTest.toPrint)
             System.out.println(test);
         final int tmp = 0;
         long startTime, endTime;
@@ -117,13 +115,9 @@ public class TestUtil {
         return col;
     }
 
-    /**
-     * Compare current run time of test to saved run time.
-     */
-    @SuppressWarnings("EmptyMethod")
     private static void printPerf(final String testName, final long time) {
-        // TODO
-        /*System.out.println(testName + " took " + time/1000 + " us");*/
+        if (BaseTest.toPrint)
+            System.out.println(testName + " took " + time/1000 + " us");
     }
 
     /**

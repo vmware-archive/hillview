@@ -195,13 +195,14 @@ public class SimpleDBTarget extends RpcTarget {
         assert info.length == 2;
         ColumnDescription cd = info[0].cd;  // both args should be on the same column
         @Nullable
-        Histogram histo = this.database.histogram(
+        JsonGroups<Count> histo = this.database.histogram(
                 cd, info[0].getBuckets(), this.columnLimits, null, this.rowCount);
-        Histogram cdf = this.database.histogram(
+        JsonGroups<Count> cdf = this.database.histogram(
                 cd, info[1].getBuckets(), this.columnLimits, null, this.rowCount);
-        Pair<Histogram, Histogram> result = new Pair<Histogram, Histogram>(histo, cdf.integrate());
-        ISketch<ITable, Pair<Histogram, Histogram>> sk =
-                new PrecomputedSketch<ITable, Pair<Histogram, Histogram>>(result);
+        Pair<JsonGroups<Count>, JsonGroups<Count>> result = new Pair<>(
+                histo, cdf.prefixSum(Count::add, JsonGroups::new));
+        ISketch<ITable, Pair<JsonGroups<Count>, JsonGroups<Count>>> sk =
+                new PrecomputedSketch<>(result);
         this.runSketch(this.table, sk, request, context);
     }
 

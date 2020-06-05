@@ -18,8 +18,9 @@
 package org.hillview.sketches.highorder;
 
 import org.hillview.dataset.api.ISketch;
+import org.hillview.sketches.results.Count;
+import org.hillview.sketches.results.Groups;
 import org.hillview.utils.Pair;
-import org.hillview.sketches.results.Histogram;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 
@@ -30,16 +31,16 @@ import javax.annotation.Nullable;
  * @param <D>  Type of first argument.
  */
 public class DataWithCDFSketch<D> extends
-        PostProcessedSketch<ITable, Pair<D, Histogram>, Pair<D, Histogram>> {
-    public DataWithCDFSketch(ISketch<ITable, Pair<D, Histogram>> sketch) {
+        PostProcessedSketch<ITable, Pair<D, Groups<Count>>, Pair<D, Groups<Count>>> {
+    public DataWithCDFSketch(ISketch<ITable, Pair<D, Groups<Count>>> sketch) {
         super(sketch);
     }
 
     @Nullable
     @Override
-    public Pair<D, Histogram> postProcess(@Nullable Pair<D, Histogram> result) {
+    public Pair<D, Groups<Count>> postProcess(@Nullable Pair<D, Groups<Count>> result) {
         D first = Converters.checkNull(Converters.checkNull(result).first);
-        Histogram cdf = Converters.checkNull(result.second);
-        return new Pair<D, Histogram>(first, cdf.integrate());
+        Groups<Count> cdf = Converters.checkNull(result.second);
+        return new Pair<>(first, cdf.prefixSum(Count::add, Groups::new));
     }
 }

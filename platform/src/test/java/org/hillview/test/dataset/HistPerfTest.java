@@ -32,14 +32,14 @@ import org.junit.Test;
 import static org.hillview.utils.TestTables.getIntTable;
 
 /**
- * Test class for performance profiling of histogram and CDF
+ * Test class for performance profiling of histograms
  */
-public class CDFTest extends BaseTest {
+public class HistPerfTest extends BaseTest {
     private final BasicColStats colStat;
     private final LocalDataSet<ITable> dataSet;
     private final String colName;
 
-    public CDFTest() {
+    public HistPerfTest() {
         final int bigSize = 30000000;
         final int numCols = 1;
         final SmallTable bigTable = getIntTable(bigSize, numCols);
@@ -51,18 +51,7 @@ public class CDFTest extends BaseTest {
         this.colStat = r.get(0);
     }
 
-    private void prepareCDF(int width, int height, boolean useSampling) {
-        IHistogramBuckets bDec  =
-                new DoubleHistogramBuckets(this.colName, this.colStat.getMin(), this.colStat.getMax(), width);
-        double sampleSize  =  2 * height * height * width;
-        double rate = sampleSize / (double)this.colStat.getPresentCount();
-        if ((rate > 0.1) || (!useSampling))
-            rate = 1.0; // no performance gains in sampling
-        HistogramSketch sk = new HistogramSketch(
-                bDec, rate, 0, null);
-        this.dataSet.blockingSketch(sk);
-    }
-
+    /*
     private void prepareHist(int width, int height, int barWidth, boolean useSampling) {
         int bucketNum = width / barWidth;
         IHistogramBuckets bDec  =
@@ -75,15 +64,33 @@ public class CDFTest extends BaseTest {
         this.dataSet.blockingSketch(
                 new HistogramSketch(bDec, rate, 0, null));
     }
+    */
+
+    private void prepareHistNew(int width, int height, int barWidth, boolean useSampling) {
+        int bucketNum = width / barWidth;
+        IHistogramBuckets bDec  =
+                new DoubleHistogramBuckets(this.colName, this.colStat.getMin(), this.colStat.getMax(), bucketNum);
+        // approximately what is needed to have error smaller than a single pixel
+        double sampleSize  =  2 * height * height * bucketNum;
+        double rate = sampleSize / this.colStat.getPresentCount();
+        if ((rate > 0.1) || (!useSampling))
+            rate = 1.0; // no use in sampling
+        this.dataSet.blockingSketch(
+                new HistogramSketch(bDec).sampled(rate, 0));
+    }
 
     @Test
     public void HistE2E() {
-        CDFTest cdftest = new CDFTest();
-        TestUtil.runPerfTest("Running time of cdfBuckets: ",
-                k -> cdftest.prepareCDF(1000, 1000, false), 2);
+        HistPerfTest cdftest = new HistPerfTest();
+        /*
         TestUtil.runPerfTest("Running time of hist with sampling: ",
                 k -> prepareHist(1000, 100, 10, true), 2);
         TestUtil.runPerfTest("Running time of hist without sampling: ",
                 k -> cdftest.prepareHist(1000, 100, 10, false), 2);
+         */
+        TestUtil.runPerfTest("Running time of hist1 with sampling: ",
+                k -> prepareHistNew(1000, 100, 10, true), 2);
+        TestUtil.runPerfTest("Running time of hist1 without sampling: ",
+                k -> cdftest.prepareHistNew(1000, 100, 10, false), 2);
     }
 }

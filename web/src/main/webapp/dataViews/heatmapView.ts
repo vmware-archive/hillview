@@ -320,7 +320,8 @@ export class HeatmapView extends ChartView {
         this.colorLegend.draw();
         this.plot.draw();
         if (this.showMissingData) {
-            this.xHistoPlot.setHistogram(heatmap.histogramMissingX, this.samplingRate,
+            this.xHistoPlot.setHistogram({first: heatmap.histogramMissingX, second: null},
+                this.samplingRate,
                 this.xAxisData, null,
                 this.page.dataset.isPrivate());
             this.xHistoPlot.draw();

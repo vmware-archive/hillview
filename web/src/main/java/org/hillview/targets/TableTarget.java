@@ -288,11 +288,11 @@ public final class TableTarget extends RpcTarget {
     public void histogramAndCDF(RpcRequest request, RpcRequestContext context) {
         HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
         assert info.length == 2;
-        HistogramSketch sk = info[0].getSketch(); // Histogram
-        HistogramSketch cdf = info[1].getSketch(); // CDF: also histogram but at finer granularity
-        ConcurrentSketch<ITable, Histogram, Histogram> csk =
-                new ConcurrentSketch<ITable, Histogram, Histogram>(sk, cdf);
-        DataWithCDFSketch<Histogram> post = new DataWithCDFSketch<Histogram>(csk);
+        TableSketch<Groups<Count>> sk = info[0].getSketch(); // Histogram
+        TableSketch<Groups<Count>> cdf = info[1].getSketch(); // CDF: also histogram but at finer granularity
+        ConcurrentSketch<ITable, Groups<Count>, Groups<Count>> csk =
+                new ConcurrentSketch<>(sk, cdf);
+        DataWithCDFSketch<Groups<Count>> post = new DataWithCDFSketch<Groups<Count>>(csk);
         this.runSketch(this.table, post, request, context);
     }
 
@@ -325,9 +325,9 @@ public final class TableTarget extends RpcTarget {
         TableSketch<Groups<Groups<Count>>> sk = new Histogram2DSketch(
                 info[1].getBuckets(),
                 info[0].getBuckets()).sampled(info[0].samplingRate, info[0].seed);
-        HistogramSketch cdf = info[2].getSketch();
-        ConcurrentSketch<ITable, Groups<Groups<Count>>, Histogram> csk =
-                new ConcurrentSketch<ITable, Groups<Groups<Count>>, Histogram>(sk, cdf);
+        TableSketch<Groups<Count>> cdf = info[2].getSketch();
+        ConcurrentSketch<ITable, Groups<Groups<Count>>, Groups<Count>> csk =
+                new ConcurrentSketch<ITable, Groups<Groups<Count>>, Groups<Count>>(sk, cdf);
         DataWithCDFSketch<Groups<Groups<Count>>> dwc = new DataWithCDFSketch<Groups<Groups<Count>>>(csk);
         this.runSketch(this.table, dwc, request, context);
     }

@@ -24,22 +24,27 @@ import {ErrorReporter} from "./ui/errReporter";
 import {NotifyDialog} from "./ui/dialog";
 import {HtmlString, Size} from "./ui/ui";
 import {
-    AggregateDescription, ComparisonFilterDescription,
+    AggregateDescription,
+    ComparisonFilterDescription,
     ContentsKind,
-    FilterDescription, Groups, Heatmap, Histogram,
+    FilterDescription,
+    Groups,
+    Heatmap,
+    Histogram,
     kindIsNumeric,
-    kindIsString, RowFilterDescription, StringColumnFilterDescription,
+    kindIsString,
+    RowFilterDescription,
     StringFilterDescription
 } from "./javaBridge";
 import {DragEventKind, PageTitle} from "./ui/fullPage";
 
 // TODO: delete this function
 export function toHistogram(data: Groups<number>): Histogram {
+    if (data == null)
+        return null;
     return {
         buckets: data.perBucket,
         missingCount: data.perMissing,
-        confidence: null,
-        missingConfidence: null
     };
 }
 
@@ -58,7 +63,7 @@ export function toHeatmap(data: Two<Groups<Groups<number>>>): Heatmap {
             conf.push(data.second.perBucket[i].perBucket)
     }
 
-    const d: Heatmap = {
+    return {
         buckets: b,
         confidence: conf,
         missingData: data.first.perMissing.perMissing,
@@ -69,7 +74,6 @@ export function toHeatmap(data: Two<Groups<Groups<number>>>): Heatmap {
         },
         totalSize: total
     };
-    return d;
 }
 
 export interface Pair<T1, T2> {
@@ -225,10 +229,9 @@ export class Converters {
 
     static comparisonFilterDescription(filter: ComparisonFilterDescription): string {
         const kind = filter.column.kind;
-        let result = "Compare " + filter.column.name + " " + filter.comparison +
+        return "Compare " + filter.column.name + " " + filter.comparison +
             (kindIsNumeric(kind) ? this.valueToString(filter.doubleValue, kind) :
-                    this.valueToString(filter.stringValue, kind));
-        return result;
+                this.valueToString(filter.stringValue, kind));
     }
 }
 

@@ -23,6 +23,7 @@ import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IMap;
+import org.hillview.dataset.api.TableSketch;
 import org.hillview.sketches.Histogram2DSketch;
 import org.hillview.sketches.results.*;
 import org.hillview.utils.Pair;
@@ -31,7 +32,6 @@ import org.hillview.maps.FindFilesMap;
 import org.hillview.maps.LoadFilesMap;
 import org.hillview.security.SecureLaplace;
 import org.hillview.security.TestKeyLoader;
-import org.hillview.sketches.HistogramSketch;
 import org.hillview.sketches.SummarySketch;
 import org.hillview.storage.FileSetDescription;
 import org.hillview.storage.IFileReference;
@@ -105,7 +105,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
      * @param decomposition The leaf specification for the histogram.
      * @return The average per-query absolute error.
      */
-    private double computeAccuracy(DPHistogram ph, IntervalDecomposition decomposition, SecureLaplace laplace) {
+    private double computeAccuracy(DPHistogram<IGroup<Count>> ph, IntervalDecomposition decomposition, SecureLaplace laplace) {
         double scale = PrivacyUtils.computeNoiseScale(ph.getEpsilon(), decomposition);
         double baseVariance = PrivacyUtils.laplaceVariance(scale);
         // Do all-intervals accuracy on leaves.
@@ -197,11 +197,11 @@ public class DPAccuracyBenchmarks extends Benchmarks {
         // Construct a histogram corresponding to the leaves.
         // We will manually aggregate buckets as needed for the accuracy test.
         HistogramRequestInfo info = createHistogramRequest(col, cq);
-        HistogramSketch sk = info.getSketch(cq);
+        TableSketch<Groups<Count>> sk = info.getSketch(cq);
         IntervalDecomposition dd = info.getDecomposition(cq);
 
         System.out.println("Epsilon: " + epsilon);
-        Histogram hist = table.blockingSketch(sk); // Leaf counts.
+        Groups<Count> hist = table.blockingSketch(sk); // Leaf counts.
         Assert.assertNotNull(hist);
 
         TestKeyLoader tkl = new TestKeyLoader();
@@ -210,8 +210,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
         for (int i = 0 ; i < iterations; i++) {
             tkl.setIndex(i);
             SecureLaplace laplace = new SecureLaplace(tkl);
-            @SuppressWarnings("ConstantConditions")
-            DPHistogram ph = new DPHistogram(null, colIndex, dd, epsilon, false, laplace);
+            DPHistogram<IGroup<Count>> ph = new DPHistogram<>(null, colIndex, dd, epsilon, false, laplace);
             double acc = computeAccuracy(ph, dd, laplace);
             accuracies.add(acc);
             totAccuracy += acc;

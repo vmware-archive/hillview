@@ -21,7 +21,16 @@ import {Histogram, kindIsString} from "../javaBridge";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {SpecialChars} from "./ui";
-import {add, cloneArray, formatNumber, makeInterval, percent, significantDigits, valueWithConfidence} from "../util";
+import {
+    add,
+    cloneArray,
+    formatNumber,
+    makeInterval,
+    percent,
+    significantDigits,
+    Two,
+    valueWithConfidence
+} from "../util";
 
 interface ValueAndIndex {
     value: number;
@@ -35,7 +44,7 @@ export class PiePlot extends Plot {
     /**
      * Histogram that is being drawn.
      */
-    public histogram: Histogram;
+    public histogram: Two<Histogram>;
     /**
      * Sampling rate that was used to compute the histogram.
      */
@@ -55,7 +64,7 @@ export class PiePlot extends Plot {
      * @param maxYAxis      Not used for pie chart.
      * @param isPrivate     True if we are plotting private data.
      */
-    public setHistogram(bars: Histogram, samplingRate: number,
+    public setHistogram(bars: Two<Histogram>, samplingRate: number,
                         axisData: AxisData, maxYAxis: number | null, isPrivate: boolean): void {
         this.histogram = bars;
         this.samplingRate = samplingRate;
@@ -116,8 +125,8 @@ export class PiePlot extends Plot {
     }
 
     private drawPie(): void {
-        const counts = this.histogram.buckets.map((x) => Math.max(x, 0));
-        counts.push(this.histogram.missingCount);
+        const counts = this.histogram.first.buckets.map((x) => Math.max(x, 0));
+        counts.push(this.histogram.first.missingCount);
         const pie = d3pie().sort(null);
         const chartWidth = this.getChartWidth();
         const chartHeight = this.getChartHeight();
@@ -127,10 +136,10 @@ export class PiePlot extends Plot {
             .outerRadius(radius);
         let confidence;
         if (this.isPrivate) {
-            confidence = cloneArray(this.histogram.confidence);
-            confidence.push(this.histogram.missingConfidence);
+            confidence = cloneArray(this.histogram.second.buckets);
+            confidence.push(this.histogram.second.missingCount);
         } else {
-            confidence = new Array(this.histogram.buckets.length + 1);
+            confidence = new Array(this.histogram.first.buckets.length + 1);
         }
 
         const sum = counts.reduce(add, 0);

@@ -17,19 +17,16 @@
 
 package org.hillview.utils;
 
-import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.IJsonSketchResult;
-import org.hillview.dataset.api.ISketchResult;
 import org.hillview.sketches.results.Count;
 
-import java.util.Objects;
 import java.util.function.Function;
 
 /**
  * This is a version of Group which is serializable as JSON.
  * @param <R>  Type of data that is grouped.
  */
-public class JsonGroups<R extends IJson> implements IJsonSketchResult, IGroup<R> {
+public class JsonGroups<R extends IJsonSketchResult> implements IJsonSketchResult, IGroup<R> {
     /**
      * For each bucket one result.
      */
@@ -85,8 +82,12 @@ public class JsonGroups<R extends IJson> implements IJsonSketchResult, IGroup<R>
             return this.perBucket.get(index);
     }
 
+    public static JsonGroups<Count> fromArray(long[] data, long missing) {
+        return new JsonGroups<Count>(data.length, index -> index < 0 ? new Count(missing) : new Count(data[index]));
+    }
+
     public static JsonGroups<Count> fromArray(long[] data) {
-        return new JsonGroups<Count>(data.length, index -> index < 0 ? new Count(0) : new Count(data[index]));
+        return fromArray(data, 0);
     }
 
     public static JsonGroups<JsonGroups<Count>> fromArray(long[][] data) {
@@ -96,8 +97,12 @@ public class JsonGroups<R extends IJson> implements IJsonSketchResult, IGroup<R>
                         fromArray(data[index]));
     }
 
+    public static JsonGroups<Count> fromArray(int[] data, int missing) {
+        return new JsonGroups<Count>(data.length, index -> index < 0 ? new Count(missing) : new Count(data[index]));
+    }
+
     public static JsonGroups<Count> fromArray(int[] data) {
-        return new JsonGroups<Count>(data.length, index -> index < 0 ? new Count(0) : new Count(data[index]));
+        return fromArray(data, 0);
     }
 
     public static JsonGroups<JsonGroups<Count>> fromArray(int[][] data) {

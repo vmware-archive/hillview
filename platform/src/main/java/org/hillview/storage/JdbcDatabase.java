@@ -165,10 +165,11 @@ public class JdbcDatabase {
      * @param rowCount Number of rows in the database.
      * @return         The histogram of the data.
      */
-    public Histogram histogram(ColumnDescription cd, IHistogramBuckets buckets,
-                               @Nullable ColumnLimits columnLimits,
-                               @Nullable ColumnQuantization quantization,
-                               int rowCount) {
+    public JsonGroups<Count> histogram(
+            ColumnDescription cd, IHistogramBuckets buckets,
+            @Nullable ColumnLimits columnLimits,
+            @Nullable ColumnQuantization quantization,
+            int rowCount) {
         String query = this.conn.getQueryForHistogram(cd, columnLimits, buckets, quantization);
         ResultSet rs = this.getQueryResult(query);
         List<IAppendableColumn> cols = JdbcDatabase.convertResultSet(rs);
@@ -191,7 +192,7 @@ public class JdbcDatabase {
             nonNulls += count;
         }
         long nulls = rowCount - nonNulls;
-        return new Histogram(data, nulls);
+        return JsonGroups.fromArray(data, nulls);
     }
 
     public JsonGroups<JsonGroups<Count>>

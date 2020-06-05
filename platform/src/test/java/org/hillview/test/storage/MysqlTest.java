@@ -32,6 +32,7 @@ import org.hillview.table.columns.StringColumnQuantization;
 import org.hillview.table.filters.RangeFilterDescription;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.Converters;
+import org.hillview.utils.IGroup;
 import org.hillview.utils.JsonGroups;
 import org.junit.Assert;
 import org.junit.Test;
@@ -238,14 +239,14 @@ public class MysqlTest extends JdbcTest {
         Instant last = parseOneDate("1965/02/01");
         DoubleHistogramBuckets buckets = new DoubleHistogramBuckets("birth_date",
                 Converters.toDouble(first), Converters.toDouble(last), 10);
-        Histogram histogram = db.histogram(
+        JsonGroups<Count> histogram = db.histogram(
                 new ColumnDescription("birth_date", ContentsKind.Date), buckets,
                 null, null, 300024);
         Assert.assertNotNull(histogram);
-        Assert.assertEquals(10, histogram.getBucketCount());
+        Assert.assertEquals(10, histogram.size());
         long total = 0;
-        for (int i = 0; i < histogram.getBucketCount(); i++)
-            total += histogram.getCount(i);
+        for (int i = 0; i < histogram.size(); i++)
+            total += histogram.getBucket(i).count;
         Assert.assertEquals(300024, total);
         db.disconnect();
     }
@@ -268,14 +269,14 @@ public class MysqlTest extends JdbcTest {
                 Converters.toDouble(first), Converters.toDouble(last), 10);
         DoubleColumnQuantization quantization = new DoubleColumnQuantization("birth_date",
                 86400, Converters.toDouble(first), Converters.toDouble(last));
-        Histogram histogram = db.histogram(
+        JsonGroups<Count> histogram = db.histogram(
                 new ColumnDescription("birth_date", ContentsKind.Date),
                 buckets, null, quantization, 300024);
         Assert.assertNotNull(histogram);
-        Assert.assertEquals(10, histogram.getBucketCount());
+        Assert.assertEquals(10, histogram.size());
         long total = 0;
-        for (int i = 0; i < histogram.getBucketCount(); i++)
-            total += histogram.getCount(i);
+        for (int i = 0; i < histogram.size(); i++)
+            total += histogram.getBucket(i).count;
         Assert.assertEquals(300024, total);
         db.disconnect();
     }
@@ -300,14 +301,14 @@ public class MysqlTest extends JdbcTest {
         Instant lastQ = parseOneDate("1965/02/01");
         DoubleColumnQuantization quantization = new DoubleColumnQuantization("birth_date",
                 86400, Converters.toDouble(firstQ), Converters.toDouble(lastQ));
-        Histogram histogram = db.histogram(
+        JsonGroups<Count> histogram = db.histogram(
                 new ColumnDescription("birth_date", ContentsKind.Date),
                 buckets, null, quantization, 232730);
         Assert.assertNotNull(histogram);
-        Assert.assertEquals(10, histogram.getBucketCount());
+        Assert.assertEquals(10, histogram.size());
         long total = 0;
-        for (int i = 0; i < histogram.getBucketCount(); i++)
-            total += histogram.getCount(i);
+        for (int i = 0; i < histogram.size(); i++)
+            total += histogram.getBucket(i).count;
         Assert.assertEquals(232730, total);
         db.disconnect();
     }
@@ -352,16 +353,16 @@ public class MysqlTest extends JdbcTest {
             return;
         }
         DoubleHistogramBuckets buckets = new DoubleHistogramBuckets("salary", 0, 200000, 8);
-        Histogram histogram = db.histogram(
+        IGroup<Count> histogram = db.histogram(
                 new ColumnDescription("salary", ContentsKind.Integer), buckets, null, null, 2844047);
         Assert.assertNotNull(histogram);
-        Assert.assertEquals(8, histogram.getBucketCount());
-        Assert.assertEquals(0, histogram.getMissingCount());
-        Assert.assertEquals(0, histogram.getCount(0));
-        Assert.assertEquals(0, histogram.getCount(7));
+        Assert.assertEquals(8, histogram.size());
+        Assert.assertEquals(0, histogram.getMissing().count);
+        Assert.assertEquals(0, histogram.getBucket(0).count);
+        Assert.assertEquals(0, histogram.getBucket(7).count);
         long total = 0;
-        for (int i = 0; i < histogram.getBucketCount(); i++)
-            total += histogram.getCount(i);
+        for (int i = 0; i < histogram.size(); i++)
+            total += histogram.getBucket(i).count;
         Assert.assertEquals(2844047, total);
         db.disconnect();
     }
@@ -472,17 +473,17 @@ public class MysqlTest extends JdbcTest {
         }
         DoubleHistogramBuckets buckets = new DoubleHistogramBuckets("salary", 0, 200000, 8);
         DoubleColumnQuantization quantization = new DoubleColumnQuantization("salary", 5, 0, 200000);
-        Histogram histogram = db.histogram(
+        IGroup<Count> histogram = db.histogram(
                 new ColumnDescription("salary", ContentsKind.Integer), buckets,
                 null, quantization, 2844047);
         Assert.assertNotNull(histogram);
-        Assert.assertEquals(8, histogram.getBucketCount());
-        Assert.assertEquals(0, histogram.getMissingCount());
-        Assert.assertEquals(0, histogram.getCount(0));
-        Assert.assertEquals(0, histogram.getCount(7));
+        Assert.assertEquals(8, histogram.size());
+        Assert.assertEquals(0, histogram.getMissing().count);
+        Assert.assertEquals(0, histogram.getBucket(0).count);
+        Assert.assertEquals(0, histogram.getBucket(7).count);
         long total = 0;
-        for (int i = 0; i < histogram.getBucketCount(); i++)
-            total += histogram.getCount(i);
+        for (int i = 0; i < histogram.size(); i++)
+            total += histogram.getBucket(i).count;
         Assert.assertEquals(2844047, total);
         db.disconnect();
     }
@@ -501,13 +502,13 @@ public class MysqlTest extends JdbcTest {
         }
         String[] boundaries = new String[] { "A", "F", "K", "P", "T", "X" };
         StringHistogramBuckets buckets = new StringHistogramBuckets("first_name", boundaries);
-        Histogram histogram = db.histogram(
+        IGroup<Count> histogram = db.histogram(
                 new ColumnDescription("first_name", ContentsKind.String), buckets, null, null, 300024);
         Assert.assertNotNull(histogram);
-        Assert.assertEquals(6, histogram.getBucketCount());
+        Assert.assertEquals(6, histogram.size());
         long total = 0;
-        for (int i = 0; i < histogram.getBucketCount(); i++)
-            total += histogram.getCount(i);
+        for (int i = 0; i < histogram.size(); i++)
+            total += histogram.getBucket(i).count;
         Assert.assertEquals(300024, total);
         db.disconnect();
     }
@@ -531,13 +532,13 @@ public class MysqlTest extends JdbcTest {
         for (char c = 'A'; c <= 'Z'; c++)
             letters[c - 'A'] = Character.toString(c);
         StringColumnQuantization quantization = new StringColumnQuantization("first_name", letters, "z");
-        Histogram histogram = db.histogram(
+        IGroup<Count> histogram = db.histogram(
                 new ColumnDescription("first_name", ContentsKind.String), buckets, null, quantization, 300024);
         Assert.assertNotNull(histogram);
-        Assert.assertEquals(6, histogram.getBucketCount());
+        Assert.assertEquals(6, histogram.size());
         long total = 0;
-        for (int i = 0; i < histogram.getBucketCount(); i++)
-            total += histogram.getCount(i);
+        for (int i = 0; i < histogram.size(); i++)
+            total += histogram.getBucket(i).count;
         Assert.assertEquals(300024, total);
         db.disconnect();
     }

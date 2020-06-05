@@ -17,7 +17,9 @@
 
 package org.hillview.dataset.api;
 
+import org.hillview.sketches.highorder.QuantizedTableSketch;
 import org.hillview.sketches.highorder.SamplingTableSketch;
+import org.hillview.table.QuantizationSchema;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ISketchWorkspace;
 import org.hillview.table.api.ITable;
@@ -78,5 +80,9 @@ public abstract class IncrementalTableSketch<
      */
     public TableSketch<R> sampled(double samplingRate, long seed) {
         return new SamplingTableSketch<>(Converters.checkRate(samplingRate), seed, this);
+    }
+
+    public TableSketch<R> quantized(QuantizationSchema qs) {
+        return new QuantizedTableSketch<>(this, qs);
     }
 }

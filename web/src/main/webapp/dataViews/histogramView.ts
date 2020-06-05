@@ -18,7 +18,7 @@
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {HistogramSerialization, IViewSerialization} from "../datasetView";
 import {
-    FilterDescription,
+    FilterDescription, Groups,
     Histogram, IColumnDescription, kindIsNumeric,
     kindIsString,
     RecordOrder,
@@ -40,12 +40,11 @@ import {
     Converters,
     formatNumber,
     ICancellable, makeInterval,
-    Pair,
     PartialResult,
     percent,
     reorder,
     saveAs,
-    significantDigits, significantDigitsHtml,
+    significantDigits, significantDigitsHtml, toHistogram, Two,
 } from "../util";
 import {AxisData} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
@@ -57,8 +56,8 @@ import {BaseReceiver} from "../tableTarget";
  * A HistogramView is responsible for showing a one-dimensional histogram on the screen.
  */
 export class HistogramView extends HistogramViewBase /*implements IScrollTarget*/ {
-    protected cdf: Histogram;
-    protected histogram: Histogram;
+    protected cdf: Two<Groups<number>>;
+    protected histogram: Two<Groups<number>>;
     protected plot: HistogramPlot | PiePlot;
     protected bucketCount: number;
     readonly defaultProvenance = "from histogram";
@@ -159,9 +158,10 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
             case "YAxis":
                 const range = {
                     min: 0,
-                    max: this.plot.maxYAxis != null ? this.plot.maxYAxis : Math.max(...this.histogram.buckets),
-                    presentCount: this.rowCount - this.histogram.missingCount,
-                    missingCount: this.histogram.missingCount
+                    max: this.plot.maxYAxis != null ?
+                        this.plot.maxYAxis : Math.max(...this.histogram.first.perBucket),
+                    presentCount: this.rowCount - this.histogram.first.perMissing,
+                    missingCount: this.histogram.first.perMissing
                 };
                 return new AxisData(null, range, 0);
         }
@@ -247,7 +247,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
      * @param histogram: Data for the histogram buckets.
      * @param maxYAxis: maximum value to use for Y axis if not null
      */
-    public updateView(cdf: Histogram, histogram: Histogram,
+    public updateView(cdf: Two<Groups<number>>, histogram: Two<Groups<number>>,
                       maxYAxis: number | null): void {
         this.createNewSurfaces();
         if (histogram == null) {
@@ -264,15 +264,19 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         }
 
         this.cdf = cdf;
-        const counts = this.histogram.buckets;
+        const counts = this.histogram.first.perBucket;
         this.bucketCount = counts.length;
-        this.plot.setHistogram(histogram, this.samplingRate,
-                               this.xAxisData, maxYAxis, this.page.dataset.isPrivate());
+
+        const hf = toHistogram(histogram.first);
+        const hs = toHistogram(histogram.second);
+        const twoH = { first: hf, second: hs };
+        this.plot.setHistogram(
+            twoH, this.samplingRate, this.xAxisData, maxYAxis, this.page.dataset.isPrivate());
         this.plot.draw();
 
         const discrete = kindIsString(this.xAxisData.description.kind) ||
             this.xAxisData.description.kind === "Integer";
-        this.cdfPlot.setData(cdf.buckets, discrete);
+        this.cdfPlot.setData(cdf.first.perBucket, discrete);
         this.cdfPlot.draw();
         this.setupMouse();
 
@@ -289,8 +293,8 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
 
         let summary = new HtmlString("");
         const approx = this.isPrivate() ? SpecialChars.approx : "";
-        if (histogram.missingCount !== 0)
-            summary = summary.appendSafeString(approx +formatNumber(histogram.missingCount) + " missing, ");
+        if (histogram.first.perMissing !== 0)
+            summary = summary.appendSafeString(approx +formatNumber(histogram.first.perMissing) + " missing, ");
         summary = summary.appendSafeString(approx + formatNumber(this.rowCount) + " points");
         if (this.xAxisData != null &&
             this.xAxisData.displayRange.stringQuantiles != null &&
@@ -390,12 +394,12 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         const lines: string[] = [];
         let line = this.schema.displayName(this.xAxisData.description.name) + ",count";
         lines.push(line);
-        for (let x = 0; x < this.histogram.buckets.length; x++) {
+        for (let x = 0; x < this.histogram.first.perBucket.length; x++) {
             const bx = this.xAxisData.bucketDescription(x, 0);
-            const l = "" + JSON.stringify(bx) + "," + this.histogram.buckets[x];
+            const l = "" + JSON.stringify(bx) + "," + this.histogram.first.perBucket[x];
             lines.push(l);
         }
-        line = "missing," + this.histogram.missingCount;
+        line = "missing," + this.histogram.first.perMissing;
         lines.push(line);
         return lines;
     }
@@ -405,7 +409,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         const cds: IColumnDescription[] = [this.xAxisData.description, oc];
         const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [this.histogram.buckets.length, 0], cds, null, this.defaultProvenance,{
+            [this.histogram.first.perBucket.length, 0], cds, null, this.defaultProvenance,{
             reusePage: false,
             relative: false,
             chartKind: "2DHistogram",
@@ -558,7 +562,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
     }
 }
 
-export class HistogramReceiver extends Receiver<Pair<Histogram, Histogram>>  {
+export class HistogramReceiver extends Receiver<Two<Two<Groups<number>>>>  {
     private readonly view: HistogramView;
 
     constructor(protected title: PageTitle,
@@ -567,7 +571,7 @@ export class HistogramReceiver extends Receiver<Pair<Histogram, Histogram>>  {
                 protected rowCount: number,
                 protected schema: SchemaClass,
                 protected xAxisData: AxisData,
-                operation: ICancellable<Pair<Histogram, Histogram>>,
+                operation: ICancellable<Two<Two<Groups<number>>>>,
                 protected samplingRate: number,
                 protected isPie: boolean,
                 reusePage: boolean) {
@@ -579,7 +583,7 @@ export class HistogramReceiver extends Receiver<Pair<Histogram, Histogram>>  {
         this.page.setDataView(this.view);
     }
 
-    public onNext(value: PartialResult<Pair<Histogram, Histogram>>): void {
+    public onNext(value: PartialResult<Two<Two<Groups<number>>>>): void {
         super.onNext(value);
         if (value == null || value.data == null || value.data.first == null)
             return;

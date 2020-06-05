@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2020 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,58 +16,20 @@
  */
 
 package org.hillview.sketches;
-import org.hillview.dataset.api.TableSketch;
-import org.hillview.sketches.results.Histogram;
-import org.hillview.sketches.results.IHistogramBuckets;
-import org.hillview.table.api.IColumn;
-import org.hillview.table.api.ITable;
-import org.hillview.table.columns.ColumnQuantization;
-import org.hillview.table.columns.QuantizedColumn;
-import org.hillview.utils.Converters;
 
-import javax.annotation.Nullable;
+import org.hillview.sketches.highorder.GroupBySketch;
+import org.hillview.sketches.results.Count;
+import org.hillview.sketches.results.IHistogramBuckets;
 
 /**
- * One-dimensional histogram
+ * This sketch computes a histogram over the specified buckets.
  */
-public class HistogramSketch implements TableSketch<Histogram> {
-    static final long serialVersionUID = 1;
-    public final IHistogramBuckets bucketDesc;
-    protected final double rate;
-    protected final long seed;
-    @Nullable
-    protected ColumnQuantization cpm;
-
-    public HistogramSketch(IHistogramBuckets bucketDesc,
-                           double rate, long seed, @Nullable ColumnQuantization cpm) {
-        this.bucketDesc = bucketDesc;
-        this.rate = rate;
-        this.seed = seed;
-        this.cpm = cpm;
-    }
-
-    @Override
-    public Histogram create(@Nullable final ITable data) {
-        Converters.checkNull(data);
-        Histogram result = this.getZero();
-        Converters.checkNull(result);
-        IColumn column = data.getLoadedColumn(this.bucketDesc.getColumn());
-        if (this.cpm != null)
-            column = new QuantizedColumn(column, this.cpm);
-        result.create(column, data.getMembershipSet(), this.bucketDesc, this.rate, this.seed, false);
-        return result;
-    }
-
-    @Override
-    public Histogram add(@Nullable final Histogram left,
-                         @Nullable final Histogram right) {
-        assert left != null;
-        assert right != null;
-        return left.union(right);
-    }
-
-    @Override
-    public Histogram zero() {
-        return new Histogram(this.bucketDesc.getBucketCount());
+public class HistogramSketch
+        extends GroupBySketch<Count,
+                                      EmptyWorkspace,
+                                      CounterSketch> {
+    public HistogramSketch(
+            IHistogramBuckets buckets) {
+        super(buckets, new CounterSketch());
     }
 }

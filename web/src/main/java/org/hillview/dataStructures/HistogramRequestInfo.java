@@ -17,11 +17,11 @@
 
 package org.hillview.dataStructures;
 
-import org.hillview.sketches.results.DoubleHistogramBuckets;
+import org.hillview.dataset.api.TableSketch;
 import org.hillview.sketches.HistogramSketch;
-import org.hillview.sketches.results.IHistogramBuckets;
-import org.hillview.sketches.results.StringHistogramBuckets;
+import org.hillview.sketches.results.*;
 import org.hillview.table.ColumnDescription;
+import org.hillview.table.QuantizationSchema;
 import org.hillview.table.columns.ColumnQuantization;
 import org.hillview.table.columns.DoubleColumnQuantization;
 import org.hillview.table.columns.StringColumnQuantization;
@@ -82,12 +82,19 @@ public class HistogramRequestInfo {
         return this.getBuckets(null);
     }
 
-    public HistogramSketch getSketch(@Nullable ColumnQuantization quantization) {
+    public TableSketch<Groups<Count>> getSketch(@Nullable ColumnQuantization quantization) {
         IHistogramBuckets buckets = this.getBuckets(quantization);
-        return new HistogramSketch(buckets, this.samplingRate, this.seed, quantization);
+        HistogramSketch sk = new HistogramSketch(buckets);
+        if (quantization == null) {
+            if (this.samplingRate < 1)
+                return sk.sampled(this.samplingRate, this.seed);
+            return sk;
+        }
+        assert this.samplingRate >= 1;
+        return sk.quantized(new QuantizationSchema(quantization));
     }
 
-    public HistogramSketch getSketch() {
+    public TableSketch<Groups<Count>> getSketch() {
         return this.getSketch(null);
     }
 

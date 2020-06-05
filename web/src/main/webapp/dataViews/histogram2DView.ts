@@ -18,7 +18,6 @@
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {Histogram2DSerialization, IViewSerialization} from "../datasetView";
 import {
-    Histogram,
     FilterDescription,
     IColumnDescription,
     kindIsString,
@@ -63,7 +62,7 @@ import {Dialog, FieldKind} from "../ui/dialog";
  */
 export class Histogram2DView extends HistogramViewBase {
     protected yAxisData: AxisData;
-    protected cdf: Histogram;
+    protected cdf: Groups<number>;
     protected heatMap: Groups<Groups<number>>;
     protected xPoints: number;
     protected yPoints: number;
@@ -203,7 +202,7 @@ export class Histogram2DView extends HistogramViewBase {
         return null;
     }
 
-    public updateView(data: Groups<Groups<number>>, cdf: Histogram, maxYAxis: number | null, keepColorMap: boolean): void {
+    public updateView(data: Groups<Groups<number>>, cdf: Groups<number>, maxYAxis: number | null, keepColorMap: boolean): void {
         this.viewMenu.enable("relative/absolute", this.stacked);
         this.createNewSurfaces(keepColorMap);
         if (data == null || data.perBucket == null || data.perBucket.length === 0) {
@@ -230,7 +229,7 @@ export class Histogram2DView extends HistogramViewBase {
             this.xAxisData.description.kind === "Integer";
 
         if (this.stacked) {
-            this.cdfPlot.setData(cdf.buckets, discrete);
+            this.cdfPlot.setData(cdf.perBucket, discrete);
             this.cdfPlot.draw();
         }
         this.legendPlot.setData(this.yAxisData, this.plot.getMissingDisplayed() > 0, this.schema);
@@ -733,7 +732,7 @@ export class Histogram2DView extends HistogramViewBase {
  * Receives partial results and renders a 2D histogram.
  * The 2D histogram data and the Heatmap data use the same data structure.
  */
-export class Histogram2DReceiver extends Receiver<Pair<Groups<Groups<number>>, Histogram>> {
+export class Histogram2DReceiver extends Receiver<Pair<Groups<Groups<number>>, Groups<number>>> {
     protected view: Histogram2DView;
 
     constructor(title: PageTitle,
@@ -743,7 +742,7 @@ export class Histogram2DReceiver extends Receiver<Pair<Groups<Groups<number>>, H
                 protected schema: SchemaClass,
                 protected axes: AxisData[],
                 protected samplingRate: number,
-                operation: RpcRequest<PartialResult<Pair<Groups<Groups<number>>, Histogram>>>,
+                operation: RpcRequest<PartialResult<Pair<Groups<Groups<number>>, Groups<number>>>>,
                 protected options: ChartOptions) {
         super(options.reusePage ? page : page.dataset.newPage(title, page), operation, "histogram");
         this.view = new Histogram2DView(
@@ -752,7 +751,7 @@ export class Histogram2DReceiver extends Receiver<Pair<Groups<Groups<number>>, H
         this.view.setAxes(axes[0], axes[1], options.relative);
     }
 
-    public onNext(value: PartialResult<Pair<Groups<Groups<number>>, Histogram>>): void {
+    public onNext(value: PartialResult<Pair<Groups<Groups<number>>, Groups<number>>>): void {
         super.onNext(value);
         if (value == null)
             return;

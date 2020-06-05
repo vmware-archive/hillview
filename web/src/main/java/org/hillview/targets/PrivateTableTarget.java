@@ -2,6 +2,7 @@ package org.hillview.targets;
 
 import org.hillview.*;
 import org.hillview.dataStructures.*;
+import org.hillview.dataset.api.TableSketch;
 import org.hillview.sketches.highorder.*;
 import org.hillview.sketches.PrecomputedSketch;
 import org.hillview.dataset.api.IDataSet;
@@ -72,7 +73,6 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
         SummarySketch ss = new SummarySketch();
         PostProcessedSketch<ITable, TableSummary, DPWrapper.PrivacySummary> post =
                 new PostProcessedSketch<ITable, TableSummary, DPWrapper.PrivacySummary>(ss) {
-                    @Nullable
                     @Override
                     public DPWrapper.PrivacySummary postProcess(@Nullable TableSummary result) {
                         return PrivateTableTarget.this.wrapper.addPrivateMetadata(Converters.checkNull(result));
@@ -91,18 +91,20 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
         assert info.length == 2;
         ColumnQuantization quantization = this.getPrivacySchema().quantization(info[0].cd.name);
         Converters.checkNull(quantization);
-        HistogramSketch sk = info[0].getSketch(quantization); // Histogram
-        HistogramSketch cdf = info[1].getSketch(quantization);
+        TableSketch<Groups<Count>> sk = info[0].getSketch(quantization); // Histogram
+        TableSketch<Groups<Count>> cdf = info[1].getSketch(quantization);
         IntervalDecomposition d0 = info[0].getDecomposition(quantization);
         IntervalDecomposition d1 = info[1].getDecomposition(quantization);
         double epsilon = this.getPrivacySchema().epsilon(info[0].cd.name);
-        DPHistogram privateHisto = new DPHistogram(sk, this.wrapper.getColumnIndex(info[0].cd.name),
+        DPHistogram<Groups<Count>> privateHisto = new DPHistogram<>(
+                sk, this.wrapper.getColumnIndex(info[0].cd.name),
                 d0, epsilon, false, this.wrapper.laplace);
-        DPHistogram privateCdf = new DPHistogram(cdf, this.wrapper.getColumnIndex(info[0].cd.name),
+        DPHistogram<Groups<Count>> privateCdf = new DPHistogram<>(
+                cdf, this.wrapper.getColumnIndex(info[0].cd.name),
                 d1, epsilon, true, this.wrapper.laplace);
-        ConcurrentPostprocessedSketch<ITable, Histogram, Histogram, Histogram, Histogram> ccp =
-                new ConcurrentPostprocessedSketch<ITable, Histogram, Histogram, Histogram, Histogram>(
-                        privateHisto, privateCdf);
+        ConcurrentPostprocessedSketch<ITable, Groups<Count>, Groups<Count>,
+                Two<JsonGroups<Count>>, Two<JsonGroups<Count>>> ccp =
+                new ConcurrentPostprocessedSketch<>(privateHisto, privateCdf);
         this.runCompleteSketch(this.table, ccp, request, context);
     }
 

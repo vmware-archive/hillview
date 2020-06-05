@@ -30,12 +30,12 @@ import org.hillview.table.api.ITable;
 public class Histogram2DSketch extends GroupBySketch<
         Groups<Count>,
         GroupByWorkspace<EmptyWorkspace>,
-        GenericHistogramSketch> {
+        HistogramSketch> {
 
     public Histogram2DSketch(
             IHistogramBuckets buckets0,
             IHistogramBuckets buckets1) {
-        super(buckets1, new GenericHistogramSketch(buckets0));
+        super(buckets1, new HistogramSketch(buckets0));
     }
 
     @Override

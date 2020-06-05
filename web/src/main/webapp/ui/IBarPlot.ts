@@ -4,9 +4,10 @@
 import {Histogram} from "../javaBridge";
 import {AxisData} from "../dataViews/axisData";
 import {D3Scale} from "./ui";
+import {Two} from "../util";
 
 export interface IBarPlot {
-    setHistogram(bars: Histogram, samplingRate: number,
+    setHistogram(bars: Two<Histogram>, samplingRate: number,
                  axisData: AxisData, maxYAxis: number | null, isPrivate: boolean): void;
     draw(): void;
     getYScale(): D3Scale;
