@@ -38,7 +38,7 @@ import {AxisData} from "./axisData";
 import {TrellisHeatmapReceiver} from "./trellisHeatmapView";
 import {TrellisHistogram2DReceiver} from "./trellisHistogram2DView";
 import {DatasetView} from "../datasetView";
-import {QuartilesVectorReceiver} from "./quartilesVectorView";
+import {QuartilesVectorReceiver} from "./quartilesHistogramView";
 import {TrellisHistogramQuartilesReceiver} from "./trellisHistogramQuartilesView";
 
 /**

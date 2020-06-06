@@ -44,7 +44,7 @@ import {Quartiles2DPlot} from "../ui/quartiles2DPlot";
  * This class is responsible for rendering a vector of quartiles.
  * Each quartile is for a bucket.
  */
-export class QuartilesVectorView extends HistogramViewBase {
+export class QuartilesHistogramView extends HistogramViewBase {
     protected data: Groups<SampleSet>;
     protected plot: Quartiles2DPlot;
     protected yAxisData: AxisData;
@@ -150,7 +150,7 @@ export class QuartilesVectorView extends HistogramViewBase {
         this.pointDescription = new TextOverlay(this.surface.getChart(),
             this.surface.getActualChartSize(),
             [this.xAxisData.getDisplayNameString(this.schema), "bucket",
-                "max", "q3", "median", "q1", "min", "missing"], 40);
+                "max", "q3", "median", "q1", "min", "count", "missing"], 40);
         this.pointDescription.show(false);
         let summary = new HtmlString(String(bucketCount) + " buckets");
         summary.setInnerHtml(this.summary);
@@ -176,7 +176,7 @@ export class QuartilesVectorView extends HistogramViewBase {
             xPoints === null)
             return null;
 
-        const hv = new QuartilesVectorView(ser.remoteObjectId, ser.rowCount, schema, cd1, page);
+        const hv = new QuartilesHistogramView(ser.remoteObjectId, ser.rowCount, schema, cd1, page);
         hv.setAxis(new AxisData(cd0, null, ser.xBucketCount));
         return hv;
     }
@@ -336,7 +336,7 @@ export class QuartilesVectorView extends HistogramViewBase {
         // Use the plot scale, not the yData to invert.  That's the
         // one which is used to draw the axis.
         let bucketDesc = "";
-        let min = "", q1 = "", q2 = "", q3 = "", max = "", missing = "";
+        let min = "", q1 = "", q2 = "", q3 = "", max = "", missing = "", count = "";
         if (this.xAxisData.scale != null) {
             xs = this.xAxisData.invert(position[0]);
             if (this.data != null) {
@@ -347,13 +347,14 @@ export class QuartilesVectorView extends HistogramViewBase {
                 const qv = this.data.perBucket[bucket];
                 min = significantDigits(qv.min);
                 max = significantDigits(qv.max);
+                count = significantDigits(qv.count);
                 q1 = significantDigits(qv.samples[0]);
                 q2 = qv.samples.length > 1 ? significantDigits(qv.samples[1]) : q1;
                 q3 = qv.samples.length > 2 ? significantDigits(qv.samples[2]) : q2;
                 missing = significantDigits(qv.missing);
             }
         }
-        this.pointDescription.update([xs, bucketDesc, max, q3, q2, q1, min, missing], mouseX, mouseY);
+        this.pointDescription.update([xs, bucketDesc, max, q3, q2, q1, min, count, missing], mouseX, mouseY);
     }
 
     protected dragMove(): boolean {
@@ -407,7 +408,7 @@ export class QuartilesVectorView extends HistogramViewBase {
 }
 
 export class QuartilesVectorReceiver extends Receiver<Groups<SampleSet>> {
-    protected view: QuartilesVectorView;
+    protected view: QuartilesHistogramView;
 
     constructor(title: PageTitle,
                 page: FullPage,
@@ -420,7 +421,7 @@ export class QuartilesVectorReceiver extends Receiver<Groups<SampleSet>> {
                 operation: RpcRequest<PartialResult<Groups<SampleSet>>>,
                 protected options: ChartOptions) {
         super(options.reusePage ? page : page.dataset.newPage(title, page), operation, "quartiles");
-        this.view = new QuartilesVectorView(
+        this.view = new QuartilesHistogramView(
             this.remoteObject.remoteObjectId, rowCount, schema, quantilesCol, this.page);
         this.page.setDataView(this.view);
         const axisData = new AxisData(histoArgs.cd, range, histoArgs.bucketCount);

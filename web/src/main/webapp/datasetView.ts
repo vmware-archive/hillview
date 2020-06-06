@@ -42,7 +42,7 @@ import {TrellisHistogram2DView} from "./dataViews/trellisHistogram2DView";
 import {TrellisHistogramView} from "./dataViews/trellisHistogramView";
 import JSONEditor, {JSONEditorOptions} from "jsoneditor";
 import {OnCompleteReceiver} from "./rpc";
-import {QuartilesVectorView} from "./dataViews/quartilesVectorView";
+import {QuartilesHistogramView} from "./dataViews/quartilesHistogramView";
 import {TrellisHistogramQuartilesView} from "./dataViews/trellisHistogramQuartilesView";
 
 export interface IViewSerialization {
@@ -466,7 +466,7 @@ export class DatasetView implements IHtmlElement {
                 view = HistogramView.reconstruct(vs as HistogramSerialization, page);
                 break;
             case "QuartileVector":
-                view = QuartilesVectorView.reconstruct(vs as QuantileVectorSerialization, page);
+                view = QuartilesHistogramView.reconstruct(vs as QuantileVectorSerialization, page);
                 break;
             case "2DHistogram":
                 view = Histogram2DView.reconstruct(vs as Histogram2DSerialization, page);
