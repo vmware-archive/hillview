@@ -32,7 +32,7 @@ import {FullPage, PageTitle} from "../ui/fullPage";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface} from "../ui/plottingSurface";
-import {ICancellable, significantDigits, toHistogram} from "../util";
+import {ICancellable, significantDigits} from "../util";
 import {AxisData} from "./axisData";
 import {CorrelationMatrixReceiver, TableView} from "./tableView";
 import {ChartView} from "./chartView";
@@ -162,7 +162,7 @@ export class SpectrumView extends ChartView {
         this.axisData = axisData;
         this.title = title;
         this.histogram = h;
-        this.plot.setHistogram({first: toHistogram(h), second: null }, 1,
+        this.plot.setHistogram({first: h, second: null }, 1,
             axisData, null, this.page.dataset.isPrivate());
         this.plot.draw();
 

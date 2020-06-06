@@ -181,8 +181,8 @@ export interface Heatmap {
     buckets: number[][];
     confidence?: number[][];
     missingData: number;
-    histogramMissingX: Histogram;
-    histogramMissingY: Histogram;
+    histogramMissingX: Groups<number>;
+    histogramMissingY: Groups<number>;
     totalSize: number;
 }
 
@@ -235,12 +235,6 @@ export interface FileSizeSketchInfo {
 export interface ColumnSortOrientation {
     columnDescription: IColumnDescription;
     isAscending: boolean;
-}
-
-// TODO: delete this class
-export interface Histogram {
-    buckets: number[];
-    missingCount: number;
 }
 
 // This is actually a union of two java classes

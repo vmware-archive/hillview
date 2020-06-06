@@ -17,7 +17,7 @@
 
 import {pie as d3pie, arc as d3arc} from "d3-shape";
 import {AxisData} from "../dataViews/axisData";
-import {Histogram, kindIsString} from "../javaBridge";
+import {Groups, kindIsString} from "../javaBridge";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {SpecialChars} from "./ui";
@@ -44,7 +44,7 @@ export class PiePlot extends Plot {
     /**
      * Histogram that is being drawn.
      */
-    public histogram: Two<Histogram>;
+    public histogram: Two<Groups<number>>;
     /**
      * Sampling rate that was used to compute the histogram.
      */
@@ -64,7 +64,7 @@ export class PiePlot extends Plot {
      * @param maxYAxis      Not used for pie chart.
      * @param isPrivate     True if we are plotting private data.
      */
-    public setHistogram(bars: Two<Histogram>, samplingRate: number,
+    public setHistogram(bars: Two<Groups<number>>, samplingRate: number,
                         axisData: AxisData, maxYAxis: number | null, isPrivate: boolean): void {
         this.histogram = bars;
         this.samplingRate = samplingRate;
@@ -125,8 +125,8 @@ export class PiePlot extends Plot {
     }
 
     private drawPie(): void {
-        const counts = this.histogram.first.buckets.map((x) => Math.max(x, 0));
-        counts.push(this.histogram.first.missingCount);
+        const counts = this.histogram.first.perBucket.map((x) => Math.max(x, 0));
+        counts.push(this.histogram.first.perMissing);
         const pie = d3pie().sort(null);
         const chartWidth = this.getChartWidth();
         const chartHeight = this.getChartHeight();
@@ -136,10 +136,10 @@ export class PiePlot extends Plot {
             .outerRadius(radius);
         let confidence;
         if (this.isPrivate) {
-            confidence = cloneArray(this.histogram.second.buckets);
-            confidence.push(this.histogram.second.missingCount);
+            confidence = cloneArray(this.histogram.second.perBucket);
+            confidence.push(this.histogram.second.perMissing);
         } else {
-            confidence = new Array(this.histogram.first.buckets.length + 1);
+            confidence = new Array(this.histogram.first.perBucket.length + 1);
         }
 
         const sum = counts.reduce(add, 0);

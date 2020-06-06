@@ -110,6 +110,13 @@ public class Linq {
         return result;
     }
 
+    public static <T, S> JsonList<S> mapToList(T[] data, Function<T, S> function) {
+        JsonList<S> result = new JsonList<S>(data.length);
+        for (int i=0; i < data.length; i++)
+            result.add(function.apply(data[i]));
+        return result;
+    }
+
     public static <T, S> Pair<T, S>[] zip(T[] l, S[] r, Class<Pair<T, S>> sc) {
         if (l.length != r.length)
             throw new RuntimeException("Zip vectors with uneven lengths: " +

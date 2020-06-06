@@ -36,7 +36,6 @@ import java.util.function.Function;
  */
 public class MultiPostprocessedSketch<T, R extends ISketchResult, F extends IJson>
         extends PostProcessedSketch<T, JsonList<R>, JsonList<F>> {
-
     private final List<Function<R, F>> post;
 
     public MultiPostprocessedSketch(List<PostProcessedSketch<T, R, F>> sketches) {

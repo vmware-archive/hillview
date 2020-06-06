@@ -22,7 +22,6 @@ import org.hillview.*;
 import org.hillview.dataStructures.*;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.sketches.PrecomputedSketch;
-import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.utils.Pair;
 import org.hillview.maps.highorder.IdMap;
@@ -50,7 +49,7 @@ import java.util.List;
  * the front-end.  Note that all operations on the local database are not scalable -
  * they are not expected to scale to billions of rows.
  */
-public class SimpleDBTarget extends RpcTarget {
+public class SimpleDBTarget extends TableRpcTarget {
     static final long serialVersionUID = 1;
 
     final JdbcConnectionInformation jdbc;
@@ -58,9 +57,6 @@ public class SimpleDBTarget extends RpcTarget {
     protected final int rowCount;
     @Nullable
     protected Schema schema;
-    // This table is actually not used for anything; the only purpose
-    // is for some APIs to be similar to the TableTarget class.
-    protected final IDataSet<ITable> table;
     private final ColumnLimits columnLimits;
 
     static {
@@ -83,8 +79,10 @@ public class SimpleDBTarget extends RpcTarget {
             this.database.connect();
             this.rowCount = this.database.getRowCount(this.columnLimits);
             this.schema = this.database.getSchema();
+            // The table table is actually not used for anything; the only purpose
+            // is for some APIs to be similar to the TableTarget class.
             SmallTable empty = new SmallTable(this.schema);
-            this.table = new LocalDataSet<ITable>(empty);
+            this.setTable(new LocalDataSet<ITable>(empty));
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -146,46 +144,23 @@ public class SimpleDBTarget extends RpcTarget {
         this.heavyHitters(request, context);
     }
 
-    @SuppressWarnings("unused")
     @HillviewRpc
-    public void getDataQuantiles1D(RpcRequest request, RpcRequestContext context) {
+    public void getDataQuantiles(RpcRequest request, RpcRequestContext context) {
         QuantilesArgs[] info = request.parseArgs(QuantilesArgs[].class);
-        assert info.length == 1;
-        ColumnDescription cd = info[0].cd;
-        BucketsInfo range;
-        if (cd.kind == ContentsKind.Integer ||
-                cd.kind == ContentsKind.Double ||
-                cd.kind == ContentsKind.Date) {
-            range = this.database.numericDataRange(cd, this.columnLimits);
-        } else {
-            range = this.database.stringBuckets(
-                    cd, info[0].stringsToSample, this.columnLimits);
-        }
-        JsonList<BucketsInfo> result = new JsonList<BucketsInfo>(1);
-        result.add(range);
-        ISketch<ITable, JsonList<BucketsInfo>> sk = new PrecomputedSketch<ITable, JsonList<BucketsInfo>>(result);
-        this.runSketch(this.table, sk, request, context);
-    }
-
-    @SuppressWarnings("unused")
-    @HillviewRpc
-    public void getDataQuantiles2D(RpcRequest request, RpcRequestContext context) {
-        QuantilesArgs[] info = request.parseArgs(QuantilesArgs[].class);
-        assert info.length == 2;
-        JsonList<BucketsInfo> result = new JsonList<BucketsInfo>(2);
-        for (int i = 0; i < 2; i++) {
+        JsonList<BucketsInfo> result = new JsonList<BucketsInfo>(info.length);
+        for (QuantilesArgs quantilesArgs : info) {
             BucketsInfo range;
-            if (info[i].cd.kind == ContentsKind.Integer ||
-                    info[i].cd.kind == ContentsKind.Double ||
-                    info[i].cd.kind == ContentsKind.Date) {
-                range = this.database.numericDataRange(info[i].cd, this.columnLimits);
+            if (quantilesArgs.cd.kind == ContentsKind.Integer ||
+                    quantilesArgs.cd.kind == ContentsKind.Double ||
+                    quantilesArgs.cd.kind == ContentsKind.Date) {
+                range = this.database.numericDataRange(quantilesArgs.cd, this.columnLimits);
             } else {
                 range = this.database.stringBuckets(
-                        info[i].cd, info[i].stringsToSample, this.columnLimits);
+                        quantilesArgs.cd, quantilesArgs.stringsToSample, this.columnLimits);
             }
             result.add(range);
         }
-        ISketch<ITable, JsonList<BucketsInfo>> sk = new PrecomputedSketch<ITable, JsonList<BucketsInfo>>(result);
+        ISketch<ITable, JsonList<BucketsInfo>> sk = new PrecomputedSketch<>(result);
         this.runSketch(this.table, sk, request, context);
     }
 

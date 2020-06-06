@@ -19,7 +19,7 @@ import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {HistogramSerialization, IViewSerialization} from "../datasetView";
 import {
     FilterDescription, Groups,
-    Histogram, IColumnDescription, kindIsNumeric,
+    IColumnDescription, kindIsNumeric,
     kindIsString,
     RecordOrder,
     RemoteObjectId,
@@ -44,7 +44,7 @@ import {
     percent,
     reorder,
     saveAs,
-    significantDigits, significantDigitsHtml, toHistogram, Two,
+    significantDigits, significantDigitsHtml, Two,
 } from "../util";
 import {AxisData} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
@@ -266,12 +266,8 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         this.cdf = cdf;
         const counts = this.histogram.first.perBucket;
         this.bucketCount = counts.length;
-
-        const hf = toHistogram(histogram.first);
-        const hs = toHistogram(histogram.second);
-        const twoH = { first: hf, second: hs };
         this.plot.setHistogram(
-            twoH, this.samplingRate, this.xAxisData, maxYAxis, this.page.dataset.isPrivate());
+            histogram, this.samplingRate, this.xAxisData, maxYAxis, this.page.dataset.isPrivate());
         this.plot.draw();
 
         const discrete = kindIsString(this.xAxisData.description.kind) ||

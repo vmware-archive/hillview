@@ -30,23 +30,12 @@ import {
     FilterDescription,
     Groups,
     Heatmap,
-    Histogram,
     kindIsNumeric,
     kindIsString,
     RowFilterDescription,
     StringFilterDescription
 } from "./javaBridge";
 import {DragEventKind, PageTitle} from "./ui/fullPage";
-
-// TODO: delete this function
-export function toHistogram(data: Groups<number>): Histogram {
-    if (data == null)
-        return null;
-    return {
-        buckets: data.perBucket,
-        missingCount: data.perMissing,
-    };
-}
 
 // TODO: delete this function
 export function toHeatmap(data: Two<Groups<Groups<number>>>): Heatmap {
@@ -67,10 +56,10 @@ export function toHeatmap(data: Two<Groups<Groups<number>>>): Heatmap {
         buckets: b,
         confidence: conf,
         missingData: data.first.perMissing.perMissing,
-        histogramMissingX: toHistogram(data.first.perMissing),
+        histogramMissingX: data.first.perMissing,
         histogramMissingY: {
-            buckets: my,
-            missingCount: data.first.perMissing.perMissing
+            perBucket: my,
+            perMissing: data.first.perMissing.perMissing
         },
         totalSize: total
     };

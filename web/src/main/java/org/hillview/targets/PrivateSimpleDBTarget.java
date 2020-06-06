@@ -77,14 +77,8 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
     public void getSummary(RpcRequest request, RpcRequestContext context) {
         TableSummary summary = new TableSummary(this.schema, this.rowCount);
         PostProcessedSketch<ITable, TableSummary, DPWrapper.PrivacySummary> post =
-                new PostProcessedSketch<ITable, TableSummary, DPWrapper.PrivacySummary>(
-                        new PrecomputedSketch<ITable, TableSummary>(summary)) {
-                    @Override
-                    public DPWrapper.PrivacySummary postProcess(@Nullable TableSummary result) {
-                        return PrivateSimpleDBTarget.this.wrapper.addPrivateMetadata(
-                                Converters.checkNull(result));
-                    }
-                };
+            new PrecomputedSketch<ITable, TableSummary>(summary).andThen(
+                    PrivateSimpleDBTarget.this.wrapper::addPrivateMetadata);
         this.runCompleteSketch(this.table, post, request, context);
     }
 
@@ -94,19 +88,8 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
     }
 
     @HillviewRpc
-    public void getDataQuantiles1D(RpcRequest request, RpcRequestContext context) {
-        this.wrapper.getDataQuantiles1D(request, context, this);
-    }
-
-    @HillviewRpc
-    public void getDataQuantiles2D(RpcRequest request, RpcRequestContext context) {
-        this.wrapper.getDataQuantiles2D(request, context, this);
-    }
-
-    @SuppressWarnings("unused")
-    @HillviewRpc
-    public void getDataQuantiles3D(RpcRequest request, RpcRequestContext context) {
-        this.wrapper.getDataQuantiles3D(request, context, this);
+    public void getDataQuantiles(RpcRequest request, RpcRequestContext context) {
+        this.wrapper.getDataQuantiles(request, context, this);
     }
 
     @HillviewRpc
@@ -184,7 +167,7 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
     }
 
     @HillviewRpc
-    public void heatmap(RpcRequest request, RpcRequestContext context) {
+    public void histogram2D(RpcRequest request, RpcRequestContext context) {
         HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
         assert info.length == 2;
         JsonGroups<JsonGroups<Count>> heatmap = this.database.histogram2D(
@@ -200,8 +183,9 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
         IntervalDecomposition d0 = info[0].getDecomposition(q0);
         IntervalDecomposition d1 = info[1].getDecomposition(q1);
         ISketch<ITable, JsonGroups<JsonGroups<Count>>> sk = new PrecomputedSketch<>(heatmap);
-        DPHeatmapSketch noisyHeatmap = new DPHeatmapSketch(
-                sk,  this.wrapper.getColumnIndex(info[0].cd.name, info[1].cd.name),
+        DPHeatmapSketch<JsonGroups<Count>, JsonGroups<JsonGroups<Count>>> noisyHeatmap =
+                new DPHeatmapSketch<>(
+                sk, this.wrapper.getColumnIndex(info[0].cd.name, info[1].cd.name),
                 d0, d1, epsilon, this.wrapper.laplace);
         this.runSketch(this.table, noisyHeatmap, request, context);
     }

@@ -16,7 +16,7 @@
  */
 
 import {AxisData, AxisDescription, AxisKind} from "../dataViews/axisData";
-import {Heatmap, Histogram} from "../javaBridge";
+import {Groups, Heatmap} from "../javaBridge";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {D3Axis, D3Scale} from "./ui";
@@ -40,7 +40,7 @@ export abstract class Histogram2DBase extends Plot {
     public maxYAxis: number | null; // If not null the maximum value to display
     public max: number; // the maximum value in a stacked bar
     public colorMap: ColorMap;
-    public histogram: Histogram;  //  1D histogram by ignoring the y axis
+    public histogram: Groups<number>;  //  1D histogram by ignoring the y axis
 
     protected constructor(protected plottingSurface: PlottingSurface) {
         super(plottingSurface);

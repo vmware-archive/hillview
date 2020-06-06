@@ -69,8 +69,8 @@ export class Histogram2DPlot extends Histogram2DBase {
         this.max = 0;
         const rects: Box[] = [];
         this.histogram = {
-            buckets: [],
-            missingCount: this.heatmap.missingData
+            perBucket: [],
+            perMissing: this.heatmap.missingData
         };
         for (let x = 0; x < xPoints; x++) {
             let yTotal = 0;
@@ -88,9 +88,9 @@ export class Histogram2DPlot extends Histogram2DBase {
                 }
                 yTotal += vis;
             }
-            this.histogram.buckets.push(yTotal);
+            this.histogram.perBucket.push(yTotal);
             if (this.heatmap.histogramMissingY != null) {
-                const v = this.heatmap.histogramMissingY.buckets[x];
+                const v = this.heatmap.histogramMissingY.perBucket[x];
                 const rec: Box = {
                     xIndex: x,
                     countBelow: yTotal,
@@ -159,7 +159,7 @@ export class Histogram2DPlot extends Histogram2DBase {
 
         let noX = 0;
         if (this.heatmap.histogramMissingX != null) {
-            for (const bucket of this.heatmap.histogramMissingX.buckets)
+            for (const bucket of this.heatmap.histogramMissingX.perBucket)
                 noX += bucket;
         }
 
@@ -243,7 +243,7 @@ export class Histogram2DPlot extends Histogram2DBase {
         for (const v of values)
             total += v;
         if (this.heatmap.histogramMissingY != null)
-            total += this.heatmap.histogramMissingY.buckets[xIndex];
+            total += this.heatmap.histogramMissingY.perBucket[xIndex];
         if (total <= 0)
             // There could be no data for this specific x value
             return null;
@@ -264,7 +264,7 @@ export class Histogram2DPlot extends Histogram2DBase {
         }
 
         if (this.heatmap.histogramMissingY != null) {
-            const missing = this.heatmap.histogramMissingY.buckets[xIndex];
+            const missing = this.heatmap.histogramMissingY.perBucket[xIndex];
             yTotal += missing;
             yTotalScaled += missing * scale;
             if (!found && yTotalScaled >= yScaled) {

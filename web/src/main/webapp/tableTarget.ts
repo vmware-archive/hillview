@@ -172,8 +172,7 @@ export class TableTargetAPI extends RemoteObject {
             };
             args.push(arg);
         }
-        const method = "getDataQuantiles" + cds.length + "D";
-        return this.createStreamingRpcRequest<BucketsInfo>(method, args);
+        return this.createStreamingRpcRequest<BucketsInfo>("getDataQuantiles", args);
     }
 
     public createQuantilesVectorRequest(args: QuantilesVectorInfo):

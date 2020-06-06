@@ -17,12 +17,10 @@
 
 package org.hillview.sketches.highorder;
 
-import org.hillview.dataset.api.IJson;
-import org.hillview.dataset.api.ISketch;
-import org.hillview.dataset.api.ISketchResult;
+import org.hillview.dataset.api.*;
 
-import java.io.Serializable;
 import javax.annotation.Nullable;
+import java.util.function.Function;
 
 /**
  * A sketch bundled with a post-processing function.
@@ -39,4 +37,14 @@ public abstract class PostProcessedSketch<T, R extends ISketchResult, F extends 
 
     @Nullable
     public abstract F postProcess(@Nullable R result);
+
+    public <F1 extends IJson> PostProcessedSketch<T, R, F1> andThen(Function<F, F1> after) {
+        return new PostProcessedSketch<T, R, F1>(this.sketch) {
+            @Nullable
+            @Override
+            public F1 postProcess(@Nullable R result) {
+                return after.apply(PostProcessedSketch.this.postProcess(result));
+            }
+        };
+    }
 }

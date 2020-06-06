@@ -63,7 +63,7 @@ export class Histogram2DBarsPlot extends Histogram2DBase {
         this.xPoints = this.heatmap.buckets.length;
         this.yPoints = this.heatmap.buckets[0].length;
         if (this.heatmap.histogramMissingY != null) {
-            const missingYSum = this.heatmap.histogramMissingY.buckets.reduce(add, 0);
+            const missingYSum = this.heatmap.histogramMissingY.perBucket.reduce(add, 0);
             if (missingYSum > 0) {
                 this.showMissing = true;
                 this.yPoints++;
@@ -75,8 +75,8 @@ export class Histogram2DBarsPlot extends Histogram2DBase {
         this.max = 0;
         const rects: Box[] = [];
         this.histogram = {
-            buckets: [],
-            missingCount: this.heatmap.missingData
+            perBucket: [],
+            perMissing: this.heatmap.missingData
         };
         for (let x = 0; x < this.xPoints; x++) {
             let yTotal = 0;
@@ -95,9 +95,9 @@ export class Histogram2DBarsPlot extends Histogram2DBase {
                 }
                 yTotal += vis;
             }
-            this.histogram.buckets.push(yTotal);
+            this.histogram.perBucket.push(yTotal);
             if (this.heatmap.histogramMissingY != null) {
-                const vis = this.heatmap.histogramMissingY.buckets[x];
+                const vis = this.heatmap.histogramMissingY.perBucket[x];
                 const rec: Box = {
                     xCoordinate: x * (this.yPoints + 1) + this.yPoints - 1,
                     color: -1,
@@ -196,7 +196,7 @@ export class Histogram2DBarsPlot extends Histogram2DBase {
             colorIndex = NoBucketIndex;
         } else if (this.showMissing && colorIndex == this.yPoints - 1) {
             colorIndex = MissingBucketIndex;
-            count = this.heatmap.histogramMissingY.buckets[bucketIndex];
+            count = this.heatmap.histogramMissingY.perBucket[bucketIndex];
         } else {
             if (bucketIndex >= 0 && bucketIndex < this.xPoints)
                 count = this.heatmap.buckets[bucketIndex][colorIndex];

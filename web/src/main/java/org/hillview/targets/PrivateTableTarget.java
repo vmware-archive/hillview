@@ -20,20 +20,17 @@ import org.hillview.table.filters.RangeFilterPairDescription;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.*;
 
-import javax.annotation.Nullable;
 import java.util.function.BiFunction;
 
-public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
+public class PrivateTableTarget extends TableRpcTarget implements IPrivateDataset {
     static final long serialVersionUID = 1;
-
-    public final IDataSet<ITable> table;
     public final DPWrapper wrapper;
 
     PrivateTableTarget(IDataSet<ITable> table, HillviewComputation computation,
                        PrivacySchema privacySchema, String schemaFilename) {
         super(computation);
         this.wrapper = new DPWrapper(privacySchema, schemaFilename);
-        this.table = table;
+        this.setTable(table);
         this.registerObject();
     }
 
@@ -72,12 +69,7 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
     public void getSummary(RpcRequest request, RpcRequestContext context) {
         SummarySketch ss = new SummarySketch();
         PostProcessedSketch<ITable, TableSummary, DPWrapper.PrivacySummary> post =
-                new PostProcessedSketch<ITable, TableSummary, DPWrapper.PrivacySummary>(ss) {
-                    @Override
-                    public DPWrapper.PrivacySummary postProcess(@Nullable TableSummary result) {
-                        return PrivateTableTarget.this.wrapper.addPrivateMetadata(Converters.checkNull(result));
-                    }
-                };
+                ss.andThen(PrivateTableTarget.this.wrapper::addPrivateMetadata);
         this.runCompleteSketch(this.table, post, request, context);
     }
 
@@ -110,8 +102,8 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
 
     @SuppressWarnings("unused")
     @HillviewRpc
-    public void getDataQuantiles1D(RpcRequest request, RpcRequestContext context) {
-        this.wrapper.getDataQuantiles1D(request, context, this);
+    public void getDataQuantiles(RpcRequest request, RpcRequestContext context) {
+        this.wrapper.getDataQuantiles(request, context, this);
     }
 
     @HillviewRpc
@@ -148,18 +140,6 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
                 DPWrapper.SpecialBucket.DistinctCount, epsilon, this.wrapper.laplace);
         NoisyHLogLog nhll = new NoisyHLogLog(sketch, noise);
         this.runCompleteSketch(this.table, nhll, request, context);
-    }
-
-    @SuppressWarnings("unused")
-    @HillviewRpc
-    public void getDataQuantiles3D(RpcRequest request, RpcRequestContext context) {
-        this.wrapper.getDataQuantiles3D(request, context, this);
-    }
-
-    @SuppressWarnings("unused")
-    @HillviewRpc
-    public void getDataQuantiles2D(RpcRequest request, RpcRequestContext context) {
-        this.wrapper.getDataQuantiles2D(request, context, this);
     }
 
     @HillviewRpc
@@ -212,13 +192,7 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
                 info.order, info.precision, info.tableSize, info.seed,
                 this.getPrivacySchema().quantization);
         PostProcessedSketch<ITable, SampleList, RowSnapshot> post =
-                new PostProcessedSketch<ITable, SampleList, RowSnapshot>(sk) {
-                    @Override
-                    public RowSnapshot postProcess(@Nullable SampleList result) {
-                        Converters.checkNull(result);
-                        return result.getRow(info.position);
-                    }
-                };
+                sk.andThen(s -> s.getRow(info.position));
         this.runCompleteSketch(this.table, post, request, context);
     }
 

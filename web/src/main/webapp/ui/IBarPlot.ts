@@ -1,13 +1,13 @@
 /**
  * Interface for a class that can draw data in a Histogram (Bar).
  */
-import {Histogram} from "../javaBridge";
+import {Groups} from "../javaBridge";
 import {AxisData} from "../dataViews/axisData";
 import {D3Scale} from "./ui";
 import {Two} from "../util";
 
 export interface IBarPlot {
-    setHistogram(bars: Two<Histogram>, samplingRate: number,
+    setHistogram(bars: Two<Groups<number>>, samplingRate: number,
                  axisData: AxisData, maxYAxis: number | null, isPrivate: boolean): void;
     draw(): void;
     getYScale(): D3Scale;

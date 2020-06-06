@@ -31,7 +31,7 @@ import {
     ICancellable, makeInterval,
     PartialResult,
     percent, prefixSum,
-    reorder, toHistogram, Two,
+    reorder, Two,
 } from "../util";
 import {AxisData, AxisKind} from "./axisData";
 import {IViewSerialization, TrellisHistogramSerialization} from "../datasetView";
@@ -345,7 +345,7 @@ export class TrellisHistogramView extends TrellisChartView {
                 perBucket: confidences != null ? confidences.perBucket[i].perBucket : null,
                 perMissing: confidences != null ? confidences.perBucket[i].perMissing : null
             };
-            plot.setHistogram({ first: toHistogram(coarsened[i]), second: toHistogram(confidence) }, this.samplingRate,
+            plot.setHistogram({ first: coarsened[i], second: confidence }, this.samplingRate,
                 this.xAxisData,
                 max, this.page.dataset.isPrivate());
             plot.displayAxes = false;

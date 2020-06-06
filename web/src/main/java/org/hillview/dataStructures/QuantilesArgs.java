@@ -27,8 +27,6 @@ import org.hillview.sketches.results.StringQuantiles;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.ITable;
 
-import javax.annotation.Nullable;
-
 public class QuantilesArgs {
     // if this is String, or Json we are sampling strings
     public ColumnDescription cd = new ColumnDescription();
@@ -51,10 +49,7 @@ public class QuantilesArgs {
             ISketch<ITable, BucketsInfo> result = (ISketch<ITable, BucketsInfo>)(Object)s;
             res = result;
         }
-        ISketch<ITable, BucketsInfo> sketch = res;
-        return new PostProcessedSketch<ITable, BucketsInfo, BucketsInfo>(sketch) {
-            @Override
-            public BucketsInfo postProcess(@Nullable BucketsInfo result) {
+        return res.andThen(result -> {
                 BucketsInfo bi = result;
                 if (QuantilesArgs.this.cd.kind.isString()) {
                     int b = QuantilesArgs.this.stringsToSample;
@@ -66,7 +61,6 @@ public class QuantilesArgs {
                             mks.presentCount, mks.missingCount);
                 }
                 return bi;
-            }
-        };
+            });
     }
 }

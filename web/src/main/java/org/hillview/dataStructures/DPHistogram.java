@@ -15,7 +15,8 @@ import java.util.List;
 /**
  * Postprocesses a histogram adding differentially-private noise.
  */
-public class DPHistogram<G extends IGroup<Count>> extends PostProcessedSketch<ITable, G, Two<JsonGroups<Count>>> {
+public class DPHistogram<G extends IGroup<Count>> extends
+        PostProcessedSketch<ITable, G, Two<JsonGroups<Count>>> {
     private final IntervalDecomposition decomposition;
     private final double epsilon;
     private final boolean isCdf;

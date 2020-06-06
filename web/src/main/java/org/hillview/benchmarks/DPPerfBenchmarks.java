@@ -317,13 +317,7 @@ public class DPPerfBenchmarks extends Benchmarks {
                 post = new DPHistogram<>(hsk, ps.getColumnIndex(col.name),
                         c.decomposition, epsilon, false, this.flightsWrapper.laplace);
             else
-                post = new PostProcessedSketch<ITable, Groups<Count>, Two<JsonGroups<Count>>>(hsk) {
-                    @Override
-                    public Two<JsonGroups<Count>> postProcess(@Nullable Groups<Count> result) {
-                        Converters.checkNull(result);
-                        return new Two<>(result.toSerializable(c -> c));
-                    }
-                };
+                post = hsk.andThen(result -> new Two<>(result.toSerializable(c1 -> c1)));
             r = () -> table.blockingPostProcessedSketch(post);
             quiet = true;
             runNTimes(r, 1, bench);  // warm up jit

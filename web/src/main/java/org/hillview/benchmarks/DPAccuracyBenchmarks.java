@@ -26,6 +26,7 @@ import org.hillview.dataset.api.IMap;
 import org.hillview.dataset.api.TableSketch;
 import org.hillview.sketches.Histogram2DSketch;
 import org.hillview.sketches.results.*;
+import org.hillview.targets.TableRpcTarget;
 import org.hillview.utils.Pair;
 import org.hillview.main.Benchmarks;
 import org.hillview.maps.FindFilesMap;
@@ -174,18 +175,18 @@ public class DPAccuracyBenchmarks extends Benchmarks {
         return abstot / (double) n;
     }
 
-    private HistogramRequestInfo createHistogramRequest(String col, ColumnQuantization cq) {
+    private TableRpcTarget.HistogramRequestInfo createHistogramRequest(String col, ColumnQuantization cq) {
         // Construct a histogram corresponding to the leaves.
         // We will manually aggregate buckets as needed for the accuracy test.
-        HistogramRequestInfo info;
+        TableRpcTarget.HistogramRequestInfo info;
         if (cq instanceof DoubleColumnQuantization) {
             DoubleColumnQuantization dq = (DoubleColumnQuantization)cq;
-            info = new HistogramRequestInfo(new ColumnDescription(col, ContentsKind.Double),
+            info = new TableRpcTarget.HistogramRequestInfo(new ColumnDescription(col, ContentsKind.Double),
                     0, dq.globalMin, dq.globalMax, dq.getIntervalCount());
         } else {
             // StringColumnQuantization
             StringColumnQuantization sq = (StringColumnQuantization)cq;
-            info = new HistogramRequestInfo(new ColumnDescription(col, ContentsKind.String),0, sq.leftBoundaries);
+            info = new TableRpcTarget.HistogramRequestInfo(new ColumnDescription(col, ContentsKind.String),0, sq.leftBoundaries);
         }
 
         return info;
@@ -196,7 +197,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
                                              int iterations) {
         // Construct a histogram corresponding to the leaves.
         // We will manually aggregate buckets as needed for the accuracy test.
-        HistogramRequestInfo info = createHistogramRequest(col, cq);
+        TableRpcTarget.HistogramRequestInfo info = createHistogramRequest(col, cq);
         TableSketch<Groups<Count>> sk = info.getSketch(cq);
         IntervalDecomposition dd = info.getDecomposition(cq);
 
@@ -225,7 +226,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
                                                         int iterations) {
         // Construct a histogram corresponding to the leaves.
         // We will manually aggregate buckets as needed for the accuracy test.
-        HistogramRequestInfo[] info = new HistogramRequestInfo[]
+        TableRpcTarget.HistogramRequestInfo[] info = new TableRpcTarget.HistogramRequestInfo[]
                 {
                         createHistogramRequest(col1, cq1),
                         createHistogramRequest(col2, cq2)
