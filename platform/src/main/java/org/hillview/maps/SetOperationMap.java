@@ -18,7 +18,7 @@
 package org.hillview.maps;
 
 import org.hillview.dataset.api.IMap;
-import org.hillview.dataset.api.Pair;
+import org.hillview.utils.Pair;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;

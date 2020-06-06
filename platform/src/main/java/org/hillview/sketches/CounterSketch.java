@@ -17,7 +17,7 @@
 
 package org.hillview.sketches;
 
-import org.hillview.dataset.IncrementalTableSketch;
+import org.hillview.dataset.api.IncrementalTableSketch;
 import org.hillview.sketches.results.Count;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
@@ -35,6 +35,11 @@ public class CounterSketch extends IncrementalTableSketch<Count, EmptyWorkspace>
 
     @Override
     public EmptyWorkspace initialize(ITable data) { return EmptyWorkspace.instance; }
+
+    @Override
+    public Count rescale(Count result, double samplingRate) {
+        return new Count(Converters.toLong(result.count / samplingRate));
+    }
 
     @Nullable
     @Override

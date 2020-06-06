@@ -9,6 +9,8 @@ import org.hillview.maps.FindFilesMap;
 import org.hillview.maps.LoadFilesMap;
 import org.hillview.maps.ProjectMap;
 import org.hillview.sketches.*;
+import org.hillview.sketches.highorder.GroupByWorkspace;
+import org.hillview.sketches.highorder.SamplingTableSketch;
 import org.hillview.sketches.results.*;
 import org.hillview.storage.FileSetDescription;
 import org.hillview.storage.IFileReference;
@@ -87,16 +89,16 @@ public class BatchLogAnalysis {
         StringHistogramBuckets bucketsErrorCode = new StringHistogramBuckets("errorCode", leftBoundaries.toArray(new String[0]));
 
         /* Generate heatmap based on Timestamp buckets and errorCode buckets, and get the count in each bucket */
-        HeatmapSketch heatmapSketch = new HeatmapSketch(bucketsTimestamp, bucketsErrorCode, 1.0, 0);
-        Heatmap heatmap = table1.blockingSketch(heatmapSketch);
+        Histogram2DSketch sk = new Histogram2DSketch(bucketsTimestamp, bucketsErrorCode);
+        Groups<Groups<Count>> heatmap = table1.blockingSketch(sk);
         assert heatmap != null;
         HeatmapData heatmapData = new HeatmapData();
-        int numOfBucketsD1 = heatmap.xBucketCount;
-        int numOfBucketsD2 = heatmap.yBucketCount;
+        int numOfBucketsD1 = heatmap.size();
+        int numOfBucketsD2 = heatmap.perBucket.get(0).size();
         heatmapData.matrix = new long[numOfBucketsD1][numOfBucketsD2];
         for (int i = 0; i < numOfBucketsD1; i++){
             for (int j = 0; j < numOfBucketsD2; j++){
-                heatmapData.matrix[i][j] = heatmap.getCount(i, j);
+                heatmapData.matrix[i][j] = heatmap.getBucket(i).getBucket(j).count;
             }
         }
 

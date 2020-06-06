@@ -36,6 +36,12 @@ public class QuantizationSchema implements IJson {
         this.quantization = new LinkedHashMap<String, ColumnQuantization>();
     }
 
+    public QuantizationSchema(ColumnQuantization... cols) {
+        this();
+        for (ColumnQuantization q: cols)
+            this.add(q);
+    }
+
     @Nullable
     public ColumnQuantization get(String colName) {
         return quantization.get(colName);
@@ -45,8 +51,8 @@ public class QuantizationSchema implements IJson {
         return quantization.keySet();
     }
 
-    public void set(String col, ColumnQuantization quantization) {
-        this.quantization.put(col, quantization);
+    public void add(ColumnQuantization quantization) {
+        this.quantization.put(quantization.getColumn(), quantization);
     }
 
     public int getColumnCount() { return this.quantization.size(); }

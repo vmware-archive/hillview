@@ -17,9 +17,8 @@
 
 import {Receiver, RpcRequest} from "../rpc";
 import {
-    FilterDescription,
+    FilterDescription, Groups,
     Heatmap,
-    Histogram,
     kindIsString,
     RecordOrder,
     RemoteObjectId
@@ -32,7 +31,7 @@ import {
     ICancellable, makeInterval,
     PartialResult,
     percent, prefixSum,
-    reorder,
+    reorder, Two,
 } from "../util";
 import {AxisData, AxisKind} from "./axisData";
 import {IViewSerialization, TrellisHistogramSerialization} from "../datasetView";
@@ -60,7 +59,7 @@ export class TrellisHistogramView extends TrellisChartView {
     protected cdfs: CDFPlot[];
     protected bucketCount: number;
     protected xAxisData: AxisData;
-    protected data: Heatmap;
+    protected data: Two<Groups<Groups<number>>>;
     protected cdfDot: D3SvgElement;
     private readonly defaultProvenance: string = "Trellis histograms";
 
@@ -282,8 +281,8 @@ export class TrellisHistogramView extends TrellisChartView {
         return view;
     }
 
-    private static coarsen(cdf: Histogram, bucketCount: number): Histogram {
-        const cdfBucketCount = cdf.buckets.length;
+    private static coarsen(cdf: Groups<number>, bucketCount: number): Groups<number> {
+        const cdfBucketCount = cdf.perBucket.length;
         if (bucketCount === cdfBucketCount)
             return cdf;
 
@@ -294,21 +293,26 @@ export class TrellisHistogramView extends TrellisChartView {
             const leftBoundary = i * bucketWidth - .5;
             const rightBoundary = leftBoundary + bucketWidth;
             for (let j = Math.ceil(leftBoundary); j < rightBoundary; j++) {
-                console.assert(j < cdf.buckets.length);
-                sum += cdf.buckets[j];
+                console.assert(j < cdf.perBucket.length);
+                sum += cdf.perBucket[j];
             }
             buckets.push(Math.max(sum, 0));
         }
 
         // noinspection UnnecessaryLocalVariableJS
-        const hist: Histogram = { buckets: buckets,
-            missingCount: cdf.missingCount };
+        const hist: Groups<number> = {
+            perBucket: buckets,
+            perMissing: cdf.perMissing };
         return hist;
     }
 
-    public updateView(data: Heatmap, bucketCount: number): void {
-        if (data == null || data.buckets == null)
+    public updateView(data: Two<Groups<Groups<number>>>, bucketCount: number): void {
+        if (data == null || data.first === null || data.first.perBucket == null)
             return;
+
+        const histos = data.first;
+        const confidences = data.second;
+
         this.createNewSurfaces();
         if (this.isPrivate()) {
             const cols = [this.xAxisData.description.name, this.groupByAxisData.description.name];
@@ -320,30 +324,28 @@ export class TrellisHistogramView extends TrellisChartView {
         else
             this.bucketCount = Math.round(this.shape.size.width / Resolution.minBarWidth);
         this.data = data;
-        const coarsened: Histogram[] = [];
+        const coarsened: Groups<number>[] = [];
         let max = 0;
         const discrete = kindIsString(this.xAxisData.description.kind) ||
             this.xAxisData.description.kind === "Integer";
 
-        for (let i = 0; i < data.buckets.length; i++) {
-            const bucketData = data.buckets[i];
-            const histo: Histogram = {
-                buckets: bucketData,
-                missingCount: data.histogramMissingX.buckets[i],
-            };
-
+        for (let i = 0; i < histos.perBucket.length; i++) {
+            const bucketData = histos.perBucket[i];
             const cdfp = this.cdfs[i];
-            cdfp.setData(prefixSum(histo.buckets.map((b) => Math.max(0, b))), discrete);
+            cdfp.setData(prefixSum(bucketData.perBucket.map((b) => Math.max(0, b))), discrete);
 
-            const coarse = TrellisHistogramView.coarsen(histo, this.bucketCount);
-            max = Math.max(max, Math.max(...coarse.buckets));
+            const coarse = TrellisHistogramView.coarsen(bucketData, this.bucketCount);
+            max = Math.max(max, Math.max(...coarse.perBucket));
             coarsened.push(coarse);
         }
 
         for (let i = 0; i < coarsened.length; i++) {
             const plot = this.hps[i];
-            coarsened[i].confidence = data.confidence != null ? data.confidence[i] : null;
-            plot.setHistogram(coarsened[i], this.samplingRate,
+            const confidence = {
+                perBucket: confidences != null ? confidences.perBucket[i].perBucket : null,
+                perMissing: confidences != null ? confidences.perBucket[i].perMissing : null
+            };
+            plot.setHistogram({ first: coarsened[i], second: confidence }, this.samplingRate,
                 this.xAxisData,
                 max, this.page.dataset.isPrivate());
             plot.displayAxes = false;
@@ -473,7 +475,7 @@ export class TrellisHistogramView extends TrellisChartView {
 /**
  * Renders a Trellis plot of 1D histograms
  */
-export class TrellisHistogramReceiver extends Receiver<Heatmap> {
+export class TrellisHistogramReceiver extends Receiver<Two<Groups<Groups<number>>>> {
     protected trellisView: TrellisHistogramView;
 
     constructor(title: PageTitle,
@@ -495,7 +497,7 @@ export class TrellisHistogramReceiver extends Receiver<Heatmap> {
         this.page.setDataView(this.trellisView);
     }
 
-    public onNext(value: PartialResult<Heatmap>): void {
+    public onNext(value: PartialResult<Two<Groups<Groups<number>>>>): void {
         super.onNext(value);
         if (value == null || value.data == null) {
             return;

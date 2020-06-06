@@ -17,6 +17,9 @@
 
 package org.hillview.sketches;
 
+import org.hillview.sketches.highorder.GroupBySketch;
+import org.hillview.sketches.highorder.GroupByWorkspace;
+import org.hillview.sketches.results.Groups;
 import org.hillview.sketches.results.IHistogramBuckets;
 import org.hillview.sketches.results.SampleSet;
 
@@ -25,16 +28,14 @@ import org.hillview.sketches.results.SampleSet;
  */
 public class Histogram2DQuantilesSketch
         extends GroupBySketch<Groups<SampleSet>,
-                              GroupByWorkspace<ColumnWorkspace<ReservoirSampleWorkspace>>,
-                              HistogramQuantilesSketch,
-                              Groups<Groups<SampleSet>>> {
+        GroupByWorkspace<ColumnWorkspace<ReservoirSampleWorkspace>>,
+                                      HistogramQuantilesSketch> {
     public Histogram2DQuantilesSketch(
             String column,
             int quantileCount,
             long seed,
             IHistogramBuckets buckets0,
             IHistogramBuckets buckets1) {
-        super(buckets1, Groups::new,
-                new HistogramQuantilesSketch(column, quantileCount, seed, buckets0));
+        super(buckets1, new HistogramQuantilesSketch(column, quantileCount, seed, buckets0));
     }
 }

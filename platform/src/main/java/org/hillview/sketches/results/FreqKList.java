@@ -21,13 +21,12 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.objects.*;
 import org.hillview.dataset.api.ISketchResult;
-import org.hillview.dataset.api.Pair;
+import org.hillview.utils.Pair;
 import org.hillview.table.Schema;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.RowSnapshotSet;
 import org.hillview.utils.Converters;
 import org.hillview.utils.MutableInteger;
-import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -110,7 +109,7 @@ public class FreqKList implements ISketchResult {
         IntList listCounts = new IntArrayList(maxSize);
         for (int i = 0; i < maxSize; i++) {
             listRows.add(pList.get(i).first);
-            listCounts.add(Utilities.toInt(Converters.checkNull(pList.get(i).second)));
+            listCounts.add(Converters.toInt(Converters.checkNull(pList.get(i).second)));
         }
         return new NextKList(listRows, listCounts, schema, this.totalRows);
     }

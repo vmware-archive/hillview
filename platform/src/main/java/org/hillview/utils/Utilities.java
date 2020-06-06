@@ -23,7 +23,6 @@ import com.google.gson.reflect.TypeToken;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hillview.dataset.api.IJson;
-import org.hillview.dataset.api.Pair;
 import org.hillview.dataset.api.PartialResult;
 
 import javax.annotation.Nullable;
@@ -35,6 +34,7 @@ import java.util.function.Function;
 /**
  * This class has some useful static helper methods.
  */
+@SuppressWarnings("unused")
 public class Utilities {
     public static final int INT_SIZE = 4;
 
@@ -64,24 +64,6 @@ public class Utilities {
         if (count == 0)
             return value;  // probably also 0
         return value / count;
-    }
-
-    public static long toLong(double value) {
-        if (value < Long.MIN_VALUE || value > Long.MAX_VALUE)
-            throw new RuntimeException("Cannot convert to long " + value);
-        return (long)value;
-    }
-
-    public static int toInt(double value) {
-        if (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE)
-            throw new RuntimeException("Cannot convert to int " + value);
-        return (int)value;
-    }
-
-    public static int toInt(long value) {
-        if (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE)
-            throw new RuntimeException("Cannot convert to int " + value);
-        return (int)value;
     }
 
     /**
@@ -324,7 +306,7 @@ public class Utilities {
         if (x <= 0) {
             throw new RuntimeException("Attempted to take the log of a negative value: " + x);
         }
-        return Utilities.toInt((Math.floor(Math.log(x) / Math.log(2))));
+        return Converters.toInt((Math.floor(Math.log(x) / Math.log(2))));
     }
 
     /**

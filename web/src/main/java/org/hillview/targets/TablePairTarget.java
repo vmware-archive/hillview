@@ -19,7 +19,7 @@ package org.hillview.targets;
 
 import org.hillview.*;
 import org.hillview.dataset.api.IDataSet;
-import org.hillview.dataset.api.Pair;
+import org.hillview.utils.Pair;
 import org.hillview.maps.SetOperationMap;
 import org.hillview.table.api.ITable;
 

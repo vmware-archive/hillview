@@ -17,8 +17,9 @@
 
 package org.hillview.dataset.api;
 
-import org.hillview.dataset.PRDataSetMonoid;
-import org.hillview.dataset.PostProcessedSketch;
+import org.hillview.dataset.monoids.PRDataSetMonoid;
+import org.hillview.sketches.highorder.PostProcessedSketch;
+import org.hillview.utils.Pair;
 import rx.Observable;
 
 import javax.annotation.Nullable;

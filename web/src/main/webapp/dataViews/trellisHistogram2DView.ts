@@ -17,15 +17,15 @@
 
 import {Receiver} from "../rpc";
 import {
-    FilterDescription,
-    Heatmap, Heatmap3D,
+    FilterDescription, Groups,
+    Heatmap,
     RecordOrder,
     RemoteObjectId
 } from "../javaBridge";
 import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {SchemaClass} from "../schemaClass";
-import {add, Converters, ICancellable, PartialResult, percent, reorder, significantDigits} from "../util";
+import {add, Converters, ICancellable, PartialResult, percent, reorder, significantDigits, toHeatmap} from "../util";
 import {AxisData, AxisKind} from "./axisData";
 import {
     IViewSerialization,
@@ -58,7 +58,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
     private readonly legendDiv: HTMLDivElement;
     protected legendPlot: HistogramLegendPlot;
     protected relative: boolean;
-    protected data: Heatmap3D;
+    protected data: Groups<Groups<Groups<number>>>;
     protected maxYAxis: number | null;  // maximum value to use for Y axis; if null - derive from data
     private readonly defaultProvenance: string = "Trellis 2D histograms";
 
@@ -395,15 +395,16 @@ export class TrellisHistogram2DView extends TrellisChartView {
         return view;
     }
 
-    public updateView(data: Heatmap3D, bucketCount: number[], maxYAxis: number | null, keepColorMap: boolean): void {
+    public updateView(data: Groups<Groups<Groups<number>>>, bucketCount: number[], maxYAxis: number | null, keepColorMap: boolean): void {
         this.createNewSurfaces(keepColorMap);
         this.data = data;
         let max = maxYAxis;
         if (maxYAxis == null) {
-            for (let i = 0; i < data.buckets.length; i++) {
-                const buckets = data.buckets[i];
-                for (let j = 0; j < buckets.length; j++) {
-                    const total = buckets[j].reduce(add, 0);
+            for (let i = 0; i < data.perBucket.length; i++) {
+                const buckets = data.perBucket[i];
+                for (let j = 0; j < buckets.perBucket.length; j++) {
+                    const bj = buckets.perBucket[j];
+                    const total = bj.perBucket.reduce(add, 0);
                     if (total > max)
                         max = total;
                 }
@@ -411,15 +412,9 @@ export class TrellisHistogram2DView extends TrellisChartView {
             this.maxYAxis = max;
         }
 
-        for (let i = 0; i < data.buckets.length; i++) {
-            const buckets = data.buckets[i];
-            const heatmap: Heatmap = {
-                buckets: buckets,
-                histogramMissingX: null,
-                histogramMissingY: null,
-                missingData: data.eitherMissing,
-                totalSize: data.eitherMissing + data.totalPresent
-            };
+        for (let i = 0; i < data.perBucket.length; i++) {
+            const buckets = data.perBucket[i];
+            const heatmap: Heatmap = toHeatmap({ first: buckets, second: null });
             const plot = this.hps[i];
             plot.setData(heatmap, this.xAxisData, this.samplingRate, this.relative,
                 this.schema, this.legendPlot.colorMap, max);
@@ -534,7 +529,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
 /**
  * Renders a Trellis plot of 2D histograms
  */
-export class TrellisHistogram2DReceiver extends Receiver<Heatmap3D> {
+export class TrellisHistogram2DReceiver extends Receiver<Groups<Groups<Groups<number>>>> {
     protected trellisView: TrellisHistogram2DView;
 
     constructor(title: PageTitle,
@@ -545,7 +540,7 @@ export class TrellisHistogram2DReceiver extends Receiver<Heatmap3D> {
                 protected axes: AxisData[],
                 protected samplingRate: number,
                 protected shape: TrellisShape,
-                operation: ICancellable<Heatmap[]>,
+                operation: ICancellable<Groups<Groups<Groups<number>>>>,
                 protected options: ChartOptions) {
         super(options.reusePage ? page : page.dataset.newPage(title, page), operation, "histogram");
         this.trellisView = new TrellisHistogram2DView(
@@ -555,7 +550,7 @@ export class TrellisHistogram2DReceiver extends Receiver<Heatmap3D> {
         this.page.setDataView(this.trellisView);
     }
 
-    public onNext(value: PartialResult<Heatmap3D>): void {
+    public onNext(value: PartialResult<Groups<Groups<Groups<number>>>>): void {
         super.onNext(value);
         if (value == null) {
             return;

@@ -21,7 +21,7 @@ import org.hillview.dataset.api.ISketchResult;
 import org.hillview.table.ArrayRowOrder;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.SmallTable;
-import org.hillview.utils.Utilities;
+import org.hillview.utils.Converters;
 
 /**
  * A sample of rows from a large table, stored in a small table. The expectation is that the rows
@@ -45,7 +45,7 @@ public class SampleList implements ISketchResult {
      * estimator for the p^th quantile in the large table.
      */
     public RowSnapshot getRow(double q) {
-        return new RowSnapshot(this.table, Utilities.toInt(q*this.table.getNumOfRows()));
+        return new RowSnapshot(this.table, Converters.toInt(q*this.table.getNumOfRows()));
     }
 
     /** A method that can be used in sketching to estimate the quality of the quantiles sketch.
@@ -58,7 +58,7 @@ public class SampleList implements ISketchResult {
         else {
             int[] order = new int[resolution];
             for (int i = 0; i < resolution; i++) {
-                order[i] = Utilities.toInt(Math.round((((i + 1) * (double)this.table.getNumOfRows()) / (resolution + 1)) - 1));
+                order[i] = Converters.toInt(Math.round((((i + 1) * (double)this.table.getNumOfRows()) / (resolution + 1)) - 1));
             }
             return this.table.compress(new ArrayRowOrder(order));
         }

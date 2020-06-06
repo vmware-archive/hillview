@@ -20,9 +20,8 @@ import {
     CombineOperators,
     BucketsInfo,
     EigenVal,
-    Histogram,
     IColumnDescription, RecordOrder,
-    RemoteObjectId
+    RemoteObjectId, Groups
 } from "../javaBridge";
 import {OnCompleteReceiver} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
@@ -75,7 +74,7 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
         this.newPage.setDataView(this.specView);
 
         const ev: number [] = eVals.eigenValues;
-        const histogram: Histogram = { buckets: ev, missingCount: 0 };
+        const histogram: Groups<number> = { perBucket: ev, perMissing: 0 };
         const icd: IColumnDescription = { kind: "Integer", name: "Singular Values" };
         const range: BucketsInfo = { min: -.5, max: ev.length - .5,
             presentCount: 0, missingCount: 0 };
@@ -126,7 +125,7 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
  * A SpectrumView plots a one-dimensional bar-chart showing the top singular values.
  */
 export class SpectrumView extends ChartView {
-    protected histogram: Histogram;
+    protected histogram: Groups<number>;
     protected axisData: AxisData;
     protected title: string;
     protected plot: HistogramPlot;
@@ -153,7 +152,7 @@ export class SpectrumView extends ChartView {
         this.plot = new HistogramPlot(this.surface);
     }
 
-    public updateView(title: string, h: Histogram, axisData: AxisData): void {
+    public updateView(title: string, h: Groups<number>, axisData: AxisData): void {
         this.createNewSurfaces();
         if (h == null) {
             this.page.reportError("No data to display");
@@ -163,7 +162,7 @@ export class SpectrumView extends ChartView {
         this.axisData = axisData;
         this.title = title;
         this.histogram = h;
-        this.plot.setHistogram(h, 1,
+        this.plot.setHistogram({first: h, second: null }, 1,
             axisData, null, this.page.dataset.isPrivate());
         this.plot.draw();
 

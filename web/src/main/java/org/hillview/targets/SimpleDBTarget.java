@@ -21,12 +21,10 @@ import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import org.hillview.*;
 import org.hillview.dataStructures.*;
 import org.hillview.dataset.LocalDataSet;
-import org.hillview.dataset.PrecomputedSketch;
-import org.hillview.dataset.TableSketch;
-import org.hillview.dataset.api.IDataSet;
+import org.hillview.sketches.PrecomputedSketch;
 import org.hillview.dataset.api.ISketch;
-import org.hillview.dataset.api.Pair;
-import org.hillview.maps.IdMap;
+import org.hillview.utils.Pair;
+import org.hillview.maps.highorder.IdMap;
 import org.hillview.sketches.results.*;
 import org.hillview.storage.ColumnLimits;
 import org.hillview.storage.JdbcConnectionInformation;
@@ -39,10 +37,7 @@ import org.hillview.table.api.ITable;
 import org.hillview.table.filters.RangeFilterDescription;
 import org.hillview.table.filters.RangeFilterPairDescription;
 import org.hillview.table.rows.RowSnapshot;
-import org.hillview.utils.CountWithConfidence;
-import org.hillview.utils.HillviewException;
-import org.hillview.utils.JsonList;
-import org.hillview.utils.Utilities;
+import org.hillview.utils.*;
 
 import javax.annotation.Nullable;
 import java.sql.DriverManager;
@@ -54,7 +49,7 @@ import java.util.List;
  * the front-end.  Note that all operations on the local database are not scalable -
  * they are not expected to scale to billions of rows.
  */
-public class SimpleDBTarget extends RpcTarget {
+public class SimpleDBTarget extends TableRpcTarget {
     static final long serialVersionUID = 1;
 
     final JdbcConnectionInformation jdbc;
@@ -62,9 +57,6 @@ public class SimpleDBTarget extends RpcTarget {
     protected final int rowCount;
     @Nullable
     protected Schema schema;
-    // This table is actually not used for anything; the only purpose
-    // is for some APIs to be similar to the TableTarget class.
-    protected final IDataSet<ITable> table;
     private final ColumnLimits columnLimits;
 
     static {
@@ -87,8 +79,10 @@ public class SimpleDBTarget extends RpcTarget {
             this.database.connect();
             this.rowCount = this.database.getRowCount(this.columnLimits);
             this.schema = this.database.getSchema();
+            // The table table is actually not used for anything; the only purpose
+            // is for some APIs to be similar to the TableTarget class.
             SmallTable empty = new SmallTable(this.schema);
-            this.table = new LocalDataSet<ITable>(empty);
+            this.setTable(new LocalDataSet<ITable>(empty));
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -117,7 +111,7 @@ public class SimpleDBTarget extends RpcTarget {
     private void heavyHitters(RpcRequest request, RpcRequestContext context) {
         HeavyHittersRequestInfo info = request.parseArgs(HeavyHittersRequestInfo.class);
         SmallTable tbl = this.database.topFreq(
-                info.columns, Utilities.toInt(Math.ceil(info.amount * info.totalRows / 100)),
+                info.columns, Converters.toInt(Math.ceil(info.amount * info.totalRows / 100)),
                 this.columnLimits);
         List<String> cols = tbl.getSchema().getColumnNames();
         String lastCol = cols.get(cols.size() - 1);
@@ -125,7 +119,7 @@ public class SimpleDBTarget extends RpcTarget {
         for (int i = 0; i < tbl.getNumOfRows(); i++) {
             RowSnapshot rs = new RowSnapshot(tbl, i);
             RowSnapshot proj = new RowSnapshot(rs, info.columns);
-            map.put(proj, Utilities.toInt(rs.getDouble(lastCol)));
+            map.put(proj, Converters.toInt(rs.getDouble(lastCol)));
         }
         FreqKList fkList = new FreqKList(info.totalRows, 0, map);
         fkList.sortList();
@@ -150,46 +144,23 @@ public class SimpleDBTarget extends RpcTarget {
         this.heavyHitters(request, context);
     }
 
-    @SuppressWarnings("unused")
     @HillviewRpc
-    public void getDataQuantiles1D(RpcRequest request, RpcRequestContext context) {
+    public void getDataQuantiles(RpcRequest request, RpcRequestContext context) {
         QuantilesArgs[] info = request.parseArgs(QuantilesArgs[].class);
-        assert info.length == 1;
-        ColumnDescription cd = info[0].cd;
-        BucketsInfo range;
-        if (cd.kind == ContentsKind.Integer ||
-                cd.kind == ContentsKind.Double ||
-                cd.kind == ContentsKind.Date) {
-            range = this.database.numericDataRange(cd, this.columnLimits);
-        } else {
-            range = this.database.stringBuckets(
-                    cd, info[0].stringsToSample, this.columnLimits);
-        }
-        JsonList<BucketsInfo> result = new JsonList<BucketsInfo>(1);
-        result.add(range);
-        ISketch<ITable, JsonList<BucketsInfo>> sk = new PrecomputedSketch<ITable, JsonList<BucketsInfo>>(result);
-        this.runSketch(this.table, sk, request, context);
-    }
-
-    @SuppressWarnings("unused")
-    @HillviewRpc
-    public void getDataQuantiles2D(RpcRequest request, RpcRequestContext context) {
-        QuantilesArgs[] info = request.parseArgs(QuantilesArgs[].class);
-        assert info.length == 2;
-        JsonList<BucketsInfo> result = new JsonList<BucketsInfo>(2);
-        for (int i = 0; i < 2; i++) {
+        JsonList<BucketsInfo> result = new JsonList<BucketsInfo>(info.length);
+        for (QuantilesArgs quantilesArgs : info) {
             BucketsInfo range;
-            if (info[i].cd.kind == ContentsKind.Integer ||
-                    info[i].cd.kind == ContentsKind.Double ||
-                    info[i].cd.kind == ContentsKind.Date) {
-                range = this.database.numericDataRange(info[i].cd, this.columnLimits);
+            if (quantilesArgs.cd.kind == ContentsKind.Integer ||
+                    quantilesArgs.cd.kind == ContentsKind.Double ||
+                    quantilesArgs.cd.kind == ContentsKind.Date) {
+                range = this.database.numericDataRange(quantilesArgs.cd, this.columnLimits);
             } else {
                 range = this.database.stringBuckets(
-                        info[i].cd, info[i].stringsToSample, this.columnLimits);
+                        quantilesArgs.cd, quantilesArgs.stringsToSample, this.columnLimits);
             }
             result.add(range);
         }
-        ISketch<ITable, JsonList<BucketsInfo>> sk = new PrecomputedSketch<ITable, JsonList<BucketsInfo>>(result);
+        ISketch<ITable, JsonList<BucketsInfo>> sk = new PrecomputedSketch<>(result);
         this.runSketch(this.table, sk, request, context);
     }
 
@@ -199,26 +170,28 @@ public class SimpleDBTarget extends RpcTarget {
         assert info.length == 2;
         ColumnDescription cd = info[0].cd;  // both args should be on the same column
         @Nullable
-        Histogram histo = this.database.histogram(
+        JsonGroups<Count> histo = this.database.histogram(
                 cd, info[0].getBuckets(), this.columnLimits, null, this.rowCount);
-        Histogram cdf = this.database.histogram(
+        JsonGroups<Count> cdf = this.database.histogram(
                 cd, info[1].getBuckets(), this.columnLimits, null, this.rowCount);
-        Pair<Histogram, Histogram> result = new Pair<Histogram, Histogram>(histo, cdf.integrate());
-        ISketch<ITable, Pair<Histogram, Histogram>> sk =
-                new PrecomputedSketch<ITable, Pair<Histogram, Histogram>>(result);
+        Pair<JsonGroups<Count>, JsonGroups<Count>> result = new Pair<>(
+                histo, cdf.prefixSum(Count::add, JsonGroups::new));
+        ISketch<ITable, Pair<JsonGroups<Count>, JsonGroups<Count>>> sk =
+                new PrecomputedSketch<>(result);
         this.runSketch(this.table, sk, request, context);
     }
 
     @HillviewRpc
-    public void heatmap(RpcRequest request, RpcRequestContext context) {
+    public void histogram2D(RpcRequest request, RpcRequestContext context) {
         HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
         assert info.length == 2;
-        Heatmap heatmap = this.database.heatmap(
+        JsonGroups<JsonGroups<Count>> heatmap = this.database.histogram2D(
                 info[0].cd, info[1].cd,
                 info[0].getBuckets(), info[1].getBuckets(),
                 this.columnLimits,
                 null, null);
-        ISketch<ITable, Heatmap> sk = new PrecomputedSketch<ITable, Heatmap>(heatmap);
+        ISketch<ITable, JsonGroups<JsonGroups<Count>>> sk =
+                new PrecomputedSketch<ITable, JsonGroups<JsonGroups<Count>>>(heatmap);
         this.runSketch(this.table, sk, request, context);
     }
 

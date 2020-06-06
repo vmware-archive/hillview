@@ -2,15 +2,16 @@ package org.hillview.targets;
 
 import org.hillview.*;
 import org.hillview.dataStructures.*;
-import org.hillview.dataset.ConcurrentPostprocessedSketch;
-import org.hillview.dataset.PostProcessedSketch;
-import org.hillview.dataset.PrecomputedSketch;
+import org.hillview.dataset.api.TableSketch;
+import org.hillview.sketches.highorder.*;
+import org.hillview.sketches.PrecomputedSketch;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.maps.FilterMap;
 import org.hillview.maps.ProjectMap;
 import org.hillview.sketches.*;
 import org.hillview.sketches.results.*;
 import org.hillview.table.PrivacySchema;
+import org.hillview.table.QuantizationSchema;
 import org.hillview.table.Schema;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.ColumnQuantization;
@@ -19,20 +20,17 @@ import org.hillview.table.filters.RangeFilterPairDescription;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.*;
 
-import javax.annotation.Nullable;
 import java.util.function.BiFunction;
 
-public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
+public class PrivateTableTarget extends TableRpcTarget implements IPrivateDataset {
     static final long serialVersionUID = 1;
-
-    public final IDataSet<ITable> table;
     public final DPWrapper wrapper;
 
     PrivateTableTarget(IDataSet<ITable> table, HillviewComputation computation,
                        PrivacySchema privacySchema, String schemaFilename) {
         super(computation);
         this.wrapper = new DPWrapper(privacySchema, schemaFilename);
-        this.table = table;
+        this.setTable(table);
         this.registerObject();
     }
 
@@ -71,13 +69,7 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
     public void getSummary(RpcRequest request, RpcRequestContext context) {
         SummarySketch ss = new SummarySketch();
         PostProcessedSketch<ITable, TableSummary, DPWrapper.PrivacySummary> post =
-                new PostProcessedSketch<ITable, TableSummary, DPWrapper.PrivacySummary>(ss) {
-                    @Nullable
-                    @Override
-                    public DPWrapper.PrivacySummary postProcess(@Nullable TableSummary result) {
-                        return PrivateTableTarget.this.wrapper.addPrivateMetadata(Converters.checkNull(result));
-                    }
-                };
+                ss.andThen(PrivateTableTarget.this.wrapper::addPrivateMetadata);
         this.runCompleteSketch(this.table, post, request, context);
     }
 
@@ -91,25 +83,27 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
         assert info.length == 2;
         ColumnQuantization quantization = this.getPrivacySchema().quantization(info[0].cd.name);
         Converters.checkNull(quantization);
-        HistogramSketch sk = info[0].getSketch(quantization); // Histogram
-        HistogramSketch cdf = info[1].getSketch(quantization);
+        TableSketch<Groups<Count>> sk = info[0].getSketch(quantization); // Histogram
+        TableSketch<Groups<Count>> cdf = info[1].getSketch(quantization);
         IntervalDecomposition d0 = info[0].getDecomposition(quantization);
         IntervalDecomposition d1 = info[1].getDecomposition(quantization);
         double epsilon = this.getPrivacySchema().epsilon(info[0].cd.name);
-        DPHistogram privateHisto = new DPHistogram(sk, this.wrapper.getColumnIndex(info[0].cd.name),
+        DPHistogram<Groups<Count>> privateHisto = new DPHistogram<>(
+                sk, this.wrapper.getColumnIndex(info[0].cd.name),
                 d0, epsilon, false, this.wrapper.laplace);
-        DPHistogram privateCdf = new DPHistogram(cdf, this.wrapper.getColumnIndex(info[0].cd.name),
+        DPHistogram<Groups<Count>> privateCdf = new DPHistogram<>(
+                cdf, this.wrapper.getColumnIndex(info[0].cd.name),
                 d1, epsilon, true, this.wrapper.laplace);
-        ConcurrentPostprocessedSketch<ITable, Histogram, Histogram, Histogram, Histogram> ccp =
-                new ConcurrentPostprocessedSketch<ITable, Histogram, Histogram, Histogram, Histogram>(
-                        privateHisto, privateCdf);
+        ConcurrentPostprocessedSketch<ITable, Groups<Count>, Groups<Count>,
+                Two<JsonGroups<Count>>, Two<JsonGroups<Count>>> ccp =
+                new ConcurrentPostprocessedSketch<>(privateHisto, privateCdf);
         this.runCompleteSketch(this.table, ccp, request, context);
     }
 
     @SuppressWarnings("unused")
     @HillviewRpc
-    public void getDataQuantiles1D(RpcRequest request, RpcRequestContext context) {
-        this.wrapper.getDataQuantiles1D(request, context, this);
+    public void getDataQuantiles(RpcRequest request, RpcRequestContext context) {
+        this.wrapper.getDataQuantiles(request, context, this);
     }
 
     @HillviewRpc
@@ -148,37 +142,30 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
         this.runCompleteSketch(this.table, nhll, request, context);
     }
 
-    @SuppressWarnings("unused")
     @HillviewRpc
-    public void getDataQuantiles3D(RpcRequest request, RpcRequestContext context) {
-        this.wrapper.getDataQuantiles3D(request, context, this);
-    }
-
-    @SuppressWarnings("unused")
-    @HillviewRpc
-    public void getDataQuantiles2D(RpcRequest request, RpcRequestContext context) {
-        this.wrapper.getDataQuantiles2D(request, context, this);
-    }
-
-    @HillviewRpc
-    public void heatmap(RpcRequest request, RpcRequestContext context) {
+    public void histogram2D(RpcRequest request, RpcRequestContext context) {
         HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
         assert info.length == 2;
+        Histogram2DSketch sk = new Histogram2DSketch(
+                info[1].getBuckets(),
+                info[0].getBuckets());
         ColumnQuantization q0 = this.getPrivacySchema().quantization(info[0].cd.name);
         ColumnQuantization q1 = this.getPrivacySchema().quantization(info[1].cd.name);
         Converters.checkNull(q0);
         Converters.checkNull(q1);
-        double epsilon = this.getPrivacySchema().epsilon(info[0].cd.name, info[1].cd.name);
-        IHistogramBuckets b0 = info[0].getBuckets(q0);
-        IHistogramBuckets b1 = info[1].getBuckets(q1);
+        QuantizedTableSketch<
+                Groups<Groups<Count>>,
+                Histogram2DSketch,
+                GroupByWorkspace<GroupByWorkspace<EmptyWorkspace>>>
+                qts = new QuantizedTableSketch<>(sk, new QuantizationSchema(q0, q1));
         IntervalDecomposition d0 = info[0].getDecomposition(q0);
         IntervalDecomposition d1 = info[1].getDecomposition(q1);
-        HeatmapSketch sk = new HeatmapSketch(
-                b0, b1, 1.0, 0, q0, q1);
-        DPHeatmapSketch hsk = new DPHeatmapSketch(sk,
+        double epsilon = this.getPrivacySchema().epsilon(info[0].cd.name, info[1].cd.name);
+        DPHeatmapSketch<Groups<Count>, Groups<Groups<Count>>> hsk = new DPHeatmapSketch<>(
+                qts.sampled(info[0].samplingRate, info[0].seed),
                 this.wrapper.getColumnIndex(info[0].cd.name, info[1].cd.name),
                 d0, d1, epsilon, this.wrapper.laplace);
-        this.runCompleteSketch(this.table, hsk, request, context);
+        this.runSketch(this.table, hsk, request, context);
     }
 
     @HillviewRpc
@@ -205,13 +192,7 @@ public class PrivateTableTarget extends RpcTarget implements IPrivateDataset {
                 info.order, info.precision, info.tableSize, info.seed,
                 this.getPrivacySchema().quantization);
         PostProcessedSketch<ITable, SampleList, RowSnapshot> post =
-                new PostProcessedSketch<ITable, SampleList, RowSnapshot>(sk) {
-                    @Override
-                    public RowSnapshot postProcess(@Nullable SampleList result) {
-                        Converters.checkNull(result);
-                        return result.getRow(info.position);
-                    }
-                };
+                sk.andThen(s -> s.getRow(info.position));
         this.runCompleteSketch(this.table, post, request, context);
     }
 

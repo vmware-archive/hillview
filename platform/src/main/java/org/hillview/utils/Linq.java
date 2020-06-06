@@ -17,9 +17,6 @@
 
 package org.hillview.utils;
 
-import org.hillview.dataset.api.Pair;
-import org.hillview.dataset.api.Triple;
-
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -110,6 +107,13 @@ public class Linq {
         S[] result = (S[])Array.newInstance(sc, data.length);
         for (int i=0; i < data.length; i++)
             result[i] = function.apply(data[i]);
+        return result;
+    }
+
+    public static <T, S> JsonList<S> mapToList(T[] data, Function<T, S> function) {
+        JsonList<S> result = new JsonList<S>(data.length);
+        for (int i=0; i < data.length; i++)
+            result.add(function.apply(data[i]));
         return result;
     }
 

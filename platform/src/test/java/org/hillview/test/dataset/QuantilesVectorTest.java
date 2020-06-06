@@ -2,9 +2,8 @@ package org.hillview.test.dataset;
 
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.api.IDataSet;
-import org.hillview.sketches.Groups;
+import org.hillview.sketches.results.Groups;
 import org.hillview.sketches.HistogramQuantilesSketch;
-import org.hillview.sketches.HistogramSketch;
 import org.hillview.sketches.results.*;
 import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;
@@ -37,9 +36,6 @@ public class QuantilesVectorTest extends BaseTest {
         IDataSet<ITable> local = new LocalDataSet<ITable>(table);
         String[] boundaries = new String[] { "A", "M" };
         IHistogramBuckets buckets = new StringHistogramBuckets("Name", boundaries, "Z");
-        HistogramSketch hissk = new HistogramSketch(buckets, 1.0, 0, null);
-        Histogram h = local.blockingSketch(hissk);
-        Assert.assertNotNull(h);
         final int desiredSamples = 10;
         HistogramQuantilesSketch sk = new HistogramQuantilesSketch(
                 "Age", desiredSamples, 1, buckets);

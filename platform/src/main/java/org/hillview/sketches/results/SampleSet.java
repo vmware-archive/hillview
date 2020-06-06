@@ -18,6 +18,7 @@
 package org.hillview.sketches.results;
 
 import org.hillview.dataset.api.IJsonSketchResult;
+import org.hillview.dataset.api.IScalable;
 import org.hillview.sketches.ReservoirSampleWorkspace;
 import org.hillview.utils.Randomness;
 import org.hillview.utils.Utilities;
@@ -28,7 +29,7 @@ import java.util.Arrays;
  * A set of samples from a numeric distribution extracted using
  * reservoir sampling.  Also maintains the min and the max.
  */
-public class SampleSet implements IJsonSketchResult {
+public class SampleSet implements IJsonSketchResult, IScalable<SampleSet> {
     static final long serialVersionUID = 1;
 
     /**
@@ -113,11 +114,23 @@ public class SampleSet implements IJsonSketchResult {
         return result;
     }
 
+    @Override
+    public SampleSet rescale(double samplingRate) {
+        // Nothing to do
+        return this;
+    }
+
     private static void copyAndMerge(Randomness random, double[] dest, double[] smallArray, long smallCount,
                                      double[] bigArray, long bigCount) {
         int filled = (int)Math.min(dest.length, bigCount);
+        // Fill result first from big array
         System.arraycopy(bigArray, 0, dest, 0, filled);
-        for (int i = 0; i < (int)smallCount; i++) {
+        int i = 0;
+        // Fill the remaining space from the small array
+        for (; i < Math.min(dest.length - filled, (int)smallCount); i++)
+            dest[i + filled] = smallArray[i];
+        // Finally, start sampling from the remaining small array
+        for (; i < (int)smallCount; i++) {
             double d = smallArray[i];
             int index = random.nextInt(i + filled);
             if (index < dest.length)
@@ -147,13 +160,23 @@ public class SampleSet implements IJsonSketchResult {
      * @param expectedCount Number of empirical quantiles to extract.
      */
     public SampleSet quantiles(int expectedCount) {
-        Arrays.sort(this.samples);
         SampleSet result;
         if (this.count < expectedCount) {
             result = new SampleSet((int)this.count, this.count);
             System.arraycopy(this.samples, 0, result.samples, 0, result.samples.length);
+            Arrays.sort(result.samples);
         } else {
-            double[] small = Utilities.decimate(this.samples, Math.floorDiv(this.samples.length, expectedCount));
+            double[] valid;
+            if (this.count < this.samples.length) {
+                // Not all values in array are valid; only sort the valid ones
+                valid = new double[(int)this.count];
+                System.arraycopy(this.samples, 0, valid, 0, (int)this.count);
+            } else {
+                // the entire array this.samples has valid data
+                valid = this.samples;
+            }
+            Arrays.sort(valid);
+            double[] small = Utilities.decimate(valid, Math.floorDiv(valid.length, expectedCount));
             result = new SampleSet(small.length - 1, this.count);
             System.arraycopy(small, 1, result.samples, 0, result.samples.length);  // skip 0-th quantile
         }
@@ -161,6 +184,11 @@ public class SampleSet implements IJsonSketchResult {
         result.max = this.max;
         result.count = this.count;
         result.missing = this.missing;
+        // Sanity check
+        for (double v: result.samples)
+            if (!(v >= result.min && v <= result.max))
+                throw new RuntimeException(
+                        "Illegal sample in set " + v + " count " + this.count + " expected " + expectedCount);
         return result;
     }
 

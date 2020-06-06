@@ -19,8 +19,7 @@ package org.hillview.sketches;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
-import org.hillview.dataset.TableSketch;
-import org.hillview.dataset.api.ISketch;
+import org.hillview.dataset.api.TableSketch;
 import org.hillview.sketches.results.NextKList;
 import org.hillview.table.Schema;
 import org.hillview.table.SmallTable;

@@ -19,9 +19,9 @@ package org.hillview.test.dataset;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.api.IDataSet;
+import org.hillview.dataset.api.TableSketch;
 import org.hillview.sketches.*;
 import org.hillview.sketches.results.*;
-import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IIntColumn;
 import org.hillview.test.BaseTest;
 import org.hillview.utils.TestTables;
@@ -39,18 +39,17 @@ public class HistSketchTest extends BaseTest {
     public void Histogram1DTest() {
         final int numCols = 1;
         final int tableSize = 1000;
-        final Table myTable = TestTables.getRepIntTable(tableSize, numCols);
-        final IHistogramBuckets buckets = new DoubleHistogramBuckets(
+        Table myTable = TestTables.getRepIntTable(tableSize, numCols);
+        IHistogramBuckets buckets = new DoubleHistogramBuckets(
                 myTable.getSchema().getColumnNames().get(0),1, 50, 10);
-        final HistogramSketch mySketch = new HistogramSketch(buckets,
-                1, 0, null);
-        Histogram result = mySketch.create(myTable);
+        TableSketch<Groups<Count>> sk = new HistogramSketch(buckets).sampled(1, 0);
+        Groups<Count> result = sk.create(myTable);
         int size = 0;
         Assert.assertNotNull(result);
-        int bucketNum = result.getBucketCount();
+        int bucketNum = result.size();
         for (int i = 0; i < bucketNum; i++)
-            size += result.getCount(i);
-        Assert.assertTrue(tableSize > size + result.getMissingCount());
+            size += result.getBucket(i).count;
+        Assert.assertTrue(tableSize > size + result.perMissing.count);
     }
 
     @Test
@@ -60,7 +59,7 @@ public class HistSketchTest extends BaseTest {
         Table myTable = TestTables.getRepIntTable(tableSize, numCols);
         IHistogramBuckets buckets = new DoubleHistogramBuckets(
                 myTable.getSchema().getColumnNames().get(0), 1, 50, 10);
-        GenericHistogramSketch mySketch = new GenericHistogramSketch(buckets);
+        HistogramSketch mySketch = new HistogramSketch(buckets);
         LocalDataSet<ITable> local = new LocalDataSet<ITable>(myTable);
         Groups<Count> result = local.blockingSketch(mySketch);
         int size = 0;
@@ -72,56 +71,19 @@ public class HistSketchTest extends BaseTest {
     }
 
     @Test
-    public void Histogram1DTest2() {
-        final int numCols = 1;
-        final int bigSize = 100000;
-        final SmallTable bigTable = TestTables.getIntTable(bigSize, numCols);
-        double min, max;
-        final String colName = bigTable.getSchema().getColumnNames().get(0);
-        IColumn col = bigTable.getColumn(colName);
-        min = col.getInt(0);
-        max = col.getInt(0);
-        for (int i=0; i < col.sizeInRows(); i++) {
-            int e = col.getInt(i);
-            if (e < min)
-                min = e;
-            if (e > max)
-                max = e;
-        }
-
-        final IHistogramBuckets buckets = new DoubleHistogramBuckets(colName, min, max, 10);
-        final ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize / 10);
-        final Histogram hdl = all.blockingSketch(
-                new HistogramSketch(buckets, 0.5, 0, null));
-        Assert.assertNotNull(hdl);
-        int size = 0;
-        int bucketNum = hdl.getBucketCount();
-        for (int i = 0; i < bucketNum; i++)
-            size += hdl.getCount(i);
-        Assert.assertEquals(bigSize, size);
-    }
-
-    @Test
     public void HistogramGeneric1DTest2() {
         final int numCols = 1;
         final int bigSize = 100000;
         final SmallTable bigTable = TestTables.getIntTable(bigSize, numCols);
         double min, max;
         final String colName = bigTable.getSchema().getColumnNames().get(0);
-        IColumn col = bigTable.getColumn(colName);
-        min = col.getInt(0);
-        max = col.getInt(0);
-        for (int i=0; i < col.sizeInRows(); i++) {
-            int e = col.getInt(i);
-            if (e < min)
-                min = e;
-            if (e > max)
-                max = e;
-        }
+        IIntColumn col = bigTable.getColumn(colName).to(IIntColumn.class);
+        min = col.minInt();
+        max = col.maxInt();
 
         IHistogramBuckets buckets = new DoubleHistogramBuckets(colName, min, max, 10);
         ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize / 10);
-        GenericHistogramSketch mySketch = new GenericHistogramSketch(buckets);
+        HistogramSketch mySketch = new HistogramSketch(buckets);
         Groups<Count> h = all.blockingSketch(mySketch);
         Assert.assertNotNull(h);
         int size = 0;
@@ -136,27 +98,26 @@ public class HistSketchTest extends BaseTest {
         final int numCols = 2;
         final int bigSize = 100000;
         final double rate = 0.5;
-        final SmallTable bigTable = TestTables.getIntTable(bigSize, numCols);
-        final String colName1 = bigTable.getSchema().getColumnNames().get(0);
-        final String colName2 = bigTable.getSchema().getColumnNames().get(1);
-        final IHistogramBuckets buckets1 = new DoubleHistogramBuckets(colName1, 1, 50, 10);
-        final IHistogramBuckets buckets2 = new DoubleHistogramBuckets(colName2, 1, 50, 15);
-        final ParallelDataSet<ITable> data0 = TestTables.makeParallel(bigTable, bigSize/10);
+        SmallTable bigTable = TestTables.getIntTable(bigSize, numCols);
+        String colName1 = bigTable.getSchema().getColumnNames().get(0);
+        String colName2 = bigTable.getSchema().getColumnNames().get(1);
+        IHistogramBuckets buckets1 = new DoubleHistogramBuckets(colName1, 1, 50, 10);
+        IHistogramBuckets buckets2 = new DoubleHistogramBuckets(colName2, 1, 50, 15);
+        ParallelDataSet<ITable> data0 = TestTables.makeParallel(bigTable, bigSize/10);
         IDataSet<ITable> data1 = new LocalDataSet<ITable>(bigTable);
-        Heatmap h0 = data0.blockingSketch(
-                new HeatmapSketch(buckets1, buckets2, rate, 0));
+        Groups<Groups<Count>> h0 = data0.blockingSketch(
+                new Histogram2DSketch(buckets2, buckets1).sampled(rate, 0));
         Assert.assertNotNull(h0);
-        Heatmap h1 = data1.blockingSketch(
-                new HeatmapSketch(buckets1, buckets2, rate, 0));
+        Groups<Groups<Count>> h1 = data1.blockingSketch(
+                new Histogram2DSketch(buckets2, buckets1).sampled(rate, 0));
         Assert.assertNotNull(h1);
-        Assert.assertTrue(h0.same(h1));
+        Assert.assertEquals(h0.toString(), h1.toString());
     }
 
     @Test
     public void HeatmapGenericSketchTest() {
         int numCols = 2;
         int bigSize = 100000;
-        double rate = 0.5;
         int xBuckets = 10;
         int yBuckets = 15;
         int fragments = 10;
@@ -171,13 +132,13 @@ public class HistSketchTest extends BaseTest {
         Assert.assertEquals(fragments, data0.size());
 
         IDataSet<ITable> data1 = new LocalDataSet<ITable>(bigTable);
-        Histogram2DSketch s = new Histogram2DSketch(buckets1, buckets2);
+        Histogram2DSketch s = new Histogram2DSketch(buckets2, buckets1);
         Groups<Groups<Count>> h0 = data0.blockingSketch(s);
         Assert.assertNotNull(h0);
         Groups<Groups<Count>> h1 = data1.blockingSketch(s);
         Assert.assertNotNull(h1);
-        Heatmap h = data0.blockingSketch(
-                new HeatmapSketch(buckets2, buckets1, 1.0, 0));
+        Groups<Groups<Count>> h = data0.blockingSketch(
+                new Histogram2DSketch(buckets2, buckets1).sampled(1.0, 0));
         Assert.assertNotNull(h);
         Assert.assertEquals(h.toString(), h1.toString());
         Assert.assertEquals(h.toString(), h0.toString());
@@ -189,7 +150,6 @@ public class HistSketchTest extends BaseTest {
     public void HeatmapArrayGenericSketchTest() {
         int numCols = 3;
         int bigSize = 100000;
-        double rate = 0.5;
         int xBuckets = 10;
         int yBuckets = 15;
         int zBuckets = 20;
@@ -212,9 +172,6 @@ public class HistSketchTest extends BaseTest {
         Assert.assertNotNull(h0);
         Groups<Groups<Groups<Count>>> h1 = data1.blockingSketch(s);
         Assert.assertNotNull(h1);
-        Heatmap3D h = data0.blockingSketch(
-                new Heatmap3DSketch(buckets3, buckets2, buckets1, colName3, colName2, colName1, 1.0, 0));
-        Assert.assertNotNull(h);
         Assert.assertEquals(h0, h1);
     }
 }

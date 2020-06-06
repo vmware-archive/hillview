@@ -51,7 +51,7 @@ public class Randomness {
         if (p <= 0) throw new IllegalArgumentException("parameter of Geometric Distribution must be positive");
         int value = myPrg.nextInt();
         double sample = (double) Math.abs(value) / Integer.MAX_VALUE;
-        return Utilities.toInt((Math.floor((Math.log(1 - sample) / Math.log(1-p) ) )) + 1);
+        return Converters.toInt((Math.floor((Math.log(1 - sample) / Math.log(1-p) ) )) + 1);
     }
 
     /**

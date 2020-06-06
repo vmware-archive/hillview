@@ -21,10 +21,10 @@ import org.hillview.*;
 import org.hillview.utils.*;
 import org.hillview.dataStructures.QuantilesArgs;
 import org.hillview.dataset.api.ISketch;
-import org.hillview.dataset.api.Pair;
+import org.hillview.utils.Pair;
 import org.hillview.security.PersistedKeyLoader;
 import org.hillview.security.SecureLaplace;
-import org.hillview.dataset.PrecomputedSketch;
+import org.hillview.sketches.PrecomputedSketch;
 import org.hillview.sketches.results.BucketsInfo;
 import org.hillview.sketches.results.DataRange;
 import org.hillview.sketches.results.StringQuantiles;
@@ -159,8 +159,8 @@ public class DPWrapper {
         pSumm.metadata = this.container.privacySchema;
         double epsilon = this.getPrivacySchema().epsilon();
         Noise noise = DPWrapper.computeCountNoise(TABLE_COLUMN_INDEX, SpecialBucket.TotalCount, epsilon, this.laplace);
-        pSumm.rowCount = summary.rowCount + Utilities.toLong(noise.getNoise());
-        pSumm.rowCountConfidence = Utilities.toLong(PrivacyUtils.laplaceCI(
+        pSumm.rowCount = summary.rowCount + Converters.toLong(noise.getNoise());
+        pSumm.rowCountConfidence = Converters.toLong(PrivacyUtils.laplaceCI(
                 1, 1.0/epsilon, PrivacyUtils.DEFAULT_ALPHA).second);
         return pSumm;
     }
@@ -249,42 +249,13 @@ public class DPWrapper {
         }
     }
 
-    // The following are methods used in common by various Private targets;
-    // technically we should use multiple inheritance to inherit these methods
-    // but in Java this is not possible, so we put them here.
-    void getDataQuantiles1D(RpcRequest request, RpcRequestContext context,
-                            IPrivateDataset target) {
+    void getDataQuantiles(RpcRequest request, RpcRequestContext context,
+                          IPrivateDataset target) {
         QuantilesArgs[] args = request.parseArgs(QuantilesArgs[].class);
-        assert args.length == 1;
-        BucketsInfo retRange = this.getRange(args[0]);
+        JsonList<BucketsInfo> bi = Linq.mapToList(args, this::getRange);
         ISketch<ITable, JsonList<BucketsInfo>> sk =
                 new PrecomputedSketch<ITable, JsonList<BucketsInfo>>(
-                        new JsonList<BucketsInfo>(retRange));
-        target.runCompleteSketch(target.getDataset(), sk, request, context);
-    }
-
-    void getDataQuantiles2D(RpcRequest request, RpcRequestContext context,
-                            IPrivateDataset target) {
-        QuantilesArgs[] args = request.parseArgs(QuantilesArgs[].class);
-        assert args.length == 2;
-        BucketsInfo retRange0 = this.getRange(args[0]);
-        BucketsInfo retRange1 = this.getRange(args[1]);
-        ISketch<ITable, JsonList<BucketsInfo>> sk =
-                new PrecomputedSketch<ITable, JsonList<BucketsInfo>>(
-                        new JsonList<BucketsInfo>(retRange0, retRange1));
-        target.runCompleteSketch(target.getDataset(), sk, request, context);
-    }
-
-    void getDataQuantiles3D(RpcRequest request, RpcRequestContext context,
-                            IPrivateDataset target) {
-        QuantilesArgs[] args = request.parseArgs(QuantilesArgs[].class);
-        assert args.length == 3;
-        BucketsInfo retRange0 = this.getRange(args[0]);
-        BucketsInfo retRange1 = this.getRange(args[1]);
-        BucketsInfo retRange2 = this.getRange(args[2]);
-        ISketch<ITable, JsonList<BucketsInfo>> sk =
-                new PrecomputedSketch<ITable, JsonList<BucketsInfo>>(
-                        new JsonList<BucketsInfo>(retRange0, retRange1, retRange2));
+                        new JsonList<BucketsInfo>(bi));
         target.runCompleteSketch(target.getDataset(), sk, request, context);
     }
 

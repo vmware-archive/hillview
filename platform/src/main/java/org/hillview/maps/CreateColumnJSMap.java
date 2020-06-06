@@ -118,7 +118,7 @@ public class CreateColumnJSMap extends AppendColumnMap {
                             col.set(r, value.asInt());
                             break;
                         case Double:
-                            col.set(r, value);
+                            col.set(r, value.asDouble());
                             break;
                         case Duration:
                             // TODO

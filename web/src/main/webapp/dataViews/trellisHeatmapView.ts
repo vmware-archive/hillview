@@ -16,9 +16,8 @@
  */
 
 import {
-    FilterDescription,
+    FilterDescription, Groups,
     Heatmap,
-    Heatmap3D,
     IColumnDescription,
     RecordOrder,
     RemoteObjectId
@@ -37,7 +36,7 @@ import {
     TrellisLayoutComputation
 } from "./dataRangesCollectors";
 import {Receiver, RpcRequest} from "../rpc";
-import {Converters, ICancellable, makeInterval, PartialResult, reorder} from "../util";
+import {Converters, ICancellable, makeInterval, PartialResult, reorder, toHeatmap} from "../util";
 import {HeatmapPlot} from "../ui/heatmapPlot";
 import {IViewSerialization, TrellisHeatmapSerialization} from "../datasetView";
 import {IDataView} from "../ui/dataview";
@@ -57,7 +56,7 @@ export class TrellisHeatmapView extends TrellisChartView {
     protected xAxisData: AxisData;
     protected yAxisData: AxisData;
     protected hps: HeatmapPlot[];
-    protected heatmaps: Heatmap3D;
+    protected heatmaps: Groups<Groups<Groups<number>>>;
     protected readonly defaultProvenance = "Trellis heatmaps";
 
     constructor(remoteObjectId: RemoteObjectId,
@@ -296,24 +295,18 @@ export class TrellisHeatmapView extends TrellisChartView {
         rr.invoke(new NextKReceiver(newPage, table, rr, false, order, null));
     }
 
-    public updateView(heatmaps: Heatmap3D, keepColorMap: boolean): void {
+    public updateView(histogram3d: Groups<Groups<Groups<number>>>, keepColorMap: boolean): void {
         this.createNewSurfaces(keepColorMap);
-        this.heatmaps = heatmaps;
-        if (heatmaps == null || heatmaps.buckets.length === 0) {
+        this.heatmaps = histogram3d;
+        if (histogram3d == null || histogram3d.perBucket.length === 0) {
             this.page.reportError("No data to display");
             return;
         }
 
         let max = 0;
-        for (let i = 0; i < heatmaps.buckets.length; i++) {
-            const buckets = heatmaps.buckets[i];
-            const heatmap: Heatmap = {
-                buckets: buckets,
-                histogramMissingX: null,
-                histogramMissingY: null,
-                missingData: heatmaps.eitherMissing,
-                totalSize: heatmaps.eitherMissing + heatmaps.totalPresent
-            };
+        for (let i = 0; i < histogram3d.perBucket.length; i++) {
+            const buckets = histogram3d.perBucket[i];
+            const heatmap: Heatmap = toHeatmap({ first: buckets, second: null });
             const plot = this.hps[i];
             // The order of these operations is important
             plot.setData(heatmap, this.xAxisData, this.yAxisData, this.schema, 2, this.isPrivate());
@@ -447,7 +440,7 @@ export class TrellisHeatmapView extends TrellisChartView {
 /**
  * Renders a Trellis plot of heatmaps
  */
-export class TrellisHeatmapReceiver extends Receiver<Heatmap3D> {
+export class TrellisHeatmapReceiver extends Receiver<Groups<Groups<Groups<number>>>> {
     protected trellisView: TrellisHeatmapView;
 
     constructor(title: PageTitle,
@@ -458,7 +451,7 @@ export class TrellisHeatmapReceiver extends Receiver<Heatmap3D> {
                 protected axes: AxisData[],
                 protected samplingRate: number,
                 protected shape: TrellisShape,
-                operation: ICancellable<Heatmap3D>,
+                operation: ICancellable<Groups<Groups<Groups<number>>>>,
                 protected reusePage: boolean) {
         super(reusePage ? page : page.dataset.newPage(title, page), operation, "histogram");
         this.trellisView = new TrellisHeatmapView(
@@ -468,7 +461,7 @@ export class TrellisHeatmapReceiver extends Receiver<Heatmap3D> {
         this.page.setDataView(this.trellisView);
     }
 
-    public onNext(value: PartialResult<Heatmap3D>): void {
+    public onNext(value: PartialResult<Groups<Groups<Groups<number>>>>): void {
         super.onNext(value);
         if (value == null) {
             return;

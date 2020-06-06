@@ -181,15 +181,9 @@ export interface Heatmap {
     buckets: number[][];
     confidence?: number[][];
     missingData: number;
-    histogramMissingX: Histogram;
-    histogramMissingY: Histogram;
+    histogramMissingX: Groups<number>;
+    histogramMissingY: Groups<number>;
     totalSize: number;
-}
-
-export interface Heatmap3D {
-    buckets: number[][][];
-    eitherMissing: number;
-    totalPresent: number;
 }
 
 export type AggregateKind = "Sum" | "Count" | "Min" | "Max" | "Average";
@@ -241,15 +235,6 @@ export interface FileSizeSketchInfo {
 export interface ColumnSortOrientation {
     columnDescription: IColumnDescription;
     isAscending: boolean;
-}
-
-export interface Histogram {
-    buckets: number[];
-    missingCount: number;
-    /// confidence interval for each histogram bucket
-    confidence?: number[];
-    /// Confidence for missingData
-    missingConfidence?: number;
 }
 
 // This is actually a union of two java classes

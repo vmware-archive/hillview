@@ -24,19 +24,53 @@ import {ErrorReporter} from "./ui/errReporter";
 import {NotifyDialog} from "./ui/dialog";
 import {HtmlString, Size} from "./ui/ui";
 import {
-    AggregateDescription, ComparisonFilterDescription,
+    AggregateDescription,
+    ComparisonFilterDescription,
     ContentsKind,
     FilterDescription,
+    Groups,
+    Heatmap,
     kindIsNumeric,
-    kindIsString, RowFilterDescription, StringColumnFilterDescription,
+    kindIsString,
+    RowFilterDescription,
     StringFilterDescription
 } from "./javaBridge";
 import {DragEventKind, PageTitle} from "./ui/fullPage";
+
+// TODO: delete this function
+export function toHeatmap(data: Two<Groups<Groups<number>>>): Heatmap {
+    const b: number[][] = [];
+    const conf: number[][] = data.second != null ? [] : null;
+    const my: number[] = [];
+    let total = 0;
+    for (let i = 0; i < data.first.perBucket.length; i++) {
+        const row = data.first.perBucket[i];
+        b.push(row.perBucket);
+        total += row.perBucket.reduce(add, 0);
+        my.push(row.perMissing);
+        if (data.second != null)
+            conf.push(data.second.perBucket[i].perBucket)
+    }
+
+    return {
+        buckets: b,
+        confidence: conf,
+        missingData: data.first.perMissing.perMissing,
+        histogramMissingX: data.first.perMissing,
+        histogramMissingY: {
+            perBucket: my,
+            perMissing: data.first.perMissing.perMissing
+        },
+        totalSize: total
+    };
+}
 
 export interface Pair<T1, T2> {
     first: T1;
     second: T2;
 }
+
+export interface Two<T> extends Pair<T, T> {}
 
 export function assert(condition: boolean, message?: string): asserts condition {
     console.assert(condition, message);  // tslint:disable-line
@@ -184,10 +218,9 @@ export class Converters {
 
     static comparisonFilterDescription(filter: ComparisonFilterDescription): string {
         const kind = filter.column.kind;
-        let result = "Compare " + filter.column.name + " " + filter.comparison +
+        return "Compare " + filter.column.name + " " + filter.comparison +
             (kindIsNumeric(kind) ? this.valueToString(filter.doubleValue, kind) :
-                    this.valueToString(filter.stringValue, kind));
-        return result;
+                this.valueToString(filter.stringValue, kind));
     }
 }
 

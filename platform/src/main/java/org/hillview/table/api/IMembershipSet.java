@@ -18,8 +18,8 @@
 package org.hillview.table.api;
 
 import org.hillview.table.membership.MembershipSetFactory;
+import org.hillview.utils.Converters;
 import org.hillview.utils.Randomness;
-import org.hillview.utils.Utilities;
 
 import java.util.function.IntPredicate;
 
@@ -138,8 +138,8 @@ public interface IMembershipSet extends IRowOrder {
         final int sampleSize;
         final double appSampleSize = rate * this.getSize();
         if (r.nextDouble() < (appSampleSize - Math.floor(appSampleSize)))
-            sampleSize = Utilities.toInt(Math.floor(appSampleSize));
-        else sampleSize = Utilities.toInt(Math.ceil(appSampleSize));
+            sampleSize = Converters.toInt(Math.floor(appSampleSize));
+        else sampleSize = Converters.toInt(Math.ceil(appSampleSize));
         return sampleSize;
     }
 

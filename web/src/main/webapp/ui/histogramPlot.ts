@@ -20,12 +20,12 @@ import {axisLeft as d3axisLeft} from "d3-axis";
 import {format as d3format} from "d3-format";
 import {scaleLinear as d3scaleLinear} from "d3-scale";
 import {AxisData, AxisDescription, AxisKind} from "../dataViews/axisData";
-import {Histogram} from "../javaBridge";
+import {Groups} from "../javaBridge";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {D3Axis, D3Scale} from "./ui";
 import {symbol, symbolTriangle} from "d3-shape";
-import {valueWithConfidence} from "../util";
+import {Two, valueWithConfidence} from "../util";
 import {IBarPlot} from "./IBarPlot";
 
 /**
@@ -38,7 +38,7 @@ export class HistogramPlot extends Plot implements IBarPlot {
     /**
      * Histogram that is being drawn.
      */
-    public histogram: Histogram;
+    public data: Two<Groups<number>>;
     /**
      * Sampling rate that was used to compute the histogram.
      */
@@ -66,14 +66,14 @@ export class HistogramPlot extends Plot implements IBarPlot {
      * @param maxYAxis      If present it is used to scale the maximum value for the Y axis.
      * @param isPrivate     True if we are plotting private data.
      */
-    public setHistogram(bars: Histogram, samplingRate: number,
+    public setHistogram(bars: Two<Groups<number>>, samplingRate: number,
                         axisData: AxisData, maxYAxis: number | null, isPrivate: boolean): void {
         // TODO: display missing data graphically.
-        this.histogram = bars;
+        this.data = bars;
         this.samplingRate = samplingRate;
         this.xAxisData = axisData;
         const chartWidth = this.getChartWidth();
-        const bucketCount = this.histogram.buckets.length;
+        const bucketCount = this.data.first.perBucket.length;
         this.barWidth = chartWidth / bucketCount;
         this.maxYAxis = maxYAxis;
         this.isPrivate = isPrivate;
@@ -86,13 +86,13 @@ export class HistogramPlot extends Plot implements IBarPlot {
     }
 
     private drawBars(): void {
-        const counts = this.histogram.buckets.map((x) => Math.max(x, 0));
+        const counts = this.data.first.perBucket.map((x) => Math.max(x, 0));
         this.max = Math.max(...counts);
         const displayMax = this.maxYAxis == null ? this.max : this.maxYAxis;
         const chartWidth = this.getChartWidth();
         const chartHeight = this.getChartHeight();
-        const confidence = this.isPrivate ? this.histogram.confidence :
-            new Array(this.histogram.buckets.length);
+        const confidence = this.isPrivate ? this.data.second :
+            new Array(this.data.first.perBucket.length); // filled with zeros
         const zippedData = d3zip(counts, confidence);
         const bars = this.plottingSurface
             .getChart()
@@ -159,7 +159,7 @@ export class HistogramPlot extends Plot implements IBarPlot {
     }
 
     public draw(): void {
-        if (this.histogram == null)
+        if (this.data == null)
             return;
 
         this.drawBars();
@@ -180,8 +180,8 @@ export class HistogramPlot extends Plot implements IBarPlot {
      */
     public getBucketIndex(x: number): number {
         const bucket = Math.floor(x / this.barWidth);
-        if (bucket < 0 || this.histogram == null ||
-            bucket >= this.histogram.buckets.length)
+        if (bucket < 0 || this.data == null ||
+            bucket >= this.data.first.perBucket.length)
             return -1;
         return bucket;
     }
@@ -190,8 +190,8 @@ export class HistogramPlot extends Plot implements IBarPlot {
         const bucket = this.getBucketIndex(x);
         if (bucket < 0)
             return valueWithConfidence(0, null);
-        const value = this.histogram.buckets[bucket];
-        const conf = this.isPrivate ? this.histogram.confidence[bucket] : null;
+        const value = this.data.first.perBucket[bucket];
+        const conf = this.isPrivate ? this.data.second.perBucket[bucket] : null;
         return valueWithConfidence(value, conf);
     }
 }

@@ -18,7 +18,7 @@
 package org.hillview.sketches;
 
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import org.hillview.dataset.TableSketch;
+import org.hillview.dataset.api.TableSketch;
 import org.hillview.dataset.api.IJsonSketchResult;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IRowIterator;

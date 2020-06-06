@@ -20,13 +20,15 @@ package org.hillview.sketches.results;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
 import org.hillview.dataset.api.IJsonSketchResult;
+import org.hillview.dataset.api.IScalable;
+import org.hillview.utils.Converters;
 
 import java.util.Objects;
 
 /**
  * Represents a count (e.g., of elements a histogram bucket).
  */
-public class Count implements IJsonSketchResult {
+public class Count implements IJsonSketchResult, IScalable<Count> {
     public long count;
 
     public Count() {
@@ -61,4 +63,15 @@ public class Count implements IJsonSketchResult {
 
     @Override
     public JsonElement toJsonTree() { return new JsonPrimitive(this.count); }
+
+    public Count add(Count other) {
+        return new Count(this.count + other.count);
+    }
+
+    @Override
+    public Count rescale(double samplingRate) {
+        if (samplingRate >= 1.0)
+            return this;
+        return new Count(Converters.toLong(this.count / samplingRate));
+    }
 }

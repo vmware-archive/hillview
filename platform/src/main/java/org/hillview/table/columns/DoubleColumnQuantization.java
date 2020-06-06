@@ -19,7 +19,7 @@ package org.hillview.table.columns;
 
 import org.hillview.sketches.results.BucketsInfo;
 import org.hillview.sketches.results.DataRange;
-import org.hillview.utils.Utilities;
+import org.hillview.utils.Converters;
 
 public class DoubleColumnQuantization extends ColumnQuantization {
     static final long serialVersionUID = 1;
@@ -40,12 +40,13 @@ public class DoubleColumnQuantization extends ColumnQuantization {
 
     /**
      * Create a privacy metadata for a numeric-type column.
-     *
+     * @param column      Name of quantized column.
      * @param granularity Size of a bucket for quantized data.
      * @param globalMin   Minimum value expected in the column.  The minimum is inclusive.
      * @param globalMax   Maximum value expected in column.  The maximum is exclusive.
      */
-    public DoubleColumnQuantization(double granularity, double globalMin, double globalMax) {
+    public DoubleColumnQuantization(String column, double granularity, double globalMin, double globalMax) {
+        super(column);
         this.granularity = granularity;
         this.globalMin = globalMin;
         this.globalMax = globalMax;
@@ -54,7 +55,7 @@ public class DoubleColumnQuantization extends ColumnQuantization {
         if (this.granularity <= 0)
             throw new IllegalArgumentException("Granularity must be positive: " + this.granularity);
         double intervals = (this.globalMax - this.globalMin) / this.granularity;
-        if (Math.abs(intervals - Utilities.toInt(intervals)) > .001)
+        if (Math.abs(intervals - Converters.toInt(intervals)) > .001)
             throw new IllegalArgumentException("Granularity does not divide range into an integer number of intervals");
         if (intervals >= Integer.MAX_VALUE)
             throw new IllegalArgumentException("Number of intervals is too large: " + intervals);
@@ -77,13 +78,13 @@ public class DoubleColumnQuantization extends ColumnQuantization {
         if (this.outOfRange(value))
             return -1;
         double index = Math.floor((value - this.globalMin) / this.granularity);
-        return Utilities.toInt(index);
+        return Converters.toInt(index);
     }
 
     @Override
     public int getIntervalCount() {
         double count = ((this.globalMax - this.globalMin) / this.granularity);
-        return Utilities.toInt(count);
+        return Converters.toInt(count);
     }
 
     @Override

@@ -2,7 +2,6 @@ package org.hillview.utils;
 
 import org.apache.commons.math3.distribution.LaplaceDistribution;
 import org.hillview.dataStructures.IntervalDecomposition;
-import org.hillview.dataset.api.Pair;
 
 import java.util.ArrayList;
 import java.util.Arrays;

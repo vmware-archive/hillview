@@ -19,7 +19,7 @@ package org.hillview.table;
 
 import org.hillview.dataset.api.IJson;
 import org.hillview.table.columns.ColumnQuantization;
-import org.hillview.utils.Utilities;
+import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -83,7 +83,7 @@ public class PrivacySchema implements IJson {
                 throw new RuntimeException("Too many columns; index overflow");
             index = newIndex;
         }
-        return Utilities.toInt(index);
+        return Converters.toInt(index);
     }
 
     /**

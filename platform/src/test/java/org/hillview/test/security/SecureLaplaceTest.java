@@ -1,6 +1,6 @@
 package org.hillview.test.security;
 
-import org.hillview.dataset.api.Pair;
+import org.hillview.utils.Pair;
 import org.hillview.security.SecureLaplace;
 import org.hillview.security.TestKeyLoader;
 import org.hillview.test.BaseTest;

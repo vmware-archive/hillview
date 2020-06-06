@@ -17,10 +17,11 @@
 
 package org.hillview;
 
-import org.hillview.dataset.IdPostProcessedSketch;
-import org.hillview.dataset.PostProcessedSketch;
+import org.hillview.sketches.highorder.IdPostProcessedSketch;
+import org.hillview.sketches.highorder.PostProcessedSketch;
 import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.*;
+import org.hillview.utils.Pair;
 
 import java.util.List;
 import java.util.UUID;

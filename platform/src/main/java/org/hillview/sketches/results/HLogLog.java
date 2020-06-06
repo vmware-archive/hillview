@@ -23,8 +23,8 @@ import org.hillview.dataset.api.ISketchResult;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.IRowIterator;
+import org.hillview.utils.Converters;
 import org.hillview.utils.CountWithConfidence;
-import org.hillview.utils.Utilities;
 
 /**
  * A class that computes an approximation of the number of distinct elements in a column. Elements
@@ -120,7 +120,7 @@ public class HLogLog implements ISketchResult {
         if ((zeroRegs > 0) && (rawEstimate < (2.5 * this.regNum)))
             result = Math.round(this.regNum * (Math.log(this.regNum / (double) zeroRegs)));
         else if (rawEstimate > ((double)Integer.MAX_VALUE / 30 ))
-            result = Utilities.toLong(-Math.pow(2, 32) * Math.log(1 - (rawEstimate / Math.pow(2, 32))));
+            result = Converters.toLong(-Math.pow(2, 32) * Math.log(1 - (rawEstimate / Math.pow(2, 32))));
         this.distinctItemCount = result;
         return result;
     }

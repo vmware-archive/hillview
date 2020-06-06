@@ -18,14 +18,14 @@
 package org.hillview.targets;
 
 import org.hillview.*;
-import org.hillview.dataset.PrecomputedSketch;
+import org.hillview.sketches.PrecomputedSketch;
 import org.hillview.table.PrivacySchema;
 import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.*;
 import org.hillview.dataset.remoting.HillviewServer;
 import org.hillview.management.*;
 import org.hillview.maps.FindFilesMap;
-import org.hillview.maps.IdMap;
+import org.hillview.maps.highorder.IdMap;
 import org.hillview.maps.LoadDatabaseTableMap;
 import org.hillview.storage.*;
 import org.hillview.utils.*;

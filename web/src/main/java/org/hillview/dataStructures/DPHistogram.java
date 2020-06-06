@@ -1,11 +1,10 @@
 package org.hillview.dataStructures;
 
-import org.hillview.dataset.PostProcessedSketch;
-import org.hillview.dataset.TableSketch;
+import org.hillview.sketches.highorder.PostProcessedSketch;
 import org.hillview.dataset.api.ISketch;
-import org.hillview.dataset.api.Pair;
+import org.hillview.sketches.results.Count;
+import org.hillview.utils.Pair;
 import org.hillview.security.SecureLaplace;
-import org.hillview.sketches.results.Histogram;
 import org.hillview.table.api.ITable;
 import org.hillview.targets.DPWrapper;
 import org.hillview.utils.*;
@@ -16,14 +15,15 @@ import java.util.List;
 /**
  * Postprocesses a histogram adding differentially-private noise.
  */
-public class DPHistogram extends PostProcessedSketch<ITable, Histogram, Histogram> {
+public class DPHistogram<G extends IGroup<Count>> extends
+        PostProcessedSketch<ITable, G, Two<JsonGroups<Count>>> {
     private final IntervalDecomposition decomposition;
     private final double epsilon;
     private final boolean isCdf;
     private final SecureLaplace laplace;
     private final int columnIndex;
 
-    public DPHistogram(ISketch<ITable, Histogram> sketch,
+    public DPHistogram(ISketch<ITable, G> sketch,
                        int columnIndex,
                        IntervalDecomposition decomposition,
                        double epsilon, boolean isCdf, SecureLaplace laplace) {
@@ -86,39 +86,41 @@ public class DPHistogram extends PostProcessedSketch<ITable, Histogram, Histogra
      */
     @Nullable
     @Override
-    public Histogram postProcess(@Nullable Histogram histogram) {
+    public Two<JsonGroups<Count>> postProcess(@Nullable G histogram) {
         HillviewLogger.instance.info("Adding histogram noise with", "epsilon={0}", this.epsilon);
         double scale = PrivacyUtils.computeNoiseScale(this.epsilon, decomposition);
         double baseVariance = PrivacyUtils.laplaceVariance(scale);
         Converters.checkNull(histogram);
-        Histogram result = new Histogram(histogram.buckets.length, true);
-        Converters.checkNull(result.confidence);
+        long[] counts = new long[histogram.size()];
+        int[]  conf = new int[histogram.size()];
 
         Noise noise = new Noise();
         long totalIntervals = 0;
         long previous = 0;
-        for (int i = 0; i < histogram.buckets.length; i++) {
+        for (int i = 0; i < histogram.size(); i++) {
             long nIntervals = this.noiseForBucket(i, scale, baseVariance, isCdf, noise, laplace, decomposition);
             long current;
             if (isCdf) {
-                current = previous + histogram.buckets[i];
+                current = previous + histogram.getBucket(i).count;
                 previous = current;
             } else {
-                current = histogram.buckets[i];
+                current = histogram.getBucket(i).count;
             }
-            result.buckets[i] = Utilities.toLong(current + noise.getNoise());
+            counts[i] = Converters.toLong(current + noise.getNoise());
             if (isCdf && i > 0) {
                 // Ensure they are monotonically increasing
-                result.buckets[i] = Math.max(result.buckets[i-1], result.buckets[i]);
+                counts[i] = Math.max(counts[i-1], counts[i]);
             }
-            result.confidence[i] = Utilities.toInt(
+            conf[i] = Converters.toInt(
                     PrivacyUtils.laplaceCI(nIntervals, scale, PrivacyUtils.DEFAULT_ALPHA).second);
             totalIntervals += nIntervals;
         }
         noise = DPWrapper.computeCountNoise(this.columnIndex, DPWrapper.SpecialBucket.NullCount, epsilon, laplace);
-        result.missingConfidence = Utilities.toInt(
+        int missingConfidence = Converters.toInt(
                 PrivacyUtils.laplaceCI(1, 1.0/epsilon, PrivacyUtils.DEFAULT_ALPHA).second);
         HillviewLogger.instance.info("RNG calls", "{0}", totalIntervals);
-        return result;
+        JsonGroups<Count> result = JsonGroups.fromArray(counts, histogram.getMissing().count);
+        JsonGroups<Count> confidences = JsonGroups.fromArray(conf, missingConfidence);
+        return new Two<>(result, confidences);
     }
 }

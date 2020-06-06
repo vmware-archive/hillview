@@ -18,10 +18,10 @@
 package org.hillview.test.table;
 
 import org.hillview.dataset.LocalDataSet;
-import org.hillview.sketches.results.DoubleHistogramBuckets;
-import org.hillview.sketches.results.Histogram;
+import org.hillview.dataset.api.TableSketch;
 import org.hillview.sketches.HistogramSketch;
-import org.hillview.sketches.results.StringHistogramBuckets;
+import org.hillview.sketches.results.*;
+import org.hillview.table.QuantizationSchema;
 import org.hillview.table.Table;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
@@ -39,7 +39,7 @@ public class QuantizationTest extends BaseTest {
     public void testPrivateColumn() {
         Table table = TestTables.testTable();
         IColumn age = table.getLoadedColumn("Age");
-        ColumnQuantization cpm = new DoubleColumnQuantization(5, 0, 100);
+        ColumnQuantization cpm = new DoubleColumnQuantization("Age", 5, 0, 100);
         QuantizedColumn pc = new QuantizedColumn(age, cpm);
         for (int i = 0; i < pc.sizeInRows(); i++) {
             int v = pc.getInt(i);
@@ -55,7 +55,7 @@ public class QuantizationTest extends BaseTest {
             boundaries[index] = Character.toString(c);
             index++;
         }
-        cpm = new StringColumnQuantization(boundaries, "a");
+        cpm = new StringColumnQuantization("Name", boundaries, "a");
         pc = new QuantizedColumn(name, cpm);
         for (int i = 0; i < pc.sizeInRows(); i++) {
             String s = pc.getString(i);
@@ -71,7 +71,7 @@ public class QuantizationTest extends BaseTest {
     public void testQuantizedHistogram() {
         Table table = TestTables.testTable();
         IColumn age = table.getLoadedColumn("Age");
-        ColumnQuantization cpm = new DoubleColumnQuantization(5, 0, 100);
+        ColumnQuantization cpm = new DoubleColumnQuantization("Age", 5, 0, 100);
         QuantizedColumn pcage = new QuantizedColumn(age, cpm);
         IColumn name = table.getLoadedColumn("Name");
         String[] boundaries = new String[26];
@@ -80,19 +80,19 @@ public class QuantizationTest extends BaseTest {
             boundaries[index] = Character.toString(c);
             index++;
         }
-        cpm = new StringColumnQuantization(boundaries, "a");
+        cpm = new StringColumnQuantization("Name", boundaries, "a");
         QuantizedColumn pcname = new QuantizedColumn(name, cpm);
         IColumn[] cols = new IColumn[] { pcage, pcname };
         Table quantizedTable = new Table(cols, null, null);
         DoubleHistogramBuckets hb = new DoubleHistogramBuckets("Age", 0, 100, 4);
-        HistogramSketch sk = new HistogramSketch(hb, 1.0, 0, null);
+        HistogramSketch sk = new HistogramSketch(hb);
         LocalDataSet<ITable> local = new LocalDataSet<ITable>(quantizedTable);
-        Histogram histo = local.blockingSketch(sk);
+        Groups<Count> histo = local.blockingSketch(sk);
         Assert.assertNotNull(histo);
-        Assert.assertEquals(4, histo.getBucketCount());
+        Assert.assertEquals(4, histo.size());
         long count = 0;
-        for (int i = 0; i < histo.getBucketCount(); i++) {
-            count += histo.buckets[i];
+        for (int i = 0; i < histo.size(); i++) {
+            count += histo.perBucket.get(i).count;
         }
         Assert.assertEquals(table.getNumOfRows(), count);
     }
@@ -103,7 +103,7 @@ public class QuantizationTest extends BaseTest {
         LocalDataSet<ITable> pub = new LocalDataSet<ITable>(table);
 
         IColumn age = table.getLoadedColumn("Age");
-        ColumnQuantization cpmage = new DoubleColumnQuantization(5, 0, 100);
+        ColumnQuantization cpmage = new DoubleColumnQuantization("Age",5, 0, 100);
         QuantizedColumn pcage = new QuantizedColumn(age, cpmage);
         IColumn name = table.getLoadedColumn("Name");
         String[] boundaries = new String[26];
@@ -112,46 +112,48 @@ public class QuantizationTest extends BaseTest {
             boundaries[index] = Character.toString(c);
             index++;
         }
-        ColumnQuantization cpmname = new StringColumnQuantization(boundaries, "a");
+        ColumnQuantization cpmname = new StringColumnQuantization("Name", boundaries, "a");
         QuantizedColumn pcname = new QuantizedColumn(name, cpmname);
         IColumn[] cols = new IColumn[] { pcage, pcname };
         Table quantizedTable = new Table(cols, null, null);
         LocalDataSet<ITable> local = new LocalDataSet<ITable>(quantizedTable);
 
         DoubleHistogramBuckets hb = new DoubleHistogramBuckets("Age", 0, 100, 4);
-        HistogramSketch sk = new HistogramSketch(hb, 1.0, 0, null);
-        Histogram histo = local.blockingSketch(sk);
+        HistogramSketch sk = new HistogramSketch(hb);
+        Groups<Count> histo = local.blockingSketch(sk);
         Assert.assertNotNull(histo);
-        Assert.assertEquals(4, histo.getBucketCount());
+        Assert.assertEquals(4, histo.size());
         long count = 0;
-        for (int i = 0; i < histo.getBucketCount(); i++) {
-            count += histo.buckets[i];
+        for (int i = 0; i < histo.size(); i++) {
+            count += histo.getBucket(i).count;
         }
         Assert.assertEquals(table.getNumOfRows(), count);
 
-        HistogramSketch psk = new HistogramSketch(hb, 1.0, 0, cpmage);
-        Histogram oh = pub.blockingSketch(psk);
+        TableSketch<Groups<Count>> psk = new HistogramSketch(hb)
+                .quantized(new QuantizationSchema(cpmage));
+        Groups<Count> oh = pub.blockingSketch(psk);
         Assert.assertNotNull(oh);
-        Assert.assertEquals(histo.getBucketCount(), oh.getBucketCount());
-        for (int i = 0; i < histo.getBucketCount(); i++)
-            Assert.assertEquals(histo.buckets[i], oh.buckets[i]);
+        Assert.assertEquals(histo.size(), oh.size());
+        for (int i = 0; i < histo.size(); i++)
+            Assert.assertEquals(histo.getBucket(i).count, oh.getBucket(i).count);
 
         StringHistogramBuckets sb = new StringHistogramBuckets("Name", new String[] { "A", "F", "M", "W" });
-        HistogramSketch ssk = new HistogramSketch(sb, 1.0, 0, null);
-        Histogram shisto = local.blockingSketch(ssk);
+        HistogramSketch ssk = new HistogramSketch(sb);
+        Groups<Count> shisto = local.blockingSketch(ssk);
         Assert.assertNotNull(shisto);
-        Assert.assertEquals(4, shisto.getBucketCount());
+        Assert.assertEquals(4, shisto.size());
         count = 0;
-        for (int i = 0; i < histo.getBucketCount(); i++) {
-            count += histo.buckets[i];
+        for (int i = 0; i < histo.size(); i++) {
+            count += histo.getBucket(i).count;
         }
         Assert.assertEquals(table.getNumOfRows(), count);
 
-        HistogramSketch spsk = new HistogramSketch(sb, 1.0, 0, cpmname);
-        Histogram ohs = pub.blockingSketch(spsk);
+        TableSketch<Groups<Count>> spsk = new HistogramSketch(sb)
+                .quantized(new QuantizationSchema(cpmname));
+        Groups<Count> ohs = pub.blockingSketch(spsk);
         Assert.assertNotNull(ohs);
-        Assert.assertEquals(shisto.getBucketCount(), ohs.getBucketCount());
-        for (int i = 0; i < shisto.getBucketCount(); i++)
-            Assert.assertEquals(shisto.buckets[i], ohs.buckets[i]);
+        Assert.assertEquals(shisto.size(), ohs.size());
+        for (int i = 0; i < shisto.size(); i++)
+            Assert.assertEquals(shisto.getBucket(i).count, ohs.getBucket(i).count);
     }
 }

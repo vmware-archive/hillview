@@ -20,6 +20,7 @@ package org.hillview.test.dataStructures;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import org.hillview.dataset.api.IJson;
+import org.hillview.sketches.results.Count;
 import org.hillview.sketches.results.NextKList;
 import org.hillview.storage.JsonFileLoader;
 import org.hillview.table.*;
@@ -29,6 +30,8 @@ import org.hillview.table.api.ITable;
 import org.hillview.table.columns.*;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.test.BaseTest;
+import org.hillview.utils.JsonGroups;
+import org.hillview.utils.JsonList;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -118,9 +121,22 @@ public class JsonTest extends BaseTest {
 
     @Test
     public void testHierarchySerialization() {
-        DoubleColumnQuantization md1 = new DoubleColumnQuantization(12.345, 0.0, 123.45);
+        DoubleColumnQuantization md1 = new DoubleColumnQuantization("name", 12.345, 0.0, 123.45);
         String s = IJson.gsonInstance.toJson(md1);
         ColumnQuantization des = IJson.gsonInstance.fromJson(s, ColumnQuantization.class);
         Assert.assertTrue(des instanceof DoubleColumnQuantization);
+    }
+
+    @Test
+    public void jsonGroupTest() {
+        Count c = new Count(3);
+        String s = IJson.gsonInstance.toJson(c);
+        Assert.assertEquals("3", s);
+
+        JsonList<Count> list = new JsonList<Count>();
+        list.add(new Count(3));
+        JsonGroups<Count> jg = new JsonGroups<Count>(list, new Count(5));
+        s = IJson.gsonInstance.toJson(jg);
+        Assert.assertEquals("{\"perBucket\":[3],\"perMissing\":5}", s);
     }
 }

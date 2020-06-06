@@ -17,11 +17,11 @@
 
 package org.hillview.dataset.api;
 
+import org.hillview.sketches.highorder.PostProcessedSketch;
 import org.hillview.utils.Converters;
 
-import java.io.Serializable;
-
 import javax.annotation.Nullable;
+import java.util.function.Function;
 
 /**
  * Describes a sketch computation on a dataset of type T that produces a result of type R.
@@ -30,7 +30,8 @@ import javax.annotation.Nullable;
  * @param <T> Input data type.
  * @param <R> Output data type.
  */
-public interface ISketch<T, R extends ISketchResult> extends IDataSetComputation, IMonoid<R> {
+public interface ISketch<T, R extends ISketchResult> extends
+        IDataSetComputation, IMonoid<R>  {
     /**
      * Sketch computation on some dataset T.
      * @param data  Data to sketch.
@@ -44,4 +45,20 @@ public interface ISketch<T, R extends ISketchResult> extends IDataSetComputation
      */
     @Nullable
     default R getZero() { return Converters.checkNull(this.zero()); }
+
+    /**
+     * Creates a post-processed sketch which runs the specified post-processing
+     * function after the sketch completes.
+     * @param post  Post processing function to execute.
+     * @param <F>   Final type of result produced.
+     */
+    default <F extends IJson> PostProcessedSketch<T, R, F> andThen(Function<R, F> post) {
+        return new PostProcessedSketch<T, R, F>(this) {
+            @Nullable
+            @Override
+            public F postProcess(@Nullable R result) {
+                return post.apply(result);
+            }
+        };
+    }
 }

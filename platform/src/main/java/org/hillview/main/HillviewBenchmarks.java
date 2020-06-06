@@ -20,11 +20,10 @@ package org.hillview.main;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.RemoteDataSet;
-import org.hillview.dataset.TableSketch;
+import org.hillview.dataset.api.TableSketch;
 import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.dataset.api.IMap;
-import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.remoting.HillviewServer;
 import org.hillview.management.ClusterConfig;
 import org.hillview.management.SetMemoization;
@@ -123,8 +122,7 @@ public class HillviewBenchmarks extends Benchmarks {
 
         IHistogramBuckets buckDes = new DoubleHistogramBuckets(col.getName(), 0, 100, bucketNum);
         ITable table = createTable(colSize, col);
-        TableSketch<Histogram> sk = new HistogramSketch(
-                        buckDes, rateParameter, 0, null);
+        TableSketch<Groups<Count>> sk = new HistogramSketch(buckDes).sampled(rateParameter, 0);
 
         System.out.println("Bench,Time (ms),Melems/s,Percent slower");
         if (args[0].equals("noseparatethread")) {

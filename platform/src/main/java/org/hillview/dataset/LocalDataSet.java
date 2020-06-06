@@ -21,6 +21,7 @@ import org.hillview.dataset.api.*;
 import org.hillview.utils.Converters;
 import org.hillview.utils.ExecutorUtils;
 import org.hillview.utils.HillviewLogger;
+import org.hillview.utils.Pair;
 import rx.Observable;
 import rx.Scheduler;
 import rx.schedulers.Schedulers;

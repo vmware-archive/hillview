@@ -18,13 +18,11 @@
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {Histogram2DSerialization, IViewSerialization} from "../datasetView";
 import {
-    Histogram,
     FilterDescription,
-    Heatmap,
     IColumnDescription,
     kindIsString,
     RecordOrder,
-    RemoteObjectId, kindIsNumeric,
+    RemoteObjectId, kindIsNumeric, Groups,
 } from "../javaBridge";
 import {Receiver, RpcRequest} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
@@ -39,6 +37,7 @@ import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
 import {ChartOptions, HtmlString, Resolution} from "../ui/ui";
 import {
+    add,
     Converters,
     formatNumber,
     ICancellable,
@@ -47,7 +46,7 @@ import {
     percent,
     reorder,
     saveAs, significantDigits,
-    significantDigitsHtml,
+    significantDigitsHtml, toHeatmap,
 } from "../util";
 import {AxisData} from "./axisData";
 import {HistogramViewBase} from "./histogramViewBase";
@@ -63,8 +62,8 @@ import {Dialog, FieldKind} from "../ui/dialog";
  */
 export class Histogram2DView extends HistogramViewBase {
     protected yAxisData: AxisData;
-    protected cdf: Histogram;
-    protected heatMap: Heatmap;
+    protected cdf: Groups<number>;
+    protected heatMap: Groups<Groups<number>>;
     protected xPoints: number;
     protected yPoints: number;
     protected relative: boolean;  // true when bars are normalized to 100%
@@ -191,36 +190,38 @@ export class Histogram2DView extends HistogramViewBase {
             case "YAxis":
                 if (this.relative)
                     return null;
+                const missing = this.heatMap.perMissing.perBucket.reduce(add);
                 const range = {
                     min: 0,
                     max: this.plot.maxYAxis != null ? this.plot.maxYAxis : this.plot.max,
-                    presentCount: this.rowCount - this.heatMap.missingData,
-                    missingCount: this.heatMap.missingData
+                    presentCount: this.rowCount - missing,
+                    missingCount: missing
                 };
                 return new AxisData(null, range, this.yAxisData.bucketCount);
         }
         return null;
     }
 
-    public updateView(heatmap: Heatmap, cdf: Histogram, maxYAxis: number | null, keepColorMap: boolean): void {
+    public updateView(data: Groups<Groups<number>>, cdf: Groups<number>, maxYAxis: number | null, keepColorMap: boolean): void {
         this.viewMenu.enable("relative/absolute", this.stacked);
         this.createNewSurfaces(keepColorMap);
-        if (heatmap == null || heatmap.buckets.length === 0) {
+        if (data == null || data.perBucket == null || data.perBucket.length === 0) {
             this.page.reportError("No data to display");
             return;
         }
-        this.xPoints = heatmap.buckets.length;
-        this.yPoints = heatmap.buckets[0].length;
+        this.xPoints = data.perBucket.length;
+        this.yPoints = data.perBucket[0].perBucket.length;
         if (this.yPoints === 0) {
             this.page.reportError("No data to display");
             return;
         }
-        this.heatMap = heatmap;
+        this.heatMap = data;
         this.cdf = cdf;
 
         const bucketCount = this.xPoints;
         const canvas = this.surface.getCanvas();
 
+        const heatmap = toHeatmap({first: data, second: null});
         this.plot.setData(heatmap, this.xAxisData, this.samplingRate, this.relative,
             this.schema, this.legendPlot.colorMap, maxYAxis);
         this.plot.draw();
@@ -228,7 +229,7 @@ export class Histogram2DView extends HistogramViewBase {
             this.xAxisData.description.kind === "Integer";
 
         if (this.stacked) {
-            this.cdfPlot.setData(cdf.buckets, discrete);
+            this.cdfPlot.setData(cdf.perBucket, discrete);
             this.cdfPlot.draw();
         }
         this.legendPlot.setData(this.yAxisData, this.plot.getMissingDisplayed() > 0, this.schema);
@@ -254,15 +255,17 @@ export class Histogram2DView extends HistogramViewBase {
             this.surface.getActualChartSize(), pointFields, 40);
         this.pointDescription.show(false);
         let summary = new HtmlString(formatNumber(this.plot.getDisplayedPoints()) + " data points");
-        if (heatmap.missingData !== 0)
+        /*
+        if (data.missingData !== 0)
             summary = summary.appendSafeString(
-                ", " + formatNumber(heatmap.missingData) + " missing both coordinates");
-        if (heatmap.histogramMissingX.missingCount !== 0)
+                ", " + formatNumber(data.missingData) + " missing both coordinates");
+        if (data.histogramMissingX.missingCount !== 0)
             summary = summary.appendSafeString(
-                ", " + formatNumber(heatmap.histogramMissingX.missingCount) + " missing Y coordinate");
-        if (heatmap.histogramMissingY.missingCount !== 0)
+                ", " + formatNumber(data.histogramMissingX.missingCount) + " missing Y coordinate");
+        if (data.histogramMissingY.missingCount !== 0)
             summary = summary.appendSafeString(
-                ", " + formatNumber(heatmap.histogramMissingY.missingCount) + " missing X coordinate");
+                ", " + formatNumber(data.histogramMissingY.missingCount) + " missing X coordinate");
+        */
         summary = summary.appendSafeString(", " + String(bucketCount) + " buckets");
         if (this.samplingRate < 1.0)
             summary = summary.appendSafeString(", sampling rate ")
@@ -390,16 +393,16 @@ export class Histogram2DView extends HistogramViewBase {
         line += ",missing";
         lines.push(line);
         for (let x = 0; x < this.xAxisData.bucketCount; x++) {
-            const data = this.heatMap.buckets[x];
+            const data = this.heatMap.perBucket[x];
             const bx = this.xAxisData.bucketDescription(x, 0);
             let l = JSON.stringify(this.schema.displayName(this.xAxisData.description.name) + " " + bx);
-            for (const y of data)
+            for (const y of data.perBucket)
                 l += "," + y;
-            l += "," + this.heatMap.histogramMissingY.buckets[x];
+            l += "," + data.perMissing;
             lines.push(l);
         }
         line = "mising";
-        for (const y of this.heatMap.histogramMissingX.buckets)
+        for (const y of this.heatMap.perMissing.perBucket)
             line += "," + y;
         lines.push(line);
         return lines;
@@ -729,7 +732,7 @@ export class Histogram2DView extends HistogramViewBase {
  * Receives partial results and renders a 2D histogram.
  * The 2D histogram data and the Heatmap data use the same data structure.
  */
-export class Histogram2DReceiver extends Receiver<Pair<Heatmap, Histogram>> {
+export class Histogram2DReceiver extends Receiver<Pair<Groups<Groups<number>>, Groups<number>>> {
     protected view: Histogram2DView;
 
     constructor(title: PageTitle,
@@ -739,7 +742,7 @@ export class Histogram2DReceiver extends Receiver<Pair<Heatmap, Histogram>> {
                 protected schema: SchemaClass,
                 protected axes: AxisData[],
                 protected samplingRate: number,
-                operation: RpcRequest<PartialResult<Pair<Heatmap, Histogram>>>,
+                operation: RpcRequest<PartialResult<Pair<Groups<Groups<number>>, Groups<number>>>>,
                 protected options: ChartOptions) {
         super(options.reusePage ? page : page.dataset.newPage(title, page), operation, "histogram");
         this.view = new Histogram2DView(
@@ -748,7 +751,7 @@ export class Histogram2DReceiver extends Receiver<Pair<Heatmap, Histogram>> {
         this.view.setAxes(axes[0], axes[1], options.relative);
     }
 
-    public onNext(value: PartialResult<Pair<Heatmap, Histogram>>): void {
+    public onNext(value: PartialResult<Pair<Groups<Groups<number>>, Groups<number>>>): void {
         super.onNext(value);
         if (value == null)
             return;

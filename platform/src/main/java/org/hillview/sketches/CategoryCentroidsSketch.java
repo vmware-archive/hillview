@@ -17,7 +17,7 @@
 
 package org.hillview.sketches;
 
-import org.hillview.dataset.TableSketch;
+import org.hillview.dataset.api.TableSketch;
 import org.hillview.sketches.results.Centroids;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;

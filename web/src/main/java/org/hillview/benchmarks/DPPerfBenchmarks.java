@@ -18,19 +18,17 @@
 package org.hillview.benchmarks;
 
 import org.hillview.dataStructures.*;
-import org.hillview.dataset.IdPostProcessedSketch;
+import org.hillview.sketches.*;
+import org.hillview.sketches.highorder.GroupByWorkspace;
 import org.hillview.dataset.LocalDataSet;
-import org.hillview.dataset.PostProcessedSketch;
+import org.hillview.sketches.highorder.PostProcessedSketch;
 import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.*;
 import org.hillview.main.Benchmarks;
 import org.hillview.management.ClusterConfig;
 import org.hillview.maps.FindFilesMap;
 import org.hillview.maps.LoadFilesMap;
-import org.hillview.sketches.HeatmapSketch;
-import org.hillview.sketches.HistogramSketch;
-import org.hillview.dataset.PrecomputedSketch;
-import org.hillview.sketches.SummarySketch;
+import org.hillview.sketches.highorder.QuantizedTableSketch;
 import org.hillview.sketches.results.*;
 import org.hillview.storage.FileSetDescription;
 import org.hillview.storage.IFileReference;
@@ -38,6 +36,7 @@ import org.hillview.storage.JdbcConnectionInformation;
 import org.hillview.storage.JdbcDatabase;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.PrivacySchema;
+import org.hillview.table.QuantizationSchema;
 import org.hillview.table.Schema;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.ITable;
@@ -45,10 +44,7 @@ import org.hillview.table.columns.ColumnQuantization;
 import org.hillview.table.columns.DoubleColumnQuantization;
 import org.hillview.table.columns.StringColumnQuantization;
 import org.hillview.targets.DPWrapper;
-import org.hillview.utils.Converters;
-import org.hillview.utils.HillviewLogger;
-import org.hillview.utils.HostList;
-import org.hillview.utils.Utilities;
+import org.hillview.utils.*;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -257,27 +253,31 @@ public class DPPerfBenchmarks extends Benchmarks {
         Runnable r;
         if (conf.dataset == Dataset.DB) {
             r = () -> {
-                Heatmap h = this.database.heatmap(col0, col1,
+                JsonGroups<JsonGroups<Count>> h = this.database.histogram2D(col0, col1,
                     c0.buckets, c1.buckets, null, c0.quantization, c1.quantization);
                 if (conf.usePostProcessing) {
-                    ISketch<ITable, Heatmap> pre = new PrecomputedSketch<ITable, Heatmap>(h);  // not really used
-                    PostProcessedSketch<ITable, Heatmap, Heatmap> postprocess =
-                            new DPHeatmapSketch(pre, ps.getColumnIndex(col0.name, col1.name),
+                    ISketch<ITable, JsonGroups<JsonGroups<Count>>> pre =
+                            new PrecomputedSketch<ITable, JsonGroups<JsonGroups<Count>>>(h);  // not really used
+                    DPHeatmapSketch<JsonGroups<Count>, JsonGroups<JsonGroups<Count>>> postProcess =
+                            new DPHeatmapSketch<>(pre, ps.getColumnIndex(col0.name, col1.name),
                             c0.decomposition, c1.decomposition, epsilon, this.flightsWrapper.laplace);
-                    postprocess.postProcess(h);
+                    postProcess.postProcess(h);
                 }
             };
         } else {
             Converters.checkNull(table);
-            ISketch<ITable, Heatmap> hsk = new HeatmapSketch(
-                    c0.buckets, c1.buckets, 1.0, 0, c0.quantization, c1.quantization);
-            PostProcessedSketch<ITable, Heatmap, Heatmap> pp;
-            if (conf.usePostProcessing)
-                pp = new DPHeatmapSketch(hsk, ps.getColumnIndex(col0.name, col1.name),
+            Histogram2DSketch sk = new Histogram2DSketch(c0.buckets, c1.buckets);
+            QuantizedTableSketch<Groups<Groups<Count>>, Histogram2DSketch, GroupByWorkspace<GroupByWorkspace<EmptyWorkspace>>>
+                    hsk = new QuantizedTableSketch<>(sk, new QuantizationSchema(c0.quantization, c1.quantization));
+
+            if (conf.usePostProcessing) {
+                DPHeatmapSketch<Groups<Count>, Groups<Groups<Count>>> pp =
+                        new DPHeatmapSketch<>(hsk, ps.getColumnIndex(col0.name, col1.name),
                         c0.decomposition, c1.decomposition, epsilon, this.flightsWrapper.laplace);
-            else
-                pp = new IdPostProcessedSketch<ITable, Heatmap>(hsk);
-            r = () -> table.blockingPostProcessedSketch(pp);
+                r = () -> table.blockingPostProcessedSketch(pp);
+            } else {
+                r = () -> table.blockingSketch(hsk);
+            }
             quiet = true;
             runNTimes(r, 2, bench);  // warm up jit
         }
@@ -298,26 +298,26 @@ public class DPPerfBenchmarks extends Benchmarks {
 
         if (conf.dataset == Dataset.DB) {
             r = () -> {
-                Histogram histo = this.database.histogram(
+                JsonGroups<Count> histo = this.database.histogram(
                         col, c.buckets, null, c.quantization, 0);
                 if (conf.usePostProcessing) {
-                    ISketch<ITable, Histogram> pre = new PrecomputedSketch<ITable, Histogram>(histo);  // not really used
-                    PostProcessedSketch<ITable, Histogram, Histogram> post =
-                            new DPHistogram(pre, ps.getColumnIndex(col.name),
+                    ISketch<ITable, JsonGroups<Count>> pre = new PrecomputedSketch<>(histo);  // not really used
+                    PostProcessedSketch<ITable, JsonGroups<Count>, Two<JsonGroups<Count>>> post =
+                            new DPHistogram<>(pre, ps.getColumnIndex(col.name),
                                 c.decomposition, epsilon, false, this.flightsWrapper.laplace);
                     post.postProcess(histo);
                 }
             };
         } else {
             Converters.checkNull(table);
-            ISketch<ITable, Histogram> hsk = new HistogramSketch(
-                c.buckets, 1.0, 0, c.quantization);
-            PostProcessedSketch<ITable, Histogram, Histogram> post;
+            TableSketch<Groups<Count>> hsk = new HistogramSketch(
+                c.buckets).quantized(new QuantizationSchema(c.quantization));
+            PostProcessedSketch<ITable, Groups<Count>, Two<JsonGroups<Count>>> post;
             if (conf.usePostProcessing)
-                post = new DPHistogram(hsk, ps.getColumnIndex(col.name),
+                post = new DPHistogram<>(hsk, ps.getColumnIndex(col.name),
                         c.decomposition, epsilon, false, this.flightsWrapper.laplace);
             else
-                post = new IdPostProcessedSketch<ITable, Histogram>(hsk);
+                post = hsk.andThen(result -> new Two<>(result.toSerializable(c1 -> c1)));
             r = () -> table.blockingPostProcessedSketch(post);
             quiet = true;
             runNTimes(r, 1, bench);  // warm up jit
@@ -404,7 +404,7 @@ public class DPPerfBenchmarks extends Benchmarks {
 
                     for (int i: granularity) {
                         conf.machines = i; // that's a lie
-                        ps.quantization.set(col.name, new DoubleColumnQuantization(i, q.globalMin, q.globalMax));
+                        ps.quantization.add(new DoubleColumnQuantization(col.name, i, q.globalMin, q.globalMax));
                         this.allHistograms(col, conf);
                     }
                 }

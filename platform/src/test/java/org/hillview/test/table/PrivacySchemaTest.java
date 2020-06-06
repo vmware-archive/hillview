@@ -35,7 +35,10 @@ import java.nio.file.Paths;
 public class PrivacySchemaTest extends BaseTest {
     @Test
     public void parseMetadataTest() {
-        String metadata = "{\"quantization\":{\"quantization\":{\"col1\":{\"type\":\"DoubleColumnQuantization\",\"granularity\":12.345,\"globalMin\":0.0,\"globalMax\":123.45},\"col2\":{\"type\":\"StringColumnQuantization\",\"globalMax\":\"d\",\"leftBoundaries\":[\"a\",\"b\",\"c\"]}}},\"epsilons\":{\"col1\":0.1,\"col2\":0.5},\"defaultEpsilons\":{},\"defaultEpsilon\":0.001}";
+        String metadata = "{\"quantization\":{\"quantization\":{\"col1\":{\"type\":\"DoubleColumnQuantization\"," +
+                "\"granularity\":12.345,\"globalMin\":0.0,\"globalMax\":123.45},\"col2\":" +
+                "{\"type\":\"StringColumnQuantization\",\"globalMax\":\"d\",\"leftBoundaries\":" +
+                "[\"a\",\"b\",\"c\"]}}},\"epsilons\":{\"col1\":0.1,\"col2\":0.5},\"defaultEpsilons\":{},\"defaultEpsilon\":0.001}";
         PrivacySchema mdSchema = PrivacySchema.loadFromString(metadata);
         Assert.assertNotNull(mdSchema);
         Assert.assertNotNull(mdSchema.quantization);
@@ -53,38 +56,44 @@ public class PrivacySchemaTest extends BaseTest {
 
     @Test
     public void serializeMetadataTest() {
-        ColumnQuantization md1 = new DoubleColumnQuantization(12.345, 0.0, 123.45);
-        ColumnQuantization md2 = new StringColumnQuantization(new String[] {"a", "b", "c"}, "d");
-        QuantizationSchema qs = new QuantizationSchema();
-        qs.set("col1", md1);
-        qs.set("col2", md2);
+        ColumnQuantization md1 = new DoubleColumnQuantization("col1",12.345, 0.0, 123.45);
+        ColumnQuantization md2 = new StringColumnQuantization("col2", new String[] {"a", "b", "c"}, "d");
+        QuantizationSchema qs = new QuantizationSchema(md1, md2);
         PrivacySchema mdSchema = new PrivacySchema(qs);
         mdSchema.setEpsilon("col1", .1);
         mdSchema.setEpsilon("col2", .5);
         String mdJson = mdSchema.toJson();
-        String expected = "{\"quantization\":{\"quantization\":{\"col1\":{\"type\":\"DoubleColumnQuantization\",\"granularity\":12.345,\"globalMin\":0.0,\"globalMax\":123.45},\"col2\":{\"type\":\"StringColumnQuantization\",\"globalMax\":\"d\",\"leftBoundaries\":[\"a\",\"b\",\"c\"]}}},\"epsilons\":{\"col1\":0.1,\"col2\":0.5},\"defaultEpsilons\":{},\"defaultEpsilon\":0.001}";
+        String expected = "{\"quantization\":{\"quantization\":{\"col1\":{\"type\":\"DoubleColumnQuantization\"," +
+                "\"granularity\":12.345,\"globalMin\":0.0,\"globalMax\":123.45,\"column\":\"col1\"},\"col2\":{\"type\":" +
+                "\"StringColumnQuantization\",\"globalMax\":\"d\",\"leftBoundaries\":[\"a\",\"b\",\"c\"],\"column\":\"col2\"}}}," +
+                "\"epsilons\":{\"col1\":0.1,\"col2\":0.5},\"defaultEpsilons\":{},\"defaultEpsilon\":0.001}";
         Assert.assertEquals(expected, mdJson);
     }
 
     @Test
     public void serializeMultipleColumnsTest() {
-        ColumnQuantization md1 = new DoubleColumnQuantization(12.345, 0.0, 123.45);
-        ColumnQuantization md2 = new DoubleColumnQuantization(0.5, -0.5, 13.0);
-        QuantizationSchema qs = new QuantizationSchema();
-        qs.set("col1", md1);
-        qs.set("col2", md2);
+        ColumnQuantization md1 = new DoubleColumnQuantization("col1", 12.345, 0.0, 123.45);
+        ColumnQuantization md2 = new DoubleColumnQuantization("col2", 0.5, -0.5, 13.0);
+        QuantizationSchema qs = new QuantizationSchema(md1, md2);
         PrivacySchema msSchema = new PrivacySchema(qs);
         msSchema.setEpsilon("col1+col2", .25);
         msSchema.setEpsilon("col1", .1);
         msSchema.setEpsilon("col1", .5);
         String mdJson = msSchema.toJson();
-        String expected = "{\"quantization\":{\"quantization\":{\"col1\":{\"type\":\"DoubleColumnQuantization\",\"granularity\":12.345,\"globalMin\":0.0,\"globalMax\":123.45},\"col2\":{\"type\":\"DoubleColumnQuantization\",\"granularity\":0.5,\"globalMin\":-0.5,\"globalMax\":13.0}}},\"epsilons\":{\"col1+col2\":0.25,\"col1\":0.5},\"defaultEpsilons\":{},\"defaultEpsilon\":0.001}";
+        String expected = "{\"quantization\":{\"quantization\":{\"col1\":{\"type\":\"DoubleColumnQuantization\"," +
+                "\"granularity\":12.345,\"globalMin\":0.0,\"globalMax\":123.45,\"column\":\"col1\"}," +
+                "\"col2\":{\"type\":\"DoubleColumnQuantization\",\"granularity\":0.5,\"globalMin\":-0.5," +
+                "\"globalMax\":13.0,\"column\":\"col2\"}}},\"epsilons\":{\"col1+col2\":0.25,\"col1\":0.5}," +
+                "\"defaultEpsilons\":{},\"defaultEpsilon\":0.001}";
         Assert.assertEquals(expected, mdJson);
     }
 
     @Test
     public void deserializeMultipleColumnsTest() {
-        String md = "{'quantization':{'quantization':{'col1':{'type':'DoubleColumnQuantization','granularity':12.345,'globalMin':0.0,'globalMax':123.45},'col2':{'type':'DoubleColumnQuantization','granularity':0.5,'globalMin':-0.5,'globalMax':13.0}}},'epsilons':{'col1+col2':0.25,'col1':0.5},\"defaultEpsilons\":{\"1\":1,\"2\":1},\"defaultEpsilon\":0.001}";
+        String md = "{'quantization':{'quantization':{'col1':{'type':'DoubleColumnQuantization','granularity':12.345," +
+                "'globalMin':0.0,'globalMax':123.45},'col2':{'type':'DoubleColumnQuantization','granularity':0.5," +
+                "'globalMin':-0.5,'globalMax':13.0}}},'epsilons':{'col1+col2':0.25,'col1':0.5}," +
+                "\"defaultEpsilons\":{\"1\":1,\"2\":1},\"defaultEpsilon\":0.001}";
         PrivacySchema mdSchema = PrivacySchema.loadFromString(md);
         double eps = mdSchema.epsilon("col1", "col2");
         Assert.assertEquals(.25, eps, 0.001);
@@ -96,11 +105,9 @@ public class PrivacySchemaTest extends BaseTest {
 
     @Test
     public void saveTest() throws IOException {
-        ColumnQuantization md1 = new DoubleColumnQuantization(12.345, 0.0, 123.45);
-        ColumnQuantization md2 = new StringColumnQuantization(new String[] {"a", "b", "c"}, "d");
-        QuantizationSchema qs = new QuantizationSchema();
-        qs.set("col1", md1);
-        qs.set("col2", md2);
+        ColumnQuantization md1 = new DoubleColumnQuantization("col1", 12.345, 0.0, 123.45);
+        ColumnQuantization md2 = new StringColumnQuantization("col2", new String[] {"a", "b", "c"}, "d");
+        QuantizationSchema qs = new QuantizationSchema(md1, md2);
         PrivacySchema mdSchema = new PrivacySchema(qs);
         mdSchema.setEpsilon("col1", .1);
         mdSchema.setEpsilon("col2", .5);

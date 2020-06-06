@@ -17,7 +17,7 @@
 
 package org.hillview.test.dataStructures;
 
-import org.hillview.dataset.api.Pair;
+import org.hillview.utils.Pair;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -18,7 +18,7 @@
 package org.hillview.sketches.results;
 
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-import org.hillview.dataset.api.Pair;
+import org.hillview.utils.Pair;
 import org.hillview.table.Schema;
 import org.hillview.table.rows.RowSnapshot;
 

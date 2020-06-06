@@ -18,6 +18,7 @@
 import {mouse as d3mouse} from "d3-selection";
 import {HeatmapSerialization, IViewSerialization} from "../datasetView";
 import {
+    Groups,
     Heatmap,
     IColumnDescription, kindIsNumeric,
     RecordOrder,
@@ -40,7 +41,7 @@ import {
     ICancellable, makeInterval,
     PartialResult,
     saveAs,
-    significantDigitsHtml,
+    significantDigitsHtml, toHeatmap, Two,
 } from "../util";
 import {AxisData} from "./axisData";
 import {NextKReceiver, TableView} from "./tableView";
@@ -60,7 +61,7 @@ export class HeatmapView extends ChartView {
     protected legendSurface: HtmlPlottingSurface;
     protected xHistoSurface: PlottingSurface;
     protected xHistoPlot: HistogramPlot;
-    protected heatmap: Heatmap;
+    protected heatmap: Two<Groups<Groups<number>>>;
     protected xPoints: number;
     protected yPoints: number;
     protected readonly viewMenu: SubMenu;
@@ -289,14 +290,15 @@ export class HeatmapView extends ChartView {
         collector.finished();
     }
 
-    public updateView(heatmap: Heatmap, keepColorMap: boolean): void {
+    public updateView(data: Two<Groups<Groups<number>>>, keepColorMap: boolean): void {
         this.createNewSurfaces(keepColorMap);
-        if (heatmap == null || heatmap.buckets.length === 0) {
+        if (data == null || data.first === null || data.first.perBucket.length === 0) {
             this.page.reportError("No data to display");
             return;
         }
 
-        this.heatmap = heatmap;
+        this.heatmap = data;
+        const heatmap = toHeatmap(data);
         this.xPoints = heatmap.buckets.length;
         this.yPoints = heatmap.buckets[0].length;
         if (this.yPoints === 0) {
@@ -318,7 +320,8 @@ export class HeatmapView extends ChartView {
         this.colorLegend.draw();
         this.plot.draw();
         if (this.showMissingData) {
-            this.xHistoPlot.setHistogram(heatmap.histogramMissingX, this.samplingRate,
+            this.xHistoPlot.setHistogram({first: heatmap.histogramMissingX, second: null},
+                this.samplingRate,
                 this.xAxisData, null,
                 this.page.dataset.isPrivate());
             this.xHistoPlot.draw();
@@ -333,13 +336,13 @@ export class HeatmapView extends ChartView {
         if (heatmap.missingData !== 0) {
             summary = summary.appendSafeString(", " + formatNumber(heatmap.missingData) + " missing");
         }
-        if (heatmap.histogramMissingX.missingCount !== 0) {
+        if (heatmap.histogramMissingX.perMissing !== 0) {
             summary = summary.appendSafeString(
-                ", " + formatNumber(heatmap.histogramMissingX.missingCount) + " missing Y coordinate");
+                ", " + formatNumber(heatmap.histogramMissingX.perMissing) + " missing Y coordinate");
         }
-        if (heatmap.histogramMissingY.missingCount !== 0) {
+        if (heatmap.histogramMissingY.perMissing !== 0) {
             summary = summary.appendSafeString(
-                ", " + formatNumber(heatmap.histogramMissingY.missingCount) + " missing X coordinate");
+                ", " + formatNumber(heatmap.histogramMissingY.perMissing) + " missing X coordinate");
         }
         summary = summary.appendSafeString(", " + formatNumber(this.plot.getDistinct()) + " distinct dots");
         if (this.samplingRate < 1.0) {
@@ -410,11 +413,11 @@ export class HeatmapView extends ChartView {
             JSON.stringify(this.xAxisData.getDisplayNameString(this.schema)) + "," +
             JSON.stringify(this.yAxisData.getDisplayNameString(this.schema) + "_range") + "," +
             JSON.stringify(this.yAxisData.getDisplayNameString(this.schema)) + "," + "count"];
-        for (let x = 0; x < this.heatmap.buckets.length; x++) {
-            const data = this.heatmap.buckets[x];
+        for (let x = 0; x < this.heatmap.first.perBucket.length; x++) {
+            const data = this.heatmap.first.perBucket[x];
             const bdx = JSON.stringify(this.xAxisData.bucketDescription(x, 0));
-            for (let y = 0; y < data.length; y++) {
-                if (data[y] === 0) {
+            for (let y = 0; y < data.perBucket.length; y++) {
+                if (data.perBucket[y] === 0) {
                     continue;
                 }
                 const bdy = JSON.stringify(this.yAxisData.bucketDescription(y, 0));
@@ -547,7 +550,7 @@ export class HeatmapView extends ChartView {
 /**
  * Renders a heatmap
  */
-export class HeatmapReceiver extends Receiver<Heatmap> {
+export class HeatmapReceiver extends Receiver<Two<Groups<Groups<number>>>> {
     protected heatmap: HeatmapView;
 
     constructor(title: PageTitle,
@@ -557,7 +560,7 @@ export class HeatmapReceiver extends Receiver<Heatmap> {
                 protected schema: SchemaClass,
                 protected axisData: AxisData[],
                 protected samplingRate: number,
-                operation: ICancellable<Heatmap>,
+                operation: ICancellable<Groups<Groups<number>>>,
                 protected reusePage: boolean) {
         super(reusePage ? page : page.dataset.newPage(title, page), operation, "histogram");
         this.heatmap = new HeatmapView(
@@ -567,7 +570,7 @@ export class HeatmapReceiver extends Receiver<Heatmap> {
         this.page.setDataView(this.heatmap);
     }
 
-    public onNext(value: PartialResult<Heatmap>): void {
+    public onNext(value: PartialResult<Two<Groups<Groups<number>>>>): void {
         super.onNext(value);
         if (value == null) {
             return;
