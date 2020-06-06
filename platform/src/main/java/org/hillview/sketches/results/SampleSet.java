@@ -184,11 +184,13 @@ public class SampleSet implements IJsonSketchResult, IScalable<SampleSet> {
         result.max = this.max;
         result.count = this.count;
         result.missing = this.missing;
-        // Sanity check
+        /* Sanity check
         for (double v: result.samples)
             if (!(v >= result.min && v <= result.max))
                 throw new RuntimeException(
                         "Illegal sample in set " + v + " count " + this.count + " expected " + expectedCount);
+
+         */
         return result;
     }
 

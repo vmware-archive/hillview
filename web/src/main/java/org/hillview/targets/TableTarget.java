@@ -291,13 +291,8 @@ public final class TableTarget extends TableRpcTarget {
                 info[1].getBuckets(),
                 info[0].getBuckets());
         TableSketch<Groups<Groups<Groups<Count>>>> sts = sk.sampled(info[0].samplingRate, info[0].seed);
-        PostProcessedSketch<
-                ITable,
-                Groups<Groups<Groups<Count>>>,
-                JsonGroups<JsonGroups<JsonGroups<Count>>>> pps =
-                sts.andThen(res -> res.toSerializable(
-                        r -> r.toSerializable(s -> s.toSerializable(c -> c))));
-        this.runSketch(this.table, pps, request, context);
+        this.runSketch(this.table, sts.andThen(res -> res.toSerializable(
+                r -> r.toSerializable(s -> s.toSerializable(c -> c)))), request, context);
     }
 
     private void runFilter(

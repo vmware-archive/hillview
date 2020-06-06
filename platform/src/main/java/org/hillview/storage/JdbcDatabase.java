@@ -230,10 +230,7 @@ public class JdbcDatabase {
                 y0--;
             buckets[x0][y0] += count;
         }
-        Count z = new Count(0);
-        return new JsonGroups<JsonGroups<Count>>(
-                b0, i -> i < 0 ? new JsonGroups<Count>(b1, z) :
-                new JsonGroups<Count>(b1, j -> j < 0 ? z : new Count(buckets[i][j])));
+        return JsonGroups.fromArray(buckets);
     }
 
     /**

@@ -153,16 +153,11 @@ public class PrivateTableTarget extends TableRpcTarget implements IPrivateDatase
         ColumnQuantization q1 = this.getPrivacySchema().quantization(info[1].cd.name);
         Converters.checkNull(q0);
         Converters.checkNull(q1);
-        QuantizedTableSketch<
-                Groups<Groups<Count>>,
-                Histogram2DSketch,
-                GroupByWorkspace<GroupByWorkspace<EmptyWorkspace>>>
-                qts = new QuantizedTableSketch<>(sk, new QuantizationSchema(q0, q1));
         IntervalDecomposition d0 = info[0].getDecomposition(q0);
         IntervalDecomposition d1 = info[1].getDecomposition(q1);
         double epsilon = this.getPrivacySchema().epsilon(info[0].cd.name, info[1].cd.name);
         DPHeatmapSketch<Groups<Count>, Groups<Groups<Count>>> hsk = new DPHeatmapSketch<>(
-                qts.sampled(info[0].samplingRate, info[0].seed),
+                sk.quantized(new QuantizationSchema(q0, q1)),
                 this.wrapper.getColumnIndex(info[0].cd.name, info[1].cd.name),
                 d0, d1, epsilon, this.wrapper.laplace);
         this.runSketch(this.table, hsk, request, context);
