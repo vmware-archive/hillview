@@ -17,7 +17,6 @@
 
 import {
     FilterDescription, Groups,
-    Heatmap,
     IColumnDescription,
     RecordOrder,
     RemoteObjectId
@@ -36,7 +35,7 @@ import {
     TrellisLayoutComputation
 } from "./dataRangesCollectors";
 import {Receiver, RpcRequest} from "../rpc";
-import {Converters, ICancellable, makeInterval, PartialResult, reorder, toHeatmap} from "../util";
+import {Converters, ICancellable, makeInterval, PartialResult, reorder} from "../util";
 import {HeatmapPlot} from "../ui/heatmapPlot";
 import {IViewSerialization, TrellisHeatmapSerialization} from "../datasetView";
 import {IDataView} from "../ui/dataview";
@@ -306,7 +305,7 @@ export class TrellisHeatmapView extends TrellisChartView {
         let max = 0;
         for (let i = 0; i < histogram3d.perBucket.length; i++) {
             const buckets = histogram3d.perBucket[i];
-            const heatmap: Heatmap = toHeatmap({ first: buckets, second: null });
+            const heatmap = { first: buckets, second: null };
             const plot = this.hps[i];
             // The order of these operations is important
             plot.setData(heatmap, this.xAxisData, this.yAxisData, this.schema, 2, this.isPrivate());

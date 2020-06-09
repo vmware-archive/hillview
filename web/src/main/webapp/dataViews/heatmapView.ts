@@ -19,7 +19,6 @@ import {mouse as d3mouse} from "d3-selection";
 import {HeatmapSerialization, IViewSerialization} from "../datasetView";
 import {
     Groups,
-    Heatmap,
     IColumnDescription, kindIsNumeric,
     RecordOrder,
     RemoteObjectId,
@@ -41,7 +40,7 @@ import {
     ICancellable, makeInterval,
     PartialResult,
     saveAs,
-    significantDigitsHtml, toHeatmap, Two,
+    significantDigitsHtml, Two,
 } from "../util";
 import {AxisData} from "./axisData";
 import {NextKReceiver, TableView} from "./tableView";
@@ -298,9 +297,8 @@ export class HeatmapView extends ChartView {
         }
 
         this.heatmap = data;
-        const heatmap = toHeatmap(data);
-        this.xPoints = heatmap.buckets.length;
-        this.yPoints = heatmap.buckets[0].length;
+        this.xPoints = data.first.perBucket.length;
+        this.yPoints = data.first.perBucket[0].perBucket.length;
         if (this.yPoints === 0) {
             this.page.reportError("No data to display");
             return;
@@ -313,14 +311,14 @@ export class HeatmapView extends ChartView {
         }
 
         // The order of these operations is important
-        this.plot.setData(heatmap, this.xAxisData, this.yAxisData, this.schema, this.confThreshold, this.isPrivate());
+        this.plot.setData(data, this.xAxisData, this.yAxisData, this.schema, this.confThreshold, this.isPrivate());
         if (!keepColorMap) {
             this.colorLegend.setData(1, this.plot.getMaxCount());
         }
         this.colorLegend.draw();
         this.plot.draw();
         if (this.showMissingData) {
-            this.xHistoPlot.setHistogram({first: heatmap.histogramMissingX, second: null},
+            this.xHistoPlot.setHistogram({first: data.first.perMissing, second: null },
                 this.samplingRate,
                 this.xAxisData, null,
                 this.page.dataset.isPrivate());
@@ -333,6 +331,7 @@ export class HeatmapView extends ChartView {
             [this.schema.displayName(this.xAxisData.description.name).displayName,
                 this.schema.displayName(this.yAxisData.description.name).displayName, "count"], 40);
         let summary = new HtmlString(formatNumber(this.plot.getVisiblePoints()) + " data points");
+        /*
         if (heatmap.missingData !== 0) {
             summary = summary.appendSafeString(", " + formatNumber(heatmap.missingData) + " missing");
         }
@@ -344,6 +343,7 @@ export class HeatmapView extends ChartView {
             summary = summary.appendSafeString(
                 ", " + formatNumber(heatmap.histogramMissingY.perMissing) + " missing X coordinate");
         }
+         */
         summary = summary.appendSafeString(", " + formatNumber(this.plot.getDistinct()) + " distinct dots");
         if (this.samplingRate < 1.0) {
             summary = summary.appendSafeString(", sampling rate ").append(significantDigitsHtml(this.samplingRate));

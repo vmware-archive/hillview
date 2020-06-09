@@ -151,6 +151,7 @@ export class Test {
             9: Trellis Histograms of UniqueCarrier grouped by ActualElapsedTime
             10: Trellis heatmap plot
             11: Quartiles vector plot
+            12: Non-stacked bar charts plot
          */
         this.addProgram([{
             description: "Load all flights",
@@ -362,8 +363,39 @@ export class Test {
                 qv.click();
             }
         }, {
-            description: "Close some windows",
+            description: "Stacked bars 2D histogram",
             cond: () => Test.existsElement("#hillviewPage11 .idle"),
+            cont: () => {
+                const carrier = findElement("#hillviewPage1 thead td[data-colname=UniqueCarrier] .truncated");
+                carrier.click();
+                const depDelay = findElement("#hillviewPage1 thead td[data-colname=DepDelay] .truncated");
+                const ctrl = controlClickEvent();
+                depDelay.dispatchEvent(ctrl);
+                const evt = contextMenuEvent();
+                depDelay.dispatchEvent(evt);
+                const qv = findElement("#hillviewPage1 .dropdown #Histogram");
+                qv.click();
+            }
+        }, {
+            description: "Change buckets for 2D histogram",
+            cond: () => Test.existsElement("#hillviewPage12 .idle"),
+            cont: () => {
+                const b = findElement("#hillviewPage12 .topMenu #View #__buckets___");
+                b.click();
+                (findElement(".dialog #y_buckets") as HTMLInputElement).value = "10";
+                findElement(".dialog .confirm").click();
+            }
+        }, {
+            description: "Non-stacked bars 2D histogram",
+            cond: () => Test.existsElement("#hillviewPage12 .idle"),
+            cont: () => {
+                const b = findElement("#hillviewPage12 .topMenu #View #stacked_parallel");
+                b.click();
+                this.next();  // no interaction required
+            }
+        }, {
+            description: "Close some windows",
+            cond: () => Test.existsElement("#hillviewPage12 .idle"),
             cont: () => {
                 /*
                     for (let i = 2; i < 8; i++) {

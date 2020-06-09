@@ -16,8 +16,8 @@
  */
 
 import {AxisData, AxisKind} from "../dataViews/axisData";
-import {Heatmap, kindIsString} from "../javaBridge";
-import {regression, valueWithConfidence} from "../util";
+import {Groups, kindIsString} from "../javaBridge";
+import {regression, Two, valueWithConfidence} from "../util";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {SchemaClass} from "../schemaClass";
@@ -32,7 +32,7 @@ interface Dot {
 }
 
 export class HeatmapPlot extends Plot {
-    protected heatmap: Heatmap;
+    protected heatmap: Two<Groups<Groups<number>>>;
     protected pointWidth: number; // in pixels
     protected pointHeight: number; // in pixels
     protected max: number;  // maximum count
@@ -41,6 +41,8 @@ export class HeatmapPlot extends Plot {
     protected dots: Dot[];
     protected schema: SchemaClass;
     protected isPrivate: boolean;
+    protected xPoints: number;
+    protected yPoints: number;
 
     public constructor(surface: PlottingSurface,
                        protected legendPlot: HeatmapLegendPlot,
@@ -99,17 +101,17 @@ export class HeatmapPlot extends Plot {
             // It makes no sense to do regressions for string values.
             // Regressions for private data should be computed in a different way; this
             // way gives too much noise.
-            const regr = regression(this.heatmap.buckets);
+            const regr = regression(this.heatmap.first.perBucket.map(l => l.perBucket));
             if (regr.length === 2) {
                 const b = regr[0];
                 const a = regr[1];
                 const y1 = this.getChartHeight() - (b + .5) * this.pointHeight;
-                const y2 = this.getChartHeight() - (a * this.heatmap.buckets.length + b + .5) * this.pointHeight;
+                const y2 = this.getChartHeight() - (a * this.xPoints + b + .5) * this.pointHeight;
                 this.plottingSurface.getChart()
                     .append("line")
                     .attr("x1", 0)
                     .attr("y1", y1)
-                    .attr("x2", this.pointWidth * this.heatmap.buckets.length)
+                    .attr("x2", this.pointWidth * this.xPoints)
                     .attr("y2", y2)
                     .attr("stroke", "black");
             }
@@ -124,11 +126,10 @@ export class HeatmapPlot extends Plot {
         let yi = (this.getChartHeight() - y) / this.pointHeight;
         xi = Math.floor(xi);
         yi = Math.floor(yi);
-        const xPoints = this.heatmap.buckets.length;
-        const yPoints = this.heatmap.buckets[0].length;
-        if (xi >= 0 && xi < xPoints && yi >= 0 && yi < yPoints) {
-            const value = this.heatmap.buckets[xi][yi];
-            const conf = this.heatmap.confidence != null ? this.heatmap.confidence[xi][yi] : null;
+        if (xi >= 0 && xi < this.xPoints && yi >= 0 && yi < this.yPoints) {
+            const value = this.heatmap.first.perBucket[xi].perBucket[yi];
+            const conf = this.heatmap.second != null ?
+                this.heatmap.second.perBucket[xi].perBucket[yi] : null;
             return valueWithConfidence(value, conf);
         }
         return valueWithConfidence(0, null);
@@ -146,7 +147,7 @@ export class HeatmapPlot extends Plot {
         return this.distinct;
     }
 
-    public setData(heatmap: Heatmap, xData: AxisData, yData: AxisData,
+    public setData(heatmap: Two<Groups<Groups<number>>>, xData: AxisData, yData: AxisData,
                    schema: SchemaClass, confThreshold: number, isPrivate: boolean): void {
         this.heatmap = heatmap;
         this.xAxisData = xData;
@@ -158,27 +159,27 @@ export class HeatmapPlot extends Plot {
         this.yAxisData.setResolution(
             this.getChartHeight(), AxisKind.Left, Resolution.heatmapLabelWidth);
 
-        const xPoints = this.heatmap.buckets.length;
-        const yPoints = this.heatmap.buckets[0].length;
-        if (xPoints === 0 || yPoints === 0)
+        this.xPoints = this.heatmap.first.perBucket.length;
+        this.yPoints = this.heatmap.first.perBucket[0].perBucket.length;
+        if (this.xPoints === 0 || this.yPoints === 0)
             return;
-        this.pointWidth = this.getChartWidth() / xPoints;
-        this.pointHeight = this.getChartHeight() / yPoints;
+        this.pointWidth = this.getChartWidth() / this.xPoints;
+        this.pointHeight = this.getChartHeight() / this.yPoints;
 
         this.max = 0;
         this.visible = 0;
         this.distinct = 0;
         this.dots = [];
 
-        for (let x = 0; x < this.heatmap.buckets.length; x++) {
-            for (let y = 0; y < this.heatmap.buckets[x].length; y++) {
-                const b = this.heatmap.buckets[x][y];
+        for (let x = 0; x < this.xPoints; x++) {
+            for (let y = 0; y < this.yPoints; y++) {
+                const b = this.heatmap.first.perBucket[x].perBucket[y];
                 const v = Math.max(0, b);
                 let conf;
                 if (!isPrivate) {
                     conf = true;
                 } else {
-                    const confidence = this.heatmap.confidence[x][y];
+                    const confidence = this.heatmap.second.perBucket[x].perBucket[y];
                     conf = b >= (confThreshold * confidence);
                 }
                 if (v > this.max)

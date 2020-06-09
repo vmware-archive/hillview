@@ -177,15 +177,6 @@ export interface KVCreateColumnInfo {
     outputIndex: number;
 }
 
-export interface Heatmap {
-    buckets: number[][];
-    confidence?: number[][];
-    missingData: number;
-    histogramMissingX: Groups<number>;
-    histogramMissingY: Groups<number>;
-    totalSize: number;
-}
-
 export type AggregateKind = "Sum" | "Count" | "Min" | "Max" | "Average";
 export const allAggregateKind: AggregateKind[] = ["Sum", "Count", "Min", "Max", "Average"];
 

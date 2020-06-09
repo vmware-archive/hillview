@@ -19,7 +19,6 @@ import {Receiver} from "../rpc";
 import {
     BucketsInfo,
     FilterDescription, Groups,
-    Heatmap,
     HistogramRequestInfo,
     IColumnDescription,
     RecordOrder,
@@ -449,7 +448,7 @@ export class TrellisHistogramQuartilesReceiver extends Receiver<Groups<Groups<Sa
                 protected histoArgs: HistogramRequestInfo[],
                 protected range: BucketsInfo[],
                 protected shape: TrellisShape,
-                operation: ICancellable<Heatmap[]>,
+                operation: ICancellable<Groups<Groups<SampleSet>>>,
                 protected options: ChartOptions) {
         super(options.reusePage ? page : page.dataset.newPage(title, page), operation, "quartiles");
         this.trellisView = new TrellisHistogramQuartilesView(

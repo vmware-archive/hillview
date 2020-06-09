@@ -46,7 +46,7 @@ import {
     percent,
     reorder,
     saveAs, significantDigits,
-    significantDigitsHtml, toHeatmap,
+    significantDigitsHtml,
 } from "../util";
 import {AxisData} from "./axisData";
 import {HistogramViewBase} from "./histogramViewBase";
@@ -221,7 +221,7 @@ export class Histogram2DView extends HistogramViewBase {
         const bucketCount = this.xPoints;
         const canvas = this.surface.getCanvas();
 
-        const heatmap = toHeatmap({first: data, second: null});
+        const heatmap = {first: data, second: null};
         this.plot.setData(heatmap, this.xAxisData, this.samplingRate, this.relative,
             this.schema, this.legendPlot.colorMap, maxYAxis);
         this.plot.draw();
@@ -495,6 +495,7 @@ export class Histogram2DView extends HistogramViewBase {
             "Buckets on " + this.xAxisData.description.name);
         input.min = "1";
         input.max = Resolution.maxBucketCount.toString();
+        input.value = this.xPoints.toString();
         input.required = true;
 
         input = dialog.addTextField(
@@ -503,8 +504,8 @@ export class Histogram2DView extends HistogramViewBase {
             "Buckets on " + this.yAxisData.description.name);
         input.min = "1";
         input.max = Resolution.maxBucketCount.toString();
+        input.value = this.yPoints.toString();
         input.required = true;
-        dialog.setCacheTitle("2DBucketDialog");
 
         dialog.setAction(() => this.changeBuckets(
             dialog.getFieldValueAsInt("x_buckets"),

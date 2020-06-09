@@ -28,42 +28,12 @@ import {
     ComparisonFilterDescription,
     ContentsKind,
     FilterDescription,
-    Groups,
-    Heatmap,
     kindIsNumeric,
     kindIsString,
     RowFilterDescription,
     StringFilterDescription
 } from "./javaBridge";
 import {DragEventKind, PageTitle} from "./ui/fullPage";
-
-// TODO: delete this function
-export function toHeatmap(data: Two<Groups<Groups<number>>>): Heatmap {
-    const b: number[][] = [];
-    const conf: number[][] = data.second != null ? [] : null;
-    const my: number[] = [];
-    let total = 0;
-    for (let i = 0; i < data.first.perBucket.length; i++) {
-        const row = data.first.perBucket[i];
-        b.push(row.perBucket);
-        total += row.perBucket.reduce(add, 0);
-        my.push(row.perMissing);
-        if (data.second != null)
-            conf.push(data.second.perBucket[i].perBucket)
-    }
-
-    return {
-        buckets: b,
-        confidence: conf,
-        missingData: data.first.perMissing.perMissing,
-        histogramMissingX: data.first.perMissing,
-        histogramMissingY: {
-            perBucket: my,
-            perMissing: data.first.perMissing.perMissing
-        },
-        totalSize: total
-    };
-}
 
 export interface Pair<T1, T2> {
     first: T1;

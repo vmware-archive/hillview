@@ -53,14 +53,17 @@ interface Box {
  * Draws a histogram with stacked bars.
  */
 export class Histogram2DPlot extends Histogram2DBase {
+    protected xPoints: number;
+    protected yPoints: number;
+
     public constructor(protected plottingSurface: PlottingSurface) {
         super(plottingSurface);
     }
 
     public draw(): void {
         super.draw();
-        const xPoints = this.heatmap.buckets.length;
-        const yPoints = this.heatmap.buckets[0].length;
+        this.xPoints = this.heatmap.first.perBucket.length;
+        this.yPoints = this.heatmap.first.perBucket[0].perBucket.length;
 
         const counts: number[] = [];
         this.missingDisplayed = 0;
@@ -68,14 +71,10 @@ export class Histogram2DPlot extends Histogram2DBase {
 
         this.max = 0;
         const rects: Box[] = [];
-        this.histogram = {
-            perBucket: [],
-            perMissing: this.heatmap.missingData
-        };
-        for (let x = 0; x < xPoints; x++) {
+        for (let x = 0; x < this.xPoints; x++) {
             let yTotal = 0;
-            for (let y = 0; y < yPoints; y++) {
-                const vis = this.heatmap.buckets[x][y];
+            for (let y = 0; y < this.yPoints; y++) {
+                const vis = this.heatmap.first.perBucket[x].perBucket[y];
                 this.visiblePoints += vis;
                 if (vis !== 0) {
                     const rect: Box = {
@@ -88,19 +87,16 @@ export class Histogram2DPlot extends Histogram2DBase {
                 }
                 yTotal += vis;
             }
-            this.histogram.perBucket.push(yTotal);
-            if (this.heatmap.histogramMissingY != null) {
-                const v = this.heatmap.histogramMissingY.perBucket[x];
-                const rec: Box = {
-                    xIndex: x,
-                    countBelow: yTotal,
-                    yIndex: -1,
-                    count: v
-                };
-                rects.push(rec);
-                yTotal += v;
-                this.missingDisplayed += v;
-            }
+            const v = this.heatmap.first.perBucket[x].perMissing;
+            const rec: Box = {
+                xIndex: x,
+                countBelow: yTotal,
+                yIndex: -1,
+                count: v
+            };
+            rects.push(rec);
+            yTotal += v;
+            this.missingDisplayed += v;
             if (yTotal > this.max)
                 this.max = yTotal;
             counts.push(yTotal);
@@ -116,7 +112,7 @@ export class Histogram2DPlot extends Histogram2DBase {
         this.yAxis = new AxisDescription(
             d3axisLeft(this.yScale).tickFormat(d3format(".2s")), 1, false, null);
 
-        this.barWidth = this.getChartWidth() / xPoints;
+        this.barWidth = this.getChartWidth() / this.xPoints;
         const scale = displayMax <= 0 ? 1 : this.getChartHeight() / displayMax;
 
         this.plottingSurface.getChart()
@@ -128,7 +124,7 @@ export class Histogram2DPlot extends Histogram2DBase {
             .attr("y", (d: Box) => this.rectPosition(d, counts, scale))
             .attr("height", (d: Box) => this.rectHeight(d, counts, scale))
             .attr("width", this.barWidth)
-            .attr("fill", (d: Box) => this.color(d.yIndex, yPoints - 1))
+            .attr("fill", (d: Box) => this.color(d.yIndex, this.yPoints - 1))
             .attr("stroke", "black")
             .attr("stroke-width", (d: Box) => d.yIndex < 0 ? 1 : 0)
             // overflow signs if necessary
@@ -157,15 +153,8 @@ export class Histogram2DPlot extends Histogram2DBase {
             .attr("dy", (d: number) => this.normalized ? 0 : d <= (9 * displayMax / 10) ? "-.25em" : ".75em")
             .text((d: number) => Plot.boxHeight(d, this.samplingRate, this.getDisplayedPoints()));
 
-        let noX = 0;
-        if (this.heatmap.histogramMissingX != null) {
-            for (const bucket of this.heatmap.histogramMissingX.perBucket)
-                noX += bucket;
-        }
-
         if (displayMax <= 0) {
-            this.plottingSurface.reportError("All values are missing: " + noX + " have no X value, "
-                + this.heatmap.missingData + " have no X or Y value");
+            this.plottingSurface.reportError("All values are missing.");
             return;
         }
 
@@ -234,16 +223,15 @@ export class Histogram2DPlot extends Histogram2DBase {
         let perc: number = 0;
         let yIndex: number = null;
         let found = false;
-        if (xIndex < 0 || xIndex >= this.heatmap.buckets.length)
+        if (xIndex < 0 || xIndex >= this.xPoints)
             return null;
 
-        const values: number[] = this.heatmap.buckets[xIndex];
+        const values: number[] = this.heatmap.first.perBucket[xIndex].perBucket;
 
         let total = 0;
         for (const v of values)
             total += v;
-        if (this.heatmap.histogramMissingY != null)
-            total += this.heatmap.histogramMissingY.perBucket[xIndex];
+        total += this.heatmap.first.perBucket[xIndex].perMissing;
         if (total <= 0)
             // There could be no data for this specific x value
             return null;
@@ -263,14 +251,12 @@ export class Histogram2DPlot extends Histogram2DBase {
             }
         }
 
-        if (this.heatmap.histogramMissingY != null) {
-            const missing = this.heatmap.histogramMissingY.perBucket[xIndex];
-            yTotal += missing;
-            yTotalScaled += missing * scale;
-            if (!found && yTotalScaled >= yScaled) {
-                perc = missing;
-                yIndex = -1;  // missing
-            }
+        const missing = this.heatmap.first.perBucket[xIndex].perMissing;
+        yTotal += missing;
+        yTotalScaled += missing * scale;
+        if (!found && yTotalScaled >= yScaled) {
+            perc = missing;
+            yIndex = -1;  // missing
         }
         return {
             xIndex: xIndex,
