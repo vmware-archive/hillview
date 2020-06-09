@@ -16,18 +16,18 @@
  */
 
 import {AxisData, AxisDescription, AxisKind} from "../dataViews/axisData";
-import {Groups, Heatmap} from "../javaBridge";
+import {Groups} from "../javaBridge";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {D3Axis, D3Scale} from "./ui";
 import {SchemaClass} from "../schemaClass";
-import {ColorMap} from "../util";
+import {ColorMap, Two} from "../util";
 
 /**
  * Draws a histogram with stacked bars.
  */
 export abstract class Histogram2DBase extends Plot {
-    protected heatmap: Heatmap;
+    protected heatmap: Two<Groups<Groups<number>>>;
     protected xAxisData: AxisData;
     protected samplingRate: number;
     protected normalized: boolean;
@@ -40,13 +40,12 @@ export abstract class Histogram2DBase extends Plot {
     public maxYAxis: number | null; // If not null the maximum value to display
     public max: number; // the maximum value in a stacked bar
     public colorMap: ColorMap;
-    public histogram: Groups<number>;  //  1D histogram by ignoring the y axis
 
     protected constructor(protected plottingSurface: PlottingSurface) {
         super(plottingSurface);
     }
 
-    public setData(heatmap: Heatmap,
+    public setData(heatmap: Two<Groups<Groups<number>>>,
                    xAxisData: AxisData,
                    samplingRate: number,
                    normalized: boolean,

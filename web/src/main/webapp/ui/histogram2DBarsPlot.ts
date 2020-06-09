@@ -60,28 +60,22 @@ export class Histogram2DBarsPlot extends Histogram2DBase {
         this.xPoints = null;
         this.yPoints = null;
         this.showMissing = false;
-        this.xPoints = this.heatmap.buckets.length;
-        this.yPoints = this.heatmap.buckets[0].length;
-        if (this.heatmap.histogramMissingY != null) {
-            const missingYSum = this.heatmap.histogramMissingY.perBucket.reduce(add, 0);
-            if (missingYSum > 0) {
-                this.showMissing = true;
-                this.yPoints++;
-            }
+        this.xPoints = this.heatmap.first.perBucket.length;
+        this.yPoints = this.heatmap.first.perBucket[0].perBucket.length;
+        const missingYSum = this.heatmap.first.perBucket.map(b => b.perMissing).reduce(add, 0);
+        if (missingYSum > 0) {
+            this.showMissing = true;
+            this.yPoints++;
         }
         this.missingDisplayed = 0;
         this.visiblePoints = 0;
 
         this.max = 0;
         const rects: Box[] = [];
-        this.histogram = {
-            perBucket: [],
-            perMissing: this.heatmap.missingData
-        };
         for (let x = 0; x < this.xPoints; x++) {
             let yTotal = 0;
             for (let y = 0; y < this.yPoints; y++) {
-                const vis = this.heatmap.buckets[x][y];
+                const vis = this.heatmap.first.perBucket[x].perBucket[y];
                 this.visiblePoints += vis;
                 if (vis !== 0) {
                     const rect: Box = {
@@ -95,19 +89,16 @@ export class Histogram2DBarsPlot extends Histogram2DBase {
                 }
                 yTotal += vis;
             }
-            this.histogram.perBucket.push(yTotal);
-            if (this.heatmap.histogramMissingY != null) {
-                const vis = this.heatmap.histogramMissingY.perBucket[x];
-                const rec: Box = {
-                    xCoordinate: x * (this.yPoints + 1) + this.yPoints - 1,
-                    color: -1,
-                    count: vis
-                };
-                rects.push(rec);
-                if (vis > this.max)
-                    this.max = vis;
-                this.missingDisplayed += vis;
-            }
+            const vis = this.heatmap.first.perBucket[x].perMissing;
+            const rec: Box = {
+                xCoordinate: x * (this.yPoints + 1) + this.yPoints - 1,
+                color: -1,
+                count: vis
+            };
+            rects.push(rec);
+            if (vis > this.max)
+                this.max = vis;
+            this.missingDisplayed += vis;
         }
         /*
         TODO: show in a different plot
@@ -147,7 +138,7 @@ export class Histogram2DBarsPlot extends Histogram2DBase {
             .attr("y", (d: Box) => this.getChartHeight() - this.rectHeight(d, scale))
             .attr("height", (d: Box) => this.rectHeight(d, scale))
             .attr("width", this.barWidth - 1)
-            .attr("fill", (d: Box) => this.color(d.color, this.heatmap.buckets[0].length - 1))
+            .attr("fill", (d: Box) => this.color(d.color, this.heatmap.first.perBucket[0].perBucket.length - 1))
             .attr("stroke", "black")
             .attr("stroke-width", (d: Box) => d.color < 0 ? 1 : 0)
         this.drawAxes();
@@ -196,10 +187,10 @@ export class Histogram2DBarsPlot extends Histogram2DBase {
             colorIndex = NoBucketIndex;
         } else if (this.showMissing && colorIndex == this.yPoints - 1) {
             colorIndex = MissingBucketIndex;
-            count = this.heatmap.histogramMissingY.perBucket[bucketIndex];
+            count = this.heatmap.first.perBucket[bucketIndex].perMissing;
         } else {
             if (bucketIndex >= 0 && bucketIndex < this.xPoints)
-                count = this.heatmap.buckets[bucketIndex][colorIndex];
+                count = this.heatmap.first.perBucket[bucketIndex].perBucket[colorIndex];
         }
         return {
             colorIndex: colorIndex, // This could be null for the space between buckets

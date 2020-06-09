@@ -18,7 +18,6 @@
 import {Receiver, RpcRequest} from "../rpc";
 import {
     FilterDescription, Groups,
-    Heatmap,
     kindIsString,
     RecordOrder,
     RemoteObjectId
@@ -487,7 +486,7 @@ export class TrellisHistogramReceiver extends Receiver<Two<Groups<Groups<number>
                 protected bucketCount: number,
                 protected samplingRate: number,
                 protected shape: TrellisShape,
-                operation: ICancellable<Heatmap>,
+                operation: ICancellable<Two<Groups<Groups<number>>>>,
                 protected reusePage: boolean) {
         super(reusePage ? page : page.dataset.newPage(title, page), operation, "histogram");
         this.trellisView = new TrellisHistogramView(

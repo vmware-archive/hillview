@@ -18,14 +18,13 @@
 import {Receiver} from "../rpc";
 import {
     FilterDescription, Groups,
-    Heatmap,
     RecordOrder,
     RemoteObjectId
 } from "../javaBridge";
 import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {SchemaClass} from "../schemaClass";
-import {add, Converters, ICancellable, PartialResult, percent, reorder, significantDigits, toHeatmap} from "../util";
+import {add, Converters, ICancellable, PartialResult, percent, reorder, significantDigits} from "../util";
 import {AxisData, AxisKind} from "./axisData";
 import {
     IViewSerialization,
@@ -414,7 +413,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
 
         for (let i = 0; i < data.perBucket.length; i++) {
             const buckets = data.perBucket[i];
-            const heatmap: Heatmap = toHeatmap({ first: buckets, second: null });
+            const heatmap = { first: buckets, second: null };
             const plot = this.hps[i];
             plot.setData(heatmap, this.xAxisData, this.samplingRate, this.relative,
                 this.schema, this.legendPlot.colorMap, max);
