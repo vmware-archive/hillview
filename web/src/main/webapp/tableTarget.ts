@@ -86,8 +86,9 @@ export class TableTargetAPI extends RemoteObject {
         super(remoteObjectId);
     }
 
-    public createZipRequest(r: RemoteObject): RpcRequest<PartialResult<RemoteObjectId>> {
-        return this.createStreamingRpcRequest<RemoteObjectId>("zip", r.remoteObjectId);
+    public createSetRequest(r: RemoteObject, c: CombineOperators): RpcRequest<PartialResult<RemoteObjectId>> {
+        return this.createStreamingRpcRequest<RemoteObjectId>("setOperation",
+            { otherId: r.remoteObjectId, op: CombineOperators[c] });
     }
 
     public createFindRequest(
@@ -490,7 +491,7 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
     /**
      * This method is called by the zip receiver after combining two datasets.
      * It should return a renderer which will handle the newly received object
-     * after the zip has been performed.
+     * after the set operation has been performed.
      */
     protected abstract getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver;
@@ -503,11 +504,12 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
         }
 
         const view = this.dataset.findPage(pageId).dataView;
-        const rr = this.createZipRequest(view as BigTableView);
+        const rr = this.createSetRequest(view as BigTableView, how);
         const renderer = this.getCombineRenderer(
             new PageTitle(this.page.title.format,
                 CombineOperators[how] + " between " + this.page.pageId + " and " + pageId));
-        rr.invoke(new ZipReceiver(this.getPage(), rr, how, this.dataset, renderer));
+        const receiver = renderer(this.getPage(), rr);
+        rr.invoke(receiver);
     }
 
     /**
@@ -539,30 +541,5 @@ export abstract class BaseReceiver extends OnCompleteReceiver<RemoteObjectId> {
     public run(): void {
         if (this.value != null)
             this.remoteObject = new TableTargetAPI(this.value);
-    }
-}
-
-/**
- * A zip receiver receives the result of a Zip operation on
- * two IDataSet<ITable> objects (an IDataSet<Pair<ITable, ITable>>,
- *  and applies to the pair the specified set operation setOp.
- */
-class ZipReceiver extends BaseReceiver {
-    public constructor(page: FullPage,
-                       operation: ICancellable<RemoteObjectId>,
-                       protected setOp: CombineOperators,
-                       protected dataset: DatasetView,
-                       // receiver constructs the renderer that is used to display
-                       // the result after combining
-                       protected receiver:
-                           (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver) {
-        super(page, operation, "zip", dataset);
-    }
-
-    public run(): void {
-        super.run();
-        const rr = this.remoteObject.createSetOperationRequest(this.setOp);
-        const rec = this.receiver(this.page, rr);
-        rr.invoke(rec);
     }
 }

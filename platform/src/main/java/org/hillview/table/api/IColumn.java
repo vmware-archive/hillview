@@ -21,6 +21,7 @@ import net.openhft.hashing.LongHashFunction;
 import org.hillview.table.*;
 import org.hillview.table.columns.*;
 import org.hillview.utils.HillviewLogger;
+import org.hillview.utils.ICast;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;
@@ -32,7 +33,7 @@ import java.util.function.Function;
  * Interface describing operations on a column.
  * A column is just a big vector of values.
  */
-public interface IColumn extends Serializable {
+public interface IColumn extends Serializable, ICast {
     ColumnDescription getDescription();
 
     /* Only one of the following methods is supposed to work for a column */
@@ -199,27 +200,4 @@ public interface IColumn extends Serializable {
     long hashCode64(int rowIndex, LongHashFunction hash);
 
     long MISSING_HASH_VALUE = 0;
-
-    @Nullable
-    default <T> T as(Class<T> clazz) {
-        try {
-            return clazz.cast(this);
-        } catch (ClassCastException e) {
-            return null;
-        }
-    }
-
-    default <T> T as(Class<T> clazz, @Nullable String failureMessage) {
-        T result = this.as(clazz);
-        if (result == null) {
-            if (failureMessage == null)
-                failureMessage = this.getClass().getName() + " is not an instance of " + clazz.toString();
-            throw new RuntimeException(failureMessage);
-        }
-        return result;
-    }
-
-    default <T> T to(Class<T> clazz) {
-        return this.as(clazz, null);
-    }
 }

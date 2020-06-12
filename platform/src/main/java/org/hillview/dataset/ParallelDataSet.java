@@ -241,8 +241,8 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
     }
 
     @Override
-    public <S> Observable<PartialResult<IDataSet<Pair<T, S>>>> zip(
-            final IDataSet<S> other) {
+    public <S, R> Observable<PartialResult<IDataSet<R>>> zip(
+            final IDataSet<S> other, IMap<Pair<T, S>, R> map) {
         HillviewLogger.instance.info("Invoked zip", "target={0}", this);
         if (!(other instanceof ParallelDataSet<?>))
             throw new RuntimeException("Expected a ParallelDataSet " + other);
@@ -251,18 +251,44 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
         if (mySize != os.size())
             throw new RuntimeException("Different sizes for ParallelDatasets: " +
                     mySize + " vs. " + os.size());
-        final List<Observable<Pair<Integer, PartialResult<IDataSet<Pair<T, S>>>>>> obs =
-                new ArrayList<Observable<Pair<Integer, PartialResult<IDataSet<Pair<T, S>>>>>>();
+        final List<Observable<Pair<Integer, PartialResult<IDataSet<R>>>>> obs =
+                new ArrayList<Observable<Pair<Integer, PartialResult<IDataSet<R>>>>>();
         // Just zip children pairwise; tag each result with the child index
         for (int i = 0; i < mySize; i++) {
             final IDataSet<S> oChild = os.children.get(i);
             final IDataSet<T> tChild = this.children.get(i);
-            final Observable<PartialResult<IDataSet<Pair<T, S>>>> zip = tChild.zip(oChild).last();
+            final Observable<PartialResult<IDataSet<R>>> zip = tChild.zip(oChild, map).last();
             final int finalI = i;
             obs.add(zip.map(
-                    e -> new Pair<Integer, PartialResult<IDataSet<Pair<T, S>>>>(finalI, e)));
+                    e -> new Pair<Integer, PartialResult<IDataSet<R>>>(finalI, e)));
         }
+        return this.mergeResults(obs);
+    }
 
+    @Override
+    public <R> Observable<PartialResult<IDataSet<R>>> zipN(List<IDataSet<T>> other, IMap<List<T>, R> map) {
+        HillviewLogger.instance.info("Invoked zipN", "target={0}", this);
+        final List<Observable<Pair<Integer, PartialResult<IDataSet<R>>>>> obs =
+                new ArrayList<Observable<Pair<Integer, PartialResult<IDataSet<R>>>>>();
+        final int mySize = this.size();
+        for (int i = 0; i < mySize; i++) {
+            IDataSet<T> tChild = this.children.get(i);
+            ArrayList<IDataSet<T>> list = new ArrayList<IDataSet<T>>(other.size() + 1);
+            for (IDataSet<T> o: other) {
+                if (!(o instanceof ParallelDataSet<?>))
+                    throw new RuntimeException("Expected a ParallelDataSet " + o);
+                final ParallelDataSet<T> os = (ParallelDataSet<T>) o;
+                if (mySize != os.size())
+                    throw new RuntimeException("Different sizes for ParallelDatasets: " +
+                            mySize + " vs. " + os.size());
+                final IDataSet<T> oChild = os.children.get(i);
+                list.add(oChild);
+                final Observable<PartialResult<IDataSet<R>>> zip = tChild.zipN(list, map).last();
+                final int finalI = i;
+                obs.add(zip.map(
+                        e -> new Pair<Integer, PartialResult<IDataSet<R>>>(finalI, e)));
+            }
+        }
         return this.mergeResults(obs);
     }
 

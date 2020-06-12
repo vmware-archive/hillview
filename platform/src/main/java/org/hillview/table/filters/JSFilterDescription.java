@@ -17,6 +17,9 @@
 
 package org.hillview.table.filters;
 
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Value;
+import org.graalvm.polyglot.proxy.ProxyObject;
 import org.hillview.table.Schema;
 import org.hillview.table.api.ITable;
 import org.hillview.table.api.ITableFilter;
@@ -24,10 +27,6 @@ import org.hillview.table.api.ITableFilterDescription;
 import org.hillview.table.rows.VirtualRowSnapshot;
 
 import javax.annotation.Nullable;
-import javax.script.Invocable;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
 import java.util.Map;
 
 /**
@@ -57,31 +56,28 @@ public class JSFilterDescription implements ITableFilterDescription {
 
     class JSFilter implements ITableFilter {
         private final VirtualRowSnapshot vrs;
-        private Invocable invocable;
+        private final Value function;
+        private final ProxyObject vrsProxy;
 
         JSFilter(ITable table) {
             try {
                 this.vrs = new VirtualRowSnapshot(
                         table, JSFilterDescription.this.schema,
                         JSFilterDescription.this.renameMap);
-                ScriptEngineManager factory = new ScriptEngineManager();
-                ScriptEngine engine = factory.getEngineByName("nashorn");
+                this.vrsProxy = ProxyObject.fromMap(this.vrs);
+                Context context = Context.newBuilder().allowAllAccess(true).build();
                 // Compiles the JS function
-                engine.eval(JSFilterDescription.this.jsCode);
-                this.invocable = (Invocable) engine;
+                context.eval("js", JSFilterDescription.this.jsCode);
+                this.function = context.eval("js", "vrs => filter(vrs)");
+                assert this.function.canExecute();
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
         }
 
         public boolean test(int rowIndex) {
-            vrs.setRow(rowIndex);
-            try {
-                Object value = this.invocable.invokeFunction("filter", vrs);
-                return (boolean)value;
-            } catch (ScriptException | NoSuchMethodException e) {
-                throw new RuntimeException(e);
-            }
+            this.vrs.setRow(rowIndex);
+            return this.function.execute(this.vrsProxy).asBoolean();
         }
     }
 

@@ -297,6 +297,7 @@ public class DataUpload {
                 progress++;
             }
             myParser.stopParsing();
+            file.close();
         }
         catch (Exception e) {
             error(e);
@@ -396,6 +397,7 @@ public class DataUpload {
                 columns = schema.createAppendableColumns();
             }
             myParser.stopParsing();
+            file.close();
         } catch (Exception e) {
             try {
                 Files.deleteIfExists(Paths.get(chunkName));

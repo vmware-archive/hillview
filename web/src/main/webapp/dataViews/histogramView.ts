@@ -267,7 +267,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         const counts = this.histogram.first.perBucket;
         this.bucketCount = counts.length;
         this.plot.setHistogram(
-            histogram, this.samplingRate, this.xAxisData, maxYAxis, this.page.dataset.isPrivate());
+            histogram, this.samplingRate, this.xAxisData, maxYAxis, this.page.dataset.isPrivate(), this.rowCount);
         this.plot.draw();
 
         const discrete = kindIsString(this.xAxisData.description.kind) ||

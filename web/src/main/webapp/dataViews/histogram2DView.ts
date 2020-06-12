@@ -223,7 +223,7 @@ export class Histogram2DView extends HistogramViewBase {
 
         const heatmap = {first: data, second: null};
         this.plot.setData(heatmap, this.xAxisData, this.samplingRate, this.relative,
-            this.schema, this.legendPlot.colorMap, maxYAxis);
+            this.schema, this.legendPlot.colorMap, maxYAxis, this.rowCount);
         this.plot.draw();
         const discrete = kindIsString(this.xAxisData.description.kind) ||
             this.xAxisData.description.kind === "Integer";
@@ -232,7 +232,9 @@ export class Histogram2DView extends HistogramViewBase {
             this.cdfPlot.setData(cdf.perBucket, discrete);
             this.cdfPlot.draw();
         }
-        this.legendPlot.setData(this.yAxisData, this.plot.getMissingDisplayed() > 0, this.schema);
+
+        const missingShown = data.perBucket.map(b => b.perMissing).reduce(add);
+        this.legendPlot.setData(this.yAxisData, missingShown > 0, this.schema);
         this.legendPlot.draw();
 
         this.setupMouse();
@@ -254,7 +256,7 @@ export class Histogram2DView extends HistogramViewBase {
         this.pointDescription = new TextOverlay(this.surface.getChart(),
             this.surface.getActualChartSize(), pointFields, 40);
         this.pointDescription.show(false);
-        let summary = new HtmlString(formatNumber(this.plot.getDisplayedPoints()) + " data points");
+        let summary = new HtmlString(formatNumber(this.rowCount) + " data points");
         /*
         if (data.missingData !== 0)
             summary = summary.appendSafeString(

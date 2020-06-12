@@ -152,6 +152,7 @@ export class Test {
             10: Trellis heatmap plot
             11: Quartiles vector plot
             12: Non-stacked bar charts plot
+            13: Filtered table
          */
         this.addProgram([{
             description: "Load all flights",
@@ -166,8 +167,7 @@ export class Test {
             cond: () => Test.existsElement("#hillviewPage1 .idle"),
             cont: () => {
                 const date = findElement("#hillviewPage1 thead td[data-colname=FlightDate] .truncated");
-                const evt = contextMenuEvent();
-                date.dispatchEvent(evt);
+                date.dispatchEvent(contextMenuEvent());
                 const rename = findElement("#hillviewPage1 .dropdown #Rename___");
                 rename.click();
                 const formField = findElement(".dialog #name");
@@ -182,8 +182,7 @@ export class Test {
             cont: () => {
                 // Drop column cancelled
                 const cancCol = findElement("#hillviewPage1 thead td[data-colname=Cancelled] .truncated");
-                const evt = contextMenuEvent();
-                cancCol.dispatchEvent(evt);
+                cancCol.dispatchEvent(contextMenuEvent());
                 const item = findElement("#hillviewPage1 .dropdown #Drop");
                 item.click();
             },
@@ -194,8 +193,7 @@ export class Test {
                 // Check that Cancelled column does not exist
                 assert(!Test.existsElement("#hillviewPage1 thead td[data-colname=Cancelled]"));
                 const col0 = findElement("#hillviewPage1 thead .col0");
-                const evt = contextMenuEvent();
-                col0.dispatchEvent(evt);
+                col0.dispatchEvent(contextMenuEvent());
                 findElement("#hillviewPage1 .dropdown #Show").click();
             },
         }, {
@@ -203,8 +201,7 @@ export class Test {
             cond: () => Test.existsElement("#hillviewPage1 .idle"),
             cont: () => {
                 const col1 = findElement("#hillviewPage1 thead .col1");
-                const evt = contextMenuEvent();
-                col1.dispatchEvent(evt);
+                col1.dispatchEvent(contextMenuEvent());
                 findElement("#hillviewPage1 .dropdown #Show").click();
             },
         }, {
@@ -212,8 +209,7 @@ export class Test {
             cond: () => Test.existsElement("#hillviewPage1 .idle"),
             cont: () => {
                 const col0 = findElement("#hillviewPage1 thead .col0");
-                const evt = contextMenuEvent();
-                col0.dispatchEvent(evt);
+                col0.dispatchEvent(contextMenuEvent());
                 findElement("#hillviewPage1 .dropdown #Hide").click();
             },
         }, {
@@ -221,8 +217,7 @@ export class Test {
             cond: () => Test.existsElement("#hillviewPage1 .idle"),
             cont: () => {
                 const cancCol = findElement("#hillviewPage1 thead td[data-colname=OriginCityName] .truncated");
-                const evt = contextMenuEvent();
-                cancCol.dispatchEvent(evt);
+                cancCol.dispatchEvent(contextMenuEvent());
                 const item = findElement("#hillviewPage1 .dropdown #Create_column_in_JS___");
                 item.click();
                 (findElement(".dialog #outColName") as HTMLInputElement).value = "O";
@@ -242,11 +237,10 @@ export class Test {
                 row0.click();
                 // Add row 1
                 const row1 = findElement("#hillviewPage2 #row1");
-                const evt = controlClickEvent();
-                row1.dispatchEvent(evt);
+                row1.dispatchEvent(controlClickEvent());
                 // Add row 3
                 const row3 = findElement("#hillviewPage2 #row3");
-                row3.dispatchEvent(evt);
+                row3.dispatchEvent(controlClickEvent());
                 // Select menu item to show the associated table
                 findElement("#hillviewPage2 .topMenu #Selected_columns").click();
                 this.next(); // no rpc
@@ -256,8 +250,7 @@ export class Test {
             cond: () => true,
             cont: () => {
                 const col1 = findElement("#hillviewPage1 thead .col1");
-                const revt = contextMenuEvent();
-                col1.dispatchEvent(revt);
+                col1.dispatchEvent(contextMenuEvent());
                 // Produces hillviewPage4
                 findElement("#hillviewPage1 .dropdown #Histogram").click();
             },
@@ -267,8 +260,7 @@ export class Test {
             cont: () => {
                 // Show a histogram
                 const col2 = findElement("#hillviewPage1 thead .col2");
-                const evt = contextMenuEvent();
-                col2.dispatchEvent(evt);
+                col2.dispatchEvent(contextMenuEvent());
                 // Produces hillviewPage5
                 findElement("#hillviewPage1 .dropdown #Histogram").click();
             },
@@ -287,11 +279,9 @@ export class Test {
             cont: () => {
                 // Show a histogram
                 findElement("#hillviewPage1 thead .col8").click();
-                const evt = controlClickEvent();
                 const col9 = findElement("#hillviewPage1 thead .col9");
-                col9.dispatchEvent(evt);
-                const revt = contextMenuEvent();
-                col9.dispatchEvent(revt);
+                col9.dispatchEvent(controlClickEvent());
+                col9.dispatchEvent(contextMenuEvent());
                 // Produces hillviewPage6
                 findElement("#hillviewPage1 .dropdown #Histogram").click();
             },
@@ -309,8 +299,7 @@ export class Test {
             cont: () => {
                 // Show a histogram
                 const col2 = findElement("#hillviewPage1 thead .col2");
-                const evt = contextMenuEvent();
-                col2.dispatchEvent(evt);
+                col2.dispatchEvent(contextMenuEvent());
                 findElement("#hillviewPage1 .dropdown #Filter___").click();
                 (findElement(".dialog #query") as HTMLInputElement).value = "AA";
                 // Produces hillviewPage7
@@ -355,10 +344,8 @@ export class Test {
                 const dest = findElement("#hillviewPage1 thead td[data-colname=Dest] .truncated");
                 dest.click();
                 const arrTime = findElement("#hillviewPage1 thead td[data-colname=ArrTime] .truncated");
-                const ctrl = controlClickEvent();
-                arrTime.dispatchEvent(ctrl);
-                const evt = contextMenuEvent();
-                arrTime.dispatchEvent(evt);
+                arrTime.dispatchEvent(controlClickEvent());
+                arrTime.dispatchEvent(contextMenuEvent());
                 const qv = findElement("#hillviewPage1 .dropdown #Quartile_vector");
                 qv.click();
             }
@@ -369,10 +356,8 @@ export class Test {
                 const carrier = findElement("#hillviewPage1 thead td[data-colname=UniqueCarrier] .truncated");
                 carrier.click();
                 const depDelay = findElement("#hillviewPage1 thead td[data-colname=DepDelay] .truncated");
-                const ctrl = controlClickEvent();
-                depDelay.dispatchEvent(ctrl);
-                const evt = contextMenuEvent();
-                depDelay.dispatchEvent(evt);
+                depDelay.dispatchEvent(controlClickEvent());
+                depDelay.dispatchEvent(contextMenuEvent());
                 const qv = findElement("#hillviewPage1 .dropdown #Histogram");
                 qv.click();
             }
@@ -394,8 +379,17 @@ export class Test {
                 this.next();  // no interaction required
             }
         }, {
-            description: "Close some windows",
+            description: "Filter based on the first table cell value",
             cond: () => Test.existsElement("#hillviewPage12 .idle"),
+            cont: () => {
+                const cell = findElement("#hillviewPage1 [data-col=\"3\"][data-row=\"1\"]");
+                cell.dispatchEvent(contextMenuEvent());
+                const menu = findElement("#hillviewPage1 #Keep_2016_01_01");
+                menu.click();
+            }
+        }, {
+            description: "Close some windows",
+            cond: () => Test.existsElement("#hillviewPage13 .idle"),
             cont: () => {
                 /*
                     for (let i = 2; i < 8; i++) {

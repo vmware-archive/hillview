@@ -18,10 +18,13 @@
 package org.hillview.test.table;
 
 import org.hillview.table.ColumnDescription;
+import org.hillview.table.api.IMembershipSet;
+import org.hillview.table.columns.SetComparisonColumn;
 import org.hillview.table.columns.StringListColumn;
 import org.hillview.table.columns.DoubleListColumn;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.columns.IntArrayColumn;
+import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.test.BaseTest;
 import org.junit.Assert;
 import org.junit.Test;
@@ -133,5 +136,21 @@ public class ColumnTest extends BaseTest {
         Assert.assertEquals(2, nulls);
         Assert.assertEquals(100002, firstCount);
         Assert.assertEquals(col.sizeInRows() - nulls - firstCount, otherCount);
+    }
+
+    @Test
+    public void testSetComparisonColumn() {
+        int rowCount = 6;
+        IMembershipSet set0 = new FullMembershipSet(rowCount);
+        IMembershipSet set1 = set0.filter(i -> i < 3);
+        IMembershipSet set2 = set0.filter(i -> i >= 2);
+        SetComparisonColumn col = new SetComparisonColumn(
+                "C3", new IMembershipSet[] { set0, set1, set2 }, new String[] { "A", "B", "C" });
+        Assert.assertEquals(rowCount, col.sizeInRows());
+        for (int i = 0; i < 2; i++)
+            Assert.assertEquals("A,B", col.getString(i));
+        Assert.assertEquals("All", col.getString(2));
+        for (int i = 3; i < rowCount; i++)
+            Assert.assertEquals("A,C", col.getString(i));
     }
 }

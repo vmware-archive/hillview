@@ -28,7 +28,7 @@ import java.util.HashMap;
 
 /**
  * This class is an adaptor around the VirtualRowSnapshot which is used by the JavaScript
- * Nashorn engine.  When it retrieves an Instant, it gets a JavaScript date instead.
+ * engine.  When it retrieves an Instant, it gets a JavaScript date instead.
  */
 public class JSVirtualRowSnapshot extends VirtualRowSnapshot {
     static final long serialVersionUID = 1;

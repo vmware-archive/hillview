@@ -204,7 +204,8 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
      * Zip operation on two IDataSet objects that need to reside on the same remote server.
      */
     @Override
-    public <S> Observable<PartialResult<IDataSet<Pair<T, S>>>> zip(final IDataSet<S> other) {
+    public <S, R> Observable<PartialResult<IDataSet<R>>> zip(
+            final IDataSet<S> other, IMap<Pair<T, S>, R> map) {
         if (!(other instanceof RemoteDataSet<?>)) {
             throw new RuntimeException("Unexpected type in Zip " + other);
         }
@@ -219,11 +220,38 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
                     "across different servers | left: " + leftAddress + ", right:" + rightAddress);
         }
 
-        final ZipOperation zip = new ZipOperation(rds.remoteHandle);
-        DatasetCommandWrapper<Pair<T, S>> wrap = new DatasetCommandWrapper<Pair<T, S>>(zip);
+        final ZipOperation<T, S, R> zip = new ZipOperation<>(rds.remoteHandle, map);
+        DatasetCommandWrapper<R> wrap = new DatasetCommandWrapper<>(zip);
         return wrap.subject.unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
                 .doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
                         .zip(wrap.command, wrap.responseObserver))
+                .doOnUnsubscribe(() -> this.unsubscribe(wrap.operationId));
+    }
+
+    @Override
+    public <R> Observable<PartialResult<IDataSet<R>>> zipN(List<IDataSet<T>> other, IMap<List<T>, R> map) {
+        List<Integer> handles = new ArrayList<>(other.size());
+        for (IDataSet<T> o : other) {
+            if (!(o instanceof RemoteDataSet<?>)) {
+                throw new RuntimeException("Unexpected type in Zip " + other);
+            }
+            final RemoteDataSet<T> rds = (RemoteDataSet<T>) o;
+            // zip commands are not valid if the RemoteDataSet instances point to different
+            // actor systems or different nodes.
+            final HostAndPort leftAddress = this.serverEndpoint;
+            final HostAndPort rightAddress = rds.serverEndpoint;
+            if (!leftAddress.equals(rightAddress)) {
+                throw new RuntimeException("ZipN command invalid for RemoteDataSets " +
+                        "across different servers | left: " + leftAddress + ", right:" + rightAddress);
+            }
+            handles.add(rds.remoteHandle);
+        }
+
+        final ZipNOperation<T, R> zip = new ZipNOperation<>(handles, map);
+        DatasetCommandWrapper<R> wrap = new DatasetCommandWrapper<>(zip);
+        return wrap.subject.unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
+                .doOnSubscribe(() -> this.stub.withDeadlineAfter(TIMEOUT, TimeUnit.MILLISECONDS)
+                        .zipN(wrap.command, wrap.responseObserver))
                 .doOnUnsubscribe(() -> this.unsubscribe(wrap.operationId));
     }
 

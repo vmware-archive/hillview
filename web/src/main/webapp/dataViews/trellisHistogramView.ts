@@ -346,7 +346,7 @@ export class TrellisHistogramView extends TrellisChartView {
             };
             plot.setHistogram({ first: coarsened[i], second: confidence }, this.samplingRate,
                 this.xAxisData,
-                max, this.page.dataset.isPrivate());
+                max, this.page.dataset.isPrivate(), this.rowCount);
             plot.displayAxes = false;
             plot.draw();
             plot.border(1);

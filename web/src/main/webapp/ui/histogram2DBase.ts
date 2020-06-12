@@ -31,8 +31,6 @@ export abstract class Histogram2DBase extends Plot {
     protected xAxisData: AxisData;
     protected samplingRate: number;
     protected normalized: boolean;
-    protected missingDisplayed: number;
-    protected visiblePoints: number;
     protected barWidth: number;
     protected yScale: D3Scale;
     protected yAxis: D3Axis;
@@ -51,7 +49,8 @@ export abstract class Histogram2DBase extends Plot {
                    normalized: boolean,
                    schema: SchemaClass,
                    colorMap: ColorMap,
-                   max: number | null): void {
+                   max: number | null,
+                   rowCount: number): void {
         this.heatmap = heatmap;
         this.xAxisData = xAxisData;
         this.samplingRate = samplingRate;
@@ -59,6 +58,7 @@ export abstract class Histogram2DBase extends Plot {
         this.schema = schema;
         this.maxYAxis = max;
         this.colorMap = colorMap;
+        this.rowCount = rowCount;
     }
 
     public draw(): void {
@@ -85,20 +85,6 @@ export abstract class Histogram2DBase extends Plot {
      */
     public getBarWidth(): number {
         return this.barWidth;
-    }
-
-    /**
-     * The total count of missing values displayed as rectangles.
-     */
-    public getMissingDisplayed(): number {
-        return this.missingDisplayed;
-    }
-
-    /**
-     * The total count of points that correspond to displayed rectangles.
-     */
-    public getDisplayedPoints(): number {
-        return this.visiblePoints + this.missingDisplayed;
     }
 
     // noinspection JSMethodCanBeStatic

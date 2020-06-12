@@ -18,6 +18,7 @@
 package org.hillview.dataset.api;
 
 import org.hillview.dataset.monoids.PRDataSetMonoid;
+import org.hillview.maps.highorder.IdMap;
 import org.hillview.sketches.highorder.PostProcessedSketch;
 import org.hillview.utils.Pair;
 import rx.Observable;
@@ -69,7 +70,31 @@ public interface IDataSet<T> {
      * @return       A stream of partial results which are all IDataSet[Pair[T,S]].  In fact this
      *               stream will contain exactly one result.
      */
-    <S> Observable<PartialResult<IDataSet<Pair<T, S>>>> zip(IDataSet<S> other);
+    default <S> Observable<PartialResult<IDataSet<Pair<T, S>>>> zip(IDataSet<S> other) {
+        return this.zip(other, new IdMap<Pair<T, S>>());
+    }
+
+    /**
+     * Combine two datasets that have the exact same topology by pairing the values in the
+     * corresponding leaves and apply a map to each result.
+     * @param other  Dataset to combine with this.
+     * @param <S>    Type of data in the other dataset.
+     * @param <R>    Type of data in result.
+     * @param map    Function to apply to each pair.
+     * @return       A stream of partial results which are all IDataSet[R].  In fact this
+     *               stream will contain exactly one result.
+     */
+    <S, R> Observable<PartialResult<IDataSet<R>>> zip(IDataSet<S> other, IMap<Pair<T, S>, R> map);
+
+    /**
+     * Combine multiple datasets and apply a map to their corresponding leaves.
+     * @param other  List of other datasets to combine.
+     * @param map    Map to apply to each set of corresponding leaves.
+     * @param <R>    Type of result produced by map.
+     * @return       A stream of partial results which are all IDataSet[R].  In fact this
+     *               stream will contain exactly one result.
+     */
+    <R> Observable<PartialResult<IDataSet<R>>> zipN(List<IDataSet<T>> other, IMap<List<T>, R> map);
 
     /**
      * Remove from a dataset all leaves that are empty according to the supplied function.
@@ -156,12 +181,23 @@ public interface IDataSet<T> {
 
     /**
      * Applies a zip and then reduces the result immediately.
-     * @param <S>     Type of data in the result.
+     * @param <S>     Type of data in the the other dataset.
+     * @param <R>     Type of data in the result.
      * @return        An observable with a single element.
      */
-    default <S> Observable<IDataSet<Pair<T, S>>> singleZip(
-            final IDataSet<S> other) {
-        return reduce(this.zip(other));
+    default <S, R> Observable<IDataSet<R>> singleZip(
+            final IDataSet<S> other, IMap<Pair<T, S>, R> map) {
+        return reduce(this.zip(other, map));
+    }
+
+    /**
+     * Applies a zipN and then reduces the result immediately.
+     * @param <R>     Type of data in the result.
+     * @return        An observable with a single element.
+     */
+    default <R> Observable<IDataSet<R>> singleZipN(
+            List<IDataSet<T>> other, IMap<List<T>, R> map) {
+        return reduce(this.zipN(other, map));
     }
 
     /**
@@ -201,13 +237,26 @@ public interface IDataSet<T> {
     }
 
     /**
-     * Run a zip synchronously.
-     * @param <S>     Type of data produced.
+     * Run a zip synchronously between two datasets.
+     * @param <R>     Type of data produced.
+     * @param <S>     Type of data in the other dataset.
      * @return        An IDataSet containing the final result of the zip.
      */
     @SuppressWarnings("unused")
-    default <S> IDataSet<Pair<T, S>> blockingZip(final IDataSet<S> other) {
-        return this.singleZip(other).toBlocking().single();
+    default <S, R> IDataSet<R> blockingZip(
+            IDataSet<S> other, IMap<Pair<T, S>, R> map) {
+        return this.singleZip(other, map).toBlocking().single();
+    }
+
+    /**
+     * Run a zipN synchronously.
+     * @param <R>     Type of data produced.
+     * @return        An IDataSet containing the final result of the zipN.
+     */
+    @SuppressWarnings("unused")
+    default <R> IDataSet<R> blockingZipN(
+            List<IDataSet<T>> other, IMap<List<T>, R> map) {
+        return this.singleZipN(other, map).toBlocking().single();
     }
 
     /**

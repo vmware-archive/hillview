@@ -25,6 +25,7 @@ import rx.Subscription;
 import javax.annotation.Nullable;
 import javax.websocket.Session;
 import java.util.HashMap;
+import java.util.function.Consumer;
 
 /**
  * The RpcObjectManager manages a pool of objects that are the targets of RPC calls
@@ -127,7 +128,7 @@ public final class RpcObjectManager {
     /**
      * Execute the specified action.
      */
-    public void executeAction(RpcTargetAction action, boolean rebuild) {
+    private void executeAction(RpcTargetAction action, boolean rebuild) {
         RpcTarget target = this.getObject(action.id);
         if (target != null) {
             // Object found
@@ -143,7 +144,21 @@ public final class RpcObjectManager {
         }
     }
 
-    public void executeAction(RpcTargetAction action) {
+    public void when(RpcTarget.Id id, Consumer<RpcTarget> action) {
+        RpcTargetAction a = new RpcTargetAction(id) {
+            @Override
+            public void action(RpcTarget target) {
+                action.accept(target);
+            }
+        };
+        this.executeAction(a);
+    }
+
+    public void when(String id, Consumer<RpcTarget> action) {
+        this.when(new IRpcTarget.Id(id), action);
+    }
+
+    private void executeAction(RpcTargetAction action) {
         this.executeAction(action, true);
     }
 

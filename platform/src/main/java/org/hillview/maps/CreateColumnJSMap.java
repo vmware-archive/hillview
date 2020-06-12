@@ -17,7 +17,6 @@
 
 package org.hillview.maps;
 
-import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.proxy.ProxyObject;
@@ -29,12 +28,7 @@ import org.hillview.table.rows.JSVirtualRowSnapshot;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
-import javax.script.Invocable;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.HashMap;
 
 /**
@@ -86,7 +80,7 @@ public class CreateColumnJSMap extends AppendColumnMap {
             IMutableColumn col = BaseColumn.create(this.outputColumn,
                     table.getMembershipSet().getMax(),
                     table.getMembershipSet().getSize());
-            // TODO: ensure that the input columns are loaded.
+            table.getLoadedColumns(this.inputColumns.getColumnNames());
             ContentsKind kind = this.outputColumn.kind;
 
             JSVirtualRowSnapshot vrs = new JSVirtualRowSnapshot(

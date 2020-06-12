@@ -530,6 +530,7 @@ public abstract class RpcTarget implements IJson, IRpcTarget {
      * Runs a zip between two datasets.
      * @param data    Left dataset.
      * @param other   Right dataset.
+     * @param map     Function to apply to zip result.
      * @param factory Function which knows how to create a new RpcTarget
      *                out of the resulting IDataSet.  It is the reference
      *                to this RpcTarget that is returned to the client.
@@ -537,11 +538,33 @@ public abstract class RpcTarget implements IJson, IRpcTarget {
      * @param context Context for the computation.
      */
     @Override
-    public <T, S> void
-    runZip(IDataSet<T> data, IDataSet<S> other,
-           BiFunction<IDataSet<Pair<T, S>>, HillviewComputation, IRpcTarget> factory,
+    public <T, S, R> void
+    runZip(IDataSet<T> data, IDataSet<S> other, IMap<Pair<T, S>, R> map,
+           BiFunction<IDataSet<R>, HillviewComputation, IRpcTarget> factory,
            RpcRequest request, RpcRequestContext context) {
-        Observable<PartialResult<IDataSet<Pair<T, S>>>> stream = data.zip(other);
+        Observable<PartialResult<IDataSet<R>>> stream = data.zip(other, map);
+        this.collectDataset(stream, "zip", request, context, factory);
+    }
+
+    /**
+     * Runs a zipN computatoin between N datasets.
+     * @param data    All datasets involved.
+     * @param map     Function to apply to zip result.
+     * @param factory Function which knows how to create a new RpcTarget
+     *                out of the resulting IDataSet.  It is the reference
+     *                to this RpcTarget that is returned to the client.
+     * @param request Web socket request, used to send the reply.
+     * @param context Context for the computation.
+     */
+    @Override
+    public <T, R> void
+    runZipN(List<IDataSet<T>> data, IMap<List<T>, R> map,
+           BiFunction<IDataSet<R>, HillviewComputation, IRpcTarget> factory,
+           RpcRequest request, RpcRequestContext context) {
+        if (data.isEmpty())
+            throw new RuntimeException("Empty set of datasets");
+        IDataSet<T> left = data.remove(0);
+        Observable<PartialResult<IDataSet<R>>> stream = left.zipN(data, map);
         this.collectDataset(stream, "zip", request, context, factory);
     }
 

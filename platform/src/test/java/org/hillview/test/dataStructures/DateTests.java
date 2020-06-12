@@ -17,16 +17,14 @@
 
 package org.hillview.test.dataStructures;
 
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Value;
 import org.hillview.test.BaseTest;
 import org.hillview.utils.Converters;
 import org.hillview.utils.DateParsing;
 import org.junit.Assert;
 import org.junit.Test;
 
-import javax.script.Invocable;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
 import java.time.*;
 
 public final class DateTests extends BaseTest {
@@ -130,9 +128,8 @@ public final class DateTests extends BaseTest {
     }
 
     @Test
-    public void compareJavascriptTest() throws ScriptException, NoSuchMethodException {
-        ScriptEngineManager factory = new ScriptEngineManager();
-        ScriptEngine engine = factory.getEngineByName("nashorn");
+    public void compareJavascriptTest() {
+        Context context = Context.create();
         // This function should be the same as the one in util.ts.
         String jsConverter =
                 "function zeroPad(num, length) {\n" +
@@ -170,9 +167,9 @@ public final class DateTests extends BaseTest {
                 "    }\n" +
                 "    return df + suffix;\n" +
                 "}\n";
-        engine.eval(jsConverter);
-        Invocable invocable = (Invocable)engine;
-
+        context.eval("js", jsConverter);
+        Value function = context.eval("js", "d => formatDate(d)");
+        assert function.canExecute();
         String[] dates = new String[] {
                 "2017-01-01",
                 "1999-12-10",
@@ -200,7 +197,7 @@ public final class DateTests extends BaseTest {
             Instant instant = parsing.parse(d);
             String s = Converters.toString(instant);
             double dbl = Converters.toDouble(instant);
-            Object value = invocable.invokeFunction("formatDate", dbl);
+            String value = function.execute(dbl).asString();
             //System.out.println(s + "=>\n" + writer);
             Assert.assertEquals(s, value);
         }
