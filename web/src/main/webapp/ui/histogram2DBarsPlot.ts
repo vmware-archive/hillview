@@ -67,16 +67,14 @@ export class Histogram2DBarsPlot extends Histogram2DBase {
             this.showMissing = true;
             this.yPoints++;
         }
-        this.missingDisplayed = 0;
-        this.visiblePoints = 0;
 
         this.max = 0;
         const rects: Box[] = [];
         for (let x = 0; x < this.xPoints; x++) {
             let yTotal = 0;
-            for (let y = 0; y < this.yPoints; y++) {
-                const vis = this.heatmap.first.perBucket[x].perBucket[y];
-                this.visiblePoints += vis;
+            const xBuckets = this.heatmap.first.perBucket[x];
+            for (let y = 0; y < xBuckets.perBucket.length; y++) {
+                const vis = xBuckets.perBucket[y];
                 if (vis !== 0) {
                     const rect: Box = {
                         xCoordinate: x * (this.yPoints + 1) + y, // +1 for a space
@@ -98,7 +96,6 @@ export class Histogram2DBarsPlot extends Histogram2DBase {
             rects.push(rec);
             if (vis > this.max)
                 this.max = vis;
-            this.missingDisplayed += vis;
         }
         /*
         TODO: show in a different plot
@@ -159,38 +156,33 @@ export class Histogram2DBarsPlot extends Histogram2DBase {
         return this.barWidth;
     }
 
-    /**
-     * The total count of missing values displayed as rectangles.
-     */
-    public getMissingDisplayed(): number {
-        return this.missingDisplayed;
-    }
-
-    /**
-     * The total count of points that correspond to displayed rectangles.
-     */
-    public getDisplayedPoints(): number {
-        return this.visiblePoints + this.missingDisplayed;
-    }
-
     protected rectHeight(d: Box, scale: number): number {
         return d.count * scale;
     }
 
     public getBarInfo(mouseX: number, y: number): BarInfo {
         const bucketWidth = this.getChartWidth() / this.xPoints;
-        const bucketIndex = Math.floor(mouseX / bucketWidth);
+        let bucketIndex = Math.floor(mouseX / bucketWidth);
         const withinBucketOffset = mouseX - bucketIndex * bucketWidth;
         let colorIndex = Math.floor(withinBucketOffset / this.barWidth);
         let count = null;
+
         if (colorIndex == this.yPoints) {
             colorIndex = NoBucketIndex;
-        } else if (this.showMissing && colorIndex == this.yPoints - 1) {
+        }
+        if (this.showMissing && colorIndex == this.yPoints - 1) {
             colorIndex = MissingBucketIndex;
-            count = this.heatmap.first.perBucket[bucketIndex].perMissing;
+        }
+
+        if (bucketIndex >= 0 && bucketIndex < this.heatmap.first.perBucket.length) {
+            const bucket = this.heatmap.first.perBucket[bucketIndex];
+            if (colorIndex == MissingBucketIndex)
+                count = bucket.perMissing;
+            else
+                count = bucket.perBucket[colorIndex];
         } else {
-            if (bucketIndex >= 0 && bucketIndex < this.xPoints)
-                count = this.heatmap.first.perBucket[bucketIndex].perBucket[colorIndex];
+            bucketIndex = NoBucketIndex;
+            colorIndex = NoBucketIndex;
         }
         return {
             colorIndex: colorIndex, // This could be null for the space between buckets

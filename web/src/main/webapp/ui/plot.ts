@@ -38,6 +38,7 @@ export abstract class Plot {
     protected yAxisData: AxisData;
     protected xAxisRepresentation: D3SvgElement;
     protected yAxisRepresentation: D3SvgElement;
+    protected rowCount: number;
 
     /**
      * Create a plot that will do all its drawing on the specified plotting surface.

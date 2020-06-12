@@ -123,18 +123,14 @@ public final class RpcServer {
 
     public static void execute(RpcRequest rpcRequest, RpcRequestContext context) {
         HillviewLogger.instance.info("Executing request", "{0}", rpcRequest);
-        RpcTargetAction obs = new RpcTargetAction(rpcRequest.objectId) {
-            @Override
-            public void action(RpcTarget rpcTarget) {
-                if (context.session != null)
-                    RpcObjectManager.instance.addSession(context.session, rpcTarget);
-                // This function is responsible for sending the replies and closing the session.
-                rpcTarget.execute(rpcRequest, context);
-            }
-        };
         // Retrieve the source object on which the operation is executed.
         // This works asynchronously - when the object is retrieved obs is invoked.
-        RpcObjectManager.instance.executeAction(obs);
+        RpcObjectManager.instance.when(rpcRequest.objectId, rpcTarget -> {
+            if (context.session != null)
+                RpcObjectManager.instance.addSession(context.session, rpcTarget);
+            // This function is responsible for sending the replies and closing the session.
+            rpcTarget.execute(rpcRequest, context);
+        });
     }
 
     private void replyWithError(final Throwable th, final Session session) {

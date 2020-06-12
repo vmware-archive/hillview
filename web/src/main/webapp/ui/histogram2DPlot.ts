@@ -66,8 +66,6 @@ export class Histogram2DPlot extends Histogram2DBase {
         this.yPoints = this.heatmap.first.perBucket[0].perBucket.length;
 
         const counts: number[] = [];
-        this.missingDisplayed = 0;
-        this.visiblePoints = 0;
 
         this.max = 0;
         const rects: Box[] = [];
@@ -75,7 +73,6 @@ export class Histogram2DPlot extends Histogram2DBase {
             let yTotal = 0;
             for (let y = 0; y < this.yPoints; y++) {
                 const vis = this.heatmap.first.perBucket[x].perBucket[y];
-                this.visiblePoints += vis;
                 if (vis !== 0) {
                     const rect: Box = {
                         xIndex: x,
@@ -96,7 +93,6 @@ export class Histogram2DPlot extends Histogram2DBase {
             };
             rects.push(rec);
             yTotal += v;
-            this.missingDisplayed += v;
             if (yTotal > this.max)
                 this.max = yTotal;
             counts.push(yTotal);
@@ -151,7 +147,7 @@ export class Histogram2DPlot extends Histogram2DBase {
                 this.getChartHeight() - (d * scale) : 0)
             .attr("text-anchor", "middle")
             .attr("dy", (d: number) => this.normalized ? 0 : d <= (9 * displayMax / 10) ? "-.25em" : ".75em")
-            .text((d: number) => Plot.boxHeight(d, this.samplingRate, this.getDisplayedPoints()));
+            .text((d: number) => Plot.boxHeight(d, this.samplingRate, this.rowCount));
 
         if (displayMax <= 0) {
             this.plottingSurface.reportError("All values are missing.");
@@ -174,20 +170,6 @@ export class Histogram2DPlot extends Histogram2DBase {
      */
     public getBarWidth(): number {
         return this.barWidth;
-    }
-
-    /**
-     * The total count of missing values displayed as rectangles.
-     */
-    public getMissingDisplayed(): number {
-        return this.missingDisplayed;
-    }
-
-    /**
-     * The total count of points that correspond to displayed rectangles.
-     */
-    public getDisplayedPoints(): number {
-        return this.visiblePoints + this.missingDisplayed;
     }
 
     protected rectHeight(d: Box, counts: number[], scale: number): number {

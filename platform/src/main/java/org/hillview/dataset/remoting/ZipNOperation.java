@@ -20,19 +20,19 @@ package org.hillview.dataset.remoting;
 import org.hillview.dataset.api.IMap;
 import org.hillview.utils.Pair;
 
-import javax.annotation.Nullable;
+import java.util.List;
 
 /**
- * Message type to initiate a zip command against two RemoteDataSets
+ * Message type to initiate a zipN command against a list of RemoteDataSets
  */
-public class ZipOperation<T, S, R> extends RemoteOperation {
+public class ZipNOperation<T, R> extends RemoteOperation {
     static final long serialVersionUID = 1;
-    public final int datasetIndex;
+    public final List<Integer> datasetIndexes;
 
-    public final IMap<Pair<T, S>, R> map;
+    public final IMap<List<T>, R> map;
 
-    public ZipOperation(final int datasetIndex, IMap<Pair<T, S>, R> map) {
+    public ZipNOperation(final List<Integer> datasetIndexes, IMap<List<T>, R> map) {
         this.map = map;
-        this.datasetIndex = datasetIndex;
+        this.datasetIndexes = datasetIndexes;
     }
 }

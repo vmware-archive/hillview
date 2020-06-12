@@ -8,7 +8,7 @@ import {Two} from "../util";
 
 export interface IBarPlot {
     setHistogram(bars: Two<Groups<number>>, samplingRate: number,
-                 axisData: AxisData, maxYAxis: number | null, isPrivate: boolean): void;
+                 axisData: AxisData, maxYAxis: number | null, isPrivate: boolean, rowCount: number): void;
     draw(): void;
     getYScale(): D3Scale;
 

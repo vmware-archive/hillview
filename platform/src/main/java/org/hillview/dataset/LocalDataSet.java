@@ -138,14 +138,28 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
     }
 
     @Override
-    public <S> Observable<PartialResult<IDataSet<Pair<T, S>>>> zip(final IDataSet<S> other) {
+    public <S, R> Observable<PartialResult<IDataSet<R>>> zip(
+            IDataSet<S> other, IMap<Pair<T, S>, R> map) {
         if (!(other instanceof LocalDataSet<?>))
             throw new RuntimeException("Unexpected type in Zip " + other);
-        final LocalDataSet<S> lds = (LocalDataSet<S>) other;
-        final Pair<T, S> data = new Pair<T, S>(this.data, lds.data);
-        final LocalDataSet<Pair<T, S>> retval = new LocalDataSet<Pair<T, S>>(data);
-        // This is very fast, so there is no need to use a callable or to return a zero.
-        return Observable.just(new PartialResult<IDataSet<Pair<T, S>>>(retval));
+        LocalDataSet<S> lds = (LocalDataSet<S>) other;
+        Pair<T, S> data = new Pair<T, S>(this.data, lds.data);
+        LocalDataSet<R> retval = new LocalDataSet<R>(map.apply(data));
+        return Observable.just(new PartialResult<IDataSet<R>>(retval));
+    }
+
+    @Override
+    public <R> Observable<PartialResult<IDataSet<R>>> zipN(List<IDataSet<T>> other, IMap<List<T>, R> map) {
+        List<T> data = new ArrayList<T>();
+        data.add(this.data);
+        for (IDataSet<T> d: other) {
+            if (!(d instanceof LocalDataSet<?>))
+                throw new RuntimeException("Unexpected type in ZipN " + other);
+            LocalDataSet<T> lds = (LocalDataSet<T>)d;
+            data.add(lds.data);
+        }
+        LocalDataSet<R> retval = new LocalDataSet<R>(map.apply(data));
+        return Observable.just(new PartialResult<IDataSet<R>>(retval));
     }
 
     @Override

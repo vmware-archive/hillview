@@ -399,25 +399,21 @@ public final class TableTarget extends TableRpcTarget {
     @HillviewRpc
     public void projectToEigenVectors(RpcRequest request, RpcRequestContext context) {
         ProjectToEigenVectorsInfo info = request.parseArgs(ProjectToEigenVectorsInfo.class);
-        RpcTargetAction observer = new RpcTargetAction(new RpcTarget.Id(info.id)) {
-            @Override
-            public void action(RpcTarget rpcTarget) {
-                CorrelationMatrixTarget cmt = (CorrelationMatrixTarget)rpcTarget;
-                CorrMatrix cm = cmt.corrMatrix;
-                DoubleMatrix[] mats = LinAlg.eigenVectorsVarianceExplained(new DoubleMatrix(cm.getCorrelationMatrix()),
-                        info.numComponents);
-                DoubleMatrix projectionMatrix = mats[0];
-                DoubleMatrix varianceExplained = mats[1];
-                String[] newColNames = new String[projectionMatrix.rows];
-                for (int i = 0; i < projectionMatrix.rows; i++) {
-                    int perc = Converters.toInt(Math.round(varianceExplained.get(i) * 100));
-                    newColNames[i] = String.format("%s%d (%d%%)", info.projectionName, i, perc);
-                }
-                LinearProjectionMap lpm = new LinearProjectionMap(cm.columnNames, projectionMatrix, newColNames);
-                TableTarget.this.runMap(TableTarget.this.table, lpm, TableTarget::new, request, context);
+        RpcObjectManager.instance.when(info.id, target -> {
+            CorrelationMatrixTarget cmt = target.to(CorrelationMatrixTarget.class);
+            CorrMatrix cm = cmt.corrMatrix;
+            DoubleMatrix[] mats = LinAlg.eigenVectorsVarianceExplained(new DoubleMatrix(cm.getCorrelationMatrix()),
+                    info.numComponents);
+            DoubleMatrix projectionMatrix = mats[0];
+            DoubleMatrix varianceExplained = mats[1];
+            String[] newColNames = new String[projectionMatrix.rows];
+            for (int i = 0; i < projectionMatrix.rows; i++) {
+                int perc = Converters.toInt(Math.round(varianceExplained.get(i) * 100));
+                newColNames[i] = String.format("%s%d (%d%%)", info.projectionName, i, perc);
             }
-        };
-        RpcObjectManager.instance.executeAction(observer);
+            LinearProjectionMap lpm = new LinearProjectionMap(cm.columnNames, projectionMatrix, newColNames);
+            TableTarget.this.runMap(TableTarget.this.table, lpm, TableTarget::new, request, context);
+        });
     }
 
     static class SampledControlPoints {
@@ -478,24 +474,20 @@ public final class TableTarget extends TableRpcTarget {
     @HillviewRpc
     public void makeMDSProjection(RpcRequest request, RpcRequestContext context) {
         MakeMDSProjection info = request.parseArgs(MakeMDSProjection.class);
-        RpcTargetAction observer = new RpcTargetAction(new RpcTarget.Id(info.id)) {
-            @Override
-            public void action(RpcTarget rpcTarget) {
-                ControlPointsTarget controlPointsTarget = (ControlPointsTarget)rpcTarget;
-                ControlPoints2D controlPoints2D = controlPointsTarget.mds(info.seed);
-                Session session = context.getSessionIfOpen();
-                if (session == null)
-                    return;
+        RpcObjectManager.instance.when(info.id, rpcTarget -> {
+            ControlPointsTarget controlPointsTarget = rpcTarget.to(ControlPointsTarget.class);
+            ControlPoints2D controlPoints2D = controlPointsTarget.mds(info.seed);
+            Session session = context.getSessionIfOpen();
+            if (session == null)
+                return;
 
-                JsonObject json = new JsonObject();
-                json.addProperty("done", 1.0);
-                json.add("data", controlPoints2D.toJsonTree());
-                RpcReply reply = request.createReply(json);
-                RpcServer.sendReply(reply, session);
-                request.syncCloseSession(session);
-            }
-        };
-        RpcObjectManager.instance.executeAction(observer);
+            JsonObject json = new JsonObject();
+            json.addProperty("done", 1.0);
+            json.add("data", controlPoints2D.toJsonTree());
+            RpcReply reply = request.createReply(json);
+            RpcServer.sendReply(reply, session);
+            request.syncCloseSession(session);
+        });
     }
 
     @SuppressWarnings("NotNullFieldNotInitialized")
@@ -509,23 +501,19 @@ public final class TableTarget extends TableRpcTarget {
     @HillviewRpc
     public void lampMap(RpcRequest request, RpcRequestContext context) {
         LAMPMapInfo info = request.parseArgs(LAMPMapInfo.class);
-        RpcTargetAction observer = new RpcTargetAction(new RpcTarget.Id(info.controlPointsId)) {
-            @Override
-            public void action(RpcTarget rpcTarget) {
-                ControlPointsTarget controlPointsTarget = (ControlPointsTarget)rpcTarget;
-                DoubleMatrix highDimPoints = controlPointsTarget.highDimData;
-                ControlPoints2D newControlPoints = Converters.checkNull(info.newLowDimControlPoints);
-                DoubleMatrix lowDimPoints = new DoubleMatrix(newControlPoints.points.length, 2);
-                for (int i = 0; i < newControlPoints.points.length; i++) {
-                    lowDimPoints.put(i, 0, newControlPoints.points[i].x);
-                    lowDimPoints.put(i, 1, newControlPoints.points[i].y);
-                }
-                lowDimPoints.print();
-                LAMPMap map = new LAMPMap(highDimPoints, lowDimPoints, info.colNames, info.newColNames);
-                TableTarget.this.runMap(TableTarget.this.table, map, TableTarget::new, request, context);
+        RpcObjectManager.instance.when(info.controlPointsId, rpcTarget -> {
+            ControlPointsTarget controlPointsTarget = rpcTarget.to(ControlPointsTarget.class);
+            DoubleMatrix highDimPoints = controlPointsTarget.highDimData;
+            ControlPoints2D newControlPoints = Converters.checkNull(info.newLowDimControlPoints);
+            DoubleMatrix lowDimPoints = new DoubleMatrix(newControlPoints.points.length, 2);
+            for (int i = 0; i < newControlPoints.points.length; i++) {
+                lowDimPoints.put(i, 0, newControlPoints.points[i].x);
+                lowDimPoints.put(i, 1, newControlPoints.points[i].y);
             }
-        };
-        RpcObjectManager.instance.executeAction(observer);
+            lowDimPoints.print();
+            LAMPMap map = new LAMPMap(highDimPoints, lowDimPoints, info.colNames, info.newColNames);
+            TableTarget.this.runMap(TableTarget.this.table, map, TableTarget::new, request, context);
+        });
     }
 
 
@@ -588,22 +576,18 @@ public final class TableTarget extends TableRpcTarget {
     @HillviewRpc
     public void checkHeavy(RpcRequest request, RpcRequestContext context) {
         HeavyHittersFilterInfo hhi = request.parseArgs(HeavyHittersFilterInfo.class);
-        RpcTargetAction observer = new RpcTargetAction(new RpcTarget.Id(hhi.hittersId)) {
-            @Override
-            public void action(RpcTarget rpcTarget) {
-                HeavyHittersTarget hht = (HeavyHittersTarget)rpcTarget;
-                ExactFreqSketch efSketch = new ExactFreqSketch(hhi.schema, hht.heavyHitters);
-                PostProcessedSketch<ITable, FreqKListExact, TopList> post = efSketch.andThen(result -> {
-                    HillviewComputation computation = context.getComputation(request);
-                    // This allocates a new RpcTarget object and registers it.
-                    HeavyHittersTarget target = new HeavyHittersTarget(result, computation);
-                    NextKList top = result.getTop(hhi.schema);
-                    return new TopList(top, target.getId().toString());
-                });
-                TableTarget.this.runCompleteSketch(TableTarget.this.table, post, request, context);
-            }
-        };
-        RpcObjectManager.instance.executeAction(observer);
+        RpcObjectManager.instance.when(hhi.hittersId, rpcTarget -> {
+            HeavyHittersTarget hht = rpcTarget.to(HeavyHittersTarget.class);
+            ExactFreqSketch efSketch = new ExactFreqSketch(hhi.schema, hht.heavyHitters);
+            PostProcessedSketch<ITable, FreqKListExact, TopList> post = efSketch.andThen(result -> {
+                HillviewComputation computation = context.getComputation(request);
+                // This allocates a new RpcTarget object and registers it.
+                HeavyHittersTarget target = new HeavyHittersTarget(result, computation);
+                NextKList top = result.getTop(hhi.schema);
+                return new TopList(top, target.getId().toString());
+            });
+            TableTarget.this.runCompleteSketch(TableTarget.this.table, post, request, context);
+        });
     }
 
     static class HeavyHittersListFilterInfo extends HeavyHittersFilterInfo {
@@ -616,16 +600,12 @@ public final class TableTarget extends TableRpcTarget {
     @HillviewRpc
     public void filterListHeavy(RpcRequest request, RpcRequestContext context) {
         HeavyHittersListFilterInfo hhl = request.parseArgs(HeavyHittersListFilterInfo.class);
-        RpcTargetAction observer = new RpcTargetAction(new RpcTarget.Id(hhl.hittersId)) {
-            @Override
-            public void action(RpcTarget rpcTarget) {
-                HeavyHittersTarget hht = (HeavyHittersTarget)rpcTarget;
-                ITableFilterDescription filter = hht.heavyHitters.getFilter(hhl.schema,
-                        hhl.includeSet, hhl.rowIndices);
-                TableTarget.this.runFilter(filter, request, context);
-            }
-        };
-        RpcObjectManager.instance.executeAction(observer);
+        RpcObjectManager.instance.when(hhl.hittersId, rpcTarget -> {
+            HeavyHittersTarget hht = rpcTarget.to(HeavyHittersTarget.class);
+            ITableFilterDescription filter = hht.heavyHitters.getFilter(hhl.schema,
+                    hhl.includeSet, hhl.rowIndices);
+            TableTarget.this.runFilter(filter, request, context);
+        });
     }
 
     /**
@@ -634,15 +614,11 @@ public final class TableTarget extends TableRpcTarget {
     @HillviewRpc
     public void filterHeavy(RpcRequest request, RpcRequestContext context) {
         HeavyHittersFilterInfo hhi = request.parseArgs(HeavyHittersFilterInfo.class);
-        RpcTargetAction observer = new RpcTargetAction(new RpcTarget.Id(hhi.hittersId)) {
-            @Override
-            public void action(RpcTarget rpcTarget) {
-                HeavyHittersTarget hht = (HeavyHittersTarget)rpcTarget;
-                ITableFilterDescription filter = hht.heavyHitters.getFilter(hhi.schema, hhi.includeSet);
-                TableTarget.this.runFilter(filter, request, context);
-            }
-        };
-        RpcObjectManager.instance.executeAction(observer);
+        RpcObjectManager.instance.when(hhi.hittersId, rpcTarget -> {
+            HeavyHittersTarget hht = rpcTarget.to(HeavyHittersTarget.class);
+            ITableFilterDescription filter = hht.heavyHitters.getFilter(hhi.schema, hhi.includeSet);
+            TableTarget.this.runFilter(filter, request, context);
+        });
     }
 
     @HillviewRpc
@@ -673,18 +649,43 @@ public final class TableTarget extends TableRpcTarget {
         return "TableTarget object=" + super.toString();
     }
 
+    static class SetOperationInfo {
+        String op = "";
+        String otherId = "";
+    }
+
     @HillviewRpc
-    public void zip(RpcRequest request, RpcRequestContext context) {
-        String otherId = request.parseArgs(String.class);
-        RpcTargetAction observer = new RpcTargetAction(new RpcTarget.Id(otherId)) {
+    public void setOperation(RpcRequest request, RpcRequestContext context) {
+        SetOperationInfo op = request.parseArgs(SetOperationInfo.class);
+        SetOperationMap sm = new SetOperationMap(op.op);
+        RpcObjectManager.instance.when(op.otherId, target -> {
+            TableTarget otherTable = (TableTarget)target;
+            TableTarget.this.runZip(
+                    TableTarget.this.table, otherTable.table, sm, TableTarget::new, request, context);
+        });
+    }
+
+    static class CompareDatasetsInfo {
+        String[] names;
+        String[] otherIds;
+        String outputName = "";
+    }
+
+    @HillviewRpc
+    public void compareDatasets(RpcRequest request, RpcRequestContext context) {
+        CompareDatasetsInfo op = request.parseArgs(CompareDatasetsInfo.class);
+        SetCompareColumnMap map = new SetCompareColumnMap(op.outputName, Utilities.list(op.otherIds));
+        /*
+        RpcTargetAction observer = new RpcTargetAction(new RpcTarget.Id(op.otherId)) {
             @Override
             public void action(RpcTarget rpcTarget) {
                 TableTarget otherTable = (TableTarget)rpcTarget;
-                TableTarget.this.runZip(
-                        TableTarget.this.table, otherTable.table, TablePairTarget::new, request, context);
+                TableTarget.this.runZipN(
+                        map, TableTarget::new, request, context);
             }
         };
         RpcObjectManager.instance.executeAction(observer);
+         */
     }
 
     @SuppressWarnings("NotNullFieldNotInitialized")

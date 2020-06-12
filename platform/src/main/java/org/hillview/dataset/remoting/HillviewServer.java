@@ -44,6 +44,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -53,6 +54,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * RemoteDataSet object to locally managed IDataSet objects, and streams back results.
  * If memoization is enabled, it caches the results of (operation, dataset-index) types.
  */
+@SuppressWarnings("ALL")
 public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     public static final int DEFAULT_PORT = 3569;
     private static final int NUM_THREADS = 5;
@@ -294,19 +296,14 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     @SuppressWarnings("unchecked")
     public void prune(final Command command, final StreamObserver<PartialResponse> responseObserver) {
         try {
+            PruneOperation pruneOp = this.respondIfReplyIsMemoized(command, responseObserver, true);
+            if (pruneOp == null)
+               return;
             final IDataSet<?> dataset = this.getIfValid(command.getIdsIndex(), responseObserver);
             if (dataset == null)
                 return;
-            final byte[] bytes = command.getSerializedOp().toByteArray();
-            if (this.respondIfReplyIsMemoized(command, responseObserver, true)) {
-                HillviewLogger.instance.info(
-                        "Found memoized prune", "on IDataSet#{0}", command.getIdsIndex());
-                return;
-            }
 
-            final PruneOperation mapOp = SerializationUtils.deserialize(bytes);
-            final Observable<PartialResult<IDataSet<?>>> observable = dataset.prune(mapOp.isEmpty);
-
+            final Observable<PartialResult<IDataSet<?>>> observable = dataset.prune(pruneOp.isEmpty);
             final UUID commandId = this.getId(command);
             Subscriber<PartialResult<IDataSet<?>>> subscriber = this.createSubscriber(
                     command, commandId, "prune", responseObserver);
@@ -330,17 +327,13 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     @SuppressWarnings("unchecked")
     public void map(final Command command, final StreamObserver<PartialResponse> responseObserver) {
         try {
+            MapOperation mapOp = this.respondIfReplyIsMemoized(command, responseObserver, true);
+            if (mapOp == null)
+                return;
+
             final IDataSet<?> dataset = this.getIfValid(command.getIdsIndex(), responseObserver);
             if (dataset == null)
                 return;
-            final byte[] bytes = command.getSerializedOp().toByteArray();
-            if (this.respondIfReplyIsMemoized(command, responseObserver, true)) {
-                HillviewLogger.instance.info(
-                        "Found memoized map", "on IDataSet#{0}", command.getIdsIndex());
-                return;
-            }
-
-            final MapOperation mapOp = SerializationUtils.deserialize(bytes);
             final Observable<PartialResult<IDataSet<?>>> observable = dataset.map(mapOp.mapper);
             final UUID commandId = this.getId(command);
             Subscriber subscriber = this.createSubscriber(
@@ -366,21 +359,16 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     public void flatMap(
             final Command command, final StreamObserver<PartialResponse> responseObserver) {
         try {
+            FlatMapOperation mapOp = this.respondIfReplyIsMemoized(command, responseObserver, true);
+            if (mapOp == null)
+                return;
+
             final IDataSet<?> dataset = this.getIfValid(command.getIdsIndex(), responseObserver);
             if (dataset == null)
                 return;
-            final byte[] bytes = command.getSerializedOp().toByteArray();
-
-            if (this.respondIfReplyIsMemoized(command, responseObserver, true)) {
-                HillviewLogger.instance.info(
-                        "Found memoized flatMap", "on IDataSet#{0}", command.getIdsIndex());
-                return;
-            }
-
-            final FlatMapOperation mapOp = SerializationUtils.deserialize(bytes);
             final Observable<PartialResult<IDataSet<?>>> observable = dataset.flatMap(mapOp.mapper);
             final UUID commandId = this.getId(command);
-            Subscriber subscriber = this.createSubscriber(
+            Subscriber<PartialResult<IDataSet<?>>> subscriber = this.createSubscriber(
                     command, commandId, "flatMap", responseObserver);
             final Subscription sub = observable
                     .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
@@ -403,20 +391,16 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     public void sketch(final Command command, final StreamObserver<PartialResponse> responseObserver) {
         try {
             boolean memoize = MEMOIZE;  // The value may change while we execute
+            final SketchOperation sketchOp = this.respondIfReplyIsMemoized(command, responseObserver, false);
+            if (sketchOp == null)
+                return;
+
             final IDataSet<?> dataset = this.getIfValid(command.getIdsIndex(), responseObserver);
             if (dataset == null)
                 return;
-            if (this.respondIfReplyIsMemoized(command, responseObserver, false)) {
-                HillviewLogger.instance.info(
-                        "Found memoized sketch", "on IDataSet#{0}", command.getIdsIndex());
-                return;
-            }
-
-            final byte[] bytes = command.getSerializedOp().toByteArray();
-            final SketchOperation sketchOp = SerializationUtils.deserialize(bytes);
             final Observable<PartialResult<?>> observable = dataset.sketch(sketchOp.sketch);
             final UUID commandId = this.getId(command);
-            Subscriber subscriber = new Subscriber<PartialResult<?>>() {
+            Subscriber<PartialResult<?>> subscriber = new Subscriber<PartialResult<?>>() {
                 @Nullable private Object sketchResultAccumulator =
                         memoize ? sketchOp.sketch.getZero(): null;
                 CompletableFuture<?> queue = CompletableFuture.completedFuture(null);
@@ -492,7 +476,6 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
      * Implementation of manage() service in hillview.proto.
      */
     @Override
-    @SuppressWarnings("unchecked")
     public void manage(Command command, StreamObserver<PartialResponse> responseObserver) {
         try {
             final UUID commandId = this.getId(command);
@@ -518,10 +501,11 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             };
             Observable<ControlMessage.StatusList> executed = Observable.fromCallable(callable);
             Observable<PartialResult<ControlMessage.StatusList>> pre =
-                    executed.map(l -> new PartialResult(0, l));
+                    executed.map(l -> new PartialResult<>(0, l));
             observable = observable.mergeWith(pre);
 
-            Subscriber subscriber = new Subscriber<PartialResult<ControlMessage.StatusList>>() {
+            Subscriber<PartialResult<ControlMessage.StatusList>> subscriber =
+                    new Subscriber<PartialResult<ControlMessage.StatusList>>() {
                 @Override
                 public void onCompleted() {
                     responseObserver.onCompleted();
@@ -537,9 +521,9 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                 }
 
                 @Override
-                public void onNext(final PartialResult pr) {
-                    final OperationResponse<PartialResult> res =
-                            new OperationResponse<PartialResult>(pr);
+                public void onNext(final PartialResult<ControlMessage.StatusList> pr) {
+                    final OperationResponse<PartialResult<ControlMessage.StatusList>> res =
+                            new OperationResponse<PartialResult<ControlMessage.StatusList>>(pr);
                     final byte[] bytes = SerializationUtils.serialize(res);
                     responseObserver.onNext(PartialResponse.newBuilder()
                             .setSerializedOp(ByteString.copyFrom(bytes))
@@ -566,24 +550,20 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     @SuppressWarnings("unchecked")
     public void zip(final Command command, final StreamObserver<PartialResponse> responseObserver) {
         try {
+            final ZipOperation zipOp = this.respondIfReplyIsMemoized(command, responseObserver, true);
+            if (zipOp == null)
+                return;
+
             final UUID commandId = this.getId(command);
-            final byte[] bytes = command.getSerializedOp().toByteArray();
-            final ZipOperation zipOp = SerializationUtils.deserialize(bytes);
-            final IDataSet left = this.getIfValid(command.getIdsIndex(), responseObserver);
+            final IDataSet<?> left = this.getIfValid(command.getIdsIndex(), responseObserver);
             if (left == null)
                 return;
-            final IDataSet right = this.getIfValid(zipOp.datasetIndex, responseObserver);
+            final IDataSet<?> right = this.getIfValid(zipOp.datasetIndex, responseObserver);
             if (right == null)
                 return;
-            if (this.respondIfReplyIsMemoized(command, responseObserver, true)) {
-                HillviewLogger.instance.info(
-                        "Found memoized zip", "on IDataSet#{0}",
-                        command.getIdsIndex());
-                return;
-            }
 
-            final Observable<PartialResult<IDataSet<Pair<Object, Object>>>> observable = left.zip(right);
-            Subscriber subscriber = this.createSubscriber(
+            final Observable<PartialResult<IDataSet<?>>> observable = left.zip(right, zipOp.map);
+            Subscriber<PartialResult<IDataSet<?>>> subscriber = this.createSubscriber(
                     command, commandId, "zip", responseObserver);
             final Subscription sub = observable
                     .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
@@ -593,6 +573,40 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
                 sub.unsubscribe();
         } catch (final Exception e) {
             HillviewLogger.instance.error("Exception in zip", e);
+            e.printStackTrace();
+            responseObserver.onError(asStatusRuntimeException(e));
+        }
+    }
+
+    /**
+     * Implementation of zipN() service in hillview.proto.
+     */
+    @Override
+    @SuppressWarnings("unchecked")
+    public void zipN(final Command command, final StreamObserver<PartialResponse> responseObserver) {
+        try {
+            ZipNOperation zipOp = this.respondIfReplyIsMemoized(command, responseObserver, true);
+            if (zipOp == null)
+                return;
+
+            final UUID commandId = this.getId(command);
+            final IDataSet<?> left = this.getIfValid(command.getIdsIndex(), responseObserver);
+            if (left == null)
+                return;
+            List right = Linq.map(
+                    zipOp.datasetIndexes, i -> this.getIfValid((int)i, responseObserver));
+
+            final Observable<PartialResult<IDataSet<?>>> observable = left.zipN(right, zipOp.map);
+            Subscriber<PartialResult<IDataSet<?>>> subscriber = this.createSubscriber(
+                    command, commandId, "zipN", responseObserver);
+            final Subscription sub = observable
+                    .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
+                    .subscribe(subscriber);
+            boolean unsub = this.saveSubscription(commandId, sub, "zip");
+            if (unsub)
+                sub.unsubscribe();
+        } catch (final Exception e) {
+            HillviewLogger.instance.error("Exception in zipN", e);
             e.printStackTrace();
             responseObserver.onError(asStatusRuntimeException(e));
         }
@@ -633,36 +647,46 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
     }
 
     /**
-     * Respond with a memoized result if it is available.  Otherwise do nothing.
-     * @param command   Command to execute.
+     * Respond to caller with a memoized result if it is available.
+     * @param command          Command to execute.
      * @param responseObserver Observer that expects the result of the command.
      * @param checkResult      Only used if the result is actually a dataset id;
      *                         if the dataset with this id does not exist, then
      *                         it is removed from the memoization cache.  It means
      *                         that the dataset has expired.
+     * @return                 The decoding of the command, or null if the command does not have
+     *                         to be executed.
      */
-    private boolean respondIfReplyIsMemoized(final Command command,
-                                             StreamObserver<PartialResponse> responseObserver,
-                                             boolean checkResult) {
-        if (!MEMOIZE)
-            return false;
-        MemoizedResults.ResponseAndId memoized = this.memoizedCommands.get(command);
-        if (memoized == null)
-            return false;
-        if (checkResult) {
-            int index = memoized.localDatasetIndex;
-            assert index != 0;
-            IDataSet<?> ds = this.dataSets.getIfPresent(index);
-            if (ds == null) {
-                // This dataset no longer exists; remove it from
-                // the memoization cache as well.
-                this.memoizedCommands.remove(command, memoized);
-                return false;
+    @Nullable
+    private <T> T respondIfReplyIsMemoized(final Command command,
+                                           StreamObserver<PartialResponse> responseObserver,
+                                           boolean checkResult) {
+        final byte[] bytes = command.getSerializedOp().toByteArray();
+        T result = SerializationUtils.deserialize(bytes);
+        if (MEMOIZE) {
+            MemoizedResults.ResponseAndId memoized = this.memoizedCommands.get(command);
+            if (memoized != null) {
+                if (checkResult) {
+                    int index = memoized.localDatasetIndex;
+                    assert index != 0;
+                    IDataSet<?> ds = this.dataSets.getIfPresent(index);
+                    if (ds == null) {
+                        // This dataset no longer exists; remove it from
+                        // the memoization cache as well.
+                        this.memoizedCommands.remove(command, memoized);
+                        memoized = null;
+                    }
+                }
+            }
+            if (memoized != null) {
+                responseObserver.onNext(memoized.response);
+                responseObserver.onCompleted();
+                HillviewLogger.instance.info(
+                        "Found memoized result", "{0}.{1}", command.getIdsIndex(), result.toString());
+                return null;
             }
         }
-        responseObserver.onNext(memoized.response);
-        responseObserver.onCompleted();
-        return true;
+        return result;
     }
 
     /**

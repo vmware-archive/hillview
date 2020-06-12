@@ -67,7 +67,8 @@ export class HistogramPlot extends Plot implements IBarPlot {
      * @param isPrivate     True if we are plotting private data.
      */
     public setHistogram(bars: Two<Groups<number>>, samplingRate: number,
-                        axisData: AxisData, maxYAxis: number | null, isPrivate: boolean): void {
+                        axisData: AxisData, maxYAxis: number | null, isPrivate: boolean,
+                        rowCount: number): void {
         // TODO: display missing data graphically.
         this.data = bars;
         this.samplingRate = samplingRate;
@@ -77,6 +78,7 @@ export class HistogramPlot extends Plot implements IBarPlot {
         this.barWidth = chartWidth / bucketCount;
         this.maxYAxis = maxYAxis;
         this.isPrivate = isPrivate;
+        this.rowCount = rowCount;
     }
 
     private confident(valueAndConf: number[]): boolean {
@@ -142,7 +144,7 @@ export class HistogramPlot extends Plot implements IBarPlot {
             .attr("text-anchor", "middle")
             .attr("dy", (d) => d[0] <= (9 * displayMax / 10) ? "-.25em" : ".75em")
             .text((d) => Plot.boxHeight(
-                d[0], this.samplingRate, this.xAxisData.displayRange.presentCount))
+                d[0], this.samplingRate, this.rowCount))
             .exit();
 
         this.yAxis = d3axisLeft(this.yScale)

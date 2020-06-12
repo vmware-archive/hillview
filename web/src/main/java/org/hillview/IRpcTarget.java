@@ -21,13 +21,14 @@ import org.hillview.sketches.highorder.IdPostProcessedSketch;
 import org.hillview.sketches.highorder.PostProcessedSketch;
 import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.*;
+import org.hillview.utils.ICast;
 import org.hillview.utils.Pair;
 
 import java.util.List;
 import java.util.UUID;
 import java.util.function.BiFunction;
 
-public interface IRpcTarget {
+public interface IRpcTarget extends ICast {
     /**
      * This class represents the ID of an RPC Target.
      * It is used by other classes that refer to RpcTargets by their ids.
@@ -135,9 +136,14 @@ public interface IRpcTarget {
                BiFunction<IDataSet<S>, HillviewComputation, IRpcTarget> factory,
                RpcRequest request, RpcRequestContext context);
 
-    <T, S> void
-    runZip(IDataSet<T> data, IDataSet<S> other,
-           BiFunction<IDataSet<Pair<T, S>>, HillviewComputation, IRpcTarget> factory,
+    <T, S, R> void
+    runZip(IDataSet<T> data, IDataSet<S> other, IMap<Pair<T, S>, R> map,
+           BiFunction<IDataSet<R>, HillviewComputation, IRpcTarget> factory,
+           RpcRequest request, RpcRequestContext context);
+
+    <T, R> void
+    runZipN(List<IDataSet<T>> data, IMap<List<T>, R> map,
+           BiFunction<IDataSet<R>, HillviewComputation, IRpcTarget> factory,
            RpcRequest request, RpcRequestContext context);
 
     <T> void

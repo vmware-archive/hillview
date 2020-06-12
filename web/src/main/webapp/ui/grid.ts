@@ -34,6 +34,7 @@ export class Grid implements IHtmlElement {
     protected thr: HTMLTableRowElement;
     protected lastRow: HTMLTableRowElement;
     protected currentColumn: number;
+    protected currentRow: number;
     protected readonly minColumnWidth: number = 20;
     protected currentWidth: number;
     protected resizable: boolean[];  // True if a column is resizable
@@ -45,7 +46,7 @@ export class Grid implements IHtmlElement {
            <thead><tr>
                 <td class="header" style="width:200px" data-colname="Date">
                     <div class="resizable">
-                        <div class="truncated col3"><span>Text to display<span></div> <<< context event here
+                        <div class="truncated col3" data-col="1" data-row="1"><span>Text to display<span></div> <<< context event here
                         <div class="handle" data-col="col1"></div>
                     </div>
                 </td>
@@ -64,6 +65,8 @@ export class Grid implements IHtmlElement {
         this.lastRow = null;
         this.tBody = null;
         this.topLevel.appendChild(this.htmlTable);
+        this.currentColumn = 0;
+        this.currentRow = 0;
     }
 
     public setSize(rows: number, columns: number): void {
@@ -78,6 +81,8 @@ export class Grid implements IHtmlElement {
         const truncated = document.createElement("div");
         resizable.appendChild(truncated);
         truncated.className = "truncated";
+        truncated.setAttribute("data-col", this.currentColumn.toString());
+        truncated.setAttribute("data-row", this.currentRow.toString());
 
         if (!fixedWidth) {
             const handle = document.createElement("div");
@@ -170,6 +175,7 @@ export class Grid implements IHtmlElement {
 
     public newRow(): void {
         this.lastRow = this.tBody.insertRow();
+        this.currentRow++;
         this.currentColumn = 0;
     }
 
@@ -206,6 +212,7 @@ export class Grid implements IHtmlElement {
         this.tHead = this.htmlTable.createTHead();
         this.thr = this.tHead.appendChild(document.createElement("tr"));
         this.currentColumn = 0;
+        this.currentRow = 0;
         this.currentWidth = 0;
     }
 

@@ -416,7 +416,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
             const heatmap = { first: buckets, second: null };
             const plot = this.hps[i];
             plot.setData(heatmap, this.xAxisData, this.samplingRate, this.relative,
-                this.schema, this.legendPlot.colorMap, max);
+                this.schema, this.legendPlot.colorMap, max, this.rowCount);
             plot.draw();
         }
 

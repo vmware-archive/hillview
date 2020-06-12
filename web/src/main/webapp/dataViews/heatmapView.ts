@@ -321,7 +321,7 @@ export class HeatmapView extends ChartView {
             this.xHistoPlot.setHistogram({first: data.first.perMissing, second: null },
                 this.samplingRate,
                 this.xAxisData, null,
-                this.page.dataset.isPrivate());
+                this.page.dataset.isPrivate(), this.rowCount);
             this.xHistoPlot.draw();
         }
 
