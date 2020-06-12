@@ -37,6 +37,7 @@ import org.jblas.DoubleMatrix;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
+import java.util.List;
 
 /**
  * This is the most important RpcTarget, representing a remote table.
@@ -665,6 +666,7 @@ public final class TableTarget extends TableRpcTarget {
         });
     }
 
+    @SuppressWarnings("NotNullFieldNotInitialized")
     static class CompareDatasetsInfo {
         String[] names;
         String[] otherIds;
@@ -674,18 +676,16 @@ public final class TableTarget extends TableRpcTarget {
     @HillviewRpc
     public void compareDatasets(RpcRequest request, RpcRequestContext context) {
         CompareDatasetsInfo op = request.parseArgs(CompareDatasetsInfo.class);
-        SetCompareColumnMap map = new SetCompareColumnMap(op.outputName, Utilities.list(op.otherIds));
-        /*
-        RpcTargetAction observer = new RpcTargetAction(new RpcTarget.Id(op.otherId)) {
-            @Override
-            public void action(RpcTarget rpcTarget) {
-                TableTarget otherTable = (TableTarget)rpcTarget;
-                TableTarget.this.runZipN(
-                        map, TableTarget::new, request, context);
-            }
-        };
-        RpcObjectManager.instance.executeAction(observer);
-         */
+        SetCompareColumnMap map = new SetCompareColumnMap(op.outputName, Utilities.list(op.names));
+        List<String> ids = Utilities.list(op.otherIds);
+        if (op.names.length != op.otherIds.length)
+            throw new RuntimeException("Names and ids must have the same length");
+        RpcObjectManager.instance.when(
+                ids, l -> {
+                    List<IDataSet<ITable>> other = Linq.map(l, e -> e.to(TableTarget.class).table);
+                    TableTarget.this.runZipN(
+                            TableTarget.this.table, other, map, TableTarget::new, request, context);
+                });
     }
 
     @SuppressWarnings("NotNullFieldNotInitialized")

@@ -22,6 +22,7 @@ import org.hillview.dataset.monoids.PRDataSetMonoid;
 import org.hillview.dataset.monoids.PartialResultMonoid;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
+import org.hillview.utils.Linq;
 import org.hillview.utils.Pair;
 import rx.Observable;
 import rx.Subscription;
@@ -268,26 +269,24 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
     @Override
     public <R> Observable<PartialResult<IDataSet<R>>> zipN(List<IDataSet<T>> other, IMap<List<T>, R> map) {
         HillviewLogger.instance.info("Invoked zipN", "target={0}", this);
-        final List<Observable<Pair<Integer, PartialResult<IDataSet<R>>>>> obs =
+        List<Observable<Pair<Integer, PartialResult<IDataSet<R>>>>> obs =
                 new ArrayList<Observable<Pair<Integer, PartialResult<IDataSet<R>>>>>();
         final int mySize = this.size();
         for (int i = 0; i < mySize; i++) {
             IDataSet<T> tChild = this.children.get(i);
-            ArrayList<IDataSet<T>> list = new ArrayList<IDataSet<T>>(other.size() + 1);
-            for (IDataSet<T> o: other) {
+            int finalI = i;
+            List<IDataSet<T>> list = Linq.map(other, o -> {
                 if (!(o instanceof ParallelDataSet<?>))
                     throw new RuntimeException("Expected a ParallelDataSet " + o);
                 final ParallelDataSet<T> os = (ParallelDataSet<T>) o;
                 if (mySize != os.size())
                     throw new RuntimeException("Different sizes for ParallelDatasets: " +
                             mySize + " vs. " + os.size());
-                final IDataSet<T> oChild = os.children.get(i);
-                list.add(oChild);
-                final Observable<PartialResult<IDataSet<R>>> zip = tChild.zipN(list, map).last();
-                final int finalI = i;
-                obs.add(zip.map(
-                        e -> new Pair<Integer, PartialResult<IDataSet<R>>>(finalI, e)));
-            }
+                return os.children.get(finalI);
+            });
+            Observable<PartialResult<IDataSet<R>>> zipN = tChild.zipN(list, map).last();
+            obs.add(zipN.map(
+                    e -> new Pair<Integer, PartialResult<IDataSet<R>>>(finalI, e)));
         }
         return this.mergeResults(obs);
     }

@@ -20,11 +20,13 @@ package org.hillview;
 import org.hillview.targets.InitialObjectTarget;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.RpcTargetAction;
+import org.hillview.utils.Utilities;
 import rx.Subscription;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
 import java.util.HashMap;
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -128,6 +130,7 @@ public final class RpcObjectManager {
     /**
      * Execute the specified action.
      */
+    @SuppressWarnings("SameParameterValue")
     private void executeAction(RpcTargetAction action, boolean rebuild) {
         RpcTarget target = this.getObject(action.id);
         if (target != null) {
@@ -144,22 +147,42 @@ public final class RpcObjectManager {
         }
     }
 
-    public void when(RpcTarget.Id id, Consumer<RpcTarget> action) {
-        RpcTargetAction a = new RpcTargetAction(id) {
+    public void when(RpcTarget.Id id, Consumer<RpcTarget> consumer) {
+        RpcTargetAction append = new RpcTargetAction(id) {
             @Override
             public void action(RpcTarget target) {
-                action.accept(target);
+                consumer.accept(target);
             }
         };
-        this.executeAction(a);
+        this.executeAction(append, true);
     }
 
-    public void when(String id, Consumer<RpcTarget> action) {
-        this.when(new IRpcTarget.Id(id), action);
+    /**
+     * Retrieve the RpcTarget with the specified id, when available, pass it to
+     * the consumer as an argument for execution.
+     * @param id     Id to retrieve.
+     * @param consumer Action to execute when the RpcTarget is found.
+     */
+    public void when(String id, Consumer<RpcTarget> consumer) {
+        this.when(new IRpcTarget.Id(id), consumer);
     }
 
-    private void executeAction(RpcTargetAction action) {
-        this.executeAction(action, true);
+    /**
+     * Retrieve all the RpcTargets with the specified ids, when available, pass them to
+     * the consumer as an argument for execution.
+     * @param ids     Ids to retrieve.
+     * @param consumer Action to execute when all the RpcTargets are found.
+     */
+    public void when(List<String> ids, Consumer<List<RpcTarget>> consumer) {
+        if (ids.isEmpty()) {
+            consumer.accept(Utilities.list());
+        } else {
+            String first = ids.remove(0);
+            this.when(ids, l -> this.when(first, f -> {
+                l.add(0, f);
+                consumer.accept(l);
+            }));
+        }
     }
 
     /**

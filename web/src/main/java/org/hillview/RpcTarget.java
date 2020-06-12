@@ -547,25 +547,25 @@ public abstract class RpcTarget implements IJson, IRpcTarget {
     }
 
     /**
-     * Runs a zipN computatoin between N datasets.
-     * @param data    All datasets involved.
+     * Runs a zipN computation between N datasets.
+     * @param data    The dataset on which the function is invoked.
+     * @param other   All other datasets involved.
      * @param map     Function to apply to zip result.
      * @param factory Function which knows how to create a new RpcTarget
      *                out of the resulting IDataSet.  It is the reference
-     *                to this RpcTarget that is returned to the client.
+     *                to the created RpcTarget that is returned to the client.
      * @param request Web socket request, used to send the reply.
      * @param context Context for the computation.
      */
     @Override
     public <T, R> void
-    runZipN(List<IDataSet<T>> data, IMap<List<T>, R> map,
+    runZipN(IDataSet<T> data, List<IDataSet<T>> other, IMap<List<T>, R> map,
            BiFunction<IDataSet<R>, HillviewComputation, IRpcTarget> factory,
            RpcRequest request, RpcRequestContext context) {
-        if (data.isEmpty())
+        if (other.isEmpty())
             throw new RuntimeException("Empty set of datasets");
-        IDataSet<T> left = data.remove(0);
-        Observable<PartialResult<IDataSet<R>>> stream = left.zipN(data, map);
-        this.collectDataset(stream, "zip", request, context, factory);
+        Observable<PartialResult<IDataSet<R>>> stream = data.zipN(other, map);
+        this.collectDataset(stream, "zipN", request, context, factory);
     }
 
     /**

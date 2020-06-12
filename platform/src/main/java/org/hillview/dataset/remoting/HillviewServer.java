@@ -593,9 +593,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             final IDataSet<?> left = this.getIfValid(command.getIdsIndex(), responseObserver);
             if (left == null)
                 return;
-            List right = Linq.map(
-                    zipOp.datasetIndexes, i -> this.getIfValid((int)i, responseObserver));
-
+            List right = Linq.map(zipOp.datasetIndexes, i -> this.getIfValid((int)i, responseObserver));
             final Observable<PartialResult<IDataSet<?>>> observable = left.zipN(right, zipOp.map);
             Subscriber<PartialResult<IDataSet<?>>> subscriber = this.createSubscriber(
                     command, commandId, "zipN", responseObserver);

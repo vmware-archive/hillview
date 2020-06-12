@@ -90,6 +90,9 @@ public interface IDataSet<T> {
      * Combine multiple datasets and apply a map to their corresponding leaves.
      * @param other  List of other datasets to combine.
      * @param map    Map to apply to each set of corresponding leaves.
+     *               The argument to the map is a list whose first element is
+     *               `this` (the dataset whose zipN function is invoked), and the
+     *               tail is the is other.
      * @param <R>    Type of result produced by map.
      * @return       A stream of partial results which are all IDataSet[R].  In fact this
      *               stream will contain exactly one result.

@@ -30,10 +30,9 @@ import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.VirtualRowSnapshot;
 import org.hillview.test.BaseTest;
 import org.hillview.utils.TestTables;
+import org.hillview.utils.Utilities;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.util.Arrays;
 
 public class ContainsMapTest extends BaseTest {
     @Test
@@ -71,8 +70,8 @@ public class ContainsMapTest extends BaseTest {
         range.min = 15;
         IDataSet<ITable> subset1 = ds.blockingMap(new FilterMap(range));
 
-        SetCompareColumnMap map = new SetCompareColumnMap("X", Arrays.asList("A", "B", "C"));
-        IDataSet<ITable> withNewColumn = ds.blockingZipN(Arrays.asList(subset0, subset1), map);
+        SetCompareColumnMap map = new SetCompareColumnMap("X", Utilities.list("A", "B", "C"));
+        IDataSet<ITable> withNewColumn = ds.blockingZipN(Utilities.list(ds, subset0, subset1), map);
         LocalDataSet<ITable> r = (LocalDataSet<ITable>)withNewColumn;
         Assert.assertNotNull(r);
         Assert.assertNotNull(r.data);

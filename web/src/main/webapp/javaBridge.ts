@@ -292,6 +292,12 @@ export interface SampleSet {
     samples: number[];
 }
 
+export interface CompareDatasetsInfo {
+    names: string[];
+    otherIds: string[];
+    outputName: string;
+}
+
 export interface Groups<R> {
     perBucket: R[];
     perMissing: R;

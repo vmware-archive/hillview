@@ -18,7 +18,6 @@
 package org.hillview.dataset.remoting;
 
 import org.hillview.dataset.api.IMap;
-import org.hillview.utils.Pair;
 
 import java.util.List;
 

@@ -17,6 +17,7 @@
 
 import {FullPage} from "./fullPage";
 import {IHtmlElement, ViewKind} from "./ui";
+import {RemoteObjectId} from "../javaBridge";
 
 /**
  * Main interface implemented by all Hillview views.
@@ -41,4 +42,8 @@ export interface IDataView extends IHtmlElement {
      * Kind of view displayed
      */
     viewKind: ViewKind;
+    /**
+     * The id of the remote object backed by this view.  null if none.
+     */
+    getRemoteObjectId(): RemoteObjectId | null;
 }

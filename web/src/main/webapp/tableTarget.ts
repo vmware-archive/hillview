@@ -24,7 +24,7 @@ import {
     AggregateDescription,
     BasicColStats,
     BucketsInfo,
-    CombineOperators,
+    CombineOperators, CompareDatasetsInfo,
     ComparisonFilterDescription,
     ContainsArgs,
     CountWithConfidence,
@@ -86,9 +86,9 @@ export class TableTargetAPI extends RemoteObject {
         super(remoteObjectId);
     }
 
-    public createSetRequest(r: RemoteObject, c: CombineOperators): RpcRequest<PartialResult<RemoteObjectId>> {
+    public createSetRequest(r: RemoteObjectId, c: CombineOperators): RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<RemoteObjectId>("setOperation",
-            { otherId: r.remoteObjectId, op: CombineOperators[c] });
+            { otherId: r, op: CombineOperators[c] });
     }
 
     public createFindRequest(
@@ -295,6 +295,10 @@ export class TableTargetAPI extends RemoteObject {
         return this.createStreamingRpcRequest<RemoteObjectId>("jsFilter", filter);
     }
 
+    public createCompareDatasetsRequest(args: CompareDatasetsInfo): RpcRequest<PartialResult<RemoteObjectId>> {
+        return this.createStreamingRpcRequest<RemoteObjectId>("compareDatasets", args);
+    }
+
     public createRowFilterRequest(filter: RowFilterDescription):
             RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<RemoteObjectId>("filterOnRow", filter);
@@ -442,6 +446,10 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
         this.dataset = page.dataset;
     }
 
+    public getRemoteObjectId(): string | null {
+        return this.remoteObjectId;
+    }
+
     /**
      * Save the information needed to (re)create this view.
      */
@@ -504,7 +512,7 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
         }
 
         const view = this.dataset.findPage(pageId).dataView;
-        const rr = this.createSetRequest(view as BigTableView, how);
+        const rr = this.createSetRequest(view.getRemoteObjectId(), how);
         const renderer = this.getCombineRenderer(
             new PageTitle(this.page.title.format,
                 CombineOperators[how] + " between " + this.page.pageId + " and " + pageId));

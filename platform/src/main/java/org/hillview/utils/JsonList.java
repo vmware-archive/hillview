@@ -19,13 +19,13 @@ package org.hillview.utils;
 
 import org.hillview.dataset.api.IJsonSketchResult;
 
-import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
  * Wrapper around a list which makes it serializable as JSON.
+ * A list is serialized as a Json array.
  */
 public class JsonList<T> implements List<T>, IJsonSketchResult {
     static final long serialVersionUID = 1;
@@ -44,28 +44,11 @@ public class JsonList<T> implements List<T>, IJsonSketchResult {
         this.data = data;
     }
 
-    public JsonList(@Nullable T value) {
-        this(1);
-        this.add(value);
-    }
-
-    public JsonList(@Nullable T v1, @Nullable T v2) {
-        this(2);
-        this.add(v1);
-        this.add(v2);
-    }
-
-    public JsonList(@Nullable T v1, @Nullable T v2, @Nullable T v3) {
-        this(3);
-        this.add(v1);
-        this.add(v2);
-        this.add(v3);
-    }
-
-    @SuppressWarnings({"ManualArrayToCollectionCopy", "UseBulkOperation"})
-    public JsonList(T[] data) {
-        this(data.length);
-        for (T t : data)
+    @SafeVarargs
+    @SuppressWarnings({"UseBulkOperation", "ManualArrayToCollectionCopy"})
+    public JsonList(T... value) {
+        this(value.length);
+        for (T t : value)
             this.add(t);
     }
 
@@ -181,16 +164,8 @@ public class JsonList<T> implements List<T>, IJsonSketchResult {
     }
 
     @Override
-    public List<T> subList(int fromIndex, int toIndex) {
+    public JsonList<T> subList(int fromIndex, int toIndex) {
         return new JsonList<T>(this.data.subList(fromIndex, toIndex));
-    }
-
-    public <S> JsonList<Pair<T, S>> zip(JsonList<S> other) {
-        int len = Math.min(this.size(), other.size());
-        JsonList<Pair<T, S>> result = new JsonList<Pair<T, S>>(len);
-        for (int i=0; i < len; i++)
-            result.add(new Pair<T, S>(this.get(i), other.get(i)));
-        return result;
     }
 
     public <S, U>

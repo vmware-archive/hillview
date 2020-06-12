@@ -18,10 +18,7 @@
 package org.hillview.dataset;
 
 import org.hillview.dataset.api.*;
-import org.hillview.utils.Converters;
-import org.hillview.utils.ExecutorUtils;
-import org.hillview.utils.HillviewLogger;
-import org.hillview.utils.Pair;
+import org.hillview.utils.*;
 import rx.Observable;
 import rx.Scheduler;
 import rx.schedulers.Schedulers;
@@ -149,9 +146,9 @@ public class LocalDataSet<T> extends BaseDataSet<T> {
     }
 
     @Override
-    public <R> Observable<PartialResult<IDataSet<R>>> zipN(List<IDataSet<T>> other, IMap<List<T>, R> map) {
-        List<T> data = new ArrayList<T>();
-        data.add(this.data);
+    public <R> Observable<PartialResult<IDataSet<R>>> zipN(
+            List<IDataSet<T>> other, IMap<List<T>, R> map) {
+        List<T> data = Utilities.list(this.data);
         for (IDataSet<T> d: other) {
             if (!(d instanceof LocalDataSet<?>))
                 throw new RuntimeException("Unexpected type in ZipN " + other);
