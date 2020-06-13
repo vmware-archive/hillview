@@ -17,17 +17,22 @@
 
 import {DatasetView, IViewSerialization, TableSerialization} from "../datasetView";
 import {
-    AggregateDescription, AggregateKind, allAggregateKind,
-    ColumnSortOrientation,
+    AggregateDescription,
+    AggregateKind,
+    allAggregateKind,
+    ColumnSortOrientation, CompareDatasetsInfo,
     Comparison,
     ComparisonFilterDescription,
     FindResult,
-    IColumnDescription, JSFilterInfo,
-    kindIsString, KVCreateColumnInfo,
+    IColumnDescription,
+    JSFilterInfo,
+    kindIsString,
+    KVCreateColumnInfo,
     NextKList,
     RecordOrder,
     RemoteObjectId,
-    RowData, RowFilterDescription,
+    RowData,
+    RowFilterDescription,
     Schema,
     StringFilterDescription,
     TableSummary,
@@ -44,17 +49,21 @@ import {IScrollTarget, ScrollBar} from "../ui/scroll";
 import {SelectionStateMachine} from "../ui/selectionStateMachine";
 import {HtmlString, Resolution, SpecialChars, ViewKind} from "../ui/ui";
 import {
+    add,
     cloneToSet,
+    Converters,
+    find,
     formatNumber,
     ICancellable,
     makeMissing,
     makeSpan,
     PartialResult,
     percent,
+    sameAggregate,
     saveAs,
+    significantDigits,
     significantDigitsHtml,
-    truncate,
-    Converters, sameAggregate, find, significantDigits, add
+    truncate
 } from "../util";
 import {SchemaView} from "./schemaView";
 import {SpectrumReceiver} from "./spectrumView";
@@ -172,6 +181,10 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                         text: "Filter using JavaScript...",
                         help: "Filter rows with JavaScript",
                         action: () => this.filterJSDialog() },
+                    {
+                        text: "Compare subsets...",
+                        help: "Given other data views creates a column that indicates for each row the views it belongs to.",
+                        action: () => this.setCompareDialog() },
                 ]),
             },
             this.dataset.combineMenu(this, page.pageId));
@@ -691,6 +704,48 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                     }, !this.isPrivate());
             this.contextMenu.show(e);
         };
+    }
+
+    public setCompareDialog(): void {
+        const dialog = new Dialog(
+            "Compare data from multiple views",
+            "Select two other views; this will create a column that indicates for each row the views it belongs to");
+        const resultColumn = this.schema.uniqueColumnName("Compare");
+        dialog.addTextField("column", "Column", FieldKind.String, resultColumn, "Column to create");
+        const pages = this.dataset.allPages
+            .filter(p => p.dataView.getRemoteObjectId() != null);
+        if (pages.length < 2) {
+            this.page.reportError("Not enough views to compare");
+            return;
+        }
+        dialog.addPageSelectField("view0", "First view",
+            pages, "First view to compare");
+        dialog.addPageSelectField("view1", "Second view",
+            pages, "Second view to compare");
+
+        dialog.setAction(() => {
+            const page0 = dialog.getFieldValueAsPage("view0");
+            const page1 = dialog.getFieldValueAsPage("view1");
+            if (page0 == null || page1 == null)
+                return;
+
+            const newColumn = dialog.getFieldValue("column");
+            const args: CompareDatasetsInfo = {
+                names: [page0.pageId.toString(), page1.pageId.toString()],
+                otherIds: [page0.dataView.getRemoteObjectId(), page1.dataView.getRemoteObjectId()],
+                outputName: newColumn
+            };
+            const rr = this.createCompareDatasetsRequest(args);
+            const cd: IColumnDescription = { name: newColumn, kind: "String" };
+            const schema = this.schema.append(cd);
+            const o = this.order.clone();
+            o.addColumn({columnDescription: cd, isAscending: true});
+            const rec = new TableOperationCompleted(
+                this.page, rr, this.rowCount, schema, o,
+                this.tableRowsDesired, this.aggregates);
+            rr.invoke(rec);
+        });
+        dialog.show();
     }
 
     public filterJSDialog(): void {

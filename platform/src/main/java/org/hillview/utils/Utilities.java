@@ -24,10 +24,12 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.PartialResult;
+import org.hillview.table.api.ITable;
 
 import javax.annotation.Nullable;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.function.Function;
 
@@ -37,6 +39,10 @@ import java.util.function.Function;
 @SuppressWarnings("unused")
 public class Utilities {
     public static final int INT_SIZE = 4;
+
+    public static List<ITable> tail(List<ITable> data) {
+        return data.subList(1, data.size());
+    }
 
     @FunctionalInterface
     public
@@ -184,6 +190,14 @@ public class Utilities {
         else
             json.add("data", pr.deltaValue.toJsonTree());
         return json;
+    }
+
+    public static <T> T[] toArray(List<T> data, Class<T> clazz) {
+        @SuppressWarnings("unchecked")
+        T[] result = (T[]) Array.newInstance(clazz, data.size());
+        for (int i = 0; i < data.size(); i++)
+            result[i] = data.get(i);
+        return result;
     }
 
     public static String[] toArray(List<String> list) {
@@ -370,9 +384,15 @@ public class Utilities {
         return -1;
     }
 
+    public static <T> List<T> emptyList() {
+        return new ArrayList<T>();
+    }
+
     @SafeVarargs
     public static <T> List<T> list(T... data) {
-        return Arrays.asList(data);
+        ArrayList<T> a = new ArrayList<>();
+        Collections.addAll(a, data);
+        return a;
     }
 
     /**

@@ -51,6 +51,10 @@ export class LoadMenu extends RemoteObject implements IDataView {
         this.getUIConfig();
     }
 
+    public getRemoteObjectId(): string | null {
+        return null;
+    }
+
     private getUIConfig(): void {
         const rr = this.createStreamingRpcRequest<UIConfig>("getUIConfig", null);
         const observer = new UIConfigReceiver(this, rr);

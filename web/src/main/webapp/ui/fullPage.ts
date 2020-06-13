@@ -85,6 +85,10 @@ export class PageTitle {
         result.title = this.provenance;
         return result;
     }
+
+    public getTextRepresentation(parentPage: FullPage): string {
+        return this.getHTMLRepresentation(parentPage).innerText;
+    }
 }
 
 // Kind of data that is being dragged

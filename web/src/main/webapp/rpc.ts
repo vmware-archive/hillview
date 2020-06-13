@@ -297,6 +297,7 @@ export class RpcRequest<T> implements ICancellable<T> {
 export abstract class Receiver<T> implements Rx.Observer<PartialResult<T>> {
     protected progressBar: ProgressBar;
     protected reporter: ErrorReporter;
+    protected done: boolean;
 
     /**
      * Create a Renderer.
@@ -312,6 +313,7 @@ export abstract class Receiver<T> implements Rx.Observer<PartialResult<T>> {
         this.progressBar = page.progressManager.newProgressBar(operation, description);
         this.reporter = page.getErrorReporter();
         this.reporter.clear();
+        this.done = false;
     }
 
     //noinspection JSUnusedLocalSymbols
@@ -325,6 +327,7 @@ export abstract class Receiver<T> implements Rx.Observer<PartialResult<T>> {
      */
     public finished(): void {
         // This causes the progress bar to disappear.
+        this.done = true;
         this.progressBar.setFinished();
     }
 
@@ -334,7 +337,10 @@ export abstract class Receiver<T> implements Rx.Observer<PartialResult<T>> {
      */
     public onError(exception: any): void {
         // displays the error message using the reporter.
-        this.reporter.reportError(String(exception));
+        if (!this.done)
+            // only report the first error - so the
+            // second one does not overwrite the first one.
+            this.reporter.reportError(String(exception));
         this.finished();
     }
 
@@ -354,6 +360,10 @@ export abstract class Receiver<T> implements Rx.Observer<PartialResult<T>> {
      * this method; otherwise the progress bar will not advance.
      */
     public onNext(value: PartialResult<T>): void {
+        if (this.done) {
+            console.log("Received result after finished");
+            return;
+        }
         this.progressBar.setPosition(value.done);
         if (this.operation != null)
             console.log("onNext after " + this.elapsedMilliseconds());

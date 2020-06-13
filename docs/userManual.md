@@ -21,7 +21,12 @@ performs all operations using a class of very efficient algorithms,
 called “sketches”, which are constrained to compute with bounded
 memory over distributed data.
 
-Updated on 2020 May 27.
+Several of our examples are based on a flights dataset, which contains
+one row for an airline flight.  Columns in this dataset include: the date of the flight,
+the origin and destination cities, the origin and destination states,
+the origin airport code, the distance flown, the departure and arrival delay.
+
+Updated on 2020 Jun 12.
 
 # Contents
 |Section|Reference|
@@ -1045,7 +1050,7 @@ filter the data according to specific criteria.
 
 ![Find bar](find.png)
 
-  The user has typed a search string (in this figure CA) and pressed the
+* The user has typed a search string (in this figure CA) and pressed the
   "Search from top" button followed by the "next" (down arrow) button.
   The found string is highlighted in the visible columns.  The first visible
   row is responsible for 144 matches (the "count" meta column is 144).  The second
@@ -1053,6 +1058,22 @@ filter the data according to specific criteria.
   before the first displayed row, and 150,452 total matches not counting the first
   row.  Pressing the button labeled "Keep only matching data" will eliminate
   all rows that do not match.
+
+![Compare multiple views](table-compare-multiple-views.png)
+
+* This allows the user to compare the rows present in two other views.
+  Using the dialog the user can specify which two views should be compared.
+  The results of the comparison will be inserted in a new column.
+  Then this column can be used to compare the two rows in the two other views.
+
+  For example, in a flights dataset the user can select flights leaving from
+  CA or from FL.  In this image we are comparing these two datasets, from views 2 and 3;
+  this will create a new column named "Compare".  This column will have one of three values:
+  None, 2, 3, and All, depending on whether a row shows up in one of the two datasets.
+  Then we can, for example, plot the 2D histogram of flight distances together with the
+  "Compare" column to get view of the distribution of these sets.
+
+![Comparison of flights from CA and FL](compare-ca-and-fl.png)
 
 ### 3.4. Frequent elements views
 

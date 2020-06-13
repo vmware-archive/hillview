@@ -21,6 +21,7 @@ import {cloneArray, makeId, makeSpan, px} from "../util";
 import {EditBox} from "./editBox";
 import {IHtmlElement, Point} from "./ui";
 import {DisplayName} from "../schemaClass";
+import {FullPage} from "./fullPage";
 
 export enum FieldKind {
     String,
@@ -30,7 +31,8 @@ export enum FieldKind {
     Password,
     File,
     Datetime,
-    ColumnName
+    ColumnName,
+    PageName
 }
 
 /**
@@ -515,6 +517,45 @@ export class Dialog extends DialogBase {
                           toolTip: string): HTMLInputElement | HTMLSelectElement {
         return this.addSelectInternal(
             fieldName, labelText, options, value, toolTip, FieldKind.String);
+    }
+
+    protected selectFields: Map<string, Map<string, any>> = new Map();
+
+    /**
+     * Add a drop-down selection field with the specified pages.
+     * @param fieldName: Internal name. Has to be used when parsing the input.
+     * @param labelText: Text in the dialog for this field.
+     * @param options: List of pages that are the options in the selection box.
+     * @param toolTip:  Help message to show as a tool-tip.
+     * @return       A reference to the select html input field.
+     */
+    public addPageSelectField(fieldName: string, labelText: string,
+                              options: FullPage[],
+                              toolTip: string): HTMLInputElement | HTMLSelectElement {
+        let v = null;
+        const names = options.map(p => p.pageId + ". " + p.title.getTextRepresentation(p) +
+            "(" + p.title.provenance + ")");
+        const map = new Map<string, FullPage>();
+        for (let i = 0; i < names.length; i++)
+            map.set(names[i], options[i]);
+        this.selectFields.set(fieldName, map);
+        if (options.length > 0)
+            v = names[0];
+        return this.addSelectInternal(
+            fieldName, labelText, names,
+            v, toolTip, FieldKind.PageName);
+    }
+
+    public getFieldValueAsPage(fieldName: string): FullPage {
+        if (this.fields.get(fieldName).type !== FieldKind.PageName) {
+            console.assert(false, "Field is not page");
+            return null;
+        }
+        // This must be a select field.
+        const map = this.selectFields.get(fieldName);
+        if (map == null)
+            return null;
+        return map.get(this.getFieldValue(fieldName)) as FullPage;
     }
 
     /**

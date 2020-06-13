@@ -188,7 +188,7 @@ export class Converters {
 
     static comparisonFilterDescription(filter: ComparisonFilterDescription): string {
         const kind = filter.column.kind;
-        return "Compare " + filter.column.name + " " + filter.comparison +
+        return filter.column.name + " " + filter.comparison +
             (kindIsNumeric(kind) ? this.valueToString(filter.doubleValue, kind) :
                 this.valueToString(filter.stringValue, kind));
     }

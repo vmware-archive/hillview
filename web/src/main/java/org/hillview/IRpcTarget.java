@@ -142,7 +142,7 @@ public interface IRpcTarget extends ICast {
            RpcRequest request, RpcRequestContext context);
 
     <T, R> void
-    runZipN(List<IDataSet<T>> data, IMap<List<T>, R> map,
+    runZipN(IDataSet<T> data, List<IDataSet<T>> other, IMap<List<T>, R> map,
            BiFunction<IDataSet<R>, HillviewComputation, IRpcTarget> factory,
            RpcRequest request, RpcRequestContext context);
 

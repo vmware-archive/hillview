@@ -22,6 +22,7 @@ import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.SetComparisonColumn;
 import org.hillview.utils.Converters;
+import org.hillview.utils.Linq;
 import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
@@ -31,6 +32,8 @@ import java.util.List;
 /**
  * Given a set of tables, creates a new table with a new column
  * that is the comparison of the membership sets of all tables.
+ * The first table is not used in the comparison, but the column is
+ * appended to it.
  */
 public class SetCompareColumnMap implements IMap<List<ITable>, ITable> {
     private final String columnName;
@@ -45,15 +48,17 @@ public class SetCompareColumnMap implements IMap<List<ITable>, ITable> {
     @Override
     public ITable apply(@Nullable List<ITable> data) {
         Converters.checkNull(data);
+        assert !data.isEmpty();
+        ITable first = data.get(0);
+        data = Utilities.tail(data);
         if (this.names.size() != data.size())
-            throw new RuntimeException("Incompatible names and tables sizes: " + names.size() + " and " + data.size());
+            throw new RuntimeException("Incompatible names and tables sizes: " +
+                    names.size() + " and " + data.size());
         if (this.names.isEmpty())
             throw new RuntimeException("Empty names");
         String[] names = Utilities.toArray(this.names);
-        IMembershipSet[] sets = new IMembershipSet[data.size()];
-        for (int i = 0; i < data.size(); i++)
-            sets[i] = data.get(i).getMembershipSet();
+        IMembershipSet[] sets = Utilities.toArray(Linq.map(data, ITable::getMembershipSet), IMembershipSet.class);
         SetComparisonColumn col = new SetComparisonColumn(this.columnName, sets, names);
-        return data.get(0).append(Collections.singletonList(col));
+        return first.append(Collections.singletonList(col));
     }
 }

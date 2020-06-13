@@ -229,9 +229,9 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
     }
 
     @Override
-    public <R> Observable<PartialResult<IDataSet<R>>> zipN(List<IDataSet<T>> other, IMap<List<T>, R> map) {
-        List<Integer> handles = new ArrayList<>(other.size());
-        for (IDataSet<T> o : other) {
+    public <R> Observable<PartialResult<IDataSet<R>>> zipN(
+            List<IDataSet<T>> other, IMap<List<T>, R> map) {
+        List<Integer> handles = Linq.map(other, o -> {
             if (!(o instanceof RemoteDataSet<?>)) {
                 throw new RuntimeException("Unexpected type in Zip " + other);
             }
@@ -244,8 +244,8 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
                 throw new RuntimeException("ZipN command invalid for RemoteDataSets " +
                         "across different servers | left: " + leftAddress + ", right:" + rightAddress);
             }
-            handles.add(rds.remoteHandle);
-        }
+            return rds.remoteHandle;
+        });
 
         final ZipNOperation<T, R> zip = new ZipNOperation<>(handles, map);
         DatasetCommandWrapper<R> wrap = new DatasetCommandWrapper<>(zip);
