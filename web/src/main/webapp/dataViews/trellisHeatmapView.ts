@@ -111,7 +111,7 @@ export class TrellisHeatmapView extends TrellisChartView {
         const hv = new TrellisHeatmapView(ser.remoteObjectId, ser.rowCount, schema, shape, ser.samplingRate, page);
         hv.setAxes(new AxisData(ser.columnDescription0, null, ser.xBucketCount),
             new AxisData(ser.columnDescription1, null, ser.yBucketCount),
-            new AxisData(ser.groupByColumn, null, ser.groupByBucketCount));
+            new AxisData(ser.groupByColumn, null, ser.windowCount));
         return hv;
     }
 
@@ -119,15 +119,13 @@ export class TrellisHeatmapView extends TrellisChartView {
         // noinspection UnnecessaryLocalVariableJS
         const ser: TrellisHeatmapSerialization = {
             ...super.serialize(),
+            ...this.shape,
             samplingRate: this.samplingRate,
             columnDescription0: this.xAxisData.description,
             columnDescription1: this.yAxisData.description,
             xBucketCount: this.xAxisData.bucketCount,
             yBucketCount: this.yAxisData.bucketCount,
-            groupByColumn: this.groupByAxisData.description,
-            xWindows: this.shape.xNum,
-            yWindows: this.shape.yNum,
-            groupByBucketCount: this.groupByAxisData.bucketCount
+            groupByColumn: this.groupByAxisData.description
         };
         return ser;
     }
@@ -307,6 +305,14 @@ export class TrellisHeatmapView extends TrellisChartView {
             const buckets = histogram3d.perBucket[i];
             const heatmap = { first: buckets, second: null };
             const plot = this.hps[i];
+            // The order of these operations is important
+            plot.setData(heatmap, this.xAxisData, this.yAxisData, this.schema, 2, this.isPrivate());
+            max = Math.max(max, plot.getMaxCount());
+        }
+        if (this.shape.missingBucket) {
+            const buckets = histogram3d.perMissing;
+            const heatmap = { first: buckets, second: null };
+            const plot = this.hps[histogram3d.perBucket.length];
             // The order of these operations is important
             plot.setData(heatmap, this.xAxisData, this.yAxisData, this.schema, 2, this.isPrivate());
             max = Math.max(max, plot.getMaxCount());

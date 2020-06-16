@@ -152,8 +152,6 @@ export class AxisDescription {
     }
 }
 
-// This value represents the index of the bucket with missing data.
-export const MissingBucketIndex = -1;
 // This value indicates that some data does not fall within a bucket.
 export const NoBucketIndex = null;
 
@@ -362,9 +360,9 @@ export class AxisData {
     }
 
     public bucketBoundaries(bucket: number): BucketBoundaries {
-        if (bucket === MissingBucketIndex)
+        if (bucket === this.bucketCount)
             return new BucketBoundaries(new BucketBoundary("missing", "String", true), null);
-        if (bucket === null || bucket < 0 || bucket >= this.bucketCount)
+        if (bucket === null || bucket < 0 || bucket > this.bucketCount)
             return new BucketBoundaries(null, null);
 
         const valueKind = this.description.kind;
@@ -427,7 +425,7 @@ export class AxisData {
     }
 
     /**
-     * @param bucket   Bucket number.  MissingBucketIndex for the missing data buckets.
+     * @param bucket   Bucket number.  The same as the number of buckets for the missing data buckets.
      * @param maxChars Maximum number of characters to use for description; if 0 it is unlimited.
      * @returns  A description of the boundaries of the specified bucket.
      */

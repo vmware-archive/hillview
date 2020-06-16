@@ -94,8 +94,8 @@ export abstract class TrellisChartView extends ChartView {
         let created = 0;
         this.surfaces = [];
         this.coordinates = [];
-        for (let y = 0; y < this.shape.yNum; y++) {
-            for (let x = 0; x < this.shape.xNum; x++) {
+        for (let y = 0; y < this.shape.yWindows; y++) {
+            for (let x = 0; x < this.shape.xWindows; x++) {
                 const xCorner = this.surface.leftMargin + x * this.shape.size.width;
                 const shortTitle = this.groupByAxisData.bucketDescription(created, this.shape.size.width / 10);
                 const title = this.groupByAxisData.bucketDescription(created, 0);
@@ -126,14 +126,14 @@ export abstract class TrellisChartView extends ChartView {
                 } );
                 onCreation(surface);
                 created++;
-                if (created === this.shape.bucketCount)
+                if (created === this.shape.windowCount)
                     return;
             }
         }
     }
 
     protected drawAxes(xAxis: AxisDescription, yAxis: AxisDescription): void {
-        for (let i = 0; i < this.shape.xNum; i++) {
+        for (let i = 0; i < this.shape.xWindows; i++) {
             const g = this.surface
                 .getCanvas()
                 .append("g")
@@ -141,11 +141,11 @@ export abstract class TrellisChartView extends ChartView {
                 .attr("transform", `translate(
                     ${this.surface.leftMargin + i * this.shape.size.width}, 
                     ${this.surface.topMargin +
-                     (this.shape.size.height + this.shape.headerHeight) * this.shape.yNum})`);
+                     (this.shape.size.height + this.shape.headerHeight) * this.shape.yWindows})`);
             xAxis.draw(g);
         }
 
-        for (let i = 0; i < this.shape.yNum; i++) {
+        for (let i = 0; i < this.shape.yWindows; i++) {
             const g = this.surface.getCanvas()
                 .append("g")
                 .attr("class", "y-axis")
@@ -158,14 +158,15 @@ export abstract class TrellisChartView extends ChartView {
     }
 
     public static deserializeShape(ser: TrellisShapeSerialization, page: FullPage): TrellisShape {
-        if (ser.xWindows == null || ser.yWindows == null || ser.groupByBucketCount == null)
+        if (ser.xWindows == null || ser.yWindows == null || ser.windowCount == null)
             return null;
         const size = PlottingSurface.getDefaultCanvasSize(page.getWidthInPixels());
         return {
-            xNum: ser.xWindows,
-            yNum: ser.yWindows,
+            xWindows: ser.xWindows,
+            yWindows: ser.yWindows,
             coverage: 1.0,
-            bucketCount: ser.groupByBucketCount,
+            windowCount: ser.windowCount,
+            missingBucket: ser.missingBucket,
             size: {
                 width: size.width / ser.xWindows,
                 height: size.height / ser.xWindows
@@ -214,7 +215,7 @@ export abstract class TrellisChartView extends ChartView {
     }
 
     protected selectSurfaces(start: number, end: number): void {
-        for (let index = 0; index < this.shape.bucketCount; index++) {
+        for (let index = 0; index < this.shape.windowCount; index++) {
             const selected = index >= start && index <= end;
             if (index < this.surfaces.length)
                 this.surfaces[index].select(selected);
@@ -305,12 +306,16 @@ export abstract class TrellisChartView extends ChartView {
         // Find out which plot we are in.
         const xIndex = Math.floor(chartX / this.shape.size.width);
         const yIndex = Math.floor(chartY / (this.shape.size.height + this.shape.headerHeight));
-        let plotIndex = yIndex * this.shape.xNum + xIndex;
+        let plotIndex = yIndex * this.shape.xWindows + xIndex;
         chartX -= xIndex * this.shape.size.width;
         chartY -= yIndex * (this.shape.size.height + this.shape.headerHeight) + this.shape.headerHeight;
 
-        if (xIndex < 0 || plotIndex < 0 || plotIndex >= this.groupByAxisData.bucketCount)
+        if (xIndex < 0 || plotIndex < 0 ||
+            xIndex >= this.shape.xWindows || yIndex >= this.shape.yWindows ||
+            plotIndex > this.groupByAxisData.bucketCount)
             plotIndex = null;
+        if (plotIndex == this.groupByAxisData.bucketCount && !this.shape.missingBucket)
+            return null;
         return { plotIndex: plotIndex, x: chartX, y: chartY,
             plotXIndex: xIndex, plotYIndex: yIndex };
     }
