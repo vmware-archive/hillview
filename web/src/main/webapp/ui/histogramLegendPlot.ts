@@ -110,14 +110,14 @@ export class HistogramLegendPlot extends LegendPlot {
 
     /**
      * Highlight the color with the specified index.  Special values:
-     * - colorIndex is < 0: missing box
+     * - colorIndex is bucketCount: missing box
      * - colorIndex is null: nothing
      */
     public highlight(colorIndex: number | null): void {
         if (colorIndex == null) {
             this.hilightRect
                 .attr("width", 0);
-        } else if (colorIndex < 0) {
+        } else if (colorIndex == this.axisData.bucketCount && this.missingLegend) {
             this.hilightRect
                 .attr("x", this.missingX)
                 .attr("y", this.missingY)

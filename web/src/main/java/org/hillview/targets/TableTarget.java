@@ -341,14 +341,8 @@ public final class TableTarget extends TableRpcTarget {
     }
 
     @HillviewRpc
-    public void filterRange(RpcRequest request, RpcRequestContext context) {
-        RangeFilterDescription filter = request.parseArgs(RangeFilterDescription.class);
-        this.runFilter(filter, request, context);
-    }
-
-    @HillviewRpc
-    public void filter2DRange(RpcRequest request, RpcRequestContext context) {
-        RangeFilterPairDescription filter = request.parseArgs(RangeFilterPairDescription.class);
+    public void filterRanges(RpcRequest request, RpcRequestContext context) {
+        RangeFilterArrayDescription filter = request.parseArgs(RangeFilterArrayDescription.class);
         this.runFilter(filter, request, context);
     }
 

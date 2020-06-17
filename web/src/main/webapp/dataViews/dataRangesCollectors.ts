@@ -46,21 +46,32 @@ import {TrellisHistogramQuartilesReceiver} from "./trellisHistogramQuartilesView
  */
 export interface TrellisShape {
     /** The number of plots in a row. */
-    xNum: number;
+    xWindows: number;
     /** The number of plots in a column. */
-    yNum: number;
+    yWindows: number;
     /** The size of the header in pixels. */
     headerHeight: number;
     // The size of a plot in pixels, excluding the header.
     size: Size;
-    /** The fraction of available display used by the trellis display. This is the
+    /**
+     * The fraction of available display used by the trellis display. This is the
      * parameter that our algorithm optimizes, subject to constraints on the aspect ratio and minimum
      * width and height of each histogram. This should be a fraction between 0 and 1. A value larger
      * than 1 indicates that there is no feasible solution.
      */
     coverage: number;
-    /** The actual number of windows to display. */
-    bucketCount: number;
+    /**
+     * The actual number of windows to display.
+     */
+    windowCount: number;
+    /**
+     * If true the last bucket is reserved for missing data.
+     */
+    missingBucket: boolean;
+}
+
+function groupByBuckets(shape: TrellisShape): number {
+    return shape.windowCount - (shape.missingBucket ? 1 : 0);
 }
 
 export class TrellisLayoutComputation {
@@ -93,23 +104,24 @@ export class TrellisLayoutComputation {
     public static resize(xMax: number, yMax: number, shape: TrellisShape): TrellisShape {
         return {
             ...shape, size: {
-                width: Math.floor(xMax / shape.xNum),
-                height: Math.floor(yMax / shape.yNum) - shape.headerHeight
+                width: Math.floor(xMax / shape.xWindows),
+                height: Math.floor(yMax / shape.yWindows) - shape.headerHeight
             }
         };
     }
 
-    public getShape(nBuckets: number): TrellisShape {
+    public getShape(nBuckets: number, missingData: boolean): TrellisShape {
         const total = this.xMax * this.yMax;
         let used = nBuckets * this.xMin * (this.yMin + this.headerHt);
         let coverage = used / total;
         const opt: TrellisShape = {
-            xNum: this.maxWidth,
-            yNum: this.maxHeight,
-            bucketCount: nBuckets,
+            xWindows: this.maxWidth,
+            yWindows: this.maxHeight,
+            windowCount: nBuckets,
             size: {width: this.xMin, height: this.yMin},
             coverage: coverage,
-            headerHeight: this.headerHt
+            headerHeight: this.headerHt,
+            missingBucket: missingData
         };
         if (this.maxWidth * this.maxHeight < nBuckets) {
             return opt;
@@ -131,11 +143,11 @@ export class TrellisLayoutComputation {
             used = nBuckets * xLen * yLen;
             coverage = used / total;
             if ((xLen >= this.xMin) && (yLen >= this.yMin) && (coverage > opt.coverage)) {
-                opt.xNum = size[0];
-                opt.yNum = size[1];
+                opt.xWindows = size[0];
+                opt.yWindows = size[1];
                 opt.size = {width: xLen, height: yLen};
                 opt.coverage = coverage;
-                opt.bucketCount = opt.xNum * opt.yNum;
+                opt.windowCount = opt.xWindows * opt.yWindows;
             }
         }
         return opt;
@@ -165,11 +177,14 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
         return this.page.dataset.isPrivate();
     }
 
-    public static samplingRate(bucketCount: number, rowCount: number, chartSize: Size): number {
+    public static samplingRate(
+        bucketCount: number, presentCount: number, missingCount: number, chartSize: Size): number {
+        if ((presentCount + missingCount) <= 0)
+            return 1.0;
         const constant = 4;  // This models the confidence we want from the sampling
         const height = chartSize.height;
         const sampleCount = constant * height * height;
-        const sampleRate = sampleCount / rowCount;
+        const sampleRate = sampleCount / (presentCount + missingCount);
         return Math.min(sampleRate, 1);
     }
 
@@ -190,7 +205,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
         if (kindIsString(cd.kind)) {
             const cdfBucketCount = range.stringQuantiles.length;
             let samplingRate = DataRangesReceiver.samplingRate(
-                cdfBucketCount, range.presentCount, chartSize);
+                cdfBucketCount, range.presentCount, range.missingCount, chartSize);
             if (exact)
                 samplingRate = 1.0;
             let bounds = range.stringQuantiles;
@@ -218,7 +233,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
             let samplingRate = 1.0;
             if (!exact)
                 samplingRate = DataRangesReceiver.samplingRate(
-                    cdfCount, range.presentCount, chartSize);
+                    cdfCount, range.presentCount, range.missingCount, chartSize);
             // noinspection UnnecessaryLocalVariableJS
             const args: HistogramRequestInfo = {
                 cd: cd,
@@ -232,13 +247,13 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
         }
     }
 
-    private trellisLayout(windows: number): TrellisShape {
+    private trellisLayout(windows: number, missingData: boolean): TrellisShape {
         const chartSize = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
         const tlc = new TrellisLayoutComputation(
             chartSize.width, Resolution.minTrellisWindowSize,
             chartSize.height, Resolution.minTrellisWindowSize,
             Resolution.lineHeight, 1.2);
-        return tlc.getShape(windows);
+        return tlc.getShape(windows, missingData);
     }
 
     public run(ranges: BucketsInfo[]): void {
@@ -254,6 +269,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
         }
         const rowCount = ranges[0].presentCount + ranges[0].missingCount;
         const chartSize = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
+        const exact = this.options.exact || this.isPrivate();
 
         // variables when drawing Trellis plots
         let trellisShape: TrellisShape = null;
@@ -278,7 +294,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 else
                     windows = maxWindows;
             }
-            trellisShape = this.trellisLayout(windows);
+            trellisShape = this.trellisLayout(windows, ranges[groupByIndex].missingCount > 0);
         }
 
         switch (this.options.chartKind) {
@@ -305,7 +321,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
 
                 const histoArg = DataRangesReceiver.computeHistogramArgs(
                     this.cds[0], ranges[0], maxXBucketCount,
-                    this.options.exact, chartSize);
+                    exact, chartSize);
                 const args: QuantilesVectorInfo = {
                     quantileCount: 4,  // we display quartiles
                     quantilesColumn: this.cds[1].name,
@@ -333,11 +349,11 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
 
                 const histoArg = DataRangesReceiver.computeHistogramArgs(
                     this.cds[0], ranges[0], maxXBucketCount,
-                    this.options.exact || this.isPrivate(), chartSize);
+                    exact, chartSize);
                 args.push(histoArg);
                 const cdfArg = DataRangesReceiver.computeHistogramArgs(
                     this.cds[0], ranges[0], 0,
-                    this.options.exact|| this.isPrivate(), chartSize);
+                    exact, chartSize);
                 args.push(cdfArg);
 
                 const rr = this.originator.createHistogramAndCDFRequest(args);
@@ -356,10 +372,11 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 // noinspection JSObjectNullOrUndefined
                 const xArg = DataRangesReceiver.computeHistogramArgs(
                     this.cds[0], ranges[0], this.bucketCounts[0],
-                    this.options.exact || this.isPrivate(), trellisShape.size);
-                const groups = this.bucketCounts[1] === 0 ? trellisShape.bucketCount : this.bucketCounts[1];
+                    exact, trellisShape.size);
+                let groups = this.bucketCounts[1] === 0 ?
+                    groupByBuckets(trellisShape) : this.bucketCounts[1];
                 const wArg = DataRangesReceiver.computeHistogramArgs(
-                    this.cds[1], ranges[1], groups, this.options.exact || this.isPrivate(), trellisShape.size);
+                    this.cds[1], ranges[1], groups, exact, trellisShape.size);
                 // Window argument comes first
                 const args = [wArg, xArg];
                 const rr = this.originator.createHistogram2DRequest(args);
@@ -396,7 +413,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 let maxGBucketCount = this.bucketCounts[2];
                 if (maxGBucketCount === 0)
                     // noinspection JSObjectNullOrUndefined
-                    maxGBucketCount = trellisShape.bucketCount;
+                    maxGBucketCount = trellisShape.windowCount;
 
                 if (this.title == null)
                     this.title = new PageTitle(
@@ -406,10 +423,10 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
 
                 const histoArg0 = DataRangesReceiver.computeHistogramArgs(
                     this.cds[0], ranges[0], maxXBucketCount,
-                    this.options.exact, chartSize);
+                    exact, chartSize);
                 const histoArg2 = DataRangesReceiver.computeHistogramArgs(
                     this.cds[2], ranges[2], maxGBucketCount,
-                    this.options.exact, chartSize);
+                    exact, chartSize);
                 const args: QuantilesMatrixInfo = {
                     quantileCount: 4,  // we display quartiles
                     seed: 0,  // scan all data
@@ -429,11 +446,11 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 const maxXBucketCount = Math.floor(trellisShape.size.width / Resolution.minBarWidth);
                 const maxYBucketCount = Resolution.maxBucketCount;
                 const xArg = DataRangesReceiver.computeHistogramArgs(
-                    this.cds[0], ranges[0], maxXBucketCount, this.options.exact || this.isPrivate(), trellisShape.size);
+                    this.cds[0], ranges[0], maxXBucketCount, exact, trellisShape.size);
                 const yArg = DataRangesReceiver.computeHistogramArgs(
-                    this.cds[1], ranges[1], maxYBucketCount, this.options.exact || this.isPrivate(), trellisShape.size);
+                    this.cds[1], ranges[1], maxYBucketCount, exact, trellisShape.size);
                 const wArg = DataRangesReceiver.computeHistogramArgs(
-                    this.cds[2], ranges[2], trellisShape.bucketCount, this.options.exact || this.isPrivate(), chartSize);
+                    this.cds[2], ranges[2], groupByBuckets(trellisShape), exact, chartSize);
                 // Window argument comes first
                 args.push(wArg);
                 args.push(xArg);
@@ -460,11 +477,11 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 const maxXBucketCount = Math.floor(trellisShape.size.width / Resolution.minDotSize);
                 const maxYBucketCount = Math.floor(trellisShape.size.height / Resolution.minDotSize);
                 const xArg = DataRangesReceiver.computeHistogramArgs(
-                    this.cds[0], ranges[0], maxXBucketCount, this.options.exact || this.isPrivate(), trellisShape.size);
+                    this.cds[0], ranges[0], maxXBucketCount, exact, trellisShape.size);
                 const yArg = DataRangesReceiver.computeHistogramArgs(
-                    this.cds[1], ranges[1], maxYBucketCount, this.options.exact || this.isPrivate(), trellisShape.size);
+                    this.cds[1], ranges[1], maxYBucketCount, exact, trellisShape.size);
                 const wArg = DataRangesReceiver.computeHistogramArgs(
-                    this.cds[2], ranges[2], trellisShape.bucketCount, this.options.exact || this.isPrivate(), chartSize);
+                    this.cds[2], ranges[2], groupByBuckets(trellisShape), exact, chartSize);
                 // Window argument comes first
                 args.push(wArg);
                 args.push(xArg);
@@ -495,10 +512,10 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 if (maxYBucketCount === 0)
                     maxYBucketCount = Math.floor(chartSize.height / Resolution.minDotSize);
                 const xArg = DataRangesReceiver.computeHistogramArgs(
-                    this.cds[0], ranges[0], maxXBucketCount, this.options.exact || this.isPrivate(), chartSize);
+                    this.cds[0], ranges[0], maxXBucketCount, exact, chartSize);
                 args.push(xArg);
                 const yArg = DataRangesReceiver.computeHistogramArgs(
-                    this.cds[1], ranges[1], maxYBucketCount, this.options.exact || this.isPrivate(), chartSize);
+                    this.cds[1], ranges[1], maxYBucketCount, exact, chartSize);
                 args.push(yArg);
 
                 const rr = this.originator.createHistogram2DRequest(args);
@@ -532,16 +549,16 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 const xarg = DataRangesReceiver.computeHistogramArgs(
                     this.cds[0], ranges[0], maxXBucketCount,
                     // Relative views cannot sample
-                    this.options.exact || this.options.relative || this.isPrivate(), chartSize);
+                    exact || this.options.relative, chartSize);
                 args.push(xarg);
                 const yarg = DataRangesReceiver.computeHistogramArgs(
                     this.cds[1], ranges[1], maxYBucketCount,
-                    this.options.exact || this.options.relative || this.isPrivate(), chartSize);
+                    exact || this.options.relative, chartSize);
                 args.push(yarg);
                 // This last one represents the resolution for the CDF
                 const cdfArg = DataRangesReceiver.computeHistogramArgs(
                     this.cds[0], ranges[0], 0,
-                    this.options.exact || this.isPrivate(), chartSize);
+                    exact, chartSize);
                 args.push(cdfArg);
                 const rr = this.originator.createHistogram2DAndCDFRequest(args);
                 const xAxis = new AxisData(this.cds[0], ranges[0], xarg.bucketCount);

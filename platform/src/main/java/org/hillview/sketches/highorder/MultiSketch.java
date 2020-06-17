@@ -25,9 +25,6 @@ import org.hillview.utils.JsonList;
 import org.hillview.utils.Linq;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Runs multiple sketches of the same type.
@@ -43,6 +40,7 @@ public class MultiSketch<T, R extends ISketchResult>
         this.sketches = sketches;
     }
 
+    @SafeVarargs
     public MultiSketch(ISketch<T, R>... sketches) {
         this.sketches = new JsonList<ISketch<T, R>>(sketches);
     }

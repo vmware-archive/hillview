@@ -17,14 +17,14 @@
 
 import {Receiver} from "../rpc";
 import {
-    FilterDescription, Groups,
+    Groups,
     RecordOrder,
-    RemoteObjectId
+    RemoteObjectId, RangeFilterArrayDescription
 } from "../javaBridge";
 import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {SchemaClass} from "../schemaClass";
-import {add, Converters, ICancellable, PartialResult, percent, reorder, significantDigits} from "../util";
+import {add, Converters, ICancellable, PartialResult, percent, significantDigits} from "../util";
 import {AxisData, AxisKind} from "./axisData";
 import {
     IViewSerialization,
@@ -206,7 +206,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
             this.xAxisData.description, this.groupByAxisData.description];
         const rr = this.createDataQuantilesRequest(cds, this.page, "Trellis2DHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [this.legendAxisData.bucketCount, this.buckets, this.shape.bucketCount],
+            [this.legendAxisData.bucketCount, this.buckets, this.shape.windowCount],
             cds, null, "swap axes",{
                 reusePage: true, relative: this.relative,
                 chartKind: "Trellis2DHistogram", exact: true
@@ -278,7 +278,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
             this.legendAxisData.description, this.groupByAxisData.description];
         const rr = this.createDataQuantilesRequest(cds, this.page, "Trellis2DHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [this.buckets, this.legendAxisData.bucketCount, this.shape.bucketCount],
+            [this.buckets, this.legendAxisData.bucketCount, this.shape.windowCount],
                 cds, null, "exact",{
                 reusePage: true, relative: this.relative,
                 chartKind: "Trellis2DHistogram", exact: true
@@ -329,7 +329,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
             this.legendAxisData.description, this.groupByAxisData.description];
         const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisHeatmap");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [this.buckets, this.legendAxisData.bucketCount, this.shape.bucketCount],
+            [this.buckets, this.legendAxisData.bucketCount, this.shape.windowCount],
             cds, null, this.defaultProvenance,{
                 reusePage: false, chartKind: "TrellisHeatmap", exact: true
             }));
@@ -364,23 +364,21 @@ export class TrellisHistogram2DView extends TrellisChartView {
         // noinspection UnnecessaryLocalVariableJS
         const ser: TrellisHistogram2DSerialization = {
             ...super.serialize(),
+            ...this.shape,
             samplingRate: this.samplingRate,
             columnDescription0: this.xAxisData.description,
             columnDescription1: this.legendAxisData.description,
             xBucketCount: this.xAxisData.bucketCount,
             yBucketCount: this.legendAxisData.bucketCount,
             relative: this.relative,
-            groupByColumn: this.groupByAxisData.description,
-            xWindows: this.shape.xNum,
-            yWindows: this.shape.yNum,
-            groupByBucketCount: this.groupByAxisData.bucketCount
+            groupByColumn: this.groupByAxisData.description
         };
         return ser;
     }
 
     public static reconstruct(ser: TrellisHistogram2DSerialization, page: FullPage): IDataView {
         if (ser.remoteObjectId == null || ser.rowCount == null || ser.xWindows == null ||
-            ser.yWindows == null || ser.groupByBucketCount ||
+            ser.yWindows == null || ser.windowCount ||
             ser.samplingRate == null || ser.schema == null)
             return null;
         const schema = new SchemaClass([]).deserialize(ser.schema);
@@ -389,7 +387,7 @@ export class TrellisHistogram2DView extends TrellisChartView {
             schema, shape, ser.samplingRate, page);
         view.setAxes(new AxisData(ser.columnDescription0, null, ser.xBucketCount),
             new AxisData(ser.columnDescription1, null, ser.yBucketCount),
-            new AxisData(ser.groupByColumn, null, ser.groupByBucketCount),
+            new AxisData(ser.groupByColumn, null, ser.windowCount),
             ser.relative);
         return view;
     }
@@ -408,6 +406,15 @@ export class TrellisHistogram2DView extends TrellisChartView {
                         max = total;
                 }
             }
+            if (this.shape.missingBucket) {
+                const buckets = data.perMissing;
+                for (let j = 0; j < buckets.perBucket.length; j++) {
+                    const bj = buckets.perBucket[j];
+                    const total = bj.perBucket.reduce(add, 0);
+                    if (total > max)
+                        max = total;
+                }
+            }
             this.maxYAxis = max;
         }
 
@@ -415,6 +422,14 @@ export class TrellisHistogram2DView extends TrellisChartView {
             const buckets = data.perBucket[i];
             const heatmap = { first: buckets, second: null };
             const plot = this.hps[i];
+            plot.setData(heatmap, this.xAxisData, this.samplingRate, this.relative,
+                this.schema, this.legendPlot.colorMap, max, this.rowCount);
+            plot.draw();
+        }
+        if (this.shape.missingBucket) {
+            const buckets = data.perMissing;
+            const heatmap = { first: buckets, second: null };
+            const plot = this.hps[data.perBucket.length];
             plot.setData(heatmap, this.xAxisData, this.samplingRate, this.relative,
                 this.schema, this.legendPlot.colorMap, max, this.rowCount);
             plot.draw();
@@ -461,11 +476,11 @@ export class TrellisHistogram2DView extends TrellisChartView {
         };
     }
 
-    protected filter(filter: FilterDescription): void {
+    protected filter(filter: RangeFilterArrayDescription): void {
         if (filter == null)
             return;
         const rr = this.createFilterRequest(filter);
-        const title = new PageTitle(this.page.title.format, Converters.filterDescription(filter));
+        const title = new PageTitle(this.page.title.format, Converters.filterDescription(filter.filters[0]));
         const renderer = new FilterReceiver(title, [this.xAxisData.description, this.legendAxisData.description,
             this.groupByAxisData.description], this.schema, [0, 0, 0], this.page, rr, this.dataset, {
             chartKind: "Trellis2DHistogram", relative: this.relative,
@@ -475,29 +490,16 @@ export class TrellisHistogram2DView extends TrellisChartView {
     }
 
     protected legendSelectionCompleted(xl: number, xr: number): void {
-        [xl, xr] = reorder(xl, xr);
         const x0 = this.legendAxisData.invertToNumber(xl);
         const x1 = this.legendAxisData.invertToNumber(xr);
-        if (x0 > x1) {
-            this.page.reportError("No data selected");
-            return;
-        }
-
         if (d3event.sourceEvent.shiftKey) {
             this.legendPlot.emphasizeRange(xl / this.legendPlot.width, xr / this.legendPlot.width);
             this.resize();
             return;
         }
 
-        const filter: FilterDescription = {
-            min: x0,
-            max: x1,
-            minString: this.legendAxisData.invert(xl),
-            maxString: this.legendAxisData.invert(xr),
-            cd: this.legendAxisData.description,
-            complement: d3event.sourceEvent.ctrlKey,
-        };
-        this.filter(filter);
+        const filter = this.legendAxisData.getFilter(xl, xr);
+        this.filter({ filters: [filter], complement: d3event.sourceEvent.ctrlKey });
     }
 
     protected selectionCompleted(): void {
@@ -507,14 +509,8 @@ export class TrellisHistogram2DView extends TrellisChartView {
             const left = this.position(origin.x, origin.y);
             const end = this.canvasToChart(this.selectionEnd);
             const right = this.position(end.x, end.y);
-            const [xl, xr] = reorder(left.x, right.x);
-
-            const filter: FilterDescription = {
-                min: this.xAxisData.invertToNumber(xl),
-                max: this.xAxisData.invertToNumber(xr),
-                minString: this.xAxisData.invert(xl),
-                maxString: this.xAxisData.invert(xr),
-                cd: this.xAxisData.description,
+            const filter: RangeFilterArrayDescription = {
+                filters: [this.xAxisData.getFilter(left.x, right.x)],
                 complement: d3event.sourceEvent.ctrlKey,
             };
             this.filter(filter);

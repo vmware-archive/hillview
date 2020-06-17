@@ -11,7 +11,7 @@ if ( -not ( Test-Path .\apache-tomcat-9.0.4 )) {
 $ARCHIVE="hillview-bin.zip"
 
 echo "Installing Hillview"
-Invoke-WebRequest -OutFile $ARCHIVE https://github.com/vmware/hillview/releases/download/v0.7-alpha/$ARCHIVE
+Invoke-WebRequest -OutFile $ARCHIVE https://github.com/vmware/hillview/releases/download/v0.8-alpha/$ARCHIVE
 Expand-Archive $ARCHIVE -DestinationPath .
 mv web\target\web-1.0-SNAPSHOT.war apache-tomcat-9.0.4\webapps\ROOT.war
 del $ARCHIVE

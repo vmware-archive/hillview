@@ -29,7 +29,6 @@ import {
     ContainsArgs,
     CountWithConfidence,
     EigenVal,
-    FilterDescription,
     FindResult, Groups,
     HeavyHittersFilterInfo,
     HistogramRequestInfo,
@@ -41,7 +40,7 @@ import {
     NextKArgs,
     NextKList, QuantilesMatrixInfo,
     QuantilesVectorInfo,
-    RangeArgs,
+    RangeArgs, RangeFilterArrayDescription,
     RecordOrder,
     RemoteObjectId,
     RowFilterDescription, SampleSet,
@@ -353,14 +352,9 @@ RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<string>("kvCreateColumn", c);
     }
 
-    public createFilterRequest(f: FilterDescription):
+    public createFilterRequest(f: RangeFilterArrayDescription):
         RpcRequest<PartialResult<RemoteObjectId>> {
-        return this.createStreamingRpcRequest<RemoteObjectId>("filterRange", f);
-    }
-
-    public createFilter2DRequest(xRange: FilterDescription, yRange: FilterDescription):
-            RpcRequest<PartialResult<RemoteObjectId>> {
-        return this.createStreamingRpcRequest<RemoteObjectId>("filter2DRange", { first: xRange, second: yRange } );
+        return this.createStreamingRpcRequest<RemoteObjectId>("filterRanges", f);
     }
 
     public createHistogram2DAndCDFRequest(info: HistogramRequestInfo[]):

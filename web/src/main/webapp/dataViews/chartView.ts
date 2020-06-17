@@ -16,7 +16,7 @@
  */
 
 import {BigTableView} from "../tableTarget";
-import {BucketsInfo, FilterDescription, RemoteObjectId} from "../javaBridge";
+import {BucketsInfo, RangeFilterArrayDescription, RemoteObjectId} from "../javaBridge";
 import {DisplayName, SchemaClass} from "../schemaClass";
 import {DragEventKind, FullPage} from "../ui/fullPage";
 import {D3SvgElement, Point, ViewKind} from "../ui/ui";
@@ -27,8 +27,6 @@ import {drag as d3drag} from "d3-drag";
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {AxisData} from "./axisData";
 import {Dialog} from "../ui/dialog";
-import {PartialResult, reorder} from "../util";
-import {RpcRequest} from "../rpc";
 
 /**
  * A ChartView is a common base class for many views that
@@ -305,35 +303,21 @@ export abstract class ChartView extends BigTableView {
      */
     protected filterSelectionRectangle(xl: number, xr: number, yl: number, yr: number,
                                        xAxisData: AxisData, yAxisData: AxisData):
-        [RpcRequest<PartialResult<RemoteObjectId>>, FilterDescription, FilterDescription] {
+        RangeFilterArrayDescription {
         if (xAxisData.axis == null ||
             yAxisData.axis == null) {
-            return [null, null, null];
+            return null;
         }
 
         xl -= this.surface.leftMargin;
         xr -= this.surface.leftMargin;
         yl -= this.surface.topMargin;
         yr -= this.surface.topMargin;
-        [xl, xr] = reorder(xl, xr);
-        [yr, yl] = reorder(yl, yr);   // y coordinates are in reverse
-
-        const xRange: FilterDescription = {
-            min: xAxisData.invertToNumber(xl),
-            max: xAxisData.invertToNumber(xr),
-            minString: xAxisData.invert(xl),
-            maxString: xAxisData.invert(xr),
-            cd: xAxisData.description,
-            complement: d3event.sourceEvent.ctrlKey,
+        const xRange = xAxisData.getFilter(xl, xr);
+        const yRange = yAxisData.getFilter(yl, yr);
+        return {
+            filters: [xRange, yRange],
+            complement: d3event.sourceEvent.ctrlKey
         };
-        const yRange: FilterDescription = {
-            min: yAxisData.invertToNumber(yl),
-            max: yAxisData.invertToNumber(yr),
-            minString: yAxisData.invert(yl),
-            maxString: yAxisData.invert(yr),
-            cd: yAxisData.description,
-            complement: d3event.sourceEvent.ctrlKey,
-        };
-        return [this.createFilter2DRequest(xRange, yRange), xRange, yRange];
     }
 }

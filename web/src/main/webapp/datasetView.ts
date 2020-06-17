@@ -102,7 +102,8 @@ export interface TrellisShapeSerialization {
     groupByColumn: IColumnDescription;
     xWindows: number;
     yWindows: number;
-    groupByBucketCount: number;
+    windowCount: number;
+    missingBucket: boolean;
 }
 
 export interface TrellisHistogramSerialization extends

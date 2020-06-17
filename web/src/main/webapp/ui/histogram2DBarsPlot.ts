@@ -18,7 +18,7 @@
 import {axisLeft as d3axisLeft} from "d3-axis";
 import {format as d3format} from "d3-format";
 import {scaleLinear as d3scaleLinear} from "d3-scale";
-import {AxisDescription, MissingBucketIndex, NoBucketIndex} from "../dataViews/axisData";
+import {AxisDescription, NoBucketIndex} from "../dataViews/axisData";
 import {PlottingSurface} from "./plottingSurface";
 import {D3Scale} from "./ui";
 import {Histogram2DBase} from "./histogram2DBase";
@@ -170,13 +170,10 @@ export class Histogram2DBarsPlot extends Histogram2DBase {
         if (colorIndex == this.yPoints) {
             colorIndex = NoBucketIndex;
         }
-        if (this.showMissing && colorIndex == this.yPoints - 1) {
-            colorIndex = MissingBucketIndex;
-        }
 
         if (bucketIndex >= 0 && bucketIndex < this.heatmap.first.perBucket.length) {
             const bucket = this.heatmap.first.perBucket[bucketIndex];
-            if (colorIndex == MissingBucketIndex)
+            if (this.showMissing && colorIndex == this.yPoints - 1)
                 count = bucket.perMissing;
             else
                 count = bucket.perBucket[colorIndex];

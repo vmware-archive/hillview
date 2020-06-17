@@ -97,8 +97,6 @@ public class MySqlJdbcConnection extends JdbcConnection {
 
         String getLimit(RangeFilterDescription filter) {
             String result = "";
-            if (filter.complement)
-                result += "not ";
             String minString;
             String maxString;
             if (filter.cd.kind.isString()) {

@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-import {Receiver, RpcRequest} from "../rpc";
+import {Receiver} from "../rpc";
 import {
-    FilterDescription, Groups,
-    kindIsString,
+    Groups,
+    kindIsString, RangeFilterArrayDescription,
     RecordOrder,
     RemoteObjectId
 } from "../javaBridge";
@@ -26,11 +26,12 @@ import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {DisplayName, SchemaClass} from "../schemaClass";
 import {
+    add,
     Converters,
     ICancellable, makeInterval,
     PartialResult,
     percent, prefixSum,
-    reorder, Two,
+    Two,
 } from "../util";
 import {AxisData, AxisKind} from "./axisData";
 import {IViewSerialization, TrellisHistogramSerialization} from "../datasetView";
@@ -176,7 +177,7 @@ export class TrellisHistogramView extends TrellisChartView {
         const cds = [this.xAxisData.description, this.groupByAxisData.description];
         const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [this.bucketCount, this.shape.bucketCount], cds, null, "exact counts",{
+            [this.bucketCount, this.shape.windowCount], cds, null, "exact counts",{
                 reusePage: true, relative: false,
                 chartKind: "TrellisHistogram", exact: true
             }));
@@ -220,7 +221,7 @@ export class TrellisHistogramView extends TrellisChartView {
         const cds = [this.xAxisData.description, col, this.groupByAxisData.description];
         const rr = this.createDataQuantilesRequest(cds, this.page, "Trellis2DHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [this.bucketCount, 0, this.shape.bucketCount], cds, null, this.defaultProvenance,{
+            [this.bucketCount, 0, this.shape.windowCount], cds, null, this.defaultProvenance,{
                 reusePage: true, relative: false,
                 chartKind: "Trellis2DHistogram", exact: this.samplingRate >= 1
             }));
@@ -254,21 +255,19 @@ export class TrellisHistogramView extends TrellisChartView {
         // noinspection UnnecessaryLocalVariableJS
         const ser: TrellisHistogramSerialization = {
             ...super.serialize(),
+            ...this.shape,
             isPie: false,
             bucketCount: this.bucketCount,
             samplingRate: this.samplingRate,
             columnDescription: this.xAxisData.description,
-            groupByColumn: this.groupByAxisData.description,
-            xWindows: this.shape.xNum,
-            yWindows: this.shape.yNum,
-            groupByBucketCount: this.shape.bucketCount
+            groupByColumn: this.groupByAxisData.description
         };
         return ser;
     }
 
     public static reconstruct(ser: TrellisHistogramSerialization, page: FullPage): IDataView {
         if (ser.remoteObjectId == null || ser.rowCount == null || ser.xWindows == null ||
-            ser.yWindows == null || ser.groupByBucketCount ||
+            ser.yWindows == null || ser.windowCount ||
             ser.samplingRate == null || ser.schema == null)
             return null;
         const schema = new SchemaClass([]).deserialize(ser.schema);
@@ -276,7 +275,7 @@ export class TrellisHistogramView extends TrellisChartView {
         const view = new TrellisHistogramView(ser.remoteObjectId, ser.rowCount,
             schema, shape, ser.samplingRate, page);
         view.setAxes(new AxisData(ser.columnDescription, null, ser.bucketCount),
-            new AxisData(ser.groupByColumn, null, ser.groupByBucketCount));
+            new AxisData(ser.groupByColumn, null, ser.windowCount));
         return view;
     }
 
@@ -333,6 +332,14 @@ export class TrellisHistogramView extends TrellisChartView {
             const cdfp = this.cdfs[i];
             cdfp.setData(prefixSum(bucketData.perBucket.map((b) => Math.max(0, b))), discrete);
 
+            const coarse = TrellisHistogramView.coarsen(bucketData, this.bucketCount);
+            max = Math.max(max, Math.max(...coarse.perBucket));
+            coarsened.push(coarse);
+        }
+        if (histos.perMissing.perBucket.reduce(add) > 0) {
+            const bucketData = histos.perMissing;
+            const cdfp = this.cdfs[histos.perBucket.length];
+            cdfp.setData(prefixSum(bucketData.perBucket.map((b) => Math.max(0, b))), discrete);
             const coarse = TrellisHistogramView.coarsen(bucketData, this.bucketCount);
             max = Math.max(max, Math.max(...coarse.perBucket));
             coarsened.push(coarse);
@@ -435,33 +442,23 @@ export class TrellisHistogramView extends TrellisChartView {
 
     protected selectionCompleted(): void {
         const local = this.selectionIsLocal();
-        let title: PageTitle;
-        let rr: RpcRequest<PartialResult<RemoteObjectId>>;
-        let filter: FilterDescription;
+        let filter: RangeFilterArrayDescription;
         if (local != null) {
             const origin = this.canvasToChart(this.selectionOrigin);
             const left = this.position(origin.x, origin.y);
             const end = this.canvasToChart(this.selectionEnd);
             const right = this.position(end.x, end.y);
-            const [xl, xr] = reorder(left.x, right.x);
-
             filter = {
-                min: this.xAxisData.invertToNumber(xl),
-                max: this.xAxisData.invertToNumber(xr),
-                minString: this.xAxisData.invert(xl),
-                maxString: this.xAxisData.invert(xr),
-                cd: this.xAxisData.description,
+                filters: [this.xAxisData.getFilter(left.x, right.x)],
                 complement: d3event.sourceEvent.ctrlKey,
             };
-            rr = this.createFilterRequest(filter);
-            title = new PageTitle(this.page.title.format, Converters.filterDescription(filter));
         } else {
             filter = this.getGroupBySelectionFilter();
-            if (filter == null)
-                return;
-            rr = this.createFilterRequest(filter);
-            title = new PageTitle(this.page.title.format, Converters.filterDescription(filter));
         }
+        if (filter == null)
+            return;
+        const rr = this.createFilterRequest(filter);
+        const title = new PageTitle(this.page.title.format, Converters.filterArrayDescription(filter));
         const renderer = new FilterReceiver(title, [this.xAxisData.description, this.groupByAxisData.description],
             this.schema, [0, 0], this.page, rr, this.dataset, {
             chartKind: "TrellisHistogram", relative: false,

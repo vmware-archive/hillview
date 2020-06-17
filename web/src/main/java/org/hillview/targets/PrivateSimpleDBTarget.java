@@ -33,11 +33,10 @@ import org.hillview.table.PrivacySchema;
 import org.hillview.table.SmallTable;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.ColumnQuantization;
+import org.hillview.table.filters.RangeFilterArrayDescription;
 import org.hillview.table.filters.RangeFilterDescription;
-import org.hillview.table.filters.RangeFilterPairDescription;
 import org.hillview.utils.*;
 
-import javax.annotation.Nullable;
 import java.sql.SQLException;
 
 public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDataset {
@@ -120,33 +119,16 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
     }
 
     @HillviewRpc
-    public void filterRange(RpcRequest request, RpcRequestContext context) {
-        RangeFilterDescription filter = request.parseArgs(RangeFilterDescription.class);
+    public void filterRanges(RpcRequest request, RpcRequestContext context) {
+        RangeFilterArrayDescription filter = request.parseArgs(RangeFilterArrayDescription.class);
         if (filter.complement)
             throw new HillviewException("Only filters on contiguous range are supported");
         IdMap<ITable> map = new IdMap<ITable>();
         this.runMap(this.table, map, (e, c) -> {
             try {
                 IPrivateDataset result = new PrivateSimpleDBTarget(this, c);
-                result.getWrapper().filter(filter);
-                return result;
-            } catch (SQLException ex) {
-                throw new RuntimeException(ex);
-            }
-        }, request, context);
-    }
-
-    @HillviewRpc
-    public void filter2DRange(RpcRequest request, RpcRequestContext context) {
-        RangeFilterPairDescription filter = request.parseArgs(RangeFilterPairDescription.class);
-        if (filter.first.complement || filter.second.complement)
-            throw new HillviewException("Only filters on contiguous range are supported");
-        IdMap<ITable> map = new IdMap<ITable>();
-        this.runMap(this.table, map, (e, c) -> {
-            try {
-                IPrivateDataset result = new PrivateSimpleDBTarget(this, c);
-                result.getWrapper().filter(filter.first);
-                result.getWrapper().filter(filter.second);
+                for (RangeFilterDescription f: filter.filters)
+                     result.getWrapper().filter(f);
                 return result;
             } catch (SQLException ex) {
                 throw new RuntimeException(ex);

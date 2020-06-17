@@ -37,7 +37,7 @@ public class RangeFilterDescription implements ITableFilterDescription {
     public double max = 0;
     public String minString = "";
     public String maxString = "";
-    public boolean complement = false;
+    public boolean includeMissing = false;
 
     @Override
     public ITableFilter getFilter(ITable table) {
@@ -59,27 +59,24 @@ public class RangeFilterDescription implements ITableFilterDescription {
             RangeFilterDescription desc = RangeFilterDescription.this;
             boolean result;
             if (this.column.isMissing(rowIndex))
-                result = false;
+                result = RangeFilterDescription.this.includeMissing;
             else {
                 double d = this.column.asDouble(rowIndex);
                 result = (desc.min <= d) && (d <= desc.max);
             }
-            if (desc.complement)
-                result = !result;
             return result;
         }
 
         public String toString() {
             return "Rangefilter[" + RangeFilterDescription.this.min + "," +
-                    RangeFilterDescription.this.max + "]";
+                    RangeFilterDescription.this.max + "]" +
+                    (RangeFilterDescription.this.includeMissing ? " and missing" : "");
         }
     }
 
     public RangeFilterDescription intersect(@Nullable RangeFilterDescription with) {
         if (with == null)
             return this;
-        if (this.complement || with.complement)
-            throw new RuntimeException("Intersection only supported for contiguous filters");
         RangeFilterDescription result = new RangeFilterDescription();
         result.cd = this.cd;
         if (this.cd.kind.isString()) {
@@ -89,7 +86,6 @@ public class RangeFilterDescription implements ITableFilterDescription {
             result.min = Math.max(this.min, with.min);
             result.max = Math.min(this.max, with.max);
         }
-        result.complement = this.complement;
         return result;
     }
 
@@ -107,7 +103,6 @@ public class RangeFilterDescription implements ITableFilterDescription {
             result.min = Math.max(this.min, q.globalMin);
             result.max = Math.min(this.max, q.globalMax);
         }
-        result.complement = this.complement;
         return result;
     }
 
@@ -122,20 +117,19 @@ public class RangeFilterDescription implements ITableFilterDescription {
             RangeFilterDescription desc = RangeFilterDescription.this;
             boolean result;
             if (this.column.isMissing(rowIndex))
-                result = false;
+                result = RangeFilterDescription.this.includeMissing;
             else {
                 String s = this.column.getString(rowIndex);
                 assert s != null;
                 result = (s.compareTo(desc.minString) >= 0) && (s.compareTo(desc.maxString) <= 0);
             }
-            if (desc.complement)
-                result = !result;
             return result;
         }
 
         public String toString() {
             return "Rangefilter[" + RangeFilterDescription.this.minString + "," +
-                    RangeFilterDescription.this.maxString + "]";
+                    RangeFilterDescription.this.maxString + "]" +
+                    (RangeFilterDescription.this.includeMissing ? " and missing" : "");
         }
     }
 }

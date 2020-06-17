@@ -1,21 +1,28 @@
 ![Hillview project logo](hillview-logo.png)
 
-# Introduction
-
 Hillview: a big data spreadsheet.  Hillview is a cloud-based
-application for browsing large datasets.  The hillview user interface
-executes in a browser.  Currently the software is alpha quality, under
-active development.
+service for visualizing interactively large datasets.  
+The hillview user interface executes in a browser.  
 
-# Documentation
+Contents:
+
+[1. Documentation](#1.-Documentation)
+
+[2. Local installation](#2.-Installing-and-running-Hillview-on-a-local-machine)
+
+[3. Cluster installation](#3.-Deploying-the-Hillview-service-on-a-cluster)
+
+[4. Developing Hillview](#4.-Developing-Hillview)
+
+# 1. Documentation
 
 There is a [Hillview user manual](docs/userManual.md).
 
 A [short video](https://1drv.ms/v/s!AlywK8G1COQ_jeRQatBqla3tvgk4FQ)
 shows the system in action in real-time.
 
-You can [test](http://ec2-18-217-136-170.us-east-2.compute.amazonaws.com:8080/)
-a demo of the system running on 15 small Amazon machines.
+You can [try a demo](http://ec2-18-217-136-170.us-east-2.compute.amazonaws.com:8080/)
+of the system running on 15 small Amazon machines.
 
 A [paper](https://arxiv.org/abs/1907.04827) describing the system in
 some detail.  This is an extended version of the following publication
@@ -27,55 +34,19 @@ Documentation for the [internal APIs](docs/hillview-apis.pdf).
 
 Experimental use of Hillview using [differential privacy](privacy.md).
 
-# Installing Hillview on a local machine
+# 2. Installing and running Hillview on a local machine
 
-## Ubuntu or MacOS machines.
+For developing Hillview see [below](#4.-developing-hillview).
+
+## 2.1 Linux of MacOS
+
+### 2.1.1 Installing on Linux or MacOS
 
 * Install Java 8.  At this point newer versions of Java will *not* work.
 * clone this github repository
-* run the script `bin/install-dependencies.sh`
-* Download the Hillview release [zip
-file](https://github.com/vmware/hillview/releases/download/v0.8-alpha/hillview-bin.zip).
-  Save it in the top directory of Hillview.
-* Unzip the release `unzip hillview-bin.zip`
+* run the script `bin/install.sh`
 
-## Windows machines
-
-* Download and install Java 8.
-* Choose a directory for installing Hillview
-* Enable execution of powershell scripts; this can be done, for example, by
-  running the following command in powershell as an administrator: `Set-ExecutionPolicy unrestricted`
-* Download and install the [following script](bin/install-hillview.ps1) in the chosen directory
-* Run the installation script using Windows powershell:
-
-```
-> install-hillview.ps1
-```
-
-# Running Hillview locally
-
-## Windows machines
-
-All Windows scripts are in the `bin` folder:
-
-```
-> cd bin
-```
-
-* Start Hillview processes:
-
-```
-> hillview-start.bat
-```
-
-* If needed give permissions to the application to communicate through the Windows firewall
-* To stop hillview:
-
-```
-> hillview-stop.bat
-```
-
-## Ubuntu or MacOS machines
+### 2.1.2 Running on Ubuntu or MacOS machines
 
 All the following scripts are in the `bin` folder.
 
@@ -102,21 +73,43 @@ $ ./frontend-start.sh
 * when you are done stop the two services by killing the
   `frontend-start.sh` and `backend-start.sh` jobs.
 
-As an alternative, you can use the configuration service file
-`bin/config-local.json` and use the instructions for [deploying
-Hillview on a cluster](#deploying-the-hillview-service-on-a-cluster)
-using this configuration file; this will run Hillview on the local
-machine.
+## 2.2 Windows
 
-* (Optional, only if you have an installation for development, using
-  the Java SDK) download and prepare the sample data:
+### 2.2.1 Installing on Windows
+
+* Download and install Java 8.
+* Choose a directory for installing Hillview
+* Enable execution of powershell scripts; this can be done, for example, by
+  running the following command in powershell as an administrator: `Set-ExecutionPolicy unrestricted`
+* Download and install the [following script](bin/install-hillview.ps1) in the chosen directory
+* Run the installation script using Windows powershell:
 
 ```
-$ ./rebuild.sh -a
-$ ./demo-data-cleaner.sh
+> install-hillview.ps1
 ```
 
-# Deploying the Hillview service on a cluster
+### 2.2.2 Running on Windows
+
+All Windows scripts are in the `bin` folder:
+
+```
+> cd bin
+```
+
+* Start Hillview processes:
+
+```
+> hillview-start.bat
+```
+
+* If needed give permissions to the application to communicate through the Windows firewall
+* To stop hillview:
+
+```
+> hillview-stop.bat
+```
+
+# 3. Deploying the Hillview service on a cluster
 
 Hillview uses `ssh` to deploy code on the cluster.  Prior to
 deployment you must setup `ssh` on the cluster to use password-less
@@ -128,10 +121,12 @@ machines in the cluster.
 worker nodes from the client application running with the privileges
 of the user specified in the configuration file.*
 
-## Service configuration
+## 3.1 Service configuration
 
-The configuration of the Hillview service is described in a Json file;
-two sample files are `bin/config.json`and `bin/config-local.json`.
+The configuration of the Hillview service is described in a Json file 
+(enhanced with comments); two sample files are `bin/config.json`and 
+`bin/config-local.json`.  The file `config-local.json` treats the local
+machine as a one-machine cluster.
 
 ```
 // This file is a Json file that defines the configuration for a
@@ -182,7 +177,7 @@ two sample files are `bin/config.json`and `bin/config-local.json`.
 }
 ```
 
-## Deployment scripts
+## 3.2 Deployment scripts
 
 All deployment scripts are written in Python, and are in the `bin` folder.
 
@@ -190,7 +185,7 @@ All deployment scripts are written in Python, and are in the `bin` folder.
 $ cd bin
 ```
 
-Install the software on the machines:
+Install the software on all cluster machines:
 
 ```
 $ ./deploy.py config.json
@@ -217,24 +212,32 @@ Query the status of the services:
 $ ./status config.json
 ```
 
-## Data management
+## 3.3. Data management
 
 We provide some crude data management scripts and tools for clusters.
 They are described [here](bin/README.md).
 
-# Developing Hillview
+# 4. Developing Hillview
 
-## Software Dependencies
+We only provide development instructions for Linux or MacOS, but there is
+no reason Hillview could not be developed on Windows. 
 
-* Back-end: Ubuntu Linux > 16 or MacOS
+## 4.1. Software Dependencies
+
+* Back-end: Ubuntu Linux > 16 or MacOS.
+On MacOS you first need to install [Homebrew](https://brew.sh/).  One way to do that is to run
+```
+$ /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+```
+
 * Java 8, Maven build system, various Java libraries
   (Maven will manage the libraries)
 * Front-end: Typescript, webpack, Tomcat app server, node.js;
   some JavaScript libraries: d3, pako, and rx-js
 * Cloud service management: Python3
-* IDEA Intellij for development (optional)
+* Once you have Java everything else is installed by scripts.
 
-## Installing Java
+### 4.1.1 Installing Java
 
 We use Java 8; newer versions will *not* work.
 
@@ -255,17 +258,10 @@ $ export JAVA_HOME="<path-to-jdk-folder>"
 
 (For MacOS you do not need to set up JAVA_HOME.)
 
-## Installing other software needed
+### 4.1.2. Installing other software needed
 
 The following shell script will install the other required dependencies
 for building and testing.
-
-On MacOS you first need to install [Homebrew](https://brew.sh/).  One way to do that is to run
-```
-$ /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-```
-
-To install all other dependencies you can run:
 
 ```
 $ cd bin
@@ -275,7 +271,7 @@ $ ./install-dependencies.sh
 For old versions of Ubuntu this may fail, so you may have to install the required
 dependencies manually.
 
-## Impala Java libraries
+#### 4.1.2.1 Optional Impala Java libraries
 
 If you want to access the [Impala](https://impala.apache.org/)
 database you will need to download and install the JDBC connectors for
@@ -285,20 +281,26 @@ Impala libraries from
 repositories.)  You should install these in your local Maven
 repository, e.g. in the ~/.m2/com/cloudera/impala folder.  You may
 also need to adjust the version of the libraries in the file
-platform/pom.xml.
+`platform/pom.xml`.
 
-## Building Hillview
+## 4.2. Building Hillview
 
-* Build the software:
+* Build the software for the first time:
 
 ```
 $ cd bin
 $ ./rebuild.sh -a
+$ ./demo-data-cleaner.sh
 ```
 
-### Build details
+Subsequent builds can just run
 
-Hillview is currently split into two separate Maven projects.
+```
+$ bin/rebuild.sh
+```
+
+Hillview is currently split into two separate Maven projects.  One can 
+also build the two projects separately, as follows:
 
 * platform: pure Java, includes the entire back-end.  This produces a
 JAR file `platform/target/hillview-jar-with-dependencies.jar`.  This
@@ -321,43 +323,44 @@ $ mvn package
 $ cd ..
 ```
 
-## Contributing code
+## 4.3. Contributing code
 
 You will need to sign a CLA (Contributor License Agreement) to
 contribute code to Hillview under an Apache-2 license.  This is very
 standard.
 
-## Setup IntelliJ IDEA
+## 4.4. Setup IntelliJ IDEA
 
 Download and install Intellij IDEA: https://www.jetbrains.com/idea/.
-You can just untar the Linux binary in a place of your choice and run
-the shell script `ideaXXX/bin/idea.sh`.  The web projects uses
-capabilities only available in the paid version of Intellij IDEA.
+The web project typescript requires the (paid) Ultimate version of Intellij.
 
-One solution is to load only the module that you want to contribute to: move to the
-corresponding folder: `cd platform` or `cd web` and start
-IntelliJ there.
+First run maven to generate the Java code automatically generated for gRPC: 
 
-Alternatively, if you have IntelliJ Ultimate you can create an empty project
+```
+$ cd platform
+$ mvn install
+```
+
+Create an empty project
 in the hillview folder, and then import three modules (from File/Project structure/Modules,
 add three modules: web/pom.xml, platform/pom.xml, and the root folder hillview itself).
-After running `mvn install` in platform you should also mark the following directories 
-as generated sources: `platform/target/generated-sources/protobuf/*` 
 
-## Using git to contribute
+## 4.5. Running the tests
 
-* Fork the repository using the "fork" button on github, by following these instructions:
+* The unit tests are run by building with maven or by running `bin/rebuild.sh -t`.
+* The UI tests are run by starting Hillview on a local machine and
+then clicking the "Test/Run" menu button.
+
+## 4.6. Using git to contribute
+
+Fork the repository using the "fork" button on github, by following these instructions:
 https://help.github.com/articles/fork-a-repo/
-* Run IntelliJ code inspection (Analyze/Inspect code) before commit and solve all open issues.
-* Submit them into your own forked repository and send us a pull request.
 
-In more detail, here is a step-by-step guide to committing your changes:
+Here is a step-by-step guide to submitting contributions:
 
 1. Create a new branch for each fix; give it a nice suggestive name:
    - `git branch yourBranchName`
    - `git checkout yourBranchName`
-   - The main benefit of using branches is that you can have multiple
-     branches active at the same time, one for each independent fix.
 2. `git add <files that changed>`
 3. `git commit -m "Description of commit"`
 4. `git fetch upstream`
@@ -367,23 +370,22 @@ In more detail, here is a step-by-step guide to committing your changes:
     to `git add` the files you have merged, and then you may need to use
     `git rebase --continue` or `git rebase --skip`)
 7. Test, analyze merged version.
-8. `git push -f origin yourBranchName`.  You won't need the `-f` if you are
-   not updating a previous push to this branch.
+8. `git push -f origin yourBranchName`.
 9. Create a pull request to merge your new branch into master (using the web ui).
 10. Delete your branch after the merging has been done `git branch -D yourBranchName`
-11. To run the program you should try the master branch:
-  - `git checkout master`
-  - `git fetch upstream`
-  - `git rebase upstream/master`
-  - `git push origin master`
 
-## Guidance in writing code
+## 4.7. Guidance in writing code
+
+* Use the IntelliJ code inspection feature (Analyze/Inspect code).
 
 * The pseudorandom generator is implemented in the class
-  Randomness.java and uses Mersenne Twister.  Do not use the
-  Java `Random` class, but this one.
+  [Randomness.java](platform/src/main/java/org/hillview/utils/Randomness.java) and uses Mersenne Twister.  Do not use the
+  Java `Random`.
 
 * By default all pointers are assumed to be non-null; use the
-  @Nullable annotation (from javax.annotation) for all pointers which
-  can be null.  Use `Converters.checkNull` to cast a @Nullable to a
-  @NonNull pointer.
+  `@Nullable` annotation (from javax.annotation) for all pointers which
+  can be null.  Use `Converters.checkNull` to cast a @Nullable pointer to a
+  non-null pointer.
+  
+* Some code executes on multiple machines or in multiple threads.  In particular,
+  all classes that derive from `IMap` or `ISketch` should be immutable.

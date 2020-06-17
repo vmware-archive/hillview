@@ -17,7 +17,7 @@
 
 import {axisBottom as d3axisBottom, axisLeft as d3axisLeft,} from "d3-axis";
 import {scaleLinear as d3scaleLinear, scaleTime as d3scaleTime,} from "d3-scale";
-import {BucketsInfo, ContentsKind, IColumnDescription, kindIsString} from "../javaBridge";
+import {BucketsInfo, ContentsKind, IColumnDescription, kindIsString, RangeFilterDescription} from "../javaBridge";
 import {assert, Converters, formatDate, formatNumber, significantDigits, truncate,} from "../util";
 import {AnyScale, D3Axis, D3SvgElement, SpecialChars} from "../ui/ui";
 import {SchemaClass} from "../schemaClass";
@@ -152,8 +152,6 @@ export class AxisDescription {
     }
 }
 
-// This value represents the index of the bucket with missing data.
-export const MissingBucketIndex = -1;
 // This value indicates that some data does not fall within a bucket.
 export const NoBucketIndex = null;
 
@@ -327,6 +325,30 @@ export class AxisData {
         }
     }
 
+    public getFilter(min: number, max: number): RangeFilterDescription {
+        let iMin = this.invertToNumber(min);
+        let iMax = this.invertToNumber(max);
+        let sMin = this.invert(min);
+        let sMax = this.invert(max);
+        if (iMin > iMax) {
+            const tmp = iMin;
+            iMin = iMax;
+            iMax = tmp;
+
+            const sTmp = sMin;
+            sMin = sMax;
+            sMax = sTmp;
+        }
+        return {
+            min: iMin,
+            max: iMax,
+            minString: sMin,
+            maxString: sMax,
+            cd: this.description,
+            includeMissing: false // TODO
+        };
+    }
+
     /**
      * Given a mouse coordinate on a specified d3 scale, returns the corresponding
      * Real-world value.  Returns the result as a string.
@@ -362,9 +384,9 @@ export class AxisData {
     }
 
     public bucketBoundaries(bucket: number): BucketBoundaries {
-        if (bucket === MissingBucketIndex)
+        if (bucket === this.bucketCount)
             return new BucketBoundaries(new BucketBoundary("missing", "String", true), null);
-        if (bucket === null || bucket < 0 || bucket >= this.bucketCount)
+        if (bucket === null || bucket < 0 || bucket > this.bucketCount)
             return new BucketBoundaries(null, null);
 
         const valueKind = this.description.kind;
@@ -427,7 +449,7 @@ export class AxisData {
     }
 
     /**
-     * @param bucket   Bucket number.  MissingBucketIndex for the missing data buckets.
+     * @param bucket   Bucket number.  The same as the number of buckets for the missing data buckets.
      * @param maxChars Maximum number of characters to use for description; if 0 it is unlimited.
      * @returns  A description of the boundaries of the specified bucket.
      */

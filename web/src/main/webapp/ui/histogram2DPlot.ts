@@ -35,7 +35,7 @@ interface Box {
     xIndex: number | null;
     /**
      * Bucket index on the Y axis.  null if out of range.
-     * -1 for "missing" data.
+     * Number of buckets for "missing" data.
      */
     yIndex: number;
     /**
@@ -238,7 +238,7 @@ export class Histogram2DPlot extends Histogram2DBase {
         yTotalScaled += missing * scale;
         if (!found && yTotalScaled >= yScaled) {
             perc = missing;
-            yIndex = -1;  // missing
+            yIndex = this.heatmap.first.perBucket.length;  // missing
         }
         return {
             xIndex: xIndex,
