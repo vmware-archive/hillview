@@ -17,14 +17,14 @@
 
 import {Receiver} from "../rpc";
 import {
-    FilterDescription, Groups,
+    Groups,
     RecordOrder,
-    RemoteObjectId
+    RemoteObjectId, RangeFilterArrayDescription
 } from "../javaBridge";
 import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {SchemaClass} from "../schemaClass";
-import {add, Converters, ICancellable, PartialResult, percent, reorder, significantDigits} from "../util";
+import {add, Converters, ICancellable, PartialResult, percent, significantDigits} from "../util";
 import {AxisData, AxisKind} from "./axisData";
 import {
     IViewSerialization,
@@ -476,11 +476,11 @@ export class TrellisHistogram2DView extends TrellisChartView {
         };
     }
 
-    protected filter(filter: FilterDescription): void {
+    protected filter(filter: RangeFilterArrayDescription): void {
         if (filter == null)
             return;
         const rr = this.createFilterRequest(filter);
-        const title = new PageTitle(this.page.title.format, Converters.filterDescription(filter));
+        const title = new PageTitle(this.page.title.format, Converters.filterDescription(filter.filters[0]));
         const renderer = new FilterReceiver(title, [this.xAxisData.description, this.legendAxisData.description,
             this.groupByAxisData.description], this.schema, [0, 0, 0], this.page, rr, this.dataset, {
             chartKind: "Trellis2DHistogram", relative: this.relative,
@@ -490,29 +490,16 @@ export class TrellisHistogram2DView extends TrellisChartView {
     }
 
     protected legendSelectionCompleted(xl: number, xr: number): void {
-        [xl, xr] = reorder(xl, xr);
         const x0 = this.legendAxisData.invertToNumber(xl);
         const x1 = this.legendAxisData.invertToNumber(xr);
-        if (x0 > x1) {
-            this.page.reportError("No data selected");
-            return;
-        }
-
         if (d3event.sourceEvent.shiftKey) {
             this.legendPlot.emphasizeRange(xl / this.legendPlot.width, xr / this.legendPlot.width);
             this.resize();
             return;
         }
 
-        const filter: FilterDescription = {
-            min: x0,
-            max: x1,
-            minString: this.legendAxisData.invert(xl),
-            maxString: this.legendAxisData.invert(xr),
-            cd: this.legendAxisData.description,
-            complement: d3event.sourceEvent.ctrlKey,
-        };
-        this.filter(filter);
+        const filter = this.legendAxisData.getFilter(xl, xr);
+        this.filter({ filters: [filter], complement: d3event.sourceEvent.ctrlKey });
     }
 
     protected selectionCompleted(): void {
@@ -522,14 +509,8 @@ export class TrellisHistogram2DView extends TrellisChartView {
             const left = this.position(origin.x, origin.y);
             const end = this.canvasToChart(this.selectionEnd);
             const right = this.position(end.x, end.y);
-            const [xl, xr] = reorder(left.x, right.x);
-
-            const filter: FilterDescription = {
-                min: this.xAxisData.invertToNumber(xl),
-                max: this.xAxisData.invertToNumber(xr),
-                minString: this.xAxisData.invert(xl),
-                maxString: this.xAxisData.invert(xr),
-                cd: this.xAxisData.description,
+            const filter: RangeFilterArrayDescription = {
+                filters: [this.xAxisData.getFilter(left.x, right.x)],
                 complement: d3event.sourceEvent.ctrlKey,
             };
             this.filter(filter);

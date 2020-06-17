@@ -376,12 +376,13 @@ export class QuartilesHistogramView extends HistogramViewBase {
      * canvas or legend rectangle respectively.
      */
     protected selectionCompleted(xl: number, xr: number, yl: number, yr: number): void {
-        const [rr, f0, f1] = this.filterSelectionRectangle(xl, xr, yl, yr, this.xAxisData, this.yAxisData);
-        if (rr == null)
+        const f = this.filterSelectionRectangle(xl, xr, yl, yr, this.xAxisData, this.yAxisData);
+        if (f == null)
             return;
+        const rr = this.createFilterRequest(f);
         const renderer = new FilterReceiver(
             new PageTitle(this.page.title.format,
-                Converters.filterDescription(f0) + " and " + Converters.filterDescription(f1)),
+                Converters.filterArrayDescription(f)),
             [this.xAxisData.description, this.qCol], this.schema,
             [0], this.page, rr, this.dataset, {
             chartKind: "QuartileVector", reusePage: false,

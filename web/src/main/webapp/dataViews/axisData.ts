@@ -17,7 +17,7 @@
 
 import {axisBottom as d3axisBottom, axisLeft as d3axisLeft,} from "d3-axis";
 import {scaleLinear as d3scaleLinear, scaleTime as d3scaleTime,} from "d3-scale";
-import {BucketsInfo, ContentsKind, IColumnDescription, kindIsString} from "../javaBridge";
+import {BucketsInfo, ContentsKind, IColumnDescription, kindIsString, RangeFilterDescription} from "../javaBridge";
 import {assert, Converters, formatDate, formatNumber, significantDigits, truncate,} from "../util";
 import {AnyScale, D3Axis, D3SvgElement, SpecialChars} from "../ui/ui";
 import {SchemaClass} from "../schemaClass";
@@ -323,6 +323,30 @@ export class AxisData {
                 break;
             }
         }
+    }
+
+    public getFilter(min: number, max: number): RangeFilterDescription {
+        let iMin = this.invertToNumber(min);
+        let iMax = this.invertToNumber(max);
+        let sMin = this.invert(min);
+        let sMax = this.invert(max);
+        if (iMin > iMax) {
+            const tmp = iMin;
+            iMin = iMax;
+            iMax = tmp;
+
+            const sTmp = sMin;
+            sMin = sMax;
+            sMax = sTmp;
+        }
+        return {
+            min: iMin,
+            max: iMax,
+            minString: sMin,
+            maxString: sMax,
+            cd: this.description,
+            includeMissing: false // TODO
+        };
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2020 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,24 +19,18 @@ package org.hillview.table.filters;
 
 import org.hillview.table.api.ITableFilter;
 
-/**
- * This filter executes an array of other filters and returns true when either returns true.
- */
-public class OrFilter implements ITableFilter {
-    private final ITableFilter[] filters;
+public class NotFilter implements ITableFilter {
+    private final ITableFilter filter;
 
-    OrFilter(ITableFilter[] filters) {
-        this.filters = filters;
+    NotFilter(ITableFilter filter) {
+        this.filter = filter;
     }
 
     public boolean test(int rowIndex) {
-        for (ITableFilter f: this.filters)
-            if (f.test(rowIndex))
-                return true;
-        return false;
+        return !this.filter.test(rowIndex);
     }
 
     public String toString() {
-        return "OrFilter(" + this.filters.length + ")";
+        return "NotFilter(" + this.filter + ")";
     }
 }

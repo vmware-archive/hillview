@@ -18,11 +18,11 @@
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {HistogramSerialization, IViewSerialization} from "../datasetView";
 import {
-    FilterDescription, Groups,
+    Groups,
     IColumnDescription, kindIsNumeric,
     kindIsString,
     RecordOrder,
-    RemoteObjectId,
+    RemoteObjectId, RangeFilterArrayDescription,
 } from "../javaBridge";
 import {Receiver} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
@@ -42,7 +42,6 @@ import {
     ICancellable, makeInterval,
     PartialResult,
     percent,
-    reorder,
     saveAs,
     significantDigits, significantDigitsHtml, Two,
 } from "../util";
@@ -533,20 +532,13 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         // coordinates within chart
         xl -= this.surface.leftMargin;
         xr -= this.surface.leftMargin;
-        // selection could be done in reverse
-        [xl, xr] = reorder(xl, xr);
-
-        const filter: FilterDescription = {
-            min: this.xAxisData.invertToNumber(xl),
-            max: this.xAxisData.invertToNumber(xr),
-            minString: this.xAxisData.invert(xl),
-            maxString: this.xAxisData.invert(xr),
-            cd: this.xAxisData.description,
+        const filter: RangeFilterArrayDescription = {
+            filters: [this.xAxisData.getFilter(xl, xr)],
             complement: d3event.sourceEvent.ctrlKey,
         };
         const rr = this.createFilterRequest(filter);
         const title = new PageTitle(this.page.title.format,
-            Converters.filterDescription(filter));
+            Converters.filterArrayDescription(filter));
         const renderer = new FilterReceiver(title, [this.xAxisData.description], this.schema,
             [0], this.page, rr, this.dataset, {
             exact: this.samplingRate >= 1,

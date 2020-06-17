@@ -18,11 +18,10 @@
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {Histogram2DSerialization, IViewSerialization} from "../datasetView";
 import {
-    FilterDescription,
     IColumnDescription,
     kindIsString,
     RecordOrder,
-    RemoteObjectId, kindIsNumeric, Groups,
+    RemoteObjectId, kindIsNumeric, Groups, RangeFilterArrayDescription,
 } from "../javaBridge";
 import {Receiver, RpcRequest} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
@@ -669,7 +668,6 @@ export class Histogram2DView extends HistogramViewBase {
     protected selectionCompleted(xl: number, xr: number, inLegend: boolean): void {
         const shiftPressed = d3event.sourceEvent.shiftKey;
         let selectedAxis: AxisData;
-        [xl, xr] = reorder(xl, xr);
 
         if (inLegend) {
             selectedAxis = this.yAxisData;
@@ -685,24 +683,14 @@ export class Histogram2DView extends HistogramViewBase {
             return;
         }
 
-        const x0 = selectedAxis.invertToNumber(xl);
-        const x1 = selectedAxis.invertToNumber(xr);
-        if (x0 > x1) {
-            this.page.reportError("No data selected");
-            return;
+        const filter = selectedAxis.getFilter(xl, xr);
+        const fa: RangeFilterArrayDescription = {
+            filters: [filter],
+            complement: d3event.sourceEvent.ctrlKey
         }
-
-        const filter: FilterDescription = {
-            min: x0,
-            max: x1,
-            minString: selectedAxis.invert(xl),
-            maxString: selectedAxis.invert(xr),
-            cd: selectedAxis.description,
-            complement: d3event.sourceEvent.ctrlKey,
-        };
-        const rr = this.createFilterRequest(filter);
+        const rr = this.createFilterRequest(fa);
         const renderer = new FilterReceiver(
-            new PageTitle(this.page.title.format, Converters.filterDescription(filter)),
+            new PageTitle(this.page.title.format, Converters.filterArrayDescription(fa)),
             [this.xAxisData.description, this.yAxisData.description], this.schema,
             [inLegend ? this.xPoints : 0, this.yPoints], this.page, rr, this.dataset, {
             exact: this.samplingRate >= 1.0,

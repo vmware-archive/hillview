@@ -27,9 +27,8 @@ import {
     AggregateDescription,
     ComparisonFilterDescription,
     ContentsKind,
-    FilterDescription,
     kindIsNumeric,
-    kindIsString,
+    kindIsString, RangeFilterArrayDescription, RangeFilterDescription,
     RowFilterDescription,
     StringFilterDescription
 } from "./javaBridge";
@@ -132,11 +131,20 @@ export class Converters {
      * Human-readable description of a filter.
      * @param f: filter to describe
      */
-    public static filterDescription(f: FilterDescription): string {
+    public static filterDescription(f: RangeFilterDescription): string {
         const min = kindIsNumeric(f.cd.kind) ? f.min : f.minString;
         const max = kindIsNumeric(f.cd.kind) ? f.max : f.maxString;
         return "Filtered on " + f.cd.name + " in range " +
             Converters.valueToString(min, f.cd.kind) + " - " + Converters.valueToString(max, f.cd.kind);
+    }
+
+    public static filterArrayDescription(f: RangeFilterArrayDescription): string {
+        let result = "";
+        if (f.complement)
+            result = "not ";
+        for (const filter of f.filters)
+            result += Converters.filterDescription(filter);
+        return result;
     }
 
     public static stringFilterDescription(f: StringFilterDescription): string {

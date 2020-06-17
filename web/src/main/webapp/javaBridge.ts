@@ -261,14 +261,17 @@ export interface RangeArgs {
     stringsToSample: number;
 }
 
-// This is a union of DoubleRangeFilterDescription
-// and StringRangeFilterDescription.
-export interface FilterDescription {
+export interface RangeFilterDescription {
     min: number;
     max: number;
     minString: string;
     maxString: string;
     cd: IColumnDescription;
+    includeMissing: boolean;
+}
+
+export interface RangeFilterArrayDescription {
+    filters: RangeFilterDescription[];
     complement: boolean;
 }
 

@@ -16,7 +16,7 @@
  */
 
 import {AxisData, AxisDescription} from "./axisData";
-import {FilterDescription, RemoteObjectId} from "../javaBridge";
+import {RangeFilterArrayDescription, RemoteObjectId} from "../javaBridge";
 import {DisplayName, SchemaClass} from "../schemaClass";
 import {FullPage} from "../ui/fullPage";
 import {Point, Resolution, ViewKind} from "../ui/ui";
@@ -25,7 +25,7 @@ import {TrellisShape} from "./dataRangesCollectors";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {TrellisShapeSerialization} from "../datasetView";
-import {reorder} from "../util";
+import {assert, reorder} from "../util";
 import {Dialog, FieldKind} from "../ui/dialog";
 
 /**
@@ -273,25 +273,34 @@ export abstract class TrellisChartView extends ChartView {
      * After the selection is completed it returns the description of the filter to apply on
      * the groupBy axis.  Returns null if the selection is not well-defined.
      */
-    protected getGroupBySelectionFilter(): FilterDescription {
+    protected getGroupBySelectionFilter(): RangeFilterArrayDescription {
         if (this.selectionIsLocal() != null)
             return null;
         const end = this.canvasToChart(this.selectionEnd);
         const [x0, x1] = reorder(this.selectionOrigin.x, end.x);
         const [y0, y1] = reorder(this.selectionOrigin.y, end.y);
-        const posUp = this.position(x0, y0);
-        const posDown = this.position(x1, y1);
-        if (posUp.plotIndex == null || posDown.plotIndex == null)
+        const first = this.position(x0, y0);
+        const last = this.position(x1, y1);
+        if (first.plotIndex == null || last.plotIndex == null)
             return null;
 
-        const min = this.groupByAxisData.bucketBoundaries(posUp.plotIndex).getMin();
-        const max = this.groupByAxisData.bucketBoundaries(posDown.plotIndex).getMax();
+        let includeMissing = false;
+        if ((last.plotIndex === this.shape.windowCount - 1) && this.shape.missingBucket) {
+            includeMissing = true;
+            assert(last.plotIndex > 0);
+            last.plotIndex--;
+        }
+        const min = this.groupByAxisData.bucketBoundaries(first.plotIndex).getMin();
+        const max = this.groupByAxisData.bucketBoundaries(last.plotIndex).getMax();
         return {
-            min: min.getNumber(),
-            max: max.getNumber(),
-            minString: min.getString(),
-            maxString: max.getString(),
-            cd: this.groupByAxisData.description,
+            filters: [{
+                min: min.getNumber(),
+                max: max.getNumber(),
+                minString: min.getString(),
+                maxString: max.getString(),
+                cd: this.groupByAxisData.description,
+                includeMissing: includeMissing
+            }],
             complement: d3event.sourceEvent.ctrlKey,
         };
     }

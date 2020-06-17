@@ -198,8 +198,6 @@ public class DPWrapper {
     }
 
     public void filter(RangeFilterDescription filter) {
-        if (filter.complement)
-            throw new HillviewException("Only filters on contiguous range are supported");
         RangeFilterDescription rf = this.columnLimits.get(filter.cd.name);
         ColumnQuantization q = this.getPrivacySchema().quantization(filter.cd.name);
         filter = filter.intersect(q);

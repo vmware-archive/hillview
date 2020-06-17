@@ -18,9 +18,9 @@
 import {Receiver} from "../rpc";
 import {
     BucketsInfo,
-    FilterDescription, Groups,
+    Groups,
     HistogramRequestInfo,
-    IColumnDescription,
+    IColumnDescription, RangeFilterArrayDescription,
     RecordOrder,
     RemoteObjectId, SampleSet
 } from "../javaBridge";
@@ -394,11 +394,11 @@ export class TrellisHistogramQuartilesView extends TrellisChartView {
         };
     }
 
-    protected filter(filter: FilterDescription): void {
+    protected filter(filter: RangeFilterArrayDescription): void {
         if (filter == null)
             return;
         const rr = this.createFilterRequest(filter);
-        const title = new PageTitle(this.page.title.format, Converters.filterDescription(filter));
+        const title = new PageTitle(this.page.title.format, Converters.filterArrayDescription(filter));
         const renderer = new FilterReceiver(title, [this.xAxisData.description, this.qCol,
             this.groupByAxisData.description], this.schema, [0, 0, 0], this.page, rr, this.dataset, {
             chartKind: "TrellisQuartiles",
@@ -414,17 +414,9 @@ export class TrellisHistogramQuartilesView extends TrellisChartView {
             const left = this.position(origin.x, origin.y);
             const end = this.canvasToChart(this.selectionEnd);
             const right = this.position(end.x, end.y);
-            const [xl, xr] = reorder(left.x, right.x);
-
-            const filter: FilterDescription = {
-                min: this.xAxisData.invertToNumber(xl),
-                max: this.xAxisData.invertToNumber(xr),
-                minString: this.xAxisData.invert(xl),
-                maxString: this.xAxisData.invert(xr),
-                cd: this.xAxisData.description,
-                complement: d3event.sourceEvent.ctrlKey,
-            };
-            this.filter(filter);
+            const filter = this.xAxisData.getFilter(left.x, right.x);
+            const fa = { filters: [filter], complement: d3event.sourceEvent.ctrlKey };
+            this.filter(fa);
         } else {
             const filter = this.getGroupBySelectionFilter();
             this.filter(filter);

@@ -16,8 +16,8 @@
  */
 
 import {
-    FilterDescription, Groups,
-    IColumnDescription,
+    Groups,
+    IColumnDescription, RangeFilterArrayDescription,
     RecordOrder,
     RemoteObjectId
 } from "../javaBridge";
@@ -35,7 +35,7 @@ import {
     TrellisLayoutComputation
 } from "./dataRangesCollectors";
 import {Receiver, RpcRequest} from "../rpc";
-import {Converters, ICancellable, makeInterval, PartialResult, reorder} from "../util";
+import {Converters, ICancellable, makeInterval, PartialResult} from "../util";
 import {HeatmapPlot} from "../ui/heatmapPlot";
 import {IViewSerialization, TrellisHeatmapSerialization} from "../datasetView";
 import {IDataView} from "../ui/dataview";
@@ -395,27 +395,13 @@ export class TrellisHeatmapView extends TrellisChartView {
             const left = this.position(origin.x, origin.y);
             const end = this.canvasToChart(this.selectionEnd);
             const right = this.position(end.x, end.y);
-
-            const [xl, xr] = reorder(left.x, right.x);
-            const [yr, yl] = reorder(left.y, right.y);   // y coordinates are in reverse
-
-            const xRange: FilterDescription = {
-                min: this.xAxisData.invertToNumber(xl),
-                max: this.xAxisData.invertToNumber(xr),
-                minString: this.xAxisData.invert(xl),
-                maxString: this.xAxisData.invert(xr),
-                cd: this.xAxisData.description,
-                complement: d3event.sourceEvent.ctrlKey,
-            };
-            const yRange: FilterDescription = {
-                min: this.yAxisData.invertToNumber(yl),
-                max: this.yAxisData.invertToNumber(yr),
-                minString: this.yAxisData.invert(yl),
-                maxString: this.yAxisData.invert(yr),
-                cd: this.yAxisData.description,
-                complement: d3event.sourceEvent.ctrlKey,
-            };
-            rr = this.createFilter2DRequest(xRange, yRange);
+            const xRange = this.xAxisData.getFilter(left.x, right.x);
+            const yRange = this.yAxisData.getFilter(left.y, right.y);
+            const f: RangeFilterArrayDescription = {
+                filters: [xRange, yRange],
+                complement: d3event.sourceEvent.ctrlKey
+            }
+            rr = this.createFilterRequest(f);
             title = new PageTitle(this.page.title.format,
                 Converters.filterDescription(xRange) + " and " + Converters.filterDescription(yRange));
             const renderer = new FilterReceiver(title,
@@ -430,7 +416,7 @@ export class TrellisHeatmapView extends TrellisChartView {
             if (filter == null)
                 return;
             rr = this.createFilterRequest(filter);
-            title = new PageTitle(this.page.title.format, Converters.filterDescription(filter));
+            title = new PageTitle(this.page.title.format, Converters.filterArrayDescription(filter));
             const renderer = new FilterReceiver(title,
                 [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description],
                 this.schema, [0, 0, 0], this.page, rr, this.dataset, {

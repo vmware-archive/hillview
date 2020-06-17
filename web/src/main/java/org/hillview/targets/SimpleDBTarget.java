@@ -23,6 +23,7 @@ import org.hillview.dataStructures.*;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.sketches.PrecomputedSketch;
 import org.hillview.dataset.api.ISketch;
+import org.hillview.table.filters.RangeFilterArrayDescription;
 import org.hillview.utils.Pair;
 import org.hillview.maps.highorder.IdMap;
 import org.hillview.sketches.results.*;
@@ -35,7 +36,6 @@ import org.hillview.table.SmallTable;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.ITable;
 import org.hillview.table.filters.RangeFilterDescription;
-import org.hillview.table.filters.RangeFilterPairDescription;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.*;
 
@@ -196,28 +196,15 @@ public class SimpleDBTarget extends TableRpcTarget {
     }
 
     @HillviewRpc
-    public void filterRange(RpcRequest request, RpcRequestContext context) {
-        RangeFilterDescription filter = request.parseArgs(RangeFilterDescription.class);
+    public void filterRanges(RpcRequest request, RpcRequestContext context) {
+        RangeFilterArrayDescription filter = request.parseArgs(RangeFilterArrayDescription.class);
         if (filter.complement)
             throw new HillviewException("Only filters on contiguous range are supported");
         IdMap<ITable> map = new IdMap<ITable>();
         this.runMap(this.table, map, (e, c1) -> {
             SimpleDBTarget result = new SimpleDBTarget(this.jdbc, c1);
-            result.columnLimits.intersect(filter);
-            return result;
-        }, request, context);
-    }
-
-    @HillviewRpc
-    public void filter2DRange(RpcRequest request, RpcRequestContext context) {
-        RangeFilterPairDescription filter = request.parseArgs(RangeFilterPairDescription.class);
-        if (filter.first.complement || filter.second.complement)
-            throw new HillviewException("Only filters on contiguous range are supported");
-        IdMap<ITable> map = new IdMap<ITable>();
-        this.runMap(this.table, map, (e, c1) -> {
-            SimpleDBTarget result = new SimpleDBTarget(this.jdbc, c1);
-            result.columnLimits.intersect(filter.first);
-            result.columnLimits.intersect(filter.second);
+            for (RangeFilterDescription f: filter.filters)
+                result.columnLimits.intersect(f);
             return result;
         }, request, context);
     }

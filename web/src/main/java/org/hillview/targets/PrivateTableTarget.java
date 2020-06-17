@@ -15,8 +15,8 @@ import org.hillview.table.QuantizationSchema;
 import org.hillview.table.Schema;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.ColumnQuantization;
+import org.hillview.table.filters.RangeFilterArrayDescription;
 import org.hillview.table.filters.RangeFilterDescription;
-import org.hillview.table.filters.RangeFilterPairDescription;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.*;
 
@@ -107,25 +107,15 @@ public class PrivateTableTarget extends TableRpcTarget implements IPrivateDatase
     }
 
     @HillviewRpc
-    public void filterRange(RpcRequest request, RpcRequestContext context) {
-        RangeFilterDescription filter = request.parseArgs(RangeFilterDescription.class);
+    public void filterRanges(RpcRequest request, RpcRequestContext context) {
+        RangeFilterArrayDescription filter = request.parseArgs(RangeFilterArrayDescription.class);
+        if (filter.complement)
+            throw new HillviewException("Only filters on contiguous range are supported");
         FilterMap map = new FilterMap(filter, this.getPrivacySchema().quantization);
         BiFunction<IDataSet<ITable>, HillviewComputation, IRpcTarget> constructor = (e, c) -> {
             PrivateTableTarget result = new PrivateTableTarget(e, c, this.wrapper);
-            result.getWrapper().filter(filter);
-            return result;
-        };
-        this.runMap(this.table, map, constructor, request, context);
-    }
-
-    @HillviewRpc
-    public void filter2DRange(RpcRequest request, RpcRequestContext context) {
-        RangeFilterPairDescription filter = request.parseArgs(RangeFilterPairDescription.class);
-        FilterMap map = new FilterMap(filter, this.getPrivacySchema().quantization);
-        BiFunction<IDataSet<ITable>, HillviewComputation, IRpcTarget> constructor = (e, c) -> {
-            PrivateTableTarget result = new PrivateTableTarget(e, c, this.wrapper);
-            result.getWrapper().filter(filter.first);
-            result.getWrapper().filter(filter.second);
+            for (RangeFilterDescription f: filter.filters)
+                result.getWrapper().filter(f);
             return result;
         };
         this.runMap(this.table, map, constructor, request, context);

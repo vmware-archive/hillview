@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-import {Receiver, RpcRequest} from "../rpc";
+import {Receiver} from "../rpc";
 import {
-    FilterDescription, Groups,
-    kindIsString,
+    Groups,
+    kindIsString, RangeFilterArrayDescription,
     RecordOrder,
     RemoteObjectId
 } from "../javaBridge";
@@ -31,7 +31,7 @@ import {
     ICancellable, makeInterval,
     PartialResult,
     percent, prefixSum,
-    reorder, Two,
+    Two,
 } from "../util";
 import {AxisData, AxisKind} from "./axisData";
 import {IViewSerialization, TrellisHistogramSerialization} from "../datasetView";
@@ -442,33 +442,23 @@ export class TrellisHistogramView extends TrellisChartView {
 
     protected selectionCompleted(): void {
         const local = this.selectionIsLocal();
-        let title: PageTitle;
-        let rr: RpcRequest<PartialResult<RemoteObjectId>>;
-        let filter: FilterDescription;
+        let filter: RangeFilterArrayDescription;
         if (local != null) {
             const origin = this.canvasToChart(this.selectionOrigin);
             const left = this.position(origin.x, origin.y);
             const end = this.canvasToChart(this.selectionEnd);
             const right = this.position(end.x, end.y);
-            const [xl, xr] = reorder(left.x, right.x);
-
             filter = {
-                min: this.xAxisData.invertToNumber(xl),
-                max: this.xAxisData.invertToNumber(xr),
-                minString: this.xAxisData.invert(xl),
-                maxString: this.xAxisData.invert(xr),
-                cd: this.xAxisData.description,
+                filters: [this.xAxisData.getFilter(left.x, right.x)],
                 complement: d3event.sourceEvent.ctrlKey,
             };
-            rr = this.createFilterRequest(filter);
-            title = new PageTitle(this.page.title.format, Converters.filterDescription(filter));
         } else {
             filter = this.getGroupBySelectionFilter();
-            if (filter == null)
-                return;
-            rr = this.createFilterRequest(filter);
-            title = new PageTitle(this.page.title.format, Converters.filterDescription(filter));
         }
+        if (filter == null)
+            return;
+        const rr = this.createFilterRequest(filter);
+        const title = new PageTitle(this.page.title.format, Converters.filterArrayDescription(filter));
         const renderer = new FilterReceiver(title, [this.xAxisData.description, this.groupByAxisData.description],
             this.schema, [0, 0], this.page, rr, this.dataset, {
             chartKind: "TrellisHistogram", relative: false,
