@@ -6,13 +6,13 @@ The hillview user interface executes in a browser.
 
 Contents:
 
-[1. Documentation](#1.-Documentation)
+[1. Documentation](#1-Documentation)
 
-[2. Local installation](#2.-Installing-and-running-Hillview-on-a-local-machine)
+[2. Local installation](#2-Installing-and-running-Hillview-on-a-local-machine)
 
-[3. Cluster installation](#3.-Deploying-the-Hillview-service-on-a-cluster)
+[3. Cluster installation](#3-Deploying-the-Hillview-service-on-a-cluster)
 
-[4. Developing Hillview](#4.-Developing-Hillview)
+[4. Developing Hillview](#4-Developing-Hillview)
 
 # 1. Documentation
 
@@ -363,7 +363,7 @@ redhat.java`: recognize projects with Maven or Gradle build in the directory hie
 1. Finally, about attaching a debugger:
 	- Bring up the `Run` view, select the `Run` icon in the `Activity Bar` on the left side of VS Code.
 	- From the `Run` view, click `create a launch.json file`, you will see the `platform` and `web` modules listed. We will create two `launch.json` files, one for `platform` module and the other for `web` module. 
-	- When configuring the `launch.json` for `platform` module, you must select `Java` option. Otherwise, choose `Chrome (preview)` option when configuring the `web` module. Then, delete the auto generated `configurations` and specify the correct configuration to attach the debugger. The important fields are `url`, `hostname`, `port`, and `request`. More about this is here [VS Code Debugging#launch-configuration](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations).
+	- When configuring the `launch.json` for `platform` module, you must select `Java` option. Otherwise, choose `Chrome (preview)` option when configuring the `web` module. Then, delete the auto generated `configurations` and specify the correct configuration to attach the debugger. The important fields are `url`, `hostname`, `port`, and `request`. More about this is here [VS Code Debugging#launch-configuration](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations) and [VS Code#Java-Debugging](https://code.visualstudio.com/docs/java/java-debugging#_attach).
 
 ## 4.6. Running the tests
 
