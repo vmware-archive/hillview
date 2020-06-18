@@ -6,13 +6,13 @@ The hillview user interface executes in a browser.
 
 Contents:
 
-[1. Documentation](#1.-Documentation)
+[1. Documentation](#1-Documentation)
 
-[2. Local installation](#2.-Installing-and-running-Hillview-on-a-local-machine)
+[2. Local installation](#2-Installing-and-running-Hillview-on-a-local-machine)
 
-[3. Cluster installation](#3.-Deploying-the-Hillview-service-on-a-cluster)
+[3. Cluster installation](#3-Deploying-the-Hillview-service-on-a-cluster)
 
-[4. Developing Hillview](#4.-Developing-Hillview)
+[4. Developing Hillview](#4-Developing-Hillview)
 
 # 1. Documentation
 
@@ -345,13 +345,33 @@ Create an empty project
 in the hillview folder, and then import three modules (from File/Project structure/Modules,
 add three modules: web/pom.xml, platform/pom.xml, and the root folder hillview itself).
 
-## 4.5. Running the tests
+## 4.5. Setup VS Code
+
+Download and install Visual Studio Code: https://code.visualstudio.com/download. 
+Here is a step-by-step guide to add the necessary extensions, run Maven commands, and attach a debugger:
+
+1. Install these extensions and then restart the VS Code.
+	- `Java Extension Pack`: installs 6 important Java extensions at once.
+	- `JavaScript and TypeScript Nightly`: enables JavaScript and TypeScript IntelliSense.
+	- `Language Support for Java(TM) by Red Hat
+redhat.java`: recognize projects with Maven or Gradle build in the directory hierarchy.
+	- `Maven for Java`: provides a project explorer and shortcuts to execute Maven commands.
+2. Select `Add workspace folder...` at the Welcome page, then choose `hillview/platform/` directory. The platform module should be displayed in the `Explorer` view. 
+4. Add `web` module to the workspace by clicking `File`->`Add Folder to Workspace...` and then choose `hillview/web/` directory. 
+5. Save the workspace by clicking `File`->`Save Workspace As...` and store it in your personal folder outside `hillview/` root directory.
+6. Next, about executing Maven commands; in the `Explorer` view, click `MAVEN PROJECTS`. There are two Maven folders correspond to `web` and `platform` modules; click those folders to expand and display the Maven pom files. The Maven commands will be displayed by right clicking the pom files.
+1. Finally, about attaching a debugger:
+	- Bring up the `Run` view, select the `Run` icon in the `Activity Bar` on the left side of VS Code.
+	- From the `Run` view, click `create a launch.json file`, you will see the `platform` and `web` modules listed. We will create two `launch.json` files, one for `platform` module and the other for `web` module. 
+	- When configuring the `launch.json` for `platform` module, you must select `Java` option. Otherwise, choose `Chrome (preview)` option when configuring the `web` module. Then, delete the auto generated `configurations` and specify the correct configuration to attach the debugger. The important fields are `url`, `hostname`, `port`, and `request`. More about this is here [VS Code Debugging#launch-configuration](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations) and [VS Code#Java-Debugging](https://code.visualstudio.com/docs/java/java-debugging#_attach).
+
+## 4.6. Running the tests
 
 * The unit tests are run by building with maven or by running `bin/rebuild.sh -t`.
 * The UI tests are run by starting Hillview on a local machine and
 then clicking the "Test/Run" menu button.
 
-## 4.6. Using git to contribute
+## 4.7. Using git to contribute
 
 Fork the repository using the "fork" button on github, by following these instructions:
 https://help.github.com/articles/fork-a-repo/
@@ -374,7 +394,7 @@ Here is a step-by-step guide to submitting contributions:
 9. Create a pull request to merge your new branch into master (using the web ui).
 10. Delete your branch after the merging has been done `git branch -D yourBranchName`
 
-## 4.7. Guidance in writing code
+## 4.8. Guidance in writing code
 
 * Use the IntelliJ code inspection feature (Analyze/Inspect code).
 
