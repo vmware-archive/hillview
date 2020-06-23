@@ -20,6 +20,8 @@ package org.hillview.utils;
 import io.krakens.grok.api.Grok;
 import io.krakens.grok.api.GrokUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.hillview.table.ColumnDescription;
+import org.hillview.table.api.ContentsKind;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -78,6 +80,8 @@ public class GrokExtra {
                                 group.get("pattern")));
                     }
                     String thisGroupName = group.get("subname") != null ? group.get("subname") : group.get("name");
+                    String[] parts = thisGroupName.split(":");
+                    thisGroupName = parts[0];  // second optional part is the type.
                     if (thisGroupName.equals(groupName)) {
                         String retval = group.get("name");
                         String subname = group.get("subname");
@@ -98,7 +102,7 @@ public class GrokExtra {
     /**
      * Returns the columns to extract in the order they appear in the grok pattern.
      */
-    public static List<String> getColumnsFromPattern(Grok grok) {
+    public static List<ColumnDescription> getColumnsFromPattern(Grok grok) {
         Set<String> columnsFound = new HashSet<String>();
 
         String currentPattern = grok.getOriginalGrokPattern();
@@ -132,7 +136,9 @@ public class GrokExtra {
                     String replacement = "";
                     String subname = group.get("subname");
                     if (subname != null) {
-                        columnsFound.add(subname);
+                        String[] parts = subname.split(":");
+                        // The second part is an optional type.
+                        columnsFound.add(parts[0]);
                     } else {
                         replacement = String.format("(?<name%d>%s)", index, definitionOfPattern);
                     }
@@ -143,13 +149,34 @@ public class GrokExtra {
         }
 
         // Now scan all the groups in order and return them only if they are in the set of columns.
-        List<String> result = new ArrayList<String>();
+        List<ColumnDescription> result = new ArrayList<ColumnDescription>();
         Set<String> groups = GrokUtils.getNameGroups(grok.getNamedRegex());
         for (String s : groups) {
             String name = grok.getNamedRegexCollectionById(s);
-            if (columnsFound.contains(name))
-                result.add(name);
+            ColumnDescription desc = getDescription(name);
+            if (columnsFound.contains(desc.name))
+                result.add(desc);
         }
         return result;
+    }
+
+    private static ColumnDescription getDescription(String name) {
+        String[] parts = name.split(":");
+        if (parts.length == 1)
+            return new ColumnDescription(name, ContentsKind.String);
+        ContentsKind kind = ContentsKind.String;
+        switch (parts[1].toLowerCase()) {
+            case "int":
+                kind = ContentsKind.Integer;
+                break;
+            case "float":
+            case "double":
+                kind = ContentsKind.Double;
+                break;
+            case "date":
+                kind = ContentsKind.Date;
+                break;
+        }
+        return new ColumnDescription(parts[0], kind);
     }
 }

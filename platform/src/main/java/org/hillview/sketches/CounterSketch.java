@@ -28,6 +28,8 @@ import javax.annotation.Nullable;
  * A sketch which just increments every time it is invoked.
  */
 public class CounterSketch extends IncrementalTableSketch<Count, EmptyWorkspace> {
+    static final long serialVersionUID = 1;
+
     @Override
     public void add(EmptyWorkspace v, Count result, int rowNumber) {
         result.add(1);

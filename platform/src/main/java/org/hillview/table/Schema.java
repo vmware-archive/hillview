@@ -133,6 +133,16 @@ public final class Schema implements IJson {
         this.cachedDescriptions = null;
     }
 
+    public Schema(List<ColumnDescription> descriptions) {
+        this.columns = new LinkedHashMap<String, ColumnDescription>(descriptions.size());
+        this.cachedColumnNames = null;
+        this.cachedKinds = null;
+        this.cachedDescriptions = null;
+        for (ColumnDescription d: descriptions)
+            this.append(d);
+        this.seal();
+    }
+
     /**
      * This method mutates the schema.  It should only be used
      * when there is a single reference to the schema - since schemas
