@@ -23,6 +23,7 @@ import io.krakens.grok.api.Match;
 import org.hillview.storage.GrokLogs;
 import org.hillview.storage.LogFiles;
 import org.hillview.storage.TextFileLoader;
+import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.table.rows.RowSnapshot;
@@ -42,11 +43,16 @@ import java.util.List;
  * Various tests for reading Generic logs into ITable.
  */
 public class GenericLogsTest extends BaseTest {
-    @Test
-    public void findTimestamp() {
+    GrokCompiler getCompiler() {
         GrokCompiler grokCompiler = GrokCompiler.newInstance();
         grokCompiler.registerDefaultPatterns();
         grokCompiler.registerPatternFromClasspath("/patterns/log-patterns");
+        return grokCompiler;
+    }
+
+    @Test
+    public void findTimestamp() {
+        GrokCompiler grokCompiler = this.getCompiler();
         String group = "Timestamp";
 
         String pattern = "%{SYSLOG}";
@@ -64,31 +70,27 @@ public class GenericLogsTest extends BaseTest {
 
     @Test
     public void testColumns() {
-        GrokCompiler grokCompiler = GrokCompiler.newInstance();
-        grokCompiler.registerDefaultPatterns();
-        grokCompiler.registerPatternFromClasspath("/patterns/log-patterns");
+        GrokCompiler grokCompiler = this.getCompiler();
         String pattern = "%{SYSLOG}";
         Grok grok = grokCompiler.compile(pattern);
-        List<String> cols = GrokExtra.getColumnsFromPattern(grok);
+        List<ColumnDescription> cols = GrokExtra.getColumnsFromPattern(grok);
         Assert.assertEquals(cols.size(), 3);
-        Assert.assertEquals("Timestamp", cols.get(0));
-        Assert.assertEquals("Logsource", cols.get(1));
-        Assert.assertEquals("Message", cols.get(2));
+        Assert.assertEquals("Timestamp", cols.get(0).name);
+        Assert.assertEquals("Logsource", cols.get(1).name);
+        Assert.assertEquals("Message", cols.get(2).name);
 
         pattern = "%{HADOOP}";
         grok = grokCompiler.compile(pattern);
         cols = GrokExtra.getColumnsFromPattern(grok);
         Assert.assertEquals(cols.size(), 3);
-        Assert.assertEquals("Timestamp", cols.get(0));
-        Assert.assertEquals("Level", cols.get(1));
-        Assert.assertEquals("Message", cols.get(2));
+        Assert.assertEquals("Timestamp", cols.get(0).name);
+        Assert.assertEquals("Level", cols.get(1).name);
+        Assert.assertEquals("Message", cols.get(2).name);
     }
 
     @Test
     public void longTimestamp() {
-        GrokCompiler grokCompiler = GrokCompiler.newInstance();
-        grokCompiler.registerDefaultPatterns();
-        grokCompiler.registerPatternFromClasspath("/patterns/log-patterns");
+        GrokCompiler grokCompiler = this.getCompiler();
         Grok grok = grokCompiler.compile("%{LONGTIMESTAMP:Timestamp}", true);
 
         String ts = "2018-09-30 09:44:10,802";
@@ -238,10 +240,10 @@ public class GenericLogsTest extends BaseTest {
         RowSnapshot row = new RowSnapshot(table, 0);
         Instant i = row.getDate("Timestamp");
         Assert.assertNotNull(i);
-        String prio = row.getString("SyslogPriority");
-        Assert.assertEquals("187", prio);
-        String ver = row.getString("SyslogVersion");
-        Assert.assertEquals("1", ver);
+        int prio = row.getInt("SyslogPriority");
+        Assert.assertEquals(187, prio);
+        int ver = row.getInt("SyslogVersion");
+        Assert.assertEquals(1, ver);
         String hostname = row.getString("Hostname");
         Assert.assertEquals("nsx-manager", hostname);
         String structured = row.getString("StructuredData");
@@ -342,6 +344,23 @@ public class GenericLogsTest extends BaseTest {
         @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
         RowSnapshot row = new RowSnapshot(table, 0);
         String structured = row.getString(LogFiles.parseErrorColumn);
+        Assert.assertNull(structured);
+    }
+
+    @Test
+    public void testBlockTrace() {
+        String path = "../data/sample_logs/blockTracelog";
+        GrokLogs logs = new GrokLogs("%{BLOCKTRACE}");
+        TextFileLoader fileLoader = logs.getFileLoader(path);
+        ITable table = fileLoader.load();
+        Assert.assertNotNull(table);
+        if (BaseTest.toPrint)
+            System.out.println(table.toLongString(3));
+        Assert.assertEquals("Table[17x200]", table.toString());
+        @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
+        RowSnapshot row = new RowSnapshot(table, 0);
+        String structured = row.getString(LogFiles.parseErrorColumn);
+        // System.out.println(table.toLongString(1));
         Assert.assertNull(structured);
     }
 

@@ -61,7 +61,7 @@ public class GrokLogs extends LogFiles {
         @Nullable
         private final Grok dateTime;
         @Nullable
-        private List<String> columnNames = null;
+        private List<ColumnDescription> columnDescriptions = null;
 
         LogFileLoader(final String path, @Nullable Instant start, @Nullable Instant end) {
             super(path);
@@ -86,13 +86,17 @@ public class GrokLogs extends LogFiles {
         }
 
         boolean parse(String line, String[] output) {
-            assert this.columnNames != null;
+            assert this.columnDescriptions != null;
             Match gm = this.grok.match(line);
             final Map<String, Object> capture = gm.capture();
             if (capture.size() > 0) {
                 int index = 0;
-                for (String col : this.columnNames) {
-                    output[index] = capture.get(col).toString().replace("\\n", "\n").trim();
+                for (ColumnDescription col : this.columnDescriptions) {
+                    Object field = capture.get(col.name);
+                    if (field == null)
+                        output[index] = null;
+                    else
+                        output[index] = field.toString().replace("\\n", "\n").trim();
                     index += 1;
                 }
                 return true;
@@ -103,14 +107,8 @@ public class GrokLogs extends LogFiles {
         @Override
         public ITable load() {
             // Create the schema and allocate the columns based on the pattern.
-            Schema schema = new Schema();
-            this.columnNames = GrokExtra.getColumnsFromPattern(this.grok);
-            for (String colName: this.columnNames) {
-                ContentsKind kind = ContentsKind.String;
-                if (colName.equals(LogFiles.timestampColumnName))
-                    kind = ContentsKind.Date;
-                schema.append(new ColumnDescription(colName, kind));
-            }
+            this.columnDescriptions = GrokExtra.getColumnsFromPattern(this.grok);
+            Schema schema = new Schema(this.columnDescriptions);
             this.columns = schema.createAppendableColumns();
             String[] fields = new String[this.columns.length];
 

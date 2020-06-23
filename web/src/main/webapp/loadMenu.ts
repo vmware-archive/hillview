@@ -459,9 +459,10 @@ class GenericLogDialog extends Dialog {
         const pattern = this.addTextField("fileNamePattern", "File name pattern(s)", FieldKind.String, "*.log",
             "shell pattern with path that describes the names of the files to load (comma-separated patterns allowed)");
         pattern.required = true;
+        // TODO: This should perhaps be read from the back-end service.
         const logFormats = ["%{HADOOP}", "%{RFC5424}", "%{VSANTRACE}", "%{ZOOKEEPERLOG}",
                             "%{YARNLOG}", "%{HBASELOG}", "%{OOZEILOG}", "%{HDFSNAMENODELOG}",
-                            "%{HDFSDATANODELOG}", "%{SYSLOG}"];
+                            "%{HDFSDATANODELOG}", "%{SYSLOG}", "%{BLOCKTRACE}"];
         const format = this.addSelectField("logFormat", "Log format", logFormats, "%{SYSLOG}",
             "Log format : https://github.com/vmware/hillview/blob/master/docs/userManual.md" +
             "#232-specifying-rules-for-parsing-logs");
