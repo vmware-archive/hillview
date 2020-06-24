@@ -214,6 +214,7 @@ export class RpcRequest<T> implements ICancellable<T> {
                 const reply = JSON.parse(r.data) as RpcReply;
                 if (this.completed) {
                     console.log("Message received after rpc completed: " + reply);
+                    return;
                 }
                 if (reply.isError) {
                     this.completed = true;
