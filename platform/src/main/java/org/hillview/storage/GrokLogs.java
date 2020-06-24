@@ -19,7 +19,6 @@ package org.hillview.storage;
 
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
-import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IAppendableColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.DateParsing;
@@ -104,28 +103,49 @@ public class GrokLogs extends LogFiles {
             return false;
         }
 
+        @Nullable
+        BufferedReader reader;
+        boolean first;
+        boolean firstTimestampIsMissing;
+        int currentLineNumber;
+        int previousLineNumber;
+        @Nullable
+        Schema schema;
+
         @Override
-        public ITable load() {
+        public void prepareLoading() {
             // Create the schema and allocate the columns based on the pattern.
             this.columnDescriptions = GrokExtra.getColumnsFromPattern(this.grok);
-            Schema schema = new Schema(this.columnDescriptions);
-            this.columns = schema.createAppendableColumns();
+            this.schema = new Schema(this.columnDescriptions);
+
+            this.first = true;
+            // True if the first non-empty line does not have a timestamp
+            this.firstTimestampIsMissing = this.dateTime == null;
+            this.currentLineNumber = 0;
+            this.previousLineNumber = 0;
+            this.reader = new BufferedReader(this.getFileReader());
+        }
+
+        @Override
+        public ITable loadFragment(int rowCount) {
+            assert this.schema != null;
+            super.startFragment();
+            this.columns = this.schema.createAppendableColumns();
+            assert this.reader != null;
+            assert this.lineNumber != null;
+            assert this.parsingErrors != null;
             String[] fields = new String[this.columns.length];
 
-            boolean first = true;
-            // True if the first non-empty line does not have a timestamp
-            boolean firstTimestampIsMissing = this.dateTime == null;
-            int currentLineNumber = 0;
-            int previousLineNumber = 0;
-            try (BufferedReader reader = new BufferedReader(
-                    this.getFileReader())) {
-                // Used to build up a log line that spans multiple file lines
-                StringBuilder logLine = new StringBuilder();
-                String fileLine; // Current line in the file
+            // Used to build up a log line that spans multiple file lines
+            StringBuilder logLine = new StringBuilder();
+            String fileLine; // Current line in the file
 
-                while (true) {
-                    currentLineNumber++;
-                    fileLine = reader.readLine();
+            try {
+                while (rowCount != 0) {
+                    if (rowCount > 0)
+                        rowCount--;
+                    this.currentLineNumber++;
+                    fileLine = this.reader.readLine();
                     if (fileLine != null) {
                         if (fileLine.trim().isEmpty())
                             continue;
@@ -137,18 +157,18 @@ public class GrokLogs extends LogFiles {
                                 currentTimestamp = gm.capture()
                                         .get(LogFiles.timestampColumnName)
                                         .toString();
-                            else if (first)
+                            else if (this.first)
                                 // If the first line does not have a timestamp
                                 // it may be that the pattern supplied by the user
                                 // is actually wrong.   We do not want to end up
                                 // concatenating all log lines into one big line.
-                                firstTimestampIsMissing = true;
+                                this.firstTimestampIsMissing = true;
                         }
 
-                        first = false;
+                        this.first = false;
                         // If there is no timestamp in a fileLine we consider heuristically that it
                         // is a continuation of the previous logLine.
-                        if (currentTimestamp == null && !firstTimestampIsMissing) {
+                        if (currentTimestamp == null && !this.firstTimestampIsMissing) {
                             if (logLine.length() != 0)
                                 logLine.append("\\n");
                             logLine.append(fileLine);
@@ -181,7 +201,7 @@ public class GrokLogs extends LogFiles {
                             this.append(fields);
                             this.parsingErrors.appendMissing();
                         } else {
-                            for (IAppendableColumn c: this.columns)
+                            for (IAppendableColumn c : this.columns)
                                 c.appendMissing();
                             this.parsingErrors.append(logString);
                         }
@@ -194,8 +214,12 @@ public class GrokLogs extends LogFiles {
             } catch (IOException e) {
                 this.error(e.getMessage());
             }
-            this.close(null);
             return this.createTable();
+        }
+
+        @Override
+        public void endLoading() {
+            this.close(null);
         }
     }
 

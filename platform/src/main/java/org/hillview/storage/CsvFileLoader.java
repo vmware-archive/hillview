@@ -58,124 +58,153 @@ public class CsvFileLoader extends TextFileLoader {
     private Schema actualSchema;
     @Nullable
     private final String schemaPath;
+    private boolean guessSchema;
 
     public CsvFileLoader(String path, Config configuration, @Nullable String schemaPath) {
         super(path);
         this.configuration = configuration;
         this.schemaPath = schemaPath;
         this.allowFewerColumns = configuration.allowFewerColumns;
+        this.guessSchema = Utilities.isNullOrEmpty(schemaPath);
     }
 
-    public ITable load() {
+    @Nullable
+    Reader file;
+    @Nullable
+    CsvParser reader;
+    @Nullable
+    String[] firstLine;
+
+    @Override
+    public void prepareLoading() {
         if (!Utilities.isNullOrEmpty(this.schemaPath))
             this.actualSchema = Schema.readFromJsonFile(Paths.get(this.schemaPath));
 
-        Reader file = null;
-        try {
-            file = this.getFileReader();
-            CsvParserSettings settings = new CsvParserSettings();
-            CsvFormat format = new CsvFormat();
-            format.setDelimiter(this.configuration.separator);
-            settings.setFormat(format);
-            settings.setIgnoreTrailingWhitespaces(true);
-            settings.setEmptyValue("");
-            settings.setNullValue(null);
-            settings.setReadInputOnSeparateThread(false);
-            if (this.actualSchema != null)
-                settings.setMaxColumns(this.actualSchema.getColumnCount());
-            else
-                settings.setMaxColumns(50000);
-            settings.setMaxCharsPerColumn(100000);
-            CsvParser reader = new CsvParser(settings);
-            reader.beginParsing(file);
+        this.file = this.getFileReader();
+        CsvParserSettings settings = new CsvParserSettings();
+        CsvFormat format = new CsvFormat();
+        format.setDelimiter(this.configuration.separator);
+        settings.setFormat(format);
+        settings.setIgnoreTrailingWhitespaces(true);
+        settings.setEmptyValue("");
+        settings.setNullValue(null);
+        settings.setReadInputOnSeparateThread(false);
+        if (this.actualSchema != null)
+            settings.setMaxColumns(this.actualSchema.getColumnCount());
+        else
+            settings.setMaxColumns(50000);
+        settings.setMaxCharsPerColumn(100000);
+        this.reader = new CsvParser(settings);
+        this.reader.beginParsing(file);
 
-            if (this.configuration.hasHeaderRow) {
-                @Nullable
-                String[] line = null;
-                try {
-                    line = reader.parseNext();
-                } catch (Exception ex) {
-                    this.error(ex.getMessage());
-                }
-                if (line == null)
-                    throw new RuntimeException("Missing header row " + this.filename);
-                if (this.actualSchema == null) {
-                    HillviewLogger.instance.info("Creating schema");
-                    this.actualSchema = new Schema();
-                    int index = 0;
-                    for (String col : line) {
-                        if ((col == null) || col.isEmpty())
-                            col = this.actualSchema.newColumnName("Column_" + index);
-                        col = this.actualSchema.newColumnName(col);
-                        ColumnDescription cd = new ColumnDescription(col,
-                                ContentsKind.String);
-                        this.actualSchema.append(cd);
-                        index++;
-                    }
-                } else {
-                    this.currentRow++;
-                }
+        if (this.configuration.hasHeaderRow) {
+            @Nullable
+            String[] line = null;
+            try {
+                line = this.reader.parseNext();
+            } catch (Exception ex) {
+                this.error(ex.getMessage());
             }
-
-            String[] firstLine = null;
+            if (line == null)
+                throw new RuntimeException("Missing header row " + this.filename);
             if (this.actualSchema == null) {
-                int columnCount;
+                HillviewLogger.instance.info("Creating schema");
                 this.actualSchema = new Schema();
-                firstLine = reader.parseNext();
-                if (firstLine == null)
-                    throw new RuntimeException("Cannot create schema from empty CSV file");
-                columnCount = firstLine.length;
-
-                for (int i = 0; i < columnCount; i++) {
-                    ColumnDescription cd = new ColumnDescription("Column " + i,
+                int index = 0;
+                for (String col : line) {
+                    if ((col == null) || col.isEmpty())
+                        col = this.actualSchema.newColumnName("Column_" + index);
+                    col = this.actualSchema.newColumnName(col);
+                    ColumnDescription cd = new ColumnDescription(col,
                             ContentsKind.String);
                     this.actualSchema.append(cd);
+                    index++;
                 }
+            } else {
+                this.currentRow++;
             }
-
-            assert this.actualSchema != null;
-            this.columns = this.actualSchema.createAppendableColumns();
-
-            if (firstLine != null)
-                this.append(firstLine);
-            while (true) {
-                @Nullable
-                String[] line = null;
-                try {
-                    line = reader.parseNext();
-                } catch (Exception ex) {
-                    this.error(ex.getMessage());
-                }
-                if (line == null)
-                    break;
-                this.append(line);
-            }
-
-            IColumn[] sealed = new IColumn[this.columns.length];
-            reader.stopParsing();
-            IMembershipSet ms = null;
-            for (int ci = 0; ci < this.columns.length; ci++) {
-                IAppendableColumn c = this.columns[ci];
-                IColumn s = c.seal();
-                if (ms == null)
-                    ms = new FullMembershipSet(s.sizeInRows());
-                if (Utilities.isNullOrEmpty(this.schemaPath)) {
-                    GuessSchema gs = new GuessSchema();
-                    GuessSchema.SchemaInfo info = gs.guess((IStringColumn)s);
-                    if (info.kind != ContentsKind.String &&
-                            info.kind != ContentsKind.None)  // all elements are null
-                        sealed[ci] = s.convertKind(info.kind, c.getName(), ms);
-                    else
-                        sealed[ci] = s;
-                } else {
-                    sealed[ci] = s;
-                }
-                assert sealed[ci] != null;
-            }
-
-            return new Table(sealed, this.filename, null);
-        } finally {
-            this.close(file);
         }
+
+        if (this.actualSchema == null) {
+            int columnCount;
+            this.actualSchema = new Schema();
+            this.firstLine = reader.parseNext();
+            if (this.firstLine == null)
+                throw new RuntimeException("Cannot create schema from empty CSV file");
+            columnCount = this.firstLine.length;
+
+            for (int i = 0; i < columnCount; i++) {
+                ColumnDescription cd = new ColumnDescription("Column " + i,
+                        ContentsKind.String);
+                this.actualSchema.append(cd);
+            }
+        }
+    }
+
+    @Nullable
+    public ITable loadFragment(int maxRows) {
+        if (this.reader == null)
+            return null;
+        assert this.actualSchema != null;
+        this.columns = this.actualSchema.createAppendableColumns();
+
+        if (this.firstLine != null) {
+            this.append(this.firstLine);
+            this.firstLine = null;
+        }
+
+        boolean anyFound = false;
+        while (maxRows != 0) {
+            @Nullable
+            String[] line = null;
+            try {
+                line = this.reader.parseNext();
+            } catch (Exception ex) {
+                this.error(ex.getMessage());
+            }
+            if (line == null)
+                break;
+            anyFound = true;
+            this.append(line);
+            if (maxRows > 0)
+                maxRows--;
+        }
+
+        if (!anyFound)
+            return null;
+
+        IColumn[] sealed = new IColumn[this.columns.length];
+        IMembershipSet ms = null;
+        for (int ci = 0; ci < this.columns.length; ci++) {
+            IAppendableColumn c = this.columns[ci];
+            IColumn s = c.seal();
+            if (ms == null)
+                ms = new FullMembershipSet(s.sizeInRows());
+            if (this.guessSchema) {
+                GuessSchema gs = new GuessSchema();
+                GuessSchema.SchemaInfo info = gs.guess((IStringColumn)s);
+                if (info.kind != ContentsKind.String &&
+                        info.kind != ContentsKind.None)  // all elements are null
+                    sealed[ci] = s.convertKind(info.kind, c.getName(), ms);
+                else
+                    sealed[ci] = s;
+            } else {
+                sealed[ci] = s;
+            }
+            assert sealed[ci] != null;
+        }
+
+        ITable result = new Table(sealed, this.filename, null);
+        this.guessSchema = false;
+        this.actualSchema = result.getSchema();
+        return result;
+    }
+
+    @Override
+    public void endLoading() {
+        if (this.reader != null)
+            reader.stopParsing();
+        if (this.file != null)
+            this.close(file);
     }
 }

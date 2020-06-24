@@ -24,6 +24,7 @@ import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IAppendableColumn;
 import org.hillview.table.api.ITable;
 
+import javax.annotation.Nullable;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -80,6 +81,9 @@ public class HillviewLogs extends LogFiles {
 
         @Override
         public ITable load() {
+            super.prepareLoading();
+            assert this.lineNumber != null;
+            assert this.parsingErrors != null;
             this.columns = schema.createAppendableColumns();
             try (BufferedReader reader = new BufferedReader(
                     new FileReader(this.filename))) {
@@ -119,6 +123,7 @@ public class HillviewLogs extends LogFiles {
         }
     }
 
+    @Nullable
     public static ITable parseLogFile(String file) {
         LogFileLoader reader = new LogFileLoader(file);
         return reader.load();

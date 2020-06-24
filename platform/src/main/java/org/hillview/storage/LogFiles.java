@@ -28,6 +28,8 @@ import org.hillview.table.columns.IntListColumn;
 import org.hillview.table.columns.StringListColumn;
 import org.hillview.utils.Utilities;
 
+import javax.annotation.Nullable;
+
 /**
  * Base class used for loading various log files.
  */
@@ -49,14 +51,19 @@ public class LogFiles {
         /**
          * Column storing the line number for each log line.
          */
-        final IntListColumn lineNumber;
+        @Nullable
+        IntListColumn lineNumber;
         /**
          * Column storing lines that failed parsing.
          */
-        final StringListColumn parsingErrors;
+        @Nullable
+        StringListColumn parsingErrors;
 
         BaseLogLoader(String path) {
             super(path);
+        }
+
+        public void startFragment() {
             this.parsingErrors = new StringListColumn(
                     new ColumnDescription(parseErrorColumn, ContentsKind.String));
             this.lineNumber = new IntListColumn(
@@ -66,6 +73,7 @@ public class LogFiles {
         /**
          * Creates a table from the list of columns by appending some special columns.
          */
+        @Nullable
         ITable createTable() {
             int size;
             int columnCount;
@@ -77,6 +85,10 @@ public class LogFiles {
                 size = 0;
             else
                 size = this.columns[0].sizeInRows();
+
+            if (size == 0)
+                return null;
+
             // Create a new column for the host
             IColumn host = new ConstantStringColumn(
                     new ColumnDescription(hostColumn, ContentsKind.String), size, Utilities.getHostName());
@@ -91,8 +103,7 @@ public class LogFiles {
             cols[1] = directory;
             cols[2] = fileName;
             cols[3] = this.lineNumber;
-            if (columnCount > 0)
-                System.arraycopy(this.columns, 0, cols, 4, columnCount);
+            System.arraycopy(this.columns, 0, cols, 4, columnCount);
             cols[cols.length - 1] = this.parsingErrors;
             return new Table(cols, this.filename, null);
         }
