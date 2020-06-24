@@ -40,7 +40,10 @@ public class NextKSketchAggregate extends PostProcessedSketch<ITable, NextKList,
             else {
                 double s = sum.getDouble(j);
                 double c = count.getDouble(j);
-                avg.set(j, s / c);
+                if (c > 0)
+                    avg.set(j, s / c);
+                else
+                    avg.set(j, 0.0);
             }
         }
         return avg;
