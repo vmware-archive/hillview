@@ -88,7 +88,7 @@ public abstract class TextFileLoader {
                     ArchiveEntry entry = is.getNextEntry();
                     if (entry == null)
                         throw new RuntimeException("No files in zip archive");
-                    ZipArchiveEntry ze = (ZipArchiveEntry)entry;
+                    ZipArchiveEntry ze = (ZipArchiveEntry) entry;
                     if (ze.isDirectory())
                         throw new RuntimeException("zip archive contains a directory");
                     fis = is;
@@ -112,7 +112,8 @@ public abstract class TextFileLoader {
 
     /**
      * Relinquishes all resources used.
-     * @param reader   Reader that was created by getFileReader, or null.
+     *
+     * @param reader Reader that was created by getFileReader, or null.
      */
     void close(@Nullable Reader reader) {
         try {
@@ -189,5 +190,36 @@ public abstract class TextFileLoader {
         throw new RuntimeException(this.errorMessage(), ex);
     }
 
-    public abstract ITable load();
+    @Nullable
+    public ITable load() {
+        this.prepareLoading();
+        ITable result = this.loadFragment(-1);
+        this.endLoading();
+        return result;
+    }
+
+    /**
+     * Prepare to load the data.
+     */
+    public void prepareLoading() {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Load this many rows from the file.
+     *
+     * @param maxRows Maximum number of rows to read.  If -1 then there is no limit.
+     * @return The loaded rows as a table.  null if there is no more data.
+     */
+    @Nullable
+    public ITable loadFragment(int maxRows) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * We are finished loading.
+     */
+    public void endLoading() {
+        throw new UnsupportedOperationException();
+    }
 }
