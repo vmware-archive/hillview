@@ -58,9 +58,14 @@ public class LogFiles {
          */
         @Nullable
         StringListColumn parsingErrors;
+        /**
+         * If false the columns that have constant values are not added.
+         */
+        public boolean addFixedColumns;
 
         BaseLogLoader(String path) {
             super(path);
+            this.addFixedColumns = true;
         }
 
         public void startFragment() {
@@ -73,7 +78,6 @@ public class LogFiles {
         /**
          * Creates a table from the list of columns by appending some special columns.
          */
-        @Nullable
         ITable createTable() {
             int size;
             int columnCount;
@@ -86,24 +90,31 @@ public class LogFiles {
             else
                 size = this.columns[0].sizeInRows();
 
-            if (size == 0)
-                return null;
-
-            // Create a new column for the host
-            IColumn host = new ConstantStringColumn(
-                    new ColumnDescription(hostColumn, ContentsKind.String), size, Utilities.getHostName());
-            IColumn fileName = new ConstantStringColumn(
-                    new ColumnDescription(filenameColumn, ContentsKind.String),
-                    size, FilenameUtils.getName(this.filename));
-            IColumn directory = new ConstantStringColumn(
-                    new ColumnDescription(directoryColumn, ContentsKind.String),
-                    size, FilenameUtils.getPath(this.filename));
-            IColumn[] cols = new IColumn[columnCount + 5];
-            cols[0] = host;
-            cols[1] = directory;
-            cols[2] = fileName;
-            cols[3] = this.lineNumber;
-            System.arraycopy(this.columns, 0, cols, 4, columnCount);
+            IColumn[] cols;
+            int startCol;
+            if (this.addFixedColumns) {
+                // Create a new column for the host
+                IColumn host = new ConstantStringColumn(
+                        new ColumnDescription(hostColumn, ContentsKind.String), size, Utilities.getHostName());
+                IColumn fileName = new ConstantStringColumn(
+                        new ColumnDescription(filenameColumn, ContentsKind.String),
+                        size, FilenameUtils.getName(this.filename));
+                IColumn directory = new ConstantStringColumn(
+                        new ColumnDescription(directoryColumn, ContentsKind.String),
+                        size, FilenameUtils.getPath(this.filename));
+                cols = new IColumn[columnCount + 5];
+                cols[0] = host;
+                cols[1] = directory;
+                cols[2] = fileName;
+                cols[3] = this.lineNumber;
+                startCol = 4;
+            } else {
+                cols = new IColumn[columnCount + 2];
+                cols[0] = this.lineNumber;
+                startCol = 1;
+            }
+            if (columnCount > 0)
+                System.arraycopy(this.columns, 0, cols, startCol, columnCount);
             cols[cols.length - 1] = this.parsingErrors;
             return new Table(cols, this.filename, null);
         }

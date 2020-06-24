@@ -209,9 +209,8 @@ public abstract class TextFileLoader {
      * Load this many rows from the file.
      *
      * @param maxRows Maximum number of rows to read.  If -1 then there is no limit.
-     * @return The loaded rows as a table.  null if there is no more data.
+     * @return The loaded rows as a table.  Returns an empty table when there is no more data.
      */
-    @Nullable
     public ITable loadFragment(int maxRows) {
         throw new UnsupportedOperationException();
     }

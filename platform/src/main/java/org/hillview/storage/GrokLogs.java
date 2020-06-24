@@ -223,11 +223,11 @@ public class GrokLogs extends LogFiles {
         }
     }
 
-    public TextFileLoader getFileLoader(String path, @Nullable Instant start, @Nullable Instant end) {
+    public LogFileLoader getFileLoader(String path, @Nullable Instant start, @Nullable Instant end) {
         return new LogFileLoader(path, start, end);
     }
 
-    public TextFileLoader getFileLoader(String path) {
+    public LogFileLoader getFileLoader(String path) {
         return this.getFileLoader(path, null, null);
     }
 }

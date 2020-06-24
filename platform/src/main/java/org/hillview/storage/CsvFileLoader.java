@@ -141,10 +141,8 @@ public class CsvFileLoader extends TextFileLoader {
         }
     }
 
-    @Nullable
     public ITable loadFragment(int maxRows) {
-        if (this.reader == null)
-            return null;
+        assert this.reader != null;
         assert this.actualSchema != null;
         this.columns = this.actualSchema.createAppendableColumns();
 
@@ -153,7 +151,6 @@ public class CsvFileLoader extends TextFileLoader {
             this.firstLine = null;
         }
 
-        boolean anyFound = false;
         while (maxRows != 0) {
             @Nullable
             String[] line = null;
@@ -164,14 +161,10 @@ public class CsvFileLoader extends TextFileLoader {
             }
             if (line == null)
                 break;
-            anyFound = true;
             this.append(line);
             if (maxRows > 0)
                 maxRows--;
         }
-
-        if (!anyFound)
-            return null;
 
         IColumn[] sealed = new IColumn[this.columns.length];
         IMembershipSet ms = null;

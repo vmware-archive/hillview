@@ -180,7 +180,9 @@ public class DataUpload {
             TextFileLoader loader;
             if (parameters.grokPattern != null) {
                 GrokLogs logs = new GrokLogs(parameters.grokPattern);
-                loader = logs.getFileLoader(parameters.filename);
+                GrokLogs.LogFileLoader ldr = logs.getFileLoader(parameters.filename);
+                ldr.addFixedColumns = false;  // we don't need these
+                loader = ldr;
             } else {
                 loader = new CsvFileLoader(parameters.filename, parsConfig, parameters.inputSchemaName);
             }
@@ -240,8 +242,9 @@ public class DataUpload {
 
         while (true) {
             ITable table = loader.loadFragment(parameters.chunkSize);
-            if (table == null)
-            break;
+            if (chunk > 0 && table.getNumOfRows() == 0)
+                // If the first chunk is empty generate it anyway.
+                break;
             tableSchema = table.getSchema();
             while (true) {
                 chunkName = getFileName(parameters.filename).concat(Integer.toString(chunk));
@@ -266,6 +269,8 @@ public class DataUpload {
                 Files.move(Paths.get(chunkName), Paths.get(parameters.destinationFolder, chunkName));
             }
             chunk++;
+            if (table.getNumOfRows() == 0)
+                break;
         }
         loader.endLoading();
         return chunk;
