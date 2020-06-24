@@ -86,8 +86,11 @@ public class LogFileParserTest extends BaseTest {
 
     @Test
     public void parseMalformedLog() throws IOException {
-        String s = "2019-03-22 09:27:10.292,worker,INFO,ip-172-31-12-140,computation-0,org.hillview.dataset.LocalDataSet,lambda$map$0,Starting map,org.hillview.dataset.LocalDataSet(2)@ip-172-31-12-140:org.hillview.storage.FileSetDescription$FileReference@3cfb3d27:org.hillview.maps.LoadFilesMapper\n" +
-        "2019-03-22 09:27:10.505,worker,WARNING,ip-172-31-12-140,Unable to load native-hadoop library for your platform... using builtin-java classes where applicable\n";
+        String s = "2019-03-22 09:27:10.292,worker,INFO,ip-172-31-12-140,computation-0,org.hillview.dataset.LocalDataSet," +
+                "lambda$map$0,Starting map,org.hillview.dataset.LocalDataSet(2)@ip-172-31-12-140:org.hillview.storage." +
+                "FileSetDescription$FileReference@3cfb3d27:org.hillview.maps.LoadFilesMapper\n" +
+        "2019-03-22 09:27:10.505,worker,WARNING,ip-172-31-12-140,Unable to load native-hadoop "+
+                "library for your platform... using builtin-java classes where applicable\n";
 
         File f = File.createTempFile("tmp", null, new File("."));
         f.deleteOnExit();

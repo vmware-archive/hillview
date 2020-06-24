@@ -65,6 +65,7 @@ export class HistogramPlot extends Plot implements IBarPlot {
      *                      since the same data may be used for a CDF plot.
      * @param maxYAxis      If present it is used to scale the maximum value for the Y axis.
      * @param isPrivate     True if we are plotting private data.
+     * @param rowCount      Total number of rows in dataset.
      */
     public setHistogram(bars: Two<Groups<number>>, samplingRate: number,
                         axisData: AxisData, maxYAxis: number | null, isPrivate: boolean,

@@ -81,7 +81,7 @@ public class HillviewLogs extends LogFiles {
 
         @Override
         public ITable load() {
-            super.prepareLoading();
+            this.startFragment();
             assert this.lineNumber != null;
             assert this.parsingErrors != null;
             this.columns = schema.createAppendableColumns();
