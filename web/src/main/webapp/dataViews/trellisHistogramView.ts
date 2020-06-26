@@ -45,7 +45,7 @@ import {
     DataRangesReceiver,
     TrellisShape,
     TrellisLayoutComputation
-} from "./dataRangesCollectors";
+} from "./dataRangesReceiver";
 import {BucketDialog} from "./histogramViewBase";
 import {TextOverlay} from "../ui/textOverlay";
 import {TrellisChartView} from "./trellisChartView";

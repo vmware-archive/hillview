@@ -26,7 +26,7 @@ import {HtmlString, Size} from "./ui/ui";
 import {
     AggregateDescription,
     ComparisonFilterDescription,
-    ContentsKind,
+    ContentsKind, Groups,
     kindIsNumeric,
     kindIsString, RangeFilterArrayDescription, RangeFilterDescription,
     RowFilterDescription,
@@ -43,6 +43,12 @@ export interface Two<T> extends Pair<T, T> {}
 
 export function assert(condition: boolean, message?: string): asserts condition {
     console.assert(condition, message);  // tslint:disable-line
+}
+
+export function allBuckets<R>(data: Groups<R>): R[] {
+    const result = cloneArray(data.perBucket);
+    result.push(data.perMissing);
+    return result;
 }
 
 /**

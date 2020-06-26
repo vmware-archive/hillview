@@ -28,12 +28,12 @@ import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {SchemaClass} from "../schemaClass";
 import {
+    allBuckets,
     Converters,
     ICancellable,
-    PartialResult,
-    reorder,
+    PartialResult, significantDigits,
 } from "../util";
-import {AxisData} from "./axisData";
+import {AxisData, AxisKind} from "./axisData";
 import {
     IViewSerialization,
     TrellisQuartilesSerialization
@@ -44,12 +44,14 @@ import {SubMenu, TopMenu} from "../ui/menu";
 import {
     FilterReceiver,
     DataRangesReceiver,
-    TrellisShape,
-} from "./dataRangesCollectors";
+    TrellisShape, TrellisLayoutComputation,
+} from "./dataRangesReceiver";
 import {TrellisChartView} from "./trellisChartView";
 import {NextKReceiver, TableView} from "./tableView";
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {Quartiles2DPlot} from "../ui/quartiles2DPlot";
+import {PlottingSurface} from "../ui/plottingSurface";
+import {TextOverlay} from "../ui/textOverlay";
 
 export class TrellisHistogramQuartilesView extends TrellisChartView {
     protected hps: Quartiles2DPlot[];
@@ -170,7 +172,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView {
 
     protected onMouseMove(): void {
         const mousePosition = this.mousePosition();
-        if (mousePosition.plotIndex == null ||
+        if (mousePosition == null || mousePosition.plotIndex == null ||
             mousePosition.x < 0 || mousePosition.y < 0) {
             this.pointDescription.show(false);
             return;
@@ -181,21 +183,34 @@ export class TrellisHistogramQuartilesView extends TrellisChartView {
             return;
 
         this.pointDescription.show(true);
-        const xs = this.xAxisData.invert(mousePosition.x);
+        let xs = this.xAxisData.invert(mousePosition.x);
         const y = Math.round(plot.getYScale().invert(mousePosition.y));
 
-        /*
-        const box = plot.getBoxInfo(mousePosition.x, y);
-        const count = (box == null) ? "" : box.count.toString();
-        const colorIndex = (box == null) ? null : box.yIndex;
-        const perc = (box == null || box.count === 0) ? 0 : box.count / box.countBelow;
-        const group = this.groupByAxisData.bucketDescription(mousePosition.plotIndex, 40);
-
-        // The point description is a child of the canvas, so we use canvas coordinates
+        // Use the plot scale, not the yData to invert.  That's the
+        // one which is used to draw the axis.
+        let bucketDesc = "";
+        let min = "", q1 = "", q2 = "", q3 = "", max = "", missing = "", count = "", group = "";
+        if (this.xAxisData.scale != null) {
+            xs = this.xAxisData.invert(mousePosition.x);
+            if (this.data != null) {
+                const bucket = plot.getBucketIndex(mousePosition.x);
+                if (bucket < 0)
+                    return;
+                bucketDesc = this.xAxisData.bucketDescription(bucket, 20);
+                const qv = this.data.perBucket[mousePosition.plotIndex].perBucket[bucket];
+                min = significantDigits(qv.min);
+                max = significantDigits(qv.max);
+                count = significantDigits(qv.count);
+                q1 = significantDigits(qv.samples[0]);
+                q2 = qv.samples.length > 1 ? significantDigits(qv.samples[1]) : q1;
+                q3 = qv.samples.length > 2 ? significantDigits(qv.samples[2]) : q2;
+                missing = significantDigits(qv.missing);
+                group = this.groupByAxisData.bucketDescription(mousePosition.plotIndex, 40);
+            }
+        }
         const position = d3mouse(this.surface.getCanvas().node());
-        this.pointDescription.update(
-            [xs, value.toString(), group, significantDigits(y), percent(perc), count], position[0], position[1]);
-         */
+        this.pointDescription.update([xs, group, bucketDesc, max, q3, q2, q1, min, count, missing],
+            position[0], position[1]);
     }
 
     protected showTable(): void {
@@ -277,12 +292,9 @@ export class TrellisHistogramQuartilesView extends TrellisChartView {
     }
 
     public resize(): void {
-        /*
         const chartSize = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
         this.shape = TrellisLayoutComputation.resize(chartSize.width, chartSize.height, this.shape);
-        this.updateView(this.data, [this.xAxisData.bucketCount, this.yAxisData.bucketCount],
-            this.maxYAxis);
-         */
+        this.updateView(this.data, null);
     }
 
     public refresh(): void {
@@ -325,34 +337,40 @@ export class TrellisHistogramQuartilesView extends TrellisChartView {
         return view;
     }
 
-    public updateView(data: Groups<Groups<SampleSet>>, bucketCount: number[], maxYAxis: number | null): void {
+    public updateView(data: Groups<Groups<SampleSet>>, yAxisRange: [number, number] | null): void {
+        if (data == null || data.perBucket == null)
+            return;
         this.createNewSurfaces();
         this.data = data;
-        let max = maxYAxis;
-        /*
-        if (maxYAxis == null) {
-            for (let i = 0; i < data.buckets.length; i++) {
-                const buckets = data.buckets[i];
-                for (let j = 0; j < buckets.length; j++) {
-                    const total = buckets[j].reduce(add, 0);
-                    if (total > max)
-                        max = total;
+        let min = null, max;
+
+        if (yAxisRange == null) {
+            for (const buckets of allBuckets(data)) {
+                for (const bucket of allBuckets(buckets)) {
+                    if (bucket.count === 0)
+                        continue;
+                    if (min == null) {
+                        min = bucket.min;
+                        max = bucket.max;
+                    } else {
+                        min = Math.min(min, bucket.min);
+                        max = Math.max(max, bucket.max);
+                    }
                 }
             }
-            this.maxYAxis = max;
+            yAxisRange = [min, max];
         }
 
-        for (let i = 0; i < data.buckets.length; i++) {
-            const buckets = data.buckets[i];
-            const heatmap: Heatmap = {
-                buckets: buckets,
-                histogramMissingX: null,
-                histogramMissingY: null,
-                missingData: data.eitherMissing,
-                totalSize: data.eitherMissing + data.totalPresent
-            };
+        for (let i = 0; i < data.perBucket.length; i++) {
+            const buckets = data.perBucket[i];
             const plot = this.hps[i];
-            plot.setData(heatmap, this.xAxisData, this.schema, max);
+            plot.setData(buckets, this.schema, this.rowCount, this.xAxisData, this.isPrivate(), yAxisRange);
+            plot.draw();
+        }
+        if (this.shape.missingBucket) {
+            const buckets = data.perMissing;
+            const plot = this.hps[data.perBucket.length];
+            plot.setData(buckets, this.schema, this.rowCount, this.xAxisData, this.isPrivate(), yAxisRange);
             plot.draw();
         }
 
@@ -364,12 +382,9 @@ export class TrellisHistogramQuartilesView extends TrellisChartView {
         this.pointDescription = new TextOverlay(this.surface.getCanvas(),
             this.surface.getActualChartSize(),
             [this.xAxisData.getDisplayNameString(this.schema),
-                this.yAxisData.getDisplayNameString(this.schema),
                 this.groupByAxisData.getDisplayNameString(this.schema),
-                "y",
-                "percent",
-                "count"], 40);
-        */
+                "bucket", "max", "q3", "median", "q1", "min", "count", "missing"], 40);
+        this.pointDescription.show(false);
     }
 
     protected dragMove(): boolean {
@@ -437,12 +452,13 @@ export class TrellisHistogramQuartilesReceiver extends Receiver<Groups<Groups<Sa
                 protected schema: SchemaClass,
                 protected histoArgs: HistogramRequestInfo[],
                 protected range: BucketsInfo[],
+                protected qCol: IColumnDescription,
                 protected shape: TrellisShape,
                 operation: ICancellable<Groups<Groups<SampleSet>>>,
                 protected options: ChartOptions) {
         super(options.reusePage ? page : page.dataset.newPage(title, page), operation, "quartiles");
         this.trellisView = new TrellisHistogramQuartilesView(
-            remoteTable.remoteObjectId, rowCount, schema, this.histoArgs[0].cd,
+            remoteTable.remoteObjectId, rowCount, schema, qCol,
             this.shape, this.page);
         const xAxis = new AxisData(histoArgs[0].cd, range[0], histoArgs[0].bucketCount);
         const groupByAxis = new AxisData(histoArgs[1].cd, range[1], histoArgs[1].bucketCount);
@@ -456,8 +472,7 @@ export class TrellisHistogramQuartilesReceiver extends Receiver<Groups<Groups<Sa
             return;
         }
 
-        this.trellisView.updateView(value.data, [this.histoArgs[0].bucketCount,
-            this.histoArgs[1].bucketCount], null);
+        this.trellisView.updateView(value.data, null);
     }
 
     public onCompleted(): void {

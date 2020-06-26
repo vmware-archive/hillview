@@ -36,7 +36,7 @@ import {Converters, ICancellable, PartialResult, saveAs, significantDigits,} fro
 import {AxisData, AxisKind} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
-import {DataRangesReceiver, FilterReceiver} from "./dataRangesCollectors";
+import {DataRangesReceiver, FilterReceiver} from "./dataRangesReceiver";
 import {DisplayName, SchemaClass} from "../schemaClass";
 import {Quartiles2DPlot} from "../ui/quartiles2DPlot";
 
@@ -142,7 +142,7 @@ export class QuartilesHistogramView extends HistogramViewBase {
         this.data = qv;
 
         const bucketCount = this.xAxisData.bucketCount;
-        this.plot.setData(qv, 1.0, this.schema, this.rowCount, this.xAxisData, false);
+        this.plot.setData(qv, this.schema, this.rowCount, this.xAxisData, false, null);
         this.plot.draw();
         this.setupMouse();
         this.yAxisData = new AxisData(this.qCol, this.plot.yDataRange(), 0);

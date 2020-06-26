@@ -325,7 +325,7 @@ export interface QuantilesVectorInfo extends HistogramRequestInfo {
 }
 
 export interface QuantilesMatrixInfo extends QuantilesVectorInfo {
-    xColumn: HistogramRequestInfo;
+    groupColumn: HistogramRequestInfo;
 }
 
 export interface HeavyHittersFilterInfo {

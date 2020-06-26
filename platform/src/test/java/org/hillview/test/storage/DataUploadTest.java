@@ -32,7 +32,6 @@ public class DataUploadTest extends BaseTest {
     public void testChopCsv() throws Exception {
         Path dir = Files.createTempDirectory(".");
         DataUpload upload = new DataUpload();
-        System.out.println("Creating parts in " + dir.toString());
         int parts = upload.run("-f", "../data/ontime/2016_1.csv", "-l",
                 "200000", "-h", "-d", dir.toString());
         File d = dir.toFile();
@@ -41,10 +40,20 @@ public class DataUploadTest extends BaseTest {
     }
 
     @Test
+    public void testChopCsvSkip() throws Exception {
+        Path dir = Files.createTempDirectory(".");
+        DataUpload upload = new DataUpload();
+        int parts = upload.run("-f", "../data/ontime/2016_1.csv", "-l",
+                "200000", "-h", "-d", dir.toString(), "--skip", "200000");
+        File d = dir.toFile();
+        FileUtils.deleteDirectory(d);
+        Assert.assertEquals(2, parts);
+    }
+
+    @Test
     public void testChopCsvToOrc() throws Exception {
         Path dir = Files.createTempDirectory(".");
         DataUpload upload = new DataUpload();
-        System.out.println("Creating parts in " + dir.toString());
         int parts = upload.run(
                 "-f", "../data/ontime/2016_1.csv", "-o",
                 "-l", "200000", "-h", "-d", dir.toString());
@@ -57,7 +66,6 @@ public class DataUploadTest extends BaseTest {
     public void testChopLogToCsv() throws Exception {
         Path dir = Files.createTempDirectory(".");
         DataUpload upload = new DataUpload();
-        System.out.println("Creating parts in " + dir.toString());
         int parts = upload.run(
                 "-f", "../data/sample_logs/blockTracelog", "-p",
                 "%{BLOCKTRACE}", "-l", "100", "-d", dir.toString());
@@ -67,10 +75,21 @@ public class DataUploadTest extends BaseTest {
     }
 
     @Test
+    public void testChopLogToCsvSkipToEmpty() throws Exception {
+        Path dir = Files.createTempDirectory(".");
+        DataUpload upload = new DataUpload();
+        int parts = upload.run(
+                "-f", "../data/sample_logs/blockTracelog", "-p",
+                "%{BLOCKTRACE}", "-l", "100", "-d", dir.toString(), "--skip", "300");
+        File d = dir.toFile();
+        FileUtils.deleteDirectory(d);
+        Assert.assertEquals(1, parts);
+    }
+
+    @Test
     public void testChopLogToOrc() throws Exception {
         Path dir = Files.createTempDirectory(".");
         DataUpload upload = new DataUpload();
-        System.out.println("Creating parts in " + dir.toString());
         int parts = upload.run("-f", "../data/sample_logs/blockTracelog", "-o",
                 "-p", "%{BLOCKTRACE}", "-l", "100", "-d", dir.toString());
         File d = dir.toFile();

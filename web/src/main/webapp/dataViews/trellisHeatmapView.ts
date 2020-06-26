@@ -33,7 +33,7 @@ import {
     DataRangesReceiver,
     TrellisShape,
     TrellisLayoutComputation
-} from "./dataRangesCollectors";
+} from "./dataRangesReceiver";
 import {Receiver, RpcRequest} from "../rpc";
 import {Converters, ICancellable, makeInterval, PartialResult} from "../util";
 import {HeatmapPlot} from "../ui/heatmapPlot";

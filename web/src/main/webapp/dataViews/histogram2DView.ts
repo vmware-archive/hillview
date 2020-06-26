@@ -50,7 +50,7 @@ import {
 import {AxisData} from "./axisData";
 import {HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
-import {FilterReceiver, DataRangesReceiver} from "./dataRangesCollectors";
+import {FilterReceiver, DataRangesReceiver} from "./dataRangesReceiver";
 import {Histogram2DBarsPlot} from "../ui/histogram2DBarsPlot";
 import {Histogram2DBase} from "../ui/histogram2DBase";
 import {Dialog, FieldKind} from "../ui/dialog";

@@ -44,7 +44,7 @@ import {
 } from "../util";
 import {AxisData} from "./axisData";
 import {NextKReceiver, TableView} from "./tableView";
-import {DataRangesReceiver, FilterReceiver} from "./dataRangesCollectors";
+import {DataRangesReceiver, FilterReceiver} from "./dataRangesReceiver";
 import {ChartView} from "./chartView";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {HeatmapLegendPlot} from "../ui/heatmapLegendPlot";

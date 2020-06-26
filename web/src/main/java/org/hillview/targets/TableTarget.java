@@ -211,15 +211,15 @@ public final class TableTarget extends TableRpcTarget {
 
     static class QuantilesMatrixInfo extends QuantilesVectorInfo {
         @SuppressWarnings("NotNullFieldNotInitialized")
-        HistogramRequestInfo xColumn;
+        HistogramRequestInfo groupColumn;
     }
 
     @SuppressWarnings("unused")
     @HillviewRpc
     public void getQuantilesMatrix(RpcRequest request, RpcRequestContext context) {
         QuantilesMatrixInfo info = request.parseArgs(QuantilesMatrixInfo.class);
-        IHistogramBuckets xBuckets = info.xColumn.getBuckets();
-        IHistogramBuckets gBuckets = info.getBuckets();
+        IHistogramBuckets gBuckets = info.groupColumn.getBuckets();
+        IHistogramBuckets xBuckets = info.getBuckets();
 
         final int samplesRequired = 10 * info.quantileCount * info.quantileCount;
         Histogram2DQuantilesSketch qvs = new Histogram2DQuantilesSketch(info.quantilesColumn,

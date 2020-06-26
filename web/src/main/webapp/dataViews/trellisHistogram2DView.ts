@@ -39,7 +39,7 @@ import {
     DataRangesReceiver,
     TrellisShape,
     TrellisLayoutComputation
-} from "./dataRangesCollectors";
+} from "./dataRangesReceiver";
 import {TrellisChartView} from "./trellisChartView";
 import {NextKReceiver, TableView} from "./tableView";
 import {BucketDialog} from "./histogramViewBase";

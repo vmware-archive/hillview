@@ -45,7 +45,7 @@ import {
     significantDigits,
 } from "../util";
 import {HeavyHittersReceiver, HeavyHittersView} from "./heavyHittersView";
-import {DataRangesReceiver} from "./dataRangesCollectors";
+import {DataRangesReceiver} from "./dataRangesReceiver";
 import {TableOperationCompleted} from "./tableView";
 import {ErrorReporter} from "../ui/errReporter";
 

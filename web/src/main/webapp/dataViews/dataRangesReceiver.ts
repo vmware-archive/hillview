@@ -423,20 +423,20 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
 
                 const histoArg0 = DataRangesReceiver.computeHistogramArgs(
                     this.cds[0], ranges[0], maxXBucketCount,
-                    exact, chartSize);
+                    true, chartSize);
                 const histoArg2 = DataRangesReceiver.computeHistogramArgs(
                     this.cds[2], ranges[2], maxGBucketCount,
-                    exact, chartSize);
+                    true, chartSize);
                 const args: QuantilesMatrixInfo = {
                     quantileCount: 4,  // we display quartiles
                     seed: 0,  // scan all data
                     quantilesColumn: this.cds[1].name,
-                    xColumn: histoArg0,
-                    ...histoArg2
+                    groupColumn: histoArg2,
+                    ...histoArg0
                 };
                 const rr = this.originator.createQuantilesMatrixRequest(args);
                 rr.invoke(new TrellisHistogramQuartilesReceiver(this.title, this.page, this.originator,
-                    rowCount, this.schema, [histoArg0, histoArg2], ranges, trellisShape, rr,
+                    rowCount, this.schema, [histoArg0, histoArg2], [ranges[0], ranges[2]], this.cds[1], trellisShape, rr,
                     this.options));
                 break;
             }

@@ -21,7 +21,7 @@ import {DisplayName, SchemaClass} from "../schemaClass";
 import {FullPage} from "../ui/fullPage";
 import {Point, Resolution, ViewKind} from "../ui/ui";
 import {ChartView} from "./chartView";
-import {TrellisShape} from "./dataRangesCollectors";
+import {TrellisShape} from "./dataRangesReceiver";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {TrellisShapeSerialization} from "../datasetView";

@@ -31,10 +31,6 @@ import {SchemaClass} from "../schemaClass";
  */
 export class Quartiles2DPlot extends Plot {
     public qv: Groups<SampleSet>;
-    /**
-     * Sampling rate that was used to compute the histogram.
-     */
-    public samplingRate: number;
     public barWidth: number;
     protected yScale: D3Scale;
     protected yAxis: D3Axis;
@@ -45,6 +41,7 @@ export class Quartiles2DPlot extends Plot {
     public displayAxes: boolean;
     public isPrivate: boolean;
     protected schema: SchemaClass;
+    private yAxisRange: [number, number];
 
     public constructor(protected plottingSurface: PlottingSurface) {
         super(plottingSurface);
@@ -54,19 +51,20 @@ export class Quartiles2DPlot extends Plot {
     /**
      * Set the histogram that we want to draw.
      * @param qv            Data to plot.
-     * @param samplingRate  Sampling rate used to compute this view.
      * @param schema        Table schema.
      * @param rowCount      Total number of rows in dataset.
      * @param axisData      Description of the X axis.
      * @param isPrivate     True if we are plotting private data.
+     * @param yAxisRange    Range to use for the drawn y axis.
      */
-    public setData(qv: Groups<SampleSet>, samplingRate: number,
+    public setData(qv: Groups<SampleSet>,
                    schema: SchemaClass, rowCount: number,
-                   axisData: AxisData, isPrivate: boolean): void {
+                   axisData: AxisData, isPrivate: boolean,
+                   yAxisRange: [number, number] | null): void {
         this.qv = qv;
         this.rowCount = rowCount;
-        this.samplingRate = samplingRate;
         this.xAxisData = axisData;
+        this.yAxisRange = yAxisRange;
         this.schema = schema;
         this.isPrivate = isPrivate;
     }
@@ -79,6 +77,10 @@ export class Quartiles2DPlot extends Plot {
         const mins = this.qv.perBucket.map(v => v.min);
         this.max = Math.max(...maxes);
         this.min = Math.min(...mins);
+        if (this.yAxisRange != null) {
+            this.min = this.yAxisRange[0];
+            this.max = this.yAxisRange[1];
+        }
         const chartWidth = this.getChartWidth();
         const chartHeight = this.getChartHeight();
         const yScale = chartHeight / (this.max - this.min);

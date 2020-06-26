@@ -48,7 +48,7 @@ import {
 import {AxisData} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
 import {NextKReceiver, TableView} from "./tableView";
-import {FilterReceiver, DataRangesReceiver} from "./dataRangesCollectors";
+import {FilterReceiver, DataRangesReceiver} from "./dataRangesReceiver";
 import {BaseReceiver} from "../tableTarget";
 
 /**
