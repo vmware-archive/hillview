@@ -107,6 +107,9 @@ public class GrokLogs extends LogFiles {
         BufferedReader reader;
         boolean first;
         boolean firstTimestampIsMissing;
+        // We keep track of the line numbers; these are not the same as currentRow
+        // from our parent class, because a logical log message can span multiple
+        // lines in the source file.
         int currentLineNumber;
         int previousLineNumber;
         @Nullable
@@ -127,7 +130,7 @@ public class GrokLogs extends LogFiles {
         }
 
         @Override
-        public ITable loadFragment(int rowCount) {
+        public ITable loadFragment(int rowCount, boolean skip) {
             assert this.schema != null;
             super.startFragment();
             this.columns = this.schema.createAppendableColumns();
@@ -147,6 +150,8 @@ public class GrokLogs extends LogFiles {
                     this.currentLineNumber++;
                     fileLine = this.reader.readLine();
                     if (fileLine != null) {
+                        if (skip)
+                            continue;
                         if (fileLine.trim().isEmpty())
                             continue;
                         @Nullable

@@ -27,10 +27,10 @@ import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {DisplayName, SchemaClass} from "../schemaClass";
 import {
     add,
-    Converters,
+    Converters, histogram2DAsCsv,
     ICancellable, makeInterval,
     PartialResult,
-    percent, prefixSum,
+    percent, prefixSum, saveAs,
     Two,
 } from "../util";
 import {AxisData, AxisKind} from "./axisData";
@@ -45,7 +45,7 @@ import {
     DataRangesReceiver,
     TrellisShape,
     TrellisLayoutComputation
-} from "./dataRangesCollectors";
+} from "./dataRangesReceiver";
 import {BucketDialog} from "./histogramViewBase";
 import {TextOverlay} from "../ui/textOverlay";
 import {TrellisChartView} from "./trellisChartView";
@@ -54,12 +54,11 @@ import {NextKReceiver, TableView} from "./tableView";
 import {Dialog} from "../ui/dialog";
 import {PlottingSurface} from "../ui/plottingSurface";
 
-export class TrellisHistogramView extends TrellisChartView {
+export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<number>>>> {
     protected hps: HistogramPlot[];
     protected cdfs: CDFPlot[];
     protected bucketCount: number;
     protected xAxisData: AxisData;
-    protected data: Two<Groups<Groups<number>>>;
     protected cdfDot: D3SvgElement;
     private readonly defaultProvenance: string = "Trellis histograms";
 
@@ -76,15 +75,9 @@ export class TrellisHistogramView extends TrellisChartView {
         this.hps = [];
         this.cdfs = [];
 
-        this.menu = new TopMenu( [{
-            text: "Export",
-            help: "Save the information in this view in a local file.",
-            subMenu: new SubMenu([{
-                text: "As CSV",
-                help: "Saves the data in this view in a CSV file.",
-                action: () => { this.export(); },
-            }]),
-        }, { text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
+        this.menu = new TopMenu( [this.exportMenu(),
+            { text: "View", help: "Change the way the data is displayed.",
+                subMenu: new SubMenu([
                 { text: "refresh",
                     action: () => { this.refresh(); },
                     help: "Redraw this view.",
@@ -228,7 +221,10 @@ export class TrellisHistogramView extends TrellisChartView {
     }
 
     protected export(): void {
-        // TODO
+        const lines: string[] = histogram2DAsCsv(
+            this.data.first, this.schema, [this.xAxisData, this.groupByAxisData]);
+        const fileName = "trellis-histogram.csv";
+        saveAs(fileName, lines.join("\n"));
     }
 
     public resize(): void {
@@ -379,12 +375,9 @@ export class TrellisHistogramView extends TrellisChartView {
     }
 
     protected onMouseMove(): void {
-        const mousePosition = this.mousePosition();
-        if (mousePosition.plotIndex == null ||
-            mousePosition.x < 0 || mousePosition.y < 0) {
-            this.pointDescription.show(false);
+        const mousePosition = this.checkMouseBounds();
+        if (mousePosition == null)
             return;
-        }
 
         this.pointDescription.show(true);
         const plot = this.hps[mousePosition.plotIndex];

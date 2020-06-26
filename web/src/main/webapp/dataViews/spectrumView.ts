@@ -124,8 +124,7 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
 /**
  * A SpectrumView plots a one-dimensional bar-chart showing the top singular values.
  */
-export class SpectrumView extends ChartView {
-    protected histogram: Groups<number>;
+export class SpectrumView extends ChartView<Groups<number>> {
     protected axisData: AxisData;
     protected title: string;
     protected plot: HistogramPlot;
@@ -152,6 +151,10 @@ export class SpectrumView extends ChartView {
         this.plot = new HistogramPlot(this.surface);
     }
 
+    public export(): void {
+        // TODO?
+    }
+
     public updateView(title: string, h: Groups<number>, axisData: AxisData): void {
         this.createNewSurfaces();
         if (h == null) {
@@ -161,7 +164,7 @@ export class SpectrumView extends ChartView {
 
         this.axisData = axisData;
         this.title = title;
-        this.histogram = h;
+        this.data = h;
         this.plot.setHistogram({first: h, second: null }, 1,
             axisData, null, this.page.dataset.isPrivate(), this.rowCount);
         this.plot.draw();
@@ -172,7 +175,7 @@ export class SpectrumView extends ChartView {
     protected onMouseMove(): void {}
 
     public resize(): void {
-        this.updateView(this.title, this.histogram, this.axisData);
+        this.updateView(this.title, this.data, this.axisData);
     }
 
     public serialize(): IViewSerialization {

@@ -20,7 +20,6 @@ import {Histogram2DSerialization, IViewSerialization} from "../datasetView";
 import {
     IColumnDescription,
     kindIsString,
-    RecordOrder,
     RemoteObjectId, kindIsNumeric, Groups, RangeFilterArrayDescription,
 } from "../javaBridge";
 import {Receiver, RpcRequest} from "../rpc";
@@ -38,7 +37,7 @@ import {ChartOptions, HtmlString, Resolution} from "../ui/ui";
 import {
     add,
     Converters,
-    formatNumber,
+    formatNumber, histogram2DAsCsv,
     ICancellable,
     Pair,
     PartialResult,
@@ -49,8 +48,7 @@ import {
 } from "../util";
 import {AxisData} from "./axisData";
 import {HistogramViewBase} from "./histogramViewBase";
-import {NextKReceiver, TableView} from "./tableView";
-import {FilterReceiver, DataRangesReceiver} from "./dataRangesCollectors";
+import {FilterReceiver, DataRangesReceiver} from "./dataRangesReceiver";
 import {Histogram2DBarsPlot} from "../ui/histogram2DBarsPlot";
 import {Histogram2DBase} from "../ui/histogram2DBase";
 import {Dialog, FieldKind} from "../ui/dialog";
@@ -59,10 +57,8 @@ import {Dialog, FieldKind} from "../ui/dialog";
  * This class is responsible for rendering a 2D histogram.
  * This is a histogram where each bar is divided further into sub-bars.
  */
-export class Histogram2DView extends HistogramViewBase {
+export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number>>, Groups<number>>> {
     protected yAxisData: AxisData;
-    protected cdf: Groups<number>;
-    protected heatMap: Groups<Groups<number>>;
     protected xPoints: number;
     protected yPoints: number;
     protected relative: boolean;  // true when bars are normalized to 100%
@@ -121,15 +117,8 @@ export class Histogram2DView extends HistogramViewBase {
             help: "In an absolute plot the Y axis represents the size for a bucket. " +
                 "In a relative plot all bars are normalized to 100% on the Y axis.",
         }]);
-        this.menu = new TopMenu( [{
-           text: "Export",
-           help: "Save the information in this view in a local file.",
-           subMenu: new SubMenu([{
-               text: "As CSV",
-               help: "Saves the data in this view in a CSV file.",
-               action: () => { this.export(); },
-           }]),
-        }, {
+        this.menu = new TopMenu( [
+            this.exportMenu(), {
             text: "View",
             help: "Change the way the data is displayed.",
             subMenu: this.viewMenu
@@ -144,6 +133,14 @@ export class Histogram2DView extends HistogramViewBase {
             const submenu = this.menu.getSubmenu("View");
             submenu.enable("exact", false);
         }
+    }
+
+    public cdf(): Groups<number> {
+        return this.data.second;
+    }
+
+    public histograms(): Groups<Groups<number>> {
+        return this.data.first;
     }
 
     private showQuartiles(): void {
@@ -189,7 +186,7 @@ export class Histogram2DView extends HistogramViewBase {
             case "YAxis":
                 if (this.relative)
                     return null;
-                const missing = this.heatMap.perMissing.perBucket.reduce(add);
+                const missing = this.histograms().perMissing.perBucket.reduce(add);
                 const range = {
                     min: 0,
                     max: this.plot.maxYAxis != null ? this.plot.maxYAxis : this.plot.max,
@@ -201,26 +198,25 @@ export class Histogram2DView extends HistogramViewBase {
         return null;
     }
 
-    public updateView(data: Groups<Groups<number>>, cdf: Groups<number>, maxYAxis: number | null, keepColorMap: boolean): void {
+    public updateView(data: Pair<Groups<Groups<number>>, Groups<number>>, maxYAxis: number | null, keepColorMap: boolean): void {
         this.viewMenu.enable("relative/absolute", this.stacked);
         this.createNewSurfaces(keepColorMap);
-        if (data == null || data.perBucket == null || data.perBucket.length === 0) {
+        if (data == null) {
             this.page.reportError("No data to display");
             return;
         }
-        this.xPoints = data.perBucket.length;
-        this.yPoints = data.perBucket[0].perBucket.length;
+        this.data = data;
+        this.xPoints = this.histograms().perBucket.length;
+        this.yPoints = this.histograms().perBucket[0].perBucket.length;
         if (this.yPoints === 0) {
             this.page.reportError("No data to display");
             return;
         }
-        this.heatMap = data;
-        this.cdf = cdf;
 
         const bucketCount = this.xPoints;
         const canvas = this.surface.getCanvas();
 
-        const heatmap = {first: data, second: null};
+        const heatmap = {first: this.histograms(), second: null};
         this.plot.setData(heatmap, this.xAxisData, this.samplingRate, this.relative,
             this.schema, this.legendPlot.colorMap, maxYAxis, this.rowCount);
         this.plot.draw();
@@ -228,11 +224,11 @@ export class Histogram2DView extends HistogramViewBase {
             this.xAxisData.description.kind === "Integer";
 
         if (this.stacked) {
-            this.cdfPlot.setData(cdf.perBucket, discrete);
+            this.cdfPlot.setData(this.cdf().perBucket, discrete);
             this.cdfPlot.draw();
         }
 
-        const missingShown = data.perBucket.map(b => b.perMissing).reduce(add);
+        const missingShown = this.histograms().perBucket.map(b => b.perMissing).reduce(add);
         this.legendPlot.setData(this.yAxisData, missingShown > 0, this.schema);
         this.legendPlot.draw();
 
@@ -375,38 +371,9 @@ export class Histogram2DView extends HistogramViewBase {
     }
 
     public export(): void {
-        const lines: string[] = this.asCSV();
+        const lines: string[] = histogram2DAsCsv(this.histograms(), this.schema, [this.xAxisData, this.yAxisData]);
         const fileName = "histogram2d.csv";
         saveAs(fileName, lines.join("\n"));
-    }
-
-    /**
-     * Convert the data to text.
-     * @returns {string[]}  An array of lines describing the data.
-     */
-    public asCSV(): string[] {
-        const lines: string[] = [];
-        let line = "";
-        for (let y = 0; y < this.yAxisData.bucketCount; y++) {
-            const by = this.yAxisData.bucketDescription(y, 0);
-            line += "," + JSON.stringify(this.schema.displayName(this.yAxisData.description.name) + " " + by);
-        }
-        line += ",missing";
-        lines.push(line);
-        for (let x = 0; x < this.xAxisData.bucketCount; x++) {
-            const data = this.heatMap.perBucket[x];
-            const bx = this.xAxisData.bucketDescription(x, 0);
-            let l = JSON.stringify(this.schema.displayName(this.xAxisData.description.name) + " " + bx);
-            for (const y of data.perBucket)
-                l += "," + y;
-            l += "," + data.perMissing;
-            lines.push(l);
-        }
-        line = "mising";
-        for (const y of this.heatMap.perMissing.perBucket)
-            line += "," + y;
-        lines.push(line);
-        return lines;
     }
 
     protected getCombineRenderer(title: PageTitle):
@@ -462,7 +429,7 @@ export class Histogram2DView extends HistogramViewBase {
     }
 
     protected replaceAxis(pageId: string, eventKind: DragEventKind): void {
-        if (this.heatMap == null)
+        if (this.data == null)
             return;
 
         const sourceRange = this.getSourceAxisRange(pageId, eventKind);
@@ -481,7 +448,7 @@ export class Histogram2DView extends HistogramViewBase {
             collector.finished();
         } else if (eventKind === "YAxis") {
             this.relative = false; // We cannot drag a relative Y axis.
-            this.updateView(this.heatMap, this.cdf, sourceRange.max, true);
+            this.updateView(this.data, sourceRange.max, true);
         }
     }
 
@@ -517,7 +484,7 @@ export class Histogram2DView extends HistogramViewBase {
     public resize(): void {
         if (this == null)
             return;
-        this.updateView(this.heatMap, this.cdf, this.plot.maxYAxis, true);
+        this.updateView(this.data, this.plot.maxYAxis, true);
     }
 
     public refresh(): void {
@@ -703,19 +670,7 @@ export class Histogram2DView extends HistogramViewBase {
 
     // show the table corresponding to the data in the histogram
     protected showTable(): void {
-        const order =  new RecordOrder([ {
-            columnDescription: this.xAxisData.description,
-            isAscending: true,
-        }, {
-            columnDescription: this.yAxisData.description,
-            isAscending: true,
-        } ]);
-
-        const page = this.dataset.newPage(new PageTitle("Table", this.defaultProvenance), this.page);
-        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, page);
-        const rr = table.createNextKRequest(order, null, Resolution.tableRowsOnScreen);
-        page.setDataView(table);
-        rr.invoke(new NextKReceiver(page, table, rr, false, order, null));
+        super.showTable([this.xAxisData.description, this.yAxisData.description], this.defaultProvenance);
     }
 }
 
@@ -746,9 +701,7 @@ export class Histogram2DReceiver extends Receiver<Pair<Groups<Groups<number>>, G
         super.onNext(value);
         if (value == null)
             return;
-        const heatmap = value.data.first;
-        const cdf = value.data.second;
-        this.view.updateView(heatmap, cdf, null, false);
+        this.view.updateView(value.data, null, false);
     }
 
     public onCompleted(): void {

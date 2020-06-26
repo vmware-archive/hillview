@@ -21,7 +21,7 @@ import {DisplayName, SchemaClass} from "../schemaClass";
 import {FullPage} from "../ui/fullPage";
 import {Point, Resolution, ViewKind} from "../ui/ui";
 import {ChartView} from "./chartView";
-import {TrellisShape} from "./dataRangesCollectors";
+import {TrellisShape} from "./dataRangesReceiver";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {TrellisShapeSerialization} from "../datasetView";
@@ -31,7 +31,7 @@ import {Dialog, FieldKind} from "../ui/dialog";
 /**
  * Point position within a Trellis plot.
  */
-interface TrellisPosition {
+interface TrellisMousePosition {
     /**
      * The plot number; if this is null then the mouse is on no plot.
      */
@@ -57,7 +57,7 @@ interface TrellisPosition {
 /**
  * A base class for all Trellis views
  */
-export abstract class TrellisChartView extends ChartView {
+export abstract class TrellisChartView<D> extends ChartView<D> {
     public groupByAxisData: AxisData;
     /**
      * Selection endpoint in canvas.
@@ -130,6 +130,19 @@ export abstract class TrellisChartView extends ChartView {
                     return;
             }
         }
+    }
+
+    protected checkMouseBounds(): TrellisMousePosition | null {
+        const mousePosition = this.mousePosition();
+        const oob = mousePosition == null ||
+            mousePosition.plotIndex == null ||
+            mousePosition.x < 0 ||
+            mousePosition.y < 0;
+        if (oob) {
+            this.pointDescription.show(false);
+            return null;
+        }
+        return mousePosition;
     }
 
     protected drawAxes(xAxis: AxisDescription, yAxis: AxisDescription): void {
@@ -311,7 +324,7 @@ export abstract class TrellisChartView extends ChartView {
      * @param chartX  X coordinate within chart.
      * @param chartY  Y coordinate within chart.
      */
-    protected position(chartX: number, chartY: number): TrellisPosition {
+    protected position(chartX: number, chartY: number): TrellisMousePosition {
         // Find out which plot we are in.
         const xIndex = Math.floor(chartX / this.shape.size.width);
         const yIndex = Math.floor(chartY / (this.shape.size.height + this.shape.headerHeight));
@@ -332,7 +345,7 @@ export abstract class TrellisChartView extends ChartView {
     /**
      * Computes the mouse position in a Trellis plot.
      */
-    protected mousePosition(): TrellisPosition {
+    protected mousePosition(): TrellisMousePosition {
         const position = d3mouse(this.surface.getChart().node());
         return this.position(position[0], position[1]);
     }

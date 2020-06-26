@@ -26,8 +26,7 @@ import {ColorMap, Two} from "../util";
 /**
  * Draws a histogram with stacked bars.
  */
-export abstract class Histogram2DBase extends Plot {
-    protected heatmap: Two<Groups<Groups<number>>>;
+export abstract class Histogram2DBase extends Plot<Two<Groups<Groups<number>>>> {
     protected xAxisData: AxisData;
     protected samplingRate: number;
     protected normalized: boolean;
@@ -51,7 +50,7 @@ export abstract class Histogram2DBase extends Plot {
                    colorMap: ColorMap,
                    max: number | null,
                    rowCount: number): void {
-        this.heatmap = heatmap;
+        this.data = heatmap;
         this.xAxisData = xAxisData;
         this.samplingRate = samplingRate;
         this.normalized = normalized;

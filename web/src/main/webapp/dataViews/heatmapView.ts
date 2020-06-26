@@ -36,7 +36,7 @@ import {TextOverlay} from "../ui/textOverlay";
 import {HtmlString, Resolution} from "../ui/ui";
 import {
     Converters,
-    formatNumber,
+    formatNumber, histogram2DAsCsv,
     ICancellable, makeInterval,
     PartialResult,
     saveAs,
@@ -44,7 +44,7 @@ import {
 } from "../util";
 import {AxisData} from "./axisData";
 import {NextKReceiver, TableView} from "./tableView";
-import {DataRangesReceiver, FilterReceiver} from "./dataRangesCollectors";
+import {DataRangesReceiver, FilterReceiver} from "./dataRangesReceiver";
 import {ChartView} from "./chartView";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {HeatmapLegendPlot} from "../ui/heatmapLegendPlot";
@@ -52,7 +52,7 @@ import {HeatmapLegendPlot} from "../ui/heatmapLegendPlot";
 /**
  * A HeatMapView renders information as a heatmap.
  */
-export class HeatmapView extends ChartView {
+export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
     protected colorLegend: HeatmapLegendPlot;
     protected summary: HTMLElement;
     protected plot: HeatmapPlot;
@@ -60,7 +60,6 @@ export class HeatmapView extends ChartView {
     protected legendSurface: HtmlPlottingSurface;
     protected xHistoSurface: PlottingSurface;
     protected xHistoPlot: HistogramPlot;
-    protected heatmap: Two<Groups<Groups<number>>>;
     protected xPoints: number;
     protected yPoints: number;
     protected readonly viewMenu: SubMenu;
@@ -118,15 +117,7 @@ export class HeatmapView extends ChartView {
             },
         ]);
         this.menu = new TopMenu([
-            {
-                text: "Export",
-                help: "Save the information in this view in a local file.",
-                subMenu: new SubMenu([{
-                    text: "As CSV",
-                    help: "Saves the data in this view in a CSV file.",
-                    action: () => this.export(),
-                }]),
-            },
+            this.exportMenu(),
             {text: "View", help: "Change the way the data is displayed.", subMenu: this.viewMenu},
             this.dataset.combineMenu(this, page.pageId),
         ]);
@@ -227,7 +218,7 @@ export class HeatmapView extends ChartView {
                 this.legendSurface,
                 (xl, xr) => this.colorLegend.emphasizeRange(xl, xr));
             this.colorLegend.setColorMapChangeEventListener(
-                () => this.updateView(this.heatmap, true));
+                () => this.updateView(this.data, true));
         }
 
         this.surface = new HtmlPlottingSurface(this.heatmapDiv, this.page,
@@ -263,7 +254,7 @@ export class HeatmapView extends ChartView {
     }
 
     protected replaceAxis(pageId: string, eventKind: DragEventKind): void {
-        if (this.heatmap == null)
+        if (this.data == null)
             return;
         const sourceRange = this.getSourceAxisRange(pageId, eventKind);
         if (sourceRange === null)
@@ -296,7 +287,7 @@ export class HeatmapView extends ChartView {
             return;
         }
 
-        this.heatmap = data;
+        this.data = data;
         this.xPoints = data.first.perBucket.length;
         this.yPoints = data.first.perBucket[0].perBucket.length;
         if (this.yPoints === 0) {
@@ -313,7 +304,7 @@ export class HeatmapView extends ChartView {
         // The order of these operations is important
         this.plot.setData(data, this.xAxisData, this.yAxisData, this.schema, this.confThreshold, this.isPrivate());
         if (!keepColorMap) {
-            this.colorLegend.setData(1, this.plot.getMaxCount());
+            this.colorLegend.setData({first: 1, second: this.plot.getMaxCount() });
         }
         this.colorLegend.draw();
         this.plot.draw();
@@ -398,34 +389,10 @@ export class HeatmapView extends ChartView {
     }
 
     public export(): void {
-        const lines: string[] = this.asCSV();
+        const lines: string[] = histogram2DAsCsv(
+            this.data.first, this.schema, [this.xAxisData, this.yAxisData]);
         const fileName = "heatmap.csv";
         saveAs(fileName, lines.join("\n"));
-    }
-
-    /**
-     * Convert the data to text.
-     * @returns {string[]}  An array of lines describing the data.
-     */
-    public asCSV(): string[] {
-        const lines: string[] = [
-            JSON.stringify(this.xAxisData.getDisplayNameString(this.schema) + "_range") + "," +
-            JSON.stringify(this.xAxisData.getDisplayNameString(this.schema)) + "," +
-            JSON.stringify(this.yAxisData.getDisplayNameString(this.schema) + "_range") + "," +
-            JSON.stringify(this.yAxisData.getDisplayNameString(this.schema)) + "," + "count"];
-        for (let x = 0; x < this.heatmap.first.perBucket.length; x++) {
-            const data = this.heatmap.first.perBucket[x];
-            const bdx = JSON.stringify(this.xAxisData.bucketDescription(x, 0));
-            for (let y = 0; y < data.perBucket.length; y++) {
-                if (data.perBucket[y] === 0) {
-                    continue;
-                }
-                const bdy = JSON.stringify(this.yAxisData.bucketDescription(y, 0));
-                const line = bdx + "," + bdy + "," + data[y];
-                lines.push(line);
-            }
-        }
-        return lines;
     }
 
     protected showTrellis(colName: DisplayName): void {
@@ -490,9 +457,9 @@ export class HeatmapView extends ChartView {
     }
 
     public resize(): void {
-        if (this.heatmap == null)
+        if (this.data == null)
             return;
-        this.updateView(this.heatmap, true);
+        this.updateView(this.data, true);
     }
 
     protected onMouseMove(): void {

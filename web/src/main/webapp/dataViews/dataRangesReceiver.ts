@@ -26,7 +26,7 @@ import {
 } from "../javaBridge";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {FullPage, PageTitle} from "../ui/fullPage";
-import {ICancellable, periodicSamples, Seed} from "../util";
+import {assert, ICancellable, periodicSamples, Seed} from "../util";
 import {SchemaClass} from "../schemaClass";
 import {ChartOptions, Resolution, Size} from "../ui/ui";
 import {PlottingSurface} from "../ui/plottingSurface";
@@ -407,7 +407,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 let maxXBucketCount = this.bucketCounts[0];
                 if (maxXBucketCount === 0) {
                     maxXBucketCount = Math.min(
-                        Math.floor(chartSize.width / Resolution.minBarWidth),
+                        Math.floor(trellisShape.size.width / Resolution.minBarWidth),
                         Resolution.maxBucketCount);
                 }
                 let maxGBucketCount = this.bucketCounts[2];
@@ -423,20 +423,20 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
 
                 const histoArg0 = DataRangesReceiver.computeHistogramArgs(
                     this.cds[0], ranges[0], maxXBucketCount,
-                    exact, chartSize);
+                    true, chartSize);
                 const histoArg2 = DataRangesReceiver.computeHistogramArgs(
                     this.cds[2], ranges[2], maxGBucketCount,
-                    exact, chartSize);
+                    true, chartSize);
                 const args: QuantilesMatrixInfo = {
                     quantileCount: 4,  // we display quartiles
                     seed: 0,  // scan all data
                     quantilesColumn: this.cds[1].name,
-                    xColumn: histoArg0,
-                    ...histoArg2
+                    groupColumn: histoArg2,
+                    ...histoArg0
                 };
                 const rr = this.originator.createQuantilesMatrixRequest(args);
                 rr.invoke(new TrellisHistogramQuartilesReceiver(this.title, this.page, this.originator,
-                    rowCount, this.schema, [histoArg0, histoArg2], ranges, trellisShape, rr,
+                    rowCount, this.schema, [histoArg0, histoArg2], [ranges[0], ranges[2]], this.cds[1], trellisShape, rr,
                     this.options));
                 break;
             }

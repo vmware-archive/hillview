@@ -193,7 +193,7 @@ public abstract class TextFileLoader {
     @Nullable
     public ITable load() {
         this.prepareLoading();
-        ITable result = this.loadFragment(-1);
+        ITable result = this.loadFragment(-1, false);
         this.endLoading();
         return result;
     }
@@ -209,9 +209,10 @@ public abstract class TextFileLoader {
      * Load this many rows from the file.
      *
      * @param maxRows Maximum number of rows to read.  If -1 then there is no limit.
+     * @param skip    If true just skip this many rows, return an empty table.
      * @return The loaded rows as a table.  Returns an empty table when there is no more data.
      */
-    public ITable loadFragment(int maxRows) {
+    public ITable loadFragment(int maxRows, boolean skip) {
         throw new UnsupportedOperationException();
     }
 

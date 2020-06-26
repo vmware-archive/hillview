@@ -141,7 +141,7 @@ public class CsvFileLoader extends TextFileLoader {
         }
     }
 
-    public ITable loadFragment(int maxRows) {
+    public ITable loadFragment(int maxRows, boolean skip) {
         assert this.reader != null;
         assert this.actualSchema != null;
         this.columns = this.actualSchema.createAppendableColumns();
@@ -161,7 +161,8 @@ public class CsvFileLoader extends TextFileLoader {
             }
             if (line == null)
                 break;
-            this.append(line);
+            if (!skip)
+                this.append(line);
             if (maxRows > 0)
                 maxRows--;
         }

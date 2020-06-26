@@ -56,6 +56,7 @@ public class DataUpload {
         boolean allowFewerColumns;
         @Nullable
         String grokPattern; // when parsing a log file this is the pattern expected
+        int skipLines;  // number of lines to skip from the beginning
     }
 
     private void usage(Options options) {
@@ -96,6 +97,9 @@ public class DataUpload {
         Option o_fewercolumns = new Option("w", "fewer", false, "set if rows with fewer columns are allowed");
         o_fewercolumns.setRequired(false);
         options.addOption(o_fewercolumns);
+        Option o_skip = new Option("w", "skip", true, "number of lines to skip before starting parsing");
+        o_skip.setRequired(false);
+        options.addOption(o_skip);
         /*
          * todo: support the -D directory option for a list of files.
         Option o_directory = new Option("D", "Directory", true,
@@ -157,6 +161,14 @@ public class DataUpload {
             parameters.inputSchemaName = cmd.getOptionValue('s');
         parameters.hasHeader = cmd.hasOption('h');
         parameters.allowFewerColumns = cmd.hasOption('w');
+        if (cmd.hasOption("skip")) {
+            try {
+                parameters.skipLines = Integer.parseInt(cmd.getOptionValue("skip"));
+            } catch (NumberFormatException e) {
+                usage(options);
+                System.out.println("Can't parse number due to " + e.getMessage());
+            }
+        }
         return parameters;
     }
 
@@ -240,8 +252,10 @@ public class DataUpload {
         String chunkName;
         int chunk = 0;
 
+        if (parameters.skipLines > 0)
+            loader.loadFragment(parameters.skipLines, true);
         while (true) {
-            ITable table = loader.loadFragment(parameters.chunkSize);
+            ITable table = loader.loadFragment(parameters.chunkSize, false);
             if (chunk > 0 && table.getNumOfRows() == 0)
                 // If the first chunk is empty generate it anyway.
                 break;

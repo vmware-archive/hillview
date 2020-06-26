@@ -142,6 +142,14 @@ public class Converters {
         return (int)value;
     }
 
+    public static int toIntClamp(double value) {
+        if (value <= Integer.MIN_VALUE)
+            return Integer.MIN_VALUE;
+        if (value >= Integer.MAX_VALUE)
+            return Integer.MAX_VALUE;
+        return (int)value;
+    }
+
     public static int toInt(long value) {
         if (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE)
             throw new RuntimeException("Cannot convert to int " + value);

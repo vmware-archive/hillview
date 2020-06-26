@@ -22,7 +22,7 @@ import {
 import {D3Axis, D3Scale, D3SvgElement, Resolution} from "./ui";
 import {ContextMenu} from "./menu";
 import {HtmlPlottingSurface, PlottingSurface} from "./plottingSurface";
-import {assert, desaturateOutsideRange} from "../util";
+import {assert, desaturateOutsideRange, Pair} from "../util";
 import {scaleLinear as d3scaleLinear, scaleLog as d3scaleLog} from "d3-scale";
 import {axisBottom as d3axisBottom} from "d3-axis";
 import {AxisDescription} from "../dataViews/axisData";
@@ -89,7 +89,7 @@ export enum ColorMapKind {
 /**
  * Displays a color map suitable for heatmaps.
  */
-export class HeatmapLegendPlot extends LegendPlot {
+export class HeatmapLegendPlot extends LegendPlot<Pair<number, number>> {
     /* Static counter that increments to assign every ColorLegend object
        a unique ID for the gradient element. */
     private static nextUniqueId: number = 0;
@@ -110,6 +110,14 @@ export class HeatmapLegendPlot extends LegendPlot {
         this.uniqueId = HeatmapLegendPlot.nextUniqueId++;
         this.y = 0;
         this.createRectangle();
+    }
+
+    public min(): number {
+        return this.data.first;
+    }
+
+    public max(): number {
+        return this.data.second;
     }
 
     public setColorMapChangeEventListener(listener: (ColorMap) => void): void {
@@ -213,20 +221,21 @@ export class HeatmapLegendPlot extends LegendPlot {
 
     // Redraw the legend, and notify the listeners.
     private mapUpdated(): void {
-        this.setData(this.colorMap.min, this.colorMap.max, this.colorMap.logScale);
+        this.setData(this.data, this.colorMap.logScale);
         this.draw();
         // Notify the onColorChange listener (redraw the elements with new colors)
         if (this.onColorMapChange != null)
             this.onColorMapChange(this.colorMap);
     }
 
-    public setData(min: number, max: number, useLogScale?: boolean): void {
-        const base = (max - min) > 10000 ? 10 : 2;
+    public setData(data: Pair<number, number>, useLogScale?: boolean): void {
+        this.data = data;
+        const base = (this.max() - this.min()) > 10000 ? 10 : 2;
         if (this.colorMap == null)
-            this.colorMap = new HeatmapColormap(min, max);
-        assert(min === this.colorMap.min);
-        assert(max === this.colorMap.max);
-        const logScale = useLogScale != null ? useLogScale : max > HeatmapColormap.logThreshold;
+            this.colorMap = new HeatmapColormap(this.min(), this.max());
+        assert(this.min() === this.colorMap.min);
+        assert(this.max() === this.colorMap.max);
+        const logScale = useLogScale != null ? useLogScale : this.max() > HeatmapColormap.logThreshold;
         this.colorMap.setLogScale(logScale);
 
         if (logScale) {
@@ -234,9 +243,9 @@ export class HeatmapLegendPlot extends LegendPlot {
         } else
             this.scale = d3scaleLinear();
         this.scale
-            .domain([min, max])
+            .domain([this.min(), this.max()])
             .range([0, Resolution.legendBarWidth]);
-        const ticks = Math.min(max, 10);
+        const ticks = Math.min(this.max(), 10);
         this.xAxis = d3axisBottom(this.scale).ticks(ticks);
         this.drawn = true;
     }
@@ -260,15 +269,13 @@ export class HeatmapLegendPlot extends LegendPlot {
             this.gradient = null;
         }
 
-        const min = this.colorMap.min;
-        const max = this.colorMap.max;
         const canvas = this.plottingSurface.getCanvas();
-        if (!this.colorMap.logScale && this.colorMap.max - this.colorMap.min < 25) {
+        if (!this.colorMap.logScale && this.max() - this.min() < 25) {
             // use discrete colors
-            const colorCount = max - min + 1;
+            const colorCount = this.max() - this.min() + 1;
             const colorWidth = Resolution.legendBarWidth / colorCount;
             let rectX = this.x;
-            for (let i = this.colorMap.min; i <= this.colorMap.max; i++) {
+            for (let i = this.min(); i <= this.max(); i++) {
                 const color = this.getColor(i);
                 canvas.append("rect")
                     .attr("width", colorWidth)

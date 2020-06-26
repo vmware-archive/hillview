@@ -28,8 +28,7 @@ export interface ICDFPlot {
 /**
  * A CDFPlot draws a CDF curve on a PlottingSurface.
  */
-export class CDFPlot extends Plot implements ICDFPlot {
-    protected cdf: number[];
+export class CDFPlot extends Plot<number[]> implements ICDFPlot {
     // Data displayed on the screen, not exactly the same as cdf
     protected cdfData: number[];
     protected max: number;
@@ -44,7 +43,7 @@ export class CDFPlot extends Plot implements ICDFPlot {
     }
 
     public setData(cdf: number[], adjust: boolean): void {
-        this.cdf = cdf;
+        this.data = cdf;
         this.adjust = adjust;
         this.cdfData = [];
         let point = 0;
@@ -110,14 +109,14 @@ export class CDFPlot extends Plot implements ICDFPlot {
      */
     public getY(x: number): number {
         // determine mouse position on cdf curve
-        if (this.cdf == null)
+        if (this.data == null)
             return 0;
         if (this.adjust)
             x += this.bucketWidth / 2;
         const cdfX = x / this.bucketWidth;
         if (cdfX < 0) {
             return 0;
-        } else if (cdfX >= this.cdf.length) {
+        } else if (cdfX >= this.data.length) {
             return 1;
         } else {
             // 2 values for each pixel

@@ -22,6 +22,7 @@ import org.hillview.sketches.highorder.GroupByWorkspace;
 import org.hillview.sketches.results.Groups;
 import org.hillview.sketches.results.IHistogramBuckets;
 import org.hillview.sketches.results.SampleSet;
+import org.hillview.table.api.ITable;
 
 /**
  * This computes a 2D array (defined by 2 histogram buckets) of SampleSets for a third column.
@@ -30,6 +31,8 @@ public class Histogram2DQuantilesSketch
         extends GroupBySketch<Groups<SampleSet>,
         GroupByWorkspace<ColumnWorkspace<ReservoirSampleWorkspace>>,
                                       HistogramQuantilesSketch> {
+    private final String qCol;
+
     public Histogram2DQuantilesSketch(
             String column,
             int quantileCount,
@@ -37,5 +40,13 @@ public class Histogram2DQuantilesSketch
             IHistogramBuckets buckets0,
             IHistogramBuckets buckets1) {
         super(buckets1, new HistogramQuantilesSketch(column, quantileCount, seed, buckets0));
+        this.qCol = column;
+    }
+
+    @Override
+    public GroupByWorkspace<GroupByWorkspace<ColumnWorkspace<ReservoirSampleWorkspace>>>
+    initialize(ITable data) {
+        data.getLoadedColumns(this.buckets.getColumn(), super.buckets.getColumn(), this.qCol);
+        return super.initialize(data);
     }
 }

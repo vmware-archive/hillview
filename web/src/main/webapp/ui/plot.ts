@@ -33,7 +33,8 @@ import {significantDigits} from "../util";
  * Each *View class will usually contain one or more plots.
  * Multiple plots can share the same plotting surface.
  */
-export abstract class Plot {
+export abstract class Plot<D> {
+    protected data: D;
     protected xAxisData: AxisData;
     protected yAxisData: AxisData;
     protected xAxisRepresentation: D3SvgElement;

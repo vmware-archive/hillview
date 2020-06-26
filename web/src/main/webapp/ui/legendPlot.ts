@@ -7,7 +7,7 @@ import {HtmlPlottingSurface} from "./plottingSurface";
 /**
  * A Plot for the legend of a chart.
  */
-export abstract class LegendPlot extends Plot {
+export abstract class LegendPlot<D> extends Plot<D> {
     protected hilightRect: D3SvgElement;  // used to highlight
     protected legendSelectionRectangle: D3SvgElement;  // used to select
     protected readonly height = 16;

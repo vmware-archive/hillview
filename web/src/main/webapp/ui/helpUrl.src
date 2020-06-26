@@ -27,7 +27,7 @@ export const helpUrl = {
     "TrellisHistogram": "(#trellis-plots-of-1d-histograms)",
     "TrellisHeatmap": "(#trellis-plots-of-heatmaps)",
     "Trellis2DHistogram": "(#trellis-plots-of-2d-histograms)",
-    "TrellisQuartiles": "(#trellis-plots-of-quartiles)",
+    "TrellisQuartiles": "(#trellis-plots-of-quartile-vectors)",
     "HeavyHitters": "(#frequent-elements-views)",
     "Schema": "(#schema-views)",
     "Load": "(#loading-data)",

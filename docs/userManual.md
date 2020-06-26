@@ -26,7 +26,7 @@ one row for an airline flight.  Columns in this dataset include: the date of the
 the origin and destination cities, the origin and destination states,
 the origin airport code, the distance flown, the departure and arrival delay.
 
-Updated on 2020 Jun 12.
+Updated on 2020 Jun 26.
 
 # Contents
 |Section|Reference|
@@ -88,7 +88,7 @@ Updated on 2020 Jun 12.
 |5.2.|[Trellis plots of 2D histograms](#52-trellis-plots-of-2d-histograms)|
 |5.2.1.|[Selection using the colormap](#521-selection-using-the-colormap)|
 |5.3.|[Trellis plots of heatmaps](#53-trellis-plots-of-heatmaps)|
-|5.4.|[Trellis plots of quartiles](#54-trellis-plots-of-quartiles)|
+|5.4.|[Trellis plots of quartile vectors](#54-trellis-plots-of-quartile-vectors)|
 |5.5.|[Combining two views](#55-combining-two-views)|
 ## 1. Basic concepts
 
@@ -1140,6 +1140,7 @@ Hillview supports many types of charts; these are described in the following sec
 [![Trellis plots of 1D histograms](hillview-histogram-array-small.png)](#51-trellis-plots-of-1d-histograms)
 [![Trellis plots of 2D histograms](trellis-histogram2d-array-small.png)](#52-trellis-plots-of-2d-histograms)
 [![Trellis plots of heatmaps](hillview-heatmap-array-small.png)](#53-trellis-plots-of-heatmaps)
+[![Trellis plots of quartile vectors](trellis-quartiles-small.png)](#54-trellis-plots-of-quartile-vectors)
 
 ### 4.1. Uni-dimensional histogram views
 
@@ -1296,6 +1297,7 @@ The "view" menu for a quartile plot offers the following operations:
 * heatmap: show the data in the two columns as a heatmap
 * histogram: show the histogram of the data on the X axis buckets
 * 2D histogram: show the data in the two columns as a 2D histogram
+* group by: create a [Trellis plots of quartile vectors](#54-trellis-plots-of-quartile-vectors)
 
 In addition, users can select a rectangular portion of the plot to filter
 the data only to the selected region:
@@ -1574,9 +1576,13 @@ A Trellis plot is an array of heatmaps, grouped by a third column.
 Each heatmap displays data that corresponds to a range of values in
 the grouping column.
 
-### 5.4. Trellis plots of quartiles
+### 5.4. Trellis plots of quartile vectors
 
-TODO
+![A Trellis plot of quartile vectors](trellis-quartiles.png)
+
+This is a Trellis plot is an array of quartile vector views, grouped by a third column.
+Each plot displays data that corresponds to a range of values in
+the grouping column.
 
 ### 5.5. Combining two views
 

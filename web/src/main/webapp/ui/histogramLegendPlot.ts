@@ -26,7 +26,7 @@ import {ColorMap, desaturateOutsideRange} from "../util";
 /**
  * Displays a legend for a 2D histogram.
  */
-export class HistogramLegendPlot extends LegendPlot {
+export class HistogramLegendPlot extends LegendPlot<void> {
     protected axisData: AxisData;
     protected missingLegend: boolean;  // if true display legend for missing
     protected missingX: number;
