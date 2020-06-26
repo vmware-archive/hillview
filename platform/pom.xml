@@ -418,6 +418,28 @@
             <artifactId>js</artifactId>
             <version>20.1.0</version>
         </dependency>
+        <!-- Cassandra server side componensts to read SSTable and Datastax driver -->
+        <dependency>
+            <groupId>org.apache.cassandra</groupId>
+            <artifactId>cassandra-all</artifactId>
+            <version>3.11.6-fix</version>
+        </dependency>
+        <dependency>
+            <groupId>com.datastax.cassandra</groupId>
+            <artifactId>cassandra-driver-core</artifactId>
+            <version>3.3.0</version>
+            <classifier>shaded</classifier>
+            <exclusions>
+            <exclusion>
+                <groupId>io.netty</groupId>
+                <artifactId>*</artifactId>
+            </exclusion>
+            <exclusion>
+                <groupId>org.ow2.asm</groupId>
+                <artifactId>*</artifactId>
+            </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
     <build>
         <extensions>
