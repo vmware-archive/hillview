@@ -35,7 +35,7 @@ import {
     TrellisLayoutComputation
 } from "./dataRangesReceiver";
 import {Receiver, RpcRequest} from "../rpc";
-import {Converters, ICancellable, makeInterval, PartialResult} from "../util";
+import {Converters, histogram3DAsCsv, ICancellable, makeInterval, PartialResult, saveAs} from "../util";
 import {HeatmapPlot} from "../ui/heatmapPlot";
 import {IViewSerialization, TrellisHeatmapSerialization} from "../datasetView";
 import {IDataView} from "../ui/dataview";
@@ -48,14 +48,13 @@ import {HeatmapLegendPlot} from "../ui/heatmapLegendPlot";
 /**
  * A Trellis plot containing multiple heatmaps.
  */
-export class TrellisHeatmapView extends TrellisChartView {
+export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<number>>>> {
     private colorLegend: HeatmapLegendPlot;
     private legendSurface: HtmlPlottingSurface;
     private readonly legendDiv: HTMLDivElement;
     protected xAxisData: AxisData;
     protected yAxisData: AxisData;
     protected hps: HeatmapPlot[];
-    protected heatmaps: Groups<Groups<Groups<number>>>;
     protected readonly defaultProvenance = "Trellis heatmaps";
 
     constructor(remoteObjectId: RemoteObjectId,
@@ -71,7 +70,7 @@ export class TrellisHeatmapView extends TrellisChartView {
         this.topLevel = document.createElement("div");
         this.topLevel.classList.add("chart");
 
-        this.menu = new TopMenu( [
+        this.menu = new TopMenu([this.exportMenu(),
             { text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
                 { text: "refresh",
                     action: () => this.refresh(),
@@ -130,6 +129,13 @@ export class TrellisHeatmapView extends TrellisChartView {
         return ser;
     }
 
+    public export(): void {
+        const lines = histogram3DAsCsv(
+            this.data, this.schema, [this.xAxisData, this.yAxisData, this.groupByAxisData]);
+        const fileName = "trellis-heatmap.csv";
+        saveAs(fileName, lines.join("\n"));
+    }
+
     protected createNewSurfaces(keepColorMap: boolean): void {
         if (this.surface != null)
             this.surface.destroy();
@@ -143,7 +149,7 @@ export class TrellisHeatmapView extends TrellisChartView {
             this.colorLegend = new HeatmapLegendPlot(
                 this.legendSurface, (xl, xr) => this.colorLegend.emphasizeRange(xl, xr));
             this.colorLegend.setColorMapChangeEventListener(
-                () => this.updateView(this.heatmaps, true));
+                () => this.updateView(this.data, true));
         }
         this.hps = [];
         this.createAllSurfaces((surface) => {
@@ -174,7 +180,7 @@ export class TrellisHeatmapView extends TrellisChartView {
     }
 
     protected replaceAxis(pageId: string, eventKind: DragEventKind): void {
-        if (this.heatmaps == null)
+        if (this.data == null)
             return;
         const sourceRange = this.getSourceAxisRange(pageId, eventKind);
         if (sourceRange === null)
@@ -219,7 +225,7 @@ export class TrellisHeatmapView extends TrellisChartView {
     public resize(): void {
         const chartSize = PlottingSurface.getDefaultChartSize(this.page.getWidthInPixels());
         this.shape = TrellisLayoutComputation.resize(chartSize.width, chartSize.height, this.shape);
-        this.updateView(this.heatmaps, true);
+        this.updateView(this.data, true);
     }
 
     protected doChangeGroups(groupCount: number): void {
@@ -294,7 +300,7 @@ export class TrellisHeatmapView extends TrellisChartView {
 
     public updateView(histogram3d: Groups<Groups<Groups<number>>>, keepColorMap: boolean): void {
         this.createNewSurfaces(keepColorMap);
-        this.heatmaps = histogram3d;
+        this.data = histogram3d;
         if (histogram3d == null || histogram3d.perBucket.length === 0) {
             this.page.reportError("No data to display");
             return;
@@ -318,7 +324,7 @@ export class TrellisHeatmapView extends TrellisChartView {
             max = Math.max(max, plot.getMaxCount());
         }
 
-        this.colorLegend.setData(1, max);
+        this.colorLegend.setData({first: 1, second: max });
         this.colorLegend.draw();
         for (const plot of this.hps) {
             plot.draw();
@@ -353,12 +359,9 @@ export class TrellisHeatmapView extends TrellisChartView {
     }
 
     public onMouseMove(): void {
-        const mousePosition = this.mousePosition();
-        if (mousePosition.plotIndex == null ||
-            mousePosition.x < 0 || mousePosition.y < 0) {
-            this.pointDescription.show(false);
+        const mousePosition = this.checkMouseBounds();
+        if (mousePosition == null)
             return;
-        }
 
         this.pointDescription.show(true);
         const plot = this.hps[mousePosition.plotIndex];

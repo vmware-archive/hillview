@@ -29,9 +29,9 @@ import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {SchemaClass} from "../schemaClass";
 import {
     allBuckets,
-    Converters,
+    Converters, describeQuartiles,
     ICancellable,
-    PartialResult, significantDigits,
+    PartialResult, quartileAsCsv, saveAs,
 } from "../util";
 import {AxisData, AxisKind} from "./axisData";
 import {
@@ -52,11 +52,11 @@ import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {Quartiles2DPlot} from "../ui/quartiles2DPlot";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
+import {BucketDialog} from "./histogramViewBase";
 
-export class TrellisHistogramQuartilesView extends TrellisChartView {
+export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Groups<SampleSet>>> {
     protected hps: Quartiles2DPlot[];
     protected xAxisData: AxisData;
-    protected data: Groups<Groups<SampleSet>>;
     private readonly defaultProvenance: string = "Trellis Quartiles";
 
     public constructor(
@@ -72,15 +72,8 @@ export class TrellisHistogramQuartilesView extends TrellisChartView {
         this.hps = [];
         this.data = null;
 
-        this.menu = new TopMenu( [{
-            text: "Export",
-            help: "Save the information in this view in a local file.",
-            subMenu: new SubMenu([{
-                text: "As CSV",
-                help: "Saves the data in this view in a CSV file.",
-                action: () => { this.export(); },
-            }]),
-        }, { text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
+        this.menu = new TopMenu( [this.exportMenu(),
+            { text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
                 { text: "refresh",
                     action: () => { this.refresh(); },
                     help: "Redraw this view.",
@@ -171,12 +164,9 @@ export class TrellisHistogramQuartilesView extends TrellisChartView {
     }
 
     protected onMouseMove(): void {
-        const mousePosition = this.mousePosition();
-        if (mousePosition == null || mousePosition.plotIndex == null ||
-            mousePosition.x < 0 || mousePosition.y < 0) {
-            this.pointDescription.show(false);
+        const mousePosition = this.checkMouseBounds();
+        if (mousePosition == null)
             return;
-        }
 
         const plot = this.hps[mousePosition.plotIndex];
         if (plot == null)
@@ -184,7 +174,6 @@ export class TrellisHistogramQuartilesView extends TrellisChartView {
 
         this.pointDescription.show(true);
         let xs = this.xAxisData.invert(mousePosition.x);
-        const y = Math.round(plot.getYScale().invert(mousePosition.y));
 
         // Use the plot scale, not the yData to invert.  That's the
         // one which is used to draw the axis.
@@ -198,14 +187,8 @@ export class TrellisHistogramQuartilesView extends TrellisChartView {
                     return;
                 bucketDesc = this.xAxisData.bucketDescription(bucket, 20);
                 const qv = this.data.perBucket[mousePosition.plotIndex].perBucket[bucket];
-                min = significantDigits(qv.min);
-                max = significantDigits(qv.max);
-                count = significantDigits(qv.count);
-                q1 = significantDigits(qv.samples[0]);
-                q2 = qv.samples.length > 1 ? significantDigits(qv.samples[1]) : q1;
-                q3 = qv.samples.length > 2 ? significantDigits(qv.samples[2]) : q2;
-                missing = significantDigits(qv.missing);
                 group = this.groupByAxisData.bucketDescription(mousePosition.plotIndex, 40);
+                [count, missing, min, q1, q2, q3, max] = describeQuartiles(qv);
             }
         }
         const position = d3mouse(this.surface.getCanvas().node());
@@ -234,16 +217,20 @@ export class TrellisHistogramQuartilesView extends TrellisChartView {
     }
 
     protected chooseBuckets(): void {
-        /*
-        const bucketDialog = new BucketDialog(this.buckets);
+        const bucketDialog = new BucketDialog(this.xAxisData.bucketCount);
         bucketDialog.setAction(() => {
-            const ct = bucketDialog.getBucketCount();
-            if (ct != null)
-                this.updateView(this.data, [ct, this.yAxisData.bucketCount],
-                    this.maxYAxis)
+            const bucketCount = bucketDialog.getBucketCount();
+            if (bucketCount == null)
+                return;
+            const cds = [this.xAxisData.description, this.qCol, this.groupByAxisData.description];
+            const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisQuartiles");
+            rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
+                [bucketCount, 0, this.groupByAxisData.bucketCount],
+                cds, null, "changed buckets",{
+                    reusePage: true, chartKind: "TrellisQuartiles"
+                }));
         });
         bucketDialog.show();
-         */
     }
 
     protected doChangeGroups(groupCount: number): void {
@@ -274,21 +261,28 @@ export class TrellisHistogramQuartilesView extends TrellisChartView {
     }
 
     protected heatmap(): void {
-        /*
         const cds = [this.xAxisData.description,
-            this.yAxisData.description, this.groupByAxisData.description];
+            this.qCol, this.groupByAxisData.description];
         const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisHeatmap");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [this.buckets, this.yAxisData.bucketCount, this.shape.bucketCount],
+            [0, 0, this.shape.windowCount],
             cds, null, this.defaultProvenance,{
-                reusePage: false, relative: false,
-                chartKind: "TrellisHeatmap", exact: true
+                reusePage: false, chartKind: "TrellisHeatmap", exact: true
             }));
-         */
     }
 
     protected export(): void {
-        // TODO
+        let lines = [];
+        const axisName = this.schema.displayName(this.groupByAxisData.description.name);
+        let bucketNo = 0;
+        for (const g of allBuckets(this.data)) {
+            const desc = this.groupByAxisData.bucketDescription(bucketNo++, 0);
+            const l = quartileAsCsv(g, this.schema, this.xAxisData);
+            lines = lines.concat(l.map(line => axisName + " " + desc + "," + line));
+        }
+
+        const fileName = "quantiles3d.csv";
+        saveAs(fileName, lines.join("\n"));
     }
 
     public resize(): void {
@@ -299,7 +293,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView {
 
     public refresh(): void {
         const cds = [this.xAxisData.description, this.qCol, this.groupByAxisData.description];
-        const ranges = [this.xAxisData.dataRange, this.groupByAxisData.dataRange];
+        const ranges = [this.xAxisData.dataRange, null, this.groupByAxisData.dataRange];
         const collector = new DataRangesReceiver(this,
             this.page, null, this.schema,
             [this.xAxisData.bucketCount, this.groupByAxisData.bucketCount],
@@ -342,7 +336,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView {
             return;
         this.createNewSurfaces();
         this.data = data;
-        let min = null, max;
+        let min = null, max = null;
 
         if (yAxisRange == null) {
             for (const buckets of allBuckets(data)) {

@@ -16,19 +16,20 @@
  */
 
 import {mouse as d3mouse} from "d3-selection";
-import {RemoteObjectId} from "../javaBridge";
+import {ColumnSortOrientation, IColumnDescription, RecordOrder, RemoteObjectId} from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
 import {ICDFPlot} from "../ui/cdfPlot";
 import {Dialog, FieldKind} from "../ui/dialog";
-import {FullPage} from "../ui/fullPage";
+import {FullPage, PageTitle} from "../ui/fullPage";
 import {D3SvgElement, Resolution, ViewKind} from "../ui/ui";
 import {ChartView} from "./chartView";
 import {AxisData} from "./axisData";
+import {NextKReceiver, TableView} from "./tableView";
 
 /**
  * This is a base class that contains code common to various histogram renderings.
  */
-export abstract class HistogramViewBase extends ChartView {
+export abstract class HistogramViewBase<D> extends ChartView<D> {
     protected summary: HTMLElement;
     protected cdfDot: D3SvgElement;
     protected cdfPlot: ICDFPlot;
@@ -53,7 +54,6 @@ export abstract class HistogramViewBase extends ChartView {
         summaryContainer.appendChild(this.summary);
     }
 
-    protected abstract showTable(): void;
     public abstract resize(): void;
 
     /**
@@ -90,6 +90,24 @@ export abstract class HistogramViewBase extends ChartView {
             .attr("width", width)
             .attr("height", height);
         return true;
+    }
+
+    // show the table corresponding to the data in the histogram
+    protected showTable(axes: IColumnDescription[], provenance: string): void {
+        const orientation: ColumnSortOrientation[] = [];
+        for (const a of axes) {
+            orientation.push({
+                columnDescription: a,
+                isAscending: true
+            });
+        }
+        const order = new RecordOrder(orientation);
+
+        const page = this.dataset.newPage(new PageTitle("Table", provenance), this.page);
+        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, page);
+        const rr = table.createNextKRequest(order, null, Resolution.tableRowsOnScreen);
+        page.setDataView(table);
+        rr.invoke(new NextKReceiver(page, table, rr, false, order, null));
     }
 }
 

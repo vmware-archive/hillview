@@ -26,7 +26,7 @@ import {
 } from "../javaBridge";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {FullPage, PageTitle} from "../ui/fullPage";
-import {ICancellable, periodicSamples, Seed} from "../util";
+import {assert, ICancellable, periodicSamples, Seed} from "../util";
 import {SchemaClass} from "../schemaClass";
 import {ChartOptions, Resolution, Size} from "../ui/ui";
 import {PlottingSurface} from "../ui/plottingSurface";
@@ -407,7 +407,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 let maxXBucketCount = this.bucketCounts[0];
                 if (maxXBucketCount === 0) {
                     maxXBucketCount = Math.min(
-                        Math.floor(chartSize.width / Resolution.minBarWidth),
+                        Math.floor(trellisShape.size.width / Resolution.minBarWidth),
                         Resolution.maxBucketCount);
                 }
                 let maxGBucketCount = this.bucketCounts[2];

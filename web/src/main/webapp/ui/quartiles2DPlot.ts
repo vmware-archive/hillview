@@ -29,8 +29,7 @@ import {SchemaClass} from "../schemaClass";
  * A QuartilesPlot draws a vector if whisker plots
  * on a PlottingSurface, including the axes.
  */
-export class Quartiles2DPlot extends Plot {
-    public qv: Groups<SampleSet>;
+export class Quartiles2DPlot extends Plot<Groups<SampleSet>> {
     public barWidth: number;
     protected yScale: D3Scale;
     protected yAxis: D3Axis;
@@ -61,7 +60,7 @@ export class Quartiles2DPlot extends Plot {
                    schema: SchemaClass, rowCount: number,
                    axisData: AxisData, isPrivate: boolean,
                    yAxisRange: [number, number] | null): void {
-        this.qv = qv;
+        this.data = qv;
         this.rowCount = rowCount;
         this.xAxisData = axisData;
         this.yAxisRange = yAxisRange;
@@ -70,11 +69,11 @@ export class Quartiles2DPlot extends Plot {
     }
 
     private drawBars(): void {
-        if (this.qv == null || this.qv.perBucket == null)
+        if (this.data == null || this.data.perBucket == null)
             return;
-        const bucketCount = this.qv.perBucket.length;
-        const maxes = this.qv.perBucket.map(v => v.max);
-        const mins = this.qv.perBucket.map(v => v.min);
+        const bucketCount = this.data.perBucket.length;
+        const maxes = this.data.perBucket.map(v => v.max);
+        const mins = this.data.perBucket.map(v => v.min);
         this.max = Math.max(...maxes);
         this.min = Math.min(...mins);
         if (this.yAxisRange != null) {
@@ -100,8 +99,8 @@ export class Quartiles2DPlot extends Plot {
 
         const whiskers = [];
         this.missingYCount = 0;
-        for (let x = 0; x < this.qv.perBucket.length; x++) {
-            const q = this.qv.perBucket[x];
+        for (let x = 0; x < this.data.perBucket.length; x++) {
+            const q = this.data.perBucket[x];
             this.missingYCount += q.missing;
             if (q.count === 0)
                 continue;
@@ -183,7 +182,7 @@ export class Quartiles2DPlot extends Plot {
     }
 
     public draw(): void {
-        if (this.qv == null)
+        if (this.data == null)
             return;
 
         this.drawBars();
@@ -204,8 +203,8 @@ export class Quartiles2DPlot extends Plot {
      */
     public getBucketIndex(x: number): number {
         const bucket = Math.floor(x / this.barWidth);
-        if (bucket < 0 || this.qv == null ||
-            bucket >= this.qv.perBucket.length)
+        if (bucket < 0 || this.data == null ||
+            bucket >= this.data.perBucket.length)
             return -1;
         return bucket;
     }

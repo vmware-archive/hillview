@@ -22,7 +22,7 @@ import {DragEventKind, FullPage} from "../ui/fullPage";
 import {D3SvgElement, Point, ViewKind} from "../ui/ui";
 import {TextOverlay} from "../ui/textOverlay";
 import {PlottingSurface} from "../ui/plottingSurface";
-import {TopMenu} from "../ui/menu";
+import {SubMenu, TopMenu, TopMenuItem} from "../ui/menu";
 import {drag as d3drag} from "d3-drag";
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {AxisData} from "./axisData";
@@ -32,7 +32,7 @@ import {Dialog} from "../ui/dialog";
  * A ChartView is a common base class for many views that
  * display charts.
  */
-export abstract class ChartView extends BigTableView {
+export abstract class ChartView<D> extends BigTableView {
     /**
      * True while the mouse is being dragged.
      */
@@ -62,6 +62,10 @@ export abstract class ChartView extends BigTableView {
      * Top-level menu.
      */
     protected menu: TopMenu;
+    /**
+     * Data that is being displayed.
+     */
+    protected data: D;
 
     protected constructor(remoteObjectId: RemoteObjectId,
                           rowCount: number,
@@ -80,6 +84,19 @@ export abstract class ChartView extends BigTableView {
         this.page.registerDropHandler("YAxis", (p) => this.replaceAxis(p, "YAxis"));
         this.page.registerDropHandler("GAxis", (p) => this.replaceAxis(p, "GAxis"));
     }
+
+    protected exportMenu(): TopMenuItem {
+        return {
+            text: "Export",
+            help: "Save the information in this view in a local file.",
+            subMenu: new SubMenu([{
+                text: "As CSV",
+                help: "Saves the data in this view in a CSV file.",
+                action: () => this.export()
+            }])};
+    }
+
+    protected abstract export(): void;
 
     protected createChartDiv(): HTMLDivElement {
         this.topLevel = document.createElement("div");
@@ -209,7 +226,7 @@ export abstract class ChartView extends BigTableView {
         const page = this.dataset.findPage(Number(sourcePageId));
         if (page == null)
             return;
-        const source = page.getDataView() as ChartView;
+        const source = page.getDataView() as ChartView<D>;
         if (source == null)
             return;
 

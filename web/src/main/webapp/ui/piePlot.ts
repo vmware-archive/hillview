@@ -22,8 +22,7 @@ import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {SpecialChars} from "./ui";
 import {
-    add,
-    cloneArray,
+    add, allBuckets,
     formatNumber,
     makeInterval,
     percent,
@@ -40,11 +39,7 @@ interface ValueAndIndex {
 /**
  * A PiePlot draws a histogram as a pie chart on a PlottingSurface.
  */
-export class PiePlot extends Plot {
-    /**
-     * Histogram that is being drawn.
-     */
-    public histogram: Two<Groups<number>>;
+export class PiePlot extends Plot<Two<Groups<number>>> {
     /**
      * Sampling rate that was used to compute the histogram.
      */
@@ -66,7 +61,7 @@ export class PiePlot extends Plot {
      */
     public setHistogram(bars: Two<Groups<number>>, samplingRate: number,
                         axisData: AxisData, maxYAxis: number | null, isPrivate: boolean): void {
-        this.histogram = bars;
+        this.data = bars;
         this.samplingRate = samplingRate;
         this.xAxisData = axisData;
         this.isPrivate = isPrivate;
@@ -125,8 +120,8 @@ export class PiePlot extends Plot {
     }
 
     private drawPie(): void {
-        const counts = this.histogram.first.perBucket.map((x) => Math.max(x, 0));
-        counts.push(this.histogram.first.perMissing);
+        const counts = this.data.first.perBucket.map((x) => Math.max(x, 0));
+        counts.push(this.data.first.perMissing);
         const pie = d3pie().sort(null);
         const chartWidth = this.getChartWidth();
         const chartHeight = this.getChartHeight();
@@ -136,10 +131,9 @@ export class PiePlot extends Plot {
             .outerRadius(radius);
         let confidence;
         if (this.isPrivate) {
-            confidence = cloneArray(this.histogram.second.perBucket);
-            confidence.push(this.histogram.second.perMissing);
+            confidence = allBuckets(this.data.second);
         } else {
-            confidence = new Array(this.histogram.first.perBucket.length + 1);
+            confidence = new Array(this.data.first.perBucket.length + 1);
         }
 
         const sum = counts.reduce(add, 0);
@@ -254,7 +248,7 @@ export class PiePlot extends Plot {
     }
 
     public draw(): void {
-        if (this.histogram == null)
+        if (this.data == null)
             return;
 
         this.drawPie();

@@ -37,6 +37,7 @@ import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
 import {HtmlString, Resolution, SpecialChars} from "../ui/ui";
 import {
+    histogramAsCsv,
     Converters,
     formatNumber,
     ICancellable, makeInterval,
@@ -54,9 +55,7 @@ import {BaseReceiver} from "../tableTarget";
 /**
  * A HistogramView is responsible for showing a one-dimensional histogram on the screen.
  */
-export class HistogramView extends HistogramViewBase /*implements IScrollTarget*/ {
-    protected cdf: Two<Groups<number>>;
-    protected histogram: Two<Groups<number>>;
+export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /*implements IScrollTarget*/ {
     protected plot: HistogramPlot | PiePlot;
     protected bucketCount: number;
     readonly defaultProvenance = "from histogram";
@@ -70,17 +69,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         page: FullPage) {
         super(remoteObjectId, rowCount, schema, page, "Histogram");
 
-        this.menu = new TopMenu([{
-            text: "Export",
-            help: "Save the information in this view in a local file.",
-            subMenu: new SubMenu([{
-                text: "As CSV",
-                help: "Saves the data in this view in a CSV file.",
-                action: () => {
-                    this.export();
-                },
-            }]),
-        }, {
+        this.menu = new TopMenu([this.exportMenu(), {
             text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
                 {
                     text: "refresh",
@@ -158,9 +147,9 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
                 const range = {
                     min: 0,
                     max: this.plot.maxYAxis != null ?
-                        this.plot.maxYAxis : Math.max(...this.histogram.first.perBucket),
-                    presentCount: this.rowCount - this.histogram.first.perMissing,
-                    missingCount: this.histogram.first.perMissing
+                        this.plot.maxYAxis : Math.max(...this.histogram().first.perBucket),
+                    presentCount: this.rowCount - this.histogram().first.perMissing,
+                    missingCount: this.histogram().first.perMissing
                 };
                 return new AxisData(null, range, 0);
         }
@@ -171,8 +160,16 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         this.resize();
     }
 
+    protected cdf(): Two<Groups<number>> {
+        return this.data.second;
+    }
+
+    protected histogram(): Two<Groups<number>> {
+        return this.data.first;
+    }
+
     protected replaceAxis(pageId: string, eventKind: DragEventKind): void {
-        if (this.histogram == null)
+        if (this.data == null)
             return;
         const sourceRange = this.getSourceAxisRange(pageId, eventKind);
         if (sourceRange === null)
@@ -190,7 +187,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
             collector.finished();
         } else if (eventKind === "YAxis") {
             // TODO
-            this.updateView(this.cdf, this.histogram, sourceRange.max);
+            this.updateView(this.data, sourceRange.max);
         }
     }
 
@@ -242,18 +239,17 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
     }
 
     /**
-     * @param cdf: Data for the cdf.
-     * @param histogram: Data for the histogram buckets.
+     * @param histogramAndCdf: first is a histogram (with confidences), second is a cdf (with confidences).
      * @param maxYAxis: maximum value to use for Y axis if not null
      */
-    public updateView(cdf: Two<Groups<number>>, histogram: Two<Groups<number>>,
+    public updateView(histogramAndCdf: Two<Two<Groups<number>>>,
                       maxYAxis: number | null): void {
         this.createNewSurfaces();
-        if (histogram == null) {
+        if (histogramAndCdf == null) {
             this.page.reportError("No data to display");
             return;
         }
-        this.histogram = histogram;
+        this.data = histogramAndCdf;
         // The following is only an *estimate* of the actual row count
         // this.rowCount = this.histogram.buckets.reduce(add, 0);
         if (this.isPrivate()) {
@@ -262,16 +258,16 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
             this.page.setEpsilon(eps, cols);
         }
 
-        this.cdf = cdf;
-        const counts = this.histogram.first.perBucket;
+        const counts = this.histogram().first.perBucket;
         this.bucketCount = counts.length;
         this.plot.setHistogram(
-            histogram, this.samplingRate, this.xAxisData, maxYAxis, this.page.dataset.isPrivate(), this.rowCount);
+            this.histogram(), this.samplingRate, this.xAxisData, maxYAxis,
+            this.page.dataset.isPrivate(), this.rowCount);
         this.plot.draw();
 
         const discrete = kindIsString(this.xAxisData.description.kind) ||
             this.xAxisData.description.kind === "Integer";
-        this.cdfPlot.setData(cdf.first.perBucket, discrete);
+        this.cdfPlot.setData(this.cdf().first.perBucket, discrete);
         this.cdfPlot.draw();
         this.setupMouse();
 
@@ -288,8 +284,9 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
 
         let summary = new HtmlString("");
         const approx = this.isPrivate() ? SpecialChars.approx : "";
-        if (histogram.first.perMissing !== 0)
-            summary = summary.appendSafeString(approx +formatNumber(histogram.first.perMissing) + " missing, ");
+        if (this.histogram().first.perMissing !== 0)
+            summary = summary.appendSafeString(approx +formatNumber(
+                this.histogram().first.perMissing) + " missing, ");
         summary = summary.appendSafeString(approx + formatNumber(this.rowCount) + " points");
         if (this.xAxisData != null &&
             this.xAxisData.displayRange.stringQuantiles != null &&
@@ -376,27 +373,9 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
     }
 
     public export(): void {
-        const lines: string[] = this.asCSV();
+        const lines: string[] = histogramAsCsv(this.histogram().first, this.schema, this.xAxisData);
         const fileName = "histogram.csv";
         saveAs(fileName, lines.join("\n"));
-    }
-
-    /**
-     * Convert the data to text.
-     * @returns An array of lines describing the data.
-     */
-    public asCSV(): string[] {
-        const lines: string[] = [];
-        let line = this.schema.displayName(this.xAxisData.description.name) + ",count";
-        lines.push(line);
-        for (let x = 0; x < this.histogram.first.perBucket.length; x++) {
-            const bx = this.xAxisData.bucketDescription(x, 0);
-            const l = "" + JSON.stringify(bx) + "," + this.histogram.first.perBucket[x];
-            lines.push(l);
-        }
-        line = "missing," + this.histogram.first.perMissing;
-        lines.push(line);
-        return lines;
     }
 
     private showSecondColumn(colName: DisplayName): void {
@@ -404,7 +383,7 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
         const cds: IColumnDescription[] = [this.xAxisData.description, oc];
         const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [this.histogram.first.perBucket.length, 0], cds, null, this.defaultProvenance,{
+            [this.histogram().first.perBucket.length, 0], cds, null, this.defaultProvenance,{
             reusePage: false,
             relative: false,
             chartKind: "2DHistogram",
@@ -442,9 +421,9 @@ export class HistogramView extends HistogramViewBase /*implements IScrollTarget*
     }
 
     public resize(): void {
-        if (this.cdf == null)
+        if (this.data == null)
             return;
-        this.updateView(this.cdf, this.histogram, this.plot.maxYAxis);
+        this.updateView(this.data, this.plot.maxYAxis);
     }
 
     public refresh(): void {
@@ -575,9 +554,7 @@ export class HistogramReceiver extends Receiver<Two<Two<Groups<number>>>>  {
         super.onNext(value);
         if (value == null || value.data == null || value.data.first == null)
             return;
-        const histogram = value.data.first;
-        const cdf = value.data.second;
-        this.view.updateView(cdf, histogram, null);
+        this.view.updateView(value.data, null);
     }
 
     public onCompleted(): void {

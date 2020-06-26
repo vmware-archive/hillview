@@ -62,8 +62,8 @@ export class Histogram2DPlot extends Histogram2DBase {
 
     public draw(): void {
         super.draw();
-        this.xPoints = this.heatmap.first.perBucket.length;
-        this.yPoints = this.heatmap.first.perBucket[0].perBucket.length;
+        this.xPoints = this.data.first.perBucket.length;
+        this.yPoints = this.data.first.perBucket[0].perBucket.length;
 
         const counts: number[] = [];
 
@@ -72,7 +72,7 @@ export class Histogram2DPlot extends Histogram2DBase {
         for (let x = 0; x < this.xPoints; x++) {
             let yTotal = 0;
             for (let y = 0; y < this.yPoints; y++) {
-                const vis = this.heatmap.first.perBucket[x].perBucket[y];
+                const vis = this.data.first.perBucket[x].perBucket[y];
                 if (vis !== 0) {
                     const rect: Box = {
                         xIndex: x,
@@ -84,7 +84,7 @@ export class Histogram2DPlot extends Histogram2DBase {
                 }
                 yTotal += vis;
             }
-            const v = this.heatmap.first.perBucket[x].perMissing;
+            const v = this.data.first.perBucket[x].perMissing;
             const rec: Box = {
                 xIndex: x,
                 countBelow: yTotal,
@@ -208,12 +208,12 @@ export class Histogram2DPlot extends Histogram2DBase {
         if (xIndex < 0 || xIndex >= this.xPoints)
             return null;
 
-        const values: number[] = this.heatmap.first.perBucket[xIndex].perBucket;
+        const values: number[] = this.data.first.perBucket[xIndex].perBucket;
 
         let total = 0;
         for (const v of values)
             total += v;
-        total += this.heatmap.first.perBucket[xIndex].perMissing;
+        total += this.data.first.perBucket[xIndex].perMissing;
         if (total <= 0)
             // There could be no data for this specific x value
             return null;
@@ -233,12 +233,12 @@ export class Histogram2DPlot extends Histogram2DBase {
             }
         }
 
-        const missing = this.heatmap.first.perBucket[xIndex].perMissing;
+        const missing = this.data.first.perBucket[xIndex].perMissing;
         yTotal += missing;
         yTotalScaled += missing * scale;
         if (!found && yTotalScaled >= yScaled) {
             perc = missing;
-            yIndex = this.heatmap.first.perBucket.length;  // missing
+            yIndex = this.data.first.perBucket.length;  // missing
         }
         return {
             xIndex: xIndex,

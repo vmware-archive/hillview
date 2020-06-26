@@ -31,14 +31,10 @@ import {IBarPlot} from "./IBarPlot";
 /**
  * A HistogramPlot draws a bar chart on a PlottingSurface, including the axes.
  */
-export class HistogramPlot extends Plot implements IBarPlot {
+export class HistogramPlot extends Plot<Two<Groups<number>>> implements IBarPlot {
     // While the data has histogram type, nothing prevents the values in the histogram
     // from being non-integers, so this class can be used to draw more general bar-charts.
 
-    /**
-     * Histogram that is being drawn.
-     */
-    public data: Two<Groups<number>>;
     /**
      * Sampling rate that was used to compute the histogram.
      */

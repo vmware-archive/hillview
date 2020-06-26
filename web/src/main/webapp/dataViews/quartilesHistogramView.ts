@@ -21,7 +21,6 @@ import {
     BucketsInfo, Groups,
     HistogramRequestInfo,
     IColumnDescription,
-    RecordOrder,
     RemoteObjectId, SampleSet,
 } from "../javaBridge";
 import {Receiver, RpcRequest} from "../rpc";
@@ -31,11 +30,17 @@ import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {ChartOptions, HtmlString, Resolution} from "../ui/ui";
-import {Converters, ICancellable, PartialResult, saveAs, significantDigits,} from "../util";
+import {ChartOptions, HtmlString} from "../ui/ui";
+import {
+    Converters,
+    describeQuartiles,
+    ICancellable,
+    PartialResult,
+    quartileAsCsv,
+    saveAs,
+} from "../util";
 import {AxisData, AxisKind} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
-import {NextKReceiver, TableView} from "./tableView";
 import {DataRangesReceiver, FilterReceiver} from "./dataRangesReceiver";
 import {DisplayName, SchemaClass} from "../schemaClass";
 import {Quartiles2DPlot} from "../ui/quartiles2DPlot";
@@ -44,8 +49,7 @@ import {Quartiles2DPlot} from "../ui/quartiles2DPlot";
  * This class is responsible for rendering a vector of quartiles.
  * Each quartile is for a bucket.
  */
-export class QuartilesHistogramView extends HistogramViewBase {
-    protected data: Groups<SampleSet>;
+export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>> {
     protected plot: Quartiles2DPlot;
     protected yAxisData: AxisData;
     private readonly defaultProvenance = "From quartile histogram";
@@ -54,15 +58,7 @@ export class QuartilesHistogramView extends HistogramViewBase {
                 schema: SchemaClass, protected qCol: IColumnDescription, page: FullPage) {
         super(remoteObjectId, rowCount, schema, page, "QuartileVector");
 
-        this.menu = new TopMenu( [{
-           text: "Export",
-           help: "Save the information in this view in a local file.",
-           subMenu: new SubMenu([{
-               text: "As CSV",
-               help: "Saves the data in this view in a CSV file.",
-               action: () => { this.export(); },
-           }]),
-        }, {
+        this.menu = new TopMenu( [this.exportMenu(), {
             text: "View",
             help: "Change the way the data is displayed.",
             subMenu: new SubMenu([{
@@ -217,62 +213,9 @@ export class QuartilesHistogramView extends HistogramViewBase {
     }
 
     public export(): void {
-        const lines: string[] = this.asCSV();
+        const lines: string[] = quartileAsCsv(this.data, this.schema, this.xAxisData);
         const fileName = "quantiles2d.csv";
         saveAs(fileName, lines.join("\n"));
-    }
-
-    /**
-     * Convert the data to text.
-     * @returns {string[]}  An array of lines describing the data.
-     */
-    public asCSV(): string[] {
-        const lines: string[] = [];
-        let line = ",";
-        for (let x = 0; x < this.xAxisData.bucketCount; x++) {
-            const bx = this.xAxisData.bucketDescription(x, 0);
-            const l = JSON.stringify(this.schema.displayName(this.xAxisData.description.name) + " " + bx);
-            line += "," + l;
-        }
-        lines.push(line);
-
-        const data = this.data.perBucket;
-        line = "min,";
-        for (let x = 0; x < this.xAxisData.bucketCount; x++) {
-            line += "," + (data[x].count === 0) ? "" : data[x].min;
-        }
-        lines.push(line);
-
-        line = "q1,";
-        for (let x = 0; x < this.xAxisData.bucketCount; x++) {
-            line += "," + (data[x].count === 0) ? "" : (data[x].samples.length > 0 ? data[x].samples[0] : "");
-        }
-        lines.push(line);
-
-        line = "median,";
-        for (let x = 0; x < this.xAxisData.bucketCount; x++) {
-            line += "," + (data[x].count === 0) ? "" : (data[x].samples.length > 1 ? data[x].samples[1] : "");
-        }
-        lines.push(line);
-
-        line = "q3,";
-        for (let x = 0; x < this.xAxisData.bucketCount; x++) {
-            line += "," + (data[x].count === 0) ? "" : (data[x].samples.length > 2 ? data[x].samples[2] : "");
-        }
-        lines.push(line);
-
-        line = "max,";
-        for (let x = 0; x < this.xAxisData.bucketCount; x++) {
-            line += "," + (data[x].count === 0) ? "" : data[x].max;
-        }
-        lines.push(line);
-
-        line = "missing,";
-        for (let x = 0; x < this.xAxisData.bucketCount; x++) {
-            line += "," + data[x].missing;
-        }
-        lines.push(line);
-        return lines;
     }
 
     protected getCombineRenderer(title: PageTitle):
@@ -286,22 +229,21 @@ export class QuartilesHistogramView extends HistogramViewBase {
         };
     }
 
-    public changeBuckets(bucketCount: number): void {
-        if (bucketCount == null)
-            return;
-        const cds = [this.xAxisData.description, this.qCol];
-        const rr = this.createDataQuantilesRequest(cds, this.page, "QuartileVector");
-        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
-            [bucketCount], cds, null, "changed buckets",{
-            reusePage: true, chartKind: "QuartileVector"
-        }));
-    }
-
     public chooseBuckets(): void {
         if (this == null)
             return;
         const bucketDialog = new BucketDialog(this.xAxisData.bucketCount);
-        bucketDialog.setAction(() => this.changeBuckets(bucketDialog.getBucketCount()));
+        bucketDialog.setAction(() => {
+            const bucketCount = bucketDialog.getBucketCount();
+            if (bucketCount == null)
+                return;
+            const cds = [this.xAxisData.description, this.qCol];
+            const rr = this.createDataQuantilesRequest(cds, this.page, "QuartileVector");
+            rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
+                [bucketCount], cds, null, "changed buckets",{
+                    reusePage: true, chartKind: "QuartileVector"
+                }));
+        });
         bucketDialog.show();
     }
 
@@ -345,13 +287,7 @@ export class QuartilesHistogramView extends HistogramViewBase {
                     return;
                 bucketDesc = this.xAxisData.bucketDescription(bucket, 20);
                 const qv = this.data.perBucket[bucket];
-                min = significantDigits(qv.min);
-                max = significantDigits(qv.max);
-                count = significantDigits(qv.count);
-                q1 = significantDigits(qv.samples[0]);
-                q2 = qv.samples.length > 1 ? significantDigits(qv.samples[1]) : q1;
-                q3 = qv.samples.length > 2 ? significantDigits(qv.samples[2]) : q2;
-                missing = significantDigits(qv.missing);
+                [count, missing, min, q1, q2, q3, max] = describeQuartiles(qv);
             }
         }
         this.pointDescription.update([xs, bucketDesc, max, q3, q2, q1, min, count, missing], mouseX, mouseY);
@@ -392,19 +328,7 @@ export class QuartilesHistogramView extends HistogramViewBase {
 
     // show the table corresponding to the data in the histogram
     protected showTable(): void {
-        const order =  new RecordOrder([ {
-            columnDescription: this.xAxisData.description,
-            isAscending: true,
-        }, {
-            columnDescription: this.qCol,
-            isAscending: true,
-        } ]);
-
-        const page = this.dataset.newPage(new PageTitle("Table", this.defaultProvenance), this.page);
-        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, page);
-        const rr = table.createNextKRequest(order, null, Resolution.tableRowsOnScreen);
-        page.setDataView(table);
-        rr.invoke(new NextKReceiver(page, table, rr, false, order, null));
+        super.showTable([this.xAxisData.description, this.qCol], this.defaultProvenance)
     }
 }
 

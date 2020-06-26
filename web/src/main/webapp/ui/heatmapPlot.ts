@@ -31,8 +31,7 @@ interface Dot {
     confident: boolean;
 }
 
-export class HeatmapPlot extends Plot {
-    protected heatmap: Two<Groups<Groups<number>>>;
+export class HeatmapPlot extends Plot<Two<Groups<Groups<number>>>> {
     protected pointWidth: number; // in pixels
     protected pointHeight: number; // in pixels
     protected max: number;  // maximum count
@@ -101,7 +100,7 @@ export class HeatmapPlot extends Plot {
             // It makes no sense to do regressions for string values.
             // Regressions for private data should be computed in a different way; this
             // way gives too much noise.
-            const regr = regression(this.heatmap.first.perBucket.map(l => l.perBucket));
+            const regr = regression(this.data.first.perBucket.map(l => l.perBucket));
             if (regr.length === 2) {
                 const b = regr[0];
                 const a = regr[1];
@@ -127,9 +126,9 @@ export class HeatmapPlot extends Plot {
         xi = Math.floor(xi);
         yi = Math.floor(yi);
         if (xi >= 0 && xi < this.xPoints && yi >= 0 && yi < this.yPoints) {
-            const value = this.heatmap.first.perBucket[xi].perBucket[yi];
-            const conf = this.heatmap.second != null ?
-                this.heatmap.second.perBucket[xi].perBucket[yi] : null;
+            const value = this.data.first.perBucket[xi].perBucket[yi];
+            const conf = this.data.second != null ?
+                this.data.second.perBucket[xi].perBucket[yi] : null;
             return valueWithConfidence(value, conf);
         }
         return valueWithConfidence(0, null);
@@ -149,7 +148,7 @@ export class HeatmapPlot extends Plot {
 
     public setData(heatmap: Two<Groups<Groups<number>>>, xData: AxisData, yData: AxisData,
                    schema: SchemaClass, confThreshold: number, isPrivate: boolean): void {
-        this.heatmap = heatmap;
+        this.data = heatmap;
         this.xAxisData = xData;
         this.yAxisData = yData;
         this.schema = schema;
@@ -159,8 +158,8 @@ export class HeatmapPlot extends Plot {
         this.yAxisData.setResolution(
             this.getChartHeight(), AxisKind.Left, Resolution.heatmapLabelWidth);
 
-        this.xPoints = this.heatmap.first.perBucket.length;
-        this.yPoints = this.heatmap.first.perBucket[0].perBucket.length;
+        this.xPoints = this.data.first.perBucket.length;
+        this.yPoints = this.data.first.perBucket[0].perBucket.length;
         if (this.xPoints === 0 || this.yPoints === 0)
             return;
         this.pointWidth = this.getChartWidth() / this.xPoints;
@@ -173,13 +172,13 @@ export class HeatmapPlot extends Plot {
 
         for (let x = 0; x < this.xPoints; x++) {
             for (let y = 0; y < this.yPoints; y++) {
-                const b = this.heatmap.first.perBucket[x].perBucket[y];
+                const b = this.data.first.perBucket[x].perBucket[y];
                 const v = Math.max(0, b);
                 let conf;
                 if (!isPrivate) {
                     conf = true;
                 } else {
-                    const confidence = this.heatmap.second.perBucket[x].perBucket[y];
+                    const confidence = this.data.second.perBucket[x].perBucket[y];
                     conf = b >= (confThreshold * confidence);
                 }
                 if (v > this.max)

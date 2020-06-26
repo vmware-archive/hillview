@@ -29,10 +29,12 @@ import {
     ContentsKind, Groups,
     kindIsNumeric,
     kindIsString, RangeFilterArrayDescription, RangeFilterDescription,
-    RowFilterDescription,
+    RowFilterDescription, SampleSet,
     StringFilterDescription
 } from "./javaBridge";
 import {DragEventKind, PageTitle} from "./ui/fullPage";
+import {AxisData} from "./dataViews/axisData";
+import {SchemaClass} from "./schemaClass";
 
 export interface Pair<T1, T2> {
     first: T1;
@@ -49,6 +51,136 @@ export function allBuckets<R>(data: Groups<R>): R[] {
     const result = cloneArray(data.perBucket);
     result.push(data.perMissing);
     return result;
+}
+
+export function histogramAsCsv(data: Groups<number>, schema: SchemaClass, axis: AxisData): string[] {
+    const lines: string[] = [];
+    let line = schema.displayName(axis.description.name) + ",count";
+    lines.push(line);
+    for (let x = 0; x < data.perBucket.length; x++) {
+        const bx = axis.bucketDescription(x, 0);
+        const l = "" + JSON.stringify(bx) + "," + data.perBucket[x];
+        lines.push(l);
+    }
+    line = "missing," + data.perMissing;
+    lines.push(line);
+    return lines;
+}
+
+export function histogram2DAsCsv(
+    data: Groups<Groups<number>>, schema: SchemaClass, axis: AxisData[]): string[] {
+    const lines: string[] = [];
+
+    const yAxis = schema.displayName(axis[1].description.name);
+    const xAxis = schema.displayName(axis[0].description.name);
+    let line = "";
+    for (let y = 0; y < axis[1].bucketCount; y++) {
+        const by = axis[1].bucketDescription(y, 0);
+        line += "," + JSON.stringify(yAxis + " " + by);
+    }
+    line += ",missing";
+    lines.push(line);
+    for (let x = 0; x < axis[0].bucketCount; x++) {
+        const d = data.perBucket[x];
+        const bx = axis[0].bucketDescription(x, 0);
+        let l = JSON.stringify(xAxis + " " + bx);
+        for (const y of d.perBucket)
+            l += "," + y;
+        l += "," + d.perMissing;
+        lines.push(l);
+    }
+    line = "mising";
+    for (const y of data.perMissing.perBucket)
+        line += "," + y;
+    line += "," + data.perMissing.perMissing;
+    lines.push(line);
+    return lines;
+}
+
+export function histogram3DAsCsv(
+    data: Groups<Groups<Groups<number>>>, schema: SchemaClass, axis: AxisData[]): string[] {
+    let lines = [];
+    const gAxis = schema.displayName(axis[2].description.name);
+    for (let g = 0; g < axis[2].bucketCount; g++) {
+        const gl = histogram2DAsCsv(data.perBucket[g], schema, axis);
+        const first = gl[0];
+        const tail = gl.slice(1);
+        if (g == 0) {
+            // This is the header line
+            lines.push("," + first);
+        }
+        const by = axis[2].bucketDescription(g, 0);
+        lines = lines.concat(tail.map(l => JSON.stringify(gAxis + " " + by) + "," + l));
+    }
+    const by = "missing";
+    const gl = histogram2DAsCsv(data.perMissing, schema, axis);
+    lines.concat(gl.map(l => JSON.stringify(gAxis + " " + by) + "," + l));
+    return lines;
+}
+
+export function quartileAsCsv(g: Groups<SampleSet>, schema: SchemaClass, axis: AxisData): string[] {
+    const lines: string[] = [];
+    let line = "";
+    const axisName = schema.displayName(axis.description.name);
+    for (let x = 0; x < axis.bucketCount; x++) {
+        const bx = axis.bucketDescription(x, 0);
+        const l = JSON.stringify( axisName + " " + bx);
+        line += "," + l;
+    }
+    line += ",missing"
+    lines.push(line);
+
+    const data = allBuckets(g);
+    line = "min";
+    for (const d of data) {
+        line += "," + ((d.count === 0) ? "" : d.min);
+    }
+    lines.push(line);
+
+    line = "q1";
+    for (const d of data) {
+        line += "," + ((d.count === 0) ? "" : (d.samples.length > 0 ? d.samples[0] : ""));
+    }
+    lines.push(line);
+
+    line = "median";
+    for (const d of data) {
+        line += "," + ((d.count === 0) ? "" : (d.samples.length > 1 ? d.samples[1] : ""));
+    }
+    lines.push(line);
+
+    line = "q3";
+    for (const d of data) {
+        line += "," + ((d.count === 0) ? "" : (d.samples.length > 2 ? d.samples[2] : ""));
+    }
+    lines.push(line);
+
+    line = "max";
+    for (const d of data) {
+        line += "," + ((d.count === 0) ? "" : d.max);
+    }
+    lines.push(line);
+
+    line = "missing";
+    for (const d of data) {
+        line += "," + d.missing;
+    }
+    lines.push(line);
+    return lines;
+}
+
+export function describeQuartiles(data: SampleSet): string[] {
+    if (data.count == 0) {
+        return ["0", "", "", "", "", "", ""];
+    }
+    const count = significantDigits(data.count);
+    const min = significantDigits(data.min);
+    const max = significantDigits(data.max);
+    const q1 = significantDigits(data.samples[0]);
+    const q2 = data.samples.length > 1 ? significantDigits(data.samples[1]) : q1;
+    const q3 = data.samples.length > 2 ? significantDigits(data.samples[2]) : q2;
+    const missing = significantDigits(data.missing);
+    return [count, missing, min, q1, q2, q3, max];
 }
 
 /**

@@ -48,7 +48,7 @@ import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {HistogramLegendPlot} from "../ui/histogramLegendPlot";
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 
-export class TrellisHistogram2DView extends TrellisChartView {
+export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Groups<number>>>> {
     protected hps: Histogram2DPlot[];
     protected buckets: number;
     protected xAxisData: AxisData;
@@ -57,7 +57,6 @@ export class TrellisHistogram2DView extends TrellisChartView {
     private readonly legendDiv: HTMLDivElement;
     protected legendPlot: HistogramLegendPlot;
     protected relative: boolean;
-    protected data: Groups<Groups<Groups<number>>>;
     protected maxYAxis: number | null;  // maximum value to use for Y axis; if null - derive from data
     private readonly defaultProvenance: string = "Trellis 2D histograms";
 
@@ -75,15 +74,10 @@ export class TrellisHistogram2DView extends TrellisChartView {
         this.data = null;
         this.maxYAxis = null;
 
-        this.menu = new TopMenu( [{
-            text: "Export",
-            help: "Save the information in this view in a local file.",
-            subMenu: new SubMenu([{
-                text: "As CSV",
-                help: "Saves the data in this view in a CSV file.",
-                action: () => { this.export(); },
-            }]),
-        }, { text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
+        this.menu = new TopMenu( [this.exportMenu(),
+            { text: "View",
+                help: "Change the way the data is displayed.",
+                subMenu: new SubMenu([
                 { text: "refresh",
                     action: () => { this.refresh(); },
                     help: "Redraw this view.",
@@ -224,12 +218,9 @@ export class TrellisHistogram2DView extends TrellisChartView {
     }
 
     protected onMouseMove(): void {
-        const mousePosition = this.mousePosition();
-        if (mousePosition.plotIndex == null ||
-            mousePosition.x < 0 || mousePosition.y < 0) {
-            this.pointDescription.show(false);
+        const mousePosition = this.checkMouseBounds();
+        if (mousePosition == null)
             return;
-        }
 
         const plot = this.hps[mousePosition.plotIndex];
         if (plot == null)
@@ -490,8 +481,6 @@ export class TrellisHistogram2DView extends TrellisChartView {
     }
 
     protected legendSelectionCompleted(xl: number, xr: number): void {
-        const x0 = this.legendAxisData.invertToNumber(xl);
-        const x1 = this.legendAxisData.invertToNumber(xr);
         if (d3event.sourceEvent.shiftKey) {
             this.legendPlot.emphasizeRange(xl / this.legendPlot.width, xr / this.legendPlot.width);
             this.resize();

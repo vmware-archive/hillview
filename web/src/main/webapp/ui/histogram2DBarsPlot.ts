@@ -60,9 +60,9 @@ export class Histogram2DBarsPlot extends Histogram2DBase {
         this.xPoints = null;
         this.yPoints = null;
         this.showMissing = false;
-        this.xPoints = this.heatmap.first.perBucket.length;
-        this.yPoints = this.heatmap.first.perBucket[0].perBucket.length;
-        const missingYSum = this.heatmap.first.perBucket.map(b => b.perMissing).reduce(add, 0);
+        this.xPoints = this.data.first.perBucket.length;
+        this.yPoints = this.data.first.perBucket[0].perBucket.length;
+        const missingYSum = this.data.first.perBucket.map(b => b.perMissing).reduce(add, 0);
         if (missingYSum > 0) {
             this.showMissing = true;
             this.yPoints++;
@@ -72,7 +72,7 @@ export class Histogram2DBarsPlot extends Histogram2DBase {
         const rects: Box[] = [];
         for (let x = 0; x < this.xPoints; x++) {
             let yTotal = 0;
-            const xBuckets = this.heatmap.first.perBucket[x];
+            const xBuckets = this.data.first.perBucket[x];
             for (let y = 0; y < xBuckets.perBucket.length; y++) {
                 const vis = xBuckets.perBucket[y];
                 if (vis !== 0) {
@@ -87,7 +87,7 @@ export class Histogram2DBarsPlot extends Histogram2DBase {
                 }
                 yTotal += vis;
             }
-            const vis = this.heatmap.first.perBucket[x].perMissing;
+            const vis = this.data.first.perBucket[x].perMissing;
             const rec: Box = {
                 xCoordinate: x * (this.yPoints + 1) + this.yPoints - 1,
                 color: -1,
@@ -135,7 +135,7 @@ export class Histogram2DBarsPlot extends Histogram2DBase {
             .attr("y", (d: Box) => this.getChartHeight() - this.rectHeight(d, scale))
             .attr("height", (d: Box) => this.rectHeight(d, scale))
             .attr("width", this.barWidth - 1)
-            .attr("fill", (d: Box) => this.color(d.color, this.heatmap.first.perBucket[0].perBucket.length - 1))
+            .attr("fill", (d: Box) => this.color(d.color, this.data.first.perBucket[0].perBucket.length - 1))
             .attr("stroke", "black")
             .attr("stroke-width", (d: Box) => d.color < 0 ? 1 : 0)
         this.drawAxes();
@@ -171,8 +171,8 @@ export class Histogram2DBarsPlot extends Histogram2DBase {
             colorIndex = NoBucketIndex;
         }
 
-        if (bucketIndex >= 0 && bucketIndex < this.heatmap.first.perBucket.length) {
-            const bucket = this.heatmap.first.perBucket[bucketIndex];
+        if (bucketIndex >= 0 && bucketIndex < this.data.first.perBucket.length) {
+            const bucket = this.data.first.perBucket[bucketIndex];
             if (this.showMissing && colorIndex == this.yPoints - 1)
                 count = bucket.perMissing;
             else
