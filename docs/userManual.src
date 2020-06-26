@@ -1075,6 +1075,7 @@ Hillview supports many types of charts; these are described in the following sec
 [![Trellis plots of 1D histograms](hillview-histogram-array-small.png)](#trellis-plots-of-1d-histograms)
 [![Trellis plots of 2D histograms](trellis-histogram2d-array-small.png)](#trellis-plots-of-2d-histograms)
 [![Trellis plots of heatmaps](hillview-heatmap-array-small.png)](#trellis-plots-of-heatmaps)
+[![Trellis plots of quartile vectors](trellis-quartiles-small.png)](#trellis-plots-of-quartile-vectors)
 
 ### Uni-dimensional histogram views
 
@@ -1231,6 +1232,7 @@ The "view" menu for a quartile plot offers the following operations:
 * heatmap: show the data in the two columns as a heatmap
 * histogram: show the histogram of the data on the X axis buckets
 * 2D histogram: show the data in the two columns as a 2D histogram
+* group by: create a [Trellis plots of quartile vectors](#trellis-plots-of-quartile-vectors)
 
 In addition, users can select a rectangular portion of the plot to filter
 the data only to the selected region:
@@ -1509,9 +1511,13 @@ A Trellis plot is an array of heatmaps, grouped by a third column.
 Each heatmap displays data that corresponds to a range of values in
 the grouping column.
 
-### Trellis plots of quartiles
+### Trellis plots of quartile vectors
 
-TODO
+![A Trellis plot of quartile vectors](trellis-quartiles.png)
+
+This is a Trellis plot is an array of quartile vector views, grouped by a third column.
+Each plot displays data that corresponds to a range of values in
+the grouping column.
 
 ### Combining two views
 

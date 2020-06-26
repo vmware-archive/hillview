@@ -122,7 +122,10 @@ def main():
     rewrite(input, output, headings, "<!--", "-->")
     input = "../web/src/main/webapp/ui/helpUrl.src"
     output = "../web/src/main/webapp/ui/helpUrl.ts"
-    rewrite(input, output, headings, "/*", "*/")
+    try:
+        rewrite(input, output, headings, "/*", "*/")
+    except Exception as e:
+        raise Exception("Error fixing file " + input) from e
 
 if __name__ == "__main__":
     main()
