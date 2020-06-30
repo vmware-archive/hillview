@@ -26,7 +26,7 @@ import {
 } from "../javaBridge";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
 import {FullPage, PageTitle} from "../ui/fullPage";
-import {assert, ICancellable, periodicSamples, Seed} from "../util";
+import {ICancellable, periodicSamples, Seed} from "../util";
 import {SchemaClass} from "../schemaClass";
 import {ChartOptions, Resolution, Size} from "../ui/ui";
 import {PlottingSurface} from "../ui/plottingSurface";
@@ -310,9 +310,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
 
                 let maxXBucketCount = this.bucketCounts[0];
                 if (maxXBucketCount === 0) {
-                    maxXBucketCount = Math.min(
-                        Math.floor(chartSize.width / Resolution.minBarWidth),
-                        Resolution.maxBucketCount);
+                    maxXBucketCount = Math.floor(chartSize.width / Resolution.minBarWidth);
                 }
                 if (this.title == null)
                     this.title = new PageTitle(
@@ -342,9 +340,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 const args: HistogramRequestInfo[] = [];
                 let maxXBucketCount = this.bucketCounts[0];
                 if (maxXBucketCount === 0) {
-                    maxXBucketCount = Math.min(
-                        Math.floor(chartSize.width / Resolution.minBarWidth),
-                        Resolution.maxBucketCount);
+                    maxXBucketCount = Math.floor(chartSize.width / Resolution.minBarWidth);
                 }
 
                 const histoArg = DataRangesReceiver.computeHistogramArgs(
@@ -403,12 +399,10 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                     this.page.reportError("Quartiles require a numeric second column " + this.cds[1].name);
                     return;
                 }
-
                 let maxXBucketCount = this.bucketCounts[0];
                 if (maxXBucketCount === 0) {
-                    maxXBucketCount = Math.min(
-                        Math.floor(trellisShape.size.width / Resolution.minBarWidth),
-                        Resolution.maxBucketCount);
+                    // noinspection JSObjectNullOrUndefined
+                    maxXBucketCount = Math.floor(trellisShape.size.width / Resolution.minBarWidth);
                 }
                 let maxGBucketCount = this.bucketCounts[2];
                 if (maxGBucketCount === 0)
@@ -440,11 +434,20 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                     this.options));
                 break;
             }
-            case "Trellis2DHistogram": {
+            case "Trellis2DHistogram": // fall through
+            case "TrellisHeatmap": {
+                let maxXBucketCount;
+                let maxYBucketCount;
+                if (this.options.chartKind === "Trellis2DHistogram") {
+                    // noinspection JSObjectNullOrUndefined
+                    maxXBucketCount = Math.floor(trellisShape.size.width / Resolution.minBarWidth);
+                    maxYBucketCount = Resolution.max2DBucketCount;
+                } else {
+                    // noinspection JSObjectNullOrUndefined
+                    maxXBucketCount = Math.floor(trellisShape.size.width / Resolution.minDotSize);
+                    maxYBucketCount = Math.floor(trellisShape.size.height / Resolution.minDotSize);
+                }
                 const args: HistogramRequestInfo[] = [];
-                // noinspection JSObjectNullOrUndefined
-                const maxXBucketCount = Math.floor(trellisShape.size.width / Resolution.minBarWidth);
-                const maxYBucketCount = Resolution.maxBucketCount;
                 const xArg = DataRangesReceiver.computeHistogramArgs(
                     this.cds[0], ranges[0], maxXBucketCount, exact, trellisShape.size);
                 const yArg = DataRangesReceiver.computeHistogramArgs(
@@ -461,44 +464,19 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 const groupByAxis = new AxisData(this.cds[2], ranges[2], wArg.bucketCount);
                 if (this.title == null)
                     this.title = new PageTitle(
-                                 "Histograms (" + this.schema.displayName(this.cds[0].name).displayName +
+                        this.options.chartKind.toString().replace("Trellis", "") +
+                                 " (" + this.schema.displayName(this.cds[0].name).displayName +
                                  ", " + this.schema.displayName(this.cds[1].name).displayName +
                                  ") grouped by " + this.schema.displayName(this.cds[2].name).displayName, this.provenance);
-                const renderer = new TrellisHistogram2DReceiver(this.title, this.page,
-                    this.originator, rowCount, this.schema,
-                    [xAxis, yAxis, groupByAxis], 1.0, trellisShape, rr, this.options);
-                rr.chain(this.operation);
-                rr.invoke(renderer);
-                break;
-            }
-            case "TrellisHeatmap": {
-                const args: HistogramRequestInfo[] = [];
-                // noinspection JSObjectNullOrUndefined
-                const maxXBucketCount = Math.floor(trellisShape.size.width / Resolution.minDotSize);
-                const maxYBucketCount = Math.floor(trellisShape.size.height / Resolution.minDotSize);
-                const xArg = DataRangesReceiver.computeHistogramArgs(
-                    this.cds[0], ranges[0], maxXBucketCount, exact, trellisShape.size);
-                const yArg = DataRangesReceiver.computeHistogramArgs(
-                    this.cds[1], ranges[1], maxYBucketCount, exact, trellisShape.size);
-                const wArg = DataRangesReceiver.computeHistogramArgs(
-                    this.cds[2], ranges[2], groupByBuckets(trellisShape), exact, chartSize);
-                // Window argument comes first
-                args.push(wArg);
-                args.push(xArg);
-                args.push(yArg);
-
-                const rr = this.originator.createHistogram3DRequest(args);
-                const xAxis = new AxisData(this.cds[0], ranges[0], xArg.bucketCount);
-                const yAxis = new AxisData(this.cds[1], ranges[1], yArg.bucketCount);
-                const groupByAxis = new AxisData(this.cds[2], ranges[2], wArg.bucketCount);
-                if (this.title == null)
-                    this.title = new PageTitle(
-                        "Heatmaps (" + this.schema.displayName(this.cds[0].name).displayName +
-                        ", " + this.schema.displayName(this.cds[1].name).displayName +
-                        ") grouped by " + this.schema.displayName(this.cds[2].name).displayName, this.provenance);
-                const renderer = new TrellisHeatmapReceiver(this.title, this.page,
-                    this.originator, rowCount, this.schema,
-                    [xAxis, yAxis, groupByAxis], 1.0, trellisShape, rr, this.options.reusePage);
+                let renderer;
+                if (this.options.chartKind === "Trellis2DHistogram")
+                    renderer = new TrellisHistogram2DReceiver(this.title, this.page,
+                        this.originator, rowCount, this.schema,
+                        [xAxis, yAxis, groupByAxis], 1.0, trellisShape, rr, this.options);
+                else
+                    renderer = new TrellisHeatmapReceiver(this.title, this.page,
+                        this.originator, rowCount, this.schema,
+                        [xAxis, yAxis, groupByAxis], 1.0, trellisShape, rr, this.options.reusePage);
                 rr.chain(this.operation);
                 rr.invoke(renderer);
                 break;
@@ -536,13 +514,11 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 const args: HistogramRequestInfo[] = [];
                 let maxXBucketCount = this.bucketCounts[0];
                 if (maxXBucketCount === 0) {
-                    maxXBucketCount = Math.min(
-                        Math.floor(chartSize.width / Resolution.minBarWidth),
-                        Resolution.maxBucketCount);
+                    maxXBucketCount = Math.floor(chartSize.width / Resolution.minBarWidth);
                 }
                 let maxYBucketCount = this.bucketCounts[1];
                 if (maxYBucketCount === 0) {
-                    maxYBucketCount = Resolution.maxBucketCount;
+                    maxYBucketCount = Resolution.max2DBucketCount;
                 }
 
                 // The first two represent the resolution for the 2D histogram

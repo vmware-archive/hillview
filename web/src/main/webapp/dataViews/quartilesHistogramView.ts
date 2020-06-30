@@ -30,7 +30,7 @@ import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {ChartOptions, HtmlString} from "../ui/ui";
+import {ChartOptions, HtmlString, Resolution} from "../ui/ui";
 import {
     Converters,
     describeQuartiles,
@@ -232,7 +232,8 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
     public chooseBuckets(): void {
         if (this == null)
             return;
-        const bucketDialog = new BucketDialog(this.xAxisData.bucketCount);
+        const bucketDialog = new BucketDialog(
+            this.xAxisData.bucketCount, Resolution.maxBuckets(this.page.getWidthInPixels()));
         bucketDialog.setAction(() => {
             const bucketCount = bucketDialog.getBucketCount();
             if (bucketCount == null)

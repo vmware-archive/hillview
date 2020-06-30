@@ -462,7 +462,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
             this.xPoints.toString(),
             "Buckets on " + this.xAxisData.description.name);
         input.min = "1";
-        input.max = Resolution.maxBucketCount.toString();
+        input.max = Resolution.maxBuckets(this.page.getWidthInPixels()).toString();
         input.value = this.xPoints.toString();
         input.required = true;
 
@@ -471,7 +471,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
             this.yPoints.toString(),
             "Buckets on " + this.yAxisData.description.name);
         input.min = "1";
-        input.max = Resolution.maxBucketCount.toString();
+        input.max = Resolution.max2DBucketCount.toString();
         input.value = this.yPoints.toString();
         input.required = true;
 

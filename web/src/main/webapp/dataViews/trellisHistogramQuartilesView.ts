@@ -82,8 +82,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
                     help: "Show the data underlying view using a table view.",
                 }, { text: "# buckets...",
                     action: () => this.chooseBuckets(),
-                    help: "Change the number of buckets used to draw the histograms. " +
-                        "The number of buckets must be between 1 and " + Resolution.maxBucketCount,
+                    help: "Change the number of buckets used to draw the histograms. "
                 }, { text: "heatmap",
                     action: () => this.heatmap(),
                     help: "Show this data as a Trellis plot of heatmaps.",
@@ -217,7 +216,8 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
     }
 
     protected chooseBuckets(): void {
-        const bucketDialog = new BucketDialog(this.xAxisData.bucketCount);
+        const bucketDialog = new BucketDialog(
+            this.xAxisData.bucketCount, Resolution.maxBuckets(this.page.getWidthInPixels()));
         bucketDialog.setAction(() => {
             const bucketCount = bucketDialog.getBucketCount();
             if (bucketCount == null)

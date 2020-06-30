@@ -89,8 +89,7 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
                     help: "Draw this data without making any approximations.",
                 }, { text: "# buckets...",
                     action: () => this.chooseBuckets(),
-                    help: "Change the number of buckets used to draw the histograms. " +
-                        "The number of buckets must be between 1 and " + Resolution.maxBucketCount,
+                    help: "Change the number of buckets used to draw the histograms. "
                 }, { text: "swap axes",
                     action: () => this.swapAxes(),
                     help: "Swap the X and Y axes of all plots."
@@ -277,7 +276,8 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
     }
 
     protected chooseBuckets(): void {
-        const bucketDialog = new BucketDialog(this.buckets);
+        const bucketDialog = new BucketDialog(
+            this.buckets, Resolution.maxBuckets(this.page.getWidthInPixels()));
         bucketDialog.setAction(() => {
             const ct = bucketDialog.getBucketCount();
             if (ct != null)

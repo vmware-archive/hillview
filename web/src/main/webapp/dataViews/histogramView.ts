@@ -415,7 +415,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
     }
 
     public chooseBuckets(): void {
-        const bucketDialog = new BucketDialog(this.bucketCount);
+        const bucketDialog = new BucketDialog(this.bucketCount, Resolution.maxBuckets(this.page.getWidthInPixels()));
         bucketDialog.setAction(() => this.changeBuckets(bucketDialog.getBucketCount()));
         bucketDialog.show();
     }
