@@ -34,7 +34,7 @@ import javax.annotation.Nullable;
 public class MultiSketch<T, R extends ISketchResult>
                             implements ISketch<T, JsonList<R>> {
     static final long serialVersionUID = 1;
-    private final JsonList<ISketch<T, R>> sketches;
+    protected final JsonList<ISketch<T, R>> sketches;
 
     public MultiSketch(JsonList<ISketch<T, R>> sketches) {
         this.sketches = sketches;

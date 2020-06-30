@@ -18,20 +18,44 @@
 package org.hillview.test.dataset;
 
 import org.hillview.dataset.api.IDataSet;
+import org.hillview.dataset.api.ISketch;
 import org.hillview.maps.LinearProjectionMap;
-import org.hillview.sketches.results.CorrMatrix;
+import org.hillview.sketches.BasicColStatSketch;
+import org.hillview.sketches.results.*;
 import org.hillview.sketches.PCACorrelationSketch;
 import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;
-import org.hillview.utils.LinAlg;
-import org.hillview.utils.TestTables;
-import org.hillview.utils.TestUtils;
-import org.hillview.utils.Utilities;
+import org.hillview.utils.*;
 import org.jblas.DoubleMatrix;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.List;
+
 public class PCATest extends BaseTest {
+    @Test
+    public void testCorrelation2D() {
+        int size = 10;
+        int numFrags = 1;
+        int numCols  = 3;
+        ITable table = TestTables.getLinearTable(size, numCols);
+        List<String> colNameList = table.getSchema().getColumnNames();
+        String[] colNames = Utilities.toArray(colNameList);
+        IDataSet<ITable> dataset = TestTables.makeParallel(table, size/numFrags);
+        ISketch<ITable, JsonList<BasicColStats>> statsSk = new BasicColStatSketch(colNames, 0);
+        JsonList<BasicColStats> stats = dataset.blockingSketch(statsSk);
+        Assert.assertNotNull(stats);
+        JsonList<DoubleHistogramBuckets> buckets =
+                Linq.zipMap(colNameList, stats, (c, s) -> new DoubleHistogramBuckets(c, s.min, s.max, 3));
+        CorrelationSketch csk = new CorrelationSketch(buckets.toArray(new IHistogramBuckets[0]), 1.0, 0);
+        JsonList<Groups<Groups<Count>>> groups = dataset.blockingSketch(csk);
+        Assert.assertNotNull(groups);
+        for (Groups<Groups<Count>> g : groups) {
+            long count = g.reduce((r, v) -> r + v.reduce((r0, v0) -> r0 + v0.count, 0L), 0L);
+            Assert.assertEquals(size, count);
+        }
+    }
+
     @Test
     public void testLinearDataset() {
         int size = 100000;
