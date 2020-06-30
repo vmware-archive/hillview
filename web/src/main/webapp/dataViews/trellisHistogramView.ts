@@ -177,7 +177,8 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
     }
 
     protected chooseBuckets(): void {
-        const bucketDialog = new BucketDialog(this.bucketCount);
+        const bucketDialog = new BucketDialog(
+            this.bucketCount, Resolution.maxBuckets(this.page.getWidthInPixels()));
         bucketDialog.setAction(() => {
             const ct = bucketDialog.getBucketCount();
             if (ct != null)
@@ -316,7 +317,9 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
         if (bucketCount !== 0)
             this.bucketCount = bucketCount;
         else
-            this.bucketCount = Math.round(this.shape.size.width / Resolution.minBarWidth);
+            this.bucketCount = Math.min(Math.round(this.shape.size.width / Resolution.minBarWidth),
+                histos.perBucket[0].perBucket.length);
+
         this.data = data;
         const coarsened: Groups<number>[] = [];
         let max = 0;

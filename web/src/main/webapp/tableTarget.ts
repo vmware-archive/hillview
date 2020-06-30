@@ -124,24 +124,26 @@ export class TableTargetAPI extends RemoteObject {
         const size = PlottingSurface.getDefaultCanvasSize(width);
         const maxWindows = Math.floor(width / Resolution.minTrellisWindowSize) *
             Math.floor(size.height / Resolution.minTrellisWindowSize);
+        const maxBuckets = Resolution.maxBuckets(page.getWidthInPixels());
         switch (viewKind) {
             case "QuartileVector":
-                return [Resolution.maxBucketCount, Resolution.maxBucketCount];
+                return [maxBuckets, maxBuckets];
             case "Histogram":
                 // Always get the window size; we integrate the CDF to draw the actual histogram.
                 return [size.width];
             case "2DHistogram":
                 // On the horizontal axis we get the maximum resolution, which we will use for
                 // deriving the CDF curve.  On the vertical axis we use a smaller number.
-                return [width, Resolution.maxBucketCount];
+                return [width, Resolution.max2DBucketCount];
             case "Heatmap":
                 return [Math.floor(size.width / Resolution.minDotSize),
                         Math.floor(size.height / Resolution.minDotSize)];
             case "Trellis2DHistogram":
+                return [width, maxBuckets, maxWindows];
             case "TrellisHeatmap":
-                return [width, Resolution.maxBucketCount, maxWindows];
+                return [width, maxBuckets, maxWindows];
             case "TrellisQuartiles":
-                return [Resolution.maxBucketCount, Resolution.maxBucketCount, maxWindows];
+                return [maxBuckets, maxBuckets, maxWindows];
             case "TrellisHistogram":
                 return [width, maxWindows];
             default:
@@ -374,10 +376,6 @@ RpcRequest<PartialResult<RemoteObjectId>> {
     RpcRequest<PartialResult<Pair<Groups<number>, Groups<number>>>> {
         return this.createStreamingRpcRequest<Pair<Groups<number>, Groups<number>>>(
             "histogramAndCDF", info);
-    }
-
-    public createSetOperationRequest(setOp: CombineOperators): RpcRequest<PartialResult<RemoteObjectId>> {
-        return this.createStreamingRpcRequest<RemoteObjectId>("setOperation", CombineOperators[setOp]);
     }
 
     public createSampledControlPointsRequest(rowCount: number, numSamples: number, columnNames: string[]):

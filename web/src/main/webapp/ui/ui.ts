@@ -171,7 +171,7 @@ export class Rectangle {
  * the displayed objects.
  */
 export class Resolution {
-    public static readonly maxBucketCount = 50;  // maximum number of buckets in a histogram
+    public static readonly max2DBucketCount = 25;  // maximum number of buckets stacked in a 2D histogram
     public static readonly minBarWidth = 15;     // minimum number of pixels for a histogram bar
     public static readonly minDotSize = 4;       // dots are drawn as rectangles of this size in pixels
     public static readonly tableRowsOnScreen = 20; // table rows displayed
@@ -181,6 +181,10 @@ export class Resolution {
     public static readonly legendSpaceHeight = 60;
     public static readonly minTrellisWindowSize = 200;
     public static readonly heatmapLabelWidth = 80;  // pixels reserved for heatmap label
+
+    public static maxBuckets(pageWidth: number): number {
+        return Math.floor(pageWidth / Resolution.minBarWidth);
+    }
 }
 
 export type D3Axis = any;  // d3 axis; perhaps some day we will be able to use a better type
