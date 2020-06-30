@@ -270,6 +270,14 @@ public final class TableTarget extends TableRpcTarget {
     }
 
     @HillviewRpc
+    public void correlation(RpcRequest request, RpcRequestContext context) {
+        HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
+        IHistogramBuckets[] buckets = Linq.map(info, HistogramRequestInfo::getBuckets, IHistogramBuckets.class);
+        CorrelationSketch sk = new CorrelationSketch(buckets, info[0].samplingRate, info[0].seed);
+        this.runSketch(this.table, sk, request, context);
+    }
+
+    @HillviewRpc
     public void histogram2DAndCDF(RpcRequest request, RpcRequestContext context) {
         HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
         assert info.length == 3;

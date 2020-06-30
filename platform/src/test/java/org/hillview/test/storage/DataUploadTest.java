@@ -18,6 +18,7 @@
 package org.hillview.test.storage;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.hillview.main.DataUpload;
 import org.hillview.test.BaseTest;
 import org.junit.Assert;
@@ -32,18 +33,30 @@ public class DataUploadTest extends BaseTest {
     public void testChopCsv() throws Exception {
         Path dir = Files.createTempDirectory(".");
         DataUpload upload = new DataUpload();
-        int parts = upload.run("-f", "../data/ontime/2016_1.csv", "-l",
+        String file = "../data/ontime/2016_1.csv";
+        int parts = upload.run("-f", file, "-l",
                 "200000", "-h", "-d", dir.toString());
         File d = dir.toFile();
         FileUtils.deleteDirectory(d);
         Assert.assertEquals(3, parts);
     }
 
+    private void deleteOrcChecksums(String file, int parts) {
+        for (int i = 0; i < parts; i++) {
+            String base = FilenameUtils.getBaseName(file);
+            String ckname = "." + base + i + ".orc.crc";
+            File f = new File(ckname);
+            boolean success = f.delete();
+            Assert.assertTrue(success);
+        }
+    }
+
     @Test
     public void testChopCsvSkip() throws Exception {
         Path dir = Files.createTempDirectory(".");
         DataUpload upload = new DataUpload();
-        int parts = upload.run("-f", "../data/ontime/2016_1.csv", "-l",
+        String file = "../data/ontime/2016_1.csv";
+        int parts = upload.run("-f", file, "-l",
                 "200000", "-h", "-d", dir.toString(), "--skip", "200000");
         File d = dir.toFile();
         FileUtils.deleteDirectory(d);
@@ -54,11 +67,13 @@ public class DataUploadTest extends BaseTest {
     public void testChopCsvToOrc() throws Exception {
         Path dir = Files.createTempDirectory(".");
         DataUpload upload = new DataUpload();
+        String file = "../data/ontime/2016_1.csv";
         int parts = upload.run(
-                "-f", "../data/ontime/2016_1.csv", "-o",
+                "-f", file, "-o",
                 "-l", "200000", "-h", "-d", dir.toString());
         File d = dir.toFile();
         FileUtils.deleteDirectory(d);
+        this.deleteOrcChecksums(file, parts);
         Assert.assertEquals(3, parts);
     }
 
@@ -90,10 +105,12 @@ public class DataUploadTest extends BaseTest {
     public void testChopLogToOrc() throws Exception {
         Path dir = Files.createTempDirectory(".");
         DataUpload upload = new DataUpload();
-        int parts = upload.run("-f", "../data/sample_logs/blockTracelog", "-o",
+        String file = "../data/sample_logs/blockTracelog";
+        int parts = upload.run("-f", file, "-o",
                 "-p", "%{BLOCKTRACE}", "-l", "100", "-d", dir.toString());
         File d = dir.toFile();
         FileUtils.deleteDirectory(d);
+        this.deleteOrcChecksums(file, parts);
         Assert.assertEquals(2, parts);
     }
 }

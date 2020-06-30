@@ -105,6 +105,14 @@ public class Groups<R extends ISketchResult & IScalable<R>>
         return new Groups<S>(perBucket, missing);
     }
 
+    public <A> A reduce(BiFunction<A, R, A> reducer, A zero) {
+        A result = reducer.apply(zero, this.perMissing);
+        for (R r: this.perBucket) {
+            result = reducer.apply(result, r);
+        }
+        return result;
+    }
+
     public <J extends IJsonSketchResult> JsonGroups<J> toSerializable(Function<R, J> map) {
         J missing = map.apply(this.perMissing);
         JsonList<J> perBucket = Linq.map(this.perBucket, map);
