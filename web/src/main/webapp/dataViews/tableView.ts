@@ -646,6 +646,11 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             if (selectedCount > 1 &&
                 this.getSelectedColNames().reduce((a, b) => a && this.isNumericColumn(b), true)) {
                 this.contextMenu.addItem({
+                    text: "Correlation",
+                    action: () => this.correlate(),
+                    help: "Compute pairwise corellation between a set of numeric columns"
+                }, true);
+                this.contextMenu.addItem({
                     text: "PCA...",
                     action: () => this.pca(true),
                     help: "Perform Principal Component Analysis on a set of numeric columns. " +
@@ -1092,42 +1097,53 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         return [valid, message];
     }
 
+    public correlate(): void {
+        const colNames = this.getSelectedColNames();
+        const [valid, message] = this.checkNumericColumns(colNames, 2);
+        if (!valid) {
+            this.page.reportError("Not valid for correlation:" + message);
+            return;
+        }
+        this.chart(this.schema.getDescriptions(colNames), "CorrelationHeatmaps");
+    }
+
     public pca(toSample: boolean): void {
         const colNames = this.getSelectedColNames();
         const [valid, message] = this.checkNumericColumns(colNames, 2);
-        if (valid) {
-            const pcaDialog = new Dialog("Principal Component Analysis",
-                "Projects a set of numeric columns to a smaller set of numeric columns while preserving the 'shape' " +
-                " of the data as much as possible.");
-            const components = pcaDialog.addTextField("numComponents", "Number of components",
-                FieldKind.Integer, "2",
-                "Number of dimensions to project to.  Must be an integer bigger than 1 and " +
-                "smaller than the number of selected columns");
-            components.required = true;
-            components.min = "2";
-            components.max = colNames.length.toString();
-            const name = pcaDialog.addTextField("projectionName", "Name for Projected columns", FieldKind.String,
-                "PCA",
-                "The projected columns will appear with this name followed by a number starting from 0");
-            name.required = true;
-            pcaDialog.setCacheTitle("PCADialog");
-            pcaDialog.setAction(() => {
-                const numComponents: number = pcaDialog.getFieldValueAsInt("numComponents");
-                const projectionName: string = pcaDialog.getFieldValue("projectionName");
-                if (numComponents < 1 || numComponents > colNames.length) {
-                    this.page.reportError("Number of components for PCA must be between 1 (incl.) " +
-                        "and the number of selected columns, " + colNames.length + " (incl.). (" +
-                        numComponents + " does not satisfy this.)");
-                    return;
-                }
-                const rr = this.createCorrelationMatrixRequest(colNames, this.rowCount, toSample);
-                rr.invoke(new CorrelationMatrixReceiver(this.getPage(), this, rr, this.order,
-                    numComponents, projectionName));
-            });
-            pcaDialog.show();
-        } else {
+        if (!valid) {
             this.page.reportError("Not valid for PCA:" + message);
+            return;
         }
+
+        const pcaDialog = new Dialog("Principal Component Analysis",
+            "Projects a set of numeric columns to a smaller set of numeric columns while preserving the 'shape' " +
+            " of the data as much as possible.");
+        const components = pcaDialog.addTextField("numComponents", "Number of components",
+            FieldKind.Integer, "2",
+            "Number of dimensions to project to.  Must be an integer bigger than 1 and " +
+            "smaller than the number of selected columns");
+        components.required = true;
+        components.min = "2";
+        components.max = colNames.length.toString();
+        const name = pcaDialog.addTextField("projectionName", "Name for Projected columns", FieldKind.String,
+            "PCA",
+            "The projected columns will appear with this name followed by a number starting from 0");
+        name.required = true;
+        pcaDialog.setCacheTitle("PCADialog");
+        pcaDialog.setAction(() => {
+            const numComponents: number = pcaDialog.getFieldValueAsInt("numComponents");
+            const projectionName: string = pcaDialog.getFieldValue("projectionName");
+            if (numComponents < 1 || numComponents > colNames.length) {
+                this.page.reportError("Number of components for PCA must be between 1 (incl.) " +
+                    "and the number of selected columns, " + colNames.length + " (incl.). (" +
+                    numComponents + " does not satisfy this.)");
+                return;
+            }
+            const rr = this.createCorrelationMatrixRequest(colNames, this.rowCount, toSample);
+            rr.invoke(new CorrelationMatrixReceiver(this.getPage(), this, rr, this.order,
+                numComponents, projectionName));
+        });
+        pcaDialog.show();
     }
 
     private spectrum(toSample: boolean): void {

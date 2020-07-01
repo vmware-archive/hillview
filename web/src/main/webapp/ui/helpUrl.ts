@@ -32,5 +32,6 @@ export const helpUrl = {
     "HeavyHitters": "(#34-frequent-elements-views)",
     "Schema": "(#32-schema-views)",
     "Load": "(#23-loading-data)",
-    "SVD Spectrum": "(#45-singular-value-spectrum-views)"
+    "SVD Spectrum": "(#45-singular-value-spectrum-views)",
+    "CorrelationHeatmaps": "(#55-correlation-heatmaps)"
 };

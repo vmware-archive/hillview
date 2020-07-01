@@ -40,7 +40,7 @@ import {
     NextKArgs,
     NextKList, QuantilesMatrixInfo,
     QuantilesVectorInfo,
-    RangeArgs, RangeFilterArrayDescription,
+    RangeFilterArrayDescription,
     RecordOrder,
     RemoteObjectId,
     RowFilterDescription, SampleSet,
@@ -54,7 +54,7 @@ import {
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
 import {FullPage, PageTitle} from "./ui/fullPage";
 import {PointSet, Resolution, ViewKind} from "./ui/ui";
-import {assert, ICancellable, Pair, PartialResult, Seed, Two} from "./util";
+import {assert, ICancellable, Pair, PartialResult, Seed, Two, zip} from "./util";
 import {IDataView} from "./ui/dataview";
 import {SchemaClass} from "./schemaClass";
 import {PlottingSurface} from "./ui/plottingSurface";
@@ -118,8 +118,9 @@ export class TableTargetAPI extends RemoteObject {
      * Computes the maximum resolution at which a data range request must be made.
      * @param page      Page - used to compute the screen size.
      * @param viewKind  Desired view for the data.
+     * @param cds       Columns analyzed.
      */
-    private static rangesResolution(page: FullPage, viewKind: ViewKind): number[] {
+    private static rangesResolution(page: FullPage, viewKind: ViewKind, cds: IColumnDescription[]): number[] {
         const width = page.getWidthInPixels();
         const size = PlottingSurface.getDefaultCanvasSize(width);
         const maxWindows = Math.floor(width / Resolution.minTrellisWindowSize) *
@@ -138,6 +139,9 @@ export class TableTargetAPI extends RemoteObject {
             case "Heatmap":
                 return [Math.floor(size.width / Resolution.minDotSize),
                         Math.floor(size.height / Resolution.minDotSize)];
+            case "CorrelationHeatmaps":
+                const dots = Math.floor(size.width / (cds.length - 1) / Resolution.minDotSize);
+                return cds.map(c => dots);
             case "Trellis2DHistogram":
                 return [width, maxBuckets, maxWindows];
             case "TrellisHeatmap":
@@ -161,20 +165,20 @@ export class TableTargetAPI extends RemoteObject {
     public createDataQuantilesRequest(cds: IColumnDescription[], page: FullPage, viewKind: ViewKind):
         RpcRequest<PartialResult<BucketsInfo[]>> {
         // Determine the resolution of the ranges request based on the plot kind.
-        const bucketCounts: number[] = TableTargetAPI.rangesResolution(page, viewKind);
+        const bucketCounts: number[] = TableTargetAPI.rangesResolution(page, viewKind, cds);
         assert(bucketCounts.length === cds.length);
-        const args: RangeArgs[] = [];
-        for (let i = 0; i < cds.length; i++) {
-            const cd = cds[i];
-            const seed = kindIsString(cd.kind) ? Seed.instance.get() : 0;
-            const arg: RangeArgs = {
-                cd: cd,
-                seed: seed,
-                stringsToSample: bucketCounts[i]
-            };
-            args.push(arg);
-        }
+        const args = zip(cds, bucketCounts, (c, b) => {
+            return {
+                cd: c,
+                seed: kindIsString(c.kind) ? Seed.instance.get() : 0,
+                stringsToSample: b
+            }});
         return this.createStreamingRpcRequest<BucketsInfo>("getDataQuantiles", args);
+    }
+
+    public createCorrelationHeatmapRequest(args: HistogramRequestInfo[]):
+        RpcRequest<PartialResult<Groups<Groups<number>>[]>> {
+        return this.createStreamingRpcRequest<Groups<Groups<number>>[]>("correlationHeatmaps", args);
     }
 
     public createQuantilesVectorRequest(args: QuantilesVectorInfo):

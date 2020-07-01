@@ -53,6 +53,10 @@ export function allBuckets<R>(data: Groups<R>): R[] {
     return result;
 }
 
+export function zip<T, S, R>(a: T[], b: S[], f: (ae: T, be: S) => R): R[] {
+    return a.map((ae, i) => f(ae, b[i]));
+}
+
 export function histogramAsCsv(data: Groups<number>, schema: SchemaClass, axis: AxisData): string[] {
     const lines: string[] = [];
     let line = schema.displayName(axis.description.name) + ",count";

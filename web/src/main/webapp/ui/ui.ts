@@ -64,7 +64,7 @@ export class HtmlString {
 }
 
 export type ViewKind = "Table" | "Histogram" | "2DHistogram" |
-    "Heatmap" | "QuartileVector" |
+    "Heatmap" | "QuartileVector" | "CorrelationHeatmaps" |
     "TrellisHistogram" | "Trellis2DHistogram" | "TrellisHeatmap" | "TrellisQuartiles" |
     "HeavyHitters" | "Schema" | "Load" | "SVD Spectrum" | "LogFileView";
 
