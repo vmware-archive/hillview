@@ -1519,6 +1519,13 @@ This is a Trellis plot is an array of quartile vector views, grouped by a third 
 Each plot displays data that corresponds to a range of values in
 the grouping column.
 
+### Correlation heatmaps
+
+Correlation heatmaps display a matrix of pairwise heatmaps between a set of numeric
+columns.  The heatmaps can be used to detect columns that are strongly correlated.
+
+TODO
+
 ### Combining two views
 
 Any view represents logically a subset of rows from an original table.

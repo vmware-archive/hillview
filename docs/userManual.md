@@ -26,7 +26,7 @@ one row for an airline flight.  Columns in this dataset include: the date of the
 the origin and destination cities, the origin and destination states,
 the origin airport code, the distance flown, the departure and arrival delay.
 
-Updated on 2020 Jun 26.
+Updated on 2020 Jul 01.
 
 # Contents
 |Section|Reference|
@@ -89,7 +89,8 @@ Updated on 2020 Jun 26.
 |5.2.1.|[Selection using the colormap](#521-selection-using-the-colormap)|
 |5.3.|[Trellis plots of heatmaps](#53-trellis-plots-of-heatmaps)|
 |5.4.|[Trellis plots of quartile vectors](#54-trellis-plots-of-quartile-vectors)|
-|5.5.|[Combining two views](#55-combining-two-views)|
+|5.5.|[Correlation heatmaps](#55-correlation-heatmaps)|
+|5.6.|[Combining two views](#56-combining-two-views)|
 ## 1. Basic concepts
 
 ### 1.1. System architecture
@@ -558,7 +559,7 @@ menu with the following options:
   colums
 
 * Combine: allows users to [combine data in two
-  views](#55-combining-two-views)
+  views](#56-combining-two-views)
 
 #### 3.2.1. Selecting columns
 
@@ -1005,7 +1006,7 @@ The table view has a menu that offers the following options:
 * Filter: allows the user [to filter data](#338-the-table-filter-menu) according
   to various criteria.
 
-* Combine: allows the user to [combine the data in two views](#55-combining-two-views).
+* Combine: allows the user to [combine the data in two views](#56-combining-two-views).
 
 #### 3.3.7. The table view menu
 
@@ -1206,7 +1207,7 @@ Histogram views have a menu that offers to the users several operations:
 
 * View: [changing parameters](#412-the-histogram-view-menu) of the current view.
 
-* Combine: [combining the data](#55-combining-two-views) in the current view with
+* Combine: [combining the data](#56-combining-two-views) in the current view with
   another one.
 
 #### 4.1.2. The histogram view menu
@@ -1405,7 +1406,7 @@ The "view" menu for a 2D histogram offers the following operations:
 
 ![A normalized two-dimensional histogram](hillview-histogram-normalized.png)
 
-For a description of the combine menu see [combining two views](#55-combining-two-views).
+For a description of the combine menu see [combining two views](#56-combining-two-views).
 
 #### 4.3.1. Selection in 2D histograms
 
@@ -1481,7 +1482,7 @@ The heatmap view menu has the following operations:
 * group by: Groups data by a third column creating a [Trellis plot]
   (#53-trellis-plots-of-heatmaps).
 
-For a description of the combine menu see [combining two views](#55-combining-two-views).
+For a description of the combine menu see [combining two views](#56-combining-two-views).
 
 #### 4.4.1. Selection from a heatmap
 
@@ -1584,7 +1585,14 @@ This is a Trellis plot is an array of quartile vector views, grouped by a third 
 Each plot displays data that corresponds to a range of values in
 the grouping column.
 
-### 5.5. Combining two views
+### 5.5. Correlation heatmaps
+
+Correlation heatmaps display a matrix of pairwise heatmaps between a set of numeric
+columns.  The heatmaps can be used to detect columns that are strongly correlated.
+
+TODO
+
+### 5.6. Combining two views
 
 Any view represents logically a subset of rows from an original table.
 Two different views can be combined by performing a set operation
