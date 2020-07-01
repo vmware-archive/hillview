@@ -77,6 +77,7 @@ public class OrcFileTest extends BaseTest {
 
         OrcFileLoader loader = new OrcFileLoader(orcFile, null, false);
         ITable table = loader.load();
+        Assert.assertNotNull(table);
         Assert.assertEquals(t.toLongString(20), table.toLongString(20));
         deleteOrcFile(orcFolder, "tmp.orc");
     }
@@ -87,6 +88,7 @@ public class OrcFileTest extends BaseTest {
         CsvFileLoader.Config config = new CsvFileLoader.Config();
         CsvFileLoader loader = new CsvFileLoader(file, config, null);
         ITable table = loader.load();
+        Assert.assertNotNull(table);
         String orcFile = "tmpX.orc";
         OrcFileWriter writer = new OrcFileWriter(orcFile);
         writer.writeTable(table);
@@ -115,6 +117,7 @@ public class OrcFileTest extends BaseTest {
 
         OrcFileLoader loader = new OrcFileLoader(orcFile, null, false);
         ITable table = loader.load();
+        Assert.assertNotNull(table);
         Assert.assertEquals(tbl.toLongString(20), table.toLongString(20));
         deleteOrcFile(orcFolder, "tmp.orc");
     }
@@ -155,6 +158,7 @@ public class OrcFileTest extends BaseTest {
         OrcFileLoader loader = new OrcFileLoader(orcFile, null, false);
         ITable table = loader.load();
         Table ref = TestTables.testRepTable();
+        Assert.assertNotNull(table);
         Assert.assertEquals(ref.toLongString(20), table.toLongString(20));
     }
 
@@ -168,6 +172,7 @@ public class OrcFileTest extends BaseTest {
 
         OrcFileLoader loader = new OrcFileLoader(orcFile, tmpSchema, false);
         ITable table = loader.load();
+        Assert.assertNotNull(table);
         Assert.assertEquals(ref.toLongString(20), table.toLongString(20));
         Assert.assertEquals(ref.getSchema().toString(), table.getSchema().toString());
 
@@ -184,6 +189,7 @@ public class OrcFileTest extends BaseTest {
         OrcFileLoader loader = new OrcFileLoader(orcFile, null, true);
         ITable table = loader.load();
         Table ref = TestTables.testRepTable();
+        Assert.assertNotNull(table);
         Assert.assertEquals(ref.toLongString(20), table.toLongString(20));
     }
 }

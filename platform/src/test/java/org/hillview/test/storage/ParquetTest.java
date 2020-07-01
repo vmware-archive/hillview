@@ -41,6 +41,7 @@ public class ParquetTest extends BaseTest {
             return;
         }
 
+        Assert.assertNotNull(table);
         Assert.assertEquals("Table[18x4214]", table.toString());
         IColumn first = table.getLoadedColumn("java_version");
         Assert.assertEquals(first.getString(0), "1.8.0_91");
@@ -57,6 +58,7 @@ public class ParquetTest extends BaseTest {
             return;
         }
 
+        Assert.assertNotNull(table);
         Assert.assertEquals("Table[18x4214]", table.toString());
         IColumn first = table.getLoadedColumn("java_version");
         Assert.assertEquals(first.getString(0), "1.8.0_91");

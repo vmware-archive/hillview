@@ -63,12 +63,6 @@
         </profile>
     </profiles>
     <dependencies>
-        <!-- Java reactive APIs: Observables -->
-        <dependency>
-            <groupId>io.reactivex</groupId>
-            <artifactId>rxjava</artifactId>
-            <version>1.3.8</version>
-        </dependency>
          <!-- Tomcat web application server: local installation -->
         <dependency>
             <groupId>org.apache.tomcat</groupId>
@@ -80,28 +74,11 @@
             <artifactId>tomcat-servlet-api</artifactId>
             <version>9.0.4</version>
         </dependency>
-        <!-- Json manipulation in Java -->
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>2.8.5</version>
-        </dependency>
         <!-- The plaform part of the project -->
         <dependency>
             <groupId>org.hillview</groupId>
             <artifactId>platform</artifactId>
             <version>1.0-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>io.grpc</groupId>
-            <artifactId>grpc-core</artifactId>
-            <version>1.15.0</version>
-        </dependency>
-        <!-- mysql database connector - for direct database connections -->
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <version>5.1.48</version>
         </dependency>
     </dependencies>
     <build>

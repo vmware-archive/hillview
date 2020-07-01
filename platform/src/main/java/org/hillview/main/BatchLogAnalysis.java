@@ -9,8 +9,6 @@ import org.hillview.maps.FindFilesMap;
 import org.hillview.maps.LoadFilesMap;
 import org.hillview.maps.ProjectMap;
 import org.hillview.sketches.*;
-import org.hillview.sketches.highorder.GroupByWorkspace;
-import org.hillview.sketches.highorder.SamplingTableSketch;
 import org.hillview.sketches.results.*;
 import org.hillview.storage.FileSetDescription;
 import org.hillview.storage.IFileReference;
@@ -217,29 +215,30 @@ public class BatchLogAnalysis {
         }
     }
 
-    @SuppressWarnings("AccessStaticViaInstance")
     public static void main(String[] args) {
         /* Arguments parser for two arguments: logDir and figDir */
         Options options = new Options();
         options.addOption("help",false,"java BatchLogAnalysis [-l] logDir [-f] figDir");
-        Option l = OptionBuilder.withArgName( "logDir" )
-                .isRequired()
+        Option l = Option.builder().argName( "logDir" )
+                .required()
                 .hasArg()
-                .withDescription("directory of syslog")
-                .create('l');
+                .desc("directory of syslog")
+                .argName("l")
+                .build();
         options.addOption(l);
-        Option f = OptionBuilder.withArgName( "figDir" )
-                .isRequired()
+        Option f = Option.builder().argName( "figDir" )
+                .required()
                 .hasArg()
-                .withDescription("directory to store the figures")
-                .create('f');
+                .desc("directory to store the figures")
+                .argName("f")
+                .build();
         options.addOption(f);
         String logDir = "";
         String figDir = "";
 
         if (args.length > 0) {
             try {
-                CommandLineParser parser = new GnuParser();
+                CommandLineParser parser = new DefaultParser();
                 CommandLine cmd = parser.parse(options,args);
                 if(cmd.hasOption("help")) {
                     HelpFormatter formatter = new HelpFormatter();
