@@ -13,6 +13,14 @@
     <version>1.0-SNAPSHOT</version>
     <name>platform</name>
     <url>http://github.com/vmware/hillview</url>
+    <!-- This repository directory will be used by Maven to find some dependencies locally -->
+    <repositories>
+        <repository>
+            <id>Repo</id>
+            <name>ProjectRepo</name>
+            <url>file://${project.basedir}/lib</url>
+        </repository>
+    </repositories>
 
     <profiles>
         <!--
@@ -418,27 +426,15 @@
             <artifactId>js</artifactId>
             <version>20.1.0</version>
         </dependency>
-        <!-- Cassandra server side componensts to read SSTable and Datastax driver -->
+        <!-- Cassandra server side module for reading SSTable. 
+            This version 3.11.6.x is a patched cassandra that had been modified to be 
+            compatible with Guava 27. Maven will resolve this version from lib/ as 
+            declared in the <repositories> above. 
+        -->
         <dependency>
             <groupId>org.apache.cassandra</groupId>
             <artifactId>cassandra-all</artifactId>
-            <version>3.11.6-fix</version>
-        </dependency>
-        <dependency>
-            <groupId>com.datastax.cassandra</groupId>
-            <artifactId>cassandra-driver-core</artifactId>
-            <version>3.3.0</version>
-            <classifier>shaded</classifier>
-            <exclusions>
-            <exclusion>
-                <groupId>io.netty</groupId>
-                <artifactId>*</artifactId>
-            </exclusion>
-            <exclusion>
-                <groupId>org.ow2.asm</groupId>
-                <artifactId>*</artifactId>
-            </exclusion>
-            </exclusions>
+            <version>3.11.6.x</version>
         </dependency>
     </dependencies>
     <build>
