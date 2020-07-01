@@ -24,7 +24,7 @@ import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.cql3.ColumnIdentifier;
 import org.apache.cassandra.db.rows.Cell;
 import org.apache.cassandra.db.rows.ColumnData;
-import org.apache.cassandra.db.rows.ComplexColumnData;
+import org.apache.cassandra.db.rows.RangeTombstoneMarker;
 import org.apache.cassandra.db.rows.Row;
 import org.apache.cassandra.db.rows.Unfiltered;
 import org.apache.cassandra.db.rows.UnfilteredRowIterator;
@@ -35,6 +35,7 @@ import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.Table;
 import org.hillview.table.membership.FullMembershipSet;
+import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
 
 import javax.annotation.Nullable;
@@ -55,34 +56,49 @@ import org.apache.cassandra.utils.FBUtilities;
 /**
  * Knows how to read a local Cassandra's SSTable file.
  */
-public class CassandraSSTableLoader {
+public class CassandraSSTableLoader extends TextFileLoader{
     @Nullable
     private Schema actualSchema;
     @Nullable
     private final String ssTablePath;
     @Nullable
     IAppendableColumn[] columns;
-    @Nullable
-    private String currentToken;
 
+    public boolean lazyLoading;
     private int currentColumn;
+    private long rowCount;
     private int currentRow;
-    private boolean allowFewerColumns;
+    private Descriptor descriptor;
+    private CFMetaData metadata;
+    private SSTableReader ssTableReader;
 
-    static
-    {
+    static{
         /** Initializing DatabaseDescriptor that contains Cassandra's general configuration */
         DatabaseDescriptor.clientInitialization(false);
     }
     
-    public CassandraSSTableLoader(String ssTablePath) {
+    public CassandraSSTableLoader(String ssTablePath, boolean lazyLoading) {
+        super(ssTablePath);
         this.ssTablePath = ssTablePath;
+        this.lazyLoading = lazyLoading;
+
+        try{
+            this.descriptor = Descriptor.fromFilename(this.ssTablePath);
+            this.metadata = this.getSSTableMetadata(this.descriptor);
+            this.ssTableReader = SSTableReader.openNoValidation(this.descriptor, this.metadata); 
+            /** Get the schema of the current SSTable */
+            this.actualSchema = this.getSchema(this.metadata);
+            assert this.actualSchema != null;        
+
+        } catch (Exception e) {
+            HillviewLogger.instance.error("Failed initializing Metadata and SStable partitions based on: " + this.ssTablePath);
+            throw new RuntimeException(e);
+        }
     }
 
-    public CFMetaData getSSTableMetadata(Descriptor desc) throws IOException
-    {
+    public CFMetaData getSSTableMetadata(Descriptor desc) throws Exception{
         if (!desc.version.storeRows())
-            throw new IOException("pre-3.0 SSTable is not supported.");
+            throw new RuntimeException("pre-3.0 SSTable is not supported");
 
         EnumSet<MetadataType> types = EnumSet.of(MetadataType.STATS, MetadataType.HEADER);
         Map<MetadataType, MetadataComponent> sstableMetadata = desc.getMetadataSerializer().deserialize(desc, types);
@@ -106,12 +122,6 @@ public class CassandraSSTableLoader {
             builder.addClusteringColumn("clustering" + (i > 0 ? i : ""), header.getClusteringTypes().get(i));
         }
         return builder.build();
-    }
-
-    private <T> Stream<T> iterToStream(Iterator<T> iter)
-    {
-        Spliterator<T> splititer = Spliterators.spliteratorUnknownSize(iter, Spliterator.IMMUTABLE);
-        return StreamSupport.stream(splititer, false);
     }
 
     /** Converting Cassandra's data type to Hillview data type */
@@ -150,8 +160,10 @@ public class CassandraSSTableLoader {
             case "duration":
                 kind = ContentsKind.Duration;
                 break;
-            case "blob":
             case "empty":
+                kind = ContentsKind.None;
+                break;
+            case "blob":
             default:
                 throw new RuntimeException("Unhandled column type " + colType);
         }
@@ -180,130 +192,209 @@ public class CassandraSSTableLoader {
         }
     }
 
-    private void append(String[] data) {
-        try {
-            assert this.columns != null;
-            int columnCount = this.columns.length;
-            this.currentColumn = 0;
-            if (data.length > columnCount)
-                throw new RuntimeException("Too many columns " + data.length + " vs " + columnCount);
-            for (this.currentColumn = 0; this.currentColumn < data.length; this.currentColumn++) {
-                this.currentToken = data[this.currentColumn];
-                this.columns[this.currentColumn].parseAndAppendString(this.currentToken);
-            }
-            if (data.length < columnCount) {
-                if (!this.allowFewerColumns)
-                throw new RuntimeException("Too few columns " + data.length + " vs " + columnCount);
-                else {
-                    this.currentToken = "";
-                    for (int i = data.length; i < columnCount; i++)
-                        this.columns[i].parseAndAppendString(this.currentToken);
+    static class SSTableColumnLoader implements IColumnLoader {
+        private int currentRow;
+        private int currentColumn;
+        private SSTableReader ssTableReader;
+        private Schema actualSchema;
+        private int sizeToLoad;
+
+        SSTableColumnLoader(SSTableReader ssTableReader, Schema actualSchema){
+            this.ssTableReader = ssTableReader;
+            this.actualSchema = actualSchema;
+        }
+
+        /** Marking the corresponding column index that are included in List<String> names */
+        private boolean[] getColumnMarker(List<String> names){
+            this.sizeToLoad = 0;
+            List<String> colNames = this.actualSchema.getColumnNames();
+            boolean[] result = new boolean[colNames.size()];
+            int i = 0;
+            for (String cn : colNames) {
+                if(names.contains(cn)){
+                    result[i] = true;
+                    /** Incrementing the number of column that will be loaded  */
+                    this.sizeToLoad++;
+                }else{
+                    result[i] = false;
                 }
+                i++;
             }
-            this.currentRow++;
-            this.currentToken = null;
-        } catch (Exception ex) {
-            HillviewLogger.instance.error("Error getting row #"+this.currentRow+" from sstable " + this.ssTablePath);
-            throw new RuntimeException(ex);
+            return result;
+        }
+        
+        @Override
+        public List<IColumn> loadColumns(List<String> names) {
+            boolean[] columnToLoad = getColumnMarker(names);
+            IAppendableColumn[] columns = this.actualSchema.createAppendableColumns();
+            ISSTableScanner currentScanner = this.ssTableReader.getScanner();
+            Spliterator<UnfilteredRowIterator> splititer = Spliterators.spliteratorUnknownSize(currentScanner, Spliterator.IMMUTABLE);
+            Stream<UnfilteredRowIterator> partitions = StreamSupport.stream(splititer, false).filter(i -> true);
+            /** Iterating each item inside the table */
+            partitions.forEach(partition -> {
+                int i;
+                Object value;
+                Object[] line;
+                Row row;
+                Cell cell;
+                AbstractType<?> cellType;
+                Unfiltered unfiltered;
+
+                /** Serializing each partition */
+                while (partition.hasNext()){
+                    unfiltered = partition.next();
+                    if (unfiltered instanceof Row){
+                        row = (Row) unfiltered;
+                        line = new Object[row.columnCount()];
+                        i = 0;
+                        /** Extracting the value for each column from a single row  */
+                        for (ColumnData cd : row) {
+                            /** Filter the column to only load the one marked true by columnToLoad[] */
+                            if (columnToLoad[i]){
+                                if (cd.column().isSimple()){
+                                    cell = (Cell) cd;
+                                    cellType = cell.column().cellValueType();
+                                    value = cellType.getSerializer().deserialize(cell.value());
+                                }else{
+                                    /** Hillview won't process the complex data */
+                                    value = new String("[Hillview can't convert complex data]");
+                                }
+                                line[i] = value; 
+                            }
+                            i++;
+                        }
+
+                        /** Append each line to Hillview column */
+                        for (this.currentColumn = 0; this.currentColumn < line.length; this.currentColumn++) {
+                            columns[this.currentColumn].append(line[this.currentColumn]);
+                        }
+                        this.currentRow++;
+                        
+                    }else if (unfiltered instanceof RangeTombstoneMarker){
+                        /** Hillview ignores Tombstone Markers */
+                    }
+                }
+            });
+
+            List<IColumn> arrColumns = new ArrayList<IColumn>(this.sizeToLoad);
+            IMembershipSet membershipSet = null;
+            IAppendableColumn appendableColumn;
+            IColumn column;
+            for (int idx = 0; idx < columns.length; idx++) {
+                appendableColumn = columns[idx];
+                column = appendableColumn.seal();
+                if (membershipSet == null)
+                    membershipSet = new FullMembershipSet(column.sizeInRows());
+                assert column != null;
+                if(columnToLoad[idx])
+                    arrColumns.add(column);
+            }
+            return arrColumns;
         }
     }
 
-    private void serializePartition( UnfilteredRowIterator partition) {
+    public int getNumRows() throws IOException{
+        ISSTableScanner currentScanner = this.ssTableReader.getScanner();
+        Spliterator<UnfilteredRowIterator> splititer = Spliterators.spliteratorUnknownSize(currentScanner, Spliterator.IMMUTABLE);
+        Stream<UnfilteredRowIterator> partitions = StreamSupport.stream(splititer, false).filter(i -> true);
+        /** Iterating each item inside the table */
+        partitions.forEach(partition -> {
+            Unfiltered unfiltered;
+            /** Serializing each partition */
+            while (partition.hasNext()){
+                unfiltered = partition.next();
+                /** Hillview ignores Tombstone Markers, just count the Row */
+                if (unfiltered instanceof Row){
+                    this.rowCount++;
+                }
+            }
+        });
+        return Converters.toInt(rowCount);
+    }
+
+    public ITable load(){
         try {
+            if (this.lazyLoading) {
+                int size = this.getNumRows();
+                PartitionColumns columnDefinitions = metadata.partitionColumns();
+                List<ColumnDescription> cds = new ArrayList<ColumnDescription>(columnDefinitions.size());
+                for (ColumnDefinition colDef : columnDefinitions) {
+                    ColumnDescription cd = CassandraSSTableLoader.getDescription(colDef);
+                    cds.add(cd);
+                }
+                IColumnLoader loader = new CassandraSSTableLoader.SSTableColumnLoader(this.ssTableReader, this.actualSchema);
+                return Table.createLazyTable(cds, size, this.filename, loader);
+            } else {
+                return nonLazyLoading();
+            }
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+    
+    public ITable nonLazyLoading() throws Exception{
+        this.columns = this.actualSchema.createAppendableColumns();
+        assert this.columns != null;
+
+        /** Iterating each item inside the table */
+        ISSTableScanner currentScanner = this.ssTableReader.getScanner();
+        Spliterator<UnfilteredRowIterator> splititer = Spliterators.spliteratorUnknownSize(currentScanner, Spliterator.IMMUTABLE);
+        Stream<UnfilteredRowIterator> partitions = StreamSupport.stream(splititer, false).filter(i -> true);
+        partitions.forEach(partition -> {
             int i;
-            String value;
-            String[] line;
+            Object value;
+            Object[] line;
             Row row;
             Cell cell;
             AbstractType<?> cellType;
             Unfiltered unfiltered;
-            while (partition.hasNext())
-            {
+
+            /** Serializing each partition */
+            while (partition.hasNext()){
                 unfiltered = partition.next();
-                if (unfiltered instanceof Row)
-                {
+                if (unfiltered instanceof Row){
                     row = (Row) unfiltered;
-                    line = new String[row.columnCount()];
+                    line = new Object[row.columnCount()];
                     i = 0;
                     /** Extracting the value for each column from a single row  */
                     for (ColumnData cd : row) {
                         if (cd.column().isSimple()){
                             cell = (Cell) cd;
                             cellType = cell.column().cellValueType();
-                            value = cellType.getSerializer().deserialize(cell.value()).toString();
-                            line[i] = value; 
+                            value = cellType.getSerializer().deserialize(cell.value());
                         }else{
-                            /** Hillview cooncatenates string representation of the complex data */
-                            ComplexColumnData complexData = (ComplexColumnData) cd;
-                            value = null;
-                            for (Cell c : complexData) {
-                                cellType = c.column().cellValueType();
-                                value += cellType.getSerializer().deserialize(c.value()).toString() + "; ";
-                            }
+                            /** Hillview won't process the complex data */
+                            value = new String("[Hillview can't convert complex data]");
                         }
+                        line[i] = value; 
                         i++;
                     }
-                    this.append(line);
+
+                    /** Append each line to Hillview column */
+                    for (this.currentColumn = 0; this.currentColumn < line.length; this.currentColumn++) {
+                        this.columns[this.currentColumn].append(line[this.currentColumn]);
+                    }
+                    this.currentRow++;
+
+                }else if (unfiltered instanceof RangeTombstoneMarker){
+                    /** Hillview ignores Tombstone Markers */
                 }
             }
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
+        });
+
+        IColumn[] arrColumns = new IColumn[this.columns.length];
+        IMembershipSet membershipSet = null;
+        IAppendableColumn appendableColumn;
+        IColumn column;
+        for (int idx = 0; idx < this.columns.length; idx++) {
+            appendableColumn = this.columns[idx];
+            column = appendableColumn.seal();
+            if (membershipSet == null)
+                membershipSet = new FullMembershipSet(column.sizeInRows());
+            arrColumns[idx] = column;
+            assert arrColumns[idx] != null;
         }
+
+        return new Table(arrColumns, this.ssTablePath, null);
     }
-
-    public ITable load() {
-        try {
-            Descriptor desc = Descriptor.fromFilename(this.ssTablePath);
-            CFMetaData metadata = this.getSSTableMetadata(desc);
-            SSTableReader ssTableReader = SSTableReader.openNoValidation(desc, metadata);
-            ISSTableScanner currentScanner = ssTableReader.getScanner();
-            Stream<UnfilteredRowIterator> partitions = this.iterToStream(currentScanner).filter(i -> true);
-
-            // Get the schema of the current SSTable
-            this.actualSchema = this.getSchema(metadata);
-            // Print the schema using: printSchema(metadata);
-            
-            assert this.actualSchema != null;
-            this.columns = this.actualSchema.createAppendableColumns();
-
-            // This is iterating each item inside the table
-            partitions.forEach(partition -> {
-                this.serializePartition(partition);
-            });
-
-            IColumn[] sealed = new IColumn[this.columns.length];
-            IMembershipSet ms = null;
-            IAppendableColumn c;
-            IColumn s;
-            for (int ci = 0; ci < this.columns.length; ci++) {
-                c = this.columns[ci];
-                s = c.seal();
-                if (ms == null)
-                    ms = new FullMembershipSet(s.sizeInRows());
-                sealed[ci] = s;
-                assert sealed[ci] != null;
-            }
-
-            return new Table(sealed, this.ssTablePath, null);
-        } catch (Exception e) {
-            HillviewLogger.instance.error("Could not retrieve sstable data from " + this.ssTablePath);
-            throw new RuntimeException(e);
-        } 
-    }
-
-    public static ITable ssTableTest(){
-        try{
-            String ssTablePath = "/Users/daniar/Documents/Github/hillview/data/sstable/md-2-big-Data.db";
-            CassandraSSTableLoader ssTableLoader = new CassandraSSTableLoader(ssTablePath);
-            HillviewLogger.instance.info("Loading SSTable", "{0}", ssTablePath);
-
-            ITable table = ssTableLoader.load();
-            // System.out.println("Loaded table: " + table.toString());
-            return table;
-        } catch (Exception e) {
-            e.printStackTrace(); 
-            throw new RuntimeException(e);
-        }
-    }
-
 }
