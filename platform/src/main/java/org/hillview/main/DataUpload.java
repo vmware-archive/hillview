@@ -108,7 +108,7 @@ public class DataUpload {
         options.addOption(o_directory);
          */
 
-        CommandLineParser parser = new BasicParser();
+        CommandLineParser parser = new DefaultParser();
         CommandLine cmd = null;
         try {
             cmd = parser.parse(options, args);

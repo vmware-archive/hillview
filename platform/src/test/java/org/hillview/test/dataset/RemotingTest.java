@@ -67,6 +67,7 @@ import static org.junit.Assert.fail;
 /**
  * Remoting tests for Hillview.
  */
+@SuppressWarnings("BusyWait")
 @net.jcip.annotations.NotThreadSafe
 public class RemotingTest extends BaseTest {
     // We have to be careful to use different ports for all the servers we start
@@ -80,6 +81,7 @@ public class RemotingTest extends BaseTest {
 
         @Override
         public int[] apply(final int[] data) {
+            Assert.assertNotNull(data);
             if (data.length == 0) {
                 throw new RuntimeException("Cannot apply map against empty data");
             }
@@ -108,6 +110,7 @@ public class RemotingTest extends BaseTest {
         @Override
         public DataSetTest.IntegerWrapper create(final int[] data) {
             int sum = 0;
+            Assert.assertNotNull(data);
             for (int d : data) sum += d;
             return new DataSetTest.IntegerWrapper(sum);
         }

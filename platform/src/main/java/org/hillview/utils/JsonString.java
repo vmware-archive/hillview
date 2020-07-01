@@ -31,7 +31,6 @@ import javax.annotation.Nullable;
 public class JsonString implements IJsonSketchResult {
     static final long serialVersionUID = 1;
 
-    private static JsonParser parser = new JsonParser();
     @Nullable
     private final String value;
 
@@ -43,6 +42,6 @@ public class JsonString implements IJsonSketchResult {
     public JsonElement toJsonTree() {
         if (this.value == null)
             return JsonNull.INSTANCE;
-        return parser.parse(this.value);
+        return JsonParser.parseString(this.value);
     }
 }
