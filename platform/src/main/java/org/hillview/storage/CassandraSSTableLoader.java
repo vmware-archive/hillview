@@ -84,7 +84,7 @@ public class CassandraSSTableLoader extends TextFileLoader{
             // Get the schema of the current SSTable
             this.actualSchema = this.getSchema(this.metadata);
         } catch (Exception e) {
-            HillviewLogger.instance.error("Failed initializing Metadata and SStable partitions based on: " 
+            HillviewLogger.instance.error("Failed initializing Metadata and SStable partitions, " 
                 + this.ssTablePath);
             throw new RuntimeException(e);
         }
@@ -186,7 +186,7 @@ public class CassandraSSTableLoader extends TextFileLoader{
     public class SSTableColumnLoader implements IColumnLoader {
         private final SSTableReader ssTableReader;
         private final Schema actualSchema;
-        private int sizeToLoad;
+        private int columnCountToLoad;
 
         SSTableColumnLoader(SSTableReader ssTableReader, Schema actualSchema) {
             this.ssTableReader = ssTableReader;
@@ -195,15 +195,15 @@ public class CassandraSSTableLoader extends TextFileLoader{
 
         // Marking the corresponding column index that are included in List<String> names
         private boolean[] getColumnMarker(List<String> names) {
-            this.sizeToLoad = 0;
+            this.columnCountToLoad = 0;
             List<String> colNames = this.actualSchema.getColumnNames();
             boolean[] result = new boolean[colNames.size()];
             int i = 0;
             for (String cn : colNames) {
-                if(names.contains(cn)) {
+                if (names.contains(cn)) {
                     result[i] = true;
                     // Incrementing the number of column that will be loaded
-                    this.sizeToLoad++;
+                    this.columnCountToLoad++;
                 } else {
                     result[i] = false;
                 }
@@ -220,35 +220,23 @@ public class CassandraSSTableLoader extends TextFileLoader{
                 Spliterator.IMMUTABLE);
             Stream<UnfilteredRowIterator> partitions = StreamSupport.stream(splititer, false);
 
-            return CassandraSSTableLoader.this.loadColumns(columnToLoad, partitions, this.sizeToLoad);
+            return CassandraSSTableLoader.this.loadColumns(columnToLoad, partitions, this.columnCountToLoad);
         }
     }
 
-    public int getNumRows() {
+    public long getNumRows() {
         ISSTableScanner currentScanner = this.ssTableReader.getScanner();
         Spliterator<UnfilteredRowIterator> splititer = Spliterators.spliteratorUnknownSize(currentScanner, 
             Spliterator.IMMUTABLE);
         Stream<UnfilteredRowIterator> partitions = StreamSupport.stream(splititer, false);
-        // Iterating each item inside the table
-        partitions.forEach(partition -> {
-            Unfiltered unfiltered;
-            // Serializing each partition
-            while (partition.hasNext()) {
-                unfiltered = partition.next();
-                // Hillview ignores Tombstone Markers, just count the Row
-                if (unfiltered instanceof Row) {
-                    this.rowCount++;
-                }
-            }
-        });
-        return Converters.toInt(rowCount);
+        return partitions.count();
     }
 
     /** Instead of checking the columnn' name to find which one to load,
      * this method uses boolean marker stored at columnToLoad to recognize the needed columns */
-    private List<IAppendableColumn> createColumns(boolean[] columnToLoad, int sizeToLoad) {
+    private List<IAppendableColumn> createColumns(boolean[] columnToLoad, int columnCountToLoad) {
         List<ColumnDescription> cols = this.actualSchema.getColumnDescriptions();
-        List<IAppendableColumn> result = new ArrayList<IAppendableColumn>(sizeToLoad);
+        List<IAppendableColumn> result = new ArrayList<IAppendableColumn>(columnCountToLoad);
         int i = 0;
         for (ColumnDescription cd : cols) {
             if (columnToLoad[i])
@@ -262,7 +250,7 @@ public class CassandraSSTableLoader extends TextFileLoader{
     public ITable load() {
         try {
             if (this.lazyLoading) {
-                int size = this.getNumRows();
+                int size = (int) this.getNumRows();
                 PartitionColumns columnDefinitions = metadata.partitionColumns();
                 List<ColumnDescription> cds = new ArrayList<ColumnDescription>(columnDefinitions.size());
                 for (ColumnDefinition colDef : columnDefinitions) {
@@ -274,9 +262,9 @@ public class CassandraSSTableLoader extends TextFileLoader{
                     this.actualSchema);
                 return Table.createLazyTable(cds, size, this.filename, loader);
             } else {
-                int sizeToLoad = this.actualSchema.getColumnCount();
+                int columnCountToLoad = this.actualSchema.getColumnCount();
                 // columns loader will load all column, so all item of columnToLoad need to be TRUE
-                boolean[] columnToLoad = new boolean[sizeToLoad];
+                boolean[] columnToLoad = new boolean[columnCountToLoad];
                 Arrays.fill(columnToLoad, Boolean.TRUE);
 
                 ISSTableScanner currentScanner = this.ssTableReader.getScanner();
@@ -284,7 +272,7 @@ public class CassandraSSTableLoader extends TextFileLoader{
                     Spliterator.IMMUTABLE);
                 Stream<UnfilteredRowIterator> partitions = StreamSupport.stream(splititer, false);
 
-                List<IColumn> arrColumns = this.loadColumns(columnToLoad, partitions, sizeToLoad);
+                List<IColumn> arrColumns = this.loadColumns(columnToLoad, partitions, columnCountToLoad);
                 return new Table(arrColumns, this.ssTablePath, null);
             }
         } catch (Exception ex) {
@@ -297,40 +285,31 @@ public class CassandraSSTableLoader extends TextFileLoader{
         List<IAppendableColumn> columns = createColumns(columnToLoad, size);
         // Iterating each item inside the table
         partitions.forEach(partition -> {
-            int i;
-            Object value;
-            List<Object> line;
-            Row row;
-            Cell cell;
-            AbstractType<?> cellType;
-            Unfiltered unfiltered;
-
-            // Serializing each partition
             while (partition.hasNext()) {
-                unfiltered = partition.next();
+                Unfiltered unfiltered = partition.next();
                 if (unfiltered instanceof Row) {
-                    row = (Row) unfiltered;
-                    line = new ArrayList<Object>(row.columnCount());
-                    i = 0;
+                    Row row = (Row) unfiltered;
+                    int i = 0;
+                    int currentColumn = 0;
+                    Object value;
+                    IAppendableColumn col;
                     // Extracting the value for each column from a single row
                     for (ColumnData cd : row) {
                         // Filter the column to only load the one marked true by columnToLoad[]
                         if (columnToLoad[i]) {
                             if (cd.column().isSimple()) {
-                                cell = (Cell) cd;
-                                cellType = cell.column().cellValueType();
+                                Cell cell = (Cell) cd;
+                                AbstractType<?> cellType = cell.column().cellValueType();
                                 value = cellType.getSerializer().deserialize(cell.value());
                             } else {
                                 // Hillview won't process the complex data
                                 throw new RuntimeException("[Hillview can't convert complex data]");
                             }
-                            line.add(value);
+                            col = columns.get(currentColumn);
+                            col.append(value);
+                            currentColumn++;
                         }
                         i++;
-                    }
-                    // Append each line to Hillview column
-                    for (i = 0; i < size; i++) {
-                        columns.get(i).append(line.get(i));
                     }
                 } else {
                     // if (unfiltered instanceof RangeTombstoneMarker)
@@ -338,9 +317,6 @@ public class CassandraSSTableLoader extends TextFileLoader{
                 }
             }
         });
-
-        for (IAppendableColumn c : columns)
-            c.seal();
         return Linq.map(columns, e -> e);
     }
 }
