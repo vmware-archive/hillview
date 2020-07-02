@@ -184,7 +184,6 @@ public class CassandraSSTableLoader extends TextFileLoader{
     }
 
     public class SSTableColumnLoader implements IColumnLoader {
-        private int currentColumn;
         private final SSTableReader ssTableReader;
         private final Schema actualSchema;
         private int sizeToLoad;
@@ -220,7 +219,7 @@ public class CassandraSSTableLoader extends TextFileLoader{
             ISSTableScanner currentScanner = this.ssTableReader.getScanner();
             Spliterator<UnfilteredRowIterator> splititer = Spliterators.spliteratorUnknownSize(currentScanner, Spliterator.IMMUTABLE);
             Stream<UnfilteredRowIterator> partitions = StreamSupport.stream(splititer, false);
-            
+
             return CassandraSSTableLoader.this.loadColumns(columns, columnToLoad, partitions, this.sizeToLoad );
         }
     }
