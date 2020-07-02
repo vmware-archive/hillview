@@ -13,15 +13,6 @@
     <version>1.0-SNAPSHOT</version>
     <name>platform</name>
     <url>http://github.com/vmware/hillview</url>
-    <!-- This repository directory will be used by Maven to find some dependencies locally -->
-    <repositories>
-        <repository>
-            <id>Repo</id>
-            <name>ProjectRepo</name>
-            <url>file://${project.basedir}/lib</url>
-        </repository>
-    </repositories>
-
     <profiles>
         <!--
              Profiles enable conditional compilation

@@ -29,61 +29,60 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class SSTableTest extends BaseTest{
-    private String ssTableDir = "../data/sstable/";
-    private String ssTablePath = "../data/sstable/md-2-big-Data.db";
+    private final String ssTableDir = "../data/sstable/";
+    private final String ssTablePath = "../data/sstable/md-2-big-Data.db";
         
     @Test
-    public void testSSTableComplimentaryFiles() throws Exception {
-        try{
+    public void testSSTableComplimentaryFiles() {
+        try {
             File directoryPath = new File(ssTableDir);
-            String contents[] = directoryPath.list();
+            String[] contents = directoryPath.list();
             int counter = 0;
-            for(int i=0; i<contents.length; i++) {
-                if(contents[i].startsWith("md-"))
-                    counter ++;
+            for (String content : contents) {
+                if (content.startsWith("md-"))
+                    counter++;
             }
             Assert.assertEquals(8, counter);
         } catch (Exception e) {
-            System.out.println(e.getStackTrace().toString());
+            e.printStackTrace();
             // this will fail if SSTable path is not valid, but we don't want to fail the test.
             this.ignoringException("Failed to read SSTable (" + ssTablePath + ")", e);
-            return;
         }
     }
 
     @Test
-    public void testReadingSSTable() throws Exception {
+    public void testReadingSSTable() {
         CassandraSSTableLoader ssTableLoader = new CassandraSSTableLoader(this.ssTablePath, false);
-        try{
+        try {
             ITable table = ssTableLoader.load();
+            Assert.assertNotNull(table);
             Assert.assertEquals("Table[4x15]", table.toString());
         } catch (Exception e) {
-            System.out.println(e.getStackTrace().toString());
+            e.printStackTrace();
             // this will fail if SSTable path is not valid, but we don't want to fail the test.
             this.ignoringException("Failed to read SSTable (" + this.ssTablePath + ")", e);
-            return;
         }
     }
 
     @Test
-    public void testRowCount() throws Exception {
+    public void testRowCount() {
         CassandraSSTableLoader ssTableLoader = new CassandraSSTableLoader(this.ssTablePath, false);
-        try{
+        try {
             int rowCount = ssTableLoader.getNumRows();
             Assert.assertEquals(15, rowCount);
         } catch (Exception e) {
-            System.out.println(e.getStackTrace().toString());
+            e.printStackTrace();
             // this will fail if SSTable path is not valid, but we don't want to fail the test.
             this.ignoringException("Failed to read SSTable (" + this.ssTablePath + ")", e);
-            return;
         }
     }
 
     @Test
-    public void testLazyLoading() throws Exception {
+    public void testLazyLoading() {
         CassandraSSTableLoader ssTableLoader = new CassandraSSTableLoader(this.ssTablePath, true);
-        try{
+        try {
             ITable table = ssTableLoader.load();
+            Assert.assertNotNull(table);
             IColumn col = table.getLoadedColumn("name");
             String firstName = col.getString(0);
             Assert.assertEquals("susi", firstName);
@@ -97,10 +96,9 @@ public class SSTableTest extends BaseTest{
             Assert.assertEquals("Hyderabad", address);
             Assert.assertEquals(40000, salary);
         } catch (Exception e) {
-            System.out.println(e.getStackTrace().toString());
+            e.printStackTrace();
             // this will fail if SSTable path is not valid, but we don't want to fail the test.
             this.ignoringException("Failed to read SSTable (" + this.ssTablePath + ")", e);
-            return;
         }
     }
 }
