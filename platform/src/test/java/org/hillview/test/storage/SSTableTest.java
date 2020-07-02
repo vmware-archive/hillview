@@ -57,17 +57,9 @@ public class SSTableTest extends BaseTest{
         CassandraSSTableLoader ssTableLoader = new CassandraSSTableLoader(this.ssTablePath, lazyLoading);
         try {
             ITable table = ssTableLoader.load();
-            String name = table.getLoadedColumn("name").getString(6);
-            String address = table.getLoadedColumn("address").getString(6);
-            int salary = table.getLoadedColumn("salary").getInt(6);
-            String phone = table.getLoadedColumn("phone").getString(6);
 
             Assert.assertNotNull(table);
             Assert.assertEquals("Table[4x15]", table.toString());
-            Assert.assertEquals("azam", name);
-            Assert.assertEquals("Chennai", address);
-            Assert.assertEquals(45000, salary);
-            Assert.assertEquals("9848022330", phone);
         } catch (Exception e) {
             e.printStackTrace();
             // this will fail if SSTable path is not valid, but we don't want to fail the test.
