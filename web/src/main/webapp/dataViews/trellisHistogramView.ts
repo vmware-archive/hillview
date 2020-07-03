@@ -19,24 +19,22 @@ import {Receiver} from "../rpc";
 import {
     Groups,
     kindIsString, RangeFilterArrayDescription,
-    RecordOrder,
     RemoteObjectId
 } from "../javaBridge";
-import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
-import {BaseReceiver, TableTargetAPI} from "../tableTarget";
+import {FullPage, PageTitle} from "../ui/fullPage";
+import {BaseReceiver, TableTargetAPI} from "../modules";
 import {DisplayName, SchemaClass} from "../schemaClass";
 import {
     add,
     Converters, histogram2DAsCsv,
     ICancellable, makeInterval,
     PartialResult,
-    percent, prefixSum, saveAs,
-    Two,
+    percent, prefixSum, Two,
 } from "../util";
 import {AxisData, AxisKind} from "./axisData";
 import {IViewSerialization, TrellisHistogramSerialization} from "../datasetView";
 import {IDataView} from "../ui/dataview";
-import {D3SvgElement, Resolution} from "../ui/ui";
+import {D3SvgElement, DragEventKind, Resolution} from "../ui/ui";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {CDFPlot} from "../ui/cdfPlot";
@@ -50,8 +48,7 @@ import {BucketDialog} from "./histogramViewBase";
 import {TextOverlay} from "../ui/textOverlay";
 import {TrellisChartView} from "./trellisChartView";
 import {event as d3event, mouse as d3mouse} from "d3-selection";
-import {NextKReceiver, TableView} from "./tableView";
-import {Dialog} from "../ui/dialog";
+import {Dialog, saveAs} from "../ui/dialog";
 import {PlottingSurface} from "../ui/plottingSurface";
 
 export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<number>>>> {
@@ -83,7 +80,8 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
                     help: "Redraw this view.",
                 },
                 { text: "table",
-                    action: () => this.showTable(),
+                    action: () => this.showTable(
+                        [this.xAxisData.description, this.groupByAxisData.description], this.defaultProvenance),
                     help: "Show the data underlying view using a table view.",
                 },
                 { text: "exact",
@@ -147,23 +145,6 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
                     chartKind: "TrellisHistogram", exact: this.samplingRate >= 1
                 }));
         }
-    }
-
-    protected showTable(): void {
-        const newPage = this.dataset.newPage(new PageTitle("Table", this.defaultProvenance), this.page);
-        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newPage);
-        newPage.setDataView(table);
-        table.schema = this.schema;
-
-        const order =  new RecordOrder([ {
-            columnDescription: this.xAxisData.description,
-            isAscending: true,
-        }, {
-            columnDescription: this.groupByAxisData.description,
-            isAscending: true
-        }]);
-        const rr = table.createNextKRequest(order, null, Resolution.tableRowsOnScreen);
-        rr.invoke(new NextKReceiver(newPage, table, rr, false, order, null));
     }
 
     protected exactHistogram(): void {

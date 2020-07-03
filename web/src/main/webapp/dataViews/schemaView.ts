@@ -39,9 +39,9 @@ import {
     significantDigits,
     Converters
 } from "../util";
-import {TableView} from "./tableView";
+import {TableView} from "../modules";
 import {TSViewBase} from "./tsViewBase";
-import {BaseReceiver} from "../tableTarget";
+import {BaseReceiver} from "../modules";
 import {Receiver, RpcRequest} from "../rpc";
 import {HillviewToplevel} from "../toplevel";
 

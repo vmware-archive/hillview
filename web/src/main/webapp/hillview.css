@@ -198,11 +198,6 @@ div.truncated {
     display: flex;
 }
 
-.external-link {
-    color: blue;
-    text-decoration: underline;
-}
-
 .highlight {
     background: yellow;
 }

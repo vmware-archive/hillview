@@ -33,7 +33,7 @@ import {
 } from "../javaBridge";
 import {OnCompleteReceiver} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
-import {BigTableView} from "../tableTarget";
+import {BigTableView} from "../modules";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {SubMenu, TopMenuItem} from "../ui/menu";
@@ -46,7 +46,7 @@ import {
 } from "../util";
 import {HeavyHittersReceiver, HeavyHittersView} from "./heavyHittersView";
 import {DataRangesReceiver} from "./dataRangesReceiver";
-import {TableOperationCompleted} from "./tableView";
+import {TableOperationCompleted} from "../modules";
 import {ErrorReporter} from "../ui/errReporter";
 
 /**

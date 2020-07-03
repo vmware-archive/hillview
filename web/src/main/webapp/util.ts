@@ -19,20 +19,21 @@
  * This file contains various useful functions and classes.
  */
 
-import * as FileSaver from "file-saver";
 import {ErrorReporter} from "./ui/errReporter";
-import {NotifyDialog} from "./ui/dialog";
-import {HtmlString, Size} from "./ui/ui";
+import {DragEventKind, HtmlString, pageReferenceFormat, Size} from "./ui/ui";
 import {
     AggregateDescription,
     ComparisonFilterDescription,
-    ContentsKind, Groups,
+    ContentsKind,
+    Groups,
     kindIsNumeric,
-    kindIsString, RangeFilterArrayDescription, RangeFilterDescription,
-    RowFilterDescription, SampleSet,
+    kindIsString,
+    RangeFilterArrayDescription,
+    RangeFilterDescription,
+    RowFilterDescription,
+    SampleSet,
     StringFilterDescription
 } from "./javaBridge";
-import {DragEventKind, PageTitle} from "./ui/fullPage";
 import {AxisData} from "./dataViews/axisData";
 import {SchemaClass} from "./schemaClass";
 
@@ -321,7 +322,7 @@ export class Converters {
         let result = "Drag-and-drop ";
         switch (event) {
             case "Title":
-                result + " contents ";
+                result += " contents ";
                 break;
             case "XAxis":
                 result += " X axis ";
@@ -333,7 +334,7 @@ export class Converters {
                 result += " Grouping "
                 break;
         }
-        return result + " from " + PageTitle.pageReferenceFormat(pageId);
+        return result + " from " + pageReferenceFormat(pageId);
     }
 
     static comparisonFilterDescription(filter: ComparisonFilterDescription): string {
@@ -411,19 +412,6 @@ export interface Serializable<T> {
      * @returns The same object if deserialization is successful, null otherwise.
      */
     deserialize(data: object): T;
-}
-
-/**
- * Save data in a file on the local filesystem.
- * @param {string} filename  File to save data to.
- * @param {string} contents  Contents to write in file.
- */
-export function saveAs(filename: string, contents: string): void {
-    const blob = new Blob([contents], {type: "text/plain;charset=utf-8"});
-    FileSaver.saveAs(blob, filename);
-    const notify = new NotifyDialog("File has been saved.",
-        "Look for file " + filename, "File has been saved");
-    notify.show();
 }
 
 /**

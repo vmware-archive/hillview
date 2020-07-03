@@ -683,6 +683,6 @@ class PingReceiver extends OnCompleteReceiver<string[]> {
     }
 
     public run(value: string[]): void {
-        this.page.reportError(this.value.toString());
+        this.page.reportError(value.toString());
     }
 }

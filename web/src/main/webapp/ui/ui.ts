@@ -191,3 +191,14 @@ export type D3Axis = any;  // d3 axis; perhaps some day we will be able to use a
 export type D3Scale = any; // d3 scale.
 export type D3SvgElement = any;  // An SVG G element created by d3
 export type AnyScale = D3ScaleLinear<number, number> | D3ScaleTime<number, number>;
+
+// Kind of data that is being dragged
+export type DragEventKind = "Title" | "XAxis" | "YAxis" | "GAxis";
+
+/**
+ * The format string used in a page title to describe a reference to another page.
+ * @param page  Page number.
+ */
+export function pageReferenceFormat(page: string): string {
+    return "%p(" + page + ")";
+}

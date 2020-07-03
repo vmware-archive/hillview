@@ -39,10 +39,10 @@ import {
 } from "../javaBridge";
 import {OnCompleteReceiver, Receiver} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
-import {BaseReceiver, OnNextK, TableTargetAPI} from "../tableTarget";
+import {BaseReceiver, OnNextK, TableTargetAPI} from "../modules";
 import {DataRangeUI} from "../ui/dataRangeUI";
 import {IDataView} from "../ui/dataview";
-import {Dialog, FieldKind} from "../ui/dialog";
+import {Dialog, FieldKind, saveAs} from "../ui/dialog";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {ContextMenu, MenuItem, SubMenu, TopMenu, TopMenuItem} from "../ui/menu";
 import {IScrollTarget, ScrollBar} from "../ui/scroll";
@@ -60,12 +60,11 @@ import {
     PartialResult,
     percent,
     sameAggregate,
-    saveAs,
     significantDigits,
     significantDigitsHtml,
     truncate
 } from "../util";
-import {SchemaView} from "./schemaView";
+import {SchemaView} from "../modules";
 import {SpectrumReceiver} from "./spectrumView";
 import {TSViewBase} from "./tsViewBase";
 import {Grid} from "../ui/grid";
@@ -723,14 +722,16 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             this.page.reportError("Not enough views to compare");
             return;
         }
-        dialog.addPageSelectField("view0", "First view",
-            pages, "First view to compare");
-        dialog.addPageSelectField("view1", "Second view",
-            pages, "Second view to compare");
+        const label = (p) => p.pageId + ". " + p.title.getTextRepresentation(p) +
+            "(" + p.title.provenance + ")";
+        dialog.addSelectFieldAsObject("view0", "First view",
+            pages, label, "First view to compare");
+        dialog.addSelectFieldAsObject("view1", "Second view",
+            pages, label,"Second view to compare");
 
         dialog.setAction(() => {
-            const page0 = dialog.getFieldValueAsPage("view0");
-            const page1 = dialog.getFieldValueAsPage("view1");
+            const page0 = dialog.getFieldValueAsObject<FullPage>("view0");
+            const page1 = dialog.getFieldValueAsObject<FullPage>("view1");
             if (page0 == null || page1 == null)
                 return;
 

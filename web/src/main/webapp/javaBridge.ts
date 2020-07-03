@@ -255,12 +255,6 @@ export interface BasicColStats {
     maxString?: string;
 }
 
-export interface RangeArgs {
-    cd: IColumnDescription;
-    seed: number;
-    stringsToSample: number;
-}
-
 export interface RangeFilterDescription {
     min: number;
     max: number;

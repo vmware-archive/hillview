@@ -16,7 +16,7 @@
  */
 
 import {DatasetView, IDatasetSerialization} from "./datasetView";
-import {SchemaReceiver} from "./dataViews/tableView";
+import {SchemaReceiver} from "./modules";
 import {
     FileSetDescription,
     FileSizeSketchInfo,

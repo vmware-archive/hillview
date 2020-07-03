@@ -20,7 +20,7 @@
 // updates and update a view on each update.
 
 import {FullPage, PageTitle} from "./fullPage";
-import {TableTargetAPI} from "../tableTarget";
+import {TableTargetAPI} from "../modules";
 import {SchemaClass} from "../schemaClass";
 import {PartialResult} from "../util";
 import {Receiver, RpcRequest} from "../rpc";
@@ -60,7 +60,7 @@ export class CommonArgs {
 }
 
 export abstract class ReceiverCommon<T> extends Receiver<T> {
-    constructor(protected args: CommonArgs, operation: RpcRequest<PartialResult<T>>, description: string) {
+    protected constructor(protected args: CommonArgs, operation: RpcRequest<PartialResult<T>>, description: string) {
         super(args.options.reusePage ? args.originalPage : args.originalPage.dataset.newPage(args.title, args.originalPage),
             operation, description)
     }

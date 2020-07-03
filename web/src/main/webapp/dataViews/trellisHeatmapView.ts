@@ -18,15 +18,14 @@
 import {
     Groups,
     IColumnDescription, RangeFilterArrayDescription,
-    RecordOrder,
     RemoteObjectId
 } from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
-import {BaseReceiver, TableTargetAPI} from "../tableTarget";
-import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
+import {BaseReceiver, TableTargetAPI} from "../modules";
+import {FullPage, PageTitle} from "../ui/fullPage";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
-import {Resolution} from "../ui/ui";
+import {DragEventKind, Resolution} from "../ui/ui";
 import {AxisData, AxisKind} from "./axisData";
 import {
     FilterReceiver,
@@ -35,15 +34,15 @@ import {
     TrellisLayoutComputation
 } from "./dataRangesReceiver";
 import {Receiver, RpcRequest} from "../rpc";
-import {Converters, histogram3DAsCsv, ICancellable, makeInterval, PartialResult, saveAs} from "../util";
+import {Converters, histogram3DAsCsv, ICancellable, makeInterval, PartialResult} from "../util";
 import {HeatmapPlot} from "../ui/heatmapPlot";
 import {IViewSerialization, TrellisHeatmapSerialization} from "../datasetView";
 import {IDataView} from "../ui/dataview";
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {TextOverlay} from "../ui/textOverlay";
 import {TrellisChartView} from "./trellisChartView";
-import {NextKReceiver, TableView} from "./tableView";
 import {HeatmapLegendPlot} from "../ui/heatmapLegendPlot";
+import {saveAs} from "../ui/dialog";
 
 /**
  * A Trellis plot containing multiple heatmaps.
@@ -80,7 +79,9 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
                     action: () => this.swapAxes(),
                     help: "Swap the X and Y axes of all plots."
                 }, { text: "table",
-                    action: () => this.showTable(),
+                    action: () => this.showTable(
+                        [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description],
+                        this.defaultProvenance),
                     help: "Show the data underlying this view in a tabular view."
                 }, { text: "histogram",
                         action: () => this.histogram(),
@@ -276,26 +277,6 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
                 relative: true,
                 reusePage: true
             }));
-    }
-
-    public showTable(): void {
-        const newPage = this.dataset.newPage(new PageTitle("Table", this.defaultProvenance), this.page);
-        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newPage);
-        newPage.setDataView(table);
-        table.schema = this.schema;
-
-        const order =  new RecordOrder([ {
-            columnDescription: this.xAxisData.description,
-            isAscending: true
-        }, {
-            columnDescription: this.yAxisData.description,
-            isAscending: true
-        }, {
-            columnDescription: this.groupByAxisData.description,
-            isAscending: true
-        }]);
-        const rr = table.createNextKRequest(order, null, Resolution.tableRowsOnScreen);
-        rr.invoke(new NextKReceiver(newPage, table, rr, false, order, null));
     }
 
     public updateView(histogram3d: Groups<Groups<Groups<number>>>, keepColorMap: boolean): void {

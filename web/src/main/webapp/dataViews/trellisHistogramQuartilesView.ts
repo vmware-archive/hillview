@@ -21,17 +21,16 @@ import {
     Groups,
     HistogramRequestInfo,
     IColumnDescription, RangeFilterArrayDescription,
-    RecordOrder,
     RemoteObjectId, SampleSet
 } from "../javaBridge";
-import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
-import {BaseReceiver, TableTargetAPI} from "../tableTarget";
+import {FullPage, PageTitle} from "../ui/fullPage";
+import {BaseReceiver, TableTargetAPI} from "../modules";
 import {SchemaClass} from "../schemaClass";
 import {
     allBuckets,
     Converters, describeQuartiles,
     ICancellable,
-    PartialResult, quartileAsCsv, saveAs,
+    PartialResult, quartileAsCsv,
 } from "../util";
 import {AxisData, AxisKind} from "./axisData";
 import {
@@ -39,7 +38,7 @@ import {
     TrellisQuartilesSerialization
 } from "../datasetView";
 import {IDataView} from "../ui/dataview";
-import {ChartOptions, Resolution} from "../ui/ui";
+import {ChartOptions, DragEventKind, Resolution} from "../ui/ui";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {
     FilterReceiver,
@@ -47,12 +46,12 @@ import {
     TrellisShape, TrellisLayoutComputation,
 } from "./dataRangesReceiver";
 import {TrellisChartView} from "./trellisChartView";
-import {NextKReceiver, TableView} from "./tableView";
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {Quartiles2DPlot} from "../ui/quartiles2DPlot";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
 import {BucketDialog} from "./histogramViewBase";
+import {saveAs} from "../ui/dialog";
 
 export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Groups<SampleSet>>> {
     protected hps: Quartiles2DPlot[];
@@ -78,7 +77,9 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
                     action: () => { this.refresh(); },
                     help: "Redraw this view.",
                 }, { text: "table",
-                    action: () => this.showTable(),
+                    action: () => this.showTable(
+                        [this.xAxisData.description, this.qCol, this.groupByAxisData.description],
+                        this.defaultProvenance),
                     help: "Show the data underlying view using a table view.",
                 }, { text: "# buckets...",
                     action: () => this.chooseBuckets(),
@@ -193,26 +194,6 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
         const position = d3mouse(this.surface.getCanvas().node());
         this.pointDescription.update([xs, group, bucketDesc, max, q3, q2, q1, min, count, missing],
             position[0], position[1]);
-    }
-
-    protected showTable(): void {
-        const newPage = this.dataset.newPage(new PageTitle("Table", this.defaultProvenance), this.page);
-        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newPage);
-        newPage.setDataView(table);
-        table.schema = this.schema;
-
-        const order =  new RecordOrder([ {
-            columnDescription: this.xAxisData.description,
-            isAscending: true
-        }, {
-            columnDescription: this.qCol,
-            isAscending: true
-        }, {
-            columnDescription: this.groupByAxisData.description,
-            isAscending: true
-        }]);
-        const rr = table.createNextKRequest(order, null, Resolution.tableRowsOnScreen);
-        rr.invoke(new NextKReceiver(newPage, table, rr, false, order, null));
     }
 
     protected chooseBuckets(): void {

@@ -24,7 +24,7 @@ import {
     kindIsString, QuantilesMatrixInfo, QuantilesVectorInfo,
     RemoteObjectId,
 } from "../javaBridge";
-import {BaseReceiver, TableTargetAPI} from "../tableTarget";
+import {BaseReceiver, TableTargetAPI} from "../modules";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {ICancellable, periodicSamples, Seed, zip} from "../util";
 import {SchemaClass} from "../schemaClass";

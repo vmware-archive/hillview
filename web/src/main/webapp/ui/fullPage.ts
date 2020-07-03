@@ -16,19 +16,14 @@
  */
 
 import {DatasetView} from "../datasetView";
-import {
-    makeMissing,
-    makeSpan,
-    openInNewTab,
-    significantDigits,
-} from "../util";
+import {makeMissing, makeSpan, openInNewTab, significantDigits,} from "../util";
 import {IDataView} from "./dataview";
 import {ErrorDisplay, ErrorReporter} from "./errReporter";
 import {TopMenu} from "./menu";
 import {ProgressManager} from "./progress";
-import {IHtmlElement, removeAllChildren, SpecialChars, ViewKind} from "./ui";
+import {DragEventKind, IHtmlElement, removeAllChildren, SpecialChars, ViewKind} from "./ui";
 import {helpUrl} from "./helpUrl";
-import {BigTableView} from "../tableTarget";
+import {BigTableView} from "../modules";
 import {CombineOperators} from "../javaBridge";
 import {Dialog, FieldKind} from "./dialog";
 
@@ -37,9 +32,6 @@ const plus = "+";
 
 export class PageTitle {
     public static readonly missingFormat = "%m";
-    public static pageReferenceFormat(page: string): string {
-        return "%p(" + page + ")";
-    }
 
     /**
      * A title is described by a format string.
@@ -90,9 +82,6 @@ export class PageTitle {
         return this.getHTMLRepresentation(parentPage).innerText;
     }
 }
-
-// Kind of data that is being dragged
-export type DragEventKind = "Title" | "XAxis" | "YAxis" | "GAxis";
 
 /**
  * A FullPage is the main unit of display in Hillview, storing on rendering.
