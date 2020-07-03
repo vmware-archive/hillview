@@ -317,7 +317,7 @@ public class JdbcDatabase {
         }
 
         @Override
-        public List<IColumn> loadColumns(List<String> names) {
+        public List<? extends IColumn> loadColumns(List<String> names) {
             try {
                 JdbcDatabase db = new JdbcDatabase(this.connInfo);
                 db.connect();

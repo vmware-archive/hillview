@@ -53,9 +53,11 @@ public class SSTableTest extends BaseTest{
     @Test
 
     public void testReadingSSTable() {
-        CassandraSSTableLoader ssTableLoader = new CassandraSSTableLoader(this.ssTablePath, false);
+        boolean lazyLoading = false;
+        CassandraSSTableLoader ssTableLoader = new CassandraSSTableLoader(this.ssTablePath, lazyLoading);
         try {
             ITable table = ssTableLoader.load();
+
             Assert.assertNotNull(table);
             Assert.assertEquals("Table[4x15]", table.toString());
         } catch (Exception e) {
@@ -67,7 +69,8 @@ public class SSTableTest extends BaseTest{
 
     @Test
     public void testRowCount() {
-        CassandraSSTableLoader ssTableLoader = new CassandraSSTableLoader(this.ssTablePath, false);
+        boolean lazyLoading = false;
+        CassandraSSTableLoader ssTableLoader = new CassandraSSTableLoader(this.ssTablePath, lazyLoading);
         try {
             int rowCount = ssTableLoader.getNumRows();
             Assert.assertEquals(15, rowCount);
@@ -80,10 +83,12 @@ public class SSTableTest extends BaseTest{
 
     @Test
     public void testLazyLoading() {
-        CassandraSSTableLoader ssTableLoader = new CassandraSSTableLoader(this.ssTablePath, true);
+        boolean lazyLoading = true;
+        CassandraSSTableLoader ssTableLoader = new CassandraSSTableLoader(this.ssTablePath, lazyLoading);
         try {
             ITable table = ssTableLoader.load();
             Assert.assertNotNull(table);
+            
             IColumn col = table.getLoadedColumn("name");
             String firstName = col.getString(0);
             Assert.assertEquals("susi", firstName);
@@ -93,9 +98,16 @@ public class SSTableTest extends BaseTest{
             String address = listCols.get(1).getString(3);
             int salary = listCols.get(0).getInt(3);
 
+            List<String> colNames2 = Arrays.asList("name","salary","phone");
+            List<IColumn> listCols2 = table.getLoadedColumns(colNames2);
+            String phone = listCols2.get(2).getString(14);
+            String name = listCols2.get(0).getString(14);
+
             Assert.assertEquals(2, listCols.size());
             Assert.assertEquals("Hyderabad", address);
             Assert.assertEquals(40000, salary);
+            Assert.assertEquals("9848022338", phone);
+            Assert.assertEquals("ram", name);
         } catch (Exception e) {
             e.printStackTrace();
             // this will fail if SSTable path is not valid, but we don't want to fail the test.
