@@ -23,7 +23,7 @@ import {
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {BaseReceiver, TableTargetAPI} from "../modules";
 import {SchemaClass} from "../schemaClass";
-import {add, Converters, ICancellable, PartialResult, percent, significantDigits} from "../util";
+import {add, Converters, histogram3DAsCsv, ICancellable, PartialResult, percent, significantDigits} from "../util";
 import {AxisData, AxisKind} from "./axisData";
 import {
     IViewSerialization,
@@ -45,6 +45,7 @@ import {TextOverlay} from "../ui/textOverlay";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {HistogramLegendPlot} from "../ui/histogramLegendPlot";
 import {event as d3event, mouse as d3mouse} from "d3-selection";
+import {saveAs} from "../ui/dialog";
 
 export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Groups<number>>>> {
     protected hps: Histogram2DPlot[];
@@ -308,7 +309,10 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
     }
 
     protected export(): void {
-        // TODO
+        const lines = histogram3DAsCsv(
+            this.data, this.schema, [this.xAxisData, this.legendAxisData, this.groupByAxisData]);
+        const fileName = "trellis-histogram2d.csv";
+        saveAs(fileName, lines.join("\n"));
     }
 
     public resize(): void {
@@ -421,7 +425,7 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
                 "percent",
                 "count" /* TODO:, "cdf" */], 40);
 
-        this.legendPlot.setData(this.legendAxisData, false /* TODO */, this.schema);
+        this.legendPlot.setData(this.legendAxisData, this.legendAxisData.dataRange.missingCount > 0, this.schema);
         this.legendPlot.draw();
     }
 

@@ -238,7 +238,7 @@ export class Histogram2DPlot extends Histogram2DBase {
         yTotalScaled += missing * scale;
         if (!found && yTotalScaled >= yScaled) {
             perc = missing;
-            yIndex = this.data.first.perBucket.length;  // missing
+            yIndex = values.length;  // missing
         }
         return {
             xIndex: xIndex,
