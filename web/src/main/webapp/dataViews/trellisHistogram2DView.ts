@@ -18,11 +18,10 @@
 import {Receiver} from "../rpc";
 import {
     Groups,
-    RecordOrder,
     RemoteObjectId, RangeFilterArrayDescription
 } from "../javaBridge";
-import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
-import {BaseReceiver, TableTargetAPI} from "../tableTarget";
+import {FullPage, PageTitle} from "../ui/fullPage";
+import {BaseReceiver, TableTargetAPI} from "../modules";
 import {SchemaClass} from "../schemaClass";
 import {add, Converters, ICancellable, PartialResult, percent, significantDigits} from "../util";
 import {AxisData, AxisKind} from "./axisData";
@@ -31,7 +30,7 @@ import {
     TrellisHistogram2DSerialization
 } from "../datasetView";
 import {IDataView} from "../ui/dataview";
-import {ChartOptions, Resolution} from "../ui/ui";
+import {ChartOptions, DragEventKind, Resolution} from "../ui/ui";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {Histogram2DPlot} from "../ui/histogram2DPlot";
 import {
@@ -41,7 +40,6 @@ import {
     TrellisLayoutComputation
 } from "./dataRangesReceiver";
 import {TrellisChartView} from "./trellisChartView";
-import {NextKReceiver, TableView} from "./tableView";
 import {BucketDialog} from "./histogramViewBase";
 import {TextOverlay} from "../ui/textOverlay";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
@@ -82,7 +80,10 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
                     action: () => { this.refresh(); },
                     help: "Redraw this view.",
                 }, { text: "table",
-                    action: () => this.showTable(),
+                    action: () => this.showTable([
+                        this.xAxisData.description,
+                        this.legendAxisData.description,
+                        this.groupByAxisData.description], this.defaultProvenance),
                     help: "Show the data underlying view using a table view.",
                 }, { text: "exact",
                     action: () => this.exactHistogram(),
@@ -241,26 +242,6 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
         this.pointDescription.update(
             [xs, value.toString(), group, significantDigits(y), percent(perc), count], position[0], position[1]);
         this.legendPlot.highlight(colorIndex);
-    }
-
-    protected showTable(): void {
-        const newPage = this.dataset.newPage(new PageTitle("Table", this.defaultProvenance), this.page);
-        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newPage);
-        newPage.setDataView(table);
-        table.schema = this.schema;
-
-        const order =  new RecordOrder([ {
-            columnDescription: this.xAxisData.description,
-            isAscending: true
-        }, {
-            columnDescription: this.legendAxisData.description,
-            isAscending: true
-        }, {
-            columnDescription: this.groupByAxisData.description,
-            isAscending: true
-        }]);
-        const rr = table.createNextKRequest(order, null, Resolution.tableRowsOnScreen);
-        rr.invoke(new NextKReceiver(newPage, table, rr, false, order, null));
     }
 
     protected exactHistogram(): void {

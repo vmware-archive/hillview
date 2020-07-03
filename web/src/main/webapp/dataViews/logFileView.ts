@@ -18,12 +18,12 @@
 import {IHtmlElement, removeAllChildren} from "../ui/ui";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {FindBar} from "../ui/findBar";
-import {BaseReceiver, OnNextK, TableTargetAPI} from "../tableTarget";
+import {BaseReceiver, OnNextK, TableTargetAPI} from "../modules";
 import {FullPage} from "../ui/fullPage";
 import {Converters, ICancellable, makeMissing, makeSpan, significantDigits} from "../util";
 import {FindResult, GenericLogs, NextKList, RecordOrder, RemoteObjectId, Schema} from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
-import {NextKReceiver} from "./tableView";
+import {NextKReceiver} from "../modules";
 
 export class LogFileView extends TableTargetAPI implements IHtmlElement, OnNextK {
     protected readonly topLevel: HTMLElement;

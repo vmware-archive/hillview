@@ -24,26 +24,27 @@ import {
     RemoteObjectId, SampleSet,
 } from "../javaBridge";
 import {Receiver, RpcRequest} from "../rpc";
-import {BaseReceiver, TableTargetAPI} from "../tableTarget";
+import {BaseReceiver, TableTargetAPI} from "../modules";
 import {IDataView} from "../ui/dataview";
-import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
+import {FullPage, PageTitle} from "../ui/fullPage";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {ChartOptions, HtmlString, Resolution} from "../ui/ui";
+import {ChartOptions, DragEventKind, HtmlString, Resolution} from "../ui/ui";
 import {
     Converters,
     describeQuartiles,
     ICancellable,
     PartialResult,
     quartileAsCsv,
-    saveAs,
+
 } from "../util";
 import {AxisData, AxisKind} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
 import {DataRangesReceiver, FilterReceiver} from "./dataRangesReceiver";
 import {DisplayName, SchemaClass} from "../schemaClass";
 import {Quartiles2DPlot} from "../ui/quartiles2DPlot";
+import {saveAs} from "../ui/dialog";
 
 /**
  * This class is responsible for rendering a vector of quartiles.
@@ -67,7 +68,7 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
                 help: "Redraw this view",
             }, {
                 text: "table",
-                action: () => this.showTable(),
+                action: () => this.showTable([this.xAxisData.description, this.qCol], this.defaultProvenance),
                 help: "Show the data underlying this plot in a tabular view. ",
             }, {
                 text: "heatmap",
@@ -325,11 +326,6 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
             chartKind: "QuartileVector", reusePage: false,
         });
         rr.invoke(renderer);
-    }
-
-    // show the table corresponding to the data in the histogram
-    protected showTable(): void {
-        super.showTable([this.xAxisData.description, this.qCol], this.defaultProvenance)
     }
 }
 

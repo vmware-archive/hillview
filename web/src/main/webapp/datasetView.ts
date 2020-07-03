@@ -19,9 +19,9 @@ import {HeatmapView} from "./dataViews/heatmapView";
 import {HeavyHittersView} from "./dataViews/heavyHittersView";
 import {Histogram2DView} from "./dataViews/histogram2DView";
 import {HistogramView} from "./dataViews/histogramView";
-import {SchemaView} from "./dataViews/schemaView";
+import {SchemaView} from "./modules";
 import {SpectrumView} from "./dataViews/spectrumView";
-import {SchemaReceiver, TableView} from "./dataViews/tableView";
+import {SchemaReceiver, TableView} from "./modules";
 import {DataLoaded, getDescription} from "./initialObject";
 import {
     CombineOperators,
@@ -36,7 +36,7 @@ import {IDataView} from "./ui/dataview";
 import {FullPage, PageTitle} from "./ui/fullPage";
 import {ContextMenu, MenuItem, SubMenu, TopMenuItem} from "./ui/menu";
 import {IHtmlElement, removeAllChildren, ViewKind} from "./ui/ui";
-import {assert, cloneArray, EnumIterators, ICancellable, saveAs} from "./util";
+import {assert, cloneArray, EnumIterators, ICancellable} from "./util";
 import {TrellisHeatmapView} from "./dataViews/trellisHeatmapView";
 import {TrellisHistogram2DView} from "./dataViews/trellisHistogram2DView";
 import {TrellisHistogramView} from "./dataViews/trellisHistogramView";
@@ -44,6 +44,7 @@ import JSONEditor, {JSONEditorOptions} from "jsoneditor";
 import {OnCompleteReceiver} from "./rpc";
 import {QuartilesHistogramView} from "./dataViews/quartilesHistogramView";
 import {TrellisHistogramQuartilesView} from "./dataViews/trellisHistogramQuartilesView";
+import {saveAs} from "./ui/dialog";
 
 export interface IViewSerialization {
     viewKind: ViewKind;

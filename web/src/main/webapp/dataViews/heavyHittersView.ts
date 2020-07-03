@@ -26,7 +26,7 @@ import {
 } from "../javaBridge";
 import {OnCompleteReceiver, RemoteObject} from "../rpc";
 import {SchemaClass} from "../schemaClass";
-import {BaseReceiver, BigTableView, TableTargetAPI} from "../tableTarget";
+import {BaseReceiver, BigTableView, TableTargetAPI} from "../modules";
 import {DataRangeUI} from "../ui/dataRangeUI";
 import {IDataView} from "../ui/dataview";
 import {Dialog, FieldKind, NotifyDialog} from "../ui/dialog";
@@ -42,7 +42,7 @@ import {
     significantDigitsHtml,
     Converters
 } from "../util";
-import {TableOperationCompleted} from "./tableView";
+import {TableOperationCompleted} from "../modules";
 
 /**
  * This method handles the outcome of the sketch for finding Heavy Hitters.

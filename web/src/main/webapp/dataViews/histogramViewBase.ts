@@ -16,15 +16,14 @@
  */
 
 import {mouse as d3mouse} from "d3-selection";
-import {ColumnSortOrientation, IColumnDescription, RecordOrder, RemoteObjectId} from "../javaBridge";
+import {RemoteObjectId} from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
 import {ICDFPlot} from "../ui/cdfPlot";
 import {Dialog, FieldKind} from "../ui/dialog";
-import {FullPage, PageTitle} from "../ui/fullPage";
-import {D3SvgElement, Resolution, ViewKind} from "../ui/ui";
-import {ChartView} from "./chartView";
+import {FullPage} from "../ui/fullPage";
+import {D3SvgElement, ViewKind} from "../ui/ui";
+import {ChartView} from "../modules";
 import {AxisData} from "./axisData";
-import {NextKReceiver, TableView} from "./tableView";
 
 /**
  * This is a base class that contains code common to various histogram renderings.
@@ -90,24 +89,6 @@ export abstract class HistogramViewBase<D> extends ChartView<D> {
             .attr("width", width)
             .attr("height", height);
         return true;
-    }
-
-    // show the table corresponding to the data in the histogram
-    protected showTable(axes: IColumnDescription[], provenance: string): void {
-        const orientation: ColumnSortOrientation[] = [];
-        for (const a of axes) {
-            orientation.push({
-                columnDescription: a,
-                isAscending: true
-            });
-        }
-        const order = new RecordOrder(orientation);
-
-        const page = this.dataset.newPage(new PageTitle("Table", provenance), this.page);
-        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, page);
-        const rr = table.createNextKRequest(order, null, Resolution.tableRowsOnScreen);
-        page.setDataView(table);
-        rr.invoke(new NextKReceiver(page, table, rr, false, order, null));
     }
 }
 

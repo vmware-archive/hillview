@@ -25,7 +25,7 @@ import {
 } from "../javaBridge";
 import {OnCompleteReceiver} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
-import {BaseReceiver, TableTargetAPI} from "../tableTarget";
+import {BaseReceiver, TableTargetAPI} from "../modules";
 import {IDataView} from "../ui/dataview";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage, PageTitle} from "../ui/fullPage";
@@ -34,8 +34,8 @@ import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {ICancellable, significantDigits} from "../util";
 import {AxisData} from "./axisData";
-import {CorrelationMatrixReceiver, TableView} from "./tableView";
-import {ChartView} from "./chartView";
+import {CorrelationMatrixReceiver, TableView} from "../modules";
+import {ChartView} from "../modules";
 
 /**
  * Receives the result of a PCA computation and plots the singular values

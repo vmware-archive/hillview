@@ -141,7 +141,7 @@ export class TableTargetAPI extends RemoteObject {
                         Math.floor(size.height / Resolution.minDotSize)];
             case "CorrelationHeatmaps":
                 const dots = Math.floor(size.width / (cds.length - 1) / Resolution.minDotSize);
-                return cds.map(c => dots);
+                return cds.map(_ => dots);
             case "Trellis2DHistogram":
                 return [width, maxBuckets, maxWindows];
             case "TrellisHeatmap":

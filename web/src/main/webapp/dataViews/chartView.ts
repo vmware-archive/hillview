@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-import {BigTableView} from "../tableTarget";
-import {BucketsInfo, RangeFilterArrayDescription, RemoteObjectId} from "../javaBridge";
+import {BigTableView} from "../modules";
+import {BucketsInfo, IColumnDescription, RangeFilterArrayDescription, RecordOrder, RemoteObjectId} from "../javaBridge";
 import {DisplayName, SchemaClass} from "../schemaClass";
-import {DragEventKind, FullPage} from "../ui/fullPage";
-import {D3SvgElement, Point, ViewKind} from "../ui/ui";
+import {FullPage, PageTitle} from "../ui/fullPage";
+import {D3SvgElement, DragEventKind, Point, Resolution, ViewKind} from "../ui/ui";
 import {TextOverlay} from "../ui/textOverlay";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {SubMenu, TopMenu, TopMenuItem} from "../ui/menu";
@@ -27,6 +27,7 @@ import {drag as d3drag} from "d3-drag";
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {AxisData} from "./axisData";
 import {Dialog} from "../ui/dialog";
+import {NextKReceiver, TableView} from "../modules";
 
 /**
  * A ChartView is a common base class for many views that
@@ -107,6 +108,18 @@ export abstract class ChartView<D> extends BigTableView {
         chartDiv.style.display = "flex";
         chartDiv.style.flexDirection = "column";
         return chartDiv;
+    }
+
+    protected showTable(columns: IColumnDescription[], provenance: string): void {
+        const newPage = this.dataset.newPage(new PageTitle("Table", provenance), this.page);
+        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newPage);
+        newPage.setDataView(table);
+        table.schema = this.schema;
+
+        const order =  new RecordOrder(
+            columns.map(c => { return { columnDescription: c, isAscending: true }}));
+        const rr = table.createNextKRequest(order, null, Resolution.tableRowsOnScreen);
+        rr.invoke(new NextKReceiver(newPage, table, rr, false, order, null));
     }
 
     protected setupMouse(): void {

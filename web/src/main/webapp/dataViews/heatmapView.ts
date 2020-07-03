@@ -25,28 +25,26 @@ import {
 } from "../javaBridge";
 import {Receiver} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
-import {BaseReceiver, TableTargetAPI} from "../tableTarget";
+import {BaseReceiver, TableTargetAPI} from "../modules";
 import {IDataView} from "../ui/dataview";
-import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
+import {FullPage, PageTitle} from "../ui/fullPage";
 import {HeatmapPlot} from "../ui/heatmapPlot";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {HtmlString, Resolution} from "../ui/ui";
+import {DragEventKind, HtmlString, Resolution} from "../ui/ui";
 import {
     Converters,
     formatNumber, histogram2DAsCsv,
     ICancellable, makeInterval,
     PartialResult,
-    saveAs,
     significantDigitsHtml, Two,
 } from "../util";
 import {AxisData} from "./axisData";
-import {NextKReceiver, TableView} from "./tableView";
 import {DataRangesReceiver, FilterReceiver} from "./dataRangesReceiver";
-import {ChartView} from "./chartView";
-import {Dialog, FieldKind} from "../ui/dialog";
+import {ChartView} from "../modules";
+import {Dialog, FieldKind, saveAs} from "../ui/dialog";
 import {HeatmapLegendPlot} from "../ui/heatmapLegendPlot";
 
 /**
@@ -96,7 +94,8 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
                 help: "Change the number of buckets used to draw this histogram. ",
             }, {
                 text: "table",
-                action: () => this.showTable(),
+                action: () => this.showTable([this.xAxisData.description,
+                     this.yAxisData.description], this.defaultProvenance),
                 help: "View the data underlying this view as a table.",
             }, {
                 text: "histogram",
@@ -414,23 +413,6 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
                 exact: true, chartKind: "Heatmap", reusePage: false,
             });
         };
-    }
-
-    // show the table corresponding to the data in the heatmap
-    public showTable(): void {
-        const order =  new RecordOrder([ {
-            columnDescription: this.xAxisData.description,
-            isAscending: true,
-        }, {
-            columnDescription: this.yAxisData.description,
-            isAscending: true,
-        }]);
-        const page = this.dataset.newPage(new PageTitle("Table", "from heatmap"), this.page);
-        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, page);
-        page.setDataView(table);
-        table.schema = this.schema;
-        const rr = table.createNextKRequest(order, null, Resolution.tableRowsOnScreen);
-        rr.invoke(new NextKReceiver(page, table, rr, false, order, null));
     }
 
     public swapAxes(): void {

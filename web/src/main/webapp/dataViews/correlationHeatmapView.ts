@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-import {Groups, HistogramRequestInfo, IColumnDescription, RemoteObjectId, SampleSet} from "../javaBridge";
-import {ChartView} from "./chartView";
+import {Groups, HistogramRequestInfo, IColumnDescription, RemoteObjectId} from "../javaBridge";
+import {ChartView} from "../modules";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {ICancellable, PartialResult} from "../util";
 import {DisplayName} from "../schemaClass";
-import {BaseReceiver} from "../tableTarget";
+import {BaseReceiver} from "../modules";
 import {RpcRequest} from "../rpc";
 import {CommonArgs, ReceiverCommon} from "../ui/receiver";
 

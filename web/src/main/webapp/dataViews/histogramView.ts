@@ -21,21 +21,20 @@ import {
     Groups,
     IColumnDescription, kindIsNumeric,
     kindIsString,
-    RecordOrder,
     RemoteObjectId, RangeFilterArrayDescription,
 } from "../javaBridge";
 import {Receiver} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
 import {CDFPlot, NoCDFPlot} from "../ui/cdfPlot";
 import {IDataView} from "../ui/dataview";
-import {Dialog} from "../ui/dialog";
-import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
+import {Dialog, saveAs} from "../ui/dialog";
+import {FullPage, PageTitle} from "../ui/fullPage";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {PiePlot} from "../ui/piePlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {HtmlString, Resolution, SpecialChars} from "../ui/ui";
+import {DragEventKind, HtmlString, Resolution, SpecialChars} from "../ui/ui";
 import {
     histogramAsCsv,
     Converters,
@@ -43,14 +42,12 @@ import {
     ICancellable, makeInterval,
     PartialResult,
     percent,
-    saveAs,
     significantDigits, significantDigitsHtml, Two,
 } from "../util";
 import {AxisData} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
-import {NextKReceiver, TableView} from "./tableView";
 import {FilterReceiver, DataRangesReceiver} from "./dataRangesReceiver";
-import {BaseReceiver} from "../tableTarget";
+import {BaseReceiver} from "../modules";
 
 /**
  * A HistogramView is responsible for showing a one-dimensional histogram on the screen.
@@ -80,7 +77,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
                 },
                 {
                     text: "table",
-                    action: () => this.showTable(),
+                    action: () => this.showTable([this.xAxisData.description], this.defaultProvenance),
                     help: "Show the data underlying this histogram using a table view.",
                 },
                 {
@@ -481,22 +478,6 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
         const position = d3mouse(this.surface.getCanvas().node());
         const x = position[0];
         this.selectionCompleted(this.selectionOrigin.x, x);
-    }
-
-    // show the table corresponding to the data in the histogram
-    protected showTable(): void {
-        const newPage = this.dataset.newPage(
-            new PageTitle("Table", this.defaultProvenance), this.page);
-        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newPage);
-        newPage.setDataView(table);
-        table.schema = this.schema;
-
-        const order =  new RecordOrder([ {
-            columnDescription: this.xAxisData.description,
-            isAscending: true,
-        } ]);
-        const rr = table.createNextKRequest(order, null, Resolution.tableRowsOnScreen);
-        rr.invoke(new NextKReceiver(newPage, table, rr, false, order, null));
     }
 
     /**

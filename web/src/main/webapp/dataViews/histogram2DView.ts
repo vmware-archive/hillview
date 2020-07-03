@@ -24,16 +24,16 @@ import {
 } from "../javaBridge";
 import {Receiver, RpcRequest} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
-import {BaseReceiver, TableTargetAPI} from "../tableTarget";
+import {BaseReceiver, TableTargetAPI} from "../modules";
 import {CDFPlot} from "../ui/cdfPlot";
 import {IDataView} from "../ui/dataview";
-import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
+import {FullPage, PageTitle} from "../ui/fullPage";
 import {Histogram2DPlot} from "../ui/histogram2DPlot";
 import {HistogramLegendPlot} from "../ui/histogramLegendPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {ChartOptions, HtmlString, Resolution} from "../ui/ui";
+import {ChartOptions, DragEventKind, HtmlString, Resolution} from "../ui/ui";
 import {
     add,
     Converters,
@@ -43,7 +43,7 @@ import {
     PartialResult,
     percent,
     reorder,
-    saveAs, significantDigits,
+    significantDigits,
     significantDigitsHtml,
 } from "../util";
 import {AxisData} from "./axisData";
@@ -51,7 +51,7 @@ import {HistogramViewBase} from "./histogramViewBase";
 import {FilterReceiver, DataRangesReceiver} from "./dataRangesReceiver";
 import {Histogram2DBarsPlot} from "../ui/histogram2DBarsPlot";
 import {Histogram2DBase} from "../ui/histogram2DBase";
-import {Dialog, FieldKind} from "../ui/dialog";
+import {Dialog, FieldKind, saveAs} from "../ui/dialog";
 
 /**
  * This class is responsible for rendering a 2D histogram.
@@ -79,7 +79,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
             help: "Redraw this view",
         }, {
             text: "table",
-            action: () => this.showTable(),
+            action: () => this.showTable([this.xAxisData.description, this.yAxisData.description], this.defaultProvenance),
             help: "Show the data underlying this plot in a tabular view. ",
         }, {
             text: "exact",
@@ -666,11 +666,6 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
             relative: this.relative
         });
         rr.invoke(renderer);
-    }
-
-    // show the table corresponding to the data in the histogram
-    protected showTable(): void {
-        super.showTable([this.xAxisData.description, this.yAxisData.description], this.defaultProvenance);
     }
 }
 
