@@ -72,7 +72,7 @@ public class SSTableTest extends BaseTest{
         boolean lazyLoading = false;
         CassandraSSTableLoader ssTableLoader = new CassandraSSTableLoader(this.ssTablePath, lazyLoading);
         try {
-            int rowCount = ssTableLoader.getNumRows();
+            long rowCount = ssTableLoader.getNumRows();
             Assert.assertEquals(15, rowCount);
         } catch (Exception e) {
             e.printStackTrace();
