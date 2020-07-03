@@ -3,7 +3,6 @@ package org.hillview.dataStructures;
 import org.hillview.sketches.highorder.PostProcessedSketch;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.sketches.results.Count;
-import org.hillview.utils.Pair;
 import org.hillview.security.SecureLaplace;
 import org.hillview.table.api.ITable;
 import org.hillview.targets.DPWrapper;

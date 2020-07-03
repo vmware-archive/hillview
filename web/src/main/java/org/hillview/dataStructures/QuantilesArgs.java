@@ -27,6 +27,7 @@ import org.hillview.sketches.results.StringQuantiles;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.ITable;
 
+@SuppressWarnings("CanBeFinal")
 public class QuantilesArgs {
     // if this is String, or Json we are sampling strings
     public ColumnDescription cd = new ColumnDescription();

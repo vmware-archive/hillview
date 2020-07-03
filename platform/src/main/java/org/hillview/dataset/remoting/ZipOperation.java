@@ -20,8 +20,6 @@ package org.hillview.dataset.remoting;
 import org.hillview.dataset.api.IMap;
 import org.hillview.utils.Pair;
 
-import javax.annotation.Nullable;
-
 /**
  * Message type to initiate a zip command against two RemoteDataSets
  */

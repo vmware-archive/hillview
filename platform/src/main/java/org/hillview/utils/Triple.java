@@ -20,6 +20,7 @@ package org.hillview.utils;
 import org.hillview.dataset.api.IJson;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 
 public class Triple<T, S, V> implements IJson /* Serializable implied by IJSon */ {
     static final long serialVersionUID = 1;
@@ -44,9 +45,9 @@ public class Triple<T, S, V> implements IJson /* Serializable implied by IJSon *
 
         Triple<?, ?, ?> triple = (Triple<?, ?, ?>) o;
 
-        if ((this.first != null) ? !this.first.equals(triple.first) : (triple.first != null)) return false;
-        if ((this.second != null) ? !this.second.equals(triple.second) : (triple.second != null)) return false;
-        return (this.third != null) ? this.third.equals(triple.third) : (triple.third == null);
+        if (!Objects.equals(this.first, triple.first)) return false;
+        if (!Objects.equals(this.second, triple.second)) return false;
+        return Objects.equals(this.third, triple.third);
     }
 
     @Override

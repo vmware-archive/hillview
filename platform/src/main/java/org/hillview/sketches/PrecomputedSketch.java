@@ -20,8 +20,6 @@ package org.hillview.sketches;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.ISketchResult;
 
-import java.io.Serializable;
-
 import javax.annotation.Nullable;
 
 /**

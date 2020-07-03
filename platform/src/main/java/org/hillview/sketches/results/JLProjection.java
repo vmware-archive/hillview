@@ -23,7 +23,6 @@ import org.hillview.sketches.results.ICorrelation;
 
 import javax.annotation.Nullable;
 
-import java.io.Serializable;
 import java.security.InvalidParameterException;
 import java.util.LinkedHashMap;
 

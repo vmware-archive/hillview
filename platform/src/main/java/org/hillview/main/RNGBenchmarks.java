@@ -11,10 +11,10 @@ import java.util.ArrayList;
 import java.util.Random;
 
 public class RNGBenchmarks extends Benchmarks {
-    static double multiplier = 10.0;
-    static double eps = 0.1;
-    static double scale = multiplier / eps;
-    static Random rand = new Random(10);
+    static final double multiplier = 10.0;
+    static final double eps = 0.1;
+    static final double scale = multiplier / eps;
+    static final Random rand = new Random(10);
 
     static ArrayList<Pair<Integer, Integer>> generateRandomPairs(int nPairs, int min, int max) {
         ArrayList<Pair<Integer, Integer>> ret = new ArrayList<>();

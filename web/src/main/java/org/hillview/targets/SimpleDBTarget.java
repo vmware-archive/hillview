@@ -24,7 +24,6 @@ import org.hillview.dataset.LocalDataSet;
 import org.hillview.sketches.PrecomputedSketch;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.table.filters.RangeFilterArrayDescription;
-import org.hillview.utils.Pair;
 import org.hillview.maps.highorder.IdMap;
 import org.hillview.sketches.results.*;
 import org.hillview.storage.ColumnLimits;

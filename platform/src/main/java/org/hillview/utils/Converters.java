@@ -75,7 +75,7 @@ public class Converters {
         return data;
     }
 
-    private static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss.SSS")
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss.SSS")
             .withLocale(Locale.US)
             .withZone(ZoneId.systemDefault());
 

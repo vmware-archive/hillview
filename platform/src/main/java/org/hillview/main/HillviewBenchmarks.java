@@ -253,11 +253,11 @@ public class HillviewBenchmarks extends Benchmarks {
             String colName = s.schema.getColumnNames().get(0);
             TableSketch<DistinctStringsSketch.DistinctStrings> sk =
                     new DistinctStringsSketch(colName);
-            Runnable r = () -> data.blockingSketch(sk).getQuantiles(quantiles);
+            Runnable r = () -> Converters.checkNull(data.blockingSketch(sk)).getQuantiles(quantiles);
             runNTimes(r, runCount, "Naive " + distinct + " distinct", elementsPerPartition);
 
             SampleDistinctElementsSketch scs = new SampleDistinctElementsSketch(colName, 0, quantiles * quantiles);
-            r = () -> data.blockingSketch(scs).getLeftBoundaries(quantiles);
+            r = () -> Converters.checkNull(data.blockingSketch(scs)).getLeftBoundaries(quantiles);
             runNTimes(r, runCount, "Smart " + distinct + " distinct", elementsPerPartition);
         }
     }
@@ -305,7 +305,7 @@ public class HillviewBenchmarks extends Benchmarks {
             for (double factor : factors) {
                 int sampled = (int) (quantiles * quantiles * factor);
                 SampleDistinctElementsSketch scs = new SampleDistinctElementsSketch(colName, i, sampled);
-                Runnable r = () -> data.blockingSketch(scs).getLeftBoundaries(quantiles);
+                Runnable r = () -> Converters.checkNull(data.blockingSketch(scs)).getLeftBoundaries(quantiles);
                 runNTimes(r, runCount, "Sampled " + sampled + "/" + distinct + " distinct", elementsPerPartition);
             }
         }

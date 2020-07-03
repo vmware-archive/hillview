@@ -21,7 +21,6 @@ import org.hillview.*;
 import org.hillview.utils.*;
 import org.hillview.dataStructures.QuantilesArgs;
 import org.hillview.dataset.api.ISketch;
-import org.hillview.utils.Pair;
 import org.hillview.security.PersistedKeyLoader;
 import org.hillview.security.SecureLaplace;
 import org.hillview.sketches.PrecomputedSketch;

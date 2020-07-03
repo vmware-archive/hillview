@@ -22,6 +22,7 @@ import org.hillview.dataset.api.IJson;
 /**
  * This class represents a hostname and a port.
  */
+@SuppressWarnings("CanBeFinal")
 public class HostAndPort implements IJson {
     static final long serialVersionUID = 1;
 

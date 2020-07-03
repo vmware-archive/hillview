@@ -25,6 +25,7 @@ import org.hillview.utils.Linq;
 /**
  * Describes an array of RangeFilters and an optional complement.
  */
+@SuppressWarnings("CanBeFinal")
 public class RangeFilterArrayDescription implements ITableFilterDescription {
     public RangeFilterDescription[] filters = new RangeFilterDescription[0];
     public boolean complement;

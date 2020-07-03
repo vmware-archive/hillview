@@ -378,7 +378,7 @@ public class DPPerfBenchmarks extends Benchmarks {
                         this.allHeatmaps(col0, col1, conf);
                     }
                 }
-            } else if (false ){
+            } else if (false) {
                 // Vary number of buckets for some columns
                 if (d.equals(Dataset.Local)) {
                     ColumnDescription col = this.ontimeSchema.getDescription("FlightDate");

@@ -43,6 +43,7 @@ import java.util.List;
  * This is the most important RpcTarget, representing a remote table.
  * Almost all operations are triggered from this object.
  */
+@SuppressWarnings("CanBeFinal")
 public final class TableTarget extends TableRpcTarget {
     static final long serialVersionUID = 1;
 

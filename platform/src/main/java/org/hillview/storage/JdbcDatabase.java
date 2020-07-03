@@ -238,6 +238,7 @@ public class JdbcDatabase {
      * @param cd  Description of the column.
      * @param limits  Limits on the data to read.
      */
+    @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
     public DataRange numericDataRange(ColumnDescription cd, @Nullable ColumnLimits limits) {
         String query = this.conn.getQueryForNumericRange(cd, null, limits);
         ResultSet rs = this.getQueryResult(query);

@@ -66,7 +66,7 @@ public class RowSnapshotSet implements Serializable {
     static class SpecializedTableFilter implements ITableFilter {
         private final RowSnapshotSet set;
         private final VirtualRowSnapshot vrs;
-        private boolean includeSet;
+        private final boolean includeSet;
 
         SpecializedTableFilter(RowSnapshotSet set, boolean includeSet, ITable table) {
             this.set = set;

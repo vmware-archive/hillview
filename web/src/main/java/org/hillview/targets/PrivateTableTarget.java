@@ -4,7 +4,6 @@ import org.hillview.*;
 import org.hillview.dataStructures.*;
 import org.hillview.dataset.api.TableSketch;
 import org.hillview.sketches.highorder.*;
-import org.hillview.sketches.PrecomputedSketch;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.maps.FilterMap;
 import org.hillview.maps.ProjectMap;

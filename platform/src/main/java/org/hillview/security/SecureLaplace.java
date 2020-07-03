@@ -19,7 +19,7 @@ public class SecureLaplace {
      * For a query on a column with index I and a rectangle <x1, y1, x2, y2>,
      * scratchBytes is filled with [I, x1, y1, x2, y2].
      */
-    private Cipher aes;
+    private final Cipher aes;
 
     private static final double NORMALIZER = Math.pow(2, -53);
 
