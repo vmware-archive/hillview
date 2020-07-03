@@ -30,6 +30,7 @@ import java.util.List;
  *  It stores the k column values
  *  that hash to the minimum value.
  */
+@SuppressWarnings("CanBeFinal")
 public class MinKSet<T> extends BucketsInfo {
     static final long serialVersionUID = 1;
     

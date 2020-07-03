@@ -22,7 +22,6 @@ import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonReader;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
-import org.hillview.utils.RpcTargetAction;
 import org.hillview.utils.Utilities;
 import rx.Subscription;
 

@@ -24,5 +24,5 @@ import org.hillview.table.api.ISketchWorkspace;
  */
 public class EmptyWorkspace implements ISketchWorkspace {
     private EmptyWorkspace() {}
-    static EmptyWorkspace instance = new EmptyWorkspace();
+    static final EmptyWorkspace instance = new EmptyWorkspace();
 }

@@ -136,7 +136,7 @@ public class FileSetDescription implements IJson {
                     throw new RuntimeException(
                             "Unexpected file kind " + FileSetDescription.this.fileKind);
             }
-            return loader.load();
+            return Converters.checkNull(loader.load());
         }
 
         public long getSizeInBytes() {

@@ -20,6 +20,7 @@ package org.hillview.dataStructures;
 /**
  * Serialization of a request to compute the number of distinct items.
  */
+@SuppressWarnings("CanBeFinal")
 public class DistinctCountRequestInfo {
     public String columnName = "";
     public long seed;

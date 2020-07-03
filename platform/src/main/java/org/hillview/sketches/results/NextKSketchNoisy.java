@@ -20,11 +20,11 @@ public class NextKSketchNoisy extends PostProcessedSketch<ITable, NextKList, Nex
     @Override
     public NextKList postProcess(@Nullable NextKList r) {
         if (r == null)
-            return r;
+            return null;
         if (r.aggregates != null)
             throw new RuntimeException("Aggregates not supported in private views");
         return new NextKList(
-                r.rows, r.aggregates, r.count, r.startPosition,
+                r.rows, null, r.count, r.startPosition,
                 r.rowsScanned + Converters.toLong(this.rowCountNoise.getNoise()));
     }
 }

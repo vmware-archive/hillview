@@ -27,7 +27,6 @@ import org.hillview.dataset.api.TableSketch;
 import org.hillview.sketches.Histogram2DSketch;
 import org.hillview.sketches.results.*;
 import org.hillview.targets.TableRpcTarget;
-import org.hillview.utils.Pair;
 import org.hillview.main.Benchmarks;
 import org.hillview.maps.FindFilesMap;
 import org.hillview.maps.LoadFilesMap;
@@ -63,7 +62,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
     private static final String histogram_results_filename = "../results/ontime_private_histogram.json";
     private static final String heatmap_results_filename = "../results/ontime_private_heatmap.json";
 
-    String resultsFilename;
+    final String resultsFilename;
 
     private DPAccuracyBenchmarks(String resultsFilename) {
         this.resultsFilename = resultsFilename;
@@ -192,9 +191,10 @@ public class DPAccuracyBenchmarks extends Benchmarks {
         return info;
     }
 
-    private Pair<Double, Double> computeSingleColumnAccuracy(String col, int colIndex,
-                                                             ColumnQuantization cq, double epsilon, IDataSet<ITable> table,
-                                             int iterations) {
+    private Pair<Double, Double> computeSingleColumnAccuracy(
+            String col, int colIndex,
+            ColumnQuantization cq, double epsilon, IDataSet<ITable> table,
+            int iterations) {
         // Construct a histogram corresponding to the leaves.
         // We will manually aggregate buckets as needed for the accuracy test.
         TableRpcTarget.HistogramRequestInfo info = createHistogramRequest(col, cq);
@@ -211,6 +211,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
         for (int i = 0 ; i < iterations; i++) {
             tkl.setIndex(i);
             SecureLaplace laplace = new SecureLaplace(tkl);
+            @SuppressWarnings("ConstantConditions")
             DPHistogram<IGroup<Count>> ph = new DPHistogram<>(null, colIndex, dd, epsilon, false, laplace);
             double acc = computeAccuracy(ph, dd, laplace);
             accuracies.add(acc);

@@ -36,7 +36,7 @@ import java.util.logging.Level;
 @Ignore
 public class BaseTest {
     private static boolean initialized = false;
-    protected static boolean toPrint = false;
+    protected static final boolean toPrint = false;
 
     /**
      * Parses one string as a date.

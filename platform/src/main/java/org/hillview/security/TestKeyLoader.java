@@ -12,7 +12,7 @@ import static org.hillview.utils.Utilities.INT_SIZE;
  * TestKeyLoader provides functionality to create new random keys for use in tests that average over randomness.
  */
 public class TestKeyLoader implements KeyLoader {
-    public byte[] keyBase;
+    public final byte[] keyBase;
     public int index;
 
     public TestKeyLoader() {

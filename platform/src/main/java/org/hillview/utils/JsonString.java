@@ -20,7 +20,6 @@ package org.hillview.utils;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonParser;
-import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.IJsonSketchResult;
 
 import javax.annotation.Nullable;

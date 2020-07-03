@@ -15,8 +15,8 @@ import org.hillview.table.api.ITable;
 public class PrivateFileDescriptionTarget extends FileDescriptionTarget {
     static final long serialVersionUID = 1;
 
-    private PrivacySchema metadata;
-    private String schemaFilename;
+    private final PrivacySchema metadata;
+    private final String schemaFilename;
 
     PrivateFileDescriptionTarget(IDataSet<IFileReference> files, HillviewComputation computation, String file) {
         super(files, computation);

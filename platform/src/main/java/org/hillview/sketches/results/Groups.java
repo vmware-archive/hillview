@@ -17,7 +17,6 @@
 
 package org.hillview.sketches.results;
 
-import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.IJsonSketchResult;
 import org.hillview.dataset.api.IScalable;
 import org.hillview.dataset.api.ISketchResult;

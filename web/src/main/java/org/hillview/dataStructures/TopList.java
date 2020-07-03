@@ -17,7 +17,6 @@
 
 package org.hillview.dataStructures;
 
-import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.IJsonSketchResult;
 import org.hillview.sketches.results.NextKList;
 

@@ -62,6 +62,7 @@ public class VirtualRowSnapshotTest extends BaseTest {
         }
     }
 
+    @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
     @Test
     public void testVrsHashing() {
         final int numCols = 1;

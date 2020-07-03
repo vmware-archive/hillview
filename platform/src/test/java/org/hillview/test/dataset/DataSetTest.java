@@ -45,7 +45,7 @@ public class DataSetTest extends BaseTest {
     }
 
     public static class IntegerWrapper implements ISketchResult {
-        public Integer value;
+        public final Integer value;
 
         public IntegerWrapper(int v) { this.value = v; }
 

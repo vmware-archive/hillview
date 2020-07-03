@@ -48,7 +48,7 @@ public class AggregateDescription implements Serializable {
      * the user, but generated internally.  For example, computing Average
      * requires computing a Sum and Count.
      */
-    public boolean internal;
+    public final boolean internal;
 
     public AggregateDescription(ColumnDescription cd, AggregateKind agkind) {
         this(cd, agkind, false);

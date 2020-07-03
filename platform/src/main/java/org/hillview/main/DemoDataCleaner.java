@@ -62,6 +62,7 @@ class DemoDataCleaner {
 
                     System.out.println("Reading " + f);
                     ITable tbl = r.load();
+                    assert tbl != null;
                     ITable p = tbl.project(schema);
 
                     String end = filename.replace(prefix, "");

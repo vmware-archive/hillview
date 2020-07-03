@@ -34,7 +34,7 @@ public class PrivacyUtils {
      * Cache the confidence intervals as we will use the same CIs many times for a given table.
      * The map is {(numVariables, scale) : {alpha : (lower bound, upper bound)}}.
      */
-    public static LinkedHashMap<Pair<Integer, Double>,
+    public static final LinkedHashMap<Pair<Integer, Double>,
             LinkedHashMap<Double, Pair<Double, Double>>> CIMemo = new LinkedHashMap<>();
 
     /**

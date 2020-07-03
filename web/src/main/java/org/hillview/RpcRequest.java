@@ -24,6 +24,7 @@ import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
+import java.util.Objects;
 
 public final class RpcRequest implements IJson {
     static final long serialVersionUID = 1;
@@ -124,7 +125,7 @@ public final class RpcRequest implements IJson {
         return this.requestId == that.requestId &&
                 this.objectId.equals(that.objectId) &&
                 this.method.equals(that.method) &&
-                (this.arguments != null ? this.arguments.equals(that.arguments) : that.arguments == null);
+                (Objects.equals(this.arguments, that.arguments));
     }
 
     @Override

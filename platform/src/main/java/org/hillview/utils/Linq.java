@@ -112,8 +112,7 @@ public class Linq {
 
     public static <T, S> JsonList<S> mapToList(T[] data, Function<T, S> function) {
         JsonList<S> result = new JsonList<S>(data.length);
-        for (int i=0; i < data.length; i++)
-            result.add(function.apply(data[i]));
+        for (T datum : data) result.add(function.apply(datum));
         return result;
     }
 

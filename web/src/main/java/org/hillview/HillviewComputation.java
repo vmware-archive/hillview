@@ -54,7 +54,7 @@ public class HillviewComputation implements Serializable {
      * Announce these guys when the object with resultId has been created.
      * This field should not be serialized.
      */
-    private List<RpcTargetAction> onCreate;
+    private final List<RpcTargetAction> onCreate;
 
     public HillviewComputation(@Nullable RpcTarget.Id resultId, RpcRequest request) {
         this.id = HillviewComputation.currentId.getAndIncrement();

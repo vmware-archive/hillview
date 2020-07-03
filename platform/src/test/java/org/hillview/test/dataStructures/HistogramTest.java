@@ -26,10 +26,7 @@ import org.hillview.table.api.IAppendableColumn;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.BaseListColumn;
-import org.hillview.table.membership.FullMembershipSet;
-import org.hillview.table.columns.DoubleArrayColumn;
 import org.hillview.test.BaseTest;
-import org.hillview.test.table.DoubleArrayTest;
 import org.junit.Assert;
 import org.junit.Test;
 
