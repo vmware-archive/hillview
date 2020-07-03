@@ -166,7 +166,7 @@ public class Table extends BaseTable {
         if (!toLoad.isEmpty()) {
             if (this.columnLoader == null)
                 throw new RuntimeException("Cannot load columns dynamically");
-            List<IColumn> cols = this.columnLoader.loadColumns(toLoad);
+            List<? extends IColumn> cols = this.columnLoader.loadColumns(toLoad);
             for (IColumn c: cols)
                 this.columns.put(c.getName(), c);
         }

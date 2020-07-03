@@ -87,7 +87,7 @@ public class OrcFileLoader extends TextFileLoader {
 
     class OrcColumnLoader implements IColumnLoader {
         @Override
-        public List<IColumn> loadColumns(List<String> names) {
+        public List<? extends IColumn> loadColumns(List<String> names) {
             try {
                 boolean[] toRead = OrcFileLoader.this.project(names);
                 Reader.Options options = new Reader.Options();

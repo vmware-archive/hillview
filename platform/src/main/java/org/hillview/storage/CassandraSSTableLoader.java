@@ -213,7 +213,7 @@ public class CassandraSSTableLoader extends TextFileLoader{
         }
 
         @Override
-        public List<IColumn> loadColumns(List<String> names) {
+        public List<? extends IColumn> loadColumns(List<String> names) {
             boolean[] columnToLoad = this.getColumnMarker(names);
             ISSTableScanner currentScanner = this.ssTableReader.getScanner();
             Spliterator<UnfilteredRowIterator> splititer = Spliterators.spliteratorUnknownSize(currentScanner, 
@@ -272,7 +272,7 @@ public class CassandraSSTableLoader extends TextFileLoader{
                     Spliterator.IMMUTABLE);
                 Stream<UnfilteredRowIterator> partitions = StreamSupport.stream(splititer, false);
 
-                List<IColumn> arrColumns = this.loadColumns(columnToLoad, partitions, columnCountToLoad);
+                List<IAppendableColumn> arrColumns = this.loadColumns(columnToLoad, partitions, columnCountToLoad);
                 return new Table(arrColumns, this.ssTablePath, null);
             }
         } catch (Exception ex) {
@@ -281,7 +281,7 @@ public class CassandraSSTableLoader extends TextFileLoader{
     }
 
     /** Lazy and non-lazy loader will call this function to load specific column marked by columnToLoad */
-    private List<IColumn> loadColumns(boolean[] columnToLoad, Stream<UnfilteredRowIterator> partitions, int size) {
+    private List<IAppendableColumn> loadColumns(boolean[] columnToLoad, Stream<UnfilteredRowIterator> partitions, int size) {
         List<IAppendableColumn> columns = createColumns(columnToLoad, size);
         // Iterating each item inside the table
         partitions.forEach(partition -> {
@@ -317,6 +317,6 @@ public class CassandraSSTableLoader extends TextFileLoader{
                 }
             }
         });
-        return Linq.map(columns, e -> e);
+        return columns;
     }
 }
