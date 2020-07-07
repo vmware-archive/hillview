@@ -24,7 +24,6 @@ import java.util.List;
 import org.hillview.storage.CassandraConnectionInfo;
 import org.hillview.storage.CassandraDatabase;
 import org.hillview.storage.CassandraSSTableLoader;
-import org.hillview.storage.CassandraDatabase.CassTable;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;
@@ -41,9 +40,9 @@ public class SSTableTest extends BaseTest{
         String host = "localhost";
         String jmxPort = "7199";
         String nativePort = "9042";
-        String cassandraRootDir = "/Users/daniar/Documents/Github/cassandra";
-        String username = "cassandra";
-        String password = "cassandra";
+        String cassandraRootDir = "/tmp/cassandra";
+        String username = "";
+        String password = "";
         this.info = new CassandraConnectionInfo(cassandraRootDir, host, jmxPort,
             nativePort, username, password);
     }
@@ -130,7 +129,7 @@ public class SSTableTest extends BaseTest{
         }
     }
 
-    // @Test
+    @Test
     /** Shows the interaction between CassandraDatabase.java and CassandraSSTableLoader.java */
     public void TestCassandraDatabase() {
         try {
@@ -152,14 +151,14 @@ public class SSTableTest extends BaseTest{
                 ssTableLoader.printSchema(ssTableLoader.metadata);
 
                 ITable table = ssTableLoader.load();
-                Assert.assertEquals("Table[15x869716]", table.toString());
+                Assert.assertEquals("Table[15x5767]", table.toString());
 
                 count = ssTableLoader.getNumRows();
                 System.out.println("Count: " + count + " rows");
 
                 IColumn col = table.getLoadedColumn("origincityname");
                 String origincityname = col.getString(0);
-                Assert.assertEquals("Charlotte, NC", origincityname);
+                Assert.assertEquals("Fort Myers, FL", origincityname);
 
         } catch (Exception e) {
             // this will fail if no running Cassandra instance, but we don't want to fail the test.

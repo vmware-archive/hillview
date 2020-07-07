@@ -227,7 +227,7 @@ public class CassandraDatabase {
         s.close();
 
         if (sstablePath.isEmpty()) {
-            throw new RuntimeException("Cassandra root directory is invalid");
+            throw new RuntimeException("Failed to get SSTablePath");
         }
         return sstablePath;
     }
