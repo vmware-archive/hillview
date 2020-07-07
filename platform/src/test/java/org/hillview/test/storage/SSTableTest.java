@@ -21,7 +21,10 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
+import org.hillview.storage.CassandraConnectionInfo;
+import org.hillview.storage.CassandraDatabase;
 import org.hillview.storage.CassandraSSTableLoader;
+import org.hillview.storage.CassandraDatabase.CassTable;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;
@@ -31,7 +34,20 @@ import org.junit.Test;
 public class SSTableTest extends BaseTest{
     private final String ssTableDir = "../data/sstable/";
     private final String ssTablePath = "../data/sstable/md-2-big-Data.db";
-        
+    private final CassandraConnectionInfo info;
+
+    /** This test depends on a local data, I will update this in the future. */
+    public SSTableTest() {
+        String host = "localhost";
+        String jmxPort = "7199";
+        String nativePort = "9042";
+        String cassandraRootDir = "/Users/daniar/Documents/Github/cassandra";
+        String username = "cassandra";
+        String password = "cassandra";
+        this.info = new CassandraConnectionInfo(cassandraRootDir, host, jmxPort,
+            nativePort, username, password);
+    }
+
     @Test
     public void testSSTableComplimentaryFiles() {
         try {
@@ -51,7 +67,6 @@ public class SSTableTest extends BaseTest{
     }
 
     @Test
-
     public void testReadingSSTable() {
         boolean lazyLoading = false;
         CassandraSSTableLoader ssTableLoader = new CassandraSSTableLoader(this.ssTablePath, lazyLoading);
@@ -88,7 +103,7 @@ public class SSTableTest extends BaseTest{
         try {
             ITable table = ssTableLoader.load();
             Assert.assertNotNull(table);
-            
+
             IColumn col = table.getLoadedColumn("name");
             String firstName = col.getString(0);
             Assert.assertEquals("susi", firstName);
@@ -112,6 +127,43 @@ public class SSTableTest extends BaseTest{
             e.printStackTrace();
             // this will fail if SSTable path is not valid, but we don't want to fail the test.
             this.ignoringException("Failed to read SSTable (" + this.ssTablePath + ")", e);
+        }
+    }
+
+    // @Test
+    /** Shows the interaction between CassandraDatabase.java and CassandraSSTableLoader.java */
+    public void TestCassandraDatabase() {
+        try {
+            // Connecting to Cassandra node and get some data
+                CassandraDatabase cassDB = new CassandraDatabase(this.info);
+                cassDB.loadKeyspacesAndTables();
+                cassDB.printCassTables();
+                cassDB.loadTablePartition("cassdb");
+                cassDB.printTablePartition();
+                long count = cassDB.getRowCount("cassDB", "flights");
+                System.out.println("Count: " + count + " rows");
+
+                String ssTablePath = cassDB.getSSTablePath("cassdb", "flights");
+                System.out.println("SSTable path: " + ssTablePath);
+
+            // Reading the SSTable of flights data
+                boolean lazyLoading = true;
+                CassandraSSTableLoader ssTableLoader = new CassandraSSTableLoader(ssTablePath, lazyLoading);
+                ssTableLoader.printSchema(ssTableLoader.metadata);
+
+                ITable table = ssTableLoader.load();
+                Assert.assertEquals("Table[15x869716]", table.toString());
+
+                count = ssTableLoader.getNumRows();
+                System.out.println("Count: " + count + " rows");
+
+                IColumn col = table.getLoadedColumn("origincityname");
+                String origincityname = col.getString(0);
+                Assert.assertEquals("Charlotte, NC", origincityname);
+
+        } catch (Exception e) {
+            // this will fail if no running Cassandra instance, but we don't want to fail the test.
+            this.ignoringException("Failed to connect to local cassandra", e);
         }
     }
 }

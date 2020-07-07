@@ -22,9 +22,7 @@ import org.hillview.table.columns.BaseListColumn;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.Table;
-import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
-import org.hillview.utils.Linq;
 
 import org.apache.cassandra.utils.FBUtilities;
 import org.apache.cassandra.config.CFMetaData;
@@ -63,8 +61,7 @@ public class CassandraSSTableLoader extends TextFileLoader{
     IAppendableColumn[] columns;
 
     public boolean lazyLoading;
-    private long rowCount;
-    private final CFMetaData metadata;
+    public final CFMetaData metadata;
     private final SSTableReader ssTableReader;
 
     static{
@@ -84,7 +81,7 @@ public class CassandraSSTableLoader extends TextFileLoader{
             // Get the schema of the current SSTable
             this.actualSchema = this.getSchema(this.metadata);
         } catch (Exception e) {
-            HillviewLogger.instance.error("Failed initializing Metadata and SStable partitions, " 
+            HillviewLogger.instance.error("Failed initializing Metadata and SStable partitions, "
                 + this.ssTablePath);
             throw new RuntimeException(e);
         }
@@ -216,7 +213,7 @@ public class CassandraSSTableLoader extends TextFileLoader{
         public List<? extends IColumn> loadColumns(List<String> names) {
             boolean[] columnToLoad = this.getColumnMarker(names);
             ISSTableScanner currentScanner = this.ssTableReader.getScanner();
-            Spliterator<UnfilteredRowIterator> splititer = Spliterators.spliteratorUnknownSize(currentScanner, 
+            Spliterator<UnfilteredRowIterator> splititer = Spliterators.spliteratorUnknownSize(currentScanner,
                 Spliterator.IMMUTABLE);
             Stream<UnfilteredRowIterator> partitions = StreamSupport.stream(splititer, false);
 
@@ -226,7 +223,7 @@ public class CassandraSSTableLoader extends TextFileLoader{
 
     public long getNumRows() {
         ISSTableScanner currentScanner = this.ssTableReader.getScanner();
-        Spliterator<UnfilteredRowIterator> splititer = Spliterators.spliteratorUnknownSize(currentScanner, 
+        Spliterator<UnfilteredRowIterator> splititer = Spliterators.spliteratorUnknownSize(currentScanner,
             Spliterator.IMMUTABLE);
         Stream<UnfilteredRowIterator> partitions = StreamSupport.stream(splititer, false);
         return partitions.count();
@@ -258,7 +255,7 @@ public class CassandraSSTableLoader extends TextFileLoader{
                     cds.add(cd);
                 }
                 assert this.actualSchema != null;
-                IColumnLoader loader = new CassandraSSTableLoader.SSTableColumnLoader(this.ssTableReader, 
+                IColumnLoader loader = new CassandraSSTableLoader.SSTableColumnLoader(this.ssTableReader,
                     this.actualSchema);
                 return Table.createLazyTable(cds, size, this.filename, loader);
             } else {
@@ -268,7 +265,7 @@ public class CassandraSSTableLoader extends TextFileLoader{
                 Arrays.fill(columnToLoad, Boolean.TRUE);
 
                 ISSTableScanner currentScanner = this.ssTableReader.getScanner();
-                Spliterator<UnfilteredRowIterator> splititer = Spliterators.spliteratorUnknownSize(currentScanner, 
+                Spliterator<UnfilteredRowIterator> splititer = Spliterators.spliteratorUnknownSize(currentScanner,
                     Spliterator.IMMUTABLE);
                 Stream<UnfilteredRowIterator> partitions = StreamSupport.stream(splititer, false);
 
@@ -303,7 +300,7 @@ public class CassandraSSTableLoader extends TextFileLoader{
                                 value = cellType.getSerializer().deserialize(cell.value());
                             } else {
                                 // Hillview won't process the complex data
-                                throw new RuntimeException("[Hillview can't convert complex data]");
+                                throw new RuntimeException("Hillview can't convert complex data");
                             }
                             col = columns.get(currentColumn);
                             col.append(value);
