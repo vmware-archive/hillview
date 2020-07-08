@@ -182,7 +182,7 @@ public class ParquetFileLoader extends TextFileLoader {
 
     public class ParquetColumnLoader implements IColumnLoader {
         @Override
-        public List<IColumn> loadColumns(List<String> names) {
+        public List<? extends IColumn> loadColumns(List<String> names) {
             FileMetaData fm = ParquetFileLoader.this.metadata.getFileMetaData();
             MessageType schema = fm.getSchema();
             List<Type> list = new ArrayList<Type>();

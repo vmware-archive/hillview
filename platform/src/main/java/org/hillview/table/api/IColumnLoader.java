@@ -25,5 +25,5 @@ public interface IColumnLoader {
      * @param names  Column names to load.
      * @return       The loaded columns.
      */
-    List<IColumn> loadColumns(List<String> names);
+    List<? extends IColumn> loadColumns(List<String> names);
 }
