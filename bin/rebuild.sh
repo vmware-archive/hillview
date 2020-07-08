@@ -36,9 +36,11 @@ while getopts shta FLAG; do
    esac
 done
 
-pushd ${mydir}/../cassandra-shaded
-mvn install
-popd
+if [ x${TOOLSARGS} != "x" ]; then
+   pushd ${mydir}/../cassandra-shaded
+   mvn install
+   popd
+fi
 export MAVEN_OPTS="-Xmx2048M"
 pushd ${mydir}/../platform
 mvn ${TOOLSARGS} ${TESTARGS} clean install
