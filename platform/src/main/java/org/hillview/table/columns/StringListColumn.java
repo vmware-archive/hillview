@@ -136,8 +136,6 @@ public class StringListColumn extends BaseListColumn implements IStringColumn {
 
     @Override
     public void append(@Nullable String value) {
-        if (value != null)
-            value = value.intern();
         int segmentId = this.size >> LogSegmentSize;
         final int localIndex = this.size & SegmentMask;
 

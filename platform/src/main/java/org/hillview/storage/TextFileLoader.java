@@ -50,7 +50,7 @@ public abstract class TextFileLoader {
     @Nullable
     private String currentToken;
     boolean allowFewerColumns;
-    boolean traceProgress = false;  // for debugging
+    final boolean traceProgress = false;  // for debugging
 
     // Some of these may be null
     @Nullable
