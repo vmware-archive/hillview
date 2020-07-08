@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2020 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,36 +17,28 @@
 
 package org.hillview.storage;
 
-import java.io.Serializable;
-import javax.annotation.Nullable;
-
-public class CassandraConnectionInfo implements Serializable {
+public class CassandraConnectionInfo extends JdbcConnectionInformation {
     static final long serialVersionUID = 1;
 
-    public String host;
     // Port for establising probe connection
-    public String jmxPort;
-    // Port for opening client connection
-    public String nativePort;
+    public int jmxPort;
     public String cassandraRootDir;
-    @Nullable
-    public String username;
-    @Nullable
-    public String password;
 
-    public CassandraConnectionInfo(String cassandraRootDir, String host, String jmxPort, String nativePort, String... auth){
+    public CassandraConnectionInfo (String cassandraRootDir, String host, int jmxPort,
+        int nativePort, String keyspace, String table, String user, String password){
         this.cassandraRootDir = cassandraRootDir;
         this.host = host;
         this.jmxPort = jmxPort;
-        this.nativePort = nativePort;
-        if (auth.length == 2){
-            this.username = auth[0];
-            this.password = auth[1];
-        }
+        this.port = nativePort;
+        this.database = keyspace;
+        this.table = table;
+        this.databaseKind = "Cassandra";
+        this.user = user;
+        this.password = password;
     }
 
     @Override
     public String toString() {
-        return this.cassandraRootDir + "/" + this.nativePort;
+        return this.cassandraRootDir + "/" + this.port;
     }
 }

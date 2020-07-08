@@ -73,7 +73,7 @@ INSERT INTO users (id, name, address,
 
 
 CREATE TABLE flights(
-   uuid UUID PRIMARY KEY,
+   ID int PRIMARY KEY,
    actualelapsedtime float,
    arrdelay float,
    arrtime int,
@@ -91,4 +91,4 @@ CREATE TABLE flights(
    uniquecarrier text
    );
 
-COPY CassDB.flights (UUID,DayOfWeek,FlightDate,UniqueCarrier,Origin,OriginCityName,OriginState,Dest,DestState,DepTime,DepDelay,ArrTime,ArrDelay,Cancelled,ActualElapsedTime,Distance) FROM '/Users/daniar/Documents/GitPR/hillview/bin/../data/sstable/flights_sample.csv' WITH DELIMITER=',' AND HEADER=TRUE; exit;
+COPY CassDB.flights (ID,DayOfWeek,FlightDate,UniqueCarrier,Origin,OriginCityName,OriginState,Dest,DestState,DepTime,DepDelay,ArrTime,ArrDelay,Cancelled,ActualElapsedTime,Distance)  FROM '/Users/daniar/Documents/GitPR/hillview/bin/../data/sstable/flights_data.csv' WITH DELIMITER=',' AND HEADER=TRUE; exit;

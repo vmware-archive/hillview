@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2020 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,13 +38,16 @@ public class SSTableTest extends BaseTest{
     /** This test depends on a local data, I will update this in the future. */
     public SSTableTest() {
         String host = "localhost";
-        String jmxPort = "7199";
-        String nativePort = "9042";
+        int jmxPort = 7199;
+        int nativePort = 9042;
+        // The directory where cassandra is installed, check bin/install-cassandra.sh
         String cassandraRootDir = "/tmp/cassandra";
+        String database = "cassdb";
+        String table = "flights";
         String username = "";
         String password = "";
         this.info = new CassandraConnectionInfo(cassandraRootDir, host, jmxPort,
-            nativePort, username, password);
+            nativePort, database, table, username, password);
     }
 
     @Test
@@ -135,30 +138,18 @@ public class SSTableTest extends BaseTest{
         try {
             // Connecting to Cassandra node and get some data
                 CassandraDatabase cassDB = new CassandraDatabase(this.info);
-                cassDB.loadKeyspacesAndTables();
-                cassDB.printCassTables();
-                cassDB.loadTablePartition("cassdb");
-                cassDB.printTablePartition();
-                long count = cassDB.getRowCount("cassDB", "flights");
-                System.out.println("Count: " + count + " rows");
-
-                String ssTablePath = cassDB.getSSTablePath("cassdb", "flights");
-                System.out.println("SSTable path: " + ssTablePath);
-
+                String ssTablePath = cassDB.getSSTablePath();
+                assert ssTablePath != null;
             // Reading the SSTable of flights data
                 boolean lazyLoading = true;
                 CassandraSSTableLoader ssTableLoader = new CassandraSSTableLoader(ssTablePath, lazyLoading);
-                ssTableLoader.printSchema(ssTableLoader.metadata);
 
                 ITable table = ssTableLoader.load();
-                Assert.assertEquals("Table[15x5767]", table.toString());
-
-                count = ssTableLoader.getNumRows();
-                System.out.println("Count: " + count + " rows");
+                Assert.assertEquals("Table[15x100]", table.toString());
 
                 IColumn col = table.getLoadedColumn("origincityname");
                 String origincityname = col.getString(0);
-                Assert.assertEquals("Fort Myers, FL", origincityname);
+                Assert.assertEquals("Dallas/Fort Worth, TX", origincityname);
 
         } catch (Exception e) {
             // this will fail if no running Cassandra instance, but we don't want to fail the test.
