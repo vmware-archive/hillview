@@ -66,8 +66,6 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
         protected shape: TrellisShape,
         page: FullPage) {
         super(remoteObjectId, rowCount, schema, shape, page, "TrellisQuartiles");
-        this.topLevel = document.createElement("div");
-        this.topLevel.className = "chart";
         this.hps = [];
         this.data = null;
 

@@ -307,13 +307,16 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
 
         switch (this.options.chartKind) {
             case "CorrelationHeatmaps": {
+                if (this.title == null)
+                    this.title = new PageTitle(
+                        "Pairwise correlations between " + ranges.length + " columns", this.provenance);
                 const colCount = ranges.length;
                 if (colCount < 1) {
                     this.page.reportError("Not enough columns");
                     return;
                 }
                 const width = chartSize.width / (colCount - 1);
-                const pixels = width / Resolution.minDotSize;
+                const pixels = Math.floor(width / Resolution.minDotSize);
                 // noinspection JSSuspiciousNameCombination
                 const size = { width: width, height: width };
                 const histoArgs = zip(this.cds, ranges,
@@ -321,7 +324,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                         DataRangesReceiver.computeHistogramArgs(c, r, pixels, true, size));
                 const rr = this.originator.createCorrelationHeatmapRequest(histoArgs);
                 const common = this.commonArgs();
-                rr.invoke(new CorrelationHeatmapReceiver(common, histoArgs, this.cds, rr));
+                rr.invoke(new CorrelationHeatmapReceiver(common, histoArgs, rr));
                 break;
             }
             case "QuartileVector": {

@@ -66,9 +66,6 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
         this.xAxisData = null;
         this.yAxisData = null;
         this.hps = [];
-        this.topLevel = document.createElement("div");
-        this.topLevel.classList.add("chart");
-
         this.menu = new TopMenu([this.exportMenu(),
             { text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
                 { text: "refresh",

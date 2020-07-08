@@ -74,6 +74,9 @@ export abstract class ChartView<D> extends BigTableView {
                           page: FullPage,
                           viewKind: ViewKind) {
         super(remoteObjectId, rowCount, schema, page, viewKind);
+        this.topLevel = document.createElement("div");
+        this.topLevel.className = "chart";
+
         this.dragging = false;
         this.moved = false;
         this.selectionOrigin = null;
@@ -100,9 +103,6 @@ export abstract class ChartView<D> extends BigTableView {
     protected abstract export(): void;
 
     protected createChartDiv(): HTMLDivElement {
-        this.topLevel = document.createElement("div");
-        this.topLevel.className = "chart";
-
         const chartDiv = document.createElement("div");
         this.topLevel.appendChild(chartDiv);
         chartDiv.style.display = "flex";
