@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2020 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,9 +18,13 @@
 package org.hillview.test.storage;
 
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 
+import org.hillview.storage.CassandraConnectionInfo;
+import org.hillview.storage.CassandraDatabase;
 import org.hillview.storage.CassandraSSTableLoader;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
@@ -29,9 +33,29 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class SSTableTest extends BaseTest{
+    /* The directory where cassandra is installed (check bin/install-cassandra.sh) */
+    private final String cassandraRootDir = "/tmp/cassandra";
     private final String ssTableDir = "../data/sstable/";
     private final String ssTablePath = "../data/sstable/md-2-big-Data.db";
-        
+    private final CassandraConnectionInfo conn;
+    CassandraDatabase cassDB;
+
+    /** This test depends on a local data, I will update this in the future. */
+    public SSTableTest() {
+        this.conn = new CassandraConnectionInfo();
+        this.conn.cassandraRootDir = cassandraRootDir;
+        this.conn.host = "localhost";
+        this.conn.jmxPort = 7199;
+        this.conn.port = 9042;
+        this.conn.database = "cassdb";
+        this.conn.table = "flights";
+        this.conn.databaseKind = "Cassandra";
+        this.conn.user = "";
+        this.conn.password = "";
+        this.conn.lazyLoading = true;
+        this.cassDB = new CassandraDatabase(this.conn);
+    }
+
     @Test
     public void testSSTableComplimentaryFiles() {
         try {
@@ -51,7 +75,6 @@ public class SSTableTest extends BaseTest{
     }
 
     @Test
-
     public void testReadingSSTable() {
         boolean lazyLoading = false;
         CassandraSSTableLoader ssTableLoader = new CassandraSSTableLoader(this.ssTablePath, lazyLoading);
@@ -88,7 +111,7 @@ public class SSTableTest extends BaseTest{
         try {
             ITable table = ssTableLoader.load();
             Assert.assertNotNull(table);
-            
+
             IColumn col = table.getLoadedColumn("name");
             String firstName = col.getString(0);
             Assert.assertEquals("susi", firstName);
@@ -112,6 +135,38 @@ public class SSTableTest extends BaseTest{
             e.printStackTrace();
             // this will fail if SSTable path is not valid, but we don't want to fail the test.
             this.ignoringException("Failed to read SSTable (" + this.ssTablePath + ")", e);
+        }
+    }
+
+    @Test
+    /** Checking whether the given cassandra root is exist and contains bin directory */
+    public void TestCassandraDirectory(){
+        // If this test failed, then cassandraRootDir must be updated to a valid path
+        Path cassandraRootDir = Paths.get(this.conn.cassandraRootDir);
+        Path cassandraBinaryDir = Paths.get(this.conn.cassandraRootDir + "/bin");
+        Assert.assertEquals(true, cassandraRootDir.toFile().isDirectory());
+        Assert.assertEquals(true, cassandraBinaryDir.toFile().isDirectory());
+    }
+
+    @Test
+    /** Shows the interaction between CassandraDatabase.java and CassandraSSTableLoader.java */
+    public void TestCassandraDatabase() {
+        try {
+            // Connecting to Cassandra node and get some data
+                String ssTablePath = this.cassDB.getSSTablePath();
+                Assert.assertEquals(true, ssTablePath.endsWith(CassandraDatabase.ssTableFileMarker));
+            // Reading the SSTable of flights data
+                CassandraSSTableLoader ssTableLoader = new CassandraSSTableLoader(ssTablePath, this.conn.lazyLoading);
+
+                ITable table = ssTableLoader.load();
+                Assert.assertEquals("Table[15x100]", table.toString());
+
+                IColumn col = table.getLoadedColumn("origincityname");
+                String origincityname = col.getString(0);
+                Assert.assertEquals("Dallas/Fort Worth, TX", origincityname);
+        } catch (Exception e) {
+            // this will fail if no running Cassandra instance, but we don't want to fail the test.
+            this.ignoringException("Failed connecting to local cassandra", e);
         }
     }
 }
