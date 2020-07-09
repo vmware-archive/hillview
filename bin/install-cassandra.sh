@@ -1,46 +1,37 @@
+#!/bin/bash
+# This script will install Cassandra at $CASSANDRA_INSTALLATION_DIR/cassandra/ and start it. The process is as follows:
+# 1. Download apache-cassandra-$CASSANDRA_VERSION-bin.tar.gz (if not exist) and then extract it
+# 2. Start Cassandra instance locally
+# 3. Waiting the initialization to complete for 15 seconds
+
 SAVEDIR=$PWD
-# Change this ROOR_DIR to your preferred instalation directory, and make sure to update cassandraRootDir at SSTableTest.java
-ROOT_DIR="/tmp/"
+# Change this to your preferred installation directory, and make sure to update cassandraRootDir at SSTableTest.java
+CASSANDRA_INSTALLATION_DIR="/tmp"
+CASSANDRA_VERSION="3.11.6"
 
-[ -e $ROOT_DIR/apache-cassandra-3.11.6-bin.tar.gz ] && rm $ROOT_DIR/apache-cassandra-3.11.6-bin.tar.gz
-[ -e $ROOT_DIR/cassandra ] && rm -rf $ROOT_DIR/cassandra
+# Download Cassandra and extract it to $CASSANDRA_INSTALLATION_DIR/cassandra
 
-# Download Cassandra to $ROOT_DIR
-wget https://downloads.apache.org/cassandra/3.11.6/apache-cassandra-3.11.6-bin.tar.gz -O $ROOT_DIR/apache-cassandra-3.11.6-bin.tar.gz
-tar xzvf $ROOT_DIR/apache-cassandra-3.11.6-bin.tar.gz -C $ROOT_DIR
-mv $ROOT_DIR/apache-cassandra-3.11.6 $ROOT_DIR/cassandra
-mkdir $ROOT_DIR/cassandra/logs
+if [ ! -d $CASSANDRA_INSTALLATION_DIR"/cassandra" ]; then
+    # Only download/extract when cassandra/ doesn't exist
+    [[ -f $CASSANDRA_INSTALLATION_DIR/apache-cassandra-$CASSANDRA_VERSION-bin.tar.gz ]] || wget https://downloads.apache.org/cassandra/$CASSANDRA_VERSION/apache-cassandra-$CASSANDRA_VERSION-bin.tar.gz -O $CASSANDRA_INSTALLATION_DIR/apache-cassandra-$CASSANDRA_VERSION-bin.tar.gz
+    [[ -d $CASSANDRA_INSTALLATION_DIR/cassandra ]] || { tar xzvf $CASSANDRA_INSTALLATION_DIR/apache-cassandra-$CASSANDRA_VERSION-bin.tar.gz -C $CASSANDRA_INSTALLATION_DIR ; mv $CASSANDRA_INSTALLATION_DIR/apache-cassandra-$CASSANDRA_VERSION $CASSANDRA_INSTALLATION_DIR/cassandra ; }
+fi
+
+# Create a logging directory for Cassandra
+[[ -d $CASSANDRA_INSTALLATION_DIR/cassandra/logs ]] || mkdir $CASSANDRA_INSTALLATION_DIR/cassandra/logs
 
 # Install Java 8 [Run this if you don't have it]
 # sudo apt-get update
 # printf "Y" | sudo apt-get install openjdk-8-jdk
 
 # Start Cassandra
-$ROOT_DIR/cassandra/bin/cassandra
+$CASSANDRA_INSTALLATION_DIR/cassandra/bin/cassandra
 
-# Generate 100 flights data (adding unique primary key) from the existing one
-python3 ../data/sstable/generate-data.py
-
-echo "Waiting for 10s to let Cassandra finish the initialization"
-sleep 10
-
-# Check Cassandra status
-$ROOT_DIR/cassandra/bin/nodetool status
-
-# Load data to Cassandra
-if [[ $(wc -l < ../data/sstable/cassdb.cql) -le 93 ]]; then
-    # this will append a relative path to load the csv data
-    echo " FROM '$SAVEDIR/../data/sstable/flights_data.csv' WITH DELIMITER=',' AND HEADER=TRUE; exit;" >> ../data/sstable/cassdb.cql
-fi
-
-$ROOT_DIR/cassandra/bin/cqlsh --file ../data/sstable/cassdb.cql
-
-# Force Compaction to put the data into sstable
-$ROOT_DIR/cassandra/bin/nodetool flush
-$ROOT_DIR/cassandra/bin/nodetool compact cassdb
+echo "Waiting for 15s to let Cassandra finish the initialization"
+sleep 15
 echo "============================================================================"
 echo "Cassandra is successfully installed !"
 echo "When done testing, kill Cassandra using: 'pgrep -f cassandra | xargs kill -9'"
-echo "Set cassandraRootDir at SSTableTest.java to '$ROOT_DIR/cassandra'"
+echo "Set cassandraRootDir at SSTableTest.java to '$CASSANDRA_INSTALLATION_DIR/cassandra'"
 
 cd ${SAVEDIR}
