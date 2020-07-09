@@ -9,11 +9,6 @@ source ../../bin/lib.sh
 # Prepare the data
 ./generate-data.py
 
-# this will append a relative path to load the csv data
-if [[ $(wc -l < cassdb.cql) -le 93 ]]; then
-    echo " FROM '$SAVEDIR/flights_data.csv' WITH DELIMITER=',' AND HEADER=TRUE; exit;" >> cassdb.cql
-fi
-
 # insert the data to Cassandra 
 $CASSANDRA_INSTALLATION_DIR/cassandra/bin/cqlsh --file $SAVEDIR/cassdb.cql
 
