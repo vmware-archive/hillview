@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-import {Groups, HistogramRequestInfo, IColumnDescription, RemoteObjectId} from "../javaBridge";
-import {ChartView} from "../modules";
+import {BucketsInfo, Groups, HistogramRequestInfo, RemoteObjectId} from "../javaBridge";
+import {BaseReceiver, ChartView} from "../modules";
 import {FullPage, PageTitle} from "../ui/fullPage";
-import {ICancellable, PartialResult} from "../util";
+import {assert, ICancellable, makeInterval, PartialResult, truncate, zip} from "../util";
 import {DisplayName} from "../schemaClass";
 import {RpcRequest} from "../rpc";
 import {CommonArgs, ReceiverCommon} from "../ui/receiver";
@@ -29,10 +29,53 @@ import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {Point, Resolution} from "../ui/ui";
 import {ColorMapKind, HeatmapLegendPlot} from "../ui/heatmapLegendPlot";
 import {HeatmapPlot} from "../ui/heatmapPlot";
+import {AxisData, AxisKind} from "./axisData";
+import {mouse as d3mouse} from "d3-selection";
+import {TextOverlay} from "../ui/textOverlay";
 
 export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> {
-    constructor(args: CommonArgs, page: FullPage) {
+    private legendSurface: HtmlPlottingSurface;
+    private readonly legendDiv: HTMLDivElement;
+    private colorLegend: HeatmapLegendPlot;
+    protected hps: HeatmapPlot[];
+    protected surfaces: PlottingSurface[];
+    protected xAxes: AxisData[];
+    protected yAxes: AxisData[];
+    protected chartSize: number;
+    protected headerHeight: number;
+    /**
+     * Coordinates of each surface within the canvas.
+     */
+    protected coordinates: Point[];
+
+    constructor(args: CommonArgs, protected histoArgs: HistogramRequestInfo[],
+                protected ranges: BucketsInfo[], page: FullPage) {
         super(args.remoteObjectId.remoteObjectId, args.rowCount, args.schema, page, "CorrelationHeatmaps")
+        this.menu = new TopMenu([this.exportMenu(),
+            { text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
+                    { text: "refresh",
+                        action: () => this.refresh(),
+                        help: "Redraw this view.",
+                    }
+                ]) },
+            this.dataset.combineMenu(this, page.pageId),
+        ]);
+        this.page.setMenu(this.menu);
+        this.legendDiv = this.makeToplevelDiv();
+        this.xAxes = zip(this.histoArgs, this.ranges,
+            (h, r) => new AxisData(h.cd, r, h.bucketCount));
+        // exact same code, but the resolution will be different
+        this.yAxes = zip(this.histoArgs, this.ranges,
+            (h, r) => new AxisData(h.cd, r, h.bucketCount));
+    }
+
+    public static reconstruct(ser: CorrelationHeatmapSerialization, page: FullPage): IDataView {
+        // TODO
+        return null;
+    }
+
+    public serialize(): IViewSerialization {
+        return null;
     }
 
     protected export(): void {
@@ -46,11 +89,47 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
     }
 
     protected onMouseMove(): void {
-        // TODO
+        const charts = this.histoArgs.length - 1;
+        const position = d3mouse(this.surface.getCanvas().node());
+        const x = position[0] - this.surface.leftMargin;
+        const y = position[1] - this.surface.topMargin - this.headerHeight;
+        if (x < 0 || x > charts * this.chartSize) {
+            this.pointDescription.show(false);
+            return;
+        }
+        if (y < 0 || y > charts * this.chartSize) {
+            this.pointDescription.show(false);
+            return;
+        }
+
+        const chartXIndex = Math.floor(x / this.chartSize);
+        const chartYIndex = Math.floor(y / this.chartSize);
+        const chartX = x - chartXIndex * this.chartSize;
+        const chartY = y - chartYIndex * this.chartSize;
+        if (chartYIndex > chartXIndex) {
+            this.pointDescription.show(false);
+            return;
+        }
+
+        let plotIndex = 0;
+        for (let i = 0; i < chartYIndex; i++) {
+            plotIndex += charts - i;
+        }
+        plotIndex += chartXIndex - chartYIndex;
+        const plot = this.hps[plotIndex];
+        const value = plot.getCount(chartX, chartY);
+        const xs = this.xAxes[chartXIndex].invert(chartX);
+        const xname = this.xAxes[chartXIndex + 1].description.name;
+        const yname = this.yAxes[chartYIndex].description.name;
+        const ys = this.yAxes[chartYIndex].invert(chartY);
+        this.pointDescription.show(true);
+        const p = d3mouse(this.surface.getCanvas().node());
+        this.pointDescription.update([xname, yname, xs, ys, makeInterval(value)],
+            p[0], p[1]);
     }
 
     refresh(): void {
-        // TODO
+        this.updateView(this.data, true);
     }
 
     resize(): void {
@@ -72,7 +151,6 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
             this.colorLegend = new HeatmapLegendPlot(
                 this.legendSurface, (xl, xr) =>
                     this.colorLegend.emphasizeRange(xl, xr));
-            this.colorLegend.setColorMapKind(ColorMapKind.Grayscale);
             this.colorLegend.setColorMapChangeEventListener(
                 () => this.updateView(this.data, true));
         }
@@ -85,17 +163,18 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
         this.surfaces = [];
         this.coordinates = [];
         const windows = this.histoArgs.length - 1;
-        const chartWidth = Math.round(this.surface.getActualChartSize().width / windows);
-        const headerHeight = Resolution.lineHeight;
+        this.chartSize = Math.round(this.surface.getActualChartSize().width / windows);
+        this.headerHeight = Resolution.lineHeight;
+
         // noinspection JSSuspiciousNameCombination
-        const chartHeight = chartWidth;
+        const chartHeight = this.chartSize;
         for (let y = 0; y < this.histoArgs.length; y++) {
             for (let x = y + 1; x < this.histoArgs.length; x++) {
-                const xCorner = this.surface.leftMargin + (x - 1) * chartWidth;
+                const xCorner = this.surface.leftMargin + (x - 1) * this.chartSize;
                 const yCorner = y * chartHeight
-                    + headerHeight + this.surface.topMargin;
+                    + this.headerHeight + this.surface.topMargin;
                 const surface = this.surface.createChildSurface(xCorner, yCorner, {
-                    width: chartWidth,
+                    width: this.chartSize,
                     height: chartHeight,
                     topMargin: 0,
                     leftMargin: 0,
@@ -113,12 +192,12 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
         for (let x = 1; x < this.histoArgs.length; x++) {
             const title = this.histoArgs[x].cd.name;
             const canvas = this.surface.getCanvas();
-            const xCorner = this.surface.leftMargin + (x - 1) * chartWidth;
+            const xCorner = this.surface.leftMargin + (x - 1) * this.chartSize;
             canvas.append("text")
                 .text(truncate(title, 20))
                 .attr("class", "trellisTitle")
-                .attr("x", xCorner + chartWidth / 2)
-                .attr("y", (headerHeight / 2))
+                .attr("x", xCorner + this.chartSize / 2)
+                .attr("y", (this.headerHeight / 2))
                 .attr("text-anchor", "middle")
                 .attr("dominant-baseline", "middle")
                 .append("title")
@@ -128,7 +207,7 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
             const title = this.histoArgs[i].cd.name;
             const canvas = this.surface.getCanvas();
             const x = this.surface.leftMargin / 2;
-            const y = i * chartHeight + headerHeight + this.surface.topMargin + chartHeight / 2;
+            const y = i * chartHeight + this.headerHeight + this.surface.topMargin + chartHeight / 2;
             canvas.append("text")
                 .text(truncate(title, 20))
                 .attr("class", "trellisTitle")
@@ -149,12 +228,22 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
         this.createNewSurfaces(keepColorMap);
         assert(this.histoArgs.length * (this.histoArgs.length - 1) / 2 === data.length);
         const charts = this.histoArgs.length;
+        this.setupMouse();
+        this.pointDescription = new TextOverlay(this.surface.getCanvas(),
+            this.surface.getActualChartSize(),
+            ["X", "Y", "x", "y", "count"], 40);
+
+        for (const a of this.xAxes)
+            a.setResolution(this.chartSize, AxisKind.Bottom, PlottingSurface.bottomMargin);
+        for (const a of this.yAxes)
+            a.setResolution(this.chartSize, AxisKind.Left, PlottingSurface.leftMargin);
 
         let max = 0;
         let index = 0;
         for (let y = 0; y < charts; y++) {
             for (let x = y + 1; x < charts; x++) {
-                this.hps[index].setData({first: data[index], second: null}, null, null,
+                this.hps[index].setData({first: data[index], second: null},
+                    this.xAxes[x],  this.yAxes[y],
                     this.schema, 0, this.isPrivate());
                 max = Math.max(max, this.hps[index].getMaxCount());
                 index++;
@@ -162,10 +251,30 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
         }
 
         this.colorLegend.setData({first: 1, second: max });
+        if (!keepColorMap)
+            this.colorLegend.setColorMapKind(ColorMapKind.Grayscale);
         this.colorLegend.draw();
         for (const plot of this.hps) {
             plot.draw();
             plot.border(1);
+        }
+
+        for (let i = 0; i < charts - 1; i++) {
+            const gx = this.surface
+                .getCanvas()
+                .append("g")
+                .attr("class", "x-axis")
+                .attr("transform", `translate(
+                    ${this.surface.leftMargin + i * this.chartSize}, 
+                    ${this.surface.topMargin + this.headerHeight + this.chartSize * (charts - 1)})`);
+            this.xAxes[i + 1].axis.draw(gx);
+            const gy = this.surface.getCanvas()
+                .append("g")
+                .attr("class", "y-axis")
+                .attr("transform", `translate(
+                    ${this.surface.leftMargin},
+                    ${this.surface.topMargin + this.headerHeight + i * this.chartSize})`);
+            this.yAxes[i].axis.draw(gy);
         }
     }
 }
@@ -173,10 +282,10 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
 export class CorrelationHeatmapReceiver extends ReceiverCommon<Groups<Groups<number>>[]> {
     protected view: CorrelationHeatmapView;
 
-    constructor(common: CommonArgs, histoArgs: HistogramRequestInfo[], cds: IColumnDescription[],
+    constructor(common: CommonArgs, histoArgs: HistogramRequestInfo[], ranges: BucketsInfo[],
                 operation: RpcRequest<PartialResult<Groups<Groups<number>>[]>>) {
         super(common, operation, "correlations")
-        this.view = new CorrelationHeatmapView(this.args, this.page);
+        this.view = new CorrelationHeatmapView(this.args, histoArgs, ranges, this.page);
         this.page.setDataView(this.view);
     }
 
@@ -184,7 +293,7 @@ export class CorrelationHeatmapReceiver extends ReceiverCommon<Groups<Groups<num
         super.onNext(value);
         if (value == null)
             return;
-        this.view.updateView(value.data);
+        this.view.updateView(value.data, false);
     }
 
     public onCompleted(): void {

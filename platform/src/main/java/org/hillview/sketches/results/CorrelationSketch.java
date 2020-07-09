@@ -36,10 +36,11 @@ public class CorrelationSketch extends MultiSketch<ITable, Groups<Groups<Count>>
 
     static JsonList<ISketch<ITable, Groups<Groups<Count>>>> createSketches(
             IHistogramBuckets[] buckets) {
-        JsonList<ISketch<ITable, Groups<Groups<Count>>>> result = new JsonList<>((buckets.length * (buckets.length - 1)) / 2);
+        JsonList<ISketch<ITable, Groups<Groups<Count>>>> result = new JsonList<>();
         for (int i = 0; i < buckets.length; i++) {
-            for (int j = 0; j < i; j++) {
-                ISketch<ITable, Groups<Groups<Count>>> sk = new Histogram2DSketch(buckets[i], buckets[j]);
+            for (int j = i + 1; j < buckets.length; j++) {
+                // swap buckets when passing to Histogram2DSketch
+                ISketch<ITable, Groups<Groups<Count>>> sk = new Histogram2DSketch(buckets[j], buckets[i]);
                 result.add(sk);
             }
         }
@@ -67,31 +68,37 @@ public class CorrelationSketch extends MultiSketch<ITable, Groups<Groups<Count>>
         int row = it.getNextRow();
         int[] indexes = new int[this.buckets.length];   // -2 for missing, -1 for out of bounds, bucket index ow.
         while (row >= 0) {
-            int inlist = 0;
             for (int i = 0; i < this.buckets.length; i++) {
                 IColumn col = columns[i];
-                int indexI;
                 if (col.isMissing(row)) {
-                    indexI = -2;
+                    indexes[i] = -2;
                 } else {
-                    indexI = this.buckets[i].indexOf(col, row);
+                    indexes[i] = this.buckets[i].indexOf(col, row);
                 }
-                indexes[i] = indexI;
-                for (int j = 0; j < i; j++) {
+            }
+
+            int inlist = 0;
+            for (int i = 0; i < this.buckets.length; i++) {
+                int indexI = indexes[i];
+                for (int j = i + 1; j < this.buckets.length; j++, inlist++) {
                     int indexJ = indexes[j];
 
                     Groups<Groups<Count>> grps = result.get(inlist);
                     Groups<Count> grp;
-                    if (indexI < -1)
+                    if (indexI < -1) {
                         grp = grps.perMissing;
-                    else
+                    } else if (indexI == -1) {
+                        continue;
+                    } else {
                         grp = grps.perBucket.get(indexI);
-                    if (indexJ < -1)
-                        grp.perMissing.count++;
-                    else if (indexJ >= 0)
-                        grp.getBucket(indexes[j]).count++;
-
-                    inlist++;
+                    }
+                    if (grp != null) {
+                        if (indexJ < -1) {
+                            grp.perMissing.count++;
+                        } else if (indexJ >= 0) {
+                            grp.getBucket(indexJ).add(1);
+                        } // else continue;
+                    }
                 }
             }
             row = it.getNextRow();

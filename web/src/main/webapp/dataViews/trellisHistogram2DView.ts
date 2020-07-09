@@ -67,8 +67,6 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
         protected samplingRate: number,
         page: FullPage) {
         super(remoteObjectId, rowCount, schema, shape, page, "Trellis2DHistogram");
-        this.topLevel = document.createElement("div");
-        this.topLevel.className = "chart";
         this.hps = [];
         this.data = null;
         this.maxYAxis = null;

@@ -100,18 +100,17 @@ export abstract class TrellisChartView<D> extends ChartView<D> {
                 const shortTitle = this.groupByAxisData.bucketDescription(created, this.shape.size.width / 10);
                 const title = this.groupByAxisData.bucketDescription(created, 0);
                 const canvas = this.surface.getCanvas();
+                const yCorner = y * (this.shape.size.height + this.shape.headerHeight)
+                    + this.shape.headerHeight + this.surface.topMargin;
                 canvas.append("text")
                     .text(shortTitle)
                     .attr("class", "trellisTitle")
                     .attr("x", xCorner + this.shape.size.width / 2)
-                    .attr("y", y * (this.shape.size.height + this.shape.headerHeight)
-                        + this.surface.topMargin + (this.shape.headerHeight / 2))
+                    .attr("y", yCorner - (this.shape.headerHeight / 2))
                     .attr("text-anchor", "middle")
                     .attr("dominant-baseline", "middle")
                     .append("title")
                     .text(title);
-                const yCorner = y * (this.shape.size.height + this.shape.headerHeight)
-                    + this.shape.headerHeight + this.surface.topMargin;
                 const surface = this.surface.createChildSurface(xCorner, yCorner, {
                     width: this.shape.size.width,
                     height: this.shape.size.height,

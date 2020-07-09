@@ -116,6 +116,9 @@ export interface TrellisHistogram2DSerialization extends
 export interface TrellisHeatmapSerialization extends
     HeatmapSerialization, TrellisShapeSerialization {}
 
+export interface CorrelationHeatmapSerialization extends
+    IViewSerialization {}
+
 export interface TrellisQuartilesSerialization extends
     QuantileVectorSerialization, TrellisShapeSerialization {}
 

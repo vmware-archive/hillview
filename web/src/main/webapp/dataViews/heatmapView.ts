@@ -75,8 +75,6 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
                 protected samplingRate: number,
                 page: FullPage) {
         super(remoteObjectId, rowCount, schema, page, "Heatmap");
-        this.topLevel = document.createElement("div");
-        this.topLevel.className = "chart";
         this.confThreshold = 2;
         this.viewMenu = new SubMenu([
             {

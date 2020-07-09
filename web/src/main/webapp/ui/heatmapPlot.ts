@@ -17,7 +17,7 @@
 
 import {AxisData, AxisKind} from "../dataViews/axisData";
 import {Groups, kindIsString} from "../javaBridge";
-import {regression, Two, valueWithConfidence} from "../util";
+import {assert, regression, Two, valueWithConfidence} from "../util";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {SchemaClass} from "../schemaClass";
@@ -59,6 +59,8 @@ export class HeatmapPlot extends Plot<Two<Groups<Groups<number>>>> {
 
         const canvas = this.plottingSurface.getCanvas();
         if (this.showAxes) {
+            assert(this.yAxisData != null);
+            assert(this.xAxisData != null);
             canvas.append("text")
                 .text(this.yAxisData.getDisplayNameString(this.schema))
                 .attr("dominant-baseline", "text-before-edge");
@@ -94,7 +96,9 @@ export class HeatmapPlot extends Plot<Two<Groups<Groups<number>>>> {
         if (this.showAxes)
             this.drawAxes();
 
-        if (!kindIsString(this.yAxisData.description.kind) &&
+        if (this.xAxisData != null &&
+            this.yAxisData != null &&
+            !kindIsString(this.yAxisData.description.kind) &&
             !kindIsString(this.xAxisData.description.kind) &&
             !this.isPrivate) {
             // It makes no sense to do regressions for string values.
@@ -153,10 +157,12 @@ export class HeatmapPlot extends Plot<Two<Groups<Groups<number>>>> {
         this.yAxisData = yData;
         this.schema = schema;
         this.isPrivate = isPrivate;
-        this.xAxisData.setResolution(
-            this.getChartWidth(), AxisKind.Bottom, PlottingSurface.bottomMargin);
-        this.yAxisData.setResolution(
-            this.getChartHeight(), AxisKind.Left, Resolution.heatmapLabelWidth);
+        if (this.xAxisData != null)
+            this.xAxisData.setResolution(
+                this.getChartWidth(), AxisKind.Bottom, PlottingSurface.bottomMargin);
+        if (this.yAxisData != null)
+            this.yAxisData.setResolution(
+                this.getChartHeight(), AxisKind.Left, Resolution.heatmapLabelWidth);
 
         this.xPoints = this.data.first.perBucket.length;
         this.yPoints = this.data.first.perBucket[0].perBucket.length;

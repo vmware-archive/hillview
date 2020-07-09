@@ -26,7 +26,7 @@ one row for an airline flight.  Columns in this dataset include: the date of the
 the origin and destination cities, the origin and destination states,
 the origin airport code, the distance flown, the departure and arrival delay.
 
-Updated on 2020 Jul 01.
+Updated on 2020 Jul 08.
 
 # Contents
 |Section|Reference|
@@ -881,6 +881,10 @@ the current state of the display.
   frequency in the selected columns is above the threshold. the result
   is shown in a [frequent elements view](#34-frequent-elements-views).
 
+* Correlation: Computes pairwise-correlations between all selected columns.
+  This is displayed as a [triangular matrix of heatmaps](#55-correlation-heatmaps).
+  This option is only available for numeric columns.
+
 * PCA...: principal component analysis.  [Principal Component
   Analysis](https://en.wikipedia.org/wiki/Principal_component_analysis)
   is a method to project data in a high-dimensional space to a
@@ -1142,6 +1146,7 @@ Hillview supports many types of charts; these are described in the following sec
 [![Trellis plots of 2D histograms](trellis-histogram2d-array-small.png)](#52-trellis-plots-of-2d-histograms)
 [![Trellis plots of heatmaps](hillview-heatmap-array-small.png)](#53-trellis-plots-of-heatmaps)
 [![Trellis plots of quartile vectors](trellis-quartiles-small.png)](#54-trellis-plots-of-quartile-vectors)
+[![Pairwise correlations](pairwise-correlations-small.png)](#55-correlation-heatmaps)
 
 ### 4.1. Uni-dimensional histogram views
 
@@ -1590,7 +1595,7 @@ the grouping column.
 Correlation heatmaps display a matrix of pairwise heatmaps between a set of numeric
 columns.  The heatmaps can be used to detect columns that are strongly correlated.
 
-TODO
+![Pairwise correlations](pairwise-correlations.png)
 
 ### 5.6. Combining two views
 
