@@ -127,7 +127,7 @@ public class CassandraDatabase {
         public List<String> endpoints = new ArrayList<>();
 
         public TokenRange (String rawEntry) {
-            try{
+            try {
                 String[] arr = rawEntry.split(":");
                 this.start_token = arr[1].split(",")[0];
                 this.end_token = arr[2].split(",")[0];

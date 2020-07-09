@@ -5,12 +5,11 @@
 # 3. Waiting the initialization to complete for 15 seconds
 
 SAVEDIR=$PWD
-# Change this to your preferred installation directory, and make sure to update cassandraRootDir at SSTableTest.java
-CASSANDRA_INSTALLATION_DIR="/tmp"
-CASSANDRA_VERSION="3.11.6"
+mydir="$(dirname "$0")"
+if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
+source ${mydir}/lib.sh
 
 # Download Cassandra and extract it to $CASSANDRA_INSTALLATION_DIR/cassandra
-
 if [ ! -d $CASSANDRA_INSTALLATION_DIR"/cassandra" ]; then
     # Only download/extract when cassandra/ doesn't exist
     [[ -f $CASSANDRA_INSTALLATION_DIR/apache-cassandra-$CASSANDRA_VERSION-bin.tar.gz ]] || wget https://downloads.apache.org/cassandra/$CASSANDRA_VERSION/apache-cassandra-$CASSANDRA_VERSION-bin.tar.gz -O $CASSANDRA_INSTALLATION_DIR/apache-cassandra-$CASSANDRA_VERSION-bin.tar.gz

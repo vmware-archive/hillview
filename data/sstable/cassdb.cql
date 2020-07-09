@@ -91,4 +91,4 @@ CREATE TABLE flights(
    uniquecarrier text
    );
 
-COPY CassDB.flights (ID,DayOfWeek,FlightDate,UniqueCarrier,Origin,OriginCityName,OriginState,Dest,DestState,DepTime,DepDelay,ArrTime,ArrDelay,Cancelled,ActualElapsedTime,Distance)  FROM '/Users/daniar/Documents/GitPR/hillview/data/sstable/flights_data.csv' WITH DELIMITER=',' AND HEADER=TRUE; exit;
+COPY CassDB.flights (ID,DayOfWeek,FlightDate,UniqueCarrier,Origin,OriginCityName,OriginState,Dest,DestState,DepTime,DepDelay,ArrTime,ArrDelay,Cancelled,ActualElapsedTime,Distance)  FROM './flights_data.csv' WITH DELIMITER=',' AND HEADER=TRUE; exit;
