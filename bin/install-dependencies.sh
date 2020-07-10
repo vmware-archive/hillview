@@ -52,3 +52,6 @@ rm -f node_modules/typescript
 npm install
 npm link typescript
 cd ${SAVEDIR}
+
+echo "Installing Cassandra"
+./install-cassandra.sh
