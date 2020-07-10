@@ -53,12 +53,10 @@ import java.util.stream.StreamSupport;
 /**
  * Knows how to read a local Cassandra's SSTable file.
  */
-public class CassandraSSTableLoader extends TextFileLoader{
+public class CassandraSSTableLoader extends TextFileLoader {
     @Nullable
     private final Schema actualSchema;
     private final String ssTablePath;
-    @Nullable
-    IAppendableColumn[] columns;
 
     public boolean lazyLoading;
     public final CFMetaData metadata;
@@ -158,14 +156,6 @@ public class CassandraSSTableLoader extends TextFileLoader{
         return new ColumnDescription(name, kind);
     }
 
-    public void printSchema(CFMetaData metadata) {
-        System.out.println("Column size : " + metadata.partitionColumns().size());
-        PartitionColumns columnDefinitions = metadata.partitionColumns();
-        for (ColumnDefinition colDef : columnDefinitions) {
-            System.out.println(colDef.toString() + " " + colDef.type.asCQL3Type());
-        }
-    }
-
     public Schema getSchema(CFMetaData metadata) {
         try {
             Schema result = new Schema();
@@ -232,7 +222,7 @@ public class CassandraSSTableLoader extends TextFileLoader{
     /** Instead of checking the columnn' name to find which one to load,
      * this method uses boolean marker stored at columnToLoad to recognize the needed columns */
     private List<IAppendableColumn> createColumns(boolean[] columnToLoad, int columnCountToLoad) {
-        List<ColumnDescription> cols = this.actualSchema.getColumnDescriptions();
+        List<ColumnDescription> cols = Converters.checkNull(this.actualSchema).getColumnDescriptions();
         List<IAppendableColumn> result = new ArrayList<IAppendableColumn>(columnCountToLoad);
         int i = 0;
         for (ColumnDescription cd : cols) {
@@ -259,7 +249,7 @@ public class CassandraSSTableLoader extends TextFileLoader{
                     this.actualSchema);
                 return Table.createLazyTable(cds, size, this.filename, loader);
             } else {
-                int columnCountToLoad = this.actualSchema.getColumnCount();
+                int columnCountToLoad = Converters.checkNull(this.actualSchema).getColumnCount();
                 // columns loader will load all column, so all item of columnToLoad need to be TRUE
                 boolean[] columnToLoad = new boolean[columnCountToLoad];
                 Arrays.fill(columnToLoad, Boolean.TRUE);
@@ -308,10 +298,7 @@ public class CassandraSSTableLoader extends TextFileLoader{
                         }
                         i++;
                     }
-                } else {
-                    // if (unfiltered instanceof RangeTombstoneMarker)
-                    // Hillview ignores Tombstone Markers
-                }
+                } // else tombstone marker
             }
         });
         return columns;

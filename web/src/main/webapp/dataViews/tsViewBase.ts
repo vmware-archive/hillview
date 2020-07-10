@@ -33,8 +33,8 @@ import {
 } from "../javaBridge";
 import {OnCompleteReceiver} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
-import {BigTableView} from "../tableTarget";
-import {Dialog, FieldKind} from "../ui/dialog";
+import {BigTableView} from "../modules";
+import {Dialog, FieldKind, saveAs} from "../ui/dialog";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {SubMenu, TopMenuItem} from "../ui/menu";
 import {SpecialChars, ViewKind} from "../ui/ui";
@@ -46,7 +46,7 @@ import {
 } from "../util";
 import {HeavyHittersReceiver, HeavyHittersView} from "./heavyHittersView";
 import {DataRangesReceiver} from "./dataRangesReceiver";
-import {TableOperationCompleted} from "./tableView";
+import {TableOperationCompleted} from "../modules";
 import {ErrorReporter} from "../ui/errReporter";
 
 /**
@@ -124,6 +124,10 @@ export abstract class TSViewBase extends BigTableView {
                     o, rowsDesired, aggregates));
             });
         dialog.show();
+    }
+
+    protected exportSchema(): void {
+        saveAs("schema.json", JSON.stringify(this.schema.schema));
     }
 
     public renameColumn(): void {

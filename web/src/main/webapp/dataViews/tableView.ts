@@ -39,10 +39,10 @@ import {
 } from "../javaBridge";
 import {OnCompleteReceiver, Receiver} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
-import {BaseReceiver, OnNextK, TableTargetAPI} from "../tableTarget";
+import {BaseReceiver, OnNextK, TableTargetAPI} from "../modules";
 import {DataRangeUI} from "../ui/dataRangeUI";
 import {IDataView} from "../ui/dataview";
-import {Dialog, FieldKind} from "../ui/dialog";
+import {Dialog, FieldKind, saveAs} from "../ui/dialog";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {ContextMenu, MenuItem, SubMenu, TopMenu, TopMenuItem} from "../ui/menu";
 import {IScrollTarget, ScrollBar} from "../ui/scroll";
@@ -60,12 +60,11 @@ import {
     PartialResult,
     percent,
     sameAggregate,
-    saveAs,
     significantDigits,
     significantDigitsHtml,
     truncate
 } from "../util";
-import {SchemaView} from "./schemaView";
+import {SchemaView} from "../modules";
 import {SpectrumReceiver} from "./spectrumView";
 import {TSViewBase} from "./tsViewBase";
 import {Grid} from "../ui/grid";
@@ -121,9 +120,11 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             subMenu: new SubMenu([{
                 text: "Schema",
                 help: "Saves the schema of this data JSON file.",
-                action: () => {
-                    this.exportSchema();
-                },
+                action: () => this.exportSchema()
+            }, {
+                text: "As CSV",
+                help: "Saves the data in this view in a CSV file.",
+                action: () => this.export()
             }]),
         });
         if (HillviewToplevel.instance.uiconfig.enableSaveAs)
@@ -223,6 +224,41 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         this.topLevel.appendChild(this.message);
     }
 
+    public export(): void {
+        let lines = [];
+        let line = "count";
+        for (const o of this.order.sortOrientationList)
+            line += "," + JSON.stringify(this.schema.displayName(o.columnDescription.name).displayName);
+        if (this.aggregates != null)
+            for (const a of this.aggregates) {
+                // noinspection UnnecessaryLocalVariableJS
+                const dn = this.schema.displayName(a.cd.name).displayName;
+                line += "," + JSON.stringify(a.agkind + "(" + dn + "))");
+            }
+        lines.push(line);
+
+        for (let i = 0; i < this.nextKList.rows.length; i++) {
+            const row = this.nextKList.rows[i];
+            line = row.count.toString();
+            for (let j = 0; j < row.values.length; j++) {
+                const kind = this.order.sortOrientationList[j].columnDescription.kind;
+                let a = Converters.valueToString(row.values[j], kind);
+                if (kindIsString(kind))
+                    a = JSON.stringify(a);
+                line += "," + a;
+            }
+            if (this.nextKList.aggregates != null) {
+                const agg = this.nextKList.aggregates[i];
+                for (const v of agg) {
+                    line += "," + v;
+                }
+            }
+            lines.push(line);
+        }
+        const fileName = "table.csv";
+        saveAs(fileName, lines.join("\n"));
+    }
+
     /**
      * This function is invoked when someone clicks the "Filter" button on the find bar.
      * This filters and keeps only rows that match the find criteria.
@@ -241,10 +277,6 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             Converters.stringFilterDescription(filter)), this.page);
         rr.invoke(new TableOperationCompleted(newPage, rr, this.rowCount, this.schema,
             this.order, this.tableRowsDesired, this.aggregates));
-    }
-
-    private exportSchema(): void {
-        saveAs("schema.json", JSON.stringify(this.schema.schema));
     }
 
     public serialize(): IViewSerialization {
@@ -646,6 +678,11 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             if (selectedCount > 1 &&
                 this.getSelectedColNames().reduce((a, b) => a && this.isNumericColumn(b), true)) {
                 this.contextMenu.addItem({
+                    text: "Correlation",
+                    action: () => this.correlate(),
+                    help: "Compute pairwise corellation between a set of numeric columns"
+                }, true);
+                this.contextMenu.addItem({
                     text: "PCA...",
                     action: () => this.pca(true),
                     help: "Perform Principal Component Analysis on a set of numeric columns. " +
@@ -718,14 +755,16 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             this.page.reportError("Not enough views to compare");
             return;
         }
-        dialog.addPageSelectField("view0", "First view",
-            pages, "First view to compare");
-        dialog.addPageSelectField("view1", "Second view",
-            pages, "Second view to compare");
+        const label = (p) => p.pageId + ". " + p.title.getTextRepresentation(p) +
+            "(" + p.title.provenance + ")";
+        dialog.addSelectFieldAsObject("view0", "First view",
+            pages, label, "First view to compare");
+        dialog.addSelectFieldAsObject("view1", "Second view",
+            pages, label,"Second view to compare");
 
         dialog.setAction(() => {
-            const page0 = dialog.getFieldValueAsPage("view0");
-            const page1 = dialog.getFieldValueAsPage("view1");
+            const page0 = dialog.getFieldValueAsObject<FullPage>("view0");
+            const page1 = dialog.getFieldValueAsObject<FullPage>("view1");
             if (page0 == null || page1 == null)
                 return;
 
@@ -1092,42 +1131,53 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         return [valid, message];
     }
 
+    public correlate(): void {
+        const colNames = this.getSelectedColNames();
+        const [valid, message] = this.checkNumericColumns(colNames, 2);
+        if (!valid) {
+            this.page.reportError("Not valid for correlation:" + message);
+            return;
+        }
+        this.chart(this.schema.getDescriptions(colNames), "CorrelationHeatmaps");
+    }
+
     public pca(toSample: boolean): void {
         const colNames = this.getSelectedColNames();
         const [valid, message] = this.checkNumericColumns(colNames, 2);
-        if (valid) {
-            const pcaDialog = new Dialog("Principal Component Analysis",
-                "Projects a set of numeric columns to a smaller set of numeric columns while preserving the 'shape' " +
-                " of the data as much as possible.");
-            const components = pcaDialog.addTextField("numComponents", "Number of components",
-                FieldKind.Integer, "2",
-                "Number of dimensions to project to.  Must be an integer bigger than 1 and " +
-                "smaller than the number of selected columns");
-            components.required = true;
-            components.min = "2";
-            components.max = colNames.length.toString();
-            const name = pcaDialog.addTextField("projectionName", "Name for Projected columns", FieldKind.String,
-                "PCA",
-                "The projected columns will appear with this name followed by a number starting from 0");
-            name.required = true;
-            pcaDialog.setCacheTitle("PCADialog");
-            pcaDialog.setAction(() => {
-                const numComponents: number = pcaDialog.getFieldValueAsInt("numComponents");
-                const projectionName: string = pcaDialog.getFieldValue("projectionName");
-                if (numComponents < 1 || numComponents > colNames.length) {
-                    this.page.reportError("Number of components for PCA must be between 1 (incl.) " +
-                        "and the number of selected columns, " + colNames.length + " (incl.). (" +
-                        numComponents + " does not satisfy this.)");
-                    return;
-                }
-                const rr = this.createCorrelationMatrixRequest(colNames, this.rowCount, toSample);
-                rr.invoke(new CorrelationMatrixReceiver(this.getPage(), this, rr, this.order,
-                    numComponents, projectionName));
-            });
-            pcaDialog.show();
-        } else {
+        if (!valid) {
             this.page.reportError("Not valid for PCA:" + message);
+            return;
         }
+
+        const pcaDialog = new Dialog("Principal Component Analysis",
+            "Projects a set of numeric columns to a smaller set of numeric columns while preserving the 'shape' " +
+            " of the data as much as possible.");
+        const components = pcaDialog.addTextField("numComponents", "Number of components",
+            FieldKind.Integer, "2",
+            "Number of dimensions to project to.  Must be an integer bigger than 1 and " +
+            "smaller than the number of selected columns");
+        components.required = true;
+        components.min = "2";
+        components.max = colNames.length.toString();
+        const name = pcaDialog.addTextField("projectionName", "Name for Projected columns", FieldKind.String,
+            "PCA",
+            "The projected columns will appear with this name followed by a number starting from 0");
+        name.required = true;
+        pcaDialog.setCacheTitle("PCADialog");
+        pcaDialog.setAction(() => {
+            const numComponents: number = pcaDialog.getFieldValueAsInt("numComponents");
+            const projectionName: string = pcaDialog.getFieldValue("projectionName");
+            if (numComponents < 1 || numComponents > colNames.length) {
+                this.page.reportError("Number of components for PCA must be between 1 (incl.) " +
+                    "and the number of selected columns, " + colNames.length + " (incl.). (" +
+                    numComponents + " does not satisfy this.)");
+                return;
+            }
+            const rr = this.createCorrelationMatrixRequest(colNames, this.rowCount, toSample);
+            rr.invoke(new CorrelationMatrixReceiver(this.getPage(), this, rr, this.order,
+                numComponents, projectionName));
+        });
+        pcaDialog.show();
     }
 
     private spectrum(toSample: boolean): void {
@@ -1175,16 +1225,17 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
 
     protected changeTableSize(): void {
         const dialog = new Dialog("Number of rows", "Choose number of rows to display");
+        const maxRows = 1000;
         const field = dialog.addTextField("rows", "Rows", FieldKind.Integer,
             Resolution.tableRowsOnScreen.toString(),
-            "Number of rows to show (between 10 and 200)");
+            "Number of rows to show (between 10 and " + maxRows.toString() + ")");
         field.min = "10";
-        field.max = "200";
+        field.max = maxRows.toString();
         field.required = true;
         dialog.setAction(() => {
             const rowCount = dialog.getFieldValueAsInt("rows");
-            if (rowCount < 10 || rowCount > 200) {
-                this.page.reportError("Row count must be between 10 and 200");
+            if (rowCount < 10 || rowCount > maxRows) {
+                this.page.reportError("Row count must be between 10 and " + maxRows.toString());
                 return;
             }
             this.tableRowsDesired = rowCount;

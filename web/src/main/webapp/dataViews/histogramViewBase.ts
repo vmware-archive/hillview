@@ -16,24 +16,21 @@
  */
 
 import {mouse as d3mouse} from "d3-selection";
-import {ColumnSortOrientation, IColumnDescription, RecordOrder, RemoteObjectId} from "../javaBridge";
+import {RemoteObjectId} from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
 import {ICDFPlot} from "../ui/cdfPlot";
 import {Dialog, FieldKind} from "../ui/dialog";
-import {FullPage, PageTitle} from "../ui/fullPage";
-import {D3SvgElement, Resolution, ViewKind} from "../ui/ui";
-import {ChartView} from "./chartView";
+import {FullPage} from "../ui/fullPage";
+import {D3SvgElement, ViewKind} from "../ui/ui";
+import {ChartView} from "../modules";
 import {AxisData} from "./axisData";
-import {NextKReceiver, TableView} from "./tableView";
 
 /**
  * This is a base class that contains code common to various histogram renderings.
  */
 export abstract class HistogramViewBase<D> extends ChartView<D> {
-    protected summary: HTMLElement;
     protected cdfDot: D3SvgElement;
     protected cdfPlot: ICDFPlot;
-    protected chartDiv: HTMLDivElement;
     // protected scrollBar: ScrollBar;
     public xAxisData: AxisData;
 
@@ -43,15 +40,11 @@ export abstract class HistogramViewBase<D> extends ChartView<D> {
         schema: SchemaClass,
         page: FullPage, viewKind: ViewKind) {
         super(remoteObjectId, rowCount, schema, page, viewKind);
-        this.chartDiv = this.createChartDiv();
+        this.createDiv("chart");
         this.cdfDot = null;
         // this.scrollBar = new ScrollBar(this, true);
         // this.topLevel.appendChild(this.scrollBar.getHTMLRepresentation());
-
-        const summaryContainer = document.createElement("div");
-        this.topLevel.appendChild(summaryContainer);
-        this.summary = document.createElement("div");
-        summaryContainer.appendChild(this.summary);
+        this.createDiv("summary");
     }
 
     public abstract resize(): void;
@@ -91,36 +84,18 @@ export abstract class HistogramViewBase<D> extends ChartView<D> {
             .attr("height", height);
         return true;
     }
-
-    // show the table corresponding to the data in the histogram
-    protected showTable(axes: IColumnDescription[], provenance: string): void {
-        const orientation: ColumnSortOrientation[] = [];
-        for (const a of axes) {
-            orientation.push({
-                columnDescription: a,
-                isAscending: true
-            });
-        }
-        const order = new RecordOrder(orientation);
-
-        const page = this.dataset.newPage(new PageTitle("Table", provenance), this.page);
-        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, page);
-        const rr = table.createNextKRequest(order, null, Resolution.tableRowsOnScreen);
-        page.setDataView(table);
-        rr.invoke(new NextKReceiver(page, table, rr, false, order, null));
-    }
 }
 
 /**
  * A dialog that queries the user about the number of buckets to use.
  */
 export class BucketDialog extends Dialog {
-    constructor(count: number) {
+    constructor(count: number, max: number) {
         super("Set buckets", "Change the number of buckets (bars) used to display the histogram.");
         const input = this.addTextField("n_buckets", "Number of buckets:", FieldKind.Integer, count.toString(),
             "The number of buckets to use.");
         input.min = "1";
-        input.max = Resolution.maxBucketCount.toString();
+        input.max = max.toString();
         input.required = true;
         this.setCacheTitle("BucketDialog");
     }

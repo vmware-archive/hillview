@@ -39,9 +39,9 @@ import {
     significantDigits,
     Converters
 } from "../util";
-import {TableView} from "./tableView";
+import {TableView} from "../modules";
 import {TSViewBase} from "./tsViewBase";
-import {BaseReceiver} from "../tableTarget";
+import {BaseReceiver} from "../modules";
 import {Receiver, RpcRequest} from "../rpc";
 import {HillviewToplevel} from "../toplevel";
 
@@ -52,7 +52,7 @@ import {HillviewToplevel} from "../toplevel";
 export class SchemaView extends TSViewBase {
     protected display: TabularDisplay;
     protected contextMenu: ContextMenu;
-    protected summary: HTMLElement;
+    protected summaryDiv: HTMLElement;
     protected stats: Map<string, BasicColStats>;
     protected nameDialog: Dialog;
     protected typeDialog: Dialog;
@@ -151,8 +151,12 @@ export class SchemaView extends TSViewBase {
         this.topLevel.appendChild(document.createElement("br"));
         this.display = new TabularDisplay();
         this.topLevel.appendChild(this.display.getHTMLRepresentation());
-        this.summary = document.createElement("div");
-        this.topLevel.appendChild(this.summary);
+        this.summaryDiv = document.createElement("div");
+        this.topLevel.appendChild(this.summaryDiv);
+    }
+
+    public export(): void {
+        this.exportSchema();
     }
 
     public static reconstruct(ser: IViewSerialization, page: FullPage): IDataView {
@@ -190,7 +194,7 @@ export class SchemaView extends TSViewBase {
         this.displayRows();
         this.display.getHTMLRepresentation().setAttribute("overflow-x", "hidden");
         if (this.rowCount != null)
-            this.summary.textContent = formatNumber(this.rowCount) + " rows";
+            this.summaryDiv.textContent = formatNumber(this.rowCount) + " rows";
         this.page.setDataView(this);
         this.display.setScrollPosition(scrollPos);
         this.page.reportTime(elapsedMs);

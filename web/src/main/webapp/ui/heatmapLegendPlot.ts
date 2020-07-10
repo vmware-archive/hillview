@@ -37,7 +37,7 @@ class HeatmapColormap {
      *  Suggested threshold for when a log-scale should be used.
      */
     public static logThreshold = 50;
-    public logScale: boolean;
+    public logScale: boolean | null;  // if null this is decided based on data.
     protected map: (x: number) => string;
 
     constructor(public readonly min: number, public readonly max: number) {
@@ -221,24 +221,23 @@ export class HeatmapLegendPlot extends LegendPlot<Pair<number, number>> {
 
     // Redraw the legend, and notify the listeners.
     private mapUpdated(): void {
-        this.setData(this.data, this.colorMap.logScale);
         this.draw();
         // Notify the onColorChange listener (redraw the elements with new colors)
         if (this.onColorMapChange != null)
             this.onColorMapChange(this.colorMap);
     }
 
-    public setData(data: Pair<number, number>, useLogScale?: boolean): void {
+    public setData(data: Pair<number, number>): void {
         this.data = data;
         const base = (this.max() - this.min()) > 10000 ? 10 : 2;
         if (this.colorMap == null)
             this.colorMap = new HeatmapColormap(this.min(), this.max());
         assert(this.min() === this.colorMap.min);
         assert(this.max() === this.colorMap.max);
-        const logScale = useLogScale != null ? useLogScale : this.max() > HeatmapColormap.logThreshold;
-        this.colorMap.setLogScale(logScale);
+        if (this.colorMap.logScale == null)
+            this.colorMap.setLogScale(this.max() > HeatmapColormap.logThreshold);
 
-        if (logScale) {
+        if (this.colorMap.logScale) {
             this.scale = d3scaleLog().base(base);
         } else
             this.scale = d3scaleLinear();

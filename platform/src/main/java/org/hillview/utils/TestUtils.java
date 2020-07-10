@@ -42,8 +42,7 @@ public class TestUtils {
         config.allowFewerColumns = false;
         config.hasHeaderRow = true;
         CsvFileLoader r = new CsvFileLoader(path.toString(), config, schemaPath.toString());
-
-        return r.load();
+        return Converters.checkNull(r.load());
     }
 
     public static List<String> getNumericColumnNames(ITable table) {

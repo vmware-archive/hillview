@@ -21,8 +21,6 @@ import org.hillview.dataset.api.IMap;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.dataset.api.ISketchResult;
 
-import java.io.Serializable;
-
 import javax.annotation.Nullable;
 
 public class MapAndSketch<T, S, R extends ISketchResult> implements ISketch<T, R> {

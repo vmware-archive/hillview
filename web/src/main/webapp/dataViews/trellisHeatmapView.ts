@@ -18,32 +18,31 @@
 import {
     Groups,
     IColumnDescription, RangeFilterArrayDescription,
-    RecordOrder,
     RemoteObjectId
 } from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
-import {BaseReceiver, TableTargetAPI} from "../tableTarget";
-import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
+import {BaseReceiver, TableTargetAPI} from "../modules";
+import {FullPage, PageTitle} from "../ui/fullPage";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
-import {Resolution} from "../ui/ui";
+import {DragEventKind, HtmlString, Resolution} from "../ui/ui";
 import {AxisData, AxisKind} from "./axisData";
 import {
-    FilterReceiver,
+    NewTargetReceiver,
     DataRangesReceiver,
     TrellisShape,
     TrellisLayoutComputation
 } from "./dataRangesReceiver";
 import {Receiver, RpcRequest} from "../rpc";
-import {Converters, histogram3DAsCsv, ICancellable, makeInterval, PartialResult, saveAs} from "../util";
+import {Converters, formatNumber, histogram3DAsCsv, ICancellable, makeInterval, PartialResult} from "../util";
 import {HeatmapPlot} from "../ui/heatmapPlot";
 import {IViewSerialization, TrellisHeatmapSerialization} from "../datasetView";
 import {IDataView} from "../ui/dataview";
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {TextOverlay} from "../ui/textOverlay";
 import {TrellisChartView} from "./trellisChartView";
-import {NextKReceiver, TableView} from "./tableView";
 import {HeatmapLegendPlot} from "../ui/heatmapLegendPlot";
+import {saveAs} from "../ui/dialog";
 
 /**
  * A Trellis plot containing multiple heatmaps.
@@ -51,7 +50,6 @@ import {HeatmapLegendPlot} from "../ui/heatmapLegendPlot";
 export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<number>>>> {
     private colorLegend: HeatmapLegendPlot;
     private legendSurface: HtmlPlottingSurface;
-    private readonly legendDiv: HTMLDivElement;
     protected xAxisData: AxisData;
     protected yAxisData: AxisData;
     protected hps: HeatmapPlot[];
@@ -67,9 +65,6 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
         this.xAxisData = null;
         this.yAxisData = null;
         this.hps = [];
-        this.topLevel = document.createElement("div");
-        this.topLevel.classList.add("chart");
-
         this.menu = new TopMenu([this.exportMenu(),
             { text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
                 { text: "refresh",
@@ -80,7 +75,9 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
                     action: () => this.swapAxes(),
                     help: "Swap the X and Y axes of all plots."
                 }, { text: "table",
-                    action: () => this.showTable(),
+                    action: () => this.showTable(
+                        [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description],
+                        this.defaultProvenance),
                     help: "Show the data underlying this view in a tabular view."
                 }, { text: "histogram",
                         action: () => this.histogram(),
@@ -88,12 +85,17 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
                 }, { text: "# groups",
                         action: () => this.changeGroups(),
                         help: "Change the number of groups."
-                    }
-                ]) },
+                }, {
+                    text: "Show/hide regression",
+                    action: () => this.toggleRegression(),
+                    help: "Show or hide the linear regression line"
+                }]) },
             this.dataset.combineMenu(this, page.pageId),
         ]);
         this.page.setMenu(this.menu);
-        this.legendDiv = this.makeToplevelDiv();
+        this.createDiv("legend");
+        this.createDiv("chart");
+        this.createDiv("summary");
     }
 
     public static reconstruct(ser: TrellisHeatmapSerialization, page: FullPage): IDataView {
@@ -278,24 +280,9 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
             }));
     }
 
-    public showTable(): void {
-        const newPage = this.dataset.newPage(new PageTitle("Table", this.defaultProvenance), this.page);
-        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newPage);
-        newPage.setDataView(table);
-        table.schema = this.schema;
-
-        const order =  new RecordOrder([ {
-            columnDescription: this.xAxisData.description,
-            isAscending: true
-        }, {
-            columnDescription: this.yAxisData.description,
-            isAscending: true
-        }, {
-            columnDescription: this.groupByAxisData.description,
-            isAscending: true
-        }]);
-        const rr = table.createNextKRequest(order, null, Resolution.tableRowsOnScreen);
-        rr.invoke(new NextKReceiver(newPage, table, rr, false, order, null));
+    public toggleRegression(): void {
+        for (const hp of this.hps)
+            hp.toggleRegression();
     }
 
     public updateView(histogram3d: Groups<Groups<Groups<number>>>, keepColorMap: boolean): void {
@@ -356,6 +343,8 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
             this.surface.bottomMargin / 2})`)
             .attr("text-anchor", "middle")
             .attr("dominant-baseline", "hanging");
+        const summary = new HtmlString(formatNumber(this.rowCount) + " points");
+        summary.setInnerHtml(this.summaryDiv);
     }
 
     public onMouseMove(): void {
@@ -378,7 +367,7 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
-            return new FilterReceiver(title,
+            return new NewTargetReceiver(title,
                 [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description],
                 this.schema, [0, 0, 0], page, operation, this.dataset, {
                 chartKind: "TrellisHeatmap",
@@ -407,7 +396,7 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
             rr = this.createFilterRequest(f);
             title = new PageTitle(this.page.title.format,
                 Converters.filterDescription(xRange) + " and " + Converters.filterDescription(yRange));
-            const renderer = new FilterReceiver(title,
+            const renderer = new NewTargetReceiver(title,
                 [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description],
                 this.schema, [0, 0, 0], this.page, rr, this.dataset, {
                 chartKind: "TrellisHeatmap", relative: false, reusePage: false,
@@ -420,7 +409,7 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
                 return;
             rr = this.createFilterRequest(filter);
             title = new PageTitle(this.page.title.format, Converters.filterArrayDescription(filter));
-            const renderer = new FilterReceiver(title,
+            const renderer = new NewTargetReceiver(title,
                 [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description],
                 this.schema, [0, 0, 0], this.page, rr, this.dataset, {
                 chartKind: "TrellisHeatmap", relative: false, reusePage: false,

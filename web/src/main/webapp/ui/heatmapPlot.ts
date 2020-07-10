@@ -17,11 +17,11 @@
 
 import {AxisData, AxisKind} from "../dataViews/axisData";
 import {Groups, kindIsString} from "../javaBridge";
-import {regression, Two, valueWithConfidence} from "../util";
+import {assert, regression, Two, valueWithConfidence} from "../util";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {SchemaClass} from "../schemaClass";
-import {Resolution} from "./ui";
+import {D3SvgElement, Resolution} from "./ui";
 import {HeatmapLegendPlot} from "./heatmapLegendPlot";
 
 interface Dot {
@@ -40,8 +40,10 @@ export class HeatmapPlot extends Plot<Two<Groups<Groups<number>>>> {
     protected dots: Dot[];
     protected schema: SchemaClass;
     protected isPrivate: boolean;
+    protected showRegression: boolean;
     protected xPoints: number;
     protected yPoints: number;
+    protected regressionLine: D3SvgElement;
 
     public constructor(surface: PlottingSurface,
                        protected legendPlot: HeatmapLegendPlot,
@@ -49,6 +51,18 @@ export class HeatmapPlot extends Plot<Two<Groups<Groups<number>>>> {
         super(surface);
         this.dots = null;
         this.isPrivate = false;
+        this.showRegression = true;
+        this.regressionLine = null;
+    }
+
+    public toggleRegression(): void {
+        this.showRegression = !this.showRegression;
+        if (this.regressionLine != null) {
+            if (this.showRegression)
+                this.regressionLine.attr("stroke-width", 1);
+            else
+                this.regressionLine.attr("stroke-width", 0);
+        }
     }
 
     public draw(): void {
@@ -59,6 +73,8 @@ export class HeatmapPlot extends Plot<Two<Groups<Groups<number>>>> {
 
         const canvas = this.plottingSurface.getCanvas();
         if (this.showAxes) {
+            assert(this.yAxisData != null);
+            assert(this.xAxisData != null);
             canvas.append("text")
                 .text(this.yAxisData.getDisplayNameString(this.schema))
                 .attr("dominant-baseline", "text-before-edge");
@@ -94,9 +110,12 @@ export class HeatmapPlot extends Plot<Two<Groups<Groups<number>>>> {
         if (this.showAxes)
             this.drawAxes();
 
-        if (!kindIsString(this.yAxisData.description.kind) &&
+        if (this.xAxisData != null &&
+            this.yAxisData != null &&
+            !kindIsString(this.yAxisData.description.kind) &&
             !kindIsString(this.xAxisData.description.kind) &&
-            !this.isPrivate) {
+            !this.isPrivate &&
+            this.showRegression) {
             // It makes no sense to do regressions for string values.
             // Regressions for private data should be computed in a different way; this
             // way gives too much noise.
@@ -106,7 +125,7 @@ export class HeatmapPlot extends Plot<Two<Groups<Groups<number>>>> {
                 const a = regr[1];
                 const y1 = this.getChartHeight() - (b + .5) * this.pointHeight;
                 const y2 = this.getChartHeight() - (a * this.xPoints + b + .5) * this.pointHeight;
-                this.plottingSurface.getChart()
+                this.regressionLine = this.plottingSurface.getChart()
                     .append("line")
                     .attr("x1", 0)
                     .attr("y1", y1)
@@ -153,10 +172,12 @@ export class HeatmapPlot extends Plot<Two<Groups<Groups<number>>>> {
         this.yAxisData = yData;
         this.schema = schema;
         this.isPrivate = isPrivate;
-        this.xAxisData.setResolution(
-            this.getChartWidth(), AxisKind.Bottom, PlottingSurface.bottomMargin);
-        this.yAxisData.setResolution(
-            this.getChartHeight(), AxisKind.Left, Resolution.heatmapLabelWidth);
+        if (this.xAxisData != null)
+            this.xAxisData.setResolution(
+                this.getChartWidth(), AxisKind.Bottom, PlottingSurface.bottomMargin);
+        if (this.yAxisData != null)
+            this.yAxisData.setResolution(
+                this.getChartHeight(), AxisKind.Left, Resolution.heatmapLabelWidth);
 
         this.xPoints = this.data.first.perBucket.length;
         this.yPoints = this.data.first.perBucket[0].perBucket.length;

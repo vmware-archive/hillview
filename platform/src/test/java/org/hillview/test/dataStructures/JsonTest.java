@@ -116,6 +116,7 @@ public class JsonTest extends BaseTest {
         final String jsonSample = "short.schema";
         JsonFileLoader reader = new JsonFileLoader(jsonFolder + "/" + jsonSample, null);
         ITable table = reader.load();
+        Assert.assertNotNull(table);
         Assert.assertEquals("Table[2x15]", table.toString());
     }
 

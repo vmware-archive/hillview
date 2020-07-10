@@ -29,6 +29,7 @@ import java.util.Arrays;
  * A set of samples from a numeric distribution extracted using
  * reservoir sampling.  Also maintains the min and the max.
  */
+@SuppressWarnings("CanBeFinal")
 public class SampleSet implements IJsonSketchResult, IScalable<SampleSet> {
     static final long serialVersionUID = 1;
 

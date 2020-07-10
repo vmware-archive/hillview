@@ -64,7 +64,7 @@ export class HtmlString {
 }
 
 export type ViewKind = "Table" | "Histogram" | "2DHistogram" |
-    "Heatmap" | "QuartileVector" |
+    "Heatmap" | "QuartileVector" | "CorrelationHeatmaps" |
     "TrellisHistogram" | "Trellis2DHistogram" | "TrellisHeatmap" | "TrellisQuartiles" |
     "HeavyHitters" | "Schema" | "Load" | "SVD Spectrum" | "LogFileView";
 
@@ -171,7 +171,7 @@ export class Rectangle {
  * the displayed objects.
  */
 export class Resolution {
-    public static readonly maxBucketCount = 50;  // maximum number of buckets in a histogram
+    public static readonly max2DBucketCount = 25;  // maximum number of buckets stacked in a 2D histogram
     public static readonly minBarWidth = 15;     // minimum number of pixels for a histogram bar
     public static readonly minDotSize = 4;       // dots are drawn as rectangles of this size in pixels
     public static readonly tableRowsOnScreen = 20; // table rows displayed
@@ -181,9 +181,24 @@ export class Resolution {
     public static readonly legendSpaceHeight = 60;
     public static readonly minTrellisWindowSize = 200;
     public static readonly heatmapLabelWidth = 80;  // pixels reserved for heatmap label
+
+    public static maxBuckets(pageWidth: number): number {
+        return Math.floor(pageWidth / Resolution.minBarWidth);
+    }
 }
 
 export type D3Axis = any;  // d3 axis; perhaps some day we will be able to use a better type
 export type D3Scale = any; // d3 scale.
 export type D3SvgElement = any;  // An SVG G element created by d3
 export type AnyScale = D3ScaleLinear<number, number> | D3ScaleTime<number, number>;
+
+// Kind of data that is being dragged
+export type DragEventKind = "Title" | "XAxis" | "YAxis" | "GAxis";
+
+/**
+ * The format string used in a page title to describe a reference to another page.
+ * @param page  Page number.
+ */
+export function pageReferenceFormat(page: string): string {
+    return "%p(" + page + ")";
+}

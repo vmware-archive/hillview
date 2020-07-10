@@ -33,6 +33,7 @@ import java.time.Instant;
 import java.util.Collections;
 
 public class RowSnapShotTest extends BaseTest {
+    @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
     @Test
     public void rowDateSnapshotTest() {
         Instant now = Instant.now();

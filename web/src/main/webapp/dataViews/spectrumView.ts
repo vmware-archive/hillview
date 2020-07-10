@@ -25,7 +25,7 @@ import {
 } from "../javaBridge";
 import {OnCompleteReceiver} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
-import {BaseReceiver, TableTargetAPI} from "../tableTarget";
+import {BaseReceiver, TableTargetAPI} from "../modules";
 import {IDataView} from "../ui/dataview";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage, PageTitle} from "../ui/fullPage";
@@ -34,8 +34,8 @@ import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {ICancellable, significantDigits} from "../util";
 import {AxisData} from "./axisData";
-import {CorrelationMatrixReceiver, TableView} from "./tableView";
-import {ChartView} from "./chartView";
+import {CorrelationMatrixReceiver, TableView} from "../modules";
+import {ChartView} from "../modules";
 
 /**
  * Receives the result of a PCA computation and plots the singular values
@@ -128,17 +128,14 @@ export class SpectrumView extends ChartView<Groups<number>> {
     protected axisData: AxisData;
     protected title: string;
     protected plot: HistogramPlot;
-    protected chartDiv: HTMLElement;
-    protected summary: HTMLElement;
 
     constructor(remoteObjectId: RemoteObjectId, rowCount: number,
                 protected colNames: string[],
                 schema: SchemaClass, page: FullPage) {
         super(remoteObjectId, rowCount, schema, page, "SVD Spectrum");
 
-        this.chartDiv = this.createChartDiv();
-        this.summary = document.createElement("div");
-        this.topLevel.appendChild(this.summary);
+        this.createDiv("chart");
+        this.createDiv("summary");
     }
 
     // noinspection JSUnusedLocalSymbols
@@ -169,7 +166,7 @@ export class SpectrumView extends ChartView<Groups<number>> {
             axisData, null, this.page.dataset.isPrivate(), this.rowCount);
         this.plot.draw();
 
-        this.summary.textContent = "Columns: " + this.colNames.join(", ");
+        this.summaryDiv.textContent = "Columns: " + this.colNames.join(", ");
     }
 
     protected onMouseMove(): void {}

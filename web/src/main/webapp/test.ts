@@ -120,6 +120,7 @@ export class Test {
         }
     }
 
+    // noinspection JSMethodCanBeStatic
     private next(): void {
         // Trigger a request to the remote site using a "ping" request
         findElement("#hillviewPage0 .topMenu #Manage #List_machines").click();
@@ -153,6 +154,7 @@ export class Test {
             11: Quartiles vector plot
             12: Non-stacked bar charts plot
             13: Filtered table
+            14: correlation heatmaps
          */
         this.addProgram([{
             description: "Load all flights",
@@ -388,8 +390,21 @@ export class Test {
                 menu.click();
             }
         }, {
-            description: "Close some windows",
+            description: "Correlation heatmaps",
             cond: () => Test.existsElement("#hillviewPage13 .idle"),
+            cont: () => {
+                const cellDep = findElement("#hillviewPage1 thead td[data-colname=DepTime] .truncated");
+                cellDep.scrollIntoView();
+                cellDep.click();
+                const cellArr = findElement("#hillviewPage1 thead td[data-colname=ArrDelay] .truncated");
+                cellArr.dispatchEvent(mouseClickEvent(true, false));
+                cellArr.dispatchEvent(contextMenuEvent());
+                const qv = findElement("#hillviewPage1 .dropdown #Correlation");
+                qv.click();
+            }
+        }, {
+            description: "Close some windows",
+            cond: () => Test.existsElement("#hillviewPage14 .idle"),
             cont: () => {
                 /*
                     for (let i = 2; i < 8; i++) {

@@ -21,21 +21,20 @@ import {
     Groups,
     IColumnDescription, kindIsNumeric,
     kindIsString,
-    RecordOrder,
     RemoteObjectId, RangeFilterArrayDescription,
 } from "../javaBridge";
 import {Receiver} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
 import {CDFPlot, NoCDFPlot} from "../ui/cdfPlot";
 import {IDataView} from "../ui/dataview";
-import {Dialog} from "../ui/dialog";
-import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
+import {Dialog, saveAs} from "../ui/dialog";
+import {FullPage, PageTitle} from "../ui/fullPage";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {PiePlot} from "../ui/piePlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {HtmlString, Resolution, SpecialChars} from "../ui/ui";
+import {DragEventKind, HtmlString, Resolution, SpecialChars} from "../ui/ui";
 import {
     histogramAsCsv,
     Converters,
@@ -43,14 +42,13 @@ import {
     ICancellable, makeInterval,
     PartialResult,
     percent,
-    saveAs,
     significantDigits, significantDigitsHtml, Two,
 } from "../util";
 import {AxisData} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
-import {NextKReceiver, TableView} from "./tableView";
-import {FilterReceiver, DataRangesReceiver} from "./dataRangesReceiver";
-import {BaseReceiver} from "../tableTarget";
+import {NewTargetReceiver, DataRangesReceiver} from "./dataRangesReceiver";
+import {BaseReceiver} from "../modules";
+import {CommonArgs} from "../ui/receiver";
 
 /**
  * A HistogramView is responsible for showing a one-dimensional histogram on the screen.
@@ -80,7 +78,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
                 },
                 {
                     text: "table",
-                    action: () => this.showTable(),
+                    action: () => this.showTable([this.xAxisData.description], this.defaultProvenance),
                     help: "Show the data underlying this histogram using a table view.",
                 },
                 {
@@ -217,13 +215,14 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
     }
 
     public static reconstruct(ser: HistogramSerialization, page: FullPage): IDataView {
-        const schema: SchemaClass = new SchemaClass([]).deserialize(ser.schema);
-        if (ser.columnDescription == null || ser.samplingRate == null ||
-            schema == null || ser.bucketCount == null)
+        const args: CommonArgs = this.validateSerialization(ser);
+        if (args == null ||
+            ser.columnDescription == null || ser.samplingRate == null ||
+            ser.bucketCount == null)
             return null;
 
         const hv = new HistogramView(
-            ser.remoteObjectId, ser.rowCount, schema, ser.samplingRate, ser.isPie, page);
+            ser.remoteObjectId, ser.rowCount, args.schema, ser.samplingRate, ser.isPie, page);
         hv.setAxis(new AxisData(ser.columnDescription, null, ser.bucketCount));
         hv.bucketCount = ser.bucketCount;
         return hv;
@@ -298,7 +297,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
         if (this.samplingRate < 1.0)
             summary = summary.appendSafeString(", sampling rate ")
                 .append(significantDigitsHtml(this.samplingRate));
-        summary.setInnerHtml(this.summary);
+        summary.setInnerHtml(this.summaryDiv);
     }
 
     public trellis(): void {
@@ -320,7 +319,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
-            return new FilterReceiver(title, [this.xAxisData.description], this.schema,
+            return new NewTargetReceiver(title, [this.xAxisData.description], this.schema,
                 [0], page, operation, this.dataset, {
                 exact: this.samplingRate >= 1, reusePage: false, pieChart: this.pie,
                 relative: false, chartKind: "Histogram"
@@ -415,7 +414,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
     }
 
     public chooseBuckets(): void {
-        const bucketDialog = new BucketDialog(this.bucketCount);
+        const bucketDialog = new BucketDialog(this.bucketCount, Resolution.maxBuckets(this.page.getWidthInPixels()));
         bucketDialog.setAction(() => this.changeBuckets(bucketDialog.getBucketCount()));
         bucketDialog.show();
     }
@@ -483,22 +482,6 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
         this.selectionCompleted(this.selectionOrigin.x, x);
     }
 
-    // show the table corresponding to the data in the histogram
-    protected showTable(): void {
-        const newPage = this.dataset.newPage(
-            new PageTitle("Table", this.defaultProvenance), this.page);
-        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newPage);
-        newPage.setDataView(table);
-        table.schema = this.schema;
-
-        const order =  new RecordOrder([ {
-            columnDescription: this.xAxisData.description,
-            isAscending: true,
-        } ]);
-        const rr = table.createNextKRequest(order, null, Resolution.tableRowsOnScreen);
-        rr.invoke(new NextKReceiver(newPage, table, rr, false, order, null));
-    }
-
     /**
      * Selection has been completed.
      * @param {number} xl: X mouse coordinate within canvas.
@@ -518,7 +501,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
         const rr = this.createFilterRequest(filter);
         const title = new PageTitle(this.page.title.format,
             Converters.filterArrayDescription(filter));
-        const renderer = new FilterReceiver(title, [this.xAxisData.description], this.schema,
+        const renderer = new NewTargetReceiver(title, [this.xAxisData.description], this.schema,
             [0], this.page, rr, this.dataset, {
             exact: this.samplingRate >= 1,
             reusePage: false,

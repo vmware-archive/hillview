@@ -22,7 +22,6 @@ import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.IRowIterator;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.Function;

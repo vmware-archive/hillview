@@ -18,6 +18,7 @@
 import {select as d3select} from "d3-selection";
 import {FullPage} from "./fullPage";
 import {D3SvgElement, IHtmlElement, Size} from "./ui";
+import {assert} from "../util";
 
 /**
  * An interface that can be used to specify various dimensions.
@@ -196,10 +197,10 @@ export abstract class PlottingSurface {
 export class HtmlPlottingSurface extends PlottingSurface implements IHtmlElement {
     public readonly topLevel: HTMLDivElement;
 
-    constructor(parent: HTMLElement, public readonly page: FullPage, sb: SizeAndBorders) {
+    constructor(parent: HTMLDivElement, public readonly page: FullPage, sb: SizeAndBorders) {
         super(page, sb);
-        this.topLevel = document.createElement("div");
-        parent.appendChild(this.topLevel);
+        assert(parent != null);
+        this.topLevel = parent;
         this.createObjects(d3select(this.topLevel));
     }
 

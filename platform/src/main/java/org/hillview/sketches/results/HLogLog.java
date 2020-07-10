@@ -38,7 +38,7 @@ public class HLogLog implements ISketchResult {
     private final byte[] registers;
     private final long seed;
     public long distinctItemCount; // Field so that value is accessible after serializing
-    private long confidence; // Confidence interval around distinctItemCount: TODO
+    private final long confidence; // Confidence interval around distinctItemCount: TODO
 
     /**
      * @param logRegNum the logarithm of the number of registers. should be in 4...16

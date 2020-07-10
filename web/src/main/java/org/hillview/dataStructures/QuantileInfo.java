@@ -19,6 +19,7 @@ package org.hillview.dataStructures;
 
 import org.hillview.table.RecordOrder;
 
+@SuppressWarnings("CanBeFinal")
 public class QuantileInfo {
     public int precision;
     public double position;

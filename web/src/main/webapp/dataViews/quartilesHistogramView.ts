@@ -24,26 +24,27 @@ import {
     RemoteObjectId, SampleSet,
 } from "../javaBridge";
 import {Receiver, RpcRequest} from "../rpc";
-import {BaseReceiver, TableTargetAPI} from "../tableTarget";
+import {BaseReceiver, TableTargetAPI} from "../modules";
 import {IDataView} from "../ui/dataview";
-import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
+import {FullPage, PageTitle} from "../ui/fullPage";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {ChartOptions, HtmlString} from "../ui/ui";
+import {ChartOptions, DragEventKind, HtmlString, Resolution} from "../ui/ui";
 import {
     Converters,
-    describeQuartiles,
+    describeQuartiles, formatNumber,
     ICancellable,
     PartialResult,
     quartileAsCsv,
-    saveAs,
+
 } from "../util";
 import {AxisData, AxisKind} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
-import {DataRangesReceiver, FilterReceiver} from "./dataRangesReceiver";
+import {DataRangesReceiver, NewTargetReceiver} from "./dataRangesReceiver";
 import {DisplayName, SchemaClass} from "../schemaClass";
 import {Quartiles2DPlot} from "../ui/quartiles2DPlot";
+import {saveAs} from "../ui/dialog";
 
 /**
  * This class is responsible for rendering a vector of quartiles.
@@ -67,7 +68,7 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
                 help: "Redraw this view",
             }, {
                 text: "table",
-                action: () => this.showTable(),
+                action: () => this.showTable([this.xAxisData.description, this.qCol], this.defaultProvenance),
                 help: "Show the data underlying this plot in a tabular view. ",
             }, {
                 text: "heatmap",
@@ -148,8 +149,9 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
             [this.xAxisData.getDisplayNameString(this.schema), "bucket",
                 "max", "q3", "median", "q1", "min", "count", "missing"], 40);
         this.pointDescription.show(false);
-        let summary = new HtmlString(String(bucketCount) + " buckets");
-        summary.setInnerHtml(this.summary);
+        let summary = new HtmlString(formatNumber(this.rowCount) + "rows, " +
+            formatNumber(bucketCount) + " buckets");
+        summary.setInnerHtml(this.summaryDiv);
     }
 
     public serialize(): IViewSerialization {
@@ -221,7 +223,7 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
-            return new FilterReceiver(title, [this.xAxisData.description, this.qCol],
+            return new NewTargetReceiver(title, [this.xAxisData.description, this.qCol],
                 this.schema, [0, 0], page, operation, this.dataset, {
                 exact: true, chartKind: "QuartileVector",
                 reusePage: false
@@ -232,7 +234,8 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
     public chooseBuckets(): void {
         if (this == null)
             return;
-        const bucketDialog = new BucketDialog(this.xAxisData.bucketCount);
+        const bucketDialog = new BucketDialog(
+            this.xAxisData.bucketCount, Resolution.maxBuckets(this.page.getWidthInPixels()));
         bucketDialog.setAction(() => {
             const bucketCount = bucketDialog.getBucketCount();
             if (bucketCount == null)
@@ -316,7 +319,7 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
         if (f == null)
             return;
         const rr = this.createFilterRequest(f);
-        const renderer = new FilterReceiver(
+        const renderer = new NewTargetReceiver(
             new PageTitle(this.page.title.format,
                 Converters.filterArrayDescription(f)),
             [this.xAxisData.description, this.qCol], this.schema,
@@ -324,11 +327,6 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
             chartKind: "QuartileVector", reusePage: false,
         });
         rr.invoke(renderer);
-    }
-
-    // show the table corresponding to the data in the histogram
-    protected showTable(): void {
-        super.showTable([this.xAxisData.description, this.qCol], this.defaultProvenance)
     }
 }
 

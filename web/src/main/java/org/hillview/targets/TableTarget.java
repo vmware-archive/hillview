@@ -43,6 +43,7 @@ import java.util.List;
  * This is the most important RpcTarget, representing a remote table.
  * Almost all operations are triggered from this object.
  */
+@SuppressWarnings("CanBeFinal")
 public final class TableTarget extends TableRpcTarget {
     static final long serialVersionUID = 1;
 
@@ -267,6 +268,14 @@ public final class TableTarget extends TableRpcTarget {
                 info[0].getBuckets());
         this.runSketch(this.table, sk.andThen(
                 r -> new Two<>(r.toSerializable(s -> s.toSerializable(c -> c)), null)), request, context);
+    }
+
+    @HillviewRpc
+    public void correlationHeatmaps(RpcRequest request, RpcRequestContext context) {
+        HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
+        IHistogramBuckets[] buckets = Linq.map(info, HistogramRequestInfo::getBuckets, IHistogramBuckets.class);
+        CorrelationSketch sk = new CorrelationSketch(buckets, info[0].samplingRate, info[0].seed);
+        this.runSketch(this.table, sk, request, context);
     }
 
     @HillviewRpc

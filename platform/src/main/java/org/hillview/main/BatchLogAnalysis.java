@@ -44,7 +44,7 @@ public class BatchLogAnalysis {
         @Nullable
         long[][] matrix;
         JsonList<String> errorCodeLabels = new JsonList<>();
-        ArrayList<String> timeLabels = new ArrayList<>();
+        final ArrayList<String> timeLabels = new ArrayList<>();
     }
 
     /**

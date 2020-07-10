@@ -20,33 +20,30 @@ import {HeatmapSerialization, IViewSerialization} from "../datasetView";
 import {
     Groups,
     IColumnDescription, kindIsNumeric,
-    RecordOrder,
     RemoteObjectId,
 } from "../javaBridge";
 import {Receiver} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
-import {BaseReceiver, TableTargetAPI} from "../tableTarget";
+import {BaseReceiver, TableTargetAPI} from "../modules";
 import {IDataView} from "../ui/dataview";
-import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
+import {FullPage, PageTitle} from "../ui/fullPage";
 import {HeatmapPlot} from "../ui/heatmapPlot";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {HtmlString, Resolution} from "../ui/ui";
+import {DragEventKind, HtmlString, Resolution} from "../ui/ui";
 import {
     Converters,
     formatNumber, histogram2DAsCsv,
     ICancellable, makeInterval,
     PartialResult,
-    saveAs,
     significantDigitsHtml, Two,
 } from "../util";
 import {AxisData} from "./axisData";
-import {NextKReceiver, TableView} from "./tableView";
-import {DataRangesReceiver, FilterReceiver} from "./dataRangesReceiver";
-import {ChartView} from "./chartView";
-import {Dialog, FieldKind} from "../ui/dialog";
+import {DataRangesReceiver, NewTargetReceiver} from "./dataRangesReceiver";
+import {ChartView} from "../modules";
+import {Dialog, FieldKind, saveAs} from "../ui/dialog";
 import {HeatmapLegendPlot} from "../ui/heatmapLegendPlot";
 
 /**
@@ -54,7 +51,6 @@ import {HeatmapLegendPlot} from "../ui/heatmapLegendPlot";
  */
 export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
     protected colorLegend: HeatmapLegendPlot;
-    protected summary: HTMLElement;
     protected plot: HeatmapPlot;
     protected showMissingData: boolean = false;  // TODO: enable this
     protected legendSurface: HtmlPlottingSurface;
@@ -66,7 +62,6 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
     protected xAxisData: AxisData;
     protected yAxisData: AxisData;
     protected legendDiv: HTMLDivElement;
-    protected heatmapDiv: HTMLDivElement;
     protected missingDiv: HTMLDivElement;
     protected confThreshold: number;
     private readonly defaultProvenance: string = "Fron heatmap";
@@ -77,8 +72,6 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
                 protected samplingRate: number,
                 page: FullPage) {
         super(remoteObjectId, rowCount, schema, page, "Heatmap");
-        this.topLevel = document.createElement("div");
-        this.topLevel.className = "chart";
         this.confThreshold = 2;
         this.viewMenu = new SubMenu([
             {
@@ -96,7 +89,8 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
                 help: "Change the number of buckets used to draw this histogram. ",
             }, {
                 text: "table",
-                action: () => this.showTable(),
+                action: () => this.showTable([this.xAxisData.description,
+                     this.yAxisData.description], this.defaultProvenance),
                 help: "View the data underlying this view as a table.",
             }, {
                 text: "histogram",
@@ -114,7 +108,11 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
                 text: "Confidence threshold...",
                 action: () => this.changeThreshold(),
                 help: "Specify how much larger than the confidence interval the data must be to be displayed.",
-            },
+            }, {
+                text: "Show/hide regression",
+                action: () => this.toggleRegression(),
+                help: "Show or hide the linear regression line"
+            }
         ]);
         this.menu = new TopMenu([
             this.exportMenu(),
@@ -124,11 +122,10 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
 
         this.viewMenu.enable("Confidence threshold...", this.isPrivate());
         this.page.setMenu(this.menu);
-        this.legendDiv = this.makeToplevelDiv();
-        this.heatmapDiv = this.makeToplevelDiv();
-        this.missingDiv = this.makeToplevelDiv();
-        this.summary = document.createElement("div");
-        this.topLevel.appendChild(this.summary);
+        this.createDiv("legend");
+        this.createDiv("chart");
+        this.missingDiv = this.makeToplevelDiv("missing");
+        this.createDiv("summary");
     }
 
     private quartileView(): void {
@@ -161,6 +158,10 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
             this.resize();
         });
         thDialog.show();
+    }
+
+    public toggleRegression(): void {
+        this.plot.toggleRegression();
     }
 
     public chooseBuckets(): void {
@@ -221,7 +222,7 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
                 () => this.updateView(this.data, true));
         }
 
-        this.surface = new HtmlPlottingSurface(this.heatmapDiv, this.page,
+        this.surface = new HtmlPlottingSurface(this.chartDiv, this.page,
             { topMargin: 20, leftMargin: Resolution.heatmapLabelWidth });
         this.plot = new HeatmapPlot(this.surface, this.colorLegend, true);
 
@@ -339,7 +340,7 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
         if (this.samplingRate < 1.0) {
             summary = summary.appendSafeString(", sampling rate ").append(significantDigitsHtml(this.samplingRate));
         }
-        summary.setInnerHtml(this.summary);
+        summary.setInnerHtml(this.summaryDiv);
     }
 
     public serialize(): IViewSerialization {
@@ -409,28 +410,11 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
-            return new FilterReceiver(title, [this.xAxisData.description, this.yAxisData.description],
+            return new NewTargetReceiver(title, [this.xAxisData.description, this.yAxisData.description],
                 this.schema, [0, 0], page, operation, this.dataset, {
                 exact: true, chartKind: "Heatmap", reusePage: false,
             });
         };
-    }
-
-    // show the table corresponding to the data in the heatmap
-    public showTable(): void {
-        const order =  new RecordOrder([ {
-            columnDescription: this.xAxisData.description,
-            isAscending: true,
-        }, {
-            columnDescription: this.yAxisData.description,
-            isAscending: true,
-        }]);
-        const page = this.dataset.newPage(new PageTitle("Table", "from heatmap"), this.page);
-        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, page);
-        page.setDataView(table);
-        table.schema = this.schema;
-        const rr = table.createNextKRequest(order, null, Resolution.tableRowsOnScreen);
-        rr.invoke(new NextKReceiver(page, table, rr, false, order, null));
     }
 
     public swapAxes(): void {
@@ -497,15 +481,12 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
         return true;
     }
 
-    /**
-     * Selection has been completed.  The mouse coordinates are within the canvas.
-     */
     private selectionCompleted(xl: number, xr: number, yl: number, yr: number): void {
         const f = this.filterSelectionRectangle(xl, xr, yl, yr, this.xAxisData, this.yAxisData);
         if (f == null)
             return;
         const rr = this.createFilterRequest(f);
-        const renderer = new FilterReceiver(new PageTitle(this.page.title.format,
+        const renderer = new NewTargetReceiver(new PageTitle(this.page.title.format,
             Converters.filterArrayDescription(f)),
             [this.xAxisData.description, this.yAxisData.description],
             this.schema, [0, 0], this.page, rr, this.dataset, {

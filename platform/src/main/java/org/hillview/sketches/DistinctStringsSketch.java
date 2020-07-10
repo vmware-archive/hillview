@@ -32,7 +32,7 @@ import java.util.Arrays;
 // This class is used just for benckmarking
 public class DistinctStringsSketch implements TableSketch<DistinctStringsSketch.DistinctStrings> {
     static final long serialVersionUID = 1;
-    private String column;
+    private final String column;
 
     public static class DistinctStrings implements IJsonSketchResult {
         static final long serialVersionUID = 1;

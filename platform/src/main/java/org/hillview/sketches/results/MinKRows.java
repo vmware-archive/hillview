@@ -50,7 +50,7 @@ public class MinKRows {
     /**
      * A priority queue of negated hashValues (we use negations since it dequeues the smallest key).
      */
-    LongHeapPriorityQueue priorityQueue;
+    final LongHeapPriorityQueue priorityQueue;
 
     public MinKRows(final int maxSize) {
         this.maxSize = maxSize;

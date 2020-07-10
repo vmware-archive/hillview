@@ -32,6 +32,7 @@ import java.util.List;
 /**
  * This class represents a subset of the cluster configuration information.
  */
+@SuppressWarnings("CanBeFinal")
 public class ClusterConfig {
     public static class AggregatorConfig {
         @Nullable

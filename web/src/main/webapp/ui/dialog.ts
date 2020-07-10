@@ -21,7 +21,7 @@ import {cloneArray, makeId, makeSpan, px} from "../util";
 import {EditBox} from "./editBox";
 import {IHtmlElement, Point} from "./ui";
 import {DisplayName} from "../schemaClass";
-import {FullPage} from "./fullPage";
+import * as FileSaver from "file-saver";
 
 export enum FieldKind {
     String,
@@ -32,7 +32,7 @@ export enum FieldKind {
     File,
     Datetime,
     ColumnName,
-    PageName
+    Object
 }
 
 /**
@@ -522,20 +522,20 @@ export class Dialog extends DialogBase {
     protected selectFields: Map<string, Map<string, any>> = new Map();
 
     /**
-     * Add a drop-down selection field with the specified pages.
+     * Add a drop-down selection field with the specified options.
      * @param fieldName: Internal name. Has to be used when parsing the input.
      * @param labelText: Text in the dialog for this field.
-     * @param options: List of pages that are the options in the selection box.
+     * @param options: List of objects that are the options in the selection box.
+     * @param label: A function that computes the label for each option.
      * @param toolTip:  Help message to show as a tool-tip.
      * @return       A reference to the select html input field.
      */
-    public addPageSelectField(fieldName: string, labelText: string,
-                              options: FullPage[],
-                              toolTip: string): HTMLInputElement | HTMLSelectElement {
+    public addSelectFieldAsObject<T>(fieldName: string, labelText: string,
+                                     options: T[], label: (T) => string,
+                                     toolTip: string): HTMLInputElement | HTMLSelectElement {
         let v = null;
-        const names = options.map(p => p.pageId + ". " + p.title.getTextRepresentation(p) +
-            "(" + p.title.provenance + ")");
-        const map = new Map<string, FullPage>();
+        const names = options.map(p => label(p));
+        const map = new Map<string, T>();
         for (let i = 0; i < names.length; i++)
             map.set(names[i], options[i]);
         this.selectFields.set(fieldName, map);
@@ -543,19 +543,19 @@ export class Dialog extends DialogBase {
             v = names[0];
         return this.addSelectInternal(
             fieldName, labelText, names,
-            v, toolTip, FieldKind.PageName);
+            v, toolTip, FieldKind.Object);
     }
 
-    public getFieldValueAsPage(fieldName: string): FullPage {
-        if (this.fields.get(fieldName).type !== FieldKind.PageName) {
-            console.assert(false, "Field is not page");
+    public getFieldValueAsObject<T>(fieldName: string): T {
+        if (this.fields.get(fieldName).type !== FieldKind.Object) {
+            console.assert(false, "Field is not an object");
             return null;
         }
         // This must be a select field.
         const map = this.selectFields.get(fieldName);
         if (map == null)
             return null;
-        return map.get(this.getFieldValue(fieldName)) as FullPage;
+        return map.get(this.getFieldValue(fieldName)) as T;
     }
 
     /**
@@ -738,4 +738,17 @@ export class NotifyDialog extends DialogBase {
         if (ev.code === "Enter" || ev.code === "Escape")
             this.hide();
     }
+}
+
+/**
+ * Save data in a file on the local filesystem.
+ * @param {string} filename  File to save data to.
+ * @param {string} contents  Contents to write in file.
+ */
+export function saveAs(filename: string, contents: string): void {
+    const blob = new Blob([contents], {type: "text/plain;charset=utf-8"});
+    FileSaver.saveAs(blob, filename);
+    const notify = new NotifyDialog("File has been saved.",
+        "Look for file " + filename, "File has been saved");
+    notify.show();
 }

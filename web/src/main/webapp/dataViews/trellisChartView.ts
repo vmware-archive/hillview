@@ -20,7 +20,7 @@ import {RangeFilterArrayDescription, RemoteObjectId} from "../javaBridge";
 import {DisplayName, SchemaClass} from "../schemaClass";
 import {FullPage} from "../ui/fullPage";
 import {Point, Resolution, ViewKind} from "../ui/ui";
-import {ChartView} from "./chartView";
+import {ChartView} from "../modules";
 import {TrellisShape} from "./dataRangesReceiver";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {event as d3event, mouse as d3mouse} from "d3-selection";
@@ -89,7 +89,7 @@ export abstract class TrellisChartView<D> extends ChartView<D> {
      */
     protected createAllSurfaces(
         onCreation: (surface: PlottingSurface) => void): void {
-        this.surface = new HtmlPlottingSurface(this.topLevel, this.page, {});
+        this.surface = new HtmlPlottingSurface(this.chartDiv, this.page, {});
 
         let created = 0;
         this.surfaces = [];
@@ -100,18 +100,17 @@ export abstract class TrellisChartView<D> extends ChartView<D> {
                 const shortTitle = this.groupByAxisData.bucketDescription(created, this.shape.size.width / 10);
                 const title = this.groupByAxisData.bucketDescription(created, 0);
                 const canvas = this.surface.getCanvas();
+                const yCorner = y * (this.shape.size.height + this.shape.headerHeight)
+                    + this.shape.headerHeight + this.surface.topMargin;
                 canvas.append("text")
                     .text(shortTitle)
                     .attr("class", "trellisTitle")
                     .attr("x", xCorner + this.shape.size.width / 2)
-                    .attr("y", y * (this.shape.size.height + this.shape.headerHeight)
-                        + this.surface.topMargin + (this.shape.headerHeight / 2))
+                    .attr("y", yCorner - (this.shape.headerHeight / 2))
                     .attr("text-anchor", "middle")
                     .attr("dominant-baseline", "middle")
                     .append("title")
                     .text(title);
-                const yCorner = y * (this.shape.size.height + this.shape.headerHeight)
-                    + this.shape.headerHeight + this.surface.topMargin;
                 const surface = this.surface.createChildSurface(xCorner, yCorner, {
                     width: this.shape.size.width,
                     height: this.shape.size.height,
@@ -243,10 +242,7 @@ export abstract class TrellisChartView<D> extends ChartView<D> {
             this.selectionWasLocal = true;
         } else {
             if (this.selectionWasLocal) {
-                // Hide the selection rectangle
-                this.selectionRectangle
-                    .attr("width", 0)
-                    .attr("height", 0);
+                this.hideSelectionRectangle();
             }
 
             this.selectionWasLocal = false;
@@ -276,9 +272,7 @@ export abstract class TrellisChartView<D> extends ChartView<D> {
         this.selectionEnd = { x: position[0], y: position[1] };
         this.selectionCompleted();
         this.unselectAllSurfaces();
-        this.selectionRectangle
-            .attr("width", 0)
-            .attr("height", 0);
+        this.hideSelectionRectangle();
         return true;
     }
 

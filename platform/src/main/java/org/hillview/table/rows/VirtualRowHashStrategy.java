@@ -35,8 +35,8 @@ import org.hillview.utils.MutableInteger;
 public class VirtualRowHashStrategy implements IntHash.Strategy {
     private final Schema schema;
     private final ITable data;
-    protected VirtualRowSnapshot vrs;
-    private VirtualRowSnapshot vrsToCompare;
+    protected final VirtualRowSnapshot vrs;
+    private final VirtualRowSnapshot vrsToCompare;
 
     public VirtualRowHashStrategy(ITable data, Schema schema) {
         this.data = data;

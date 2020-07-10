@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2020 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,13 +15,14 @@
  * limitations under the License.
  */
 
-package org.hillview.dataStructures;
-
-/**
- * Serialization of a request to compute the number of distinct items.
+/* This file solely exists to break circular dependencies between modules
+   which can cause problems with module loaders like webpack.
+   This is described at
+   https://medium.com/visual-development/how-to-fix-nasty-circular-dependency-issues-once-and-for-all-in-javascript-typescript-a04c987cf0de
+   This file is the equivalent of the "internal.js" module from that web page.
  */
-@SuppressWarnings("CanBeFinal")
-public class DistinctCountRequestInfo {
-    public String columnName = "";
-    public long seed;
-}
+
+export * from "./tableTarget"
+export * from "./dataViews/chartView"
+export * from "./dataViews/schemaView"
+export * from "./dataViews/tableView"

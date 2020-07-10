@@ -815,6 +815,10 @@ the current state of the display.
   frequency in the selected columns is above the threshold. the result
   is shown in a [frequent elements view](#frequent-elements-views).
 
+* Correlation: Computes pairwise-correlations between all selected columns.
+  This is displayed as a [triangular matrix of heatmaps](#correlation-heatmaps).
+  This option is only available for numeric columns.
+
 * PCA...: principal component analysis.  [Principal Component
   Analysis](https://en.wikipedia.org/wiki/Principal_component_analysis)
   is a method to project data in a high-dimensional space to a
@@ -1076,6 +1080,7 @@ Hillview supports many types of charts; these are described in the following sec
 [![Trellis plots of 2D histograms](trellis-histogram2d-array-small.png)](#trellis-plots-of-2d-histograms)
 [![Trellis plots of heatmaps](hillview-heatmap-array-small.png)](#trellis-plots-of-heatmaps)
 [![Trellis plots of quartile vectors](trellis-quartiles-small.png)](#trellis-plots-of-quartile-vectors)
+[![Pairwise correlations](pairwise-correlations-small.png)](#correlation-heatmaps)
 
 ### Uni-dimensional histogram views
 
@@ -1133,11 +1138,7 @@ Histogram views have a menu that offers to the users several operations:
 
 ![Histogram menu](histogram-menu.png)
 
-* Export: exporting the data in the view.  Exporting the data creates
-  a file named `histogram.csv` in the browser's download folder.  This
-  file has two columns: one describing each X axis bucket labels and a
-  second describing the bucket size.  This data can be used to plot
-  the same histogram using a tool like Excel.
+* Export: see (#exporting-data-to-a-local-csv-file).
 
 * View: [changing parameters](#the-histogram-view-menu) of the current view.
 
@@ -1519,6 +1520,15 @@ This is a Trellis plot is an array of quartile vector views, grouped by a third 
 Each plot displays data that corresponds to a range of values in
 the grouping column.
 
+### Correlation heatmaps
+
+Correlation heatmaps display a matrix of pairwise heatmaps between a set of numeric
+columns.  The heatmaps can be used to detect columns that are strongly correlated.
+
+![Pairwise correlations](pairwise-correlations.png)
+
+Selection is done as in heatmaps, but selection is restricted to a single heatmap.
+
 ### Combining two views
 
 Any view represents logically a subset of rows from an original table.
@@ -1544,3 +1554,10 @@ The operations are as follows:
 
 * Replace: replaces the data in the current view with the data from
   the previously-selected one.
+
+### Exporting data to a local CSV file
+
+The "export/AS CSV" menu for each chart will save the data in the chart in a
+local file (usually placed in the Downloads folder) in a CSV format.  Note that
+the data that is exported does not reflect the whole dataset, but only the data
+that is currently visible in the chart.

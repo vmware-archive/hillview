@@ -24,16 +24,16 @@ import {
 } from "../javaBridge";
 import {Receiver, RpcRequest} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
-import {BaseReceiver, TableTargetAPI} from "../tableTarget";
+import {BaseReceiver, TableTargetAPI} from "../modules";
 import {CDFPlot} from "../ui/cdfPlot";
 import {IDataView} from "../ui/dataview";
-import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
+import {FullPage, PageTitle} from "../ui/fullPage";
 import {Histogram2DPlot} from "../ui/histogram2DPlot";
 import {HistogramLegendPlot} from "../ui/histogramLegendPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {ChartOptions, HtmlString, Resolution} from "../ui/ui";
+import {ChartOptions, DragEventKind, HtmlString, Resolution} from "../ui/ui";
 import {
     add,
     Converters,
@@ -43,15 +43,15 @@ import {
     PartialResult,
     percent,
     reorder,
-    saveAs, significantDigits,
+    significantDigits,
     significantDigitsHtml,
 } from "../util";
 import {AxisData} from "./axisData";
 import {HistogramViewBase} from "./histogramViewBase";
-import {FilterReceiver, DataRangesReceiver} from "./dataRangesReceiver";
+import {NewTargetReceiver, DataRangesReceiver} from "./dataRangesReceiver";
 import {Histogram2DBarsPlot} from "../ui/histogram2DBarsPlot";
 import {Histogram2DBase} from "../ui/histogram2DBase";
-import {Dialog, FieldKind} from "../ui/dialog";
+import {Dialog, FieldKind, saveAs} from "../ui/dialog";
 
 /**
  * This class is responsible for rendering a 2D histogram.
@@ -79,7 +79,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
             help: "Redraw this view",
         }, {
             text: "table",
-            action: () => this.showTable(),
+            action: () => this.showTable([this.xAxisData.description, this.yAxisData.description], this.defaultProvenance),
             help: "Show the data underlying this plot in a tabular view. ",
         }, {
             text: "exact",
@@ -267,7 +267,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
         if (this.samplingRate < 1.0)
             summary = summary.appendSafeString(", sampling rate ")
                 .append(significantDigitsHtml(this.samplingRate));
-        summary.setInnerHtml(this.summary);
+        summary.setInnerHtml(this.summaryDiv);
     }
 
     public serialize(): IViewSerialization {
@@ -379,7 +379,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
-            return new FilterReceiver(title, [this.xAxisData.description, this.yAxisData.description],
+            return new NewTargetReceiver(title, [this.xAxisData.description, this.yAxisData.description],
                 this.schema, [0, 0], page, operation, this.dataset, {
                 exact: this.samplingRate >= 1, chartKind: "2DHistogram",
                 relative: this.relative, reusePage: false
@@ -462,7 +462,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
             this.xPoints.toString(),
             "Buckets on " + this.xAxisData.description.name);
         input.min = "1";
-        input.max = Resolution.maxBucketCount.toString();
+        input.max = Resolution.maxBuckets(this.page.getWidthInPixels()).toString();
         input.value = this.xPoints.toString();
         input.required = true;
 
@@ -471,7 +471,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
             this.yPoints.toString(),
             "Buckets on " + this.yAxisData.description.name);
         input.min = "1";
-        input.max = Resolution.maxBucketCount.toString();
+        input.max = Resolution.max2DBucketCount.toString();
         input.value = this.yPoints.toString();
         input.required = true;
 
@@ -656,7 +656,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
             complement: d3event.sourceEvent.ctrlKey
         }
         const rr = this.createFilterRequest(fa);
-        const renderer = new FilterReceiver(
+        const renderer = new NewTargetReceiver(
             new PageTitle(this.page.title.format, Converters.filterArrayDescription(fa)),
             [this.xAxisData.description, this.yAxisData.description], this.schema,
             [inLegend ? this.xPoints : 0, this.yPoints], this.page, rr, this.dataset, {
@@ -666,11 +666,6 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
             relative: this.relative
         });
         rr.invoke(renderer);
-    }
-
-    // show the table corresponding to the data in the histogram
-    protected showTable(): void {
-        super.showTable([this.xAxisData.description, this.yAxisData.description], this.defaultProvenance);
     }
 }
 

@@ -26,7 +26,7 @@ one row for an airline flight.  Columns in this dataset include: the date of the
 the origin and destination cities, the origin and destination states,
 the origin airport code, the distance flown, the departure and arrival delay.
 
-Updated on 2020 Jun 26.
+Updated on 2020 Jul 10.
 
 # Contents
 |Section|Reference|
@@ -89,7 +89,9 @@ Updated on 2020 Jun 26.
 |5.2.1.|[Selection using the colormap](#521-selection-using-the-colormap)|
 |5.3.|[Trellis plots of heatmaps](#53-trellis-plots-of-heatmaps)|
 |5.4.|[Trellis plots of quartile vectors](#54-trellis-plots-of-quartile-vectors)|
-|5.5.|[Combining two views](#55-combining-two-views)|
+|5.5.|[Correlation heatmaps](#55-correlation-heatmaps)|
+|5.6.|[Combining two views](#56-combining-two-views)|
+|5.7.|[Exporting data to a local CSV file](#57-exporting-data-to-a-local-csv-file)|
 ## 1. Basic concepts
 
 ### 1.1. System architecture
@@ -558,7 +560,7 @@ menu with the following options:
   colums
 
 * Combine: allows users to [combine data in two
-  views](#55-combining-two-views)
+  views](#56-combining-two-views)
 
 #### 3.2.1. Selecting columns
 
@@ -880,6 +882,10 @@ the current state of the display.
   frequency in the selected columns is above the threshold. the result
   is shown in a [frequent elements view](#34-frequent-elements-views).
 
+* Correlation: Computes pairwise-correlations between all selected columns.
+  This is displayed as a [triangular matrix of heatmaps](#55-correlation-heatmaps).
+  This option is only available for numeric columns.
+
 * PCA...: principal component analysis.  [Principal Component
   Analysis](https://en.wikipedia.org/wiki/Principal_component_analysis)
   is a method to project data in a high-dimensional space to a
@@ -1005,7 +1011,7 @@ The table view has a menu that offers the following options:
 * Filter: allows the user [to filter data](#338-the-table-filter-menu) according
   to various criteria.
 
-* Combine: allows the user to [combine the data in two views](#55-combining-two-views).
+* Combine: allows the user to [combine the data in two views](#56-combining-two-views).
 
 #### 3.3.7. The table view menu
 
@@ -1141,6 +1147,7 @@ Hillview supports many types of charts; these are described in the following sec
 [![Trellis plots of 2D histograms](trellis-histogram2d-array-small.png)](#52-trellis-plots-of-2d-histograms)
 [![Trellis plots of heatmaps](hillview-heatmap-array-small.png)](#53-trellis-plots-of-heatmaps)
 [![Trellis plots of quartile vectors](trellis-quartiles-small.png)](#54-trellis-plots-of-quartile-vectors)
+[![Pairwise correlations](pairwise-correlations-small.png)](#55-correlation-heatmaps)
 
 ### 4.1. Uni-dimensional histogram views
 
@@ -1198,15 +1205,11 @@ Histogram views have a menu that offers to the users several operations:
 
 ![Histogram menu](histogram-menu.png)
 
-* Export: exporting the data in the view.  Exporting the data creates
-  a file named `histogram.csv` in the browser's download folder.  This
-  file has two columns: one describing each X axis bucket labels and a
-  second describing the bucket size.  This data can be used to plot
-  the same histogram using a tool like Excel.
+* Export: see (#57-exporting-data-to-a-local-csv-file).
 
 * View: [changing parameters](#412-the-histogram-view-menu) of the current view.
 
-* Combine: [combining the data](#55-combining-two-views) in the current view with
+* Combine: [combining the data](#56-combining-two-views) in the current view with
   another one.
 
 #### 4.1.2. The histogram view menu
@@ -1405,7 +1408,7 @@ The "view" menu for a 2D histogram offers the following operations:
 
 ![A normalized two-dimensional histogram](hillview-histogram-normalized.png)
 
-For a description of the combine menu see [combining two views](#55-combining-two-views).
+For a description of the combine menu see [combining two views](#56-combining-two-views).
 
 #### 4.3.1. Selection in 2D histograms
 
@@ -1481,7 +1484,7 @@ The heatmap view menu has the following operations:
 * group by: Groups data by a third column creating a [Trellis plot]
   (#53-trellis-plots-of-heatmaps).
 
-For a description of the combine menu see [combining two views](#55-combining-two-views).
+For a description of the combine menu see [combining two views](#56-combining-two-views).
 
 #### 4.4.1. Selection from a heatmap
 
@@ -1584,7 +1587,16 @@ This is a Trellis plot is an array of quartile vector views, grouped by a third 
 Each plot displays data that corresponds to a range of values in
 the grouping column.
 
-### 5.5. Combining two views
+### 5.5. Correlation heatmaps
+
+Correlation heatmaps display a matrix of pairwise heatmaps between a set of numeric
+columns.  The heatmaps can be used to detect columns that are strongly correlated.
+
+![Pairwise correlations](pairwise-correlations.png)
+
+Selection is done as in heatmaps, but selection is restricted to a single heatmap.
+
+### 5.6. Combining two views
 
 Any view represents logically a subset of rows from an original table.
 Two different views can be combined by performing a set operation
@@ -1609,3 +1621,10 @@ The operations are as follows:
 
 * Replace: replaces the data in the current view with the data from
   the previously-selected one.
+
+### 5.7. Exporting data to a local CSV file
+
+The "export/AS CSV" menu for each chart will save the data in the chart in a
+local file (usually placed in the Downloads folder) in a CSV format.  Note that
+the data that is exported does not reflect the whole dataset, but only the data
+that is currently visible in the chart.

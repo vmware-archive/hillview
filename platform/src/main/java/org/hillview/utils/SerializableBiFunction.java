@@ -19,7 +19,6 @@ package org.hillview.utils;
 
 import java.io.Serializable;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 /**
  * Lambdas are not serializable; by casting them to this type they do become serializable.

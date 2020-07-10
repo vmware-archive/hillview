@@ -18,7 +18,7 @@
 import {HeavyHittersSerialization, IViewSerialization} from "../datasetView";
 import {
     ColumnSortOrientation,
-    IColumnDescription,
+    IColumnDescription, kindIsString,
     NextKList,
     RecordOrder,
     RemoteObjectId,
@@ -26,10 +26,10 @@ import {
 } from "../javaBridge";
 import {OnCompleteReceiver, RemoteObject} from "../rpc";
 import {SchemaClass} from "../schemaClass";
-import {BaseReceiver, BigTableView, TableTargetAPI} from "../tableTarget";
+import {BaseReceiver, BigTableView, TableTargetAPI} from "../modules";
 import {DataRangeUI} from "../ui/dataRangeUI";
 import {IDataView} from "../ui/dataview";
-import {Dialog, FieldKind, NotifyDialog} from "../ui/dialog";
+import {saveAs, Dialog, FieldKind, NotifyDialog} from "../ui/dialog";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {ContextMenu, SubMenu, TopMenu} from "../ui/menu";
 import {TabularDisplay} from "../ui/tabularDisplay";
@@ -42,7 +42,7 @@ import {
     significantDigitsHtml,
     Converters
 } from "../util";
-import {TableOperationCompleted} from "./tableView";
+import {TableOperationCompleted} from "../modules";
 
 /**
  * This method handles the outcome of the sketch for finding Heavy Hitters.
@@ -162,6 +162,7 @@ export class HeavyHittersView extends BigTableView {
         }, true);
 
         const menu = new TopMenu([
+            this.exportMenu(),
             { text: "View as Table",  subMenu: tableMenu, help: "Display frequent elements in a table."},
             { text: "Modify",  subMenu: modifyMenu, help: "Change how frequent elements are computed."},
         ]);
@@ -190,6 +191,55 @@ export class HeavyHittersView extends BigTableView {
             columnsShown: this.columnsShown,
         };
         return result;
+    }
+
+    public export(): void {
+        const lines: string[] = [];
+        let line = "";
+        for (const c of this.columnsShown)
+            line += JSON.stringify(this.schema.displayName(c.name).displayName) + ",";
+        line += "Count,%";
+        lines.push(line);
+
+        if (this.nextKList.rows != null) {
+            for (let i = 0; i < this.nextKList.rows.length; i++) {
+                line = "";
+                if (i === this.restPos) {
+                    for (const a of this.columnsShown) {
+                        line += ","
+                    }
+                    line += this.restCount.toString() + ",";
+                    line += (this.restCount / this.nextKList.rowsScanned * 100).toString();
+                    lines.push(line);
+                    continue;
+                }
+                for (let j = 0; j < this.columnsShown.length; j++) {
+                    const value = this.nextKList.rows[i].values[j];
+                    const kind = this.columnsShown[j].kind;
+                    if (value != null) {
+                        let v = Converters.valueToString(value, kind);
+                        if (kindIsString(kind))
+                            v = JSON.stringify(v);
+                        line += v;
+                    }
+                    line += ",";
+                }
+                line += this.nextKList.rows[i].count.toString() + ",";
+                line += ((this.nextKList.rows[i].count / this.nextKList.rowsScanned) * 100).toString();
+                lines.push(line);
+            }
+            if (this.restPos === this.nextKList.rows.length) {
+                for (const a of this.columnsShown) {
+                    line += ","
+                }
+                line += this.restCount.toString() + ",";
+                line += (this.restCount / this.nextKList.rowsScanned * 100).toString();
+                lines.push(line);
+            }
+        }
+
+        const fileName = "heavyHitters.csv";
+        saveAs(fileName, lines.join("\n"));
     }
 
     /**

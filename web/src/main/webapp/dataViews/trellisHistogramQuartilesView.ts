@@ -21,17 +21,16 @@ import {
     Groups,
     HistogramRequestInfo,
     IColumnDescription, RangeFilterArrayDescription,
-    RecordOrder,
     RemoteObjectId, SampleSet
 } from "../javaBridge";
-import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
-import {BaseReceiver, TableTargetAPI} from "../tableTarget";
+import {FullPage, PageTitle} from "../ui/fullPage";
+import {BaseReceiver, TableTargetAPI} from "../modules";
 import {SchemaClass} from "../schemaClass";
 import {
     allBuckets,
-    Converters, describeQuartiles,
+    Converters, describeQuartiles, formatNumber,
     ICancellable,
-    PartialResult, quartileAsCsv, saveAs,
+    PartialResult, quartileAsCsv,
 } from "../util";
 import {AxisData, AxisKind} from "./axisData";
 import {
@@ -39,20 +38,20 @@ import {
     TrellisQuartilesSerialization
 } from "../datasetView";
 import {IDataView} from "../ui/dataview";
-import {ChartOptions, Resolution} from "../ui/ui";
+import {ChartOptions, DragEventKind, HtmlString, Resolution} from "../ui/ui";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {
-    FilterReceiver,
+    NewTargetReceiver,
     DataRangesReceiver,
     TrellisShape, TrellisLayoutComputation,
 } from "./dataRangesReceiver";
 import {TrellisChartView} from "./trellisChartView";
-import {NextKReceiver, TableView} from "./tableView";
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {Quartiles2DPlot} from "../ui/quartiles2DPlot";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
 import {BucketDialog} from "./histogramViewBase";
+import {saveAs} from "../ui/dialog";
 
 export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Groups<SampleSet>>> {
     protected hps: Quartiles2DPlot[];
@@ -67,8 +66,6 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
         protected shape: TrellisShape,
         page: FullPage) {
         super(remoteObjectId, rowCount, schema, shape, page, "TrellisQuartiles");
-        this.topLevel = document.createElement("div");
-        this.topLevel.className = "chart";
         this.hps = [];
         this.data = null;
 
@@ -78,12 +75,13 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
                     action: () => { this.refresh(); },
                     help: "Redraw this view.",
                 }, { text: "table",
-                    action: () => this.showTable(),
+                    action: () => this.showTable(
+                        [this.xAxisData.description, this.qCol, this.groupByAxisData.description],
+                        this.defaultProvenance),
                     help: "Show the data underlying view using a table view.",
                 }, { text: "# buckets...",
                     action: () => this.chooseBuckets(),
-                    help: "Change the number of buckets used to draw the histograms. " +
-                        "The number of buckets must be between 1 and " + Resolution.maxBucketCount,
+                    help: "Change the number of buckets used to draw the histograms. "
                 }, { text: "heatmap",
                     action: () => this.heatmap(),
                     help: "Show this data as a Trellis plot of heatmaps.",
@@ -196,28 +194,9 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
             position[0], position[1]);
     }
 
-    protected showTable(): void {
-        const newPage = this.dataset.newPage(new PageTitle("Table", this.defaultProvenance), this.page);
-        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newPage);
-        newPage.setDataView(table);
-        table.schema = this.schema;
-
-        const order =  new RecordOrder([ {
-            columnDescription: this.xAxisData.description,
-            isAscending: true
-        }, {
-            columnDescription: this.qCol,
-            isAscending: true
-        }, {
-            columnDescription: this.groupByAxisData.description,
-            isAscending: true
-        }]);
-        const rr = table.createNextKRequest(order, null, Resolution.tableRowsOnScreen);
-        rr.invoke(new NextKReceiver(newPage, table, rr, false, order, null));
-    }
-
     protected chooseBuckets(): void {
-        const bucketDialog = new BucketDialog(this.xAxisData.bucketCount);
+        const bucketDialog = new BucketDialog(
+            this.xAxisData.bucketCount, Resolution.maxBuckets(this.page.getWidthInPixels()));
         bucketDialog.setAction(() => {
             const bucketCount = bucketDialog.getBucketCount();
             if (bucketCount == null)
@@ -379,6 +358,8 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
                 this.groupByAxisData.getDisplayNameString(this.schema),
                 "bucket", "max", "q3", "median", "q1", "min", "count", "missing"], 40);
         this.pointDescription.show(false);
+        const summary = new HtmlString(formatNumber(this.rowCount) + " points");
+        summary.setInnerHtml(this.summaryDiv);
     }
 
     protected dragMove(): boolean {
@@ -396,7 +377,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
-            return new FilterReceiver(title, [this.xAxisData.description, this.qCol,
+            return new NewTargetReceiver(title, [this.xAxisData.description, this.qCol,
                 this.groupByAxisData.description], this.schema, [0, 0, 0], page, operation, this.dataset, {
                 chartKind: "TrellisQuartiles", reusePage: false,
             });
@@ -408,7 +389,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
             return;
         const rr = this.createFilterRequest(filter);
         const title = new PageTitle(this.page.title.format, Converters.filterArrayDescription(filter));
-        const renderer = new FilterReceiver(title, [this.xAxisData.description, this.qCol,
+        const renderer = new NewTargetReceiver(title, [this.xAxisData.description, this.qCol,
             this.groupByAxisData.description], this.schema, [0, 0, 0], this.page, rr, this.dataset, {
             chartKind: "TrellisQuartiles",
             reusePage: false,

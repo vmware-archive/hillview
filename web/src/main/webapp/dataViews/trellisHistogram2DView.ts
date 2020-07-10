@@ -18,35 +18,43 @@
 import {Receiver} from "../rpc";
 import {
     Groups,
-    RecordOrder,
     RemoteObjectId, RangeFilterArrayDescription
 } from "../javaBridge";
-import {DragEventKind, FullPage, PageTitle} from "../ui/fullPage";
-import {BaseReceiver, TableTargetAPI} from "../tableTarget";
+import {FullPage, PageTitle} from "../ui/fullPage";
+import {BaseReceiver, TableTargetAPI} from "../modules";
 import {SchemaClass} from "../schemaClass";
-import {add, Converters, ICancellable, PartialResult, percent, significantDigits} from "../util";
+import {
+    add,
+    Converters,
+    formatNumber,
+    histogram3DAsCsv,
+    ICancellable,
+    PartialResult,
+    percent,
+    significantDigits
+} from "../util";
 import {AxisData, AxisKind} from "./axisData";
 import {
     IViewSerialization,
     TrellisHistogram2DSerialization
 } from "../datasetView";
 import {IDataView} from "../ui/dataview";
-import {ChartOptions, Resolution} from "../ui/ui";
+import {ChartOptions, DragEventKind, HtmlString, Resolution} from "../ui/ui";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {Histogram2DPlot} from "../ui/histogram2DPlot";
 import {
-    FilterReceiver,
+    NewTargetReceiver,
     DataRangesReceiver,
     TrellisShape,
     TrellisLayoutComputation
 } from "./dataRangesReceiver";
 import {TrellisChartView} from "./trellisChartView";
-import {NextKReceiver, TableView} from "./tableView";
 import {BucketDialog} from "./histogramViewBase";
 import {TextOverlay} from "../ui/textOverlay";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {HistogramLegendPlot} from "../ui/histogramLegendPlot";
 import {event as d3event, mouse as d3mouse} from "d3-selection";
+import {saveAs} from "../ui/dialog";
 
 export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Groups<number>>>> {
     protected hps: Histogram2DPlot[];
@@ -54,7 +62,6 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
     protected xAxisData: AxisData;
     protected legendAxisData: AxisData;
     private legendSurface: HtmlPlottingSurface;
-    private readonly legendDiv: HTMLDivElement;
     protected legendPlot: HistogramLegendPlot;
     protected relative: boolean;
     protected maxYAxis: number | null;  // maximum value to use for Y axis; if null - derive from data
@@ -68,8 +75,6 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
         protected samplingRate: number,
         page: FullPage) {
         super(remoteObjectId, rowCount, schema, shape, page, "Trellis2DHistogram");
-        this.topLevel = document.createElement("div");
-        this.topLevel.className = "chart";
         this.hps = [];
         this.data = null;
         this.maxYAxis = null;
@@ -82,15 +87,17 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
                     action: () => { this.refresh(); },
                     help: "Redraw this view.",
                 }, { text: "table",
-                    action: () => this.showTable(),
+                    action: () => this.showTable([
+                        this.xAxisData.description,
+                        this.legendAxisData.description,
+                        this.groupByAxisData.description], this.defaultProvenance),
                     help: "Show the data underlying view using a table view.",
                 }, { text: "exact",
                     action: () => this.exactHistogram(),
                     help: "Draw this data without making any approximations.",
                 }, { text: "# buckets...",
                     action: () => this.chooseBuckets(),
-                    help: "Change the number of buckets used to draw the histograms. " +
-                        "The number of buckets must be between 1 and " + Resolution.maxBucketCount,
+                    help: "Change the number of buckets used to draw the histograms. "
                 }, { text: "swap axes",
                     action: () => this.swapAxes(),
                     help: "Swap the X and Y axes of all plots."
@@ -112,7 +119,9 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
 
         this.page.setMenu(this.menu);
         this.buckets = Math.round(shape.size.width / Resolution.minBarWidth);
-        this.legendDiv = this.makeToplevelDiv();
+        this.createDiv("legend");
+        this.createDiv("chart");
+        this.createDiv("summary");
     }
 
     protected createNewSurfaces(keepColorMap: boolean): void {
@@ -244,26 +253,6 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
         this.legendPlot.highlight(colorIndex);
     }
 
-    protected showTable(): void {
-        const newPage = this.dataset.newPage(new PageTitle("Table", this.defaultProvenance), this.page);
-        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newPage);
-        newPage.setDataView(table);
-        table.schema = this.schema;
-
-        const order =  new RecordOrder([ {
-            columnDescription: this.xAxisData.description,
-            isAscending: true
-        }, {
-            columnDescription: this.legendAxisData.description,
-            isAscending: true
-        }, {
-            columnDescription: this.groupByAxisData.description,
-            isAscending: true
-        }]);
-        const rr = table.createNextKRequest(order, null, Resolution.tableRowsOnScreen);
-        rr.invoke(new NextKReceiver(newPage, table, rr, false, order, null));
-    }
-
     protected exactHistogram(): void {
         const cds = [this.xAxisData.description,
             this.legendAxisData.description, this.groupByAxisData.description];
@@ -277,7 +266,8 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
     }
 
     protected chooseBuckets(): void {
-        const bucketDialog = new BucketDialog(this.buckets);
+        const bucketDialog = new BucketDialog(
+            this.buckets, Resolution.maxBuckets(this.page.getWidthInPixels()));
         bucketDialog.setAction(() => {
             const ct = bucketDialog.getBucketCount();
             if (ct != null)
@@ -327,7 +317,10 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
     }
 
     protected export(): void {
-        // TODO
+        const lines = histogram3DAsCsv(
+            this.data, this.schema, [this.xAxisData, this.legendAxisData, this.groupByAxisData]);
+        const fileName = "trellis-histogram2d.csv";
+        saveAs(fileName, lines.join("\n"));
     }
 
     public resize(): void {
@@ -440,8 +433,10 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
                 "percent",
                 "count" /* TODO:, "cdf" */], 40);
 
-        this.legendPlot.setData(this.legendAxisData, false /* TODO */, this.schema);
+        this.legendPlot.setData(this.legendAxisData, this.legendAxisData.dataRange.missingCount > 0, this.schema);
         this.legendPlot.draw();
+        const summary = new HtmlString(formatNumber(this.rowCount) + " points");
+        summary.setInnerHtml(this.summaryDiv);
     }
 
     protected dragMove(): boolean {
@@ -459,7 +454,7 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
-            return new FilterReceiver(title, [this.xAxisData.description, this.legendAxisData.description,
+            return new NewTargetReceiver(title, [this.xAxisData.description, this.legendAxisData.description,
                 this.groupByAxisData.description], this.schema, [0, 0, 0], page, operation, this.dataset, {
                 chartKind: "Trellis2DHistogram", relative: this.relative,
                 reusePage: false, exact: this.samplingRate >= 1
@@ -472,7 +467,7 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
             return;
         const rr = this.createFilterRequest(filter);
         const title = new PageTitle(this.page.title.format, Converters.filterDescription(filter.filters[0]));
-        const renderer = new FilterReceiver(title, [this.xAxisData.description, this.legendAxisData.description,
+        const renderer = new NewTargetReceiver(title, [this.xAxisData.description, this.legendAxisData.description,
             this.groupByAxisData.description], this.schema, [0, 0, 0], this.page, rr, this.dataset, {
             chartKind: "Trellis2DHistogram", relative: this.relative,
             reusePage: false, exact: this.samplingRate >= 1

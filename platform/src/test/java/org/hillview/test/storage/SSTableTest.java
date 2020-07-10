@@ -61,6 +61,7 @@ public class SSTableTest extends BaseTest{
         try {
             File directoryPath = new File(ssTableDir);
             String[] contents = directoryPath.list();
+            Assert.assertNotNull(contents);
             int counter = 0;
             for (String content : contents) {
                 if (content.startsWith("md-"))
