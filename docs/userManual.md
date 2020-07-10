@@ -26,7 +26,7 @@ one row for an airline flight.  Columns in this dataset include: the date of the
 the origin and destination cities, the origin and destination states,
 the origin airport code, the distance flown, the departure and arrival delay.
 
-Updated on 2020 Jul 08.
+Updated on 2020 Jul 10.
 
 # Contents
 |Section|Reference|
@@ -91,6 +91,7 @@ Updated on 2020 Jul 08.
 |5.4.|[Trellis plots of quartile vectors](#54-trellis-plots-of-quartile-vectors)|
 |5.5.|[Correlation heatmaps](#55-correlation-heatmaps)|
 |5.6.|[Combining two views](#56-combining-two-views)|
+|5.7.|[Exporting data to a local CSV file](#57-exporting-data-to-a-local-csv-file)|
 ## 1. Basic concepts
 
 ### 1.1. System architecture
@@ -1204,11 +1205,7 @@ Histogram views have a menu that offers to the users several operations:
 
 ![Histogram menu](histogram-menu.png)
 
-* Export: exporting the data in the view.  Exporting the data creates
-  a file named `histogram.csv` in the browser's download folder.  This
-  file has two columns: one describing each X axis bucket labels and a
-  second describing the bucket size.  This data can be used to plot
-  the same histogram using a tool like Excel.
+* Export: see (#57-exporting-data-to-a-local-csv-file).
 
 * View: [changing parameters](#412-the-histogram-view-menu) of the current view.
 
@@ -1597,6 +1594,8 @@ columns.  The heatmaps can be used to detect columns that are strongly correlate
 
 ![Pairwise correlations](pairwise-correlations.png)
 
+Selection is done as in heatmaps, but selection is restricted to a single heatmap.
+
 ### 5.6. Combining two views
 
 Any view represents logically a subset of rows from an original table.
@@ -1622,3 +1621,10 @@ The operations are as follows:
 
 * Replace: replaces the data in the current view with the data from
   the previously-selected one.
+
+### 5.7. Exporting data to a local CSV file
+
+The "export/AS CSV" menu for each chart will save the data in the chart in a
+local file (usually placed in the Downloads folder) in a CSV format.  Note that
+the data that is exported does not reflect the whole dataset, but only the data
+that is currently visible in the chart.
