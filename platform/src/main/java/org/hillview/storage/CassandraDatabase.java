@@ -20,24 +20,18 @@ package org.hillview.storage;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.KeyspaceMetadata;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.TableMetadata;
+import com.datastax.driver.core.*;
 import com.datastax.driver.core.Cluster.Builder;
 
 import org.apache.cassandra.tools.INodeProbeFactory;
 import org.apache.cassandra.tools.NodeProbe;
 import org.apache.cassandra.tools.NodeProbeFactory;
+import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Utilities;
 
@@ -59,11 +53,11 @@ public class CassandraDatabase {
     private Metadata metadata;
     /** Probe: Connection to Cassandra node that enables Hillview to execute server-side query */
     @Nullable
-    private INodeProbeFactory nodeProbeFactory;
+    private final INodeProbeFactory nodeProbeFactory;
     @Nullable
     private NodeProbe probe;
-    private List<CassTable> cassTables = new ArrayList<CassTable>();
-    private List<TokenRange> tokenRanges = new ArrayList<TokenRange>();
+    private final List<CassTable> cassTables = new ArrayList<CassTable>();
+    private final List<TokenRange> tokenRanges = new ArrayList<TokenRange>();
 
     /** This class enables Hillview to execute server-side and client-side queries, such as
      * getting sstable path, list of stored tables, list of token-range, and also the row count
@@ -82,8 +76,8 @@ public class CassandraDatabase {
             this.setStoredTableInfo();
             this.setTokenRanges();
         } catch (Exception e) {
-            HillviewLogger.instance.error("Failed initializing CassandraDatabase partitions, "
-                + this.info.toString());
+            HillviewLogger.instance.error("Failed initializing CassandraDatabase partitions",
+                    "{0}", this.info.toString());
             throw new RuntimeException(e);
         }
     }
@@ -111,13 +105,13 @@ public class CassandraDatabase {
 
     /**
      * Connection for running server-side query.
-     * @throws IOException
     */
     private void connectLocalProbe() throws IOException {
+        Converters.checkNull(this.nodeProbeFactory);
         if (Utilities.isNullOrEmpty(info.user))
-            this.probe = nodeProbeFactory.create(info.host, info.jmxPort);
+            this.probe = this.nodeProbeFactory.create(info.host, info.jmxPort);
         else
-            this.probe = nodeProbeFactory.create(info.host, info.jmxPort,
+            this.probe = this.nodeProbeFactory.create(info.host, info.jmxPort,
                 info.user, info.password);
     }
 
@@ -135,9 +129,7 @@ public class CassandraDatabase {
                 String rawEndpoints = arr[3].replace(", rpc_endpoints", "");
                 rawEndpoints = rawEndpoints.substring(1,rawEndpoints.length()-1);
                 String[] ips = rawEndpoints.split(",");
-                for (String ip : ips) {
-                    endpoints.add(new String(ip));
-                }
+                endpoints.addAll(Arrays.asList(ips));
             } catch (Exception e) {
                 throw new RuntimeException("Failed to parse token range", e);
             }
@@ -152,12 +144,11 @@ public class CassandraDatabase {
     /**
      * Shows key-range (table partition) and endpoints (replica) which stores each key-range.
      * This key-range distribution is the same on every node in the cluster.
-     * @throws IOException
      */
     private void setTokenRanges() throws IOException {
         String keyspace = this.info.database;
         TokenRange tr;
-        for (String tokenRangeString : this.probe.describeRing(keyspace)) {
+        for (String tokenRangeString : Converters.checkNull(this.probe).describeRing(keyspace)) {
             tr = new TokenRange(tokenRangeString);
             this.tokenRanges.add(tr);
         }
@@ -175,7 +166,7 @@ public class CassandraDatabase {
         public String toString(){
             StringBuilder result = new StringBuilder(" - " + this.keyspace);
             for (String table : this.tables) {
-                result.append("\n\t" + table);
+                result.append("\n\t").append(table);
             }
             return result.toString();
         }
@@ -183,14 +174,14 @@ public class CassandraDatabase {
 
     /** The list of keyspaces and tables are obtained from cluster connection's metadata */
     private void setStoredTableInfo() {
-        List<KeyspaceMetadata> keyspaces = this.metadata.getKeyspaces();
+        List<KeyspaceMetadata> keyspaces = Converters.checkNull(this.metadata).getKeyspaces();
         String keyspace;
         Collection<TableMetadata> tables;
         List<String> tableNames;
         for (KeyspaceMetadata kMetadata : keyspaces) {
             keyspace = kMetadata.getName();
             tables = this.metadata.getKeyspace(keyspace).getTables();
-            tableNames = tables.stream().map(tm -> tm.getName())
+            tableNames = tables.stream().map(AbstractTableMetadata::getName)
                 .collect(Collectors.toList());
             this.cassTables.add(new CassTable(keyspace, tableNames));
         }
@@ -240,11 +231,17 @@ public class CassandraDatabase {
     public String toString(){
         StringBuilder result = new StringBuilder("Available Keyspaces and Tables:");
         for (CassTable cassTable : this.cassTables) {
-            result.append("\n" + cassTable.toString());
+            result.append(System.lineSeparator()).append(cassTable.toString());
         }
-        result.append("\n\n" + "Table partition of " + this.info.database + ":");
+        result.append(System.lineSeparator())
+                .append(System.lineSeparator())
+                .append("Table partition of ")
+                .append(this.info.database)
+                .append(":");
         for (TokenRange tokenRange : this.tokenRanges) {
-            result.append("\n\t" + tokenRange.toString());
+            result.append(System.lineSeparator())
+                    .append("\t")
+                    .append(tokenRange.toString());
         }
         return result.toString();
     }

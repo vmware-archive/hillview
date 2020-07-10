@@ -21,9 +21,7 @@ target/
 */.idea/libraries
 */.idea/uiDesigner.xml
 */.idea/codeStyles
-platform/platform.iml
-web/web.iml
-hillview.iml
+*.iml
 
 TAGS
 *.log

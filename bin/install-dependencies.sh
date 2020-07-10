@@ -5,6 +5,8 @@
 set -e
 set -x
 
+# Set to 0 if you don't want to install cassandra locally for tests
+INSTALL_CASSANDRA=1
 SAVEDIR=$PWD
 mydir="$(dirname "$0")"
 if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
@@ -17,7 +19,7 @@ case "$OSTYPE" in
     # Location where node.js version 11 resides.
         echo "Installing curl"
         ${SUDO} ${INSTALL} install curl -y
-	curl -sL https://deb.nodesource.com/setup_11.x | ${SUDO} -E bash -
+	curl -sL https://deb.nodesource.com/setup_12.x | ${SUDO} -E bash -
 esac
 
 ${SUDO} ${INSTALL} install wget maven ${NODEJS} ${NPM} ${LIBFORTRAN} unzip gzip
@@ -53,5 +55,6 @@ npm install
 npm link typescript
 cd ${SAVEDIR}
 
-echo "Installing Cassandra"
-./install-cassandra.sh
+if [ ${INSTALL_CASSANDRA} -eq 1 ]; then
+    ./install-cassandra.sh
+fi

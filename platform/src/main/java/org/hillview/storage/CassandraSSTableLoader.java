@@ -22,6 +22,7 @@ import org.hillview.table.columns.BaseListColumn;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.Table;
+import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
 
 import org.apache.cassandra.utils.FBUtilities;
@@ -72,15 +73,15 @@ public class CassandraSSTableLoader extends TextFileLoader {
         this.ssTablePath = ssTablePath;
         this.lazyLoading = lazyLoading;
 
-        try{
+        try {
             Descriptor descriptor = Descriptor.fromFilename(this.ssTablePath);
             this.metadata = this.getSSTableMetadata(descriptor);
             this.ssTableReader = SSTableReader.openNoValidation(descriptor, this.metadata);
             // Get the schema of the current SSTable
             this.actualSchema = this.getSchema(this.metadata);
         } catch (Exception e) {
-            HillviewLogger.instance.error("Failed initializing Metadata and SStable partitions, "
-                + this.ssTablePath);
+            HillviewLogger.instance.error(
+                    "Failed initializing Metadata and SStable partitions", "{0}", this.ssTablePath);
             throw new RuntimeException(e);
         }
     }

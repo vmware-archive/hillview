@@ -16,7 +16,7 @@ if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
 source ${mydir}/lib.sh
 
 # Bail out on first error; verbose
-set -e
+set -ex
 
 TESTARGS="-DskipTests"
 TOOLSARGS=""
@@ -36,7 +36,7 @@ while getopts shta FLAG; do
    esac
 done
 
-if [ x${TOOLSARGS} != "x" ]; then
+if [ "x${TOOLSARGS}" != "x" ]; then
    pushd ${mydir}/../cassandra-shaded
    mvn install
    popd
