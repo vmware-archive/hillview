@@ -29,10 +29,8 @@ import {AxisData} from "./axisData";
  * This is a base class that contains code common to various histogram renderings.
  */
 export abstract class HistogramViewBase<D> extends ChartView<D> {
-    protected summary: HTMLElement;
     protected cdfDot: D3SvgElement;
     protected cdfPlot: ICDFPlot;
-    protected chartDiv: HTMLDivElement;
     // protected scrollBar: ScrollBar;
     public xAxisData: AxisData;
 
@@ -42,15 +40,11 @@ export abstract class HistogramViewBase<D> extends ChartView<D> {
         schema: SchemaClass,
         page: FullPage, viewKind: ViewKind) {
         super(remoteObjectId, rowCount, schema, page, viewKind);
-        this.chartDiv = this.createChartDiv();
+        this.createDiv("chart");
         this.cdfDot = null;
         // this.scrollBar = new ScrollBar(this, true);
         // this.topLevel.appendChild(this.scrollBar.getHTMLRepresentation());
-
-        const summaryContainer = document.createElement("div");
-        this.topLevel.appendChild(summaryContainer);
-        this.summary = document.createElement("div");
-        summaryContainer.appendChild(this.summary);
+        this.createDiv("summary");
     }
 
     public abstract resize(): void;

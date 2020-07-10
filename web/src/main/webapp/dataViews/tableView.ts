@@ -231,6 +231,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             line += "," + JSON.stringify(this.schema.displayName(o.columnDescription.name).displayName);
         if (this.aggregates != null)
             for (const a of this.aggregates) {
+                // noinspection UnnecessaryLocalVariableJS
                 const dn = this.schema.displayName(a.cd.name).displayName;
                 line += "," + JSON.stringify(a.agkind + "(" + dn + "))");
             }

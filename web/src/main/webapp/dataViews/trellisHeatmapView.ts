@@ -25,16 +25,16 @@ import {BaseReceiver, TableTargetAPI} from "../modules";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
-import {DragEventKind, Resolution} from "../ui/ui";
+import {DragEventKind, HtmlString, Resolution} from "../ui/ui";
 import {AxisData, AxisKind} from "./axisData";
 import {
-    FilterReceiver,
+    NewTargetReceiver,
     DataRangesReceiver,
     TrellisShape,
     TrellisLayoutComputation
 } from "./dataRangesReceiver";
 import {Receiver, RpcRequest} from "../rpc";
-import {Converters, histogram3DAsCsv, ICancellable, makeInterval, PartialResult} from "../util";
+import {Converters, formatNumber, histogram3DAsCsv, ICancellable, makeInterval, PartialResult} from "../util";
 import {HeatmapPlot} from "../ui/heatmapPlot";
 import {IViewSerialization, TrellisHeatmapSerialization} from "../datasetView";
 import {IDataView} from "../ui/dataview";
@@ -50,7 +50,6 @@ import {saveAs} from "../ui/dialog";
 export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<number>>>> {
     private colorLegend: HeatmapLegendPlot;
     private legendSurface: HtmlPlottingSurface;
-    private readonly legendDiv: HTMLDivElement;
     protected xAxisData: AxisData;
     protected yAxisData: AxisData;
     protected hps: HeatmapPlot[];
@@ -94,7 +93,9 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
             this.dataset.combineMenu(this, page.pageId),
         ]);
         this.page.setMenu(this.menu);
-        this.legendDiv = this.makeToplevelDiv();
+        this.createDiv("legend");
+        this.createDiv("chart");
+        this.createDiv("summary");
     }
 
     public static reconstruct(ser: TrellisHeatmapSerialization, page: FullPage): IDataView {
@@ -342,6 +343,8 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
             this.surface.bottomMargin / 2})`)
             .attr("text-anchor", "middle")
             .attr("dominant-baseline", "hanging");
+        const summary = new HtmlString(formatNumber(this.rowCount) + " points");
+        summary.setInnerHtml(this.summaryDiv);
     }
 
     public onMouseMove(): void {
@@ -364,7 +367,7 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
-            return new FilterReceiver(title,
+            return new NewTargetReceiver(title,
                 [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description],
                 this.schema, [0, 0, 0], page, operation, this.dataset, {
                 chartKind: "TrellisHeatmap",
@@ -393,7 +396,7 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
             rr = this.createFilterRequest(f);
             title = new PageTitle(this.page.title.format,
                 Converters.filterDescription(xRange) + " and " + Converters.filterDescription(yRange));
-            const renderer = new FilterReceiver(title,
+            const renderer = new NewTargetReceiver(title,
                 [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description],
                 this.schema, [0, 0, 0], this.page, rr, this.dataset, {
                 chartKind: "TrellisHeatmap", relative: false, reusePage: false,
@@ -406,7 +409,7 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
                 return;
             rr = this.createFilterRequest(filter);
             title = new PageTitle(this.page.title.format, Converters.filterArrayDescription(filter));
-            const renderer = new FilterReceiver(title,
+            const renderer = new NewTargetReceiver(title,
                 [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description],
                 this.schema, [0, 0, 0], this.page, rr, this.dataset, {
                 chartKind: "TrellisHeatmap", relative: false, reusePage: false,

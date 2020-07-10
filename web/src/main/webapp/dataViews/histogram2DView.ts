@@ -48,7 +48,7 @@ import {
 } from "../util";
 import {AxisData} from "./axisData";
 import {HistogramViewBase} from "./histogramViewBase";
-import {FilterReceiver, DataRangesReceiver} from "./dataRangesReceiver";
+import {NewTargetReceiver, DataRangesReceiver} from "./dataRangesReceiver";
 import {Histogram2DBarsPlot} from "../ui/histogram2DBarsPlot";
 import {Histogram2DBase} from "../ui/histogram2DBase";
 import {Dialog, FieldKind, saveAs} from "../ui/dialog";
@@ -267,7 +267,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
         if (this.samplingRate < 1.0)
             summary = summary.appendSafeString(", sampling rate ")
                 .append(significantDigitsHtml(this.samplingRate));
-        summary.setInnerHtml(this.summary);
+        summary.setInnerHtml(this.summaryDiv);
     }
 
     public serialize(): IViewSerialization {
@@ -379,7 +379,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
-            return new FilterReceiver(title, [this.xAxisData.description, this.yAxisData.description],
+            return new NewTargetReceiver(title, [this.xAxisData.description, this.yAxisData.description],
                 this.schema, [0, 0], page, operation, this.dataset, {
                 exact: this.samplingRate >= 1, chartKind: "2DHistogram",
                 relative: this.relative, reusePage: false
@@ -656,7 +656,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
             complement: d3event.sourceEvent.ctrlKey
         }
         const rr = this.createFilterRequest(fa);
-        const renderer = new FilterReceiver(
+        const renderer = new NewTargetReceiver(
             new PageTitle(this.page.title.format, Converters.filterArrayDescription(fa)),
             [this.xAxisData.description, this.yAxisData.description], this.schema,
             [inLegend ? this.xPoints : 0, this.yPoints], this.page, rr, this.dataset, {

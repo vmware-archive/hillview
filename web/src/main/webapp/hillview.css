@@ -44,11 +44,11 @@ body {
     overflow: hidden;
 }
 
-.chart:focus, #tableContainer:focus, div.dialog:focus {
+.chart-page:focus, #tableContainer:focus, div.dialog:focus {
     outline: none;
 }
 
-.chart > h2 {
+.chart-page > h2 {
     text-align: center;
     margin: 5px;
 }

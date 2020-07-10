@@ -28,7 +28,7 @@ import {BaseReceiver, TableTargetAPI} from "../modules";
 import {SchemaClass} from "../schemaClass";
 import {
     allBuckets,
-    Converters, describeQuartiles,
+    Converters, describeQuartiles, formatNumber,
     ICancellable,
     PartialResult, quartileAsCsv,
 } from "../util";
@@ -38,10 +38,10 @@ import {
     TrellisQuartilesSerialization
 } from "../datasetView";
 import {IDataView} from "../ui/dataview";
-import {ChartOptions, DragEventKind, Resolution} from "../ui/ui";
+import {ChartOptions, DragEventKind, HtmlString, Resolution} from "../ui/ui";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {
-    FilterReceiver,
+    NewTargetReceiver,
     DataRangesReceiver,
     TrellisShape, TrellisLayoutComputation,
 } from "./dataRangesReceiver";
@@ -358,6 +358,8 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
                 this.groupByAxisData.getDisplayNameString(this.schema),
                 "bucket", "max", "q3", "median", "q1", "min", "count", "missing"], 40);
         this.pointDescription.show(false);
+        const summary = new HtmlString(formatNumber(this.rowCount) + " points");
+        summary.setInnerHtml(this.summaryDiv);
     }
 
     protected dragMove(): boolean {
@@ -375,7 +377,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
-            return new FilterReceiver(title, [this.xAxisData.description, this.qCol,
+            return new NewTargetReceiver(title, [this.xAxisData.description, this.qCol,
                 this.groupByAxisData.description], this.schema, [0, 0, 0], page, operation, this.dataset, {
                 chartKind: "TrellisQuartiles", reusePage: false,
             });
@@ -387,7 +389,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
             return;
         const rr = this.createFilterRequest(filter);
         const title = new PageTitle(this.page.title.format, Converters.filterArrayDescription(filter));
-        const renderer = new FilterReceiver(title, [this.xAxisData.description, this.qCol,
+        const renderer = new NewTargetReceiver(title, [this.xAxisData.description, this.qCol,
             this.groupByAxisData.description], this.schema, [0, 0, 0], this.page, rr, this.dataset, {
             chartKind: "TrellisQuartiles",
             reusePage: false,

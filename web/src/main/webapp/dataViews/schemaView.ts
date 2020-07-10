@@ -27,7 +27,7 @@ import {
 } from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
 import {IDataView} from "../ui/dataview";
-import {Dialog, FieldKind, saveAs} from "../ui/dialog";
+import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {ContextMenu, SubMenu, TopMenu, TopMenuItem} from "../ui/menu";
 import {TabularDisplay} from "../ui/tabularDisplay";
@@ -52,7 +52,7 @@ import {HillviewToplevel} from "../toplevel";
 export class SchemaView extends TSViewBase {
     protected display: TabularDisplay;
     protected contextMenu: ContextMenu;
-    protected summary: HTMLElement;
+    protected summaryDiv: HTMLElement;
     protected stats: Map<string, BasicColStats>;
     protected nameDialog: Dialog;
     protected typeDialog: Dialog;
@@ -151,8 +151,8 @@ export class SchemaView extends TSViewBase {
         this.topLevel.appendChild(document.createElement("br"));
         this.display = new TabularDisplay();
         this.topLevel.appendChild(this.display.getHTMLRepresentation());
-        this.summary = document.createElement("div");
-        this.topLevel.appendChild(this.summary);
+        this.summaryDiv = document.createElement("div");
+        this.topLevel.appendChild(this.summaryDiv);
     }
 
     public export(): void {
@@ -194,7 +194,7 @@ export class SchemaView extends TSViewBase {
         this.displayRows();
         this.display.getHTMLRepresentation().setAttribute("overflow-x", "hidden");
         if (this.rowCount != null)
-            this.summary.textContent = formatNumber(this.rowCount) + " rows";
+            this.summaryDiv.textContent = formatNumber(this.rowCount) + " rows";
         this.page.setDataView(this);
         this.display.setScrollPosition(scrollPos);
         this.page.reportTime(elapsedMs);

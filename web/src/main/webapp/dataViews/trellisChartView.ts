@@ -89,7 +89,7 @@ export abstract class TrellisChartView<D> extends ChartView<D> {
      */
     protected createAllSurfaces(
         onCreation: (surface: PlottingSurface) => void): void {
-        this.surface = new HtmlPlottingSurface(this.topLevel, this.page, {});
+        this.surface = new HtmlPlottingSurface(this.chartDiv, this.page, {});
 
         let created = 0;
         this.surfaces = [];
@@ -242,10 +242,7 @@ export abstract class TrellisChartView<D> extends ChartView<D> {
             this.selectionWasLocal = true;
         } else {
             if (this.selectionWasLocal) {
-                // Hide the selection rectangle
-                this.selectionRectangle
-                    .attr("width", 0)
-                    .attr("height", 0);
+                this.hideSelectionRectangle();
             }
 
             this.selectionWasLocal = false;
@@ -275,9 +272,7 @@ export abstract class TrellisChartView<D> extends ChartView<D> {
         this.selectionEnd = { x: position[0], y: position[1] };
         this.selectionCompleted();
         this.unselectAllSurfaces();
-        this.selectionRectangle
-            .attr("width", 0)
-            .attr("height", 0);
+        this.hideSelectionRectangle();
         return true;
     }
 

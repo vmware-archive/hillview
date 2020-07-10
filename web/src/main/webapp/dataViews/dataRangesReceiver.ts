@@ -597,11 +597,10 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
 }
 
 /**
- * Receives the result of a filtering operation and initiates
- * a new range computation, which in turns initiates a chart
- * rendering.
+ * Receives the result of a an operation that produces a new dataset and initiates
+ * a new range computation, which in turns initiates a chart rendering.
  */
-export class FilterReceiver extends BaseReceiver {
+export class NewTargetReceiver extends BaseReceiver {
     constructor(protected title: PageTitle,
                 protected cds: IColumnDescription[],
                 protected schema: SchemaClass,
@@ -614,7 +613,7 @@ export class FilterReceiver extends BaseReceiver {
     }
 
     public run(): void {
-        super.run();
+        super.run(); // This sets this.remoteObject.
         const rr = this.remoteObject.createDataQuantilesRequest(this.cds, this.page, this.options.chartKind);
         rr.invoke(new DataRangesReceiver(this.remoteObject, this.page, rr, this.schema,
                   this.bucketCounts, this.cds, this.title, null, this.options));

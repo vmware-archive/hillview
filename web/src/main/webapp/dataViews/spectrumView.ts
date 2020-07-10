@@ -128,17 +128,14 @@ export class SpectrumView extends ChartView<Groups<number>> {
     protected axisData: AxisData;
     protected title: string;
     protected plot: HistogramPlot;
-    protected chartDiv: HTMLElement;
-    protected summary: HTMLElement;
 
     constructor(remoteObjectId: RemoteObjectId, rowCount: number,
                 protected colNames: string[],
                 schema: SchemaClass, page: FullPage) {
         super(remoteObjectId, rowCount, schema, page, "SVD Spectrum");
 
-        this.chartDiv = this.createChartDiv();
-        this.summary = document.createElement("div");
-        this.topLevel.appendChild(this.summary);
+        this.createDiv("chart");
+        this.createDiv("summary");
     }
 
     // noinspection JSUnusedLocalSymbols
@@ -169,7 +166,7 @@ export class SpectrumView extends ChartView<Groups<number>> {
             axisData, null, this.page.dataset.isPrivate(), this.rowCount);
         this.plot.draw();
 
-        this.summary.textContent = "Columns: " + this.colNames.join(", ");
+        this.summaryDiv.textContent = "Columns: " + this.colNames.join(", ");
     }
 
     protected onMouseMove(): void {}

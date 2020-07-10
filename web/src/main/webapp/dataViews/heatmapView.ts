@@ -41,7 +41,7 @@ import {
     significantDigitsHtml, Two,
 } from "../util";
 import {AxisData} from "./axisData";
-import {DataRangesReceiver, FilterReceiver} from "./dataRangesReceiver";
+import {DataRangesReceiver, NewTargetReceiver} from "./dataRangesReceiver";
 import {ChartView} from "../modules";
 import {Dialog, FieldKind, saveAs} from "../ui/dialog";
 import {HeatmapLegendPlot} from "../ui/heatmapLegendPlot";
@@ -51,7 +51,6 @@ import {HeatmapLegendPlot} from "../ui/heatmapLegendPlot";
  */
 export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
     protected colorLegend: HeatmapLegendPlot;
-    protected summary: HTMLElement;
     protected plot: HeatmapPlot;
     protected showMissingData: boolean = false;  // TODO: enable this
     protected legendSurface: HtmlPlottingSurface;
@@ -63,7 +62,6 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
     protected xAxisData: AxisData;
     protected yAxisData: AxisData;
     protected legendDiv: HTMLDivElement;
-    protected heatmapDiv: HTMLDivElement;
     protected missingDiv: HTMLDivElement;
     protected confThreshold: number;
     private readonly defaultProvenance: string = "Fron heatmap";
@@ -124,11 +122,10 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
 
         this.viewMenu.enable("Confidence threshold...", this.isPrivate());
         this.page.setMenu(this.menu);
-        this.legendDiv = this.makeToplevelDiv();
-        this.heatmapDiv = this.makeToplevelDiv();
-        this.missingDiv = this.makeToplevelDiv();
-        this.summary = document.createElement("div");
-        this.topLevel.appendChild(this.summary);
+        this.createDiv("legend");
+        this.createDiv("chart");
+        this.missingDiv = this.makeToplevelDiv("missing");
+        this.createDiv("summary");
     }
 
     private quartileView(): void {
@@ -225,7 +222,7 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
                 () => this.updateView(this.data, true));
         }
 
-        this.surface = new HtmlPlottingSurface(this.heatmapDiv, this.page,
+        this.surface = new HtmlPlottingSurface(this.chartDiv, this.page,
             { topMargin: 20, leftMargin: Resolution.heatmapLabelWidth });
         this.plot = new HeatmapPlot(this.surface, this.colorLegend, true);
 
@@ -343,7 +340,7 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
         if (this.samplingRate < 1.0) {
             summary = summary.appendSafeString(", sampling rate ").append(significantDigitsHtml(this.samplingRate));
         }
-        summary.setInnerHtml(this.summary);
+        summary.setInnerHtml(this.summaryDiv);
     }
 
     public serialize(): IViewSerialization {
@@ -413,7 +410,7 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
-            return new FilterReceiver(title, [this.xAxisData.description, this.yAxisData.description],
+            return new NewTargetReceiver(title, [this.xAxisData.description, this.yAxisData.description],
                 this.schema, [0, 0], page, operation, this.dataset, {
                 exact: true, chartKind: "Heatmap", reusePage: false,
             });
@@ -484,15 +481,12 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
         return true;
     }
 
-    /**
-     * Selection has been completed.  The mouse coordinates are within the canvas.
-     */
     private selectionCompleted(xl: number, xr: number, yl: number, yr: number): void {
         const f = this.filterSelectionRectangle(xl, xr, yl, yr, this.xAxisData, this.yAxisData);
         if (f == null)
             return;
         const rr = this.createFilterRequest(f);
-        const renderer = new FilterReceiver(new PageTitle(this.page.title.format,
+        const renderer = new NewTargetReceiver(new PageTitle(this.page.title.format,
             Converters.filterArrayDescription(f)),
             [this.xAxisData.description, this.yAxisData.description],
             this.schema, [0, 0], this.page, rr, this.dataset, {

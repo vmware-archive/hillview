@@ -46,7 +46,7 @@ import {
 } from "../util";
 import {AxisData} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
-import {FilterReceiver, DataRangesReceiver} from "./dataRangesReceiver";
+import {NewTargetReceiver, DataRangesReceiver} from "./dataRangesReceiver";
 import {BaseReceiver} from "../modules";
 import {CommonArgs} from "../ui/receiver";
 
@@ -297,7 +297,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
         if (this.samplingRate < 1.0)
             summary = summary.appendSafeString(", sampling rate ")
                 .append(significantDigitsHtml(this.samplingRate));
-        summary.setInnerHtml(this.summary);
+        summary.setInnerHtml(this.summaryDiv);
     }
 
     public trellis(): void {
@@ -319,7 +319,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
-            return new FilterReceiver(title, [this.xAxisData.description], this.schema,
+            return new NewTargetReceiver(title, [this.xAxisData.description], this.schema,
                 [0], page, operation, this.dataset, {
                 exact: this.samplingRate >= 1, reusePage: false, pieChart: this.pie,
                 relative: false, chartKind: "Histogram"
@@ -501,7 +501,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
         const rr = this.createFilterRequest(filter);
         const title = new PageTitle(this.page.title.format,
             Converters.filterArrayDescription(filter));
-        const renderer = new FilterReceiver(title, [this.xAxisData.description], this.schema,
+        const renderer = new NewTargetReceiver(title, [this.xAxisData.description], this.schema,
             [0], this.page, rr, this.dataset, {
             exact: this.samplingRate >= 1,
             reusePage: false,

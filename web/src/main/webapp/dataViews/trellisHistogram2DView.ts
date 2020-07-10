@@ -23,18 +23,27 @@ import {
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {BaseReceiver, TableTargetAPI} from "../modules";
 import {SchemaClass} from "../schemaClass";
-import {add, Converters, histogram3DAsCsv, ICancellable, PartialResult, percent, significantDigits} from "../util";
+import {
+    add,
+    Converters,
+    formatNumber,
+    histogram3DAsCsv,
+    ICancellable,
+    PartialResult,
+    percent,
+    significantDigits
+} from "../util";
 import {AxisData, AxisKind} from "./axisData";
 import {
     IViewSerialization,
     TrellisHistogram2DSerialization
 } from "../datasetView";
 import {IDataView} from "../ui/dataview";
-import {ChartOptions, DragEventKind, Resolution} from "../ui/ui";
+import {ChartOptions, DragEventKind, HtmlString, Resolution} from "../ui/ui";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {Histogram2DPlot} from "../ui/histogram2DPlot";
 import {
-    FilterReceiver,
+    NewTargetReceiver,
     DataRangesReceiver,
     TrellisShape,
     TrellisLayoutComputation
@@ -53,7 +62,6 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
     protected xAxisData: AxisData;
     protected legendAxisData: AxisData;
     private legendSurface: HtmlPlottingSurface;
-    private readonly legendDiv: HTMLDivElement;
     protected legendPlot: HistogramLegendPlot;
     protected relative: boolean;
     protected maxYAxis: number | null;  // maximum value to use for Y axis; if null - derive from data
@@ -111,7 +119,9 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
 
         this.page.setMenu(this.menu);
         this.buckets = Math.round(shape.size.width / Resolution.minBarWidth);
-        this.legendDiv = this.makeToplevelDiv();
+        this.createDiv("legend");
+        this.createDiv("chart");
+        this.createDiv("summary");
     }
 
     protected createNewSurfaces(keepColorMap: boolean): void {
@@ -425,6 +435,8 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
 
         this.legendPlot.setData(this.legendAxisData, this.legendAxisData.dataRange.missingCount > 0, this.schema);
         this.legendPlot.draw();
+        const summary = new HtmlString(formatNumber(this.rowCount) + " points");
+        summary.setInnerHtml(this.summaryDiv);
     }
 
     protected dragMove(): boolean {
@@ -442,7 +454,7 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
-            return new FilterReceiver(title, [this.xAxisData.description, this.legendAxisData.description,
+            return new NewTargetReceiver(title, [this.xAxisData.description, this.legendAxisData.description,
                 this.groupByAxisData.description], this.schema, [0, 0, 0], page, operation, this.dataset, {
                 chartKind: "Trellis2DHistogram", relative: this.relative,
                 reusePage: false, exact: this.samplingRate >= 1
@@ -455,7 +467,7 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
             return;
         const rr = this.createFilterRequest(filter);
         const title = new PageTitle(this.page.title.format, Converters.filterDescription(filter.filters[0]));
-        const renderer = new FilterReceiver(title, [this.xAxisData.description, this.legendAxisData.description,
+        const renderer = new NewTargetReceiver(title, [this.xAxisData.description, this.legendAxisData.description,
             this.groupByAxisData.description], this.schema, [0, 0, 0], this.page, rr, this.dataset, {
             chartKind: "Trellis2DHistogram", relative: this.relative,
             reusePage: false, exact: this.samplingRate >= 1

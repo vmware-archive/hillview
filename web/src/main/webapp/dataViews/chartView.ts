@@ -22,12 +22,19 @@ import {FullPage, PageTitle} from "../ui/fullPage";
 import {D3SvgElement, DragEventKind, Point, Resolution, ViewKind} from "../ui/ui";
 import {TextOverlay} from "../ui/textOverlay";
 import {PlottingSurface} from "../ui/plottingSurface";
-import {TopMenu, TopMenuItem} from "../ui/menu";
+import {TopMenu} from "../ui/menu";
 import {drag as d3drag} from "d3-drag";
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {AxisData} from "./axisData";
 import {Dialog} from "../ui/dialog";
 import {NextKReceiver, TableView} from "../modules";
+
+/**
+ * These kinds of plots show up repeatedly.
+ */
+type CommonPlots = "chart"  // Contains the chart (or charts for trellis views)
+    | "summary"  // summary of the data displayed
+    | "legend";  // legend
 
 /**
  * A ChartView is a common base class for many views that
@@ -67,6 +74,10 @@ export abstract class ChartView<D> extends BigTableView {
      * Data that is being displayed.
      */
     protected data: D;
+    protected chartDiv: HTMLDivElement;
+    protected summaryDiv: HTMLDivElement;
+    // This may not exist.
+    protected legendDiv: HTMLDivElement;
 
     protected constructor(remoteObjectId: RemoteObjectId,
                           rowCount: number,
@@ -75,7 +86,7 @@ export abstract class ChartView<D> extends BigTableView {
                           viewKind: ViewKind) {
         super(remoteObjectId, rowCount, schema, page, viewKind);
         this.topLevel = document.createElement("div");
-        this.topLevel.className = "chart";
+        this.topLevel.className = "chart-page";
 
         this.dragging = false;
         this.moved = false;
@@ -83,18 +94,37 @@ export abstract class ChartView<D> extends BigTableView {
         this.selectionRectangle = null;
         this.pointDescription = null;
         this.surface = null;
+        this.chartDiv = null;
+        this.summaryDiv = null;
+        this.legendDiv = null;
 
         this.page.registerDropHandler("XAxis", (p) => this.replaceAxis(p, "XAxis"));
         this.page.registerDropHandler("YAxis", (p) => this.replaceAxis(p, "YAxis"));
         this.page.registerDropHandler("GAxis", (p) => this.replaceAxis(p, "GAxis"));
     }
 
-    protected createChartDiv(): HTMLDivElement {
-        const chartDiv = document.createElement("div");
-        this.topLevel.appendChild(chartDiv);
-        chartDiv.style.display = "flex";
-        chartDiv.style.flexDirection = "column";
-        return chartDiv;
+    protected makeToplevelDiv(cls: string): HTMLDivElement {
+        const div = document.createElement("div");
+        this.topLevel.appendChild(div);
+        div.className = cls;
+        return div;
+    }
+
+    protected createDiv(b: CommonPlots): void {
+        const div = this.makeToplevelDiv(b.toString());
+        switch (b) {
+            case "chart":
+                div.style.display = "flex";
+                div.style.flexDirection = "column";
+                this.chartDiv = div;
+                break;
+            case "summary":
+                this.summaryDiv = div;
+                break;
+            case "legend":
+                this.legendDiv = div;
+                break;
+        }
     }
 
     protected showTable(columns: IColumnDescription[], provenance: string): void {
@@ -150,9 +180,7 @@ export abstract class ChartView<D> extends BigTableView {
     protected cancelDrag(): void {
         this.dragging = false;
         this.moved = false;
-        this.selectionRectangle
-            .attr("width", 0)
-            .attr("height", 0);
+        this.hideSelectionRectangle();
     }
 
     /**
@@ -176,12 +204,6 @@ export abstract class ChartView<D> extends BigTableView {
         this.selectionOrigin = {
             x: position[0],
             y: position[1] };
-    }
-
-    protected makeToplevelDiv(): HTMLDivElement {
-        const div = document.createElement("div");
-        this.topLevel.appendChild(div);
-        return div;
     }
 
     /**
@@ -300,6 +322,12 @@ export abstract class ChartView<D> extends BigTableView {
         return true;
     }
 
+    protected hideSelectionRectangle(): void {
+        this.selectionRectangle
+            .attr("width", 0)
+            .attr("height", 0);
+    }
+
     /**
      * Returns true if there has been some interesting dragging.
      */
@@ -308,9 +336,7 @@ export abstract class ChartView<D> extends BigTableView {
             return false;
         }
         this.dragging = false;
-        this.selectionRectangle
-            .attr("width", 0)
-            .attr("height", 0);
+        this.hideSelectionRectangle();
         return true;
     }
 
