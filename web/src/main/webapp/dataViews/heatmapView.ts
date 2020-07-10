@@ -110,7 +110,11 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
                 text: "Confidence threshold...",
                 action: () => this.changeThreshold(),
                 help: "Specify how much larger than the confidence interval the data must be to be displayed.",
-            },
+            }, {
+                text: "Show/hide regression",
+                action: () => this.toggleRegression(),
+                help: "Show or hide the linear regression line"
+            }
         ]);
         this.menu = new TopMenu([
             this.exportMenu(),
@@ -157,6 +161,10 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
             this.resize();
         });
         thDialog.show();
+    }
+
+    public toggleRegression(): void {
+        this.plot.toggleRegression();
     }
 
     public chooseBuckets(): void {

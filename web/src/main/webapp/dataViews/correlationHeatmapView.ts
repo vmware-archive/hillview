@@ -90,17 +90,15 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
 
     protected export(): void {
         let result = [];
-        let line = 0;
-        let xAxis = 0;
-        let yAxis = 1;
+        let xAxis = 1;
+        let yAxis = 0;
         for (const h of this.data) {
-            const lines = histogram2DAsCsv(h, this.schema, [this.yAxes[yAxis], this.xAxes[xAxis]]);
+            const lines = histogram2DAsCsv(h, this.schema, [this.xAxes[xAxis], this.yAxes[yAxis]]);
             result = result.concat(lines);
             xAxis++;
             if (xAxis == this.xAxes.length) {
-                line++;
-                xAxis = line;
-                yAxis = xAxis + 1;
+                yAxis++;
+                xAxis = yAxis + 1;
             }
         }
         const fileName = "correlations.csv";

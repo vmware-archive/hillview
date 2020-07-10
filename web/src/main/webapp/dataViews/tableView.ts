@@ -228,19 +228,23 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         let lines = [];
         let line = "count";
         for (const o of this.order.sortOrientationList)
-            line += "," + this.schema.displayName(o.columnDescription.name);
+            line += "," + JSON.stringify(this.schema.displayName(o.columnDescription.name).displayName);
         if (this.aggregates != null)
             for (const a of this.aggregates) {
-                const dn = this.schema.displayName(a.cd.name);
-                line += "," + a.agkind + "(" + dn.toString() + ")";
+                const dn = this.schema.displayName(a.cd.name).displayName;
+                line += "," + JSON.stringify(a.agkind + "(" + dn + "))");
             }
         lines.push(line);
 
         for (let i = 0; i < this.nextKList.rows.length; i++) {
             const row = this.nextKList.rows[i];
             line = row.count.toString();
-            for (const a of row.values) {
-                line += "," + a.toString();
+            for (let j = 0; j < row.values.length; j++) {
+                const kind = this.order.sortOrientationList[j].columnDescription.kind;
+                let a = Converters.valueToString(row.values[j], kind);
+                if (kindIsString(kind))
+                    a = JSON.stringify(a);
+                line += "," + a;
             }
             if (this.nextKList.aggregates != null) {
                 const agg = this.nextKList.aggregates[i];

@@ -21,7 +21,7 @@ import {assert, regression, Two, valueWithConfidence} from "../util";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {SchemaClass} from "../schemaClass";
-import {Resolution} from "./ui";
+import {D3SvgElement, Resolution} from "./ui";
 import {HeatmapLegendPlot} from "./heatmapLegendPlot";
 
 interface Dot {
@@ -40,8 +40,10 @@ export class HeatmapPlot extends Plot<Two<Groups<Groups<number>>>> {
     protected dots: Dot[];
     protected schema: SchemaClass;
     protected isPrivate: boolean;
+    protected showRegression: boolean;
     protected xPoints: number;
     protected yPoints: number;
+    protected regressionLine: D3SvgElement;
 
     public constructor(surface: PlottingSurface,
                        protected legendPlot: HeatmapLegendPlot,
@@ -49,6 +51,18 @@ export class HeatmapPlot extends Plot<Two<Groups<Groups<number>>>> {
         super(surface);
         this.dots = null;
         this.isPrivate = false;
+        this.showRegression = true;
+        this.regressionLine = null;
+    }
+
+    public toggleRegression(): void {
+        this.showRegression = !this.showRegression;
+        if (this.regressionLine != null) {
+            if (this.showRegression)
+                this.regressionLine.attr("stroke-width", 1);
+            else
+                this.regressionLine.attr("stroke-width", 0);
+        }
     }
 
     public draw(): void {
@@ -100,7 +114,8 @@ export class HeatmapPlot extends Plot<Two<Groups<Groups<number>>>> {
             this.yAxisData != null &&
             !kindIsString(this.yAxisData.description.kind) &&
             !kindIsString(this.xAxisData.description.kind) &&
-            !this.isPrivate) {
+            !this.isPrivate &&
+            this.showRegression) {
             // It makes no sense to do regressions for string values.
             // Regressions for private data should be computed in a different way; this
             // way gives too much noise.
@@ -110,7 +125,7 @@ export class HeatmapPlot extends Plot<Two<Groups<Groups<number>>>> {
                 const a = regr[1];
                 const y1 = this.getChartHeight() - (b + .5) * this.pointHeight;
                 const y2 = this.getChartHeight() - (a * this.xPoints + b + .5) * this.pointHeight;
-                this.plottingSurface.getChart()
+                this.regressionLine = this.plottingSurface.getChart()
                     .append("line")
                     .attr("x1", 0)
                     .attr("y1", y1)

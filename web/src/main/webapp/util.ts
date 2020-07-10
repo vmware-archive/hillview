@@ -60,7 +60,7 @@ export function zip<T, S, R>(a: T[], b: S[], f: (ae: T, be: S) => R): R[] {
 
 export function histogramAsCsv(data: Groups<number>, schema: SchemaClass, axis: AxisData): string[] {
     const lines: string[] = [];
-    let line = schema.displayName(axis.description.name) + ",count";
+    let line = JSON.stringify(schema.displayName(axis.description.name).displayName) + ",count";
     lines.push(line);
     for (let x = 0; x < data.perBucket.length; x++) {
         const bx = axis.bucketDescription(x, 0);

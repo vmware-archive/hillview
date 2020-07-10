@@ -86,8 +86,11 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
                 }, { text: "# groups",
                         action: () => this.changeGroups(),
                         help: "Change the number of groups."
-                    }
-                ]) },
+                }, {
+                    text: "Show/hide regression",
+                    action: () => this.toggleRegression(),
+                    help: "Show or hide the linear regression line"
+                }]) },
             this.dataset.combineMenu(this, page.pageId),
         ]);
         this.page.setMenu(this.menu);
@@ -274,6 +277,11 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
                 relative: true,
                 reusePage: true
             }));
+    }
+
+    public toggleRegression(): void {
+        for (const hp of this.hps)
+            hp.toggleRegression();
     }
 
     public updateView(histogram3d: Groups<Groups<Groups<number>>>, keepColorMap: boolean): void {
