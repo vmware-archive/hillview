@@ -27,40 +27,43 @@ import {Receiver, RpcRequest} from "../rpc";
 import {ChartOptions} from "./ui";
 
 /**
- * Common arguments to all receivers.
- * @param T type of data received.
+ * Most views use all these arguments.
  */
-export class CommonArgs {
-    constructor(
-        /**
-         * Title for the produced page.
-         */
-        public title: PageTitle,
-        /**
-         * The page that started the request.
-         */
-        public originalPage: FullPage,
-        /**
-         * The initiator of the request.
-         */
-        public remoteObjectId: TableTargetAPI,
-        /**
-         * Number of rows in source dataset.
-         */
-        public rowCount: number,
-        /**
-         * Schema of the originator.
-         */
-        public schema: SchemaClass,
-        /**
-         * Options for the resulting chart.
-         */
-        public options: ChartOptions
-    ) {}
+export interface CommonArgs {
+    /**
+     * Title for the produced page.
+     */
+    title: PageTitle,
+    /**
+     * The initiator of the request.
+     */
+    remoteObject: TableTargetAPI,
+    /**
+     * Number of rows in source dataset.
+     */
+    rowCount: number,
+    /**
+     * Schema of the originator.
+     */
+    schema: SchemaClass,
+}
+
+/**
+ * Arguments passed to most receivers.
+ */
+export interface ReceiverCommonArgs extends CommonArgs {
+    /**
+     * The page that started the request.
+     */
+    originalPage: FullPage,
+    /**
+     * Options for the resulting chart.
+     */
+    options: ChartOptions
 }
 
 export abstract class ReceiverCommon<T> extends Receiver<T> {
-    protected constructor(protected args: CommonArgs, operation: RpcRequest<PartialResult<T>>, description: string) {
+    protected constructor(protected args: ReceiverCommonArgs, operation: RpcRequest<PartialResult<T>>, description: string) {
         super(args.options.reusePage ? args.originalPage : args.originalPage.dataset.newPage(args.title, args.originalPage),
             operation, description)
     }

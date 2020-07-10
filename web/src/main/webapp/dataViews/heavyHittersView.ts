@@ -192,6 +192,10 @@ export class HeavyHittersView extends BigTableView {
         return result;
     }
 
+    public export(): void {
+        // TODO
+    }
+
     /**
      * This method is called when all the data has been received.
      */

@@ -41,7 +41,7 @@ import {DatasetView} from "../datasetView";
 import {QuartilesVectorReceiver} from "./quartilesHistogramView";
 import {TrellisHistogramQuartilesReceiver} from "./trellisHistogramQuartilesView";
 import {CorrelationHeatmapReceiver} from "./correlationHeatmapView";
-import {CommonArgs} from "../ui/receiver";
+import {CommonArgs, ReceiverCommonArgs} from "../ui/receiver";
 
 /**
  * Describes the shape of trellis display.
@@ -260,8 +260,15 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
         return tlc.getShape(windows, missingData);
     }
 
-    protected commonArgs(): CommonArgs {
-        return new CommonArgs(this.title, this.page, this.originator, this.rowCount, this.schema, this.options);
+    protected commonArgs(): ReceiverCommonArgs {
+        return {
+            title: this.title,
+            originalPage: this.page,
+            remoteObject: this.originator,
+            rowCount: this.rowCount,
+            schema: this.schema,
+            options: this.options
+        };
     }
 
     public run(ranges: BucketsInfo[]): void {

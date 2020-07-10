@@ -20,7 +20,6 @@ import {HeatmapSerialization, IViewSerialization} from "../datasetView";
 import {
     Groups,
     IColumnDescription, kindIsNumeric,
-    RecordOrder,
     RemoteObjectId,
 } from "../javaBridge";
 import {Receiver} from "../rpc";

@@ -34,7 +34,7 @@ import {
 import {OnCompleteReceiver} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
 import {BigTableView} from "../modules";
-import {Dialog, FieldKind} from "../ui/dialog";
+import {Dialog, FieldKind, saveAs} from "../ui/dialog";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {SubMenu, TopMenuItem} from "../ui/menu";
 import {SpecialChars, ViewKind} from "../ui/ui";
@@ -124,6 +124,10 @@ export abstract class TSViewBase extends BigTableView {
                     o, rowsDesired, aggregates));
             });
         dialog.show();
+    }
+
+    protected exportSchema(): void {
+        saveAs("schema.json", JSON.stringify(this.schema.schema));
     }
 
     public renameColumn(): void {

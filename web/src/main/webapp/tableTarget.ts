@@ -58,6 +58,8 @@ import {assert, ICancellable, Pair, PartialResult, Seed, Two, zip} from "./util"
 import {IDataView} from "./ui/dataview";
 import {SchemaClass} from "./schemaClass";
 import {PlottingSurface} from "./ui/plottingSurface";
+import {CommonArgs} from "./ui/receiver";
+import {SubMenu, TopMenuItem} from "./ui/menu";
 
 /**
  * An interface which has a function that is called when all updates are completed.
@@ -442,6 +444,19 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
         this.dataset = page.dataset;
     }
 
+    protected abstract export(): void;
+
+    protected exportMenu(): TopMenuItem {
+        return {
+            text: "Export",
+            help: "Save the information in this view in a local file.",
+            subMenu: new SubMenu([{
+                text: "As CSV",
+                help: "Saves the data in this view in a CSV file.",
+                action: () => this.export()
+            }])};
+    }
+
     public getRemoteObjectId(): string | null {
         return this.remoteObjectId;
     }
@@ -459,6 +474,26 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
             remoteObjectId: this.remoteObjectId,
             rowCount: this.rowCount,
             schema: this.schema.serialize(),
+        };
+    }
+
+    /**
+     * Validate the serialization.  Returns null on failure.
+     * @param ser  Serialization of a view.
+     */
+    public static validateSerialization(ser: IViewSerialization): CommonArgs {
+        if (ser.schema == null || ser.rowCount == null || ser.remoteObjectId == null ||
+            ser.provenance == null || ser.title == null || ser.viewKind == null ||
+            ser.pageId == null)
+            return null;
+        const schema = new SchemaClass([]).deserialize(ser.schema);
+        if (schema == null)
+            return null;
+        return {
+            title: new PageTitle(ser.title, ser.provenance),
+            remoteObject: new TableTargetAPI(ser.remoteObjectId),
+            rowCount: ser.rowCount,
+            schema: schema
         };
     }
 

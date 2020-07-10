@@ -48,6 +48,7 @@ import {AxisData} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
 import {FilterReceiver, DataRangesReceiver} from "./dataRangesReceiver";
 import {BaseReceiver} from "../modules";
+import {CommonArgs} from "../ui/receiver";
 
 /**
  * A HistogramView is responsible for showing a one-dimensional histogram on the screen.
@@ -214,13 +215,14 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
     }
 
     public static reconstruct(ser: HistogramSerialization, page: FullPage): IDataView {
-        const schema: SchemaClass = new SchemaClass([]).deserialize(ser.schema);
-        if (ser.columnDescription == null || ser.samplingRate == null ||
-            schema == null || ser.bucketCount == null)
+        const args: CommonArgs = this.validateSerialization(ser);
+        if (args == null ||
+            ser.columnDescription == null || ser.samplingRate == null ||
+            ser.bucketCount == null)
             return null;
 
         const hv = new HistogramView(
-            ser.remoteObjectId, ser.rowCount, schema, ser.samplingRate, ser.isPie, page);
+            ser.remoteObjectId, ser.rowCount, args.schema, ser.samplingRate, ser.isPie, page);
         hv.setAxis(new AxisData(ser.columnDescription, null, ser.bucketCount));
         hv.bucketCount = ser.bucketCount;
         return hv;

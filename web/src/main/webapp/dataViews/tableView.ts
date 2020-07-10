@@ -120,9 +120,11 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             subMenu: new SubMenu([{
                 text: "Schema",
                 help: "Saves the schema of this data JSON file.",
-                action: () => {
-                    this.exportSchema();
-                },
+                action: () => this.exportSchema()
+            }, {
+                text: "As CSV",
+                help: "Saves the data in this view in a CSV file.",
+                action: () => this.export()
             }]),
         });
         if (HillviewToplevel.instance.uiconfig.enableSaveAs)
@@ -222,6 +224,36 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         this.topLevel.appendChild(this.message);
     }
 
+    public export(): void {
+        let lines = [];
+        let line = "count";
+        for (const o of this.order.sortOrientationList)
+            line += "," + this.schema.displayName(o.columnDescription.name);
+        if (this.aggregates != null)
+            for (const a of this.aggregates) {
+                const dn = this.schema.displayName(a.cd.name);
+                line += "," + a.agkind + "(" + dn.toString() + ")";
+            }
+        lines.push(line);
+
+        for (let i = 0; i < this.nextKList.rows.length; i++) {
+            const row = this.nextKList.rows[i];
+            line = row.count.toString();
+            for (const a of row.values) {
+                line += "," + a.toString();
+            }
+            if (this.nextKList.aggregates != null) {
+                const agg = this.nextKList.aggregates[i];
+                for (const v of agg) {
+                    line += "," + v;
+                }
+            }
+            lines.push(line);
+        }
+        const fileName = "table.csv";
+        saveAs(fileName, lines.join("\n"));
+    }
+
     /**
      * This function is invoked when someone clicks the "Filter" button on the find bar.
      * This filters and keeps only rows that match the find criteria.
@@ -240,10 +272,6 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             Converters.stringFilterDescription(filter)), this.page);
         rr.invoke(new TableOperationCompleted(newPage, rr, this.rowCount, this.schema,
             this.order, this.tableRowsDesired, this.aggregates));
-    }
-
-    private exportSchema(): void {
-        saveAs("schema.json", JSON.stringify(this.schema.schema));
     }
 
     public serialize(): IViewSerialization {
@@ -1192,16 +1220,17 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
 
     protected changeTableSize(): void {
         const dialog = new Dialog("Number of rows", "Choose number of rows to display");
+        const maxRows = 1000;
         const field = dialog.addTextField("rows", "Rows", FieldKind.Integer,
             Resolution.tableRowsOnScreen.toString(),
-            "Number of rows to show (between 10 and 200)");
+            "Number of rows to show (between 10 and " + maxRows.toString() + ")");
         field.min = "10";
-        field.max = "200";
+        field.max = maxRows.toString();
         field.required = true;
         dialog.setAction(() => {
             const rowCount = dialog.getFieldValueAsInt("rows");
-            if (rowCount < 10 || rowCount > 200) {
-                this.page.reportError("Row count must be between 10 and 200");
+            if (rowCount < 10 || rowCount > maxRows) {
+                this.page.reportError("Row count must be between 10 and " + maxRows.toString());
                 return;
             }
             this.tableRowsDesired = rowCount;

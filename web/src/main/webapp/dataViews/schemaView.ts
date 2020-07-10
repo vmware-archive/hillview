@@ -27,7 +27,7 @@ import {
 } from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
 import {IDataView} from "../ui/dataview";
-import {Dialog, FieldKind} from "../ui/dialog";
+import {Dialog, FieldKind, saveAs} from "../ui/dialog";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {ContextMenu, SubMenu, TopMenu, TopMenuItem} from "../ui/menu";
 import {TabularDisplay} from "../ui/tabularDisplay";
@@ -153,6 +153,10 @@ export class SchemaView extends TSViewBase {
         this.topLevel.appendChild(this.display.getHTMLRepresentation());
         this.summary = document.createElement("div");
         this.topLevel.appendChild(this.summary);
+    }
+
+    public export(): void {
+        this.exportSchema();
     }
 
     public static reconstruct(ser: IViewSerialization, page: FullPage): IDataView {

@@ -18,10 +18,10 @@
 import {BucketsInfo, Groups, HistogramRequestInfo, RemoteObjectId} from "../javaBridge";
 import {BaseReceiver, ChartView} from "../modules";
 import {FullPage, PageTitle} from "../ui/fullPage";
-import {assert, ICancellable, makeInterval, PartialResult, truncate, zip} from "../util";
+import {assert, histogram2DAsCsv, ICancellable, makeInterval, PartialResult, truncate, zip} from "../util";
 import {DisplayName} from "../schemaClass";
 import {RpcRequest} from "../rpc";
-import {CommonArgs, ReceiverCommon} from "../ui/receiver";
+import {CommonArgs, ReceiverCommon, ReceiverCommonArgs} from "../ui/receiver";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {CorrelationHeatmapSerialization, IViewSerialization} from "../datasetView";
 import {IDataView} from "../ui/dataview";
@@ -32,6 +32,8 @@ import {HeatmapPlot} from "../ui/heatmapPlot";
 import {AxisData, AxisKind} from "./axisData";
 import {mouse as d3mouse} from "d3-selection";
 import {TextOverlay} from "../ui/textOverlay";
+import {DataRangesReceiver} from "./dataRangesReceiver";
+import {saveAs} from "../ui/dialog";
 
 export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> {
     private legendSurface: HtmlPlottingSurface;
@@ -50,7 +52,7 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
 
     constructor(args: CommonArgs, protected histoArgs: HistogramRequestInfo[],
                 protected ranges: BucketsInfo[], page: FullPage) {
-        super(args.remoteObjectId.remoteObjectId, args.rowCount, args.schema, page, "CorrelationHeatmaps")
+        super(args.remoteObject.remoteObjectId, args.rowCount, args.schema, page, "CorrelationHeatmaps")
         this.menu = new TopMenu([this.exportMenu(),
             { text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
                     { text: "refresh",
@@ -70,20 +72,44 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
     }
 
     public static reconstruct(ser: CorrelationHeatmapSerialization, page: FullPage): IDataView {
-        // TODO
-        return null;
+        const args = this.validateSerialization(ser);
+        if (args == null || ser.histoArgs == null || ser.ranges == null)
+            return null;
+        return new CorrelationHeatmapView(args, ser.histoArgs, ser.ranges, page);
     }
 
     public serialize(): IViewSerialization {
-        return null;
+        // noinspection UnnecessaryLocalVariableJS
+        const result: CorrelationHeatmapSerialization = {
+            ...super.serialize(),
+            histoArgs: this.histoArgs,
+            ranges: this.ranges
+        };
+        return result;
     }
 
     protected export(): void {
-        // TODO
+        let result = [];
+        let line = 0;
+        let xAxis = 0;
+        let yAxis = 1;
+        for (const h of this.data) {
+            const lines = histogram2DAsCsv(h, this.schema, [this.yAxes[yAxis], this.xAxes[xAxis]]);
+            result = result.concat(lines);
+            xAxis++;
+            if (xAxis == this.xAxes.length) {
+                line++;
+                xAxis = line;
+                yAxis = xAxis + 1;
+            }
+        }
+        const fileName = "correlations.csv";
+        saveAs(fileName, result.join("\n"));
     }
 
     protected getCombineRenderer(title: PageTitle): (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
-        return function (p1: FullPage, p2: ICancellable<RemoteObjectId>) {
+        return function (page: FullPage, operation: ICancellable<RemoteObjectId>) {
+            // TODO
             return null;
         };
     }
@@ -129,11 +155,17 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
     }
 
     refresh(): void {
-        this.updateView(this.data, true);
+        const collector = new DataRangesReceiver(this,
+            this.page, null, this.schema, this.histoArgs.map(b => b.bucketCount),
+            this.histoArgs.map(b => b.cd), this.page.title, null,{
+                chartKind: "CorrelationHeatmaps", reusePage: true
+            });
+        collector.run(this.ranges);
+        collector.finished();
     }
 
     resize(): void {
-        // TODO
+        this.updateView(this.data, true);
     }
 
     protected showTrellis(colName: DisplayName): void {}
@@ -282,7 +314,7 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
 export class CorrelationHeatmapReceiver extends ReceiverCommon<Groups<Groups<number>>[]> {
     protected view: CorrelationHeatmapView;
 
-    constructor(common: CommonArgs, histoArgs: HistogramRequestInfo[], ranges: BucketsInfo[],
+    constructor(common: ReceiverCommonArgs, histoArgs: HistogramRequestInfo[], ranges: BucketsInfo[],
                 operation: RpcRequest<PartialResult<Groups<Groups<number>>[]>>) {
         super(common, operation, "correlations")
         this.view = new CorrelationHeatmapView(this.args, histoArgs, ranges, this.page);

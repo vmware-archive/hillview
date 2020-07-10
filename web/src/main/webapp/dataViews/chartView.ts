@@ -22,7 +22,7 @@ import {FullPage, PageTitle} from "../ui/fullPage";
 import {D3SvgElement, DragEventKind, Point, Resolution, ViewKind} from "../ui/ui";
 import {TextOverlay} from "../ui/textOverlay";
 import {PlottingSurface} from "../ui/plottingSurface";
-import {SubMenu, TopMenu, TopMenuItem} from "../ui/menu";
+import {TopMenu, TopMenuItem} from "../ui/menu";
 import {drag as d3drag} from "d3-drag";
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {AxisData} from "./axisData";
@@ -88,19 +88,6 @@ export abstract class ChartView<D> extends BigTableView {
         this.page.registerDropHandler("YAxis", (p) => this.replaceAxis(p, "YAxis"));
         this.page.registerDropHandler("GAxis", (p) => this.replaceAxis(p, "GAxis"));
     }
-
-    protected exportMenu(): TopMenuItem {
-        return {
-            text: "Export",
-            help: "Save the information in this view in a local file.",
-            subMenu: new SubMenu([{
-                text: "As CSV",
-                help: "Saves the data in this view in a CSV file.",
-                action: () => this.export()
-            }])};
-    }
-
-    protected abstract export(): void;
 
     protected createChartDiv(): HTMLDivElement {
         const chartDiv = document.createElement("div");

@@ -24,7 +24,8 @@ import {SpectrumView} from "./dataViews/spectrumView";
 import {SchemaReceiver, TableView} from "./modules";
 import {DataLoaded, getDescription} from "./initialObject";
 import {
-    CombineOperators,
+    BucketsInfo,
+    CombineOperators, HistogramRequestInfo,
     IColumnDescription, JsonString, PrivacySchema,
     RecordOrder,
     RemoteObjectId,
@@ -116,8 +117,10 @@ export interface TrellisHistogram2DSerialization extends
 export interface TrellisHeatmapSerialization extends
     HeatmapSerialization, TrellisShapeSerialization {}
 
-export interface CorrelationHeatmapSerialization extends
-    IViewSerialization {}
+export interface CorrelationHeatmapSerialization extends IViewSerialization {
+    histoArgs: HistogramRequestInfo[];
+    ranges: BucketsInfo[];
+}
 
 export interface TrellisQuartilesSerialization extends
     QuantileVectorSerialization, TrellisShapeSerialization {}
