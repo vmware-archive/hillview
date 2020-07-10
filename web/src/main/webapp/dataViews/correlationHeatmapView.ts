@@ -18,7 +18,17 @@
 import {BucketsInfo, Groups, HistogramRequestInfo, RemoteObjectId} from "../javaBridge";
 import {BaseReceiver, ChartView} from "../modules";
 import {FullPage, PageTitle} from "../ui/fullPage";
-import {assert, histogram2DAsCsv, ICancellable, makeInterval, PartialResult, truncate, zip} from "../util";
+import {
+    assert,
+    Converters,
+    formatNumber,
+    histogram2DAsCsv,
+    ICancellable,
+    makeInterval,
+    PartialResult,
+    truncate,
+    zip
+} from "../util";
 import {DisplayName} from "../schemaClass";
 import {RpcRequest} from "../rpc";
 import {CommonArgs, ReceiverCommon, ReceiverCommonArgs} from "../ui/receiver";
@@ -26,18 +36,17 @@ import {SubMenu, TopMenu} from "../ui/menu";
 import {CorrelationHeatmapSerialization, IViewSerialization} from "../datasetView";
 import {IDataView} from "../ui/dataview";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
-import {Point, Resolution} from "../ui/ui";
+import {HtmlString, Point, Resolution} from "../ui/ui";
 import {ColorMapKind, HeatmapLegendPlot} from "../ui/heatmapLegendPlot";
 import {HeatmapPlot} from "../ui/heatmapPlot";
 import {AxisData, AxisKind} from "./axisData";
-import {mouse as d3mouse} from "d3-selection";
+import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {TextOverlay} from "../ui/textOverlay";
-import {DataRangesReceiver} from "./dataRangesReceiver";
+import {DataRangesReceiver, NewTargetReceiver} from "./dataRangesReceiver";
 import {saveAs} from "../ui/dialog";
 
 export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> {
     private legendSurface: HtmlPlottingSurface;
-    private readonly legendDiv: HTMLDivElement;
     private colorLegend: HeatmapLegendPlot;
     protected hps: HeatmapPlot[];
     protected surfaces: PlottingSurface[];
@@ -63,7 +72,9 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
             this.dataset.combineMenu(this, page.pageId),
         ]);
         this.page.setMenu(this.menu);
-        this.legendDiv = this.makeToplevelDiv();
+        this.createDiv("legend");
+        this.createDiv("chart");
+        this.createDiv("summary");
         this.xAxes = zip(this.histoArgs, this.ranges,
             (h, r) => new AxisData(h.cd, r, h.bucketCount));
         // exact same code, but the resolution will be different
@@ -105,47 +116,126 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
         saveAs(fileName, result.join("\n"));
     }
 
+    protected dragStart(): void {
+        this.dragStartRectangle();
+        const origPos = this.getMousePosition([this.selectionOrigin.x, this.selectionOrigin.y]);
+        if (origPos == null)
+            this.dragging = false;
+    }
+
+    protected dragMove(): boolean {
+        if (!super.dragMove())
+            return false;
+
+        const origPos = this.getMousePosition([this.selectionOrigin.x, this.selectionOrigin.y]);
+        const position = d3mouse(this.surface.getCanvas().node());
+        const currentPos = this.getMousePosition(position);
+        if (currentPos == null) {
+            this.hideSelectionRectangle();
+            return false;
+        }
+        if (origPos.chartIndex != currentPos.chartIndex) {
+            // We only allow selection within the same chart
+            this.hideSelectionRectangle();
+            return false;
+        }
+        this.dragMoveRectangle();
+        return true;
+    }
+
+    public dragEnd(): boolean {
+        if (!super.dragEnd())
+            return false;
+        const position = d3mouse(this.surface.getCanvas().node());
+        this.selectionCompleted(this.selectionOrigin.x, position[0], this.selectionOrigin.y, position[1]);
+    }
+
+    /**
+     * Selection has been completed.  The mouse coordinates are within the canvas.
+     */
+    protected selectionCompleted(xl: number, xr: number, yl: number, yr: number): void {
+        const origPos = this.getMousePosition([xl, yl]);
+        const currentPos = this.getMousePosition([xr, yr]);
+        if (origPos == null || currentPos == null)
+            return;
+        if (origPos.chartIndex != currentPos.chartIndex)
+            return;
+        const fx = this.xAxes[currentPos.xAxisIndex].getFilter(origPos.chartX, currentPos.chartX);
+        const fy = this.yAxes[currentPos.yAxisIndex].getFilter(origPos.chartY, currentPos.chartY);
+        if (fx == null || fy == null)
+            return;
+        const filter = {
+            filters: [fx, fy],
+            complement: d3event.sourceEvent.ctrlKey
+        };
+        const rr = this.createFilterRequest(filter);
+        const renderer = new NewTargetReceiver(new PageTitle(this.page.title.format,
+            Converters.filterArrayDescription(filter)),
+            this.histoArgs.map(h => h.cd),
+            this.schema, this.histoArgs.map(_ => 0), this.page, rr, this.dataset, {
+                chartKind: "CorrelationHeatmaps", reusePage: false,
+            });
+        rr.invoke(renderer);
+    }
+
     protected getCombineRenderer(title: PageTitle): (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
+        const cds = this.histoArgs.map(b => b.cd);
+        const zeros = cds.map(_ => 0);
         return function (page: FullPage, operation: ICancellable<RemoteObjectId>) {
-            // TODO
-            return null;
+            return new NewTargetReceiver(title, cds,
+                this.schema, zeros, page, operation, this.dataset, {
+                    chartKind: "CorrelationHeatmaps", reusePage: false,
+                });
         };
     }
 
-    protected onMouseMove(): void {
+    /**
+     * Gets the chart where the mouse currently is, or null if the mouse does not overlap a chart.
+     * @param position   Array with two mouse coordinates x and y in canvas.
+     */
+    protected getMousePosition(position: number[]): MousePosition | null {
         const charts = this.histoArgs.length - 1;
-        const position = d3mouse(this.surface.getCanvas().node());
         const x = position[0] - this.surface.leftMargin;
         const y = position[1] - this.surface.topMargin - this.headerHeight;
-        if (x < 0 || x > charts * this.chartSize) {
-            this.pointDescription.show(false);
-            return;
-        }
-        if (y < 0 || y > charts * this.chartSize) {
-            this.pointDescription.show(false);
-            return;
-        }
+        if (x < 0 || x > charts * this.chartSize)
+            return null;
+        if (y < 0 || y > charts * this.chartSize)
+            return null;
 
         const chartXIndex = Math.floor(x / this.chartSize);
         const chartYIndex = Math.floor(y / this.chartSize);
         const chartX = x - chartXIndex * this.chartSize;
         const chartY = y - chartYIndex * this.chartSize;
-        if (chartYIndex > chartXIndex) {
-            this.pointDescription.show(false);
-            return;
-        }
+        if (chartYIndex > chartXIndex)
+            return null;
 
         let plotIndex = 0;
         for (let i = 0; i < chartYIndex; i++) {
             plotIndex += charts - i;
         }
         plotIndex += chartXIndex - chartYIndex;
-        const plot = this.hps[plotIndex];
-        const value = plot.getCount(chartX, chartY);
-        const xs = this.xAxes[chartXIndex].invert(chartX);
-        const xname = this.xAxes[chartXIndex + 1].description.name;
-        const yname = this.yAxes[chartYIndex].description.name;
-        const ys = this.yAxes[chartYIndex].invert(chartY);
+        return {
+            chartIndex: plotIndex,
+            chartX,
+            chartY,
+            xAxisIndex: chartXIndex + 1,
+            yAxisIndex: chartYIndex
+        };
+    }
+
+    protected onMouseMove(): void {
+        const position = d3mouse(this.surface.getCanvas().node());
+        const pos = this.getMousePosition(position);
+        if (pos == null) {
+            this.pointDescription.show(false);
+            return;
+        }
+        const plot = this.hps[pos.chartIndex];
+        const value = plot.getCount(pos.chartX, pos.chartY);
+        const xs = this.xAxes[pos.xAxisIndex].invert(pos.chartX);
+        const xname = this.xAxes[pos.xAxisIndex].description.name;
+        const yname = this.yAxes[pos.yAxisIndex].description.name;
+        const ys = this.yAxes[pos.yAxisIndex].invert(pos.chartY);
         this.pointDescription.show(true);
         const p = d3mouse(this.surface.getCanvas().node());
         this.pointDescription.update([xname, yname, xs, ys, makeInterval(value)],
@@ -166,7 +256,7 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
         this.updateView(this.data, true);
     }
 
-    protected showTrellis(colName: DisplayName): void {}
+    protected showTrellis(colName: DisplayName): void { /* not used */ }
 
     protected createNewSurfaces(keepColorMap: boolean): void {
         if (this.surface != null)
@@ -186,7 +276,7 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
         }
         this.hps = [];
         // noinspection JSSuspiciousNameCombination
-        this.surface = new HtmlPlottingSurface(this.topLevel, this.page, {
+        this.surface = new HtmlPlottingSurface(this.chartDiv, this.page, {
             height: PlottingSurface.getDefaultCanvasSize(this.page.getWidthInPixels()).width
         });
 
@@ -306,7 +396,17 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
                     ${this.surface.topMargin + this.headerHeight + i * this.chartSize})`);
             this.yAxes[i].axis.draw(gy);
         }
+        const summary = new HtmlString(formatNumber(this.rowCount) + " points");
+        summary.setInnerHtml(this.summaryDiv);
     }
+}
+
+interface MousePosition {
+    chartIndex: number;  // chart index in hps array
+    chartX: number;  // position within chart
+    chartY: number;
+    xAxisIndex: number;  // index within the xAxes array of a CorrelationHeatmapView
+    yAxisIndex: number;  // index within the yAxes array
 }
 
 export class CorrelationHeatmapReceiver extends ReceiverCommon<Groups<Groups<number>>[]> {
