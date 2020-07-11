@@ -155,6 +155,7 @@ export class Test {
             12: Non-stacked bar charts plot
             13: Filtered table
             14: correlation heatmaps
+            15: Trellis plot of quartile vectors
          */
         this.addProgram([{
             description: "Load all flights",
@@ -403,8 +404,15 @@ export class Test {
                 qv.click();
             }
         }, {
-            description: "Close some windows",
+            description: "Trellis plots of quartile vectors",
             cond: () => Test.existsElement("#hillviewPage14 .idle"),
+            cont: () => {
+                findElement("#hillviewPage11 .topMenu #View #group_by___").click();
+                (findElement(".dialog .confirm")).click();
+            }
+        }, {
+            description: "Close some windows",
+            cond: () => Test.existsElement("#hillviewPage15 .idle"),
             cont: () => {
                 /*
                     for (let i = 2; i < 8; i++) {

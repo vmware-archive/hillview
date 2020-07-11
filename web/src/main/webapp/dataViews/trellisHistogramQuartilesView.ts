@@ -94,6 +94,8 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
         ]);
 
         this.page.setMenu(this.menu);
+        this.createDiv("chart");
+        this.createDiv("summary");
     }
 
     protected createNewSurfaces(): void {
