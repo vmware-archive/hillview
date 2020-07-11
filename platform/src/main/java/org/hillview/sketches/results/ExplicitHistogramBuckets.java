@@ -74,7 +74,7 @@ public abstract class ExplicitHistogramBuckets<T extends Comparable<T>>
         if ((item.compareTo(this.minValue)) < 0)
             return -1;
         if (this.maxValue != null && item.compareTo(this.maxValue) >= 0)
-            return -1;
+            return this.bucketCount;
         if (item.compareTo(this.lastBoundary) >= 0)
             // Anything bigger than the lastBoundary is in the last bucket
             return this.bucketCount - 1;

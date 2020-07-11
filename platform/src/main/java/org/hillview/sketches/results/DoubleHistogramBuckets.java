@@ -47,8 +47,10 @@ public class DoubleHistogramBuckets implements IHistogramBuckets {
     }
 
     public int indexOf(double value) {
-        if ((value < this.minValue) || (value > this.maxValue))
+        if (value < this.minValue)
             return -1;
+        if (value > this.maxValue)
+            return this.bucketCount;
         // As overflow can occur when 'item' is very close to 'this.maxValue', clamp the resulting index.
         return Math.min(Converters.toInt((this.bucketCount * (value - this.minValue)) / this.range), this.bucketCount - 1);
     }
