@@ -19,11 +19,9 @@ package org.hillview.test.table;
 
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.IMembershipSet;
-import org.hillview.table.columns.SetComparisonColumn;
-import org.hillview.table.columns.StringListColumn;
-import org.hillview.table.columns.DoubleListColumn;
+import org.hillview.table.api.Interval;
+import org.hillview.table.columns.*;
 import org.hillview.table.api.ContentsKind;
-import org.hillview.table.columns.IntArrayColumn;
 import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.test.BaseTest;
 import org.junit.Assert;
@@ -31,8 +29,6 @@ import org.junit.Test;
 
 import java.time.Duration;
 import java.time.Instant;
-
-import static org.junit.Assert.assertEquals;
 
 public class ColumnTest extends BaseTest {
     @Test
@@ -66,28 +62,48 @@ public class ColumnTest extends BaseTest {
         for (int i = 0; i < size; i++)
             col.set(i, i);
 
-        assertEquals(col.sizeInRows(), size);
-        assertEquals(col.getInt(0), 0);
+        Assert.assertEquals(size, col.sizeInRows());
+        Assert.assertEquals(0, col.getInt(0));
         for (int i = 0; i < size; i++)
-            assertEquals(i, col.getInt(i));
-        assertEquals(col.asDouble(0), 0.0, 1e-3);
+            Assert.assertEquals(i, col.getInt(i));
+        Assert.assertEquals(0.0, col.asDouble(0), 1e-3);
+    }
+
+    @Test
+    public void testIntervalListColumn() {
+        final int size = 10000000;
+        final ColumnDescription desc = new ColumnDescription("test", ContentsKind.Double);
+        final DoubleListColumn col = new DoubleListColumn(desc);
+        for (int i = 0; i < size; i++)
+            col.append((double) i);
+
+        final ColumnDescription interval = new ColumnDescription("interval", ContentsKind.Interval);
+        final IntervalColumn ic = new IntervalColumn(interval, col, col);
+        Assert.assertEquals(ic.sizeInRows(), size);
+        Interval in = ic.getInterval(0);
+        Assert.assertNotNull(in);
+        Assert.assertEquals( 0.0, in.start, 10e-3);
+        Assert.assertEquals( 0.0, in.end, 10e-3);
+        for (int i = 0; i < size; i++) {
+            Assert.assertFalse(ic.isMissing(i));
+            Assert.assertEquals(i, ic.getValue(i, true), 1e-3);
+            Assert.assertEquals(i, ic.getValue(i, false), 1e-3);
+        }
     }
 
     @Test
     public void testDoubleListColumn() {
-        final DoubleListColumn col;
         final int size = 10000000;
-
-        final ColumnDescription desc = new ColumnDescription("test", ContentsKind.Double);
-        col = new DoubleListColumn(desc);
+        final ColumnDescription desc = new ColumnDescription("test0", ContentsKind.Double);
+        final DoubleListColumn col = new DoubleListColumn(desc);
         for (int i = 0; i < size; i++)
             col.append((double) i);
 
-        assertEquals(col.sizeInRows(), size);
-        assertEquals(col.getDouble(0), 0.0, 10e-3);
+        Assert.assertEquals(col.sizeInRows(), size);
+        Assert.assertEquals(col.getDouble(0), 0.0, 10e-3);
         for (int i = 0; i < size; i++)
-            assertEquals(i, col.getDouble(i), 1e-3);
-        assertEquals(col.asDouble(0), 0.0, 1e-3);
+            Assert.assertEquals(i, col.getDouble(i), 1e-3);
+        Assert.assertEquals(col.asDouble(0), 0.0, 1e-3);
     }
 
     @Test

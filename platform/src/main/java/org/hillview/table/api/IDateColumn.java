@@ -78,6 +78,7 @@ public interface IDateColumn extends IColumn {
             case Integer:
             case Double:
             case Duration:
+            case Interval:
                 throw new UnsupportedOperationException("Conversion from " + this.getKind()
                         + " to " + kind + " is not supported.");
             default:

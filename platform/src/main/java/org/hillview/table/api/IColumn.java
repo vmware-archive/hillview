@@ -157,8 +157,6 @@ public interface IColumn extends Serializable, ICast {
                 return new DateArrayColumn(cd, this.sizeInRows());
             case Duration:
                 return new DurationArrayColumn(cd, this.sizeInRows());
-            case Interval:
-                return new IntervalArrayColumn(cd, this.sizeInRows());
             default:
                 throw new RuntimeException("Unexpected column kind " + kind);
         }
