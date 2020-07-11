@@ -45,6 +45,8 @@ public interface IColumn extends Serializable, ICast {
     Instant getDate(int rowIndex);
     @Nullable
     Duration getDuration(int rowIndex);
+    @Nullable
+    Interval getInterval(int rowIndex);
     /**
      * Number of exceptions that have occurred during parsing.
      */
@@ -155,6 +157,8 @@ public interface IColumn extends Serializable, ICast {
                 return new DateArrayColumn(cd, this.sizeInRows());
             case Duration:
                 return new DurationArrayColumn(cd, this.sizeInRows());
+            case Interval:
+                return new IntervalArrayColumn(cd, this.sizeInRows());
             default:
                 throw new RuntimeException("Unexpected column kind " + kind);
         }

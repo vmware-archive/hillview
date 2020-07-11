@@ -98,7 +98,7 @@ public class CreateColumnJSMap extends AppendColumnMap {
                 else {
                     switch (kind) {
                         case None:
-                            col.set(r, value);
+                            throw new RuntimeException("Only null values can be stored in this column");
                         case String:
                         case Json:
                             col.set(r, value.toString());
@@ -118,6 +118,8 @@ public class CreateColumnJSMap extends AppendColumnMap {
                             // TODO
                             col.set(r, value);
                             break;
+                        default:
+                            throw new RuntimeException("Unhandled kind " + kind);
                     }
                 }
                 r = it.getNextRow();

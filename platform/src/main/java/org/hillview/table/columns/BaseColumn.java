@@ -21,6 +21,7 @@ import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMutableColumn;
+import org.hillview.table.api.Interval;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -70,6 +71,11 @@ public abstract class BaseColumn implements IColumn {
 
     @Override
     public Duration getDuration(final int rowIndex) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Interval getInterval(final int rowIndex) {
         throw new UnsupportedOperationException();
     }
 
