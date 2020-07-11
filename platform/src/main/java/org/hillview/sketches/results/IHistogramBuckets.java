@@ -39,7 +39,8 @@ public interface IHistogramBuckets extends Serializable {
      * @param column Column holding the data.
      * @param rowIndex  Index of the row in the column.
      * @return the index of the bucket in which the item should be placed.
-     * If the value is out of the range of buckets this returns -1.
+     * If the value is smallest than the minimum it returns -1, if it is larger than
+     * the maximum it returns bucketCount.
      */
     int indexOf(IColumn column, int rowIndex);
 }
