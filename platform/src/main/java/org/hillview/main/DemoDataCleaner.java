@@ -24,6 +24,7 @@ import org.hillview.table.Schema;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.HillviewLogger;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -76,14 +77,20 @@ class DemoDataCleaner {
                     }
 
                     end = end.replace(".csv", ".orc");
-                    OrcFileWriter owriter = new OrcFileWriter(end);
-                    System.out.println("Writing " + end);
-                    owriter.writeTable(p);
+                    File fend = new File(end);
+                    if (!fend.exists()) {
+                        OrcFileWriter owriter = new OrcFileWriter(end);
+                        System.out.println("Writing " + end);
+                        owriter.writeTable(p);
+                    }
 
                     String big = filename.replace(".csv.gz", ".orc");
-                    owriter = new OrcFileWriter(big);
-                    System.out.println("Writing " + big);
-                    owriter.writeTable(tbl);
+                    File fbig = new File(big);
+                    if (!fbig.exists()) {
+                        OrcFileWriter owriter = new OrcFileWriter(big);
+                        System.out.println("Writing " + big);
+                        owriter.writeTable(tbl);
+                    }
                 });
         files.close();
     }
