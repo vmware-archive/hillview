@@ -75,10 +75,10 @@ public class CassandraSSTableLoader extends TextFileLoader {
 
         try {
             Descriptor descriptor = Descriptor.fromFilename(this.ssTablePath);
-            this.metadata = this.getSSTableMetadata(descriptor);
+            this.metadata = this.setSSTableMetadata(descriptor);
             this.ssTableReader = SSTableReader.openNoValidation(descriptor, this.metadata);
             // Get the schema of the current SSTable
-            this.actualSchema = this.getSchema(this.metadata);
+            this.actualSchema = this.setSchema(this.metadata);
         } catch (Exception e) {
             HillviewLogger.instance.error(
                     "Failed initializing Metadata and SStable partitions", "{0}", this.ssTablePath);
@@ -86,7 +86,7 @@ public class CassandraSSTableLoader extends TextFileLoader {
         }
     }
 
-    public CFMetaData getSSTableMetadata(Descriptor desc) throws Exception{
+    public CFMetaData setSSTableMetadata(Descriptor desc) throws Exception{
         if (!desc.version.storeRows())
             throw new RuntimeException("pre-3.0 SSTable is not supported");
 
@@ -157,7 +157,15 @@ public class CassandraSSTableLoader extends TextFileLoader {
         return new ColumnDescription(name, kind);
     }
 
-    public Schema getSchema(CFMetaData metadata) {
+    public void printSchema(CFMetaData metadata) {
+        System.out.println("Column size : " + metadata.partitionColumns().size());
+        PartitionColumns columnDefinitions = metadata.partitionColumns();
+        for (ColumnDefinition colDef : columnDefinitions) {
+            System.out.println(colDef.toString() + " " + colDef.type.asCQL3Type());
+        }
+    }
+
+    public Schema setSchema(CFMetaData metadata) {
         try {
             Schema result = new Schema();
             PartitionColumns columnDefinitions = metadata.partitionColumns();
@@ -169,6 +177,10 @@ public class CassandraSSTableLoader extends TextFileLoader {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public Schema getSchema(){
+        return this.actualSchema;
     }
 
     public class SSTableColumnLoader implements IColumnLoader {

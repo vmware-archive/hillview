@@ -17,7 +17,7 @@
 
 import {DatasetView} from "./datasetView";
 import {InitialObject} from "./initialObject";
-import {FileSetDescription, JdbcConnectionInformation, Status, UIConfig} from "./javaBridge";
+import {FileSetDescription, JdbcConnectionInformation, CassandraConnectionInfo, Status, UIConfig} from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject} from "./rpc";
 import {Test} from "./test";
 import {IDataView} from "./ui/dataview";
@@ -244,7 +244,8 @@ export class LoadMenu extends RemoteObject implements IDataView {
                 text: "Local DB table...",
                 action: () => {
                     const dialog = new DBDialog();
-                    dialog.setAction(() => this.init.loadSimpleDBTable(dialog.getConnection(), this.page));
+                    // dialog.setAction(() => this.init.loadSimpleDBTable(dialog.getConnection(), this.page));
+                    dialog.setAction(() => this.init.loadCassandraDBTable(dialog.getCassandraConnection(), this.page));
                     dialog.show();
                 },
                 help: "A database table in a single database." });
@@ -585,19 +586,26 @@ class OrcFileDialog extends Dialog {
 class DBDialog extends Dialog {
     constructor() {
         super("Load DB tables", "Loads one table on each machine that is part of the service.");
-        const sel = this.addSelectField("databaseKind", "Database kind", ["mysql", "impala"], "mysql",
+        const sel = this.addSelectField("databaseKind", "Database kind", ["cassandra", "mysql", "impala"], "cassandra",
             "The kind of database.");
         sel.onchange = () => this.dbChanged();
         const host = this.addTextField("host", "Host", FieldKind.String, "localhost",
             "Machine name where database is located; each machine will open a connection to this host");
         host.required = true;
-        const port = this.addTextField("port", "Port", FieldKind.Integer, "3306",
+        const dbDir = this.addTextField("dbDir", "DB Directory", FieldKind.String, "/tmp/cassandra",
+            "Absolute path of dCassandra's installation directory");
+        dbDir.required = true;
+        const port = this.addTextField("port", "Port", FieldKind.Integer, "9042",
             "Network port to connect to database.");
         port.required = true;
-        const database = this.addTextField("database", "Database", FieldKind.String, null,
+        const jmxPort = this.addTextField("jmxPort", "JMX Port", FieldKind.Integer, "7199",
+        "Cassandra's JMX port to connect to server-side tools.");
+        jmxPort.required = true;
+        this.hideField("jmxPort");
+        const database = this.addTextField("database", "Database", FieldKind.String, "cassdb",
             "Name of database to load.");
         database.required = true;
-        const table = this.addTextField("table", "Table", FieldKind.String, null,
+        const table = this.addTextField("table", "Table", FieldKind.String, "flights",
             "The name of the table to load.");
         table.required = true;
         this.addTextField("user", "User", FieldKind.String, null,
@@ -612,9 +620,20 @@ class DBDialog extends Dialog {
         switch (db) {
             case "mysql":
                 this.setFieldValue("port", "3306");
+                this.hideField("jmxPort");
+                this.hideField("dbDir");
                 break;
             case "impala":
                 this.setFieldValue("port", "21050");
+                this.hideField("jmxPort");
+                this.hideField("dbDir");
+                break;
+            case "cassandra":
+                this.setFieldValue("port", "9042");
+                this.setFieldValue("jmxPort", "7199");
+                this.setFieldValue("dbDir", "/tmp/cassandra");
+                this.showField("jmxPort");
+                this.showField("dbDir");
                 break;
         }
     }
@@ -630,6 +649,41 @@ class DBDialog extends Dialog {
             databaseKind: this.getFieldValue("databaseKind"),
             lazyLoading: true,
         };
+    }
+
+    public getCassandraConnection(): CassandraConnectionInfo {
+        alert("getCassandraConnection() jmxPort: " + this.getFieldValueAsNumber("jmxPort"))
+        return {
+            host: this.getFieldValue("host"),
+            port: this.getFieldValueAsNumber("port"),
+            database: this.getFieldValue("database"),
+            table: this.getFieldValue("table"),
+            user: this.getFieldValue("user"),
+            password: this.getFieldValue("password"),
+            databaseKind: this.getFieldValue("databaseKind"),
+            lazyLoading: true,
+            jmxPort: this.getFieldValueAsNumber("jmxPort"),
+            cassandraRootDir: this.getFieldValue("dbDir"),
+        };
+    }
+
+    public hideField(fieldName: string){
+        var field = document.getElementById(fieldName);
+        if (field != null) {
+            this.setFieldValue(fieldName, "");
+            field.removeAttribute("required");
+            field.setAttribute("disabled", "");
+            field.parentElement.style.display = 'none';
+        }
+    }
+
+    public showField(fieldName: string){
+        var field = document.getElementById(fieldName);
+        if (field != null) {
+            field.removeAttribute("disabled");
+            field.setAttribute("required", "");
+            field.parentElement.style.display = 'block';
+        }
     }
 }
 

@@ -148,6 +148,11 @@ export interface JdbcConnectionInformation {
     lazyLoading: boolean;
 }
 
+export interface CassandraConnectionInfo extends JdbcConnectionInformation {
+    jmxPort: number;
+    cassandraRootDir: string;
+}
+
 export type DataKinds = "csv" | "orc" | "parquet" | "json" | "hillviewlog" | "db" | "genericlog";
 
 export interface FileSetDescription {

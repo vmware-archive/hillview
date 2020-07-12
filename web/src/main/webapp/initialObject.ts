@@ -21,6 +21,7 @@ import {
     FileSetDescription,
     FileSizeSketchInfo,
     JdbcConnectionInformation,
+    CassandraConnectionInfo,
     RemoteObjectId,
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject} from "./rpc";
@@ -193,6 +194,14 @@ export class InitialObject extends RemoteObject {
         const rr = this.createStreamingRpcRequest<RemoteObjectId>("loadDBTable", conn);
         const observer = new RemoteTableReceiver(loadMenuPage, rr,
             { kind: "DB", description: conn }, "loading database table");
+        rr.invoke(observer);
+    }
+
+    public loadCassandraDBTable(conn: CassandraConnectionInfo, loadMenuPage: FullPage): void {
+        // console.log("jmx port: " + conn.jmxPort);
+        const rr = this.createStreamingRpcRequest<RemoteObjectId>("loadCassandraDBTable", conn);
+        const observer = new RemoteTableReceiver(loadMenuPage, rr,
+            { kind: "DB", description: conn }, "loading Cassandra DB table");
         rr.invoke(observer);
     }
 

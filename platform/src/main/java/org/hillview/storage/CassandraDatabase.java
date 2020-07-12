@@ -17,6 +17,8 @@
 
 package org.hillview.storage;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -244,5 +246,11 @@ public class CassandraDatabase {
                     .append(tokenRange.toString());
         }
         return result.toString();
+    }
+
+    public int getRowCount() {
+        ResultSet result = this.session.execute("SELECT count(*) FROM " + this.info.database + "." + this.info.table);
+        Row r = result.one();
+        return (int) r.getLong("count");
     }
 }

@@ -27,6 +27,15 @@ public class CassandraConnectionInfo extends JdbcConnectionInformation {
 
     @Override
     public String toString() {
-        return this.cassandraRootDir + "/" + this.port;
+        StringBuilder sb = new StringBuilder("CassandraConnectionInfo:\n");
+        sb.append("  databaseKind : " + this.databaseKind + "\n");
+        sb.append("  host : " + this.host + "\n");
+        sb.append("  cassandraRootDir : " + this.cassandraRootDir + "\n");
+        sb.append("  port : " + this.port + "\n");
+        sb.append("  jmxPort : " + this.jmxPort + "\n");
+        sb.append("  database : " + this.database + "\n");
+        sb.append("  table : " + this.table + "\n");
+        sb.append("  user : " + this.user + "\n");
+        return sb.toString();
     }
 }
