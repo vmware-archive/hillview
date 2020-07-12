@@ -244,8 +244,8 @@ export class LoadMenu extends RemoteObject implements IDataView {
                 text: "Local DB table...",
                 action: () => {
                     const dialog = new DBDialog();
-                    // dialog.setAction(() => this.init.loadSimpleDBTable(dialog.getConnection(), this.page));
-                    dialog.setAction(() => this.init.loadCassandraDBTable(dialog.getCassandraConnection(), this.page));
+                    dialog.setAction(() => this.init.loadLocalDBTable(dialog.getConnection(),
+                        dialog.getCassandraConnection(), this.page));
                     dialog.show();
                 },
                 help: "A database table in a single database." });
@@ -602,10 +602,10 @@ class DBDialog extends Dialog {
         "Cassandra's JMX port to connect to server-side tools.");
         jmxPort.required = true;
         this.hideField("jmxPort");
-        const database = this.addTextField("database", "Database", FieldKind.String, "cassdb",
+        const database = this.addTextField("database", "Database", FieldKind.String, null,
             "Name of database to load.");
         database.required = true;
-        const table = this.addTextField("table", "Table", FieldKind.String, "flights",
+        const table = this.addTextField("table", "Table", FieldKind.String, null,
             "The name of the table to load.");
         table.required = true;
         this.addTextField("user", "User", FieldKind.String, null,
@@ -652,19 +652,21 @@ class DBDialog extends Dialog {
     }
 
     public getCassandraConnection(): CassandraConnectionInfo {
-        alert("getCassandraConnection() jmxPort: " + this.getFieldValueAsNumber("jmxPort"))
-        return {
-            host: this.getFieldValue("host"),
-            port: this.getFieldValueAsNumber("port"),
-            database: this.getFieldValue("database"),
-            table: this.getFieldValue("table"),
-            user: this.getFieldValue("user"),
-            password: this.getFieldValue("password"),
-            databaseKind: this.getFieldValue("databaseKind"),
-            lazyLoading: true,
-            jmxPort: this.getFieldValueAsNumber("jmxPort"),
-            cassandraRootDir: this.getFieldValue("dbDir"),
-        };
+        if (this.getFieldValue("databaseKind") != "cassandra")
+            return null;
+        else
+            return {
+                host: this.getFieldValue("host"),
+                port: this.getFieldValueAsNumber("port"),
+                database: this.getFieldValue("database"),
+                table: this.getFieldValue("table"),
+                user: this.getFieldValue("user"),
+                password: this.getFieldValue("password"),
+                databaseKind: this.getFieldValue("databaseKind"),
+                lazyLoading: true,
+                jmxPort: this.getFieldValueAsNumber("jmxPort"),
+                cassandraRootDir: this.getFieldValue("dbDir"),
+            };
     }
 
     public hideField(fieldName: string){

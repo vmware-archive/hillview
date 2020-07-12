@@ -30,8 +30,6 @@ import org.hillview.maps.LoadDatabaseTableMap;
 import org.hillview.storage.*;
 import org.hillview.utils.*;
 
-import java.io.File;
-import java.io.FileWriter;
 import javax.annotation.Nullable;
 import javax.websocket.Session;
 import java.io.IOException;
@@ -126,7 +124,7 @@ public class InitialObjectTarget extends RpcTarget {
 
     @HillviewRpc
     public void loadCassandraDBTable(RpcRequest request, RpcRequestContext context) {
-        CassandraConnectionInfo cassandraConn= request.parseArgs(CassandraConnectionInfo.class);
+        CassandraConnectionInfo cassandraConn = request.parseArgs(CassandraConnectionInfo.class);
         IMap<Empty, Empty> map = new IdMap<Empty>();
         Converters.checkNull(this.emptyDataset);
         this.runMap(this.emptyDataset, map, (e, c) -> new CassandraDBTarget(cassandraConn, c), request, context);

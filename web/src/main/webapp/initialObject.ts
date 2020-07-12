@@ -198,7 +198,6 @@ export class InitialObject extends RemoteObject {
     }
 
     public loadCassandraDBTable(conn: CassandraConnectionInfo, loadMenuPage: FullPage): void {
-        // console.log("jmx port: " + conn.jmxPort);
         const rr = this.createStreamingRpcRequest<RemoteObjectId>("loadCassandraDBTable", conn);
         const observer = new RemoteTableReceiver(loadMenuPage, rr,
             { kind: "DB", description: conn }, "loading Cassandra DB table");
@@ -210,5 +209,13 @@ export class InitialObject extends RemoteObject {
         const observer = new RemoteTableReceiver(loadMenuPage, rr,
             { kind: "DB", description: conn }, "loading database table");
         rr.invoke(observer);
+    }
+
+    public loadLocalDBTable(jdbcConn: JdbcConnectionInformation, cassConn: CassandraConnectionInfo, loadMenuPage: FullPage): void {
+        if (jdbcConn.databaseKind == "cassandra") {
+            this.loadCassandraDBTable(cassConn, loadMenuPage);
+        } else {
+            this.loadSimpleDBTable(jdbcConn, loadMenuPage);
+        }
     }
 }

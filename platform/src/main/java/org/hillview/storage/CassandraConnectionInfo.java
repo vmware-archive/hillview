@@ -17,6 +17,9 @@
 
 package org.hillview.storage;
 
+/**
+ * This information is required to open a Cassandra database connection.
+ */
 public class CassandraConnectionInfo extends JdbcConnectionInformation {
     static final long serialVersionUID = 1;
 
