@@ -357,21 +357,33 @@ Here is a step-by-step guide to add the necessary extensions, run Maven commands
 redhat.java`: recognize projects with Maven or Gradle build in the directory hierarchy.
 	- `Maven for Java`: provides a project explorer and shortcuts to execute Maven commands.
 2. Select `Add workspace folder...` at the Welcome page, then choose `hillview/platform/` directory. The platform module should be displayed in the `Explorer` view. 
-4. Add `web` module to the workspace by clicking `File`->`Add Folder to Workspace...` and then choose `hillview/web/` directory. 
-5. Save the workspace by clicking `File`->`Save Workspace As...` and store it in your personal folder outside `hillview/` root directory.
-6. Next, about executing Maven commands; in the `Explorer` view, click `MAVEN PROJECTS`. There are two Maven folders correspond to `web` and `platform` modules; click those folders to expand and display the Maven pom files. The Maven commands will be displayed by right clicking the pom files.
-1. Finally, about attaching a debugger:
+3. Add `web` module to the workspace by clicking `File`->`Add Folder to Workspace...` and then choose `hillview/web/` directory. 
+4. Save the workspace by clicking `File`->`Save Workspace As...` and store it in your personal folder outside `hillview/` root directory.
+5. Next, about executing Maven commands; in the `Explorer` view, click `MAVEN PROJECTS`. There are two Maven folders correspond to `web` and `platform` modules; 
+   click those folders to expand and display the Maven pom files. The Maven commands will be displayed by right clicking the pom files.
+6. Finally, about attaching a debugger:
 	- Bring up the `Run` view, select the `Run` icon in the `Activity Bar` on the left side of VS Code.
 	- From the `Run` view, click `create a launch.json file`, you will see the `platform` and `web` modules listed. We will create two `launch.json` files, one for `platform` module and the other for `web` module. 
-	- When configuring the `launch.json` for `platform` module, you must select `Java` option. Otherwise, choose `Chrome (preview)` option when configuring the `web` module. Then, delete the auto generated `configurations` and specify the correct configuration to attach the debugger. The important fields are `url`, `hostname`, `port`, and `request`. More about this is here [VS Code Debugging#launch-configuration](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations) and [VS Code#Java-Debugging](https://code.visualstudio.com/docs/java/java-debugging#_attach).
+	- When configuring the `launch.json` for `platform` module, you must select `Java` option. Otherwise, choose `Chrome (preview)` option when configuring the `web` module. Then, delete the auto generated `configurations` 
+	and specify the correct configuration to attach the debugger. The important fields are `url`, `hostname`, `port`, and `request`. More about this is here 
+	[VS Code Debugging#launch-configuration](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations) and [VS Code#Java-Debugging](https://code.visualstudio.com/docs/java/java-debugging#_attach).
 
-## 4.6. Running the tests
+## 4.6 Debugging
+
+Debugging on a single machine can done as follows:
+- you can start the back-end service under the debugger,
+  by starting the HillviewBackend binary with command-line arguments 127.0.0.1:3569
+- you can start the front-end service by attaching 
+  to the Java process created by Java Tomcat.  The frontend-start.sh
+  script has a line that sets up the environment variables to enable this.
+
+## 4.7. Running the tests
 
 * The unit tests are run by building with maven or by running `bin/rebuild.sh -t`.
 * The UI tests are run by starting Hillview on a local machine and
 then clicking the "Test/Run" menu button.
 
-## 4.7. Using git to contribute
+## 4.8. Using git to contribute
 
 Fork the repository using the "fork" button on github, by following these instructions:
 https://help.github.com/articles/fork-a-repo/
@@ -394,7 +406,7 @@ Here is a step-by-step guide to submitting contributions:
 9. Create a pull request to merge your new branch into master (using the web ui).
 10. Delete your branch after the merging has been done `git branch -D yourBranchName`
 
-## 4.8. Guidance in writing code
+## 4.9. Guidance in writing code
 
 * Use the IntelliJ code inspection feature (Analyze/Inspect code).
 

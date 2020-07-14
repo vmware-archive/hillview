@@ -24,10 +24,11 @@ export type RemoteObjectId = string;
 export type Comparison = "==" | "!=" | "<" | ">" | "<=" | ">=";
 
 export type ContentsKind = "Json" | "String" | "Integer" |
-    "Double" | "Date" | "Interval";
+    "Double" | "Date" | "Duration" | "Interval";
 /* We are not using an enum for ContentsKind because JSON deserialization does not
    return an enum from a string. */
-export const allContentsKind: ContentsKind[] = ["Json", "String", "Integer", "Double", "Date", "Interval"];
+export const allContentsKind: ContentsKind[] =
+    ["Json", "String", "Integer", "Double", "Date", "Duration", "Interval"];
 export function asContentsKind(kind: string): ContentsKind {
     switch (kind) {
         case "Json": {
@@ -44,6 +45,9 @@ export function asContentsKind(kind: string): ContentsKind {
         }
         case "Date": {
             return "Date";
+        }
+        case "Duration": {
+            return "Duration";
         }
         case "Interval": {
             return "Interval";
@@ -162,7 +166,7 @@ export interface CountWithConfidence {
     confidence: number;
 }
 
-export interface JSCreateColumnInfo {
+export interface CreateColumnJSMapInfo {
     jsFunction: string;
     schema: Schema;
     outputColumn: string;
@@ -170,9 +174,9 @@ export interface JSCreateColumnInfo {
     renameMap: string[];
 }
 
-export interface KVCreateColumnInfo {
+export interface ExtractValueFromKeyMapInfo {
     key: string;
-    inputColumn: string;
+    inputColumn: IColumnDescription;
     outputColumn: string;
     outputIndex: number;
 }
@@ -287,6 +291,13 @@ export interface SampleSet {
     count: number;
     missing: number;
     samples: number[];
+}
+
+export interface CreateIntervalColumnMapInfo {
+    startColName: string;
+    endColName: string;
+    columnIndex: number;
+    newColName: string;
 }
 
 export interface CompareDatasetsInfo {

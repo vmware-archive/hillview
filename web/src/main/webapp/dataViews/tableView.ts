@@ -27,7 +27,7 @@ import {
     IColumnDescription,
     JSFilterInfo,
     kindIsString,
-    KVCreateColumnInfo,
+    ExtractValueFromKeyMapInfo,
     NextKList,
     RecordOrder,
     RemoteObjectId,
@@ -35,7 +35,7 @@ import {
     RowFilterDescription,
     Schema,
     StringFilterDescription,
-    TableSummary,
+    TableSummary, CreateIntervalColumnMapInfo
 } from "../javaBridge";
 import {OnCompleteReceiver, Receiver} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
@@ -62,7 +62,8 @@ import {
     sameAggregate,
     significantDigits,
     significantDigitsHtml,
-    truncate
+    truncate,
+    all
 } from "../util";
 import {SchemaView} from "../modules";
 import {SpectrumReceiver} from "./spectrumView";
@@ -676,7 +677,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 help: "Find the values that occur most frequently in the selected columns.",
             }, !this.isPrivate());
             if (selectedCount > 1 &&
-                this.getSelectedColNames().reduce((a, b) => a && this.isNumericColumn(b), true)) {
+                all(this.getSelectedColNames(), b => this.isNumericColumn(b))) {
                 this.contextMenu.addItem({
                     text: "Correlation",
                     action: () => this.correlate(),
@@ -720,6 +721,12 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 help: "Convert the data in the selected column to a different data type.",
             }, selectedCount === 1 && !this.isPrivate());
             this.contextMenu.addItem({
+                text: "Create interval column...",
+                action: () => this.createIntervalColumn(this.getSelectedColNames()),
+                help: "Combine two numeric columns into a colum of intervals.",
+            }, this.getSelectedColCount() == 2 &&
+                all(this.getSelectedColNames(), c => this.isNumericColumn(c)) && !this.isPrivate());
+            this.contextMenu.addItem({
                 text: "Create column in JS...",
                 action: () => this.createJSColumnDialog(
                     this.order, this.tableRowsDesired, this.aggregates),
@@ -729,7 +736,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 text: "Aggregate...",
                 action: () => this.aggregateDialog(),
                 help: "Compute aggregations on some columns"
-            }, this.getSelectedColNames().reduce((a, b) => a && this.isNumericColumn(b), !this.isPrivate()));
+            }, all(this.getSelectedColNames(), (b) => this.isNumericColumn(b)) && !this.isPrivate());
             if (selectedCount === 1 && this.isKVColumn(this.getSelectedColNames()[0]))
                     this.contextMenu.addItem({
                         text: "Extract value...",
@@ -741,6 +748,45 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                     }, !this.isPrivate());
             this.contextMenu.show(e);
         };
+    }
+
+    public createIntervalColumn(cols: string[]): void {
+        if (cols.length != 2) {
+            this.page.reportError("Only 2 columns expected");
+            return;
+        }
+        const dialog = new Dialog(
+            "Create column of intervals",
+            "Creates a column of intervals from two numeric columns.");
+        const resultColumn = this.schema.uniqueColumnName("Interval");
+        dialog.addTextField("column", "Column", FieldKind.String, resultColumn, "Column to create");
+        dialog.addBooleanField("keep", "Keep original columns", false,
+            "If selected the original columns are not removed");
+        dialog.setAction(() => {
+            const col = dialog.getFieldValue("column");
+            const cd: IColumnDescription = { kind: "Interval", name: col };
+            const args: CreateIntervalColumnMapInfo = {
+                startColName: cols[0],
+                endColName: cols[1],
+                columnIndex: -1,
+                newColName: col
+            };
+            const rr = this.createIntervalRequest(args);
+            let schema = this.schema.append(cd);
+            let o = this.order.clone();
+            o.addColumn({columnDescription: cd, isAscending: true});
+            const keep = dialog.getBooleanValue("keep");
+            if (!keep) {
+                schema = schema.filter((c) => cols.indexOf(schema.displayName(c.name).displayName) < 0);
+                o.hide(cols[0]);
+                o.hide(cols[1]);
+            }
+            const rec = new TableOperationCompleted(
+                this.page, rr, this.rowCount, schema, o,
+                this.tableRowsDesired, this.aggregates);
+            rr.invoke(rec);
+        })
+        dialog.show();
     }
 
     public setCompareDialog(): void {
@@ -844,10 +890,12 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                       result: FindResult): void {
         this.grid.prepareForUpdate();
         this.selectedColumns.clear();
-        this.rowCount = nextKList.rowsScanned;
         this.nextKList = nextKList;
+        if (nextKList == null)
+            return;
         this.dataRowsDisplayed = 0;
         this.startPosition = nextKList.startPosition;
+        this.rowCount = nextKList.rowsScanned;
         this.order = order.clone();
         if (this.isPrivate())
             this.page.setEpsilon(null, null);
@@ -1494,9 +1542,9 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             this.page.reportError("Please specify a non-empty key");
             return;
         }
-        const arg: KVCreateColumnInfo = {
+        const arg: ExtractValueFromKeyMapInfo = {
             key: key,
-            inputColumn: inputColumn,
+            inputColumn: this.schema.find(inputColumn),
             outputColumn: col,
             outputIndex: this.schema.columnIndex(inputColumn)
         };

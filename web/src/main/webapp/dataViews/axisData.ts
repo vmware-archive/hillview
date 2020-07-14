@@ -48,7 +48,7 @@ class BucketBoundary {
                 return significantDigits(this.value as number);
             case "Date":
                 return Converters.dateFromDouble(this.value as number).toString();
-            case "Interval":
+            case "Duration":
                 return this.value.toString();
         }
     }

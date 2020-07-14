@@ -266,8 +266,14 @@ export class Converters {
             return formatDate(Converters.dateFromDouble(val as number));
         else if (kindIsString(kind))
             return val as string;
-        else
+        else if (kind == "Interval") {
+            const arr = val as number[];
+            return "[" + String(arr[0]) + ":" + String(arr[1]) + "]";
+        } else if (kind == "Duration") {
             return val.toString();  // TODO
+        } else {
+            assert(false);
+        }
     }
 
     /**
@@ -578,6 +584,10 @@ export function significantDigitsHtml(n: number): HtmlString {
 
 export function add(a: number, b: number): number {
     return a + b;
+}
+
+export function all<T>(a: T[], f: (x: T) => boolean): boolean {
+    return a.map(e => f(e)).reduce((a, b) => a && b);
 }
 
 /**

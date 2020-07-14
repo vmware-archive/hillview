@@ -23,7 +23,7 @@ import {
     ComparisonFilterDescription,
     ContentsKind,
     ConvertColumnInfo,
-    JSCreateColumnInfo,
+    CreateColumnJSMapInfo,
     IColumnDescription,
     kindIsString,
     RecordOrder,
@@ -104,7 +104,7 @@ export abstract class TSViewBase extends BigTableView {
                     newKind: kind,
                     columnIndex: columnIndex,
                 };
-                const rr = this.createStreamingRpcRequest<string>("convertColumnMap", args);
+                const rr = this.createStreamingRpcRequest<string>("convertColumn", args);
                 const cd: IColumnDescription = {
                     kind: kind,
                     name: newColName,
@@ -218,7 +218,7 @@ export abstract class TSViewBase extends BigTableView {
         const fun = "function map(row) {" + dialog.getFieldValue("function") + "}";
         const selColumns = cloneToSet(this.getSelectedColNames());
         const subSchema = this.schema.filter((c) => selColumns.has(c.name));
-        const arg: JSCreateColumnInfo = {
+        const arg: CreateColumnJSMapInfo = {
             jsFunction: fun,
             outputColumn: col,
             outputKind: asContentsKind(kind),
