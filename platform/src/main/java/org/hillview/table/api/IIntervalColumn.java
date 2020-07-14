@@ -18,10 +18,9 @@
 package org.hillview.table.api;
 
 import net.openhft.hashing.LongHashFunction;
+import org.hillview.utils.HashUtil;
 
 public interface IIntervalColumn extends IColumn {
-    Double getValue(int rowIndex, boolean start);
-
     @Override
     default IColumn convertKind(
             ContentsKind kind, String newColName, IMembershipSet set) {
@@ -29,8 +28,8 @@ public interface IIntervalColumn extends IColumn {
                 kind, set, newColName);
         switch(kind) {
             case Json:
-                this.convert(newColumn, set, row -> "{ start: " + this.getValue(row, true) +
-                        ", end: " + this.getValue(row, false));
+                this.convert(newColumn, set, row -> "{ start: " + this.getEndpoint(row, true) +
+                        ", end: " + this.getEndpoint(row, false));
                 break;
             case String:
                 this.convert(newColumn, set, this::asString);
@@ -62,12 +61,12 @@ public interface IIntervalColumn extends IColumn {
                 } else if (jMissing) {
                     return -1;
                 } else {
-                    int first = Double.compare(IIntervalColumn.this.getValue(i, true),
-                            IIntervalColumn.this.getValue(j, true));
+                    int first = Double.compare(IIntervalColumn.this.getEndpoint(i, true),
+                            IIntervalColumn.this.getEndpoint(j, true));
                     if (first != 0)
                         return first;
-                    return Double.compare(IIntervalColumn.this.getValue(i, false),
-                            IIntervalColumn.this.getValue(j, false));
+                    return Double.compare(IIntervalColumn.this.getEndpoint(i, false),
+                            IIntervalColumn.this.getEndpoint(j, false));
                 }
             }
         };
@@ -76,7 +75,8 @@ public interface IIntervalColumn extends IColumn {
     @Override
     default long hashCode64(int rowIndex, LongHashFunction hash) {
         // Is this the right way to combine two hashes?
-        return hash.hashLong(Double.doubleToRawLongBits(this.getValue(rowIndex, true)) ^
-                hash.hashLong(Double.doubleToRawLongBits(this.getValue(rowIndex, false))));
+        return HashUtil.murmurHash3(
+                hash.hashLong(Double.doubleToRawLongBits(this.getEndpoint(rowIndex, true))),
+                hash.hashLong(Double.doubleToRawLongBits(this.getEndpoint(rowIndex, false))));
     }
 }

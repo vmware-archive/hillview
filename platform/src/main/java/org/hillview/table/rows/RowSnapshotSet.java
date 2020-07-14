@@ -24,6 +24,7 @@ import org.hillview.table.Schema;
 import org.hillview.table.api.ITableFilter;
 import org.hillview.table.api.ITable;
 import org.hillview.table.api.ITableFilterDescription;
+import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;
@@ -110,7 +111,7 @@ public class RowSnapshotSet implements Serializable {
 
         @Override
         public int hashCode(BaseRowSnapshot row) {
-            return row.computeHashCode(this.schema);
+            return Converters.foldHash(row.computeHashCode(this.schema));
         }
 
         @Override

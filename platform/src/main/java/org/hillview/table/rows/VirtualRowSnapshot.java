@@ -19,6 +19,7 @@ package org.hillview.table.rows;
 
 import org.hillview.table.Schema;
 import org.hillview.table.api.*;
+import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
@@ -106,7 +107,7 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
 
     @Override
     public int hashCode() {
-        return this.computeHashCode(this.schema);
+        return Converters.foldHash(this.computeHashCode(this.schema));
     }
 
     @Override
@@ -155,6 +156,11 @@ public class VirtualRowSnapshot extends BaseRowSnapshot {
         if (!this.exists())
             throw new RuntimeException("No such row.");
         return this.getColumnChecked(colName).isMissing(this.rowIndex);
+    }
+
+    @Override
+    public double getEndpoint(String colName, boolean start) {
+        return this.columns.get(colName).getEndpoint(rowIndex, start);
     }
 
     @Override

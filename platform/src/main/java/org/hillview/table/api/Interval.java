@@ -17,12 +17,18 @@
 
 package org.hillview.table.api;
 
+import org.hillview.dataset.api.IJson;
+
+import java.io.Serializable;
+
 /**
  * Represents an interval with two numeric endpoints.
  */
-public class Interval {
-    public final double start;
-    public final double end;
+public class Interval implements Serializable, IJson {
+    static final long serialVersionUID = 1;
+
+    final double start;
+    final double end;
 
     public Interval(double start, double end) {
         this.start = start;
@@ -39,5 +45,19 @@ public class Interval {
     @Override
     public String toString() {
         return Interval.toString(this.start, this.end);
+    }
+
+    public double get(boolean start) {
+        if (start)
+            return this.start;
+        else
+            return this.end;
+    }
+
+    public int compareTo(Interval other) {
+        int c = Double.compare(this.start, other.start);
+        if (c != 0)
+            return c;
+        return Double.compare(this.end, other.end);
     }
 }

@@ -26,8 +26,10 @@ import org.hillview.table.api.*;
 import org.hillview.table.columns.BaseColumn;
 import org.hillview.table.rows.JSVirtualRowSnapshot;
 import org.hillview.utils.Converters;
+import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
+import java.io.Serializable;
 import java.time.Instant;
 import java.util.HashMap;
 
@@ -37,54 +39,56 @@ import java.util.HashMap;
  */
 public class CreateColumnJSMap extends AppendColumnMap {
     static final long serialVersionUID = 1;
-    /**
-     * A JavaScript function named 'map' that computes the value in the new column.
-     * It has a single input, which is a row in the table, and it produces a single output,
-     * a value that is written to the destination column.
-     */
-    private final String jsFunction;
-    /**
-     * Set of columns that the function can access.
-     */
-    private final Schema inputColumns;
-    /**
-     * Description of the output column to produce.
-     */
-    private final ColumnDescription outputColumn;
-    /**
-     * A map describing columns that have been renamed by the user
-     * mapping the original name to the currently visible name.
-     */
-    @Nullable
-    private final HashMap<String, String> columnRenameMap;
 
-    public CreateColumnJSMap(
-            String jsFunction, Schema inputColumns,
-            @Nullable
-            HashMap<String, String> columnRenameMap,
-            ColumnDescription outputColumn) {
-        super(outputColumn.name, -1);
-        this.jsFunction = jsFunction;
-        this.inputColumns = inputColumns;
-        this.outputColumn = outputColumn;
-        this.columnRenameMap = columnRenameMap;
+    public static class Info implements Serializable {
+        /**
+         * A JavaScript function named 'map' that computes the value in the new column.
+         * It has a single input, which is a row in the table, and it produces a single output,
+         * a value that is written to the destination column.
+         */
+        String jsFunction;
+        Schema schema;
+        String outputColumn;
+        ContentsKind outputKind;
+        /**
+         * Map string->string described by a string array.
+         */
+        @Nullable
+        String[] renameMap;
+
+        public Info(String jsFunction, Schema schema, String outputColumn, ContentsKind outputKind, @Nullable String[] renameMap) {
+            this.jsFunction = jsFunction;
+            this.schema = schema;
+            this.outputColumn = outputColumn;
+            this.outputKind = outputKind;
+            this.renameMap = renameMap;
+        }
+    }
+
+    public final Info info;
+
+    public CreateColumnJSMap(Info info) {
+        super(info.outputColumn, -1);
+        this.info = info;
     }
 
     @Override
     IColumn createColumn(ITable table) {
         try {
+            HashMap<String, String> renameMap = Utilities.arrayToMap(this.info.renameMap);
             Context context = Context.newBuilder().allowAllAccess(true).build();
             // Compiles the JS function
-            context.eval("js", this.jsFunction);
+            context.eval("js", this.info.jsFunction);
 
-            IMutableColumn col = BaseColumn.create(this.outputColumn,
+            ColumnDescription outCol = new ColumnDescription(this.info.outputColumn, this.info.outputKind);
+            IMutableColumn col = BaseColumn.create(outCol,
                     table.getMembershipSet().getMax(),
                     table.getMembershipSet().getSize());
-            table.getLoadedColumns(this.inputColumns.getColumnNames());
-            ContentsKind kind = this.outputColumn.kind;
+            table.getLoadedColumns(this.info.schema.getColumnNames());
+            ContentsKind kind = this.info.outputKind;
 
             JSVirtualRowSnapshot vrs = new JSVirtualRowSnapshot(
-                    table, this.inputColumns, this.columnRenameMap, context);
+                    table, this.info.schema, renameMap, context);
             ProxyObject vrsProxy = ProxyObject.fromMap(vrs);
             IRowIterator it = table.getMembershipSet().getIterator();
             int r = it.getNextRow();

@@ -25,17 +25,21 @@ import javax.annotation.Nullable;
 public class IntervalColumn extends BaseColumn
         implements IIntervalColumn {
     static final long serialVersionUID = 1;
-    private final IDoubleColumn start;
-    private final IDoubleColumn end;
+    private final IColumn start;
+    private final IColumn end;
 
     // At this point we only allow creation of interval columns from
     // two existing double columns of the same size.
-    public IntervalColumn(ColumnDescription description, IDoubleColumn start, IDoubleColumn end) {
+    public IntervalColumn(ColumnDescription description, IColumn start, IColumn end) {
         super(description);
         if (description.kind != ContentsKind.Interval)
             throw new RuntimeException("Expected an Interval kind, not " + description.kind);
         this.start = start;
         this.end = end;
+        if (!start.getDescription().kind.isNumeric())
+            throw new RuntimeException("Expected a numeric column, not " + start.getDescription().kind);
+        if (!end.getDescription().kind.isNumeric())
+            throw new RuntimeException("Expected a numeric column, not " + end.getDescription().kind);
         if (start.sizeInRows() != end.sizeInRows())
             throw new RuntimeException("Incompatible column sizes: " +
                     this.start.sizeInRows() + " and " + this.end.sizeInRows());
@@ -53,7 +57,7 @@ public class IntervalColumn extends BaseColumn
 
     @Override
     public double getDouble(final int rowIndex) {
-        return this.start.getDouble(rowIndex);
+        return this.start.asDouble(rowIndex);
     }
 
     @Override
@@ -83,7 +87,7 @@ public class IntervalColumn extends BaseColumn
     }
 
     @Override
-    public Double getValue(int rowIndex, boolean start) {
+    public double getEndpoint(int rowIndex, boolean start) {
         if (start)
             return this.start.asDouble(rowIndex);
         else
@@ -92,6 +96,6 @@ public class IntervalColumn extends BaseColumn
 
     @Override
     public Interval getInterval(int rowIndex) {
-        return new Interval(this.getValue(rowIndex, true), this.getValue(rowIndex, false));
+        return new Interval(this.getEndpoint(rowIndex, true), this.getEndpoint(rowIndex, false));
     }
 }

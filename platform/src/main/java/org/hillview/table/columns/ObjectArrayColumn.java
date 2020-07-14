@@ -67,6 +67,8 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
             case Double:
             case Duration:
                 return this.getDouble(rowIndex);
+            case Interval:
+                return this.getEndpoint(rowIndex, true);
             default:
                 throw new RuntimeException("Unexpected data type");
         }
@@ -93,30 +95,41 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
                 } else {
                     switch (ObjectArrayColumn.this.description.kind) {
                         case Json:
-                        case String:
+                        case String: {
                             String si = ObjectArrayColumn.this.getString(i);
                             String sj = ObjectArrayColumn.this.getString(j);
                             assert si != null;
                             assert sj != null;
                             return si.compareTo(sj);
-                        case Date:
+                        }
+                        case Date: {
                             Instant ii = ObjectArrayColumn.this.getDate(i);
                             Instant ij = ObjectArrayColumn.this.getDate(j);
                             assert ii != null;
                             assert ij != null;
                             return ii.compareTo(ij);
+                        }
                         case Integer:
                             return Integer.compare(ObjectArrayColumn.this.getInt(i),
                                     ObjectArrayColumn.this.getInt(j));
                         case Double:
                             return Double.compare(ObjectArrayColumn.this.getDouble(i),
                                     ObjectArrayColumn.this.getDouble(j));
-                        case Duration:
+                        case Duration: {
                             Duration di = ObjectArrayColumn.this.getDuration(i);
                             Duration dj = ObjectArrayColumn.this.getDuration(j);
                             assert di != null;
                             assert dj != null;
                             return di.compareTo(dj);
+                        }
+                        case Interval:
+                        {
+                            Interval ii = ObjectArrayColumn.this.getInterval(i);
+                            Interval ij = ObjectArrayColumn.this.getInterval(j);
+                            assert ii != null;
+                            assert ij != null;
+                            return ii.compareTo(ij);
+                        }
                         default:
                             throw new RuntimeException("Unexpected data type");
                     }
@@ -134,6 +147,17 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
     @Override
     public int getInt(final int rowIndex) {
         return (int)this.data[rowIndex];
+    }
+
+    @Override
+    public Interval getInterval(final int rowIndex) {
+        return (Interval)this.data[rowIndex];
+    }
+
+    @Override
+    public double getEndpoint(final int rowIndex, boolean start) {
+        Interval i = this.getInterval(rowIndex);
+        return Converters.checkNull(i).get(start);
     }
 
     @Override

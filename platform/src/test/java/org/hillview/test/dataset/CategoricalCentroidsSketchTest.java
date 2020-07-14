@@ -32,10 +32,9 @@ public class CategoricalCentroidsSketchTest extends BaseTest {
     @Test
     public void testFruits() {
         ITable table = TestTables.getCentroidTestTable();
-        CategoryCentroidsSketch sketch = new CategoryCentroidsSketch(
-                "FruitType",
-                new String[] { "x", "y" }
-        );
+        CategoryCentroidsSketch.Info info = new CategoryCentroidsSketch.Info( "FruitType",
+                new String[] { "x", "y" });
+        CategoryCentroidsSketch sketch = new CategoryCentroidsSketch(info);
         Centroids<String> centroids = sketch.create(table);
         Assert.assertNotNull(centroids);
         HashMap<String, double[]> centroidsMap = centroids.computeCentroids();

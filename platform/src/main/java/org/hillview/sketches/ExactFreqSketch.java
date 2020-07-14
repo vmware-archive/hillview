@@ -89,7 +89,7 @@ public class ExactFreqSketch implements TableSketch<FreqKListExact> {
                 if (brs instanceof VirtualRowSnapshot) {
                     return brs.hashCode();
                 } else if (brs instanceof RowSnapshot) {
-                    return brs.computeHashCode(ExactFreqSketch.this.schema);
+                    return Converters.foldHash(brs.computeHashCode(ExactFreqSketch.this.schema));
                 } else throw new RuntimeException("Uknown type encountered");
             }
 

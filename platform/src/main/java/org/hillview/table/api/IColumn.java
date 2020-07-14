@@ -47,6 +47,7 @@ public interface IColumn extends Serializable, ICast {
     Duration getDuration(int rowIndex);
     @Nullable
     Interval getInterval(int rowIndex);
+    double getEndpoint(int rowIndex, boolean start);
     /**
      * Number of exceptions that have occurred during parsing.
      */
@@ -73,6 +74,8 @@ public interface IColumn extends Serializable, ICast {
                 return this.getDouble(rowIndex);
             case Duration:
                 return this.getDuration(rowIndex);
+            case Interval:
+                return this.getInterval(rowIndex);
             default:
                 throw new RuntimeException("Unexpected data type");
         }

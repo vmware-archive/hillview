@@ -161,4 +161,11 @@ public class Converters {
             throw new RuntimeException("Invalid sampling rate " + samplingRate);
         return samplingRate;
     }
+
+    /**
+     * Convert a long hash code to an int.
+     */
+    public static int foldHash(long hashCode) {
+        return (int)((hashCode & 0xFF) ^ (hashCode >> 32));
+    }
 }

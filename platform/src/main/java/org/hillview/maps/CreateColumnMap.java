@@ -22,26 +22,31 @@ import org.hillview.table.api.*;
 import org.hillview.table.columns.BaseColumn;
 
 import javax.annotation.Nullable;
+import java.io.Serializable;
 
 /**
  * This map creates a new column by applying the function to each element in an input column.
  */
 public abstract class CreateColumnMap extends AppendColumnMap {
     static final long serialVersionUID = 1;
-    private final String inputColName;
-    // This is set before calling 'extract'
-    protected ContentsKind inputKind;
 
-    /**
-     * @param inputColName The name of the column where data is extracted from.
-     * @param newColName Name of the new column.
-     * @param insertionIndex  Index where column will be inserted.
-     */
-    CreateColumnMap(String inputColName, String newColName,
-                    int insertionIndex) {
-        super(newColName, insertionIndex);
-        this.inputColName = inputColName;
-        this.inputKind = ContentsKind.None;
+    static class Info implements Serializable {
+        ColumnDescription inputColumn;
+        String outputColumn;
+        int    outputIndex;
+
+        public Info(ColumnDescription desc, String outCol, int outputIndex) {
+            this.inputColumn = desc;
+            this.outputColumn = outCol;
+            this.outputIndex = outputIndex;
+        }
+    }
+
+    private final Info info;
+
+    CreateColumnMap(Info info) {
+        super(info.outputColumn, info.outputIndex);
+        this.info = info;
     }
 
     @Nullable
@@ -49,8 +54,7 @@ public abstract class CreateColumnMap extends AppendColumnMap {
 
     @Override
     public IColumn createColumn(ITable table) {
-        IColumn col = table.getLoadedColumn(this.inputColName);
-        this.inputKind = col.getKind();
+        IColumn col = table.getLoadedColumn(this.info.inputColumn.name);
         ColumnDescription outputColumn = new ColumnDescription(this.newColName, ContentsKind.String);
         IMutableColumn outCol = BaseColumn.create(outputColumn,
                 table.getMembershipSet().getMax(),

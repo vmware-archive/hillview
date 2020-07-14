@@ -25,33 +25,38 @@ import org.hillview.table.api.ITable;
 import org.hillview.table.api.ITableFilter;
 import org.hillview.table.api.ITableFilterDescription;
 import org.hillview.table.rows.VirtualRowSnapshot;
+import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
-import java.util.Map;
+import java.io.Serializable;
+import java.util.HashMap;
 
 /**
  * A filter that uses JavaScript to filter data.
  */
 public class JSFilterDescription implements ITableFilterDescription {
     static final long serialVersionUID = 1;
-    
-    private final Schema schema;
-    private final String jsCode;
-    @Nullable private final Map<String, String> renameMap;
+
+    public static class Info implements Serializable {
+        Schema schema;
+        String jsCode;
+        @Nullable String[] renameMap;
+
+        public Info(Schema schema, String jsCode, @Nullable String[] renameMap) {
+            this.schema = schema;
+            this.jsCode = jsCode;
+            this.renameMap = renameMap;
+        }
+    }
+
+    private final Info info;
+
     /**
      * Make a filter that accepts rows that compares in the specific way with the
      * given row.
-     * @param jsCode Javascript function called 'filter' consuming
-     *               a row and returning a boolean.
-     * @param comparedColumns  Columns that may participate in the comparison.
-     * @param renameMap        Map that shows how columns were renamed in the UI.
      */
-    public JSFilterDescription(
-            String jsCode,
-            Schema comparedColumns, @Nullable Map<String, String> renameMap) {
-        this.jsCode = jsCode;
-        this.schema = comparedColumns;
-        this.renameMap = renameMap;
+    public JSFilterDescription(Info info) {
+        this.info = info;
     }
 
     class JSFilter implements ITableFilter {
@@ -60,14 +65,15 @@ public class JSFilterDescription implements ITableFilterDescription {
         private final ProxyObject vrsProxy;
 
         JSFilter(ITable table) {
+            HashMap<String, String> renameMap = Utilities.arrayToMap(JSFilterDescription.this.info.renameMap);
             try {
                 this.vrs = new VirtualRowSnapshot(
-                        table, JSFilterDescription.this.schema,
-                        JSFilterDescription.this.renameMap);
+                        table, JSFilterDescription.this.info.schema,
+                        renameMap);
                 this.vrsProxy = ProxyObject.fromMap(this.vrs);
                 Context context = Context.newBuilder().allowAllAccess(true).build();
                 // Compiles the JS function
-                context.eval("js", JSFilterDescription.this.jsCode);
+                context.eval("js", JSFilterDescription.this.info.jsCode);
                 this.function = context.eval("js", "vrs => filter(vrs)");
                 assert this.function.canExecute();
             } catch (Exception ex) {

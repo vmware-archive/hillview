@@ -82,12 +82,12 @@ public class ColumnTest extends BaseTest {
         Assert.assertEquals(ic.sizeInRows(), size);
         Interval in = ic.getInterval(0);
         Assert.assertNotNull(in);
-        Assert.assertEquals( 0.0, in.start, 10e-3);
-        Assert.assertEquals( 0.0, in.end, 10e-3);
+        Assert.assertEquals( 0.0, in.get(true), 10e-3);
+        Assert.assertEquals( 0.0, in.get(false), 10e-3);
         for (int i = 0; i < size; i++) {
             Assert.assertFalse(ic.isMissing(i));
-            Assert.assertEquals(i, ic.getValue(i, true), 1e-3);
-            Assert.assertEquals(i, ic.getValue(i, false), 1e-3);
+            Assert.assertEquals(i, ic.getEndpoint(i, true), 1e-3);
+            Assert.assertEquals(i, ic.getEndpoint(i, false), 1e-3);
         }
     }
 

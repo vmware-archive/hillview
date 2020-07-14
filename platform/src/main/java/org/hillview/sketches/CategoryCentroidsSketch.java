@@ -24,6 +24,7 @@ import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -35,24 +36,33 @@ import java.util.List;
  */
 public class CategoryCentroidsSketch implements TableSketch<Centroids<String>> {
     static final long serialVersionUID = 1;
-    private final String catColName;
-    private final String[] columns;
 
-    public CategoryCentroidsSketch(String catColumnName, String[] columns) {
-        this.catColName = catColumnName;
-        this.columns = columns;
+    public static class Info implements Serializable {
+        public Info(String categoricalColumnName, String[] numericalColumnNames) {
+            this.categoricalColumnName = categoricalColumnName;
+            this.numericalColumnNames = numericalColumnNames;
+        }
+
+        String categoricalColumnName;
+        String[] numericalColumnNames;
+    }
+
+    private final Info info;
+
+    public CategoryCentroidsSketch(Info info) {
+        this.info = info;
     }
 
     @Override
     public Centroids<String> create(@Nullable ITable data) {
-        List<String> allColumns = new ArrayList<String>(this.columns.length + 1);
-        allColumns.add(this.catColName);
-        allColumns.addAll(Arrays.asList(this.columns));
+        List<String> allColumns = new ArrayList<String>(this.info.numericalColumnNames.length + 1);
+        allColumns.add(this.info.categoricalColumnName);
+        allColumns.addAll(Arrays.asList(this.info.numericalColumnNames));
 
         List<IColumn> cols = Converters.checkNull(data).getLoadedColumns(allColumns);
         List<IColumn> numericColumns =
-                new ArrayList<IColumn>(this.columns.length);
-        for (int i=1; i < cols.size(); i++)
+                new ArrayList<IColumn>(this.info.numericalColumnNames.length);
+        for (int i = 1; i < cols.size(); i++)
             numericColumns.add(cols.get(i));
 
         return new Centroids<String>(data.getMembershipSet(),

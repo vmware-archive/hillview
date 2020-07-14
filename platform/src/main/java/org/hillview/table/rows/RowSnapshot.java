@@ -24,6 +24,7 @@ import org.hillview.table.Schema;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
+import org.hillview.table.api.Interval;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
@@ -45,7 +46,7 @@ public class RowSnapshot extends BaseRowSnapshot
      */
     private final LinkedHashMap<String, Object> fields =
             new LinkedHashMap<String, Object>();
-    private final int cachedHashcode;
+    private final long cachedHashcode;
     private final Schema schema;
 
     public RowSnapshot(final ITable data, final int rowIndex, final Schema schema) {
@@ -111,6 +112,12 @@ public class RowSnapshot extends BaseRowSnapshot
     public boolean exists() { return true; }
 
     public boolean isMissing(String colName) { return (this.fields.get(colName) == null); }
+
+    @Override
+    public double getEndpoint(String colName, boolean start) {
+        Interval i = (Interval)(this.fields.get(colName));
+        return i.get(start);
+    }
 
     @Override
     public int columnCount() {
@@ -204,6 +211,10 @@ public class RowSnapshot extends BaseRowSnapshot
             } else if (cd.kind == ContentsKind.Integer) {
                 // In JSON everything is a double
                 converted[i] = Converters.toInt((double)o);
+            } else if (cd.kind == ContentsKind.Interval) {
+                @SuppressWarnings("unchecked")
+                List<Double> arr = (List<Double>)o;
+                converted[i] = new Interval(arr.get(0), arr.get(1));
             } else {
                 // These should be doubles or strings.
                 // No conversion needed.
@@ -269,6 +280,6 @@ public class RowSnapshot extends BaseRowSnapshot
 
     @Override
     public int hashCode() {
-        return this.cachedHashcode;
+        return Converters.foldHash(this.cachedHashcode);
     }
 }
