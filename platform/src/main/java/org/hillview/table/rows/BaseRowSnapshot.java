@@ -72,6 +72,10 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
                 case Duration:
                     same = this.getDouble(cn) == other.getDouble(cn);
                     break;
+                case Interval:
+                    same = this.getEndpoint(cn, true) == other.getEndpoint(cn, true) &&
+                           this.getEndpoint(cn, false) == other.getEndpoint(cn, false);
+                    break;
                 default:
                     throw new RuntimeException("Unexpected kind " + schema.getKind(cn));
             }
@@ -81,10 +85,10 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
         return true;
     }
 
-    public int computeHashCode(Schema schema) {
+    public long computeHashCode(Schema schema) {
         if (!this.exists())
             return 0;
-        int hashCode = 31;
+        long hashCode = 31;
         List<String> columns = schema.getColumnNames();
         List<ContentsKind> kinds = schema.getColumnKinds();
         for (int i = 0; i < columns.size(); i++) {
@@ -104,6 +108,10 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
                 case Double:
                 case Duration:
                     hashCode = HashUtil.murmurHash3(hashCode, Double.hashCode(this.getDouble(cn)));
+                    break;
+                case Interval:
+                    hashCode = HashUtil.murmurHash3(hashCode, Double.hashCode(this.getEndpoint(cn, true)));
+                    hashCode = HashUtil.murmurHash3(hashCode, Double.hashCode(this.getEndpoint(cn, false)));
                     break;
                 default:
                     throw new RuntimeException("Unexpected kind " + schema.getKind(cn));
@@ -160,6 +168,11 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
                 case Double:
                 case Duration:
                     c = Double.compare(this.getDouble(cn), other.getDouble(cn));
+                    break;
+                case Interval:
+                    c = Double.compare(this.getEndpoint(cn, true), other.getEndpoint(cn, true));
+                    if (c == 0)
+                        c = Double.compare(this.getEndpoint(cn, false), other.getEndpoint(cn, false));
                     break;
                 default:
                     throw new RuntimeException("Unexpected kind " + cso.columnDescription.kind);

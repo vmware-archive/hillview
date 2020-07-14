@@ -20,11 +20,9 @@ package org.hillview.dataStructures;
 import org.hillview.sketches.highorder.PostProcessedSketch;
 import org.hillview.dataset.api.ISketch;
 import org.hillview.sketches.*;
-import org.hillview.sketches.results.BucketsInfo;
-import org.hillview.sketches.results.DataRange;
-import org.hillview.sketches.results.MinKSet;
-import org.hillview.sketches.results.StringQuantiles;
+import org.hillview.sketches.results.*;
 import org.hillview.table.ColumnDescription;
+import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.ITable;
 
 @SuppressWarnings("CanBeFinal")
@@ -41,6 +39,11 @@ public class QuantilesArgs {
             ISketch<ITable, MinKSet<String>> s = new SampleDistinctElementsSketch(
                     // We sample stringsToSample squared
                     this.cd.name, this.seed, samples);
+            @SuppressWarnings("unchecked")
+            ISketch<ITable, BucketsInfo> result = (ISketch<ITable, BucketsInfo>)(Object)s;
+            res = result;
+        } else if (this.cd.kind == ContentsKind.Interval) {
+            ISketch<ITable, DataRange> s = new IntervalDataRangeSketch(this.cd.name);
             @SuppressWarnings("unchecked")
             ISketch<ITable, BucketsInfo> result = (ISketch<ITable, BucketsInfo>)(Object)s;
             res = result;

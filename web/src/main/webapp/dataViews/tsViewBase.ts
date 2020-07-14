@@ -23,7 +23,7 @@ import {
     ComparisonFilterDescription,
     ContentsKind,
     ConvertColumnInfo,
-    JSCreateColumnInfo,
+    CreateColumnJSMapInfo,
     IColumnDescription,
     kindIsString,
     RecordOrder,
@@ -104,7 +104,7 @@ export abstract class TSViewBase extends BigTableView {
                     newKind: kind,
                     columnIndex: columnIndex,
                 };
-                const rr = this.createStreamingRpcRequest<string>("convertColumnMap", args);
+                const rr = this.createStreamingRpcRequest<string>("convertColumn", args);
                 const cd: IColumnDescription = {
                     kind: kind,
                     name: newColName,
@@ -218,7 +218,7 @@ export abstract class TSViewBase extends BigTableView {
         const fun = "function map(row) {" + dialog.getFieldValue("function") + "}";
         const selColumns = cloneToSet(this.getSelectedColNames());
         const subSchema = this.schema.filter((c) => selColumns.has(c.name));
-        const arg: JSCreateColumnInfo = {
+        const arg: CreateColumnJSMapInfo = {
             jsFunction: fun,
             outputColumn: col,
             outputKind: asContentsKind(kind),
@@ -594,6 +594,7 @@ class ComparisonFilterDialog extends Dialog {
     public getFilter(): ComparisonFilterDescription | null {
         const value: string = this.getFieldValue("value");
         let doubleValue: number = null;
+        let endValue: number = null;
 
         let colSelected;
         if (this.displayName == null) {
@@ -616,12 +617,22 @@ class ComparisonFilterDialog extends Dialog {
                 this.reporter.reportError("Could not parse '" + value + "' as a number");
                 return null;
             }
+        } else if (columnDescription.kind == "Interval") {
+            const re = /\[([^:]*):([^\]]*)]/;
+            const m = value.match(re);
+            doubleValue = parseFloat(m[1]);
+            endValue = parseFloat(m[2]);
+            if (doubleValue == null || endValue == null) {
+                this.reporter.reportError("Could not parse '" + value + "' as an interval");
+                return null;
+            }
         }
         const comparison = this.getFieldValue("operation") as Comparison;
         return {
             column: columnDescription,
             stringValue: kindIsString(columnDescription.kind) ? value : null,
             doubleValue: doubleValue,
+            intervalEnd: endValue,
             comparison,
         };
     }

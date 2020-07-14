@@ -37,6 +37,8 @@ public class ComparisonFilterDescription implements ITableFilterDescription {
     @Nullable
     private final Double doubleValue;
     private final String comparison;
+    @Nullable
+    private final Double intervalEnd;
 
     /**
      * Make a filter that accepts rows that have a specified value in the specified
@@ -45,14 +47,17 @@ public class ComparisonFilterDescription implements ITableFilterDescription {
      * @param stringValue String value that is compared.  May be null.
      * @param doubleValue Double value that is compared.  May be null.
      *                    The value will be to the left of the comparison.
+     * @param intervalEnd Double value that is used for comparison for intervals.
+     *                    The interval left endpoint will be doubleValue.
      * @param comparison Operation for comparison: one of "==", "!=", "<", ">", "<=", ">="
      */
     public ComparisonFilterDescription(
             ColumnDescription column, @Nullable String stringValue,
-            @Nullable Double doubleValue, String comparison) {
+            @Nullable Double doubleValue, @Nullable Double intervalEnd, String comparison) {
         this.column = column;
         this.doubleValue = doubleValue;
         this.stringValue = stringValue;
+        this.intervalEnd = intervalEnd;
         this.comparison = comparison;
     }
 
@@ -186,7 +191,7 @@ public class ComparisonFilterDescription implements ITableFilterDescription {
                         case ">":
                             this.comparator = index -> {
                                 if (this.column.isMissing(index))
-                                    return true;
+                                    return false;
                                 int x = this.column.getInt(index);
                                 return i > x;
                             };
@@ -194,7 +199,7 @@ public class ComparisonFilterDescription implements ITableFilterDescription {
                         case "<":
                             this.comparator = index -> {
                                 if (this.column.isMissing(index))
-                                    return false;
+                                    return true;
                                 int x = this.column.getInt(index);
                                 return i < x;
                             };
@@ -219,6 +224,61 @@ public class ComparisonFilterDescription implements ITableFilterDescription {
                             throw new RuntimeException("Unexpected comparison operation " +
                                     ComparisonFilterDescription.this.comparison);
                     }
+                case Interval: {
+                    assert ComparisonFilterDescription.this.doubleValue != null;
+                    assert ComparisonFilterDescription.this.intervalEnd != null;
+                    Interval interval = new Interval(ComparisonFilterDescription.this.doubleValue,
+                            ComparisonFilterDescription.this.intervalEnd);
+                    IIntervalColumn col = this.column.as(IIntervalColumn.class);
+                    assert col != null;
+                    switch (ComparisonFilterDescription.this.comparison) {
+                        case "==":
+                            this.comparator = index -> {
+                                if (this.column.isMissing(index))
+                                    return false;
+                                return interval.compareTo(col, index) == 0;
+                            };
+                            return;
+                        case "!=":
+                            this.comparator = index -> {
+                                if (this.column.isMissing(index))
+                                    return true;
+                                return interval.compareTo(col, index) != 0;
+                            };
+                            return;
+                        case ">":
+                            this.comparator = index -> {
+                                if (this.column.isMissing(index))
+                                    return true;
+                                return interval.compareTo(col, index) > 0;
+                            };
+                            return;
+                        case "<":
+                            this.comparator = index -> {
+                                if (this.column.isMissing(index))
+                                    return true;
+                                return interval.compareTo(col, index) < 0;
+                            };
+                            return;
+                        case "<=":
+                            this.comparator = index -> {
+                                if (this.column.isMissing(index))
+                                    return true;
+                                return interval.compareTo(col, index) <= 0;
+                            };
+                            return;
+                        case ">=":
+                            this.comparator = index -> {
+                                if (this.column.isMissing(index))
+                                    return false;
+                                return interval.compareTo(col, index) >= 0;
+                            };
+                            return;
+                        default:
+                            throw new RuntimeException("Unexpected comparison operation " +
+                                    ComparisonFilterDescription.this.comparison);
+                    }
+                }
                 case Double:
                 case Duration:
                 case Date:

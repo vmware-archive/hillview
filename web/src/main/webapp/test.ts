@@ -156,6 +156,7 @@ export class Test {
             13: Filtered table
             14: correlation heatmaps
             15: Trellis plot of quartile vectors
+            16: Histogram of interval column
          */
         this.addProgram([{
             description: "Load all flights",
@@ -249,7 +250,7 @@ export class Test {
                 this.next(); // no rpc
             }
         }, {
-            description: "Show histogram from schema view",
+            description: "Display histogram from schema view",
             cond: () => true,
             cont: () => {
                 const col1 = findElement("#hillviewPage1 thead .col1");
@@ -258,29 +259,26 @@ export class Test {
                 findElement("#hillviewPage1 .dropdown #Histogram").click();
             },
         }, {
-            description: "Show a categorical histogram",
+            description: "Display a categorical histogram",
             cond: () => Test.existsElement("#hillviewPage4 .idle"),
             cont: () => {
-                // Show a histogram
                 const col2 = findElement("#hillviewPage1 thead .col2");
                 col2.dispatchEvent(contextMenuEvent());
                 // Produces hillviewPage5
                 findElement("#hillviewPage1 .dropdown #Histogram").click();
             },
         }, {
-            description: "Show a pie chart",
+            description: "Display a pie chart",
             cond: () => Test.existsElement("#hillviewPage5 .idle"),
             cont: () => {
-                // Show a histogram
                 const pie = findElement("#hillviewPage5 .topMenu #View #pie_chart_histogram");
                 pie.click();
                 this.next();
             },
         }, {
-            description: "Show a 2D histogram",
+            description: "Display a 2D histogram",
             cond: () => Test.existsElement("#hillviewPage5 .idle"),
             cont: () => {
-                // Show a histogram
                 findElement("#hillviewPage1 thead .col8").click();
                 const col9 = findElement("#hillviewPage1 thead .col9");
                 col9.dispatchEvent(controlClickEvent());
@@ -300,7 +298,6 @@ export class Test {
             description: "Filter",
             cond: () => Test.existsElement("#hillviewPage1 .idle"),
             cont: () => {
-                // Show a histogram
                 const col2 = findElement("#hillviewPage1 thead .col2");
                 col2.dispatchEvent(contextMenuEvent());
                 findElement("#hillviewPage1 .dropdown #Filter___").click();
@@ -395,8 +392,8 @@ export class Test {
             cond: () => Test.existsElement("#hillviewPage13 .idle"),
             cont: () => {
                 const cellDep = findElement("#hillviewPage1 thead td[data-colname=DepTime] .truncated");
-                cellDep.scrollIntoView();
                 cellDep.click();
+                cellDep.scrollIntoView();
                 const cellArr = findElement("#hillviewPage1 thead td[data-colname=ArrDelay] .truncated");
                 cellArr.dispatchEvent(mouseClickEvent(true, false));
                 cellArr.dispatchEvent(contextMenuEvent());
@@ -411,8 +408,35 @@ export class Test {
                 (findElement(".dialog .confirm")).click();
             }
         }, {
-            description: "Close some windows",
+            description: "Create interval column",
             cond: () => Test.existsElement("#hillviewPage15 .idle"),
+            cont: () => {
+                // click on a new cell, to deselect existing ones
+                const other = findElement("#hillviewPage1 thead td[data-colname=DayOfWeek] .truncated");
+                other.scrollIntoView();
+                other.click();
+                // start selection
+                const cellDep = findElement("#hillviewPage1 thead td[data-colname=DepTime] .truncated");
+                cellDep.click();
+                const cellArr = findElement("#hillviewPage1 thead td[data-colname=ArrTime] .truncated");
+                cellArr.dispatchEvent(controlClickEvent());
+                cellArr.dispatchEvent(contextMenuEvent());
+                const qv = findElement("#hillviewPage1 .dropdown #Create_interval_column___");
+                qv.click();
+                (findElement(".dialog .confirm")).click();
+            }
+        }, {
+            description: "Histogram of interval column",
+            cond: () => Test.existsElement("#hillviewPage1 .idle"),
+            cont: () => {
+                findElement("#hillviewPage1 #Chart").click();
+                findElement("#I1D_Histogram___").click();
+                (findElement(".dialog #columnName") as HTMLInputElement).value = "DepTime:ArrTime";
+                findElement(".dialog .confirm").click();
+            },
+        },{
+            description: "Close some windows",
+            cond: () => Test.existsElement("#hillviewPage16 .idle"),
             cont: () => {
                 /*
                     for (let i = 2; i < 8; i++) {

@@ -33,7 +33,6 @@ public interface IRow extends Map<String, Object> {
     /**
      * Sometimes an IRow can be a sentinel value - a row that does not really exist.
      */
-    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     boolean exists();
 
     /**
@@ -59,5 +58,15 @@ public interface IRow extends Map<String, Object> {
     int getInt(String colName);
     double getDouble(String colName);
     double asDouble(String colName);
-    boolean isMissing(final String colName);
+    /**
+     * True if the data is missing in this column.
+     * @param colName  Column name.
+     */
+    boolean isMissing(String colName);
+    /**
+     * For interval columns - get one of the two endpoints.
+     * @param colName  Column name.
+     * @param start    If true get the start endpoint, else the end endpoint.
+     */
+    double getEndpoint(String colName, boolean start);
 }

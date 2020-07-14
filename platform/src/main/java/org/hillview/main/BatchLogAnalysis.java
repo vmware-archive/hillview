@@ -70,7 +70,9 @@ public class BatchLogAnalysis {
         table = table.blockingMap(projectMap);
 
         /* Extract "errorCode" from "StructuredData" as a new column */
-        ExtractValueFromKeyMap evkm = new ExtractValueFromKeyMap("errorCode", "StructuredData", "errorCode", -1);
+        ExtractValueFromKeyMap.Info info = new ExtractValueFromKeyMap.Info(
+                "errorCode", new ColumnDescription("StructuredData", ContentsKind.String), "errorCode", -1);
+        ExtractValueFromKeyMap evkm = new ExtractValueFromKeyMap(info);
         IDataSet<ITable> table1 = table.blockingMap(evkm);
 
         /* Find Timestamp (x-axis) buckets for the heatmap */

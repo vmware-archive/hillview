@@ -266,8 +266,14 @@ export class Converters {
             return formatDate(Converters.dateFromDouble(val as number));
         else if (kindIsString(kind))
             return val as string;
-        else
+        else if (kind == "Interval") {
+            const arr = val as number[];
+            return "[" + String(arr[0]) + ":" + String(arr[1]) + "]";
+        } else if (kind == "Duration") {
             return val.toString();  // TODO
+        } else {
+            assert(false);
+        }
     }
 
     /**
@@ -339,9 +345,24 @@ export class Converters {
 
     static comparisonFilterDescription(filter: ComparisonFilterDescription): string {
         const kind = filter.column.kind;
-        return filter.column.name + " " + filter.comparison +
-            (kindIsNumeric(kind) ? this.valueToString(filter.doubleValue, kind) :
-                this.valueToString(filter.stringValue, kind));
+        let str;
+        switch (kind) {
+            case "Json":
+            case "String":
+                str = this.valueToString(filter.stringValue, kind);
+                break;
+            case "Integer":
+            case "Double":
+            case "Date":
+            case "Duration":
+            case "Interval":
+                str = this.valueToString(filter.doubleValue, kind);
+                break;
+            case "Interval":
+                str = this.valueToString([filter.doubleValue, filter.intervalEnd], kind);
+                break;
+        }
+        return filter.column.name + " " + filter.comparison + " " + str;
     }
 }
 
@@ -534,7 +555,10 @@ export function formatDate(d: Date): string {
  *                        is replaced with an underscore.
  */
 export function makeId(text: string): string {
-    return text.replace(/[^a-zA-Z0-9]/g, "_");
+    text = text.replace(/[^a-zA-Z0-9]/g, "_");
+    if (!(text[0].match(/[a-z_]/i)))
+        text = "I" + text;
+    return text;
 }
 
 /**
@@ -578,6 +602,10 @@ export function significantDigitsHtml(n: number): HtmlString {
 
 export function add(a: number, b: number): number {
     return a + b;
+}
+
+export function all<T>(a: T[], f: (x: T) => boolean): boolean {
+    return a.map(e => f(e)).reduce((a, b) => a && b);
 }
 
 /**

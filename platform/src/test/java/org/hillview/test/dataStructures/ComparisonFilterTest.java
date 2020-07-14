@@ -37,7 +37,7 @@ public class ComparisonFilterTest extends BaseTest {
         Schema schema = table.getSchema();
         ColumnDescription namecd = schema.getDescription("Name");
         ComparisonFilterDescription filter = new ComparisonFilterDescription(
-                namecd, "Ed", null, "==");
+                namecd, "Ed", null, null,"==");
         FilterMap filterMap = new FilterMap(filter);
         ITable result = filterMap.apply(table);
 
@@ -51,7 +51,7 @@ public class ComparisonFilterTest extends BaseTest {
         }
 
         filter = new ComparisonFilterDescription(
-                namecd, "Ed", null, "<=");
+                namecd, "Ed", null, null,"<=");
         filterMap = new FilterMap(filter);
         result = filterMap.apply(table);
         Assert.assertNotNull(result);
@@ -64,7 +64,7 @@ public class ComparisonFilterTest extends BaseTest {
         }
 
         filter = new ComparisonFilterDescription(
-                namecd, "Ed", null, ">=");
+                namecd, "Ed", null, null,">=");
         filterMap = new FilterMap(filter);
         result = filterMap.apply(table);
         Assert.assertNotNull(result);
@@ -78,7 +78,7 @@ public class ComparisonFilterTest extends BaseTest {
         }
 
         filter = new ComparisonFilterDescription(
-                namecd, "Ed", null, "!=");
+                namecd, "Ed", null, null,"!=");
         filterMap = new FilterMap(filter);
         result = filterMap.apply(table);
         Assert.assertNotNull(result);
@@ -91,7 +91,7 @@ public class ComparisonFilterTest extends BaseTest {
         }
 
         filter = new ComparisonFilterDescription(
-                namecd, "Ed", null, "<");
+                namecd, "Ed", null, null,"<");
         filterMap = new FilterMap(filter);
         result = filterMap.apply(table);
         Assert.assertNotNull(result);
@@ -104,7 +104,7 @@ public class ComparisonFilterTest extends BaseTest {
         }
 
         filter = new ComparisonFilterDescription(
-                namecd, "Ed", null, ">");
+                namecd, "Ed", null, null,">");
         filterMap = new FilterMap(filter);
         result = filterMap.apply(table);
         Assert.assertNotNull(result);
@@ -125,7 +125,7 @@ public class ComparisonFilterTest extends BaseTest {
         ColumnDescription agecd = schema.getDescription("Age");
 
         ComparisonFilterDescription filter = new ComparisonFilterDescription(
-                agecd, null, 10.0, "==");
+                agecd, null, 10.0, null,"==");
         FilterMap filterMap = new FilterMap(filter);
         ITable result = filterMap.apply(table);
 
@@ -139,7 +139,7 @@ public class ComparisonFilterTest extends BaseTest {
         }
 
         filter = new ComparisonFilterDescription(
-                agecd, null, 10.0, "<=");
+                agecd, null, 10.0, null,"<=");
         filterMap = new FilterMap(filter);
         result = filterMap.apply(table);
         Assert.assertNotNull(result);
@@ -154,7 +154,7 @@ public class ComparisonFilterTest extends BaseTest {
         }
 
         filter = new ComparisonFilterDescription(
-                agecd, null, 10.0, ">=");
+                agecd, null, 10.0, null,">=");
         filterMap = new FilterMap(filter);
         result = filterMap.apply(table);
         Assert.assertNotNull(result);
@@ -168,7 +168,7 @@ public class ComparisonFilterTest extends BaseTest {
         }
 
         filter = new ComparisonFilterDescription(
-                agecd, null, 10.0, "!=");
+                agecd, null, 10.0, null,"!=");
         filterMap = new FilterMap(filter);
         result = filterMap.apply(table);
         Assert.assertNotNull(result);
@@ -183,7 +183,7 @@ public class ComparisonFilterTest extends BaseTest {
         }
 
         filter = new ComparisonFilterDescription(
-                agecd, null, 10.0, "<");
+                agecd, null, 10.0, null,"<");
         filterMap = new FilterMap(filter);
         result = filterMap.apply(table);
         Assert.assertNotNull(result);
@@ -198,7 +198,7 @@ public class ComparisonFilterTest extends BaseTest {
         }
 
         filter = new ComparisonFilterDescription(
-                agecd, null, 10.0, ">");
+                agecd, null, 10.0, null,">");
         filterMap = new FilterMap(filter);
         result = filterMap.apply(table);
         Assert.assertNotNull(result);

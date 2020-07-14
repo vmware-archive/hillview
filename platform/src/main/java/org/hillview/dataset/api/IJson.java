@@ -19,6 +19,7 @@ package org.hillview.dataset.api;
 
 import com.google.gson.*;
 import org.hillview.sketches.results.Count;
+import org.hillview.table.api.Interval;
 import org.hillview.table.columns.ColumnQuantization;
 import org.hillview.table.columns.DoubleColumnQuantization;
 import org.hillview.table.columns.StringColumnQuantization;
@@ -37,6 +38,25 @@ import java.time.Instant;
 // to register various type adaptors.
 
 public interface IJson extends Serializable {
+    class IntervalSerializer implements JsonSerializer<Interval> {
+        @Override
+        public JsonElement serialize(Interval interval, Type type, JsonSerializationContext jsonSerializationContext) {
+            JsonArray result = new JsonArray();
+            result.add(interval.get(true));
+            result.add(interval.get(false));
+            return result;
+        }
+    }
+
+    class IntervalDeserializer implements JsonDeserializer<Interval> {
+        @Override
+        public Interval deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
+            double start = jsonElement.getAsJsonArray().get(0).getAsDouble();
+            double end = jsonElement.getAsJsonArray().get(1).getAsDouble();
+            return new Interval(start, end);
+        }
+    }
+
     class CountSerializer implements JsonSerializer<Count> {
         @Override
         public JsonElement serialize(Count count, Type type, JsonSerializationContext jsonSerializationContext) {
@@ -74,6 +94,8 @@ public interface IJson extends Serializable {
             .registerTypeAdapter(NextKList.class, new NextKSerializer())
             .registerTypeAdapter(Instant.class, new DateSerializer())
             .registerTypeAdapter(Count.class, new CountSerializer())
+            .registerTypeAdapter(Interval.class, new IntervalSerializer())
+            .registerTypeAdapter(Interval.class, new IntervalDeserializer())
             .registerTypeAdapter(HostAndPort.class, new HostList.HostAndPortSerializer())
             .registerTypeAdapter(HostAndPort.class, new HostList.HostAndPortDeserializer())
             .registerTypeAdapterFactory(

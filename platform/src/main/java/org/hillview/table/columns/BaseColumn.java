@@ -21,6 +21,7 @@ import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMutableColumn;
+import org.hillview.table.api.Interval;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -55,31 +56,42 @@ public abstract class BaseColumn implements IColumn {
 
     @Override
     public double getDouble(final int rowIndex) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(this.toString());
     }
 
     @Override
     public Instant getDate(final int rowIndex) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(this.toString());
     }
 
     @Override
     public int getInt(final int rowIndex) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(this.toString());
     }
 
     @Override
     public Duration getDuration(final int rowIndex) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(this.toString());
+    }
+
+    @Override
+    public double getEndpoint(final int rowIndex, boolean start) {
+        throw new UnsupportedOperationException(this.toString());
+    }
+
+    @Override
+    public Interval getInterval(final int rowIndex) {
+        throw new UnsupportedOperationException(this.toString());
     }
 
     @Override
     public String getString(final int rowIndex) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(this.toString());
     }
 
     @Override
-    public boolean isMissing(final int rowIndex) { throw new UnsupportedOperationException(); }
+    public boolean isMissing(final int rowIndex) {
+        throw new UnsupportedOperationException(this.toString()); }
 
     public int getParsingExceptionCount() { return this.parsingExceptionCount; }
 

@@ -31,6 +31,7 @@ public enum ContentsKind {
     Integer,
     Json,
     Double,
+    Interval, /* A pair of values that can be converted to double: start, end */
     Duration; /* java.time.Duration values */
 
     /**
@@ -52,6 +53,8 @@ public enum ContentsKind {
                 return -java.lang.Double.MAX_VALUE;
             case Duration:
                 return Converters.toDuration(java.lang.Long.MIN_VALUE);
+            case Interval:
+                return org.hillview.table.api.Interval.minimumValue;
             default:
                 throw new RuntimeException("Unexpected kind " + this);
         }
@@ -60,12 +63,12 @@ public enum ContentsKind {
     /**
      * True if this kind of information requires a Java Object for storage.
      */
-    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean isObject() {
         switch (this) {
             case String:
             case Json:
             case None:
+            case Interval:
                 return true;
             case Date:
             case Duration:
@@ -87,6 +90,7 @@ public enum ContentsKind {
             case Duration:
             case Integer:
             case Double:
+            case Interval:
             default:
                 return false;
         }

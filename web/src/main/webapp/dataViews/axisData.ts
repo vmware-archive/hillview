@@ -45,10 +45,11 @@ class BucketBoundary {
                 return this.value.toString();
             case "Integer":
             case "Double":
+            case "Interval":
                 return significantDigits(this.value as number);
             case "Date":
                 return Converters.dateFromDouble(this.value as number).toString();
-            case "Interval":
+            case "Duration":
                 return this.value.toString();
         }
     }
@@ -247,6 +248,7 @@ export class AxisData {
 
         switch (this.description.kind) {
             case "Integer":
+            case "Interval":  // interval ranges are just scalars
             case "Double": {
                 this.scale = d3scaleLinear()
                     .domain(domain)
@@ -361,7 +363,7 @@ export class AxisData {
             result = formatNumber(Math.round(inv as number));
         else if (kindIsString(this.description.kind))
             result = this.getString(inv as number, true);
-        else if (this.description.kind === "Double")
+        else if (this.description.kind === "Double" || this.description.kind == "Interval")
             result = formatNumber(inv as number);
         else if (this.description.kind === "Date")
             result = formatDate(inv as Date);
@@ -375,7 +377,7 @@ export class AxisData {
         let result: number = 0;
         if (this.description.kind === "Integer" || kindIsString(this.description.kind)) {
             result = Math.round(inv as number);
-        } else if (this.description.kind === "Double") {
+        } else if (this.description.kind === "Double" || this.description.kind == "Interval") {
             result = inv as number;
         } else if (this.description.kind === "Date") {
             result = Converters.doubleFromDate(inv as Date);
@@ -437,6 +439,7 @@ export class AxisData {
                     return new BucketBoundaries(
                         new BucketBoundary(start, valueKind, true),
                         new BucketBoundary(end, valueKind, inclusive));
+            case "Interval":
             case "Double":
             case "Date":
                 return new BucketBoundaries(

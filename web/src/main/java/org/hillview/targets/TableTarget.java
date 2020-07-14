@@ -26,7 +26,6 @@ import org.hillview.sketches.*;
 import org.hillview.sketches.highorder.*;
 import org.hillview.sketches.results.*;
 import org.hillview.table.*;
-import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ITable;
 import org.hillview.table.api.ITableFilterDescription;
@@ -445,17 +444,10 @@ public final class TableTarget extends TableRpcTarget {
         this.runCompleteSketch(this.table, post, request, context);
     }
 
-    static class CatCentroidControlPoints {
-        String categoricalColumnName = "";
-        @SuppressWarnings("NotNullFieldNotInitialized")
-        String[] numericalColumnNames;
-    }
-
     @HillviewRpc
     public void categoricalCentroidsControlPoints(RpcRequest request, RpcRequestContext context) {
-        CatCentroidControlPoints info = request.parseArgs(CatCentroidControlPoints.class);
-        CategoryCentroidsSketch sketch = new CategoryCentroidsSketch(
-                info.categoricalColumnName, info.numericalColumnNames);
+        CategoryCentroidsSketch.Info info = request.parseArgs(CategoryCentroidsSketch.Info.class);
+        CategoryCentroidsSketch sketch = new CategoryCentroidsSketch(info);
         PostProcessedSketch<ITable, Centroids<String>, RpcTarget> post =
                 sketch.andThen(r -> new ControlPointsTarget(r, context.getComputation(request)));
         this.runCompleteSketch(this.table, post, request, context);
@@ -634,17 +626,17 @@ public final class TableTarget extends TableRpcTarget {
         this.runSketch(this.table, nhll, request, context);
     }
 
-    static class ConvertColumnInfo {
-        String colName = "";
-        String newColName = "";
-        int columnIndex;
-        ContentsKind newKind = ContentsKind.None;
+    @HillviewRpc
+    public void convertColumn(RpcRequest request, RpcRequestContext context) {
+        ConvertColumnMap.Info info = request.parseArgs(ConvertColumnMap.Info.class);
+        ConvertColumnMap map = new ConvertColumnMap(info);
+        this.runMap(this.table, map, TableTarget::new, request, context);
     }
 
     @HillviewRpc
-    public void convertColumnMap(RpcRequest request, RpcRequestContext context) {
-        ConvertColumnInfo info = request.parseArgs(ConvertColumnInfo.class);
-        ConvertColumnMap map = new ConvertColumnMap(info.colName, info.newColName, info.newKind, info.columnIndex);
+    public void createIntervalColumn(RpcRequest request, RpcRequestContext context) {
+        CreateIntervalColumnMap.Info info = request.parseArgs(CreateIntervalColumnMap.Info.class);
+        CreateIntervalColumnMap map = new CreateIntervalColumnMap(info);
         this.runMap(this.table, map, TableTarget::new, request, context);
     }
 
@@ -691,57 +683,25 @@ public final class TableTarget extends TableRpcTarget {
                 });
     }
 
-    @SuppressWarnings("NotNullFieldNotInitialized")
-    static class JSCreateColumnInfo {
-        String jsFunction = "";
-        Schema schema;
-        String outputColumn;
-        ContentsKind outputKind = ContentsKind.None;
-        /**
-         * Map string->string described by a string array.
-         */
-        @Nullable
-        String[] renameMap;
-    }
-
     @HillviewRpc
     public void jsCreateColumn(RpcRequest request, RpcRequestContext context) {
-        JSCreateColumnInfo info = request.parseArgs(JSCreateColumnInfo.class);
-        ColumnDescription desc = new ColumnDescription(info.outputColumn, info.outputKind);
-        CreateColumnJSMap map = new CreateColumnJSMap(
-                info.jsFunction, info.schema, Utilities.arrayToMap(info.renameMap), desc);
+        CreateColumnJSMap.Info info = request.parseArgs(CreateColumnJSMap.Info.class);
+        CreateColumnJSMap map = new CreateColumnJSMap(info);
         this.runMap(this.table, map, TableTarget::new, request, context);
-    }
-
-    @SuppressWarnings("NotNullFieldNotInitialized")
-    static class JSFilterInfo {
-        Schema schema;
-        String jsCode;
-        @Nullable String[] renameMap;
     }
 
     @HillviewRpc
     public void jsFilter(RpcRequest request, RpcRequestContext context) {
-        JSFilterInfo filter = request.parseArgs(JSFilterInfo.class);
-        JSFilterDescription desc = new JSFilterDescription(
-                filter.jsCode, filter.schema, Utilities.arrayToMap(filter.renameMap));
+        JSFilterDescription.Info filter = request.parseArgs(JSFilterDescription.Info.class);
+        JSFilterDescription desc = new JSFilterDescription(filter);
         FilterMap map = new FilterMap(desc);
         this.runMap(this.table, map, TableTarget::new, request, context);
     }
 
-    @SuppressWarnings("NotNullFieldNotInitialized")
-    static class KVCreateColumnInfo {
-        String key = "";
-        String inputColumn;
-        String outputColumn;
-        int    outputIndex;
-    }
-
     @HillviewRpc
     public void kvCreateColumn(RpcRequest request, RpcRequestContext context) {
-        KVCreateColumnInfo info = request.parseArgs(KVCreateColumnInfo.class);
-        ExtractValueFromKeyMap map = new ExtractValueFromKeyMap(
-                info.key, info.inputColumn, info.outputColumn, info.outputIndex);
+        ExtractValueFromKeyMap.Info info = request.parseArgs(ExtractValueFromKeyMap.Info.class);
+        ExtractValueFromKeyMap map = new ExtractValueFromKeyMap(info);
         this.runMap(this.table, map, TableTarget::new, request, context);
     }
 

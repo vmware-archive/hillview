@@ -91,6 +91,7 @@ class HillviewServerRunner {
 
             Thread.currentThread().join();
         } catch (Exception ex) {
+            ex.printStackTrace();
             HillviewLogger.instance.error("Caught exception; exiting", ex);
         }
     }

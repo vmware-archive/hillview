@@ -17,41 +17,44 @@
 
 package org.hillview.maps;
 
-import org.hillview.table.api.*;
+import org.hillview.table.ColumnDescription;
+import org.hillview.table.api.ContentsKind;
+import org.hillview.table.api.IColumn;
+import org.hillview.table.api.IDoubleColumn;
+import org.hillview.table.api.ITable;
+import org.hillview.table.columns.IntervalColumn;
+import org.hillview.utils.Converters;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * This map receives a column name of the input table, and returns a table with a new column,
  * containing the specified data converted to a new kind.
  */
-public class ConvertColumnMap extends AppendColumnMap {
+public class CreateIntervalColumnMap extends AppendColumnMap {
     static final long serialVersionUID = 1;
 
     public static class Info implements Serializable {
-        String colName;
-        String newColName;
+        String startColName = "";
+        String endColName = "";
         int columnIndex;
-        ContentsKind newKind;
-
-        public Info(String colName, String newColName, int columnIndex, ContentsKind kind) {
-            this.colName = colName;
-            this.newColName = newColName;
-            this.columnIndex = columnIndex;
-            this.newKind = kind;
-        }
+        String newColName = "";
     }
 
     private final Info info;
 
-    public ConvertColumnMap(Info info) {
+    public CreateIntervalColumnMap(Info info) {
         super(info.newColName, info.columnIndex);
         this.info = info;
     }
 
     @Override
     public IColumn createColumn(ITable table) {
-        IColumn col = table.getLoadedColumn(this.info.colName);
-        return col.convertKind(this.info.newKind, this.newColName, table.getMembershipSet());
+        List<IColumn> cols = table.getLoadedColumns(info.startColName, info.endColName);
+        ColumnDescription desc = new ColumnDescription(info.newColName, ContentsKind.Interval);
+        IColumn col0 = cols.get(0);
+        IColumn col1 = cols.get(1);
+        return new IntervalColumn(desc, Converters.checkNull(col0), Converters.checkNull(col1));
     }
 }

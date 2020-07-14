@@ -24,6 +24,7 @@ import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import org.hillview.table.Schema;
 import org.hillview.table.api.ITable;
+import org.hillview.utils.Converters;
 import org.hillview.utils.MutableInteger;
 
 /**
@@ -48,7 +49,7 @@ public class VirtualRowHashStrategy implements IntHash.Strategy {
     @Override
     public int hashCode(int index) {
         this.vrs.setRow(index);
-        return this.vrs.computeHashCode(schema);
+        return Converters.foldHash(this.vrs.computeHashCode(schema));
     }
 
     @Override

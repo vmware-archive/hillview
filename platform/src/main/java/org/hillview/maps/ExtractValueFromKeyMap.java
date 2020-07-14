@@ -17,6 +17,7 @@
 
 package org.hillview.maps;
 
+import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.utils.Utilities;
 
@@ -31,26 +32,35 @@ import javax.annotation.Nullable;
  */
 public class ExtractValueFromKeyMap extends CreateColumnMap {
     static final long serialVersionUID = 1;
-    private final String key;
 
-    public ExtractValueFromKeyMap(String key, String inputColumn,
-                                  String newColumn, int insertionIndex) {
-        super(inputColumn, newColumn, insertionIndex);
-        this.key = key;
+    public static class Info extends CreateColumnMap.Info {
+        String key;
+
+        public Info(String key, ColumnDescription inputCol, String outputCol, int i) {
+            super(inputCol, outputCol, i);
+            this.key = key;
+        }
     }
+
+    public ExtractValueFromKeyMap(Info info) {
+        super(info);
+        this.info = info;
+    }
+
+    private final Info info;
 
     @Override
     @Nullable
     public String extract(@Nullable String s) {
         if (s == null)
             return null;
-        if (this.inputKind == ContentsKind.Json) {
-            return Utilities.getJsonField(s, this.key);
+        if (this.info.inputColumn.kind == ContentsKind.Json) {
+            return Utilities.getJsonField(s, this.info.key);
         }
         if ((s.startsWith("[") && s.endsWith("]")) ||
             (s.startsWith("{") && s.endsWith("}"))) {
                   s = s.substring(1, s.length() - 2);
         }
-        return Utilities.getKV(s, this.key);
+        return Utilities.getKV(s, this.info.key);
     }
 }

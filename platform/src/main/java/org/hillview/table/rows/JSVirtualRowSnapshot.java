@@ -48,12 +48,16 @@ public class JSVirtualRowSnapshot extends VirtualRowSnapshot {
     @Nullable
     public Object get(Object key) {
         IColumn col = this.getColumnChecked((String)key);
-        if (col.getDescription().kind == ContentsKind.Date) {
-            double dateEncoding = super.getDouble((String)key);
-            // https://stackoverflow.com/questions/33110942/supply-javascript-date-to-nashorn-script
+        ContentsKind kind = col.getKind();
+        String k = (String)key;
+        if (kind == ContentsKind.Date) {
+            double dateEncoding = super.getDouble(k);
             return this.engine.eval("js","new Date(" + dateEncoding + ")");
+        } else if (kind == ContentsKind.Interval) {
+            double start = super.getEndpoint(k, true);
+            double end = super.getEndpoint(k, false);
+            return new double[] { start, end };
         }
-
         return super.get(key);
     }
 }

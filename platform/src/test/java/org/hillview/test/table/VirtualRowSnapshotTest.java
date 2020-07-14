@@ -28,6 +28,7 @@ import org.hillview.table.rows.VirtualRowSnapshot;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;
+import org.hillview.utils.Converters;
 import org.hillview.utils.TestTables;
 import org.junit.Assert;
 import org.junit.Test;
@@ -55,7 +56,7 @@ public class VirtualRowSnapshotTest extends BaseTest {
             vrs.setRow(i);
             RowSnapshot rs = new RowSnapshot(data, i);
             int a = vrs.hashCode();
-            int b = rs.computeHashCode(data.getSchema());
+            int b = Converters.foldHash(rs.computeHashCode(data.getSchema()));
             assertEquals(a, b);
             assertTrue(rs.compareForEquality(vrs, data.getSchema()));
             i = rowIt.getNextRow();
@@ -101,7 +102,7 @@ public class VirtualRowSnapshotTest extends BaseTest {
                 if (brs instanceof VirtualRowSnapshot) {
                     return brs.hashCode();
                 } else if (brs instanceof RowSnapshot) {
-                    return brs.computeHashCode(schema);
+                    return Converters.foldHash(brs.computeHashCode(schema));
                 } else
                     throw new RuntimeException("Uknown type encountered");
             }

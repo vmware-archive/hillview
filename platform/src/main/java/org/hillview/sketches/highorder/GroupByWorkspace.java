@@ -17,9 +17,13 @@
 
 package org.hillview.sketches.highorder;
 
+import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
+import org.hillview.table.api.IIntervalColumn;
 import org.hillview.table.api.ISketchWorkspace;
 import org.hillview.utils.JsonList;
+
+import javax.annotation.Nullable;
 
 /**
  * Workspace for the GroupBySketch.  It has one workspace for each bucket computed.
@@ -27,11 +31,20 @@ import org.hillview.utils.JsonList;
  */
 public class GroupByWorkspace<SW> implements ISketchWorkspace {
     final IColumn column;
+    @Nullable
+    final IColumn endColumn;  // only used for Interval columns
     final JsonList<SW> bucketWorkspace;   // one per bucket
     final SW missingWorkspace;
 
     GroupByWorkspace(IColumn column, JsonList<SW> bucketWorkspace, SW missingWorkspace) {
-        this.column = column;
+        if (column.getKind() == ContentsKind.Interval) {
+            IIntervalColumn ic = column.to(IIntervalColumn.class);
+            this.column = ic.getStartColumn();
+            this.endColumn = ic.getEndColumn();
+        } else {
+            this.column = column;
+            this.endColumn = null;
+        }
         this.bucketWorkspace = bucketWorkspace;
         this.missingWorkspace = missingWorkspace;
     }

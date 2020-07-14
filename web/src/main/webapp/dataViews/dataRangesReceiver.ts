@@ -41,7 +41,7 @@ import {DatasetView} from "../datasetView";
 import {QuartilesVectorReceiver} from "./quartilesHistogramView";
 import {TrellisHistogramQuartilesReceiver} from "./trellisHistogramQuartilesView";
 import {CorrelationHeatmapReceiver} from "./correlationHeatmapView";
-import {CommonArgs, ReceiverCommonArgs} from "../ui/receiver";
+import {ReceiverCommonArgs} from "../ui/receiver";
 
 /**
  * Describes the shape of trellis display.

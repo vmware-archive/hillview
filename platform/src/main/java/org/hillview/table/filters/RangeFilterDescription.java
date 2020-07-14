@@ -60,7 +60,12 @@ public class RangeFilterDescription implements ITableFilterDescription {
             boolean result;
             if (this.column.isMissing(rowIndex))
                 result = RangeFilterDescription.this.includeMissing;
-            else {
+            else if (this.column.getKind() == ContentsKind.Interval) {
+                double d0 = this.column.getEndpoint(rowIndex, true);
+                double d1 = this.column.getEndpoint(rowIndex, false);
+                result = (desc.min <= d0) && (d0 <= desc.max) &&
+                        (desc.min <= d1) && (d1 <= desc.max);
+            } else {
                 double d = this.column.asDouble(rowIndex);
                 result = (desc.min <= d) && (d <= desc.max);
             }

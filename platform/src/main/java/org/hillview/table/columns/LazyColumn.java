@@ -76,6 +76,11 @@ public class LazyColumn extends BaseColumn {
     }
 
     @Override
+    public Interval getInterval(final int rowIndex) {
+        return this.ensureLoaded().getInterval(rowIndex);
+    }
+
+    @Override
     public String getString(final int rowIndex) {
         return this.ensureLoaded().getString(rowIndex);
     }

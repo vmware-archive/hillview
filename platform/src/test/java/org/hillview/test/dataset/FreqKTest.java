@@ -188,7 +188,8 @@ public class FreqKTest extends BaseTest {
     public void testTopK6() {
         Table t = TestTables.testRepTable();
         MGFreqKSketch fk = new MGFreqKSketch(t.getSchema().project(s -> s.equals("Age")), 5);
-        String s = "10: 4\n20: 4\n30: 3\n40: 2\n60: 1\n50: 1\n";
-        Assert.assertEquals(Converters.checkNull(fk.create(t)).toString(), s);
+        // TODO: this is sensitive to the hash order...
+        String s = "10: 4\n20: 4\n30: 3\n40: 2\n50: 1\n60: 1\n";
+        Assert.assertEquals(s, Converters.checkNull(fk.create(t)).toString());
     }
 }

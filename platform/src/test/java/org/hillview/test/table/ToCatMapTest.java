@@ -30,8 +30,9 @@ public class ToCatMapTest extends BaseTest {
     public void testToCatMap() {
         ITable table = TestTables.testRepTable();
         //TestUtils.printTable("Table before conversion:", table);
-        IMap<ITable, ITable> map = new ConvertColumnMap(
-                "Name", "Name Categorical", ContentsKind.String, 1);
+        ConvertColumnMap.Info info = new ConvertColumnMap.Info(
+                "Name", "Name Categorical", 1, ContentsKind.String);
+        IMap<ITable, ITable> map = new ConvertColumnMap(info);
         ITable result = map.apply(table);
         Assert.assertNotNull(result);
         //TestUtils.printTable("Table after conversion:", result);

@@ -33,10 +33,10 @@ import {
     HeavyHittersFilterInfo,
     HistogramRequestInfo,
     IColumnDescription,
-    JSCreateColumnInfo,
+    CreateColumnJSMapInfo,
     JSFilterInfo,
     kindIsString,
-    KVCreateColumnInfo,
+    ExtractValueFromKeyMapInfo,
     NextKArgs,
     NextKList, QuantilesMatrixInfo,
     QuantilesVectorInfo,
@@ -49,7 +49,7 @@ import {
     StringColumnsFilterDescription,
     StringFilterDescription,
     TableSummary,
-    TopList
+    TopList, CreateIntervalColumnMapInfo
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
 import {FullPage, PageTitle} from "./ui/fullPage";
@@ -302,6 +302,10 @@ export class TableTargetAPI extends RemoteObject {
         return this.createStreamingRpcRequest<RemoteObjectId>("jsFilter", filter);
     }
 
+    public createIntervalRequest(args: CreateIntervalColumnMapInfo): RpcRequest<PartialResult<RemoteObjectId>> {
+        return this.createStreamingRpcRequest<RemoteObjectId>("createIntervalColumn", args);
+    }
+
     public createCompareDatasetsRequest(args: CompareDatasetsInfo): RpcRequest<PartialResult<RemoteObjectId>> {
         return this.createStreamingRpcRequest<RemoteObjectId>("compareDatasets", args);
     }
@@ -350,12 +354,12 @@ RpcRequest<PartialResult<RemoteObjectId>> {
         });
     }
 
-    public createJSCreateColumnRequest(c: JSCreateColumnInfo):
+    public createJSCreateColumnRequest(c: CreateColumnJSMapInfo):
         RpcRequest<PartialResult<string>> {
         return this.createStreamingRpcRequest<string>("jsCreateColumn", c);
     }
 
-    public createKVCreateColumnRequest(c: KVCreateColumnInfo):
+    public createKVCreateColumnRequest(c: ExtractValueFromKeyMapInfo):
         RpcRequest<PartialResult<string>> {
         return this.createStreamingRpcRequest<string>("kvCreateColumn", c);
     }

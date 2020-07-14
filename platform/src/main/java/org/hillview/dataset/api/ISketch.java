@@ -31,7 +31,7 @@ import java.util.function.Function;
  * @param <R> Output data type.
  */
 public interface ISketch<T, R extends ISketchResult> extends
-        IDataSetComputation, IMonoid<R>  {
+        IDataSetComputation, IMonoid<R> {
     /**
      * Sketch computation on some dataset T.
      * @param data  Data to sketch.
