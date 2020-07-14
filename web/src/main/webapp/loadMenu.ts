@@ -592,7 +592,7 @@ class DBDialog extends Dialog {
         const host = this.addTextField("host", "Host", FieldKind.String, "localhost",
             "Machine name where database is located; each machine will open a connection to this host");
         host.required = true;
-        const dbDir = this.addTextField("dbDir", "DB Directory", FieldKind.String, "/Users/daniar/Documents/Github/cassandra",
+        const dbDir = this.addTextField("dbDir", "DB Directory", FieldKind.String, "/tmp/cassandra",
             "Absolute path of dCassandra's installation directory");
         dbDir.required = true;
         const port = this.addTextField("port", "Port", FieldKind.Integer, "9042",
@@ -602,10 +602,10 @@ class DBDialog extends Dialog {
         "Cassandra's JMX port to connect to server-side tools.");
         jmxPort.required = true;
         this.hideField("jmxPort");
-        const database = this.addTextField("database", "Database", FieldKind.String, "cassdb",
+        const database = this.addTextField("database", "Database", FieldKind.String, null,
             "Name of database to load.");
         database.required = true;
-        const table = this.addTextField("table", "Table", FieldKind.String, "flights",
+        const table = this.addTextField("table", "Table", FieldKind.String, null,
             "The name of the table to load.");
         table.required = true;
         this.addTextField("user", "User", FieldKind.String, null,

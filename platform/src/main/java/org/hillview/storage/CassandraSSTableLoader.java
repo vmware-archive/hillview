@@ -157,12 +157,15 @@ public class CassandraSSTableLoader extends TextFileLoader {
         return new ColumnDescription(name, kind);
     }
 
-    public void printSchema(CFMetaData metadata) {
-        System.out.println("Column size : " + metadata.partitionColumns().size());
+    public String toString() {
+        CFMetaData metadata = this.metadata;
+        StringBuilder sb = new StringBuilder("SSTable path: " + ssTablePath + "\n");
+        sb.append("Column size : " + metadata.partitionColumns().size() + "\n");
         PartitionColumns columnDefinitions = metadata.partitionColumns();
         for (ColumnDefinition colDef : columnDefinitions) {
-            System.out.println(colDef.toString() + " " + colDef.type.asCQL3Type());
+            sb.append(colDef.toString() + " " + colDef.type.asCQL3Type() + "\n");
         }
+        return sb.toString();
     }
 
     public Schema setSchema(CFMetaData metadata) {

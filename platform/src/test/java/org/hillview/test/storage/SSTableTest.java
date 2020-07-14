@@ -150,7 +150,7 @@ public class SSTableTest extends BaseTest {
             this.ignoringException("Failed connecting to local cassandra", e);
             return;
         }
-        String ssTablePath = db.getSSTablePath();
+        String ssTablePath = db.getSSTablePath().get(0);
         Assert.assertTrue(ssTablePath.endsWith(CassandraDatabase.ssTableFileMarker));
         // Reading the SSTable of flights data
         CassandraSSTableLoader ssTableLoader = new CassandraSSTableLoader(ssTablePath, conn.lazyLoading);
