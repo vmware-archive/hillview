@@ -24,6 +24,7 @@ import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.api.*;
 import org.hillview.table.columns.BaseColumn;
+import org.hillview.table.columns.IntervalColumn;
 import org.hillview.table.rows.JSVirtualRowSnapshot;
 import org.hillview.utils.Converters;
 import org.hillview.utils.Utilities;
@@ -81,11 +82,18 @@ public class CreateColumnJSMap extends AppendColumnMap {
             context.eval("js", this.info.jsFunction);
 
             ColumnDescription outCol = new ColumnDescription(this.info.outputColumn, this.info.outputKind);
-            IMutableColumn col = BaseColumn.create(outCol,
-                    table.getMembershipSet().getMax(),
-                    table.getMembershipSet().getSize());
-            table.getLoadedColumns(this.info.schema.getColumnNames());
+            IMutableColumn col;
+            IMutableColumn endCol = null;  // only used for Intervals
             ContentsKind kind = this.info.outputKind;
+            IMembershipSet set = table.getMembershipSet();
+            if (kind == ContentsKind.Interval) {
+                ColumnDescription cd = new ColumnDescription("start", ContentsKind.Double);
+                col = BaseColumn.create(cd, set.getMax(), set.getSize());
+                endCol = BaseColumn.create(cd, set.getMax(), set.getSize());
+            } else {
+                col = BaseColumn.create(outCol, set.getMax(), set.getSize());
+            }
+            table.getLoadedColumns(this.info.schema.getColumnNames());
 
             JSVirtualRowSnapshot vrs = new JSVirtualRowSnapshot(
                     table, this.info.schema, renameMap, context);
@@ -122,13 +130,23 @@ public class CreateColumnJSMap extends AppendColumnMap {
                             // TODO
                             col.set(r, value);
                             break;
+                        case Interval:
+                            Value v0 = value.getArrayElement(0);
+                            Value v1 = value.getArrayElement(1);
+                            col.set(r, v0.asDouble());
+                            assert endCol != null;
+                            endCol.set(r, v1.asDouble());
+                            break;
                         default:
                             throw new RuntimeException("Unhandled kind " + kind);
                     }
                 }
                 r = it.getNextRow();
             }
-            return col;
+
+            if (kind == ContentsKind.Interval)
+                return new IntervalColumn(outCol, col, endCol);
+            return col.seal();
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }

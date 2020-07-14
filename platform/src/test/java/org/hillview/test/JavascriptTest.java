@@ -99,6 +99,37 @@ public class JavascriptTest extends BaseTest {
     }
 
     @Test
+    public void testIntervalMap() {
+        ITable table = TestTables.testRepTable();
+        LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);
+        String function = "function map(row) { return row['Age'] > 18 ? [2,3] : [3,4]; }";
+        CreateColumnJSMap.Info info = new CreateColumnJSMap.Info(
+                function, table.getSchema(), "Interval", ContentsKind.Interval, null);
+        CreateColumnJSMap map = new CreateColumnJSMap(info);
+        IDataSet<ITable> mapped = lds.blockingMap(map);
+        ITable outTable = ((LocalDataSet<ITable>)mapped).data;
+        Assert.assertNotNull(outTable);
+        String data = outTable.toLongString(3);
+        Assert.assertEquals("Table[3x15]\n" +
+                "Mike,20,[2.0 : 3.0]\n" +
+                "John,30,[2.0 : 3.0]\n" +
+                "Tom,10,[3.0 : 4.0]\n", data);
+
+        function = "function map(row) { return row['Interval'][0] + row['Interval'][1]; }";
+        info = new CreateColumnJSMap.Info(
+                function, outTable.getSchema(), "Sum", ContentsKind.Double, null);
+        map = new CreateColumnJSMap(info);
+        mapped = mapped.blockingMap(map);
+        outTable = ((LocalDataSet<ITable>)mapped).data;
+        Assert.assertNotNull(outTable);
+        data = outTable.toLongString(3);
+        Assert.assertEquals("Table[4x15]\n" +
+                "Mike,20,[2.0 : 3.0],5.0\n" +
+                "John,30,[2.0 : 3.0],5.0\n" +
+                "Tom,10,[3.0 : 4.0],7.0\n", data);
+    }
+
+    @Test
     public void testMap1() {
         ITable table = TestTables.testRepTable();
         LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);
