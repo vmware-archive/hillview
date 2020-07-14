@@ -60,4 +60,11 @@ public class Interval implements Serializable, IJson {
             return c;
         return Double.compare(this.end, other.end);
     }
+
+    public int compareTo(IIntervalColumn column, int rowIndex) {
+        int c = Double.compare(this.start, column.getEndpoint(rowIndex, true));
+        if (c != 0)
+            return c;
+        return Double.compare(this.end, column.getEndpoint(rowIndex, false));
+    }
 }

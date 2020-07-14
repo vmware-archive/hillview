@@ -507,5 +507,9 @@ export interface ComparisonFilterDescription {
      * Value that is being tested if the column is a numeric/date column.
      */
     doubleValue: number;
+    /**
+     * If the column is an interval the interval is given by doubleValue - intervalEnd.
+     */
+    intervalEnd: number;
     comparison: Comparison;
 }

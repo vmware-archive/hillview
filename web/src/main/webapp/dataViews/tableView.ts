@@ -758,7 +758,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         const dialog = new Dialog(
             "Create column of intervals",
             "Creates a column of intervals from two numeric columns.");
-        const resultColumn = this.schema.uniqueColumnName("Interval");
+        const resultColumn = this.schema.uniqueColumnName(cols[0] + ":" + cols[1]);
         dialog.addTextField("column", "Column", FieldKind.String, resultColumn, "Column to create");
         dialog.addBooleanField("keep", "Keep original columns", false,
             "If selected the original columns are not removed");
@@ -1081,11 +1081,32 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             this.order, this.tableRowsDesired, this.aggregates));
     }
 
-    public filterOnValue(cd: IColumnDescription, value: string | number, comparison: Comparison): void {
+    public filterOnValue(cd: IColumnDescription, value: string | number | number[], comparison: Comparison): void {
+        let stringValue = null;
+        let doubleValue = null;
+        let intervalEnd = null;
+        switch (cd.kind) {
+            case "Json":
+            case "String":
+                stringValue = value as string;
+                break;
+            case "Integer":
+            case "Double":
+            case "Date":
+            case "Duration":
+                doubleValue = value as number;
+                break;
+            case "Interval":
+                const a = value as number[];
+                doubleValue = a[0];
+                intervalEnd = a[1];
+                break;
+        }
         const cfd: ComparisonFilterDescription = {
             column: cd,
-            stringValue: kindIsString(cd.kind) ? value as string : null,
-            doubleValue: !kindIsString(cd.kind) ? value as number : null,
+            stringValue,
+            doubleValue,
+            intervalEnd,
             comparison,
         };
         this.runComparisonFilter(cfd, this.order, this.tableRowsDesired, this.aggregates);

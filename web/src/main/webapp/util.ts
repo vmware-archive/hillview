@@ -345,9 +345,23 @@ export class Converters {
 
     static comparisonFilterDescription(filter: ComparisonFilterDescription): string {
         const kind = filter.column.kind;
-        return filter.column.name + " " + filter.comparison +
-            (kindIsNumeric(kind) ? this.valueToString(filter.doubleValue, kind) :
-                this.valueToString(filter.stringValue, kind));
+        let str;
+        switch (kind) {
+            case "Json":
+            case "String":
+                str = this.valueToString(filter.stringValue, kind);
+                break;
+            case "Integer":
+            case "Double":
+            case "Date":
+            case "Duration":
+                str = this.valueToString(filter.doubleValue, kind);
+                break;
+            case "Interval":
+                str = this.valueToString([filter.doubleValue, filter.intervalEnd], kind);
+                break;
+        }
+        return filter.column.name + " " + filter.comparison + " " + str;
     }
 }
 

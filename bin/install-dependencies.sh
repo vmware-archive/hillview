@@ -56,5 +56,5 @@ npm link typescript
 cd ${SAVEDIR}
 
 if [ ${INSTALL_CASSANDRA} -eq 1 ]; then
-    ./install-cassandra.sh
+    ./${mydir}/install-cassandra.sh
 fi
