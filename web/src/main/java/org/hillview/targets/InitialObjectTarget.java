@@ -24,6 +24,7 @@ import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.*;
 import org.hillview.dataset.remoting.HillviewServer;
 import org.hillview.management.*;
+import org.hillview.maps.FindCassandraFilesMap;
 import org.hillview.maps.FindFilesMap;
 import org.hillview.maps.highorder.IdMap;
 import org.hillview.maps.LoadDatabaseTableMap;
@@ -123,11 +124,12 @@ public class InitialObjectTarget extends RpcTarget {
     }
 
     @HillviewRpc
-    public void loadCassandraDBTable(RpcRequest request, RpcRequestContext context) {
-        CassandraConnectionInfo cassandraConn = request.parseArgs(CassandraConnectionInfo.class);
-        IMap<Empty, Empty> map = new IdMap<Empty>();
+    public void findCassandraFiles(RpcRequest request, RpcRequestContext context) {
+        CassandraConnectionInfo desc = request.parseArgs(CassandraConnectionInfo.class);
+        HillviewLogger.instance.info("Finding SSTable files", "{0}", desc);
+        IMap<Empty, List<IFileReference>> finder = new FindCassandraFilesMap(desc);
         Converters.checkNull(this.emptyDataset);
-        this.runMap(this.emptyDataset, map, (e, c) -> new CassandraDBTarget(cassandraConn, c), request, context);
+        this.runFlatMap(this.emptyDataset, finder, FileDescriptionTarget::new, request, context);
     }
 
     @HillviewRpc

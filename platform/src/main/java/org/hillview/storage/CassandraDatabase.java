@@ -35,8 +35,6 @@ import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Utilities;
 
-import static org.apache.commons.lang3.StringUtils.EMPTY;
-
 public class CassandraDatabase {
     /** All SSTable always ended with this marker */
     public static final String ssTableFileMarker = "big-Data.db";
@@ -198,7 +196,8 @@ public class CassandraDatabase {
      * the sstable parent dir from cassandra.yaml, we need to rule out the outdated sstables.
      * And sstableutil is built specifically to identify which version are the most updated.
       */
-    public String getSSTablePath() {
+    public List<String> getSSTablePath() {
+        List<String> result = new ArrayList<>();
         boolean isWindows = System.getProperty("os.name")
             .toLowerCase().startsWith("windows");
         Path ssTableUtilPath = Paths.get(ssTableUtilDir);
@@ -209,23 +208,21 @@ public class CassandraDatabase {
             sstableCommand += ".bat";
         ProcessBuilder builder = new ProcessBuilder(sstableCommand, this.info.database, this.info.table);
         builder.directory(cassandraPath.toFile());
-        String output = EMPTY;
         try {
             Process p = builder.start();
             // scan the output of executed commands
             Scanner s = new Scanner(p.getInputStream());
             while (s.hasNext()) {
-                output = s.next();
-                if (output.endsWith(ssTableFileMarker))
-                    break;
+                String output = s.next();
+                if (output.endsWith(ssTableFileMarker)){
+                    result.add(output);
+                }
             }
             s.close();
-            if (output.isEmpty())
-                throw new RuntimeException("Failed to get SSTablePath");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        return output;
+        return result;
     }
 
     public String toString(){

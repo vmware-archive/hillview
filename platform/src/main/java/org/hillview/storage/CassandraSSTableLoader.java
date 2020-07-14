@@ -298,15 +298,28 @@ public class CassandraSSTableLoader extends TextFileLoader {
                         // Filter the column to only load the one marked true by columnToLoad[]
                         if (columnToLoad[i]) {
                             if (cd.column().isSimple()) {
+                                col = columns.get(currentColumn);
                                 Cell cell = (Cell) cd;
                                 AbstractType<?> cellType = cell.column().cellValueType();
+                                String type = cellType.asCQL3Type().toString();
                                 value = cellType.getSerializer().deserialize(cell.value());
+
+                                if(value == null)
+                                    col.appendMissing();
+                                else
+                                    // Convert the data before storing it to the columns
+                                    // We need to do more test on this with a database that has all cassandra types
+                                    switch (type) {
+                                        case "float":
+                                            col.append(((Float) value).doubleValue());
+                                            break;
+                                        default:
+                                            col.append(value);
+                                    }
                             } else {
                                 // Hillview won't process the complex data
                                 throw new RuntimeException("Hillview can't convert complex data");
                             }
-                            col = columns.get(currentColumn);
-                            col.append(value);
                             currentColumn++;
                         }
                         i++;

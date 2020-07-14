@@ -183,6 +183,24 @@ export class InitialObject extends RemoteObject {
         rr.invoke(observer);
     }
 
+    public loadCassandraFiles(conn: CassandraConnectionInfo, loadMenuPage: FullPage): void {
+        const rr = this.createStreamingRpcRequest<RemoteObjectId>("findCassandraFiles", conn);
+        const files: FileSetDescription = {
+            fileNamePattern: "*-big-Data.db",
+            schemaFile: "schema",
+            headerRow: true,
+            repeat: 1,
+            name: "Cassandra SStable",
+            fileKind: "sstable",
+            logFormat: null,
+            startTime: null,
+            endTime: null
+        };
+        const observer = new FilesReceiver(loadMenuPage, rr,
+            { kind: "Files", description: files });
+        rr.invoke(observer);
+    }
+
     public loadLogs(loadMenuPage: FullPage): void {
         // Use a guid to force the request to reload every time
         const rr = this.createStreamingRpcRequest<RemoteObjectId>("findLogs", getUUID());
@@ -197,13 +215,6 @@ export class InitialObject extends RemoteObject {
         rr.invoke(observer);
     }
 
-    public loadCassandraDBTable(conn: CassandraConnectionInfo, loadMenuPage: FullPage): void {
-        const rr = this.createStreamingRpcRequest<RemoteObjectId>("loadCassandraDBTable", conn);
-        const observer = new RemoteTableReceiver(loadMenuPage, rr,
-            { kind: "DB", description: conn }, "loading Cassandra DB table");
-        rr.invoke(observer);
-    }
-
     public loadSimpleDBTable(conn: JdbcConnectionInformation, loadMenuPage: FullPage): void {
         const rr = this.createStreamingRpcRequest<RemoteObjectId>("loadSimpleDBTable", conn);
         const observer = new RemoteTableReceiver(loadMenuPage, rr,
@@ -213,7 +224,7 @@ export class InitialObject extends RemoteObject {
 
     public loadLocalDBTable(jdbcConn: JdbcConnectionInformation, cassConn: CassandraConnectionInfo, loadMenuPage: FullPage): void {
         if (jdbcConn.databaseKind == "cassandra") {
-            this.loadCassandraDBTable(cassConn, loadMenuPage);
+            this.loadCassandraFiles(cassConn, loadMenuPage);
         } else {
             this.loadSimpleDBTable(jdbcConn, loadMenuPage);
         }
