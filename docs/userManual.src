@@ -80,10 +80,13 @@ types:
   * Integer (32-bit)
   * Date+time (the Java Instant class is used to represent such date+time values
     on the server side; dates include time zone information)
-  * Time intervals (represented using the Java Duration class)
+  * Durations (represented using the Java Duration class)
+  * Intervals: an interval contains two double values.
+    Operations on interval values are described in section (#interval-values).
 
 Hillview supports a special value "missing" which indicates that a
 value is not present.  This is similar to NULL values in databases.
+When sorting missing values are considered larger than any other value.
 
 ## Interacting with data
 
@@ -676,8 +679,7 @@ LIMIT 20
 Initially a table view displays no columns.  The user can choose which
 columns are displayed or hidden.
 
-Missing values are shown with a different color.  When sorting missing
-values are considered larger than any other value.
+Missing values are shown with a different color.
 
 ![Missing value display](missing-value.png)
 
@@ -870,6 +872,12 @@ the current state of the display.
   column.  For example, a numeric column can be converted to a string
   column.  After conversion a new column is appended to the table, containing the
   converted data.
+
+* Create interval column...: Given two numeric columns it collapses them into
+  a single column of intervals.  The user can choose whether the original columns
+  are preserved or removed.
+
+  ![Create interval colum menu](create-interval-menu.png)
 
 * Aggregate...: this pops up a menu that allows the user to create a metadata
   column using an aggregation function over the data in the selected column;
@@ -1092,7 +1100,10 @@ phases:
 - first the range of the data in the column is computed (minimum and
   maximum values).
 
-- the range is divided into a small number of equal buckets.  Then the
+- the range is divided into a small number of equal buckets.  Each bucket
+  includes it's left endpoint, but does not include the right endpoint,
+  with the exception of the rightmost bucket, which also includes its
+  right endpoing.  Then the
   data is scanned and the number of points in the column that fall in
   each bucket is computed.
 
@@ -1561,3 +1572,31 @@ The "export/AS CSV" menu for each chart will save the data in the chart in a
 local file (usually placed in the Downloads folder) in a CSV format.  Note that
 the data that is exported does not reflect the whole dataset, but only the data
 that is currently visible in the chart.
+
+## Interval values
+
+Hillview supports columns whose value is an interval of two numeric values.
+These columns can be created by combining two existing numeric columns.
+The intervals are not "ordered": there is no requirement for the interval start
+to be smaller than the end.  If either interval endpoint is missing the whole interval
+value is missing.  The intervals are always closed, including both endpoints.
+
+There is currently no support for storing such columns or reading them from
+external sources.
+
+In a table these columns are displayed in the form [start : end], as shown in the following
+image.
+
+![Interval column](interval-column.png)
+
+Intervals are sorted lexicographically.  Intervals behave specially in
+histogram plots: an interval contributes to each bucket that it overlaps.
+For example, if we plot a histogram with 10 buckets of values between 0 and 9,
+the interval [2.5 : 3.5] will increment the counts in buckets [2,3) and [3,4).
+The interval [2 : 3] will increment the counts in buckets [2,3) and [3,4) as well, because
+the endpoint 3 overlaps with the bucket [3,4).  The "range" of a column of interval
+is from the minimum of all endpoints the the maximum of all endpoints.  Because
+intervals are not "ordered", the interval [3 : 2] will also increment the counts
+in buckets [2,3) and [3,4).
+
+In Javascript the intervals are exposed as arrays with two numeric values.
