@@ -79,4 +79,14 @@ public interface IIntervalColumn extends IColumn {
                 hash.hashLong(Double.doubleToRawLongBits(this.getEndpoint(rowIndex, true))),
                 hash.hashLong(Double.doubleToRawLongBits(this.getEndpoint(rowIndex, false))));
     }
+
+    /**
+     * A column that contains only the start values.
+     */
+    IColumn getStartColumn();
+
+    /**
+     * A column that contains only the end values.
+     */
+    IColumn getEndColumn();
 }

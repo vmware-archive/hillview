@@ -355,6 +355,7 @@ export class Converters {
             case "Double":
             case "Date":
             case "Duration":
+            case "Interval":
                 str = this.valueToString(filter.doubleValue, kind);
                 break;
             case "Interval":
@@ -554,7 +555,10 @@ export function formatDate(d: Date): string {
  *                        is replaced with an underscore.
  */
 export function makeId(text: string): string {
-    return text.replace(/[^a-zA-Z0-9]/g, "_");
+    text = text.replace(/[^a-zA-Z0-9]/g, "_");
+    if (!(text[0].match(/[a-z_]/i)))
+        text = "I" + text;
+    return text;
 }
 
 /**

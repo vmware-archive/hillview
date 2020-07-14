@@ -39,6 +39,12 @@
         </dependency>
     </dependencies>
 
+    <!--
+    This file is here to create a version of the cassandra-all jar
+    with the depedences "shaded"; cassandra-all depends on an old version
+    of guava, which is incompatible with later versions, so linking
+    the two together is impossible.
+    -->
     <build>
         <plugins>
             <plugin>

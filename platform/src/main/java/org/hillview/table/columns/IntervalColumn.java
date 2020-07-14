@@ -98,4 +98,18 @@ public class IntervalColumn extends BaseColumn
     public Interval getInterval(int rowIndex) {
         return new Interval(this.getEndpoint(rowIndex, true), this.getEndpoint(rowIndex, false));
     }
+
+    /**
+     * A column that contains only the start values.
+     */
+    public IColumn getStartColumn() {
+        return this.start;
+    }
+
+    /**
+     * A column that contains only the end values.
+     */
+    public IColumn getEndColumn() {
+        return this.end;
+    }
 }

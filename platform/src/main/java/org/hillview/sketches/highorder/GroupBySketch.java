@@ -30,7 +30,6 @@ import org.hillview.utils.JsonList;
 import org.hillview.utils.Linq;
 
 import javax.annotation.Nullable;
-import java.util.function.Function;
 
 /**
  * Given a TableSketch S, this applies S to each group.
@@ -47,21 +46,6 @@ public class GroupBySketch<
     protected final JsonList<S> bucketSketch;
     protected final IHistogramBuckets buckets;
 
-    /**
-     * Create a sketch that computes groups of sketches.
-     * @param buckets         Buckets defining groups.
-     * @param sketchFactory   A function that creates the sketches for each bucket given an index.
-     *                        The function is called with index -1 to create the missing bucket sketch.
-     */
-    protected GroupBySketch(IHistogramBuckets buckets,
-                            Function<Integer, S> sketchFactory) {
-        this.missingSketch = sketchFactory.apply(-1);
-        this.bucketSketch = new JsonList<S>(buckets.getBucketCount());
-        for (int i = 0; i < buckets.getBucketCount(); i++)
-            this.bucketSketch.add(sketchFactory.apply(i));
-        this.buckets = buckets;
-    }
-
     protected GroupBySketch(IHistogramBuckets buckets,
                             S sketch) {
         this.missingSketch = sketch;
@@ -76,13 +60,25 @@ public class GroupBySketch<
         if (workspace.column.isMissing(rowNumber)) {
             this.missingSketch.add(workspace.missingWorkspace, result.perMissing, rowNumber);
         } else {
-            int index = this.buckets.indexOf(workspace.column, rowNumber);
-            if (index >= 0 && index < result.perBucket.size())
-                this.bucketSketch.get(index).add(workspace.bucketWorkspace.get(index), result.perBucket.get(index), rowNumber);
-            /*
-            else
-                this.sketch.add(workspace.childWorkspace, result.outOfRange, rowNumber);
-             */
+            if (workspace.endColumn != null) {
+                // Interval columns: contribute to all buckets that overlap the interval
+                int index0 = this.buckets.indexOf(workspace.column, rowNumber);
+                int index1 = this.buckets.indexOf(workspace.endColumn, rowNumber);
+                if (index0 > index1) {
+                    int tmp = index0;
+                    index0 = index1;
+                    index1 = tmp;
+                }
+                int max = Math.min(index1, result.perBucket.size() - 1);
+                for (int index = Math.max(index0, 0); index <= max; index++) {
+                    this.bucketSketch.get(index).add(
+                            workspace.bucketWorkspace.get(index), result.perBucket.get(index), rowNumber);
+                }
+            } else {
+                int index = this.buckets.indexOf(workspace.column, rowNumber);
+                if (index >= 0 && index < result.perBucket.size())
+                    this.bucketSketch.get(index).add(workspace.bucketWorkspace.get(index), result.perBucket.get(index), rowNumber);
+            }
         }
     }
 
@@ -101,9 +97,7 @@ public class GroupBySketch<
         for (int i = 0; i < b; i++)
             perBucket.add(this.bucketSketch.get(i).zero());
         R perMissing = this.missingSketch.zero();
-        //R noBucket = this.sketch.zero();
-        return new Groups<R>(perBucket, Converters.checkNull(perMissing)
-                /*, Converters.checkNull(noBucket) */);
+        return new Groups<R>(perBucket, Converters.checkNull(perMissing));
     }
 
     @Nullable
@@ -115,8 +109,6 @@ public class GroupBySketch<
         R perMissing = this.missingSketch.add(left.perMissing, right.perMissing);
         JsonList<R> perBucket = Linq.zipMap(left.perBucket, right.perBucket,
                 Linq.map(this.bucketSketch, s -> s::add));
-        // R noBucket = this.sketch.add(left.outOfRange, right.outOfRange);
-        return new Groups<R>(perBucket, Converters.checkNull(perMissing)
-                /*, Converters.checkNull(noBucket) */);
+        return new Groups<R>(perBucket, Converters.checkNull(perMissing));
     }
 }

@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
-package org.hillview.sketches;
+package org.hillview.sketches.results;
 
 import org.hillview.dataset.api.TableSketch;
-import org.hillview.sketches.results.DataRange;
+import org.hillview.sketches.DoubleDataRangeSketch;
+import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;
@@ -27,26 +28,27 @@ import org.hillview.utils.Converters;
 import javax.annotation.Nullable;
 
 /**
- * A sketch that computes the range of data in a column where values can be
- * converted to doubles.
+ * A sketch that computes the range of data in a column where values are intervals.
  */
-public class DoubleDataRangeSketch implements TableSketch<DataRange> {
+public class IntervalDataRangeSketch extends DoubleDataRangeSketch {
     static final long serialVersionUID = 1;
-    protected final String col;
 
-    public DoubleDataRangeSketch(String col) {
-        this.col = col;
+    public IntervalDataRangeSketch(String col) {
+        super(col);
     }
 
     @Override
     public DataRange create(@Nullable final ITable data) {
         IColumn column = Converters.checkNull(data).getLoadedColumn(this.col);
+        assert(column.getKind() == ContentsKind.Interval);
         DataRange result = new DataRange();
         final IRowIterator myIter = data.getMembershipSet().getIterator();
         int currRow = myIter.getNextRow();
         while (currRow >= 0) {
             if (!column.isMissing(currRow)) {
-                double val = column.asDouble(currRow);
+                double val = column.getEndpoint(currRow, true);
+                result.add(val);
+                val = column.getEndpoint(currRow, false);
                 result.add(val);
             } else {
                 result.addMissing();
@@ -54,15 +56,5 @@ public class DoubleDataRangeSketch implements TableSketch<DataRange> {
             currRow = myIter.getNextRow();
         }
         return result;
-    }
-
-    @Override
-    public DataRange zero() { return new DataRange(); }
-
-    @Override
-    public DataRange add(@Nullable final DataRange left, @Nullable final DataRange right) {
-        assert left != null;
-        assert right != null;
-        return left.add(right);
     }
 }

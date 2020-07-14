@@ -904,9 +904,10 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             let rowsDisplayed = 0;
             if (nextKList.rows != null) {
                 nextKList.rows.reverse();
-                nextKList.aggregates.reverse();
                 rowsDisplayed = nextKList.rows.map((r) => r.count).reduce(add, 0);
             }
+            if (nextKList.aggregates != null)
+                nextKList.aggregates.reverse();
             this.startPosition = this.rowCount - this.startPosition - rowsDisplayed;
             this.order = this.order.invert();
         }
