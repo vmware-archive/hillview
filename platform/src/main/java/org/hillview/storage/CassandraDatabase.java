@@ -242,10 +242,4 @@ public class CassandraDatabase {
         }
         return result.toString();
     }
-
-    public int getRowCount() {
-        ResultSet result = this.session.execute("SELECT count(*) FROM " + this.info.database + "." + this.info.table);
-        Row r = result.one();
-        return (int) r.getLong("count");
-    }
 }
