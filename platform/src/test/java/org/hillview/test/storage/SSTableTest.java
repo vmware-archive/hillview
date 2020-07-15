@@ -209,4 +209,27 @@ public class SSTableTest extends BaseTest {
         Assert.assertEquals("0x61646231346662653037366636623934343434633636306533366134303031353166323666633666",
             listCols.get(18).getString(0));
     }
+
+    @Test
+    public void testCassandraCounterTable() {
+        CassandraConnectionInfo conn = null;
+        CassandraDatabase db = null;
+        try {
+            // Connecting to Cassandra node and get some data
+            conn = this.getConnectionInfo();
+            conn.table = "counter";
+            db = new CassandraDatabase(conn);
+        } catch (Exception e) {
+            // this will fail if no running Cassandra instance, but we don't want to fail the test.
+            this.ignoringException("Failed connecting to local cassandra", e);
+            return;
+        }
+        String ssTablePath = db.getSSTablePath().get(0);
+        Assert.assertTrue(ssTablePath.endsWith(CassandraDatabase.ssTableFileMarker));
+        CassandraSSTableLoader ssTableLoader = new CassandraSSTableLoader(ssTablePath, conn.lazyLoading);
+        ITable table = ssTableLoader.load();
+        Assert.assertNotNull(table);
+        IColumn column = table.getLoadedColumn("counter");
+        Assert.assertEquals(1, column.getDouble(0), 0);
+    }
 }
