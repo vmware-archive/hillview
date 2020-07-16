@@ -29,6 +29,7 @@ import org.apache.cassandra.utils.FBUtilities;
 import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.config.ColumnDefinition;
 import org.apache.cassandra.config.DatabaseDescriptor;
+import org.apache.cassandra.cql3.CQL3Type;
 import org.apache.cassandra.cql3.ColumnIdentifier;
 import org.apache.cassandra.db.rows.Cell;
 import org.apache.cassandra.db.rows.ColumnData;
@@ -46,15 +47,16 @@ import org.apache.cassandra.io.sstable.ISSTableScanner;
 import org.apache.cassandra.io.sstable.format.SSTableReader;
 import org.apache.cassandra.io.sstable.metadata.MetadataComponent;
 import org.apache.cassandra.io.sstable.metadata.MetadataType;
+import org.apache.commons.lang3.Range;
 
 import javax.annotation.Nullable;
-
 import java.util.stream.Stream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.StreamSupport;
-import org.apache.commons.lang3.Range;
+
+import static org.junit.Assert.assertTrue;
 
 /**
  * Knows how to read a local Cassandra's SSTable file.
@@ -122,39 +124,42 @@ public class CassandraSSTableLoader extends TextFileLoader {
     /** Converting Cassandra's data type to Hillview data type */
     private static ColumnDescription getDescription(ColumnDefinition colDef) {
         String name = colDef.toString();
-        String colType = colDef.type.asCQL3Type().toString();
         ContentsKind kind;
-        switch (colType) {
-            case "boolean":
-            case "ascii":
-            case "inet":
-            case "text":
-            case "timeuuid":
-            case "uuid":
-            case "duration":
-            case "time":
-            case "date":
-            case "blob":
+        CQL3Type type = colDef.type.asCQL3Type();
+        assertTrue(type instanceof CQL3Type.Native);
+        switch ((CQL3Type.Native) colDef.type.asCQL3Type()) {
+            case BOOLEAN:
+            case ASCII:
+            case INET:
+            case TEXT:
+            case TIMEUUID:
+            case UUID:
+            case DURATION:
+            case TIME:
+            case DATE:
+            case BLOB:
+            case VARCHAR:
                 kind = ContentsKind.String;
                 break;
-            case "int":
-            case "smallint":
-            case "tinyint":
+            case INT:
+            case SMALLINT:
+            case TINYINT:
                 kind = ContentsKind.Integer;
                 break;
-            case "varint":
-            case "bigint":
-            case "decimal":
-            case "double":
-            case "float":
-            case "counter":
+            case VARINT:
+            case BIGINT:
+            case DECIMAL:
+            case DOUBLE:
+            case FLOAT:
+            case COUNTER:
                 kind = ContentsKind.Double;
                 break;
-            case "timestamp":
+            case TIMESTAMP:
                 kind = ContentsKind.Date;
                 break;
+            case EMPTY:
             default:
-                throw new RuntimeException("Unhandled column type " + colType);
+                throw new RuntimeException("Unhandled column type " + type.toString());
         }
         return new ColumnDescription(name, kind);
     }
@@ -314,55 +319,59 @@ public class CassandraSSTableLoader extends TextFileLoader {
                             if (value == null) {
                                 col.appendMissing();
                             } else {
-                                String colType = cd.column().type.asCQL3Type().toString();
-
-                                switch (colType) {
-                                    case "boolean":
-                                    case "ascii":
-                                    case "inet":
-                                    case "text":
-                                    case "timeuuid":
-                                    case "duration":
-                                    case "uuid":
+                                CQL3Type colType = cd.column().type.asCQL3Type();
+                                assertTrue(colType instanceof CQL3Type.Native);
+                                switch ((CQL3Type.Native) colType) {
+                                    case BOOLEAN:
+                                    case ASCII:
+                                    case INET:
+                                    case TEXT:
+                                    case TIMEUUID:
+                                    case UUID:
+                                    case DURATION:
+                                    case VARCHAR:
                                         col.append(value.toString());
                                         break;
-                                    case "date":
-                                    case "time":
-                                    case "blob":
+                                    case DATE:
+                                    case TIME:
+                                    case BLOB:
                                         col.append(cellType.getSerializer()
                                                 .toCQLLiteral(((Cell) cd).value()).toString());
                                         break;
-                                    case "int":
+                                    case INT:
                                         col.append((Integer) value);
                                         break;
-                                        case "smallint":
+                                    case SMALLINT:
                                         col.append(((Short) value).intValue());
                                         break;
-                                    case "tinyint":
+                                    case TINYINT:
                                         col.append(((Byte) value).intValue());
                                         break;
-                                    case "varint":
+                                    case VARINT:
                                         col.append(((BigInteger) value).doubleValue());
                                         break;
-                                    case "bigint":
+                                    case BIGINT:
                                         col.append(((Long) value).doubleValue());
                                         break;
-                                    case "decimal":
+                                    case DECIMAL:
                                         if (bigDecimalInRange((BigDecimal) value))
                                             col.append(((BigDecimal) value).doubleValue());
                                         break;
-                                    case "double":
+                                    case DOUBLE:
                                         col.append((Double) value);
                                         break;
-                                    case "float":
+                                    case FLOAT:
                                         col.append(((Float) value).doubleValue());
                                         break;
-                                    case "counter":
+                                    case COUNTER:
                                         col.append(CounterContext.instance().total(((Cell) cd).value()));
                                         break;
-                                    case "timestamp":
+                                    case TIMESTAMP:
                                         col.append(((Date) value).toInstant());
                                         break;
+                                    case EMPTY:
+                                    default:
+                                        throw new RuntimeException("Unhandled column type " + colType.toString());
                                 }
                             }
                         } else {
