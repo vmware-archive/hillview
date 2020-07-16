@@ -295,6 +295,7 @@ public class CassandraSSTableLoader extends TextFileLoader {
             throw new RuntimeException(ex);
         }
     }
+
     /** Lazy and non-lazy loader will call this function to load specific column marked by columnToLoad */
     private static void loadColumns(SSTableReader ssTableReader, List<IAppendableColumn> columns,
             boolean[] columnToLoad) {
