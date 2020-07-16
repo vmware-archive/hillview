@@ -243,7 +243,7 @@ public class CassandraSSTableLoader extends TextFileLoader {
         });
     }
 
-    public int getRowCount(){
+    public int getRowCount() {
         if (this.rowCount > Integer.MAX_VALUE || this.rowCount < Integer.MIN_VALUE)
             throw new RuntimeException("The number of rows exceeds Integer.MAX_VALUE");
         return (int) this.rowCount;
