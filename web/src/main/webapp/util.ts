@@ -958,7 +958,7 @@ export class Color {
             throw new Error("Color out of range: " + r +"," + g + "," + b)
     }
 
-    private static colorReg = new RegExp(/rgb\((\d+), (\d+), (\d+)\)/);
+    private static colorReg = new RegExp(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/).compile();
 
     public toString(): string {
         return "rgb(" + Math.round(this.r * 255) + "," + Math.round(this.g * 255) + "," + Math.round(this.b * 255) + ")";

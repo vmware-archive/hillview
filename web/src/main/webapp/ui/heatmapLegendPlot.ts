@@ -22,7 +22,7 @@ import {
 import {D3Axis, D3Scale, D3SvgElement, Resolution} from "./ui";
 import {ContextMenu} from "./menu";
 import {HtmlPlottingSurface, PlottingSurface} from "./plottingSurface";
-import {assert, desaturateOutsideRange, Pair} from "../util";
+import {assert, ColorMap, desaturateOutsideRange, Pair} from "../util";
 import {scaleLinear as d3scaleLinear, scaleLog as d3scaleLog} from "d3-scale";
 import {axisBottom as d3axisBottom} from "d3-axis";
 import {AxisDescription} from "../dataViews/axisData";
@@ -38,7 +38,8 @@ class HeatmapColormap {
      */
     public static logThreshold = 50;
     public logScale: boolean | null;  // if null this is decided based on data.
-    protected map: (x: number) => string;
+    protected originalMap: ColorMap;
+    protected map: ColorMap;
 
     constructor(public readonly min: number, public readonly max: number) {
         this.setMap(d3interpolateWarm);
@@ -48,7 +49,8 @@ class HeatmapColormap {
         this.logScale = logScale;
     }
 
-    public setMap(map: (n: number) => string): void {
+    public setMap(map: ColorMap): void {
+        this.originalMap = map;
         this.map = map;
     }
 
@@ -76,7 +78,7 @@ class HeatmapColormap {
 
     // Colors outside the specified range are de-saturated.
     public desaturateOutsideRange(x0: number, x1: number): void {
-        this.setMap(desaturateOutsideRange(d3interpolateWarm, x0, x1));
+        this.map = desaturateOutsideRange(this.originalMap, x0, x1);
     }
 }
 
@@ -150,8 +152,8 @@ export class HeatmapLegendPlot extends LegendPlot<Pair<number, number>> {
                 this.colorMap.setMap(d3interpolateWarm);
                 break;
             case ColorMapKind.Grayscale:
-                this.colorMap.setMap((x: number) => `rgb(${Math.round(255 * (1 - x))},
-                    ${Math.round(255 * (1 - x))}, ${Math.round(255 * (1 - x))})`);
+                this.colorMap.setMap((x: number) => `rgb(
+                ${Math.round(255 * (1 - x))},${Math.round(255 * (1 - x))},${Math.round(255 * (1 - x))})`);
                 break;
         }
     }
