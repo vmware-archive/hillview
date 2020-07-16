@@ -43,7 +43,12 @@ export interface HillviewLogs {
     kind: "Hillview logs";
 }
 
-export type DataLoaded = FilesLoaded | TablesLoaded | HillviewLogs | IDatasetSerialization;
+export interface SSTableFilesLoaded {
+    kind: "SSTable";
+    description: CassandraConnectionInfo;
+}
+
+export type DataLoaded = FilesLoaded | TablesLoaded | HillviewLogs | IDatasetSerialization | SSTableFilesLoaded;
 
 export function getDescription(data: DataLoaded): PageTitle {
     switch (data.kind) {
@@ -59,6 +64,8 @@ export function getDescription(data: DataLoaded): PageTitle {
                 "loaded from database");
         case "Hillview logs":
             return new PageTitle("logs", "Hillview installation logs");
+        case "SSTable":
+            return new PageTitle(data.description.database + "/" + data.description.table, "loaded from files");
     }
 }
 
@@ -185,19 +192,8 @@ export class InitialObject extends RemoteObject {
 
     public loadCassandraFiles(conn: CassandraConnectionInfo, loadMenuPage: FullPage): void {
         const rr = this.createStreamingRpcRequest<RemoteObjectId>("findCassandraFiles", conn);
-        const files: FileSetDescription = {
-            fileNamePattern: "*-big-Data.db",
-            schemaFile: "schema",
-            headerRow: true,
-            repeat: 1,
-            name: "Cassandra SStable",
-            fileKind: "sstable",
-            logFormat: null,
-            startTime: null,
-            endTime: null
-        };
         const observer = new FilesReceiver(loadMenuPage, rr,
-            { kind: "Files", description: files });
+            { kind: "SSTable", description: conn });
         rr.invoke(observer);
     }
 

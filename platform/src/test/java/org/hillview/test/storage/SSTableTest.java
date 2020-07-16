@@ -151,6 +151,8 @@ public class SSTableTest extends BaseTest {
             this.ignoringException("Failed connecting to local cassandra", e);
             return;
         }
+        List<String> arrSSTablePath = db.getSSTablePath();
+        Assert.assertEquals(1, arrSSTablePath.size());
         String ssTablePath = db.getSSTablePath().get(0);
         Assert.assertTrue(ssTablePath.endsWith(CassandraDatabase.ssTableFileMarker));
         // Reading the SSTable of flights data
@@ -177,37 +179,38 @@ public class SSTableTest extends BaseTest {
             this.ignoringException("Failed connecting to local cassandra", e);
             return;
         }
+        List<String> arrSSTablePath = db.getSSTablePath();
+        Assert.assertEquals(1, arrSSTablePath.size());
         String ssTablePath = db.getSSTablePath().get(0);
         Assert.assertTrue(ssTablePath.endsWith(CassandraDatabase.ssTableFileMarker));
         CassandraSSTableLoader ssTableLoader = new CassandraSSTableLoader(ssTablePath, conn.lazyLoading);
         ITable table = ssTableLoader.load();
+        ;
         Assert.assertNotNull(table);
         Assert.assertEquals("Table[20x2]", table.toString());
-        List<String> columns = Arrays.asList( "name", "salary", "text", "int", "boolean", "ascii", "inet",
-            "timeuuid", "smallint", "tinyint", "varint", "decimal", "double", "float", "time",
-            "timestamp", "date", "duration", "blob");
-        List<IColumn> listCols = table.getLoadedColumns(columns);
+        System.out.println(ssTableLoader.getSchema().getColumnNames());
+        List<IColumn> listCols = table.getLoadedColumns(ssTableLoader.getSchema().getColumnNames());
 
-        Assert.assertEquals("Mr. Test", listCols.get(0).getString(0));
-        Assert.assertEquals(45000, listCols.get(1).getInt(0));
-        Assert.assertEquals("", listCols.get(2).getString(0));
-        Assert.assertEquals(0, listCols.get(3).getInt(0));
-        Assert.assertEquals("true", listCols.get(4).getString(0));
-        Assert.assertEquals("35", listCols.get(5).getString(0));
-        Assert.assertEquals("/127.0.0.1", listCols.get(6).getString(0));
-        Assert.assertEquals("50554d6e-29bb-11e5-b345-feff819cdc9f", listCols.get(7).getString(0));
-        Assert.assertEquals(1, listCols.get(8).getInt(0));
-        Assert.assertEquals(2, listCols.get(9).getInt(0));
-        Assert.assertEquals(10, listCols.get(10).getDouble(0), 0);
-        Assert.assertEquals(3.7875, listCols.get(11).getDouble(0), 0);
-        Assert.assertEquals("6.714592679340089E9", Double.toString(listCols.get(12).getDouble(0)));
-        Assert.assertEquals(3.1475300788879395, listCols.get(13).getDouble(0), 0);
-        Assert.assertEquals("13:30:23.123000000", listCols.get(14).getString(0));
-        Assert.assertEquals("2017-05-05T20:00:00Z", listCols.get(15).getDate(0).toString());
-        Assert.assertEquals("2020-07-14", listCols.get(16).getString(0));
-        Assert.assertEquals("4y6mo3d12h30m5s", listCols.get(17).getString(0));
+        Assert.assertEquals("Mr. Test", listCols.get(11).getString(0));
+        Assert.assertEquals(45000, listCols.get(12).getInt(0));
+        Assert.assertEquals("", listCols.get(14).getString(0));
+        Assert.assertEquals(0, listCols.get(10).getInt(0));
+        Assert.assertEquals("true", listCols.get(3).getString(0));
+        Assert.assertEquals("35", listCols.get(0).getString(0));
+        Assert.assertEquals("/127.0.0.1", listCols.get(9).getString(0));
+        Assert.assertEquals("50554d6e-29bb-11e5-b345-feff819cdc9f", listCols.get(17).getString(0));
+        Assert.assertEquals(1, listCols.get(13).getInt(0));
+        Assert.assertEquals(2, listCols.get(18).getInt(0));
+        Assert.assertEquals(10, listCols.get(19).getDouble(0), 1);
+        Assert.assertEquals(3.7875, listCols.get(5).getDouble(0), 1);
+        Assert.assertEquals("6.714592679340089E9", Double.toString(listCols.get(6).getDouble(0)));
+        Assert.assertEquals(3.1475300788879395, listCols.get(8).getDouble(0), 1);
+        Assert.assertEquals("13:30:23.123000000", listCols.get(15).getString(0));
+        Assert.assertEquals("2017-05-05T20:00:00Z", listCols.get(16).getDate(0).toString());
+        Assert.assertEquals("2020-07-14", listCols.get(4).getString(0));
+        Assert.assertEquals("4y6mo3d12h30m5s", listCols.get(7).getString(0));
         Assert.assertEquals("0x61646231346662653037366636623934343434633636306533366134303031353166323666633666",
-            listCols.get(18).getString(0));
+            listCols.get(2).getString(0));
     }
 
     @Test
@@ -224,6 +227,8 @@ public class SSTableTest extends BaseTest {
             this.ignoringException("Failed connecting to local cassandra", e);
             return;
         }
+        List<String> arrSSTablePath = db.getSSTablePath();
+        Assert.assertEquals(1, arrSSTablePath.size());
         String ssTablePath = db.getSSTablePath().get(0);
         Assert.assertTrue(ssTablePath.endsWith(CassandraDatabase.ssTableFileMarker));
         CassandraSSTableLoader ssTableLoader = new CassandraSSTableLoader(ssTablePath, conn.lazyLoading);

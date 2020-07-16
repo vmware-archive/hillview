@@ -21,7 +21,7 @@ import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IMap;
 import org.hillview.storage.CassandraConnectionInfo;
 import org.hillview.storage.CassandraDatabase;
-import org.hillview.storage.FileSetDescription;
+import org.hillview.storage.CassandraFileReference;
 import org.hillview.storage.IFileReference;
 
 import javax.annotation.Nullable;
@@ -29,13 +29,14 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class FindCassandraFilesMap extends FileSetDescription implements IMap<Empty, List<IFileReference>> {
+public class FindCassandraFilesMap implements IMap<Empty, List<IFileReference>> {
     static final long serialVersionUID = 1;
     private final CassandraConnectionInfo conn;
+    private CassandraFileReference description;
 
     public FindCassandraFilesMap(CassandraConnectionInfo conn) {
         this.conn = conn;
-        this.fileKind = "sstable";
+        // this.fileKind = "sstable";
     }
 
     /**
@@ -51,7 +52,7 @@ public class FindCassandraFilesMap extends FileSetDescription implements IMap<Em
         List<String> ssTables = db.getSSTablePath();
         db.closeClusterConnection();
         for (String ssTable : ssTables)
-            result.add(new FileReference(ssTable));
+            result.add(new CassandraFileReference(ssTable));
         return result;
     }
 

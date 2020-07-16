@@ -31,6 +31,7 @@ public class CassandraConnectionInfo extends JdbcConnectionInformation {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder("CassandraConnectionInfo:\n");
+        sb.append("  JdbcConnectionInformation: " + super.toString());
         sb.append("  databaseKind : " + this.databaseKind + "\n");
         sb.append("  host : " + this.host + "\n");
         sb.append("  cassandraRootDir : " + this.cassandraRootDir + "\n");

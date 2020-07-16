@@ -592,7 +592,7 @@ class DBDialog extends Dialog {
         const host = this.addTextField("host", "Host", FieldKind.String, "localhost",
             "Machine name where database is located; each machine will open a connection to this host");
         host.required = true;
-        const dbDir = this.addTextField("dbDir", "DB Directory", FieldKind.String, "/tmp/cassandra",
+        const dbDir = this.addTextField("dbDir", "DB Directory", FieldKind.String, null,
             "Absolute path of dCassandra's installation directory");
         dbDir.required = true;
         const port = this.addTextField("port", "Port", FieldKind.Integer, "9042",

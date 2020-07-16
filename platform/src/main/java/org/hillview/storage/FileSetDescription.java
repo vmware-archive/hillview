@@ -92,10 +92,10 @@ public class FileSetDescription implements IJson {
         return new FileReference(pathname);
     }
 
-    public class FileReference implements IFileReference {
+    class FileReference implements IFileReference {
         private final String pathname;
 
-        public FileReference(final String pathname) {
+        FileReference(final String pathname) {
             this.pathname = pathname;
         }
 
@@ -132,9 +132,6 @@ public class FileSetDescription implements IJson {
                     loader = genLog.getFileLoader(this.pathname,
                             Converters.toDate(FileSetDescription.this.startTime),
                             Converters.toDate(FileSetDescription.this.endTime));
-                    break;
-                case "sstable":
-                    loader = new CassandraSSTableLoader(this.pathname, true);
                     break;
                 default:
                     throw new RuntimeException(

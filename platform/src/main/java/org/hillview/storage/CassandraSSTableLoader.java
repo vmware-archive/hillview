@@ -55,11 +55,8 @@ import java.util.stream.Stream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.*;
 import java.util.stream.StreamSupport;
-import java.util.function.Consumer;
 
 /**
  * Knows how to read a local Cassandra's SSTable file.
@@ -73,25 +70,21 @@ public class CassandraSSTableLoader extends TextFileLoader {
     public boolean lazyLoading;
     public final CFMetaData metadata;
     private final SSTableReader ssTableReader;
-    private List<Consumer<Object>> arrConverters = new ArrayList<>();
-    private List<ConvertedType> arrConvertedTypes = new ArrayList<>();
-    private List< TypeSerializer<Object>> arrTypeSerializers = new ArrayList<>();
+    // private List<TypeSerializer<Object>> arrTypeSerializers = new ArrayList<>();
 
-    // This variables will be used as a temporary storage of the converted values
-    private static Double valueDouble;
-    private static Integer valueInteger;
-    private static Instant valueDate;
-    private static Duration valueDuration;
-
-    /** This enum is needed to identify the type of typeConverters's output */
-    enum ConvertedType {
-        String,
-        CQLString,
-        Double,
-        Integer,
-        Date,
-        Duration,
-        Counter
+    enum CassandraType {
+        STRING,
+        CQLSTRING,
+        INT,
+        SMALLINT,
+        TINYINT,
+        VARINT,
+        BIGINT,
+        DECIMAL,
+        DOUBLE,
+        FLOAT,
+        COUNTER,
+        TIMESTAMP
     }
 
     static {
@@ -107,12 +100,11 @@ public class CassandraSSTableLoader extends TextFileLoader {
 
         try {
             Descriptor descriptor = Descriptor.fromFilename(this.ssTablePath);
-            this.metadata = this.setSSTableMetadata(descriptor);
+            this.metadata = this.getSSTableMetadata(descriptor);
             this.ssTableReader = SSTableReader.openNoValidation(descriptor, this.metadata);
             // Get the schema of the current SSTable
-            this.actualSchema = this.setSchema();
-            this.setRowCount();
-            this.setArrayConverters();
+            this.actualSchema = this.convertSchema();
+            this.computeRowCount();
         } catch (Exception e) {
             HillviewLogger.instance.error("Failed initializing Metadata and SStable partitions", "{0}",
                     this.ssTablePath);
@@ -120,7 +112,7 @@ public class CassandraSSTableLoader extends TextFileLoader {
         }
     }
 
-    public CFMetaData setSSTableMetadata(Descriptor desc) throws Exception {
+    public CFMetaData getSSTableMetadata(Descriptor desc) throws Exception {
         if (!desc.version.storeRows())
             throw new RuntimeException("pre-3.0 SSTable is not supported");
 
@@ -196,7 +188,7 @@ public class CassandraSSTableLoader extends TextFileLoader {
         return sb.toString();
     }
 
-    public Schema setSchema() {
+    public Schema convertSchema() {
         try {
             Schema result = new Schema();
             PartitionColumns columnDefinitions = this.metadata.partitionColumns();
@@ -249,14 +241,18 @@ public class CassandraSSTableLoader extends TextFileLoader {
             boolean[] columnToLoad = this.getColumnMarker(names);
             ISSTableScanner currentScanner = this.ssTableReader.getScanner();
             Spliterator<UnfilteredRowIterator> splititer = Spliterators.spliteratorUnknownSize(currentScanner,
-                    Spliterator.IMMUTABLE);
-            Stream<UnfilteredRowIterator> partitions = StreamSupport.stream(splititer, false);
+                    Spliterator.CONCURRENT);
 
-            return CassandraSSTableLoader.this.loadColumns(columnToLoad, partitions, this.columnCountToLoad);
+            List<IAppendableColumn> columns = createColumns(columnToLoad, this.columnCountToLoad);
+            List<CassandraType> columTypes = setColumTypes();
+            splititer.forEachRemaining((f) -> {
+                CassandraSSTableLoader.loadColumns(f, columns, columnToLoad, columTypes);
+            });
+            return columns;
         }
     }
 
-    public void setRowCount() {
+    public void computeRowCount() {
         ISSTableScanner currentScanner = this.ssTableReader.getScanner();
         Spliterator<UnfilteredRowIterator> splititer = Spliterators.spliteratorUnknownSize(currentScanner,
                 Spliterator.IMMUTABLE);
@@ -270,57 +266,16 @@ public class CassandraSSTableLoader extends TextFileLoader {
                 } // else tombstone marker
             }
         });
-        if (this.rowCount > Integer.MAX_VALUE || this.rowCount < Integer.MIN_VALUE)
-            throw new RuntimeException("The number of rows exceeds Integer.MAX_VALUE");
     }
 
     public int getRowCount(){
+        if (this.rowCount > Integer.MAX_VALUE || this.rowCount < Integer.MIN_VALUE)
+            throw new RuntimeException("The number of rows exceeds Integer.MAX_VALUE");
         return (int) this.rowCount;
     }
 
-    private static void converterStub(Object value) {
-        // Nothing to do here because the conversion will be done manually.
-        // This method will be pushed to arrConverters to keep the id relevant when
-        // adding the next converters.
-    }
-
-    private static void convertFloatToDouble(Object value) {
-        CassandraSSTableLoader.valueDouble = ((Float) value).doubleValue();
-    }
-
-    private static void convertLongToDouble(Object value) {
-        CassandraSSTableLoader.valueDouble = ((Long) value).doubleValue();
-    }
-
-    private static void convertBigIntToDouble(Object value) {
-        CassandraSSTableLoader.valueDouble = ((BigInteger) value).doubleValue();
-    }
-
-    private static void convertDecimalToDouble(Object value) {
-        CassandraSSTableLoader.valueDouble = ((BigDecimal) value).doubleValue();
-    }
-
-    private static void convertDoubleToDouble(Object value) {
-        CassandraSSTableLoader.valueDouble = (Double) value;
-    }
-
-    private static void convertIntegerToInteger(Object value) {
-        CassandraSSTableLoader.valueInteger = (Integer) value;
-    }
-
-    private static void convertSmalIntToInteger(Object value) {
-        CassandraSSTableLoader.valueInteger = ((Short) value).intValue();
-    }
-
-    private static void convertByteToInteger(Object value) {
-        CassandraSSTableLoader.valueInteger = ((Byte) value).intValue();
-    }
-
-    private static void convertTimestampToDate(Object value) {
-        CassandraSSTableLoader.valueDate = ((Date) value).toInstant();
-    }
-
-    private void setArrayConverters() {
+    private List<CassandraType> setColumTypes() {
+        List<CassandraType> columTypes = new ArrayList<>();
         PartitionColumns columnDefinitions = this.metadata.partitionColumns();
         for (ColumnDefinition colDef : columnDefinitions) {
             String colType = colDef.type.asCQL3Type().toString();
@@ -332,59 +287,48 @@ public class CassandraSSTableLoader extends TextFileLoader {
                 case "timeuuid":
                 case "duration":
                 case "uuid":
-                    this.arrConverters.add(CassandraSSTableLoader::converterStub);
-                    this.arrConvertedTypes.add(ConvertedType.String);
+                    columTypes.add(CassandraType.STRING);
                     break;
                 case "smallint":
-                    this.arrConverters.add(CassandraSSTableLoader::convertSmalIntToInteger);
-                    this.arrConvertedTypes.add(ConvertedType.Integer);
+                    columTypes.add(CassandraType.SMALLINT);
                     break;
                 case "tinyint":
-                    this.arrConverters.add(CassandraSSTableLoader::convertByteToInteger);
-                    this.arrConvertedTypes.add(ConvertedType.Integer);
+                    columTypes.add(CassandraType.TINYINT);
                     break;
                 case "int":
-                    this.arrConverters.add(CassandraSSTableLoader::convertIntegerToInteger);
-                    this.arrConvertedTypes.add(ConvertedType.Integer);
+                    columTypes.add(CassandraType.INT);
                     break;
                 case "varint":
-                    this.arrConverters.add(CassandraSSTableLoader::convertBigIntToDouble);
-                    this.arrConvertedTypes.add(ConvertedType.Double);
+                    columTypes.add(CassandraType.VARINT);
                     break;
                 case "bigint":
-                    this.arrConverters.add(CassandraSSTableLoader::convertLongToDouble);
-                    this.arrConvertedTypes.add(ConvertedType.Double);
+                    columTypes.add(CassandraType.BIGINT);
                     break;
                 case "decimal":
-                    this.arrConverters.add(CassandraSSTableLoader::convertDecimalToDouble);
-                    this.arrConvertedTypes.add(ConvertedType.Double);
+                    columTypes.add(CassandraType.DECIMAL);
                     break;
                 case "double":
-                    this.arrConverters.add(CassandraSSTableLoader::convertDoubleToDouble);
-                    this.arrConvertedTypes.add(ConvertedType.Double);
+                    columTypes.add(CassandraType.DOUBLE);
                     break;
                 case "float":
-                    this.arrConverters.add(CassandraSSTableLoader::convertFloatToDouble);
-                    this.arrConvertedTypes.add(ConvertedType.Double);
+                    columTypes.add(CassandraType.FLOAT);
                     break;
                 case "timestamp":
-                    this.arrConverters.add(CassandraSSTableLoader::convertTimestampToDate);
-                    this.arrConvertedTypes.add(ConvertedType.Date);
+                    columTypes.add(CassandraType.TIMESTAMP);
                     break;
                 case "date":
                 case "time":
                 case "blob":
-                    this.arrConverters.add(CassandraSSTableLoader::converterStub);
-                    this.arrConvertedTypes.add(ConvertedType.CQLString);
+                    columTypes.add(CassandraType.CQLSTRING);
                     break;
                 case "counter":
-                    this.arrConverters.add(CassandraSSTableLoader::converterStub);
-                    this.arrConvertedTypes.add(ConvertedType.Counter);
+                    columTypes.add(CassandraType.COUNTER);
                     break;
                 default:
                     throw new RuntimeException("Unhandled column type " + colType);
             }
         }
+        return columTypes;
     }
 
     /** Instead of checking the columnn' name to find which one to load,
@@ -414,7 +358,7 @@ public class CassandraSSTableLoader extends TextFileLoader {
                 assert this.actualSchema != null;
                 IColumnLoader loader = new CassandraSSTableLoader.SSTableColumnLoader(this.ssTableReader,
                     this.actualSchema);
-                return Table.createLazyTable(cds, (int)this.rowCount, this.filename, loader);
+                return Table.createLazyTable(cds, this.getRowCount(), this.filename, loader);
             } else {
                 int columnCountToLoad = Converters.checkNull(this.actualSchema).getColumnCount();
                 // columns loader will load all column, so all item of columnToLoad need to be TRUE
@@ -423,11 +367,14 @@ public class CassandraSSTableLoader extends TextFileLoader {
 
                 ISSTableScanner currentScanner = this.ssTableReader.getScanner();
                 Spliterator<UnfilteredRowIterator> splititer = Spliterators.spliteratorUnknownSize(currentScanner,
-                    Spliterator.IMMUTABLE);
-                Stream<UnfilteredRowIterator> partitions = StreamSupport.stream(splititer, false);
+                    Spliterator.CONCURRENT);
 
-                List<IAppendableColumn> arrColumns = this.loadColumns(columnToLoad, partitions, columnCountToLoad);
-                return new Table(arrColumns, this.ssTablePath, null);
+                List<IAppendableColumn> columns = createColumns(columnToLoad, 4);
+                List<CassandraType> columTypes = setColumTypes();
+                splititer.forEachRemaining((partition) -> {
+                    CassandraSSTableLoader.loadColumns(partition, columns, columnToLoad, columTypes);
+                });
+                return new Table(columns, this.ssTablePath, null);
             }
         } catch (Exception ex) {
             throw new RuntimeException(ex);
@@ -435,89 +382,74 @@ public class CassandraSSTableLoader extends TextFileLoader {
     }
 
     /** Lazy and non-lazy loader will call this function to load specific column marked by columnToLoad */
-    private List<IAppendableColumn> loadColumns(boolean[] columnToLoad, Stream<UnfilteredRowIterator> partitions, int size) {
-        List<IAppendableColumn> columns = createColumns(columnToLoad, size);
-        // Iterating each item inside the table
-        partitions.forEach(partition -> {
-            while (partition.hasNext()) {
-                Unfiltered unfiltered = partition.next();
-                if (unfiltered instanceof Row) {
-                    Row row = (Row) unfiltered;
-                    int i = 0;
-                    int currentColumn = 0;
-                    Object value;
-                    IAppendableColumn col;
-                    // Initiate TypeSerializer array so that it can be reused to load all rows
-                    if (this.arrTypeSerializers.size() == 0) {
-                        for (ColumnData cd : row) {
-                            if (cd.column().isSimple()) {
-                                AbstractType<?> cellType = cd.column().cellValueType();
-                                this.arrTypeSerializers.add((TypeSerializer<Object>) cellType.getSerializer());
+    private static void loadColumns(UnfilteredRowIterator partition,
+        List<IAppendableColumn> columns, boolean[] columnToLoad, List<CassandraType> columTypes){
+        Unfiltered unfiltered = partition.next();
+        if (unfiltered instanceof Row) {
+            Row row = (Row) unfiltered;
+            int i = 0;
+            int currentColumn = 0;
+            Object value;
+            IAppendableColumn col;
+            // Extracting the value for each column from a single row
+            for (ColumnData cd : row) {
+                // Filter the column to only load the one marked true by columnToLoad[]
+                if (columnToLoad[i]) {
+                    if (cd.column().isSimple()) {
+                        col = columns.get(currentColumn);
+                        AbstractType<?> cellType = cd.column().cellValueType();
+                        value = cellType.getSerializer().deserialize(((Cell) cd).value());
+                        if(value == null) {
+                            col.appendMissing();
+                        } else {
+                            switch (columTypes.get(i)) {
+                                case STRING:
+                                    col.append(value.toString());
+                                    break;
+                                case CQLSTRING:
+                                    col.append(cellType.getSerializer()
+                                            .toCQLLiteral(((Cell) cd).value()).toString());
+                                    break;
+                                case INT:
+                                    col.append((Integer) value);
+                                    break;
+                                case SMALLINT:
+                                    col.append(((Short) value).intValue());
+                                    break;
+                                case TINYINT:
+                                    col.append(((Byte) value).intValue());
+                                    break;
+                                case VARINT:
+                                    col.append(((BigInteger) value).doubleValue());
+                                    break;
+                                case BIGINT:
+                                    col.append(((Long) value).doubleValue());
+                                    break;
+                                case DECIMAL:
+                                    col.append(((BigDecimal) value).doubleValue());
+                                    break;
+                                case DOUBLE:
+                                    col.append((Double) value);
+                                    break;
+                                case FLOAT:
+                                    col.append(((Float) value).doubleValue());
+                                    break;
+                                case COUNTER:
+                                    col.append(CounterContext.instance().total(((Cell) cd).value()));
+                                    break;
+                                case TIMESTAMP:
+                                    col.append(((Date) value).toInstant());
+                                    break;
                             }
                         }
+                    } else {
+                        // Hillview won't process the complex data
+                        throw new RuntimeException("Hillview can't convert complex data");
                     }
-                    // Extracting the value for each column from a single row
-                    for (ColumnData cd : row) {
-                        // Filter the column to only load the one marked true by columnToLoad[]
-                        if (columnToLoad[i]) {
-                            if (cd.column().isSimple()) {
-                                col = columns.get(currentColumn);
-                                value = this.arrTypeSerializers.get(i).deserialize(((Cell) cd).value());
-                                if(value == null)
-                                    col.appendMissing();
-                                else {
-                                    // Convert the data before storing it to the columns
-                                    // The conversion is done in 3 step which depend on arrConvertedTypes.
-                                    // (1) First, this code will call the corresponding Consumer converter, except for
-                                    // type CQLString and String because the conversion is handled manually below.
-                                    // (2) Second, the Consumer converter will store the output at a static variable
-                                    // according to its type. (3) And finally, the switch case below will retrieve the
-                                    // converted value from the corresponding static variable.
-                                    switch (arrConvertedTypes.get(i)) {
-                                        case String:
-                                            col.append(value.toString());
-                                            break;
-                                        case Double:
-                                            this.arrConverters.get(i).accept(value);
-                                            col.append(CassandraSSTableLoader.valueDouble);
-                                            break;
-                                        case Integer:
-                                            this.arrConverters.get(i).accept(value);
-                                            col.append(CassandraSSTableLoader.valueInteger);
-                                            break;
-                                        case CQLString:
-                                            col.append(this.arrTypeSerializers.get(i)
-                                                .toCQLLiteral(((Cell) cd).value()).toString());
-                                            break;
-                                        case Date:
-                                            this.arrConverters.get(i).accept(value);
-                                            col.append(CassandraSSTableLoader.valueDate);
-                                            break;
-                                        case Duration:
-                                            this.arrConverters.get(i).accept(value);
-                                            col.append(CassandraSSTableLoader.valueDuration);
-                                            break;
-                                        case Counter:
-                                            ByteBuffer counterValue = LongType.instance.decompose(CounterContext.instance()
-                                                .total(((Cell) cd).value()));
-                                            col.append(Double.parseDouble(this.arrTypeSerializers.get(i)
-                                                .toCQLLiteral(counterValue)));
-                                            break;
-                                        default:
-                                            col.append(value);
-                                    }
-                                }
-                            } else {
-                                // Hillview won't process the complex data
-                                throw new RuntimeException("Hillview can't convert complex data");
-                            }
-                            currentColumn++;
-                        }
-                        i++;
-                    }
-                } // else tombstone marker
+                    currentColumn++;
+                }
+                i++;
             }
-        });
-        return columns;
+        }
     }
 }
