@@ -25,7 +25,7 @@ import {
     add, allBuckets,
     formatNumber,
     makeInterval,
-    percent,
+    percentString,
     significantDigits,
     Two,
     valueWithConfidence
@@ -94,14 +94,14 @@ export class PiePlot extends Plot<Two<Groups<number>>> {
         result += ", ";
         if (this.isPrivate) {
             const min = Math.max(0, count - confidence);
-            const percLow = percent(min/sum);
-            const percHigh = percent((count + confidence) / sum);
+            const percLow = percentString(min/sum);
+            const percHigh = percentString((count + confidence) / sum);
             if (percLow === percHigh)
                 result += percLow;
             else
-                result += percent(min / sum) + ":" + percent((count + confidence) / sum);
+                result += percentString(min / sum) + ":" + percentString((count + confidence) / sum);
         } else {
-            result += percent(count / sum);
+            result += percentString(count / sum);
         }
         return result;
     }

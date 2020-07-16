@@ -53,8 +53,17 @@ import {
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
 import {FullPage, PageTitle} from "./ui/fullPage";
-import {PointSet, Resolution, ViewKind} from "./ui/ui";
-import {assert, ICancellable, Pair, PartialResult, Seed, Two, zip} from "./util";
+import {HtmlString, PointSet, Resolution, SpecialChars, ViewKind} from "./ui/ui";
+import {
+    assert,
+    ICancellable,
+    Pair,
+    PartialResult,
+    Seed,
+    significantDigitsHtml,
+    Two,
+    zip
+} from "./util";
 import {IDataView} from "./ui/dataview";
 import {SchemaClass} from "./schemaClass";
 import {PlottingSurface} from "./ui/plottingSurface";
@@ -416,6 +425,44 @@ RpcRequest<PartialResult<RemoteObjectId>> {
     }
 }
 
+export class SummaryMessage {
+    data: Map<string, number>;
+    approx: Set<string>;
+
+    constructor(protected parent: HTMLDivElement) {
+        this.data = new Map();
+        this.approx = new Set();
+    }
+
+    public set(s: string, n: number, approx?: boolean): void {
+        this.data.set(s, n);
+        if (approx != null && approx)
+            this.approx.add(s);
+    }
+
+    public display(): void {
+        let summary = new HtmlString("");
+        let first = true;
+        this.data.forEach((v, k) => {
+            if (!first)
+                summary.appendSafeString(", ");
+            first = false;
+            summary.appendSafeString(k + ": ");
+            if (this.approx.has(k))
+                summary.appendSafeString(SpecialChars.approx);
+            summary.append(significantDigitsHtml(v));
+        });
+        summary.setInnerHtml(this.parent);
+    }
+}
+
+/**
+ * These kinds of plots show up repeatedly.
+ */
+type CommonPlots = "chart"  // Contains the chart (or charts for trellis views)
+    | "summary"  // summary of the data displayed
+    | "legend";  // legend
+
 /**
  * This is an IDataView that is also a TableTargetAPI.
  * "Big" tables are table-shaped remote datasets, represented
@@ -427,6 +474,11 @@ RpcRequest<PartialResult<RemoteObjectId>> {
 export abstract class BigTableView extends TableTargetAPI implements IDataView, CompletedWithTime {
     protected topLevel: HTMLElement;
     public readonly dataset: DatasetView;
+    protected chartDiv: HTMLDivElement;
+    protected summaryDiv: HTMLDivElement;
+    // This may not exist.
+    protected legendDiv: HTMLDivElement;
+    protected summary: SummaryMessage;
 
     /**
      * Create a view for a big table.
@@ -446,6 +498,35 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
         super(remoteObjectId);
         this.setPage(page);
         this.dataset = page.dataset;
+        this.chartDiv = null;
+        this.summaryDiv = null;
+        this.legendDiv = null;
+        this.summary = null;
+    }
+
+    protected makeToplevelDiv(cls: string): HTMLDivElement {
+        const div = document.createElement("div");
+        this.topLevel.appendChild(div);
+        div.className = cls;
+        return div;
+    }
+
+    protected createDiv(b: CommonPlots): void {
+        const div = this.makeToplevelDiv(b.toString());
+        switch (b) {
+            case "chart":
+                div.style.display = "flex";
+                div.style.flexDirection = "column";
+                this.chartDiv = div;
+                break;
+            case "summary":
+                this.summaryDiv = div;
+                this.summary = new SummaryMessage(this.summaryDiv);
+                break;
+            case "legend":
+                this.legendDiv = div;
+                break;
+        }
     }
 
     protected abstract export(): void;
@@ -479,6 +560,10 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
             rowCount: this.rowCount,
             schema: this.schema.serialize(),
         };
+    }
+
+    protected standardSummary(): void {
+        this.summary.set("row count", this.rowCount, this.isPrivate());
     }
 
     /**
@@ -546,11 +631,14 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
             return;
         }
 
-        const view = this.dataset.findPage(pageId).dataView;
-        const rr = this.createSetRequest(view.getRemoteObjectId(), how);
         const renderer = this.getCombineRenderer(
             new PageTitle(this.page.title.format,
                 CombineOperators[how] + " between " + this.page.pageId + " and " + pageId));
+        if (renderer == null)
+            return;
+
+        const view = this.dataset.findPage(pageId).dataView;
+        const rr = this.createSetRequest(view.getRemoteObjectId(), how);
         const receiver = renderer(this.getPage(), rr);
         rr.invoke(receiver);
     }

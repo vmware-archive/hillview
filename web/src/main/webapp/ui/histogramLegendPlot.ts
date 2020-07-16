@@ -141,11 +141,6 @@ export class HistogramLegendPlot extends LegendPlot<void> {
      * two values in the range 0-1.
      */
     public emphasizeRange(x0: number, x1: number): void {
-        if (x0 > x1) {
-            const c = x0;
-            x0 = x1;
-            x1 = c;
-        }
         this.colorMap = desaturateOutsideRange(
             Plot.colorMap, x0, x1);
     }

@@ -25,7 +25,7 @@ import {BaseReceiver, TableTargetAPI} from "../modules";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
-import {DragEventKind, HtmlString, Resolution} from "../ui/ui";
+import {DragEventKind, Resolution} from "../ui/ui";
 import {AxisData, AxisKind} from "./axisData";
 import {
     NewTargetReceiver,
@@ -34,7 +34,15 @@ import {
     TrellisLayoutComputation
 } from "./dataRangesReceiver";
 import {Receiver, RpcRequest} from "../rpc";
-import {Converters, formatNumber, histogram3DAsCsv, ICancellable, makeInterval, PartialResult} from "../util";
+import {
+    Converters,
+    GroupsClass, Heatmap,
+    histogram3DAsCsv,
+    ICancellable,
+    makeInterval,
+    PartialResult,
+    reorder
+} from "../util";
 import {HeatmapPlot} from "../ui/heatmapPlot";
 import {IViewSerialization, TrellisHeatmapSerialization} from "../datasetView";
 import {IDataView} from "../ui/dataview";
@@ -149,7 +157,8 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
             this.colorLegend.setSurface(this.legendSurface);
         else {
             this.colorLegend = new HeatmapLegendPlot(
-                this.legendSurface, (xl, xr) => this.colorLegend.emphasizeRange(xl, xr));
+                this.legendSurface, (xl, xr) =>
+                    this.legendSelectionCompleted(xl, xr));
             this.colorLegend.setColorMapChangeEventListener(
                 () => this.updateView(this.data, true));
         }
@@ -158,6 +167,22 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
             const hp = new HeatmapPlot(surface, this.colorLegend, false);
             this.hps.push(hp);
         });
+    }
+
+    public legendSelectionCompleted(xl: number, xr: number): void {
+        const [min, max] = reorder(this.colorLegend.invert(xl), this.colorLegend.invert(xr));
+        const g = new GroupsClass(this.data).map(g => Heatmap.create(g));
+        const bitmap = g.map(g => g.bitmap((c) => min <= c && c <= max));
+        const filter = g.map(g => g.map((c) => min <= c && c <= max ? c : 0));
+        const bucketCount = bitmap.reduce((n, g) => n + g.sum(), 0);
+        const pointCount = filter.reduce((n, g) => n + g.sum(), 0);
+        const shiftPressed = d3event.sourceEvent.shiftKey;
+        this.summary.set("buckets selected", bucketCount);
+        this.summary.set("points selected", pointCount);
+        this.summary.display();
+        if (shiftPressed) {
+            this.colorLegend.emphasizeRange(xl, xr);
+        }
     }
 
     public getAxisData(event: DragEventKind): AxisData | null {
@@ -343,8 +368,8 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
             this.surface.bottomMargin / 2})`)
             .attr("text-anchor", "middle")
             .attr("dominant-baseline", "hanging");
-        const summary = new HtmlString(formatNumber(this.rowCount) + " points");
-        summary.setInnerHtml(this.summaryDiv);
+        this.standardSummary();
+        this.summary.display();
     }
 
     public onMouseMove(): void {

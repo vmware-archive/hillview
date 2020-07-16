@@ -355,7 +355,6 @@ export class Converters {
             case "Double":
             case "Date":
             case "Duration":
-            case "Interval":
                 str = this.valueToString(filter.doubleValue, kind);
                 break;
             case "Interval":
@@ -491,11 +490,15 @@ export function prefixSum(n: number[]): number[] {
     return result;
 }
 
+export function percent(n: number): number {
+    return n * 100;
+}
+
 /**
  * Convert n to a string representing a percent value
  * where we keep at most one digit after the decimal point
  */
-export function percent(n: number): string {
+export function percentString(n: number): string {
     n = Math.round(n * 1000) / 10;
     return significantDigits(n) + "%";
 }
@@ -591,13 +594,15 @@ export function significantDigitsHtml(n: number): HtmlString {
             n = n * 10;
             expo++;
         }
-        suffix = "&times; 10<sup>-" + expo + "</sup>";
+        suffix = "&times;10<sup>-" + expo + "</sup>";
     }
     if (absn > 1)
         n = Math.round(n * 100) / 100;
     else
         n = Math.round(n * 1000) / 1000;
-    return new HtmlString(String(n)).appendSafeString(suffix);
+    const result = new HtmlString(String(n));
+    result.appendSafeString(suffix);
+    return result;
 }
 
 export function add(a: number, b: number): number {
@@ -606,6 +611,55 @@ export function add(a: number, b: number): number {
 
 export function all<T>(a: T[], f: (x: T) => boolean): boolean {
     return a.map(e => f(e)).reduce((a, b) => a && b);
+}
+
+export class GroupsClass<T> {
+    constructor(public groups: Groups<T>) {}
+
+    public map<S>(func: (t: T, index: number) => S): GroupsClass<S> {
+        const m = func(this.groups.perMissing, this.groups.perBucket.length);
+        const buckets = this.groups.perBucket.map(func);
+        return new GroupsClass<S>({ perBucket: buckets, perMissing: m });
+    }
+
+    public reduce<S>(func: (s: S, t: T) => S, start: S): S {
+        return func(this.groups.perBucket.reduce(func, start), this.groups.perMissing);
+    }
+}
+
+export class Heatmap {
+    constructor(public data: GroupsClass<GroupsClass<number>>) {}
+
+    static create(g: Groups<Groups<number>>): Heatmap {
+        return new Heatmap(new GroupsClass(g).map(g1 => new GroupsClass(g1).map(c => c)));
+    }
+
+    public bitmap(f: (a: number, i: number) => boolean): Heatmap {
+        return new Heatmap(this.data.map(g => g.map((e, i) => f(e, i) ? 1 : 0)));
+    }
+
+    public map(f: (a: number) => number): Heatmap {
+        // noinspection JSUnusedLocalSymbols
+        return new Heatmap(this.data.map(g => g.map((e, i) => f(e))));
+    }
+
+    public sum(): number {
+        return this.data.reduce(
+            (n1, g) => n1 + g.reduce(
+                (n0: number, n1: number) => n0 + n1, 0), 0);
+    }
+
+    /**
+     * Keep only the buckets whose indexes are in this range.
+     * @param yMin  minimum index.
+     * @param yMax  maximum index; EXCLUSIVE.
+     */
+    public bucketsInRange(yMin: number, yMax: number): Heatmap {
+        return new Heatmap(this.data.map(
+            (g, i) => g.map( (n, i1) =>
+                ((yMin <= i1) && (i1 < yMax)) ? n : 0
+            )));
+    }
 }
 
 /**
@@ -904,7 +958,7 @@ export class Color {
             throw new Error("Color out of range: " + r +"," + g + "," + b)
     }
 
-    private static colorReg = new RegExp(/rgb\((\d+), (\d+), (\d+)\)/);
+    private static colorReg = new RegExp(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/).compile();
 
     public toString(): string {
         return "rgb(" + Math.round(this.r * 255) + "," + Math.round(this.g * 255) + "," + Math.round(this.b * 255) + ")";
@@ -952,9 +1006,10 @@ export function periodicSamples(data: string[], count: number): string[] {
 
 export type ColorMap = (d: number) => string;
 
-export function desaturateOutsideRange(c: ColorMap, min: number, max: number): ColorMap {
+export function desaturateOutsideRange(c: ColorMap, x0: number, x1: number): ColorMap {
     return (value) => {
         const color = c(value);
+        const [min, max] = reorder(x0, x1);
         if (value < min || value > max) {
             const cValue = Color.parse(color);
             const b = cValue.brighten(4);

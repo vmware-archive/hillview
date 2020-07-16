@@ -26,15 +26,15 @@ import {BaseReceiver, TableTargetAPI} from "../modules";
 import {DisplayName, SchemaClass} from "../schemaClass";
 import {
     add,
-    Converters, formatNumber, histogram2DAsCsv,
+    Converters, histogram2DAsCsv,
     ICancellable, makeInterval,
     PartialResult,
-    percent, prefixSum, Two,
+    percentString, prefixSum, Two,
 } from "../util";
 import {AxisData, AxisKind} from "./axisData";
 import {IViewSerialization, TrellisHistogramSerialization} from "../datasetView";
 import {IDataView} from "../ui/dataview";
-import {D3SvgElement, DragEventKind, HtmlString, Resolution} from "../ui/ui";
+import {D3SvgElement, DragEventKind, Resolution} from "../ui/ui";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {CDFPlot} from "../ui/cdfPlot";
@@ -356,8 +356,8 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
             .append("circle")
             .attr("r", Resolution.mouseDotRadius)
             .attr("fill", "blue");
-        const summary = new HtmlString(formatNumber(this.rowCount) + " points");
-        summary.setInnerHtml(this.summaryDiv);
+        this.summary.set("rows", this.rowCount, this.isPrivate());
+        this.summary.display();
     }
 
     protected onMouseMove(): void {
@@ -379,7 +379,7 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
         this.cdfDot.attr("cx", position[0] - this.surface.leftMargin);
         this.cdfDot.attr("cy", (1 - cdfPos) * cdfPlot.getChartHeight() + this.shape.headerHeight +
             mousePosition.plotYIndex * (this.shape.size.height + this.shape.headerHeight));
-        const perc = percent(cdfPos);
+        const perc = percentString(cdfPos);
         this.pointDescription.update([xs, group, makeInterval(value), perc], position[0], position[1]);
     }
 

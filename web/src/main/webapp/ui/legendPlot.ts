@@ -77,9 +77,7 @@ export abstract class LegendPlot<D> extends Plot<D> {
     protected cancelDrag(): void {
         this.dragging = false;
         this.dragMoved = false;
-        this.legendSelectionRectangle
-            .attr("width", 0)
-            .attr("height", 0);
+        this.hideSelectionRectangle();
     }
 
     // dragging in the legend
@@ -90,6 +88,12 @@ export abstract class LegendPlot<D> extends Plot<D> {
         this.selectionOrigin = {
             x: position[0],
             y: position[1] };
+    }
+
+    protected hideSelectionRectangle(): void {
+        this.legendSelectionRectangle
+            .attr("width", 0)
+            .attr("height", 0);
     }
 
     protected dragLegendMove(): void {
@@ -115,13 +119,20 @@ export abstract class LegendPlot<D> extends Plot<D> {
         // Prevent the selection from spilling out of the legend itself
         if (ox < this.legendRect.origin.x) {
             const delta = this.legendRect.origin.x - ox;
-            this.legendSelectionRectangle
-                .attr("x", this.legendRect.origin.x)
-                .attr("width", width - delta);
+            if (width > delta) {
+                this.legendSelectionRectangle
+                    .attr("x", this.legendRect.origin.x)
+                    .attr("width", width - delta);
+            } else {
+                this.hideSelectionRectangle();
+            }
         } else if (ox + width > this.legendRect.lowerRight().x) {
             const delta = ox + width - this.legendRect.lowerRight().x;
-            this.legendSelectionRectangle
-                .attr("width", width - delta);
+            if (width > delta) {
+                this.legendSelectionRectangle.attr("width", width - delta);
+            } else {
+                this.hideSelectionRectangle();
+            }
         }
     }
 
@@ -130,9 +141,7 @@ export abstract class LegendPlot<D> extends Plot<D> {
             return false;
         this.dragging = false;
         this.dragMoved = false;
-        this.legendSelectionRectangle
-            .attr("width", 0)
-            .attr("height", 0);
+        this.hideSelectionRectangle();
         const position = d3mouse(this.plottingSurface.getCanvas().node());
         const x = position[0];
         if (this.selectionCompleted != null)

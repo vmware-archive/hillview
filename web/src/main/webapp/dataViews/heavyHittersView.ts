@@ -447,7 +447,7 @@ export class HeavyHittersView extends BigTableView {
         const span = document.createElement("span");
         let str = significantDigitsHtml(n);
         if (this.isApprox)
-            str = str.prependSafeString(SpecialChars.approx);
+            str.prependSafeString(SpecialChars.approx);
         str.setInnerHtml(span);
         return span;
     }

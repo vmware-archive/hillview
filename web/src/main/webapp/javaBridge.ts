@@ -364,9 +364,6 @@ export interface EigenVal {
     correlationMatrixTargetId: RemoteObjectId;
 }
 
-/**
- * The serialization of a NextKList Java object
- */
 export interface NextKList {
     rowsScanned: number;
     startPosition: number;

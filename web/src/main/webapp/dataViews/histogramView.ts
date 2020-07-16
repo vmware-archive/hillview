@@ -34,15 +34,14 @@ import {PiePlot} from "../ui/piePlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {DragEventKind, HtmlString, Resolution, SpecialChars} from "../ui/ui";
+import {DragEventKind, Resolution} from "../ui/ui";
 import {
     histogramAsCsv,
     Converters,
-    formatNumber,
     ICancellable, makeInterval,
     PartialResult,
-    percent,
-    significantDigits, significantDigitsHtml, Two,
+    percentString,
+    significantDigits, Two,
 } from "../util";
 import {AxisData} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
@@ -281,23 +280,17 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
         this.pointDescription = new TextOverlay(this.surface.getChart(),
             this.surface.getActualChartSize(), pointDesc, 40);
 
-        let summary = new HtmlString("");
-        const approx = this.isPrivate() ? SpecialChars.approx : "";
         if (this.histogram().first.perMissing !== 0)
-            summary = summary.appendSafeString(approx +formatNumber(
-                this.histogram().first.perMissing) + " missing, ");
-        summary = summary.appendSafeString(approx + formatNumber(this.rowCount) + " points");
+            this.summary.set("missing", this.histogram().first.perMissing, this.isPrivate());
+        this.standardSummary();
         if (this.xAxisData != null &&
             this.xAxisData.displayRange.stringQuantiles != null &&
             this.xAxisData.displayRange.allStringsKnown)
-            summary = summary.appendSafeString(
-                ", " + this.xAxisData.displayRange.stringQuantiles.length + " distinct values");
-        summary = summary.appendSafeString(
-            ", " + String(this.bucketCount) + " buckets");
+            this.summary.set("distinct values", this.xAxisData.displayRange.stringQuantiles.length);
+        this.summary.set("buckets", this.bucketCount);
         if (this.samplingRate < 1.0)
-            summary = summary.appendSafeString(", sampling rate ")
-                .append(significantDigitsHtml(this.samplingRate));
-        summary.setInnerHtml(this.summaryDiv);
+            this.summary.set("sampling rate", this.samplingRate);
+        this.summary.display();
     }
 
     public trellis(): void {
@@ -468,7 +461,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
             const cdfPos = this.cdfPlot.getY(mouseX);
             this.cdfDot.attr("cx", mouseX);
             this.cdfDot.attr("cy", (1 - cdfPos) * this.surface.getChartHeight());
-            const perc = percent(cdfPos);
+            const perc = percentString(cdfPos);
             pointDesc.push(perc);
             this.pointDescription.update(pointDesc, mouseX, mouseY);
         }

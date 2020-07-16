@@ -26,7 +26,7 @@ one row for an airline flight.  Columns in this dataset include: the date of the
 the origin and destination cities, the origin and destination states,
 the origin airport code, the distance flown, the departure and arrival delay.
 
-Updated on 2020 Jul 14.
+Updated on 2020 Jul 15.
 
 # Contents
 |Section|Reference|
@@ -1472,10 +1472,13 @@ scheme.
 
 ![Colormap menu](colormap-menu.png)
 
-Also, by selecting a range within the colormap one can highlight a range
+By selecting a range within the colormap while pressing shift one can highlight a range
 of values in the heatmap:
 
 ![Highlighted heatmap](highlighted-heatmap.png)
+
+By selecting a range of data within the colormap one can select only the data
+corresponding to the respective buckets in the heatmap.
 
 The heatmap view menu has the following operations:
 

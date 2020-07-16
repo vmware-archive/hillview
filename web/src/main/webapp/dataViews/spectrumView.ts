@@ -165,8 +165,9 @@ export class SpectrumView extends ChartView<Groups<number>> {
         this.plot.setHistogram({first: h, second: null }, 1,
             axisData, null, this.page.dataset.isPrivate(), this.rowCount);
         this.plot.draw();
-
-        this.summaryDiv.textContent = "Columns: " + this.colNames.join(", ");
+        this.standardSummary();
+        //this.summary.set("Columns: " + this.colNames.join(""), 0);
+        this.summary.display();
     }
 
     protected onMouseMove(): void {}
