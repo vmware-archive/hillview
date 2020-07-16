@@ -631,7 +631,6 @@ class DBDialog extends Dialog {
             case "cassandra":
                 this.setFieldValue("port", "9042");
                 this.setFieldValue("jmxPort", "7199");
-                this.setFieldValue("dbDir", "/tmp/cassandra");
                 this.showField("jmxPort");
                 this.showField("dbDir");
                 break;
