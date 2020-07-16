@@ -359,7 +359,7 @@ public class CassandraSSTableLoader extends TextFileLoader {
                 // columns loader will load all column, so all item of columnToLoad need to be TRUE
                 boolean[] columnToLoad = new boolean[columnCountToLoad];
                 Arrays.fill(columnToLoad, Boolean.TRUE);
-                List<IAppendableColumn> columns = createColumns(columnToLoad, 4);
+                List<IAppendableColumn> columns = createColumns(columnToLoad, columnToLoad.length);
                 CassandraSSTableLoader.loadColumns(this.ssTableReader, columns, columnToLoad, this.columTypes);
                 return new Table(columns, this.ssTablePath, null);
             }
