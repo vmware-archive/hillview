@@ -39,7 +39,6 @@ import org.apache.cassandra.db.PartitionColumns;
 import org.apache.cassandra.db.SerializationHeader;
 import org.apache.cassandra.db.context.CounterContext;
 import org.apache.cassandra.db.marshal.AbstractType;
-import org.apache.cassandra.db.marshal.LongType;
 import org.apache.cassandra.db.marshal.UTF8Type;
 import org.apache.cassandra.dht.*;
 import org.apache.cassandra.io.sstable.Descriptor;
@@ -47,14 +46,12 @@ import org.apache.cassandra.io.sstable.ISSTableScanner;
 import org.apache.cassandra.io.sstable.format.SSTableReader;
 import org.apache.cassandra.io.sstable.metadata.MetadataComponent;
 import org.apache.cassandra.io.sstable.metadata.MetadataType;
-import org.apache.cassandra.serializers.TypeSerializer;
 
 import javax.annotation.Nullable;
 
 import java.util.stream.Stream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.stream.StreamSupport;
 
@@ -70,7 +67,7 @@ public class CassandraSSTableLoader extends TextFileLoader {
     public boolean lazyLoading;
     public final CFMetaData metadata;
     private final SSTableReader ssTableReader;
-    // private List<TypeSerializer<Object>> arrTypeSerializers = new ArrayList<>();
+    List<CassandraType> columTypes;
 
     enum CassandraType {
         STRING,
@@ -105,6 +102,8 @@ public class CassandraSSTableLoader extends TextFileLoader {
             // Get the schema of the current SSTable
             this.actualSchema = this.convertSchema();
             this.computeRowCount();
+
+            columTypes = setColumTypes();
         } catch (Exception e) {
             HillviewLogger.instance.error("Failed initializing Metadata and SStable partitions", "{0}",
                     this.ssTablePath);
@@ -210,10 +209,13 @@ public class CassandraSSTableLoader extends TextFileLoader {
         private final SSTableReader ssTableReader;
         private final Schema actualSchema;
         private int columnCountToLoad;
+        private List<CassandraType> columTypes;
 
-        SSTableColumnLoader(SSTableReader ssTableReader, Schema actualSchema) {
+        SSTableColumnLoader(SSTableReader ssTableReader, Schema actualSchema,
+            List<CassandraType> columTypes) {
             this.ssTableReader = ssTableReader;
             this.actualSchema = actualSchema;
+            this.columTypes = columTypes;
         }
 
         // Marking the corresponding column index that are included in List<String>
@@ -239,15 +241,8 @@ public class CassandraSSTableLoader extends TextFileLoader {
         @Override
         public List<? extends IColumn> loadColumns(List<String> names) {
             boolean[] columnToLoad = this.getColumnMarker(names);
-            ISSTableScanner currentScanner = this.ssTableReader.getScanner();
-            Spliterator<UnfilteredRowIterator> splititer = Spliterators.spliteratorUnknownSize(currentScanner,
-                    Spliterator.CONCURRENT);
-
             List<IAppendableColumn> columns = createColumns(columnToLoad, this.columnCountToLoad);
-            List<CassandraType> columTypes = setColumTypes();
-            splititer.forEachRemaining((f) -> {
-                CassandraSSTableLoader.loadColumns(f, columns, columnToLoad, columTypes);
-            });
+            CassandraSSTableLoader.loadColumns(this.ssTableReader, columns, columnToLoad, this.columTypes);
             return columns;
         }
     }
@@ -357,99 +352,94 @@ public class CassandraSSTableLoader extends TextFileLoader {
                 }
                 assert this.actualSchema != null;
                 IColumnLoader loader = new CassandraSSTableLoader.SSTableColumnLoader(this.ssTableReader,
-                    this.actualSchema);
+                    this.actualSchema, this.columTypes);
                 return Table.createLazyTable(cds, this.getRowCount(), this.filename, loader);
             } else {
                 int columnCountToLoad = Converters.checkNull(this.actualSchema).getColumnCount();
                 // columns loader will load all column, so all item of columnToLoad need to be TRUE
                 boolean[] columnToLoad = new boolean[columnCountToLoad];
                 Arrays.fill(columnToLoad, Boolean.TRUE);
-
-                ISSTableScanner currentScanner = this.ssTableReader.getScanner();
-                Spliterator<UnfilteredRowIterator> splititer = Spliterators.spliteratorUnknownSize(currentScanner,
-                    Spliterator.CONCURRENT);
-
                 List<IAppendableColumn> columns = createColumns(columnToLoad, 4);
-                List<CassandraType> columTypes = setColumTypes();
-                splititer.forEachRemaining((partition) -> {
-                    CassandraSSTableLoader.loadColumns(partition, columns, columnToLoad, columTypes);
-                });
+                CassandraSSTableLoader.loadColumns(this.ssTableReader, columns, columnToLoad, this.columTypes);
                 return new Table(columns, this.ssTablePath, null);
             }
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
     }
-
     /** Lazy and non-lazy loader will call this function to load specific column marked by columnToLoad */
-    private static void loadColumns(UnfilteredRowIterator partition,
-        List<IAppendableColumn> columns, boolean[] columnToLoad, List<CassandraType> columTypes){
-        Unfiltered unfiltered = partition.next();
-        if (unfiltered instanceof Row) {
-            Row row = (Row) unfiltered;
-            int i = 0;
-            int currentColumn = 0;
-            Object value;
-            IAppendableColumn col;
-            // Extracting the value for each column from a single row
-            for (ColumnData cd : row) {
-                // Filter the column to only load the one marked true by columnToLoad[]
-                if (columnToLoad[i]) {
-                    if (cd.column().isSimple()) {
-                        col = columns.get(currentColumn);
-                        AbstractType<?> cellType = cd.column().cellValueType();
-                        value = cellType.getSerializer().deserialize(((Cell) cd).value());
-                        if(value == null) {
-                            col.appendMissing();
-                        } else {
-                            switch (columTypes.get(i)) {
-                                case STRING:
-                                    col.append(value.toString());
-                                    break;
-                                case CQLSTRING:
-                                    col.append(cellType.getSerializer()
-                                            .toCQLLiteral(((Cell) cd).value()).toString());
-                                    break;
-                                case INT:
-                                    col.append((Integer) value);
-                                    break;
-                                case SMALLINT:
-                                    col.append(((Short) value).intValue());
-                                    break;
-                                case TINYINT:
-                                    col.append(((Byte) value).intValue());
-                                    break;
-                                case VARINT:
-                                    col.append(((BigInteger) value).doubleValue());
-                                    break;
-                                case BIGINT:
-                                    col.append(((Long) value).doubleValue());
-                                    break;
-                                case DECIMAL:
-                                    col.append(((BigDecimal) value).doubleValue());
-                                    break;
-                                case DOUBLE:
-                                    col.append((Double) value);
-                                    break;
-                                case FLOAT:
-                                    col.append(((Float) value).doubleValue());
-                                    break;
-                                case COUNTER:
-                                    col.append(CounterContext.instance().total(((Cell) cd).value()));
-                                    break;
-                                case TIMESTAMP:
-                                    col.append(((Date) value).toInstant());
-                                    break;
+    private static void loadColumns(SSTableReader ssTableReader, List<IAppendableColumn> columns,
+            boolean[] columnToLoad, List<CassandraType> columTypes) {
+        ISSTableScanner currentScanner = ssTableReader.getScanner();
+        Spliterators.spliteratorUnknownSize(currentScanner,
+        Spliterator.CONCURRENT).forEachRemaining( (partition) -> {
+            Unfiltered unfiltered = partition.next();
+            if (unfiltered instanceof Row) {
+                Row row = (Row) unfiltered;
+                int i = 0;
+                int currentColumn = 0;
+                Object value;
+                IAppendableColumn col;
+                // Extracting the value for each column from a single row
+                for (ColumnData cd : row) {
+                    // Filter the column to only load the one marked true by columnToLoad[]
+                    if (columnToLoad[i]) {
+                        if (cd.column().isSimple()) {
+                            col = columns.get(currentColumn);
+                            AbstractType<?> cellType = cd.column().cellValueType();
+                            value = cellType.getSerializer().deserialize(((Cell) cd).value());
+                            if(value == null) {
+                                col.appendMissing();
+                            } else {
+                                switch (columTypes.get(i)) {
+                                    case STRING:
+                                        col.append(value.toString());
+                                        break;
+                                    case CQLSTRING:
+                                        col.append(cellType.getSerializer()
+                                                .toCQLLiteral(((Cell) cd).value()).toString());
+                                        break;
+                                    case INT:
+                                        col.append((Integer) value);
+                                        break;
+                                    case SMALLINT:
+                                        col.append(((Short) value).intValue());
+                                        break;
+                                    case TINYINT:
+                                        col.append(((Byte) value).intValue());
+                                        break;
+                                    case VARINT:
+                                        col.append(((BigInteger) value).doubleValue());
+                                        break;
+                                    case BIGINT:
+                                        col.append(((Long) value).doubleValue());
+                                        break;
+                                    case DECIMAL:
+                                        col.append(((BigDecimal) value).doubleValue());
+                                        break;
+                                    case DOUBLE:
+                                        col.append((Double) value);
+                                        break;
+                                    case FLOAT:
+                                        col.append(((Float) value).doubleValue());
+                                        break;
+                                    case COUNTER:
+                                        col.append(CounterContext.instance().total(((Cell) cd).value()));
+                                        break;
+                                    case TIMESTAMP:
+                                        col.append(((Date) value).toInstant());
+                                        break;
+                                }
                             }
+                        } else {
+                            // Hillview won't process the complex data
+                            throw new RuntimeException("Hillview can't convert complex data");
                         }
-                    } else {
-                        // Hillview won't process the complex data
-                        throw new RuntimeException("Hillview can't convert complex data");
+                        currentColumn++;
                     }
-                    currentColumn++;
+                    i++;
                 }
-                i++;
             }
-        }
+        });;
     }
 }
