@@ -37,12 +37,6 @@ public class FindCassandraFilesMap implements IMap<Empty, List<IFileReference>> 
         this.conn = conn;
     }
 
-    /**
-     * Returns a list of SSTable objects of Cassandra's table
-     *
-     * @param empty:
-     *            unused.
-     */
     @Override
     public List<IFileReference> apply(@Nullable Empty empty) {
         CassandraDatabase db = new CassandraDatabase(this.conn);
