@@ -235,6 +235,6 @@ public class SSTableTest extends BaseTest {
         ITable table = ssTableLoader.load();
         Assert.assertNotNull(table);
         IColumn column = table.getLoadedColumn("counter");
-        Assert.assertEquals(1, column.getDouble(0), 0);
+        Assert.assertEquals(1, column.getDouble(0), 1);
     }
 }
