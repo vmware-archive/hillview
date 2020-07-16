@@ -22,7 +22,6 @@ import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 
 public class CassandraFileReference implements IFileReference {
-
     private final String pathname;
 
     public CassandraFileReference(final String pathname) {
@@ -43,5 +42,4 @@ public class CassandraFileReference implements IFileReference {
             return file.length();
         return 0;
     }
-
 }

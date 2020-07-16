@@ -54,6 +54,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.StreamSupport;
+import org.apache.commons.lang3.Range;
 
 /**
  * Knows how to read a local Cassandra's SSTable file.
@@ -67,22 +68,6 @@ public class CassandraSSTableLoader extends TextFileLoader {
     public boolean lazyLoading;
     public final CFMetaData metadata;
     private final SSTableReader ssTableReader;
-    List<CassandraType> columTypes;
-
-    enum CassandraType {
-        STRING,
-        CQLSTRING,
-        INT,
-        SMALLINT,
-        TINYINT,
-        VARINT,
-        BIGINT,
-        DECIMAL,
-        DOUBLE,
-        FLOAT,
-        COUNTER,
-        TIMESTAMP
-    }
 
     static {
         // Initializing DatabaseDescriptor that contains Cassandra's general
@@ -102,8 +87,6 @@ public class CassandraSSTableLoader extends TextFileLoader {
             // Get the schema of the current SSTable
             this.actualSchema = this.convertSchema();
             this.computeRowCount();
-
-            columTypes = setColumTypes();
         } catch (Exception e) {
             HillviewLogger.instance.error("Failed initializing Metadata and SStable partitions", "{0}",
                     this.ssTablePath);
@@ -209,13 +192,10 @@ public class CassandraSSTableLoader extends TextFileLoader {
         private final SSTableReader ssTableReader;
         private final Schema actualSchema;
         private int columnCountToLoad;
-        private List<CassandraType> columTypes;
 
-        SSTableColumnLoader(SSTableReader ssTableReader, Schema actualSchema,
-            List<CassandraType> columTypes) {
+        SSTableColumnLoader(SSTableReader ssTableReader, Schema actualSchema) {
             this.ssTableReader = ssTableReader;
             this.actualSchema = actualSchema;
-            this.columTypes = columTypes;
         }
 
         // Marking the corresponding column index that are included in List<String>
@@ -242,7 +222,7 @@ public class CassandraSSTableLoader extends TextFileLoader {
         public List<? extends IColumn> loadColumns(List<String> names) {
             boolean[] columnToLoad = this.getColumnMarker(names);
             List<IAppendableColumn> columns = createColumns(columnToLoad, this.columnCountToLoad);
-            CassandraSSTableLoader.loadColumns(this.ssTableReader, columns, columnToLoad, this.columTypes);
+            CassandraSSTableLoader.loadColumns(this.ssTableReader, columns, columnToLoad);
             return columns;
         }
     }
@@ -267,63 +247,6 @@ public class CassandraSSTableLoader extends TextFileLoader {
         if (this.rowCount > Integer.MAX_VALUE || this.rowCount < Integer.MIN_VALUE)
             throw new RuntimeException("The number of rows exceeds Integer.MAX_VALUE");
         return (int) this.rowCount;
-    }
-
-    private List<CassandraType> setColumTypes() {
-        List<CassandraType> columTypes = new ArrayList<>();
-        PartitionColumns columnDefinitions = this.metadata.partitionColumns();
-        for (ColumnDefinition colDef : columnDefinitions) {
-            String colType = colDef.type.asCQL3Type().toString();
-            switch (colType) {
-                case "boolean":
-                case "ascii":
-                case "inet":
-                case "text":
-                case "timeuuid":
-                case "duration":
-                case "uuid":
-                    columTypes.add(CassandraType.STRING);
-                    break;
-                case "smallint":
-                    columTypes.add(CassandraType.SMALLINT);
-                    break;
-                case "tinyint":
-                    columTypes.add(CassandraType.TINYINT);
-                    break;
-                case "int":
-                    columTypes.add(CassandraType.INT);
-                    break;
-                case "varint":
-                    columTypes.add(CassandraType.VARINT);
-                    break;
-                case "bigint":
-                    columTypes.add(CassandraType.BIGINT);
-                    break;
-                case "decimal":
-                    columTypes.add(CassandraType.DECIMAL);
-                    break;
-                case "double":
-                    columTypes.add(CassandraType.DOUBLE);
-                    break;
-                case "float":
-                    columTypes.add(CassandraType.FLOAT);
-                    break;
-                case "timestamp":
-                    columTypes.add(CassandraType.TIMESTAMP);
-                    break;
-                case "date":
-                case "time":
-                case "blob":
-                    columTypes.add(CassandraType.CQLSTRING);
-                    break;
-                case "counter":
-                    columTypes.add(CassandraType.COUNTER);
-                    break;
-                default:
-                    throw new RuntimeException("Unhandled column type " + colType);
-            }
-        }
-        return columTypes;
     }
 
     /** Instead of checking the columnn' name to find which one to load,
@@ -352,7 +275,7 @@ public class CassandraSSTableLoader extends TextFileLoader {
                 }
                 assert this.actualSchema != null;
                 IColumnLoader loader = new CassandraSSTableLoader.SSTableColumnLoader(this.ssTableReader,
-                    this.actualSchema, this.columTypes);
+                    this.actualSchema);
                 return Table.createLazyTable(cds, this.getRowCount(), this.filename, loader);
             } else {
                 int columnCountToLoad = Converters.checkNull(this.actualSchema).getColumnCount();
@@ -360,7 +283,7 @@ public class CassandraSSTableLoader extends TextFileLoader {
                 boolean[] columnToLoad = new boolean[columnCountToLoad];
                 Arrays.fill(columnToLoad, Boolean.TRUE);
                 List<IAppendableColumn> columns = createColumns(columnToLoad, columnToLoad.length);
-                CassandraSSTableLoader.loadColumns(this.ssTableReader, columns, columnToLoad, this.columTypes);
+                CassandraSSTableLoader.loadColumns(this.ssTableReader, columns, columnToLoad);
                 return new Table(columns, this.ssTablePath, null);
             }
         } catch (Exception ex) {
@@ -369,7 +292,7 @@ public class CassandraSSTableLoader extends TextFileLoader {
     }
     /** Lazy and non-lazy loader will call this function to load specific column marked by columnToLoad */
     private static void loadColumns(SSTableReader ssTableReader, List<IAppendableColumn> columns,
-            boolean[] columnToLoad, List<CassandraType> columTypes) {
+            boolean[] columnToLoad) {
         ISSTableScanner currentScanner = ssTableReader.getScanner();
         Spliterators.spliteratorUnknownSize(currentScanner,
         Spliterator.CONCURRENT).forEachRemaining( (partition) -> {
@@ -388,45 +311,56 @@ public class CassandraSSTableLoader extends TextFileLoader {
                             col = columns.get(currentColumn);
                             AbstractType<?> cellType = cd.column().cellValueType();
                             value = cellType.getSerializer().deserialize(((Cell) cd).value());
-                            if(value == null) {
+                            if (value == null) {
                                 col.appendMissing();
                             } else {
-                                switch (columTypes.get(i)) {
-                                    case STRING:
+                                String colType = cd.column().type.asCQL3Type().toString();
+
+                                switch (colType) {
+                                    case "boolean":
+                                    case "ascii":
+                                    case "inet":
+                                    case "text":
+                                    case "timeuuid":
+                                    case "duration":
+                                    case "uuid":
                                         col.append(value.toString());
                                         break;
-                                    case CQLSTRING:
+                                    case "date":
+                                    case "time":
+                                    case "blob":
                                         col.append(cellType.getSerializer()
                                                 .toCQLLiteral(((Cell) cd).value()).toString());
                                         break;
-                                    case INT:
+                                    case "int":
                                         col.append((Integer) value);
                                         break;
-                                    case SMALLINT:
+                                        case "smallint":
                                         col.append(((Short) value).intValue());
                                         break;
-                                    case TINYINT:
+                                    case "tinyint":
                                         col.append(((Byte) value).intValue());
                                         break;
-                                    case VARINT:
+                                    case "varint":
                                         col.append(((BigInteger) value).doubleValue());
                                         break;
-                                    case BIGINT:
+                                    case "bigint":
                                         col.append(((Long) value).doubleValue());
                                         break;
-                                    case DECIMAL:
-                                        col.append(((BigDecimal) value).doubleValue());
+                                    case "decimal":
+                                        if (bigDecimalInRange((BigDecimal) value))
+                                            col.append(((BigDecimal) value).doubleValue());
                                         break;
-                                    case DOUBLE:
+                                    case "double":
                                         col.append((Double) value);
                                         break;
-                                    case FLOAT:
+                                    case "float":
                                         col.append(((Float) value).doubleValue());
                                         break;
-                                    case COUNTER:
+                                    case "counter":
                                         col.append(CounterContext.instance().total(((Cell) cd).value()));
                                         break;
-                                    case TIMESTAMP:
+                                    case "timestamp":
                                         col.append(((Date) value).toInstant());
                                         break;
                                 }
@@ -441,5 +375,14 @@ public class CassandraSSTableLoader extends TextFileLoader {
                 }
             }
         });;
+    }
+
+    private static boolean bigDecimalInRange(BigDecimal bigDecimal) {
+        Range<BigDecimal> doubleRange = Range.between(BigDecimal.valueOf(Double.MIN_VALUE),
+            BigDecimal.valueOf(Double.MAX_VALUE));
+        if (!doubleRange.contains(bigDecimal)) {
+            throw new RuntimeException("BigDecimal value is outside the range of Double");
+        }
+        return true;
     }
 }

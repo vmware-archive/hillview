@@ -23,20 +23,18 @@ import org.hillview.storage.CassandraConnectionInfo;
 import org.hillview.storage.CassandraDatabase;
 import org.hillview.storage.CassandraFileReference;
 import org.hillview.storage.IFileReference;
+import org.hillview.utils.Linq;
 
 import javax.annotation.Nullable;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class FindCassandraFilesMap implements IMap<Empty, List<IFileReference>> {
     static final long serialVersionUID = 1;
     private final CassandraConnectionInfo conn;
-    private CassandraFileReference description;
 
     public FindCassandraFilesMap(CassandraConnectionInfo conn) {
         this.conn = conn;
-        // this.fileKind = "sstable";
     }
 
     /**
@@ -47,13 +45,10 @@ public class FindCassandraFilesMap implements IMap<Empty, List<IFileReference>> 
      */
     @Override
     public List<IFileReference> apply(@Nullable Empty empty) {
-        List<IFileReference> result = new ArrayList<IFileReference>();
         CassandraDatabase db = new CassandraDatabase(this.conn);
         List<String> ssTables = db.getSSTablePath();
         db.closeClusterConnection();
-        for (String ssTable : ssTables)
-            result.add(new CassandraFileReference(ssTable));
-        return result;
+        return Linq.map(ssTables, CassandraFileReference::new);
     }
 
 }
