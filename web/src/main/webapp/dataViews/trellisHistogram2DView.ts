@@ -25,12 +25,11 @@ import {BaseReceiver, TableTargetAPI} from "../modules";
 import {SchemaClass} from "../schemaClass";
 import {
     add,
-    Converters,
-    formatNumber,
+    Converters, GroupsClass, Heatmap,
     histogram3DAsCsv,
     ICancellable,
     PartialResult,
-    percent,
+    percentString, reorder,
     significantDigits
 } from "../util";
 import {AxisData, AxisKind} from "./axisData";
@@ -39,7 +38,7 @@ import {
     TrellisHistogram2DSerialization
 } from "../datasetView";
 import {IDataView} from "../ui/dataview";
-import {ChartOptions, DragEventKind, HtmlString, Resolution} from "../ui/ui";
+import {ChartOptions, DragEventKind, Resolution} from "../ui/ui";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {Histogram2DPlot} from "../ui/histogram2DPlot";
 import {
@@ -249,7 +248,7 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
         // The point description is a child of the canvas, so we use canvas coordinates
         const position = d3mouse(this.surface.getCanvas().node());
         this.pointDescription.update(
-            [xs, value.toString(), group, significantDigits(y), percent(perc), count], position[0], position[1]);
+            [xs, value.toString(), group, significantDigits(y), percentString(perc), count], position[0], position[1]);
         this.legendPlot.highlight(colorIndex);
     }
 
@@ -435,8 +434,8 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
 
         this.legendPlot.setData(this.legendAxisData, this.legendAxisData.dataRange.missingCount > 0, this.schema);
         this.legendPlot.draw();
-        const summary = new HtmlString(formatNumber(this.rowCount) + " points");
-        summary.setInnerHtml(this.summaryDiv);
+        this.standardSummary();
+        this.summary.display();
     }
 
     protected dragMove(): boolean {
@@ -477,7 +476,20 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
 
     protected legendSelectionCompleted(xl: number, xr: number): void {
         if (d3event.sourceEvent.shiftKey) {
-            this.legendPlot.emphasizeRange(xl / this.legendPlot.width, xr / this.legendPlot.width);
+            const yPoints = this.legendAxisData.bucketCount;
+            let min = yPoints * xl / this.legendPlot.width;
+            let max = yPoints * xr / this.legendPlot.width;
+            [min, max] = reorder(min, max);
+            min = Math.max(0, Math.floor(min));
+            max = Math.min(yPoints, Math.ceil(max));
+
+            this.legendPlot.emphasizeRange(min / yPoints, max / yPoints);
+            const heatmaps = new GroupsClass(this.data).map(g => Heatmap.create(g));
+            const filter = heatmaps.map(g => g.bucketsInRange(min, max));
+            const count = filter.reduce((c, g) => c + g.sum(), 0);
+            this.summary.set("colors selected", max - min);
+            this.summary.set("points selected", count);
+            this.summary.display();
             this.resize();
             return;
         }

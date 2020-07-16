@@ -33,18 +33,17 @@ import {HistogramLegendPlot} from "../ui/histogramLegendPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {ChartOptions, DragEventKind, HtmlString, Resolution} from "../ui/ui";
+import {ChartOptions, DragEventKind, Resolution} from "../ui/ui";
 import {
     add,
-    Converters,
-    formatNumber, histogram2DAsCsv,
+    Converters, Heatmap,
+    histogram2DAsCsv,
     ICancellable,
     Pair,
     PartialResult,
-    percent,
+    percentString,
     reorder,
     significantDigits,
-    significantDigitsHtml,
 } from "../util";
 import {AxisData} from "./axisData";
 import {HistogramViewBase} from "./histogramViewBase";
@@ -251,23 +250,12 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
         this.pointDescription = new TextOverlay(this.surface.getChart(),
             this.surface.getActualChartSize(), pointFields, 40);
         this.pointDescription.show(false);
-        let summary = new HtmlString(formatNumber(this.rowCount) + " data points");
-        /*
-        if (data.missingData !== 0)
-            summary = summary.appendSafeString(
-                ", " + formatNumber(data.missingData) + " missing both coordinates");
-        if (data.histogramMissingX.missingCount !== 0)
-            summary = summary.appendSafeString(
-                ", " + formatNumber(data.histogramMissingX.missingCount) + " missing Y coordinate");
-        if (data.histogramMissingY.missingCount !== 0)
-            summary = summary.appendSafeString(
-                ", " + formatNumber(data.histogramMissingY.missingCount) + " missing X coordinate");
-        */
-        summary = summary.appendSafeString(", " + String(bucketCount) + " buckets");
+        this.standardSummary();
+        this.summary.set("buckets", bucketCount);
+        this.summary.set("colors", this.yPoints);
         if (this.samplingRate < 1.0)
-            summary = summary.appendSafeString(", sampling rate ")
-                .append(significantDigitsHtml(this.samplingRate));
-        summary.setInnerHtml(this.summaryDiv);
+            this.summary.set("sampling rate", this.samplingRate);
+        this.summary.display();
     }
 
     public serialize(): IViewSerialization {
@@ -550,8 +538,8 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
             const pos = this.cdfPlot.getY(mouseX);
             this.cdfDot.attr("cx", mouseX + this.surface.leftMargin);
             this.cdfDot.attr("cy", (1 - pos) * this.surface.getChartHeight() + this.surface.topMargin);
-            const cdf = percent(pos);
-            pointInfo = [xs, value, bucket, ys, count, percent(perc), cdf];
+            const cdf = percentString(pos);
+            pointInfo = [xs, value, bucket, ys, count, percentString(perc), cdf];
         } else {
             let barInfo = null;
             if (mouseY >= 0 && mouseY < this.surface.getChartHeight())
@@ -622,7 +610,6 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
             const order = reorder(start, end);
             const left = this.bucketLeftMargin(order[0]);
             const right = this.bucketLeftMargin(order[1] + 1);
-            console.log("left=" + left + ", right=" + right);
             this.selectionCompleted(left, right, false);
         }
         return true;
@@ -645,7 +632,19 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
         }
 
         if (inLegend && shiftPressed) {
-            this.legendPlot.emphasizeRange(xl / this.legendPlot.width, xr / this.legendPlot.width);
+            let min = this.yPoints * xl / this.legendPlot.width;
+            let max = this.yPoints * xr / this.legendPlot.width;
+            [min, max] = reorder(min, max);
+            min = Math.max(0, Math.floor(min));
+            max = Math.min(this.yPoints, Math.ceil(max));
+
+            this.legendPlot.emphasizeRange(min / this.yPoints, max / this.yPoints);
+            const heatmap = Heatmap.create(this.data.first);
+            const filter = heatmap.bucketsInRange(min, max);
+            const count = filter.sum();
+            this.summary.set("colors selected", max - min);
+            this.summary.set("points selected", count);
+            this.summary.display();
             this.resize();
             return;
         }

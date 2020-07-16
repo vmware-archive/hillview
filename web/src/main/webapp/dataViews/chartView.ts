@@ -30,13 +30,6 @@ import {Dialog} from "../ui/dialog";
 import {NextKReceiver, TableView} from "../modules";
 
 /**
- * These kinds of plots show up repeatedly.
- */
-type CommonPlots = "chart"  // Contains the chart (or charts for trellis views)
-    | "summary"  // summary of the data displayed
-    | "legend";  // legend
-
-/**
  * A ChartView is a common base class for many views that
  * display charts.
  */
@@ -74,10 +67,6 @@ export abstract class ChartView<D> extends BigTableView {
      * Data that is being displayed.
      */
     protected data: D;
-    protected chartDiv: HTMLDivElement;
-    protected summaryDiv: HTMLDivElement;
-    // This may not exist.
-    protected legendDiv: HTMLDivElement;
 
     protected constructor(remoteObjectId: RemoteObjectId,
                           rowCount: number,
@@ -94,37 +83,10 @@ export abstract class ChartView<D> extends BigTableView {
         this.selectionRectangle = null;
         this.pointDescription = null;
         this.surface = null;
-        this.chartDiv = null;
-        this.summaryDiv = null;
-        this.legendDiv = null;
 
         this.page.registerDropHandler("XAxis", (p) => this.replaceAxis(p, "XAxis"));
         this.page.registerDropHandler("YAxis", (p) => this.replaceAxis(p, "YAxis"));
         this.page.registerDropHandler("GAxis", (p) => this.replaceAxis(p, "GAxis"));
-    }
-
-    protected makeToplevelDiv(cls: string): HTMLDivElement {
-        const div = document.createElement("div");
-        this.topLevel.appendChild(div);
-        div.className = cls;
-        return div;
-    }
-
-    protected createDiv(b: CommonPlots): void {
-        const div = this.makeToplevelDiv(b.toString());
-        switch (b) {
-            case "chart":
-                div.style.display = "flex";
-                div.style.flexDirection = "column";
-                this.chartDiv = div;
-                break;
-            case "summary":
-                this.summaryDiv = div;
-                break;
-            case "legend":
-                this.legendDiv = div;
-                break;
-        }
     }
 
     protected showTable(columns: IColumnDescription[], provenance: string): void {

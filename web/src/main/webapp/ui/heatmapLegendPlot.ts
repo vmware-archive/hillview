@@ -75,8 +75,8 @@ class HeatmapColormap {
     }
 
     // Colors outside the specified range are de-saturated.
-    public desaturateOutsideRange(min: number, max: number): void {
-        this.setMap(desaturateOutsideRange(d3interpolateWarm, min, max));
+    public desaturateOutsideRange(x0: number, x1: number): void {
+        this.setMap(desaturateOutsideRange(d3interpolateWarm, x0, x1));
     }
 }
 
@@ -208,11 +208,6 @@ export class HeatmapLegendPlot extends LegendPlot<Pair<number, number>> {
     }
 
     public emphasizeRange(x0: number, x1: number): void {
-        if (x0 > x1) {
-            const c = x0;
-            x0 = x1;
-            x1 = c;
-        }
         if (this.onColorMapChange != null) {
             this.colorMap.desaturateOutsideRange(x0 / this.width, x1 / this.width);
             this.onColorMapChange(this.colorMap);
@@ -310,5 +305,9 @@ export class HeatmapLegendPlot extends LegendPlot<Pair<number, number>> {
             .attr("transform", `translate(${this.x}, ${this.height})`)
             .call(this.getXAxis().axis);
         super.draw();
+    }
+
+    invert(x: number): number {
+        return this.scale.invert(x);
     }
 }

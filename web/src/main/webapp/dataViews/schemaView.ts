@@ -52,7 +52,6 @@ import {HillviewToplevel} from "../toplevel";
 export class SchemaView extends TSViewBase {
     protected display: TabularDisplay;
     protected contextMenu: ContextMenu;
-    protected summaryDiv: HTMLElement;
     protected stats: Map<string, BasicColStats>;
     protected nameDialog: Dialog;
     protected typeDialog: Dialog;
@@ -151,8 +150,7 @@ export class SchemaView extends TSViewBase {
         this.topLevel.appendChild(document.createElement("br"));
         this.display = new TabularDisplay();
         this.topLevel.appendChild(this.display.getHTMLRepresentation());
-        this.summaryDiv = document.createElement("div");
-        this.topLevel.appendChild(this.summaryDiv);
+        this.createDiv("summary");
     }
 
     public export(): void {
@@ -334,6 +332,12 @@ export class SchemaView extends TSViewBase {
     }
 
     protected getBasicStats(cols: string[]): void {
+        for (const desc of this.schema.getDescriptions(cols))
+            if (desc.kind == "Interval") {
+                this.page.reportError("Basic statistics not supported for interval column " +
+                    desc.name +"; skipping.");
+            }
+        cols = cols.filter(c => this.schema.find(c).kind != "Interval");
         if (cols.length === 0)
             return;
         const rr = this.createBasicColStatsRequest(cols);
@@ -409,7 +413,8 @@ export class SchemaView extends TSViewBase {
     }
 
     private selectedSummary(): void {
-        this.page.reportError(this.display.selectedRows.size().toString() + " are selected");
+        this.summary.set("selected", this.display.selectedRows.size());
+        this.summary.display();
     }
 
     /**

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {mouse as d3mouse} from "d3-selection";
+import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {HeatmapSerialization, IViewSerialization} from "../datasetView";
 import {
     Groups,
@@ -28,17 +28,16 @@ import {BaseReceiver, TableTargetAPI} from "../modules";
 import {IDataView} from "../ui/dataview";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {HeatmapPlot} from "../ui/heatmapPlot";
-import {HistogramPlot} from "../ui/histogramPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {DragEventKind, HtmlString, Resolution} from "../ui/ui";
+import {DragEventKind, Resolution} from "../ui/ui";
 import {
     Converters,
-    formatNumber, histogram2DAsCsv,
+    Heatmap, histogram2DAsCsv,
     ICancellable, makeInterval,
-    PartialResult,
-    significantDigitsHtml, Two,
+    PartialResult, reorder,
+    Two,
 } from "../util";
 import {AxisData} from "./axisData";
 import {DataRangesReceiver, NewTargetReceiver} from "./dataRangesReceiver";
@@ -52,17 +51,13 @@ import {HeatmapLegendPlot} from "../ui/heatmapLegendPlot";
 export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
     protected colorLegend: HeatmapLegendPlot;
     protected plot: HeatmapPlot;
-    protected showMissingData: boolean = false;  // TODO: enable this
     protected legendSurface: HtmlPlottingSurface;
-    protected xHistoSurface: PlottingSurface;
-    protected xHistoPlot: HistogramPlot;
     protected xPoints: number;
     protected yPoints: number;
     protected readonly viewMenu: SubMenu;
     protected xAxisData: AxisData;
     protected yAxisData: AxisData;
     protected legendDiv: HTMLDivElement;
-    protected missingDiv: HTMLDivElement;
     protected confThreshold: number;
     private readonly defaultProvenance: string = "Fron heatmap";
 
@@ -124,7 +119,6 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
         this.page.setMenu(this.menu);
         this.createDiv("legend");
         this.createDiv("chart");
-        this.missingDiv = this.makeToplevelDiv("missing");
         this.createDiv("summary");
     }
 
@@ -207,8 +201,6 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
             this.legendSurface.destroy();
         if (this.surface != null)
             this.surface.destroy();
-        if (this.xHistoSurface != null)
-            this.xHistoSurface.destroy();
 
         this.legendSurface = new HtmlPlottingSurface(this.legendDiv, this.page,
             { height: Resolution.legendSpaceHeight * 2 / 3 });
@@ -217,7 +209,7 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
         else {
             this.colorLegend = new HeatmapLegendPlot(
                 this.legendSurface,
-                (xl, xr) => this.colorLegend.emphasizeRange(xl, xr));
+                (xl, xr) => this.legendSelectionCompleted(xl, xr));
             this.colorLegend.setColorMapChangeEventListener(
                 () => this.updateView(this.data, true));
         }
@@ -225,15 +217,21 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
         this.surface = new HtmlPlottingSurface(this.chartDiv, this.page,
             { topMargin: 20, leftMargin: Resolution.heatmapLabelWidth });
         this.plot = new HeatmapPlot(this.surface, this.colorLegend, true);
+    }
 
-        if (this.showMissingData) {
-            this.xHistoSurface = new HtmlPlottingSurface(
-                this.missingDiv, this.page, {
-                    topMargin: 0,
-                    bottomMargin: 16,
-                    height: 100
-                });
-            this.xHistoPlot = new HistogramPlot(this.xHistoSurface);
+    protected legendSelectionCompleted(xl: number, xr: number): void {
+        const [min, max] = reorder(this.colorLegend.invert(xl), this.colorLegend.invert(xr));
+        const h = Heatmap.create(this.data.first);
+        const bitmap = h.bitmap((c) => min <= c && c <= max);
+        const bucketCount = bitmap.sum();
+        const filter = h.map((c) => min <= c && c <= max ? c : 0);
+        const pointCount = filter.sum();
+        const shiftPressed = d3event.sourceEvent.shiftKey;
+        this.summary.set("buckets selected", bucketCount);
+        this.summary.set("points selected", pointCount);
+        this.summary.display();
+        if (shiftPressed) {
+            this.colorLegend.emphasizeRange(xl, xr);
         }
     }
 
@@ -309,38 +307,19 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
         }
         this.colorLegend.draw();
         this.plot.draw();
-        if (this.showMissingData) {
-            this.xHistoPlot.setHistogram({first: data.first.perMissing, second: null },
-                this.samplingRate,
-                this.xAxisData, null,
-                this.page.dataset.isPrivate(), this.rowCount);
-            this.xHistoPlot.draw();
-        }
 
         this.setupMouse();
         this.pointDescription = new TextOverlay(this.surface.getChart(),
             this.surface.getActualChartSize(),
             [this.schema.displayName(this.xAxisData.description.name).displayName,
                 this.schema.displayName(this.yAxisData.description.name).displayName, "count"], 40);
-        let summary = new HtmlString(formatNumber(this.plot.getVisiblePoints()) + " data points");
-        /*
-        if (heatmap.missingData !== 0) {
-            summary = summary.appendSafeString(", " + formatNumber(heatmap.missingData) + " missing");
-        }
-        if (heatmap.histogramMissingX.perMissing !== 0) {
-            summary = summary.appendSafeString(
-                ", " + formatNumber(heatmap.histogramMissingX.perMissing) + " missing Y coordinate");
-        }
-        if (heatmap.histogramMissingY.perMissing !== 0) {
-            summary = summary.appendSafeString(
-                ", " + formatNumber(heatmap.histogramMissingY.perMissing) + " missing X coordinate");
-        }
-         */
-        summary = summary.appendSafeString(", " + formatNumber(this.plot.getDistinct()) + " distinct dots");
+        this.standardSummary();
+        this.summary.set("data points", this.plot.getVisiblePoints());
+        this.summary.set("distinct dots", this.plot.getDistinct());
         if (this.samplingRate < 1.0) {
-            summary = summary.appendSafeString(", sampling rate ").append(significantDigitsHtml(this.samplingRate));
+            this.summary.set("sampling rate", this.samplingRate);
         }
-        summary.setInnerHtml(this.summaryDiv);
+        this.summary.display();
     }
 
     public serialize(): IViewSerialization {

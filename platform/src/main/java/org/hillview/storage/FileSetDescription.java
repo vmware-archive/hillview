@@ -71,6 +71,7 @@ public class FileSetDescription implements IJson {
     @Nullable
     public Double endTime;
 
+    @SuppressWarnings("unused")
     public String getBasename() {
         return Utilities.getFolder(this.fileNamePattern);
     }

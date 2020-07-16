@@ -149,9 +149,9 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
             [this.xAxisData.getDisplayNameString(this.schema), "bucket",
                 "max", "q3", "median", "q1", "min", "count", "missing"], 40);
         this.pointDescription.show(false);
-        let summary = new HtmlString(formatNumber(this.rowCount) + "rows, " +
-            formatNumber(bucketCount) + " buckets");
-        summary.setInnerHtml(this.summaryDiv);
+        this.standardSummary();
+        this.summary.set("buckets", bucketCount);
+        this.summary.display();
     }
 
     public serialize(): IViewSerialization {

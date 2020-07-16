@@ -16,7 +16,7 @@
  */
 
 import {select as d3select} from "d3-selection";
-import {formatNumber, percent, px} from "../util";
+import {formatNumber, percentString, px} from "../util";
 import {IElement} from "./ui";
 
 /**
@@ -47,7 +47,7 @@ export class DataRangeUI implements IElement {
             .append("svg:title")
             .text(
                 formatNumber(position) + "+" + formatNumber(count) + "/" + formatNumber(totalCount) + "\n" +
-                percent(position / totalCount) + "+" + percent(count / totalCount),
+                percentString(position / totalCount) + "+" + percentString(count / totalCount),
             );
         d3select(this.topLevel).select("g")
             .append("rect")

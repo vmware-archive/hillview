@@ -33,7 +33,7 @@ import {ScaleLinear as D3ScaleLinear, ScaleTime as D3ScaleTime} from "d3-scale";
  * from external sources, because they can cause DOM injection attacks.
  */
 export class HtmlString {
-    private readonly safeValue: string;
+    private safeValue: string;
 
     constructor(private arg: string) {
         // Escape the argument string.
@@ -42,24 +42,20 @@ export class HtmlString {
         this.safeValue = div.innerHTML;
     }
 
-    public appendSafeString(str: string): HtmlString {
-        return new HtmlString(this.safeValue + str);
+    public appendSafeString(str: string): void {
+        this.safeValue += str;
     }
 
-    public append(message: HtmlString): HtmlString {
-        return new HtmlString(this.safeValue + message.safeValue);
+    public append(message: HtmlString): void {
+        this.safeValue += message.safeValue;
     }
 
-    public prependSafeString(str: string): HtmlString {
-        return new HtmlString(str + this.safeValue);
+    public prependSafeString(str: string): void {
+        this.safeValue = str + this.safeValue;
     }
 
     public setInnerHtml(elem: HTMLElement): void {
         elem.innerHTML = this.safeValue;
-    }
-
-    public getSafeEncoding(): string {
-        return this.safeValue;
     }
 }
 
@@ -96,8 +92,6 @@ export interface IHtmlElement {
 export interface IElement {
     getDOMRepresentation(): Element;
 }
-
-export const missingHtml: HtmlString = new HtmlString("<span class='missingData'>missing</span>");
 
 /**
  * A list of special unicode character codes.

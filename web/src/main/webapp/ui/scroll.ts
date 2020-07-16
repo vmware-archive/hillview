@@ -17,7 +17,7 @@
 
 import {drag as d3drag} from "d3-drag";
 import {mouse as d3mouse, select as d3select} from "d3-selection";
-import {percent} from "../util";
+import {percentString} from "../util";
 import {D3SvgElement, IHtmlElement} from "./ui";
 
 /**
@@ -211,7 +211,7 @@ export class ScrollBar implements IHtmlElement {
             .attr(this.heightAttr, this.start * this.height);
         this.barG
             .select("title")
-            .text(percent(this.start) + " - " + percent(this.end));
+            .text(percentString(this.start) + " - " + percentString(this.end));
         this.bar
             .attr(this.heightAttr, barHeight)
             .attr(this.yAttr, barY);

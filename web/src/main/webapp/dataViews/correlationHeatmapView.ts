@@ -20,12 +20,11 @@ import {BaseReceiver, ChartView} from "../modules";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {
     assert,
-    Converters,
-    formatNumber,
+    Converters, GroupsClass, Heatmap,
     histogram2DAsCsv,
     ICancellable,
     makeInterval,
-    PartialResult,
+    PartialResult, reorder,
     truncate,
     zip
 } from "../util";
@@ -36,7 +35,7 @@ import {SubMenu, TopMenu} from "../ui/menu";
 import {CorrelationHeatmapSerialization, IViewSerialization} from "../datasetView";
 import {IDataView} from "../ui/dataview";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
-import {HtmlString, Point, Resolution} from "../ui/ui";
+import {Point, Resolution} from "../ui/ui";
 import {ColorMapKind, HeatmapLegendPlot} from "../ui/heatmapLegendPlot";
 import {HeatmapPlot} from "../ui/heatmapPlot";
 import {AxisData, AxisKind} from "./axisData";
@@ -258,6 +257,22 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
 
     protected showTrellis(colName: DisplayName): void { /* not used */ }
 
+    protected legendSelectionCompleted(xl: number, xr: number): void {
+        const [min, max] = reorder(this.colorLegend.invert(xl), this.colorLegend.invert(xr));
+        const h = this.data.map(g => Heatmap.create(g));
+        const bitmap = h.map(g => g.bitmap((c) => min <= c && c <= max));
+        const bucketCount = bitmap.reduce((n, b) => n + b.sum(), 0);
+        const filter = h.map(g => g.map((c) => min <= c && c <= max ? c : 0));
+        const pointCount = filter.reduce((n, b) => n + b.sum(), 0);
+        const shiftPressed = d3event.sourceEvent.shiftKey;
+        this.summary.set("buckets selected", bucketCount);
+        this.summary.set("points selected", pointCount);
+        this.summary.display();
+        if (shiftPressed) {
+            this.colorLegend.emphasizeRange(xl, xr);
+        }
+    }
+
     protected createNewSurfaces(keepColorMap: boolean): void {
         if (this.surface != null)
             this.surface.destroy();
@@ -270,7 +285,7 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
         else {
             this.colorLegend = new HeatmapLegendPlot(
                 this.legendSurface, (xl, xr) =>
-                    this.colorLegend.emphasizeRange(xl, xr));
+                    this.legendSelectionCompleted(xl, xr));
             this.colorLegend.setColorMapChangeEventListener(
                 () => this.updateView(this.data, true));
         }
@@ -396,8 +411,8 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
                     ${this.surface.topMargin + this.headerHeight + i * this.chartSize})`);
             this.yAxes[i].axis.draw(gy);
         }
-        const summary = new HtmlString(formatNumber(this.rowCount) + " points");
-        summary.setInnerHtml(this.summaryDiv);
+        this.summary.set("points", this.rowCount);
+        this.summary.display();
     }
 }
 

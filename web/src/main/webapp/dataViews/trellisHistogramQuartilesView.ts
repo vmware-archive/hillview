@@ -360,8 +360,8 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
                 this.groupByAxisData.getDisplayNameString(this.schema),
                 "bucket", "max", "q3", "median", "q1", "min", "count", "missing"], 40);
         this.pointDescription.show(false);
-        const summary = new HtmlString(formatNumber(this.rowCount) + " points");
-        summary.setInnerHtml(this.summaryDiv);
+        this.standardSummary();
+        this.summary.display();
     }
 
     protected dragMove(): boolean {

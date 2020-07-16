@@ -47,7 +47,7 @@ import {FullPage, PageTitle} from "../ui/fullPage";
 import {ContextMenu, MenuItem, SubMenu, TopMenu, TopMenuItem} from "../ui/menu";
 import {IScrollTarget, ScrollBar} from "../ui/scroll";
 import {SelectionStateMachine} from "../ui/selectionStateMachine";
-import {HtmlString, Resolution, SpecialChars, ViewKind} from "../ui/ui";
+import {Resolution, SpecialChars, ViewKind} from "../ui/ui";
 import {
     add,
     cloneToSet,
@@ -58,12 +58,11 @@ import {
     makeMissing,
     makeSpan,
     PartialResult,
-    percent,
     sameAggregate,
     significantDigits,
     significantDigitsHtml,
     truncate,
-    all
+    all, percent
 } from "../util";
 import {SchemaView} from "../modules";
 import {SpectrumReceiver} from "./spectrumView";
@@ -221,8 +220,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             chart.enable("Trellis heatmaps...", false);
         }
 
-        this.message = document.createElement("div");
-        this.topLevel.appendChild(this.message);
+        this.createDiv("summary");
     }
 
     public export(): void {
@@ -1030,21 +1028,14 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             }
         }
 
-        let perc = "";
-        if (this.rowCount > 0)
-            perc = percent(this.dataRowsDisplayed / this.rowCount);
+        this.summary.set("table rows", tableRowCount);
+        this.summary.set("displayed rows", this.dataRowsDisplayed, this.isPrivate());
+        this.standardSummary();
+        this.summary.set("% visible", percent(this.dataRowsDisplayed / this.rowCount));
         if (this.startPosition > 0) {
-            if (perc !== "")
-                perc += " ";
-            perc += "starting at " + percent(this.startPosition / this.rowCount);
+            this.summary.set("starting at %", percent(this.startPosition / this.rowCount));
         }
-        if (perc !== "")
-            perc = " (" + perc + ")";
-
-        const message = new HtmlString(tableRowCount + " displayed rows represent " +
-            formatNumber(this.dataRowsDisplayed) +
-            "/" + (this.isPrivate() ? SpecialChars.approx : "") + formatNumber(this.rowCount) + " data rows" + perc);
-        message.setInnerHtml(this.message);
+        this.summary.display();
 
         if (result != null) {
             this.findBar.setCounts(result.before, result.after);
@@ -1630,31 +1621,31 @@ export class SchemaReceiver extends OnCompleteReceiver<TableSummary> {
         super(page, operation, "Get schema");
     }
 
-    public run(summary: TableSummary): void {
-        if (summary.schema == null) {
+    public run(ts: TableSummary): void {
+        if (ts.schema == null) {
             this.page.reportError("No schema received; empty dataset?");
             return;
         }
-        if (summary.metadata != null)
-            this.dataset.setPrivate(summary.metadata);
-        const schemaClass = this.schema == null ? new SchemaClass(summary.schema) : this.schema;
+        if (ts.metadata != null)
+            this.dataset.setPrivate(ts.metadata);
+        const schemaClass = this.schema == null ? new SchemaClass(ts.schema) : this.schema;
         const useSchema = this.viewKind === "Schema" ||
-            (this.viewKind === null && summary.schema.length > 20);
+            (this.viewKind === null && ts.schema.length > 20);
         if (useSchema) {
             const dataView = new SchemaView(this.remoteObject.remoteObjectId, this.page,
-                summary.rowCount, schemaClass);
+                ts.rowCount, schemaClass);
             this.page.setDataView(dataView);
             dataView.show(this.elapsedMilliseconds());
         } else {
             const nk: NextKList = {
-                rowsScanned: summary.rowCount,
+                rowsScanned: ts.rowCount,
                 startPosition: 0,
                 rows: [],
                 aggregates: null
             };
 
             const order = new RecordOrder([]);
-            const table = new TableView(this.remoteObject.remoteObjectId, summary.rowCount,
+            const table = new TableView(this.remoteObject.remoteObjectId, ts.rowCount,
                 schemaClass, this.page);
             this.page.setDataView(table);
             table.updateView(nk, false, order, null);
@@ -1741,8 +1732,8 @@ class PCASchemaReceiver extends OnCompleteReceiver<TableSummary> {
         super(page, operation, "Get schema");
     }
 
-    public run(summary: TableSummary): void {
-        if (summary.schema == null) {
+    public run(ts: TableSummary): void {
+        if (ts.schema == null) {
             this.page.reportError("No schema received; empty dataset?");
             return;
         }
@@ -1752,7 +1743,7 @@ class PCASchemaReceiver extends OnCompleteReceiver<TableSummary> {
         // we rely on the fact that the last numComponents columns are added by the PCA
         // computation.
         for (let i = 0; i < this.numComponents; i++) {
-            const cd = summary.schema[summary.schema.length - this.numComponents + i];
+            const cd = ts.schema[ts.schema.length - this.numComponents + i];
             newCols.push(cd);
             o.addColumn({ columnDescription: cd, isAscending: true });
         }
