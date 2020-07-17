@@ -56,8 +56,6 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.StreamSupport;
 
-import static org.junit.Assert.assertTrue;
-
 /**
  * Knows how to read a local Cassandra's SSTable file.
  */
@@ -126,7 +124,6 @@ public class CassandraSSTableLoader extends TextFileLoader {
         String name = colDef.toString();
         ContentsKind kind;
         CQL3Type type = colDef.type.asCQL3Type();
-        assertTrue(type instanceof CQL3Type.Native);
         switch ((CQL3Type.Native) colDef.type.asCQL3Type()) {
             case BOOLEAN:
             case ASCII:
@@ -321,7 +318,6 @@ public class CassandraSSTableLoader extends TextFileLoader {
                                 col.appendMissing();
                             } else {
                                 CQL3Type colType = cd.column().type.asCQL3Type();
-                                assertTrue(colType instanceof CQL3Type.Native);
                                 switch ((CQL3Type.Native) colType) {
                                     case BOOLEAN:
                                     case ASCII:

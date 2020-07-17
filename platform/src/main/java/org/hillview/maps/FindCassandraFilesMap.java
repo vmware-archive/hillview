@@ -44,5 +44,4 @@ public class FindCassandraFilesMap implements IMap<Empty, List<IFileReference>> 
         db.closeClusterConnection();
         return Linq.map(ssTables, CassandraFileReference::new);
     }
-
 }
