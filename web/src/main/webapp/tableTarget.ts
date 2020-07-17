@@ -49,7 +49,7 @@ import {
     StringColumnsFilterDescription,
     StringFilterDescription,
     TableSummary,
-    TopList, CreateIntervalColumnMapInfo, HeatmapRequestInfo
+    TopList, CreateIntervalColumnMapInfo, HeatmapRequestInfo, RowValue
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
 import {FullPage, PageTitle} from "./ui/fullPage";
@@ -58,7 +58,6 @@ import {
     assert,
     ICancellable,
     Pair,
-    PartialResult,
     Seed,
     significantDigitsHtml,
     Two,
@@ -229,7 +228,7 @@ export class TableTargetAPI extends RemoteObject {
      * @param columnsNoValue   List of columns in the firstRow for which we want to specify
      *                         "minimum possible value" instead of "null".
      */
-    public createNextKRequest(order: RecordOrder, firstRow: any[] | null, rowsOnScreen: number,
+    public createNextKRequest(order: RecordOrder, firstRow: RowValue[] | null, rowsOnScreen: number,
                               aggregates?: AggregateDescription[], columnsNoValue?: string[]):
         RpcRequest<NextKList> {
         const nextKArgs: NextKArgs = {

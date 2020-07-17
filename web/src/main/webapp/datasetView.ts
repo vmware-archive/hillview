@@ -28,7 +28,7 @@ import {
     CombineOperators, HistogramRequestInfo,
     IColumnDescription, JsonString, PrivacySchema,
     RecordOrder,
-    RemoteObjectId,
+    RemoteObjectId, RowValue,
 } from "./javaBridge";
 import {SchemaClassSerialization} from "./schemaClass";
 import {BigTableView, TableTargetAPI} from "./tableTarget";
@@ -67,7 +67,7 @@ export interface HeavyHittersSerialization extends IViewSerialization {
 
 export interface TableSerialization extends IViewSerialization {
     order: RecordOrder;
-    firstRow: any[];
+    firstRow: RowValue[];
     tableRowsDesired: number;
 }
 

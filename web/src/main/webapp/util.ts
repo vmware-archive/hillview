@@ -963,7 +963,7 @@ export class Color {
             throw new Error("Color out of range: " + r +"," + g + "," + b)
     }
 
-    private static colorReg = new RegExp(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/).compile();
+    private static colorReg = new RegExp(/rgb\(\s*(\d+),\s*(\d+),\s*(\d+)\s*\)/);
 
     public toString(): string {
         return "rgb(" + Math.round(this.r * 255) + "," + Math.round(this.g * 255) + "," + Math.round(this.b * 255) + ")";
@@ -1012,9 +1012,9 @@ export function periodicSamples(data: string[], count: number): string[] {
 export type ColorMap = (d: number) => string;
 
 export function desaturateOutsideRange(c: ColorMap, x0: number, x1: number): ColorMap {
+    const [min, max] = reorder(x0, x1);
     return (value) => {
         const color = c(value);
-        const [min, max] = reorder(x0, x1);
         if (value < min || value > max) {
             const cValue = Color.parse(color);
             const b = cValue.brighten(4);

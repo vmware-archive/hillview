@@ -59,7 +59,7 @@ export function asContentsKind(kind: string): ContentsKind {
 }
 
 /**
- * This must match the data in GenericLogs.java
+ * This must match the data in LogFiles.java
  */
 export class GenericLogs {
     public static readonly timestampColumnName = "Timestamp";
@@ -127,12 +127,14 @@ export interface ConvertColumnInfo {
     columnIndex: number;
 }
 
+export type RowValue = number | string | number[];
+
 /// Same as FindSketch.Result
 export interface FindResult {
     before: number;
     at: number;
     after: number;
-    firstMatchingRow: any[];
+    firstMatchingRow: RowValue[];
 }
 
 export interface JdbcConnectionInformation {
@@ -219,7 +221,7 @@ export type Schema = IColumnDescription[];
 
 export interface RowData {
     count: number;
-    values: any[];
+    values: RowValue[];
 }
 
 export interface FileSizeSketchInfo {
@@ -281,7 +283,7 @@ export interface JSFilterInfo {
 
 export interface RowFilterDescription {
     order: RecordOrder;
-    data: any[];
+    data: RowValue[];
     comparison: string;
 }
 
@@ -353,13 +355,13 @@ export interface TopList {
 
 export interface ContainsArgs {
     order: RecordOrder;
-    row: any[];
+    row: RowValue[];
 }
 
 export interface NextKArgs {
     toFind: string | null;
     order: RecordOrder;
-    firstRow: any[] | null;
+    firstRow: RowValue[] | null;
     rowsOnScreen: number;
     columnsNoValue: string[] | null;
     aggregates: AggregateDescription[] | null;

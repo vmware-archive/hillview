@@ -35,7 +35,7 @@ import {
     RowFilterDescription,
     Schema,
     StringFilterDescription,
-    TableSummary, CreateIntervalColumnMapInfo
+    TableSummary, CreateIntervalColumnMapInfo, RowValue
 } from "../javaBridge";
 import {OnCompleteReceiver, Receiver} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
@@ -291,7 +291,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
 
     public static reconstruct(ser: TableSerialization | null, page: FullPage): IDataView {
         const order = new RecordOrder(ser.order.sortOrientationList);
-        const firstRow: any[] = ser.firstRow;
+        const firstRow: RowValue[] = ser.firstRow;
         const schema = new SchemaClass([]).deserialize(ser.schema);
         const rowsDesired = ser.tableRowsDesired;
         if (order == null || schema == null || rowsDesired == null)
@@ -346,7 +346,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             return;
         }
         const o = this.order.clone();
-        const topRow: any[] = (fromTop ? null : this.nextKList.rows[0].values);
+        const topRow: RowValue[] = (fromTop ? null : this.nextKList.rows[0].values);
         const rr = this.createFindRequest(o, topRow, this.strFilter, excludeTopRow, next);
         rr.invoke(new FindReceiver(this.getPage(), rr, this, o));
     }
@@ -457,8 +457,8 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
     }
 
     protected setOrder(o: RecordOrder, preserveFirstRow: boolean): void {
-        let firstRow: any[] = null;
-        let minValues: any[] = null;
+        let firstRow: RowValue[] = null;
+        let minValues: string[] = null;
         if (preserveFirstRow &&
             this.nextKList != null &&
             this.nextKList.rows != null &&
@@ -1060,7 +1060,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             (this.dataset.isLog() && col === "StructuredData"));
     }
 
-    public filterOnRowValue(row: any[], comparison: Comparison): void {
+    public filterOnRowValue(row: RowValue[], comparison: Comparison): void {
         const filter: RowFilterDescription = {
             order: this.order,
             data: row,
@@ -1393,7 +1393,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         for (let i = 0; i < cds.length; i++) {
             const cd = cds[i];
             const dataIndex = this.order.find(cd.name);
-            let value: any;
+            let value: RowValue;
             let borders: string;
 
             if (this.isVisible(cd.name)) {
@@ -1658,15 +1658,15 @@ export class SchemaReceiver extends OnCompleteReceiver<TableSummary> {
  * Receives a row which is the result of an approximate quantile request and
  * initiates a request to get the NextK rows after this one.
  */
-class QuantileReceiver extends OnCompleteReceiver<any[]> {
+class QuantileReceiver extends OnCompleteReceiver<RowValue[]> {
     public constructor(page: FullPage,
                        protected tv: TableView,
-                       operation: ICancellable<any[]>,
+                       operation: ICancellable<RowValue[]>,
                        protected order: RecordOrder) {
         super(page, operation, "Compute quantiles");
     }
 
-    public run(firstRow: any[]): void {
+    public run(firstRow: RowValue[]): void {
         const rr = this.tv.createNextKRequest(
             this.order, firstRow, this.tv.tableRowsDesired, this.tv.aggregates);
         rr.chain(this.operation);
