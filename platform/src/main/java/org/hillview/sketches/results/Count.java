@@ -48,6 +48,7 @@ public class Count implements IJsonSketchResult, IScalable<Count> {
         return Long.toString(this.count);
     }
 
+    // This is only used for testing.
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

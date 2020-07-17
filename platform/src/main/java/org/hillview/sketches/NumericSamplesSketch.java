@@ -41,7 +41,7 @@ public class NumericSamplesSketch extends
     }
 
     @Override
-    public void add(ColumnWorkspace<ReservoirSampleWorkspace> workspace, SampleSet result, int rowNumber) {
+    public void increment(ColumnWorkspace<ReservoirSampleWorkspace> workspace, SampleSet result, int rowNumber) {
         if (workspace.column.isMissing(rowNumber))
             result.addMissing();
         else {

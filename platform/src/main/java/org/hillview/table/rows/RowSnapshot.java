@@ -19,6 +19,7 @@ package org.hillview.table.rows;
 
 import com.google.gson.JsonElement;
 import org.hillview.dataset.api.IJson;
+import org.hillview.dataset.api.IJsonSketchResult;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.api.ContentsKind;
@@ -39,7 +40,7 @@ import java.util.*;
  * double encoding.
  */
 public class RowSnapshot extends BaseRowSnapshot
-        implements IJson  {
+        implements IJson, IJsonSketchResult {
     static final long serialVersionUID = 1;
     /**
      * Maps a column name to a value.

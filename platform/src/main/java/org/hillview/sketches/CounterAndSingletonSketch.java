@@ -18,8 +18,11 @@
 package org.hillview.sketches;
 
 import org.hillview.dataset.api.IncrementalTableSketch;
-import org.hillview.sketches.results.Count;
+import org.hillview.sketches.results.CountAndSingleton;
+import org.hillview.table.Schema;
 import org.hillview.table.api.ITable;
+import org.hillview.table.rows.RowSnapshot;
+import org.hillview.table.rows.VirtualRowSnapshot;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
@@ -27,38 +30,50 @@ import javax.annotation.Nullable;
 /**
  * A sketch which just increments every time it is invoked.
  */
-public class CounterSketch extends IncrementalTableSketch<Count, EmptyWorkspace> {
+public class CounterAndSingletonSketch extends
+        IncrementalTableSketch<CountAndSingleton, VirtualRowSnapshot> {
     static final long serialVersionUID = 1;
+    final Schema schema;
 
-    @Override
-    public void increment(EmptyWorkspace v, Count result, int rowNumber) {
-        result.add(1);
+    public CounterAndSingletonSketch(Schema schema) {
+        this.schema = schema;
     }
 
     @Override
-    public EmptyWorkspace initialize(ITable data) { return EmptyWorkspace.instance; }
+    public void increment(VirtualRowSnapshot v, CountAndSingleton result, int rowNumber) {
+        result.increment(v, rowNumber);
+    }
 
     @Override
-    public Count rescale(Count result, double samplingRate) {
+    public VirtualRowSnapshot initialize(ITable data) {
+        return new VirtualRowSnapshot(data, this.schema);
+    }
+
+    @Override
+    public CountAndSingleton rescale(CountAndSingleton result, double samplingRate) {
         return result.rescale(samplingRate);
     }
 
     @Nullable
     @Override
-    public Count create(@Nullable ITable data) {
+    public CountAndSingleton create(@Nullable ITable data) {
         int size = Converters.checkNull(data).getMembershipSet().getSize();
-        return new Count(size);
+        @Nullable
+        RowSnapshot row = null;
+        if (size == 1)
+            row = new RowSnapshot(data, 0);
+        return new CountAndSingleton(size, row);
     }
 
     @Nullable
     @Override
-    public Count zero() {
-        return new Count();
+    public CountAndSingleton zero() {
+        return new CountAndSingleton();
     }
 
     @Nullable
     @Override
-    public Count add(@Nullable Count left, @Nullable Count right) {
+    public CountAndSingleton add(@Nullable CountAndSingleton left, @Nullable CountAndSingleton right) {
         return Converters.checkNull(left).add(Converters.checkNull(right));
     }
 }
