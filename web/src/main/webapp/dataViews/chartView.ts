@@ -209,10 +209,10 @@ export abstract class ChartView<D> extends BigTableView {
     public getSourceAxisRange(sourcePageId: string, dragEvent: DragEventKind): BucketsInfo | null {
         const page = this.dataset.findPage(Number(sourcePageId));
         if (page == null)
-            return;
+            return null;
         const source = page.getDataView() as ChartView<D>;
         if (source == null)
-            return;
+            return null;
 
         // Check compatibility
         const thisView = this.page.getDataView();

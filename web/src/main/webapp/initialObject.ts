@@ -149,8 +149,8 @@ export class RemoteTableReceiver extends BaseReceiver {
         super(loadMenuPage, operation, progressInfo, null);
     }
 
-    public run(): void {
-        super.run();
+    public run(value: RemoteObjectId): void {
+        super.run(value);
         const rr = this.remoteObject.createGetSummaryRequest();
         rr.chain(this.operation);
         const title = getDescription(this.data);

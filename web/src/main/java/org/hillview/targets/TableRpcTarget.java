@@ -60,10 +60,8 @@ public abstract class TableRpcTarget extends RpcTarget {
     /**
      * Class used to deserialize JSON request from UI for a histogram.
      */
-    public static class HistogramRequestInfo {
+    public static class HistogramInfo {
         public ColumnDescription cd = new ColumnDescription();
-        public double samplingRate;
-        public long seed;
         // Only used when doing string histograms
         @Nullable
         private String[] leftBoundaries;
@@ -72,25 +70,21 @@ public abstract class TableRpcTarget extends RpcTarget {
         private double max;
         private int bucketCount;
 
-        public HistogramRequestInfo() {}
+        public HistogramInfo() {}
 
         /**
          * Explicit constructors for headless testing.
          */
-        public HistogramRequestInfo(ColumnDescription cd, long seed, double min, double max, int bucketCount) {
+        public HistogramInfo(ColumnDescription cd, double min, double max, int bucketCount) {
             this.cd = cd;
-            this.seed = seed;
             this.min = min;
             this.max = max;
             this.bucketCount = bucketCount;
-            this.samplingRate = 1.0;
         }
 
-        public HistogramRequestInfo(ColumnDescription cd, long seed, String[] leftBoundaries) {
+        public HistogramInfo(ColumnDescription cd, String[] leftBoundaries) {
             this.cd = cd;
-            this.seed = seed;
             this.leftBoundaries = leftBoundaries;
-            this.samplingRate = 1.0;
         }
 
         public IHistogramBuckets getBuckets(@Nullable ColumnQuantization quantization) {
@@ -110,25 +104,34 @@ public abstract class TableRpcTarget extends RpcTarget {
             return this.getBuckets(null);
         }
 
-        public TableSketch<Groups<Count>> getSketch(@Nullable ColumnQuantization quantization) {
-            IHistogramBuckets buckets = this.getBuckets(quantization);
+        public HistogramSketch getSketch() {
+            IHistogramBuckets buckets = this.getBuckets();
+            return new HistogramSketch(buckets);
+        }
+    }
+
+    public static class HistogramRequestInfo {
+        @SuppressWarnings("NotNullFieldNotInitialized")
+        public HistogramInfo[] histos;
+        public double samplingRate;
+        public long seed;
+
+        public TableSketch<Groups<Count>> getSketch(int index) {
+            HistogramSketch sk = this.histos[index].getSketch();
+            if (this.samplingRate < 1)
+                return sk.sampled(this.samplingRate, this.seed);
+            return sk;
+        }
+
+        public TableSketch<Groups<Count>> getSketch(int index, ColumnQuantization quantization) {
+            IHistogramBuckets buckets = this.histos[index].getBuckets(quantization);
             HistogramSketch sk = new HistogramSketch(buckets);
-            if (quantization == null) {
-                if (this.samplingRate < 1)
-                    return sk.sampled(this.samplingRate, this.seed);
-                return sk;
-            }
-            assert this.samplingRate >= 1;
             return sk.quantized(new QuantizationSchema(quantization));
         }
 
-        public TableSketch<Groups<Count>> getSketch() {
-            return this.getSketch(null);
-        }
-
-        public IntervalDecomposition getDecomposition(ColumnQuantization quantization) {
-            IHistogramBuckets buckets = this.getBuckets(quantization);
-            if (cd.kind.isString()) {
+        public IntervalDecomposition getDecomposition(int index, ColumnQuantization quantization) {
+            IHistogramBuckets buckets = this.histos[index].getBuckets(quantization);
+            if (this.histos[index].cd.kind.isString()) {
                 return new StringIntervalDecomposition(
                         (StringColumnQuantization)quantization,
                         (StringHistogramBuckets)buckets);
@@ -137,6 +140,18 @@ public abstract class TableRpcTarget extends RpcTarget {
                         (DoubleColumnQuantization)quantization,
                         (DoubleHistogramBuckets)buckets);
             }
+        }
+
+        public IHistogramBuckets getBuckets(int index) {
+            return this.histos[index].getBuckets(null);
+        }
+
+        public IHistogramBuckets getBuckets(int index, ColumnQuantization q) {
+            return this.histos[index].getBuckets(q);
+        }
+
+        public int size() {
+            return this.histos.length;
         }
     }
 }

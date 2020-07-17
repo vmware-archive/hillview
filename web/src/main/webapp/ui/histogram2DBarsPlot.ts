@@ -120,7 +120,8 @@ export class Histogram2DBarsPlot extends Histogram2DBase {
             .range([this.getChartHeight(), 0]);
         this.yScale.domain([0, displayMax]);
         this.yAxis = new AxisDescription(
-            d3axisLeft(this.yScale).tickFormat(d3format(".2s")), 1, false, null);
+            d3axisLeft<number>(this.yScale)
+                .tickFormat(d3format(".2s")), 1, false, null);
 
         const bucketCount = this.xPoints * (this.yPoints + 1); // + 1 for a space between groups
         this.barWidth = this.getChartWidth() / bucketCount;

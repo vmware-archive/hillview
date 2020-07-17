@@ -35,7 +35,7 @@ import {
     RowFilterDescription,
     Schema,
     StringFilterDescription,
-    TableSummary, CreateIntervalColumnMapInfo
+    TableSummary, CreateIntervalColumnMapInfo, RowValue
 } from "../javaBridge";
 import {OnCompleteReceiver, Receiver} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
@@ -291,7 +291,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
 
     public static reconstruct(ser: TableSerialization | null, page: FullPage): IDataView {
         const order = new RecordOrder(ser.order.sortOrientationList);
-        const firstRow: any[] = ser.firstRow;
+        const firstRow: RowValue[] = ser.firstRow;
         const schema = new SchemaClass([]).deserialize(ser.schema);
         const rowsDesired = ser.tableRowsDesired;
         if (order == null || schema == null || rowsDesired == null)
@@ -346,7 +346,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             return;
         }
         const o = this.order.clone();
-        const topRow: any[] = (fromTop ? null : this.nextKList.rows[0].values);
+        const topRow: RowValue[] = (fromTop ? null : this.nextKList.rows[0].values);
         const rr = this.createFindRequest(o, topRow, this.strFilter, excludeTopRow, next);
         rr.invoke(new FindReceiver(this.getPage(), rr, this, o));
     }
@@ -457,8 +457,8 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
     }
 
     protected setOrder(o: RecordOrder, preserveFirstRow: boolean): void {
-        let firstRow = null;
-        let minValues = null;
+        let firstRow: RowValue[] = null;
+        let minValues: string[] = null;
         if (preserveFirstRow &&
             this.nextKList != null &&
             this.nextKList.rows != null &&
@@ -799,7 +799,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             this.page.reportError("Not enough views to compare");
             return;
         }
-        const label = (p) => p.pageId + ". " + p.title.getTextRepresentation(p) +
+        const label = (p: FullPage) => p.pageId + ". " + p.title.getTextRepresentation(p) +
             "(" + p.title.provenance + ")";
         dialog.addSelectFieldAsObject("view0", "First view",
             pages, label, "First view to compare");
@@ -992,7 +992,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                     ag.agkind + " of values in column " + this.schema.displayName(ag.cd.name),
                     0, true, false);
                 const aggIndex = i;
-                thd.oncontextmenu = (e: PointerEvent) => {
+                thd.oncontextmenu = (e: MouseEvent) => {
                     this.contextMenu.clear();
                     this.contextMenu.addItem({
                         text: "Remove",
@@ -1060,7 +1060,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             (this.dataset.isLog() && col === "StructuredData"));
     }
 
-    public filterOnRowValue(row: any[], comparison: Comparison): void {
+    public filterOnRowValue(row: RowValue[], comparison: Comparison): void {
         const filter: RowFilterDescription = {
             order: this.order,
             data: row,
@@ -1324,7 +1324,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                   cds: IColumnDescription[], last: boolean): void {
         this.grid.newRow();
         const position = this.startPosition + this.dataRowsDisplayed;
-        const rowContextMenu = (e: PointerEvent) => {
+        const rowContextMenu = (e: MouseEvent) => {
             this.contextMenu.clear();
             this.contextMenu.addItem({text: "Keep equal rows",
                 action: () => this.filterOnRowValue(row.values, "=="),
@@ -1393,7 +1393,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         for (let i = 0; i < cds.length; i++) {
             const cd = cds[i];
             const dataIndex = this.order.find(cd.name);
-            let value: any;
+            let value: RowValue;
             let borders: string;
 
             if (this.isVisible(cd.name)) {
@@ -1658,15 +1658,15 @@ export class SchemaReceiver extends OnCompleteReceiver<TableSummary> {
  * Receives a row which is the result of an approximate quantile request and
  * initiates a request to get the NextK rows after this one.
  */
-class QuantileReceiver extends OnCompleteReceiver<any[]> {
+class QuantileReceiver extends OnCompleteReceiver<RowValue[]> {
     public constructor(page: FullPage,
                        protected tv: TableView,
-                       operation: ICancellable<any[]>,
+                       operation: ICancellable<RowValue[]>,
                        protected order: RecordOrder) {
         super(page, operation, "Compute quantiles");
     }
 
-    public run(firstRow: any[]): void {
+    public run(firstRow: RowValue[]): void {
         const rr = this.tv.createNextKRequest(
             this.order, firstRow, this.tv.tableRowsDesired, this.tv.aggregates);
         rr.chain(this.operation);
@@ -1688,8 +1688,8 @@ export class CorrelationMatrixReceiver extends BaseReceiver {
         super(page, operation, "Correlation matrix", tv.dataset);
     }
 
-    public run(): void {
-        super.run();
+    public run(value: RemoteObjectId): void {
+        super.run(value);
         const rr = this.tv.createProjectToEigenVectorsRequest(
                 this.remoteObject, this.numComponents, this.projectionName);
         rr.chain(this.operation);
@@ -1710,8 +1710,8 @@ class PCATableReceiver extends BaseReceiver {
         super(page, operation, progressInfo, tv.dataset);
     }
 
-    public run(): void {
-        super.run();
+    public run(value: RemoteObjectId): void {
+        super.run(value);
         const rr = this.remoteObject.createGetSummaryRequest();
         rr.chain(this.operation);
         rr.invoke(new PCASchemaReceiver(this.page, rr, this.remoteObject, this.tv,
@@ -1782,8 +1782,8 @@ export class TableOperationCompleted extends BaseReceiver {
         super(page, operation, "Table operation", page.dataset);
     }
 
-    public run(): void {
-        super.run();
+    public run(value: RemoteObjectId): void {
+        super.run(value);
         if (this.order == null) {
             const rr = this.remoteObject.createGetSummaryRequest();
             rr.chain(this.operation);

@@ -54,12 +54,8 @@ export class RemoteObject {
      *                         method in Java.
      * @returns {RpcRequest}   The request that is created.
      */
-    public createRpcRequest<T>(method: string, args: any): RpcRequest<T> {
+    public createStreamingRpcRequest<T>(method: string, args: any): RpcRequest<T> {
         return new RpcRequest<T>(this.remoteObjectId, method, args);
-    }
-
-    public createStreamingRpcRequest<T>(method: string, args: any): RpcRequest<PartialResult<T>> {
-        return this.createRpcRequest<PartialResult<T>>(method, args);
     }
 
     public toString(): string {
@@ -76,6 +72,7 @@ export class RemoteObject {
  * T is the type of the result returned.
  */
 export class RpcRequest<T> implements ICancellable<T> {
+    public readonly unused: PartialResult<T>;
     public readonly protoVersion: number = 6;
     public readonly requestId: number;
     public cancelled: boolean;
@@ -190,7 +187,7 @@ export class RpcRequest<T> implements ICancellable<T> {
      * @param onReply  An observer which is invoked for each result received by
      *                 the streaming RPC.
      */
-    public invoke(onReply: Observer<T>): void {
+    public invoke(onReply: Observer<PartialResult<T>>): void {
         try {
             // If time is not set we set it now.  The time may be set because this
             // is a request that is part of a chain of requests.
@@ -201,9 +198,9 @@ export class RpcRequest<T> implements ICancellable<T> {
                 window.location.port + "/" + RpcRequestPath;
             this.socket = new WebSocket(rpcRequestUrl);
             this.socket.binaryType = "arraybuffer";
-            this.socket.onerror = (ev: ErrorEvent) => {
+            this.socket.onerror = (ev: Event) => {
                 console.log("socket error " + ev);
-                let msg = ev.message;
+                let msg = (ev as ErrorEvent).message;
                 if (msg == null)
                     msg = "Error communicating to server.";
                 onReply.onError(msg);
@@ -302,10 +299,10 @@ export abstract class Receiver<T> implements Rx.Observer<PartialResult<T>> {
 
     /**
      * Create a Renderer.
-     * @param {FullPage} page            This page will be used to show progress and to report errors.
-     * @param {ICancellable} operation   The progress bar stop button can cancel this operation.
+     * @param page        This page will be used to show progress and to report errors.
+     * @param operation   The progress bar stop button can cancel this operation.
      *                                   (The operation may be null occasionally.)
-     * @param {string} description       A description of the operation being performed that is shown
+     * @param description  A description of the operation being performed that is shown
      *                                   next to the progress bar.
      */
     protected constructor(public page: FullPage,
@@ -315,6 +312,18 @@ export abstract class Receiver<T> implements Rx.Observer<PartialResult<T>> {
         this.reporter = page.getErrorReporter();
         this.reporter.clear();
         this.done = false;
+    }
+
+    toNotifier(): (notification: Rx.Notification<PartialResult<T>>) => void {
+        return null;
+    }
+
+    checked(): Rx.Observer<any> {
+        return this;
+    }
+
+    asObserver(): Rx.Observer<PartialResult<T>> {
+        return this;
     }
 
     //noinspection JSUnusedLocalSymbols
@@ -385,8 +394,7 @@ export abstract class Receiver<T> implements Rx.Observer<PartialResult<T>> {
  * (It does however handle progress.)
  */
 export abstract class OnCompleteReceiver<T> extends Receiver<T> {
-    protected value: T = null;
-
+    private value: T = null;
     protected constructor(public page: FullPage,
                           public operation: ICancellable<T>,
                           public description: string) {

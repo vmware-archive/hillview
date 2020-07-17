@@ -636,7 +636,7 @@ class DBDialog extends Dialog {
 
 class GenericReceiver<T> extends OnCompleteReceiver<T> {
     public constructor(name: string, page: FullPage,
-                       operation: ICancellable<T>, protected continuation: (T) => void) {
+                       operation: ICancellable<T>, protected continuation: (t: T) => void) {
         super(page, operation, name);
     }
 

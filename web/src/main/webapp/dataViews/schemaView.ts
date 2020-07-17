@@ -181,11 +181,11 @@ export class SchemaView extends TSViewBase {
                 "Standard deviation", "Number of missing elements");
         }
         this.display.setColumns(names, descriptions);
-        this.display.addRightClickHandler("Name", (e: MouseEvent) => {
+        this.display.addRightClickHandler("Name", (e: Event) => {
             e.preventDefault();
             this.nameDialog.show();
         });
-        this.display.addRightClickHandler("Type", (e: MouseEvent) => {
+        this.display.addRightClickHandler("Type", (e: Event) => {
             e.preventDefault();
             this.typeDialog.show();
         });

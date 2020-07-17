@@ -5,7 +5,13 @@
     "module": "commonjs",
     // "strictNullChecks": true,  // not ready for primetime
     "sourceMap": true,
-    "target": "es5"
+    "target": "es5",
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "noImplicitReturns": true,
+    "strictBindCallApply": true,
+    "strictFunctionTypes": true,
+    "forceConsistentCasingInFileNames": true,
   },
   "files": [
     "hillview.ts",

@@ -120,7 +120,7 @@ class DialogBase implements IHtmlElement {
             .on("start", () => this.dragStart())
             .on("end", () => this.dragEnd())
             .on("drag", () => this.dragMove());
-        d3select(this.topLevel).call(drag);
+        d3select<Element, unknown>(this.topLevel).call(drag);
     }
 
     public dragStart(): void {
@@ -218,14 +218,14 @@ export class Dialog extends DialogBase {
         this.cancelButton.onclick = () => this.cancelAction();
         this.cancelButton.textContent = "Cancel";
         this.cancelButton.classList.add("cancel");
-        d3select(this.cancelButton).call(nodrag);
+        d3select<Element, unknown>(this.cancelButton).call(nodrag);
         this.buttonsDiv.appendChild(this.cancelButton);
 
         this.confirmButton = document.createElement("input");
         this.confirmButton.type = "submit";
         this.confirmButton.value = "Confirm";
         this.confirmButton.classList.add("confirm");
-        d3select(this.confirmButton).call(nodrag);
+        d3select<Element, unknown>(this.confirmButton).call(nodrag);
         this.buttonsDiv.appendChild(this.confirmButton);
     }
 
@@ -531,7 +531,7 @@ export class Dialog extends DialogBase {
      * @return       A reference to the select html input field.
      */
     public addSelectFieldAsObject<T>(fieldName: string, labelText: string,
-                                     options: T[], label: (T) => string,
+                                     options: T[], label: (t: T) => string,
                                      toolTip: string): HTMLInputElement | HTMLSelectElement {
         let v = null;
         const names = options.map(p => label(p));
@@ -721,7 +721,7 @@ export class NotifyDialog extends DialogBase {
         confirmButton.textContent = "Confirm";
         confirmButton.classList.add("confirm");
         confirmButton.onclick = () => this.hide();
-        d3select(confirmButton).call(nodrag);
+        d3select<Element, unknown>(confirmButton).call(nodrag);
         this.buttonsDiv.appendChild(confirmButton);
 
         if (message != null)

@@ -160,6 +160,7 @@ public abstract class BaseTable implements ITable, Serializable {
         return this.compress(this.getSchema(), rowOrder);
     }
 
+    @SuppressWarnings("SameParameterValue")
     private String toLongString(int startRow, int rowsToDisplay) {
         final StringBuilder builder = new StringBuilder();
         builder.append(this.toString());

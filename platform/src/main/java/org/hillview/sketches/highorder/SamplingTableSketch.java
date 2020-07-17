@@ -57,7 +57,7 @@ public class SamplingTableSketch<
                 .getIteratorOverSample(this.samplingRate, this.seed, false);
         int row = it.getNextRow();
         while (row >= 0) {
-            this.actualSketch.add(workspace, result, row);
+            this.actualSketch.increment(workspace, result, row);
             row = it.getNextRow();
         }
         return result.rescale(this.samplingRate);

@@ -18,8 +18,7 @@
 import {mouse as d3mouse} from "d3-selection";
 import {IViewSerialization, QuantileVectorSerialization} from "../datasetView";
 import {
-    BucketsInfo, Groups,
-    HistogramRequestInfo,
+    BucketsInfo, Groups, HistogramInfo,
     IColumnDescription,
     RemoteObjectId, SampleSet,
 } from "../javaBridge";
@@ -30,10 +29,10 @@ import {FullPage, PageTitle} from "../ui/fullPage";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {ChartOptions, DragEventKind, HtmlString, Resolution} from "../ui/ui";
+import {ChartOptions, DragEventKind, Resolution} from "../ui/ui";
 import {
     Converters,
-    describeQuartiles, formatNumber,
+    describeQuartiles,
     ICancellable,
     PartialResult,
     quartileAsCsv,
@@ -338,10 +337,10 @@ export class QuartilesVectorReceiver extends Receiver<Groups<SampleSet>> {
                 protected remoteObject: TableTargetAPI,
                 protected rowCount: number,
                 protected schema: SchemaClass,
-                protected histoArgs: HistogramRequestInfo,
+                protected histoArgs: HistogramInfo,
                 protected range: BucketsInfo,
                 protected quantilesCol: IColumnDescription,
-                operation: RpcRequest<PartialResult<Groups<SampleSet>>>,
+                operation: RpcRequest<Groups<SampleSet>>,
                 protected options: ChartOptions) {
         super(options.reusePage ? page : page.dataset.newPage(title, page), operation, "quartiles");
         this.view = new QuartilesHistogramView(

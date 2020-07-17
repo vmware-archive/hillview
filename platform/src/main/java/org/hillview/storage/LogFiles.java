@@ -34,9 +34,6 @@ import javax.annotation.Nullable;
  * Base class used for loading various log files.
  */
 public class LogFiles {
-    /**
-     * This column name must appear in all log formats.
-     */
     public static final String timestampColumnName = "Timestamp";
     /**
      * Column name where the lines that are not parsed correctly are stored.

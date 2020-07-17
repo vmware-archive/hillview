@@ -43,7 +43,7 @@ import {
     PartialResult,
     percentString,
     reorder,
-    significantDigits,
+    significantDigits, Two,
 } from "../util";
 import {AxisData} from "./axisData";
 import {HistogramViewBase} from "./histogramViewBase";
@@ -215,7 +215,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
         const bucketCount = this.xPoints;
         const canvas = this.surface.getCanvas();
 
-        const heatmap = {first: this.histograms(), second: null};
+        const heatmap: Two<Groups<Groups<number>>> = {first: this.histograms(), second: null};
         this.plot.setData(heatmap, this.xAxisData, this.samplingRate, this.relative,
             this.schema, this.legendPlot.colorMap, maxYAxis, this.rowCount);
         this.plot.draw();
@@ -682,7 +682,7 @@ export class Histogram2DReceiver extends Receiver<Pair<Groups<Groups<number>>, G
                 protected schema: SchemaClass,
                 protected axes: AxisData[],
                 protected samplingRate: number,
-                operation: RpcRequest<PartialResult<Pair<Groups<Groups<number>>, Groups<number>>>>,
+                operation: RpcRequest<Pair<Groups<Groups<number>>, Groups<number>>>,
                 protected options: ChartOptions) {
         super(options.reusePage ? page : page.dataset.newPage(title, page), operation, "histogram");
         this.view = new Histogram2DView(

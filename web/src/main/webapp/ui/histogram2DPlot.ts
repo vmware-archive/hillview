@@ -106,7 +106,8 @@ export class Histogram2DPlot extends Histogram2DBase {
         else
             this.yScale.domain([0, displayMax]);
         this.yAxis = new AxisDescription(
-            d3axisLeft(this.yScale).tickFormat(d3format(".2s")), 1, false, null);
+            d3axisLeft<number>(this.yScale)
+                .tickFormat(d3format(".2s")), 1, false, null);
 
         this.barWidth = this.getChartWidth() / this.xPoints;
         const scale = displayMax <= 0 ? 1 : this.getChartHeight() / displayMax;
@@ -132,7 +133,7 @@ export class Histogram2DPlot extends Histogram2DBase {
             .attr("d", symbol().type(symbolTriangle).size(
                 (d: number) => (!this.normalized && ((d * scale) > this.getChartHeight())) ?
                     7 * this.barWidth : 0))
-            .attr("transform", (c, i: number) => `translate(${(i + .5) * this.barWidth}, 0)`)
+            .attr("transform", (c: Box, i: number) => `translate(${(i + .5) * this.barWidth}, 0)`)
             .style("fill", "red")
             .append("svg:title")
             .text("Bar is truncated")
@@ -142,7 +143,7 @@ export class Histogram2DPlot extends Histogram2DBase {
             .append("g")
             .append("text")
             .attr("class", "histogramBoxLabel")
-            .attr("x", (c, i: number) => (i + .5) * this.barWidth)
+            .attr("x", (c: Box, i: number) => (i + .5) * this.barWidth)
             .attr("y", (d: number) => (!this.normalized && ((d * scale) < this.getChartHeight())) ?
                 this.getChartHeight() - (d * scale) : 0)
             .attr("text-anchor", "middle")

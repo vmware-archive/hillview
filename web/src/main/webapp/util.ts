@@ -30,8 +30,8 @@ import {
     kindIsString,
     RangeFilterArrayDescription,
     RangeFilterDescription,
-    RowFilterDescription,
-    SampleSet,
+    RowFilterDescription, RowValue,
+    SampleSet, Schema,
     StringFilterDescription
 } from "./javaBridge";
 import {AxisData} from "./dataViews/axisData";
@@ -40,6 +40,10 @@ import {SchemaClass} from "./schemaClass";
 export interface Pair<T1, T2> {
     first: T1;
     second: T2;
+}
+
+export interface Triple<T1, T2, T3> extends Pair<T1, T2> {
+    third: T3;
 }
 
 export interface Two<T> extends Pair<T, T> {}
@@ -104,7 +108,7 @@ export function histogram2DAsCsv(
 
 export function histogram3DAsCsv(
     data: Groups<Groups<Groups<number>>>, schema: SchemaClass, axis: AxisData[]): string[] {
-    let lines = [];
+    let lines: string[] = [];
     const gAxis = schema.displayName(axis[2].description.name);
     for (let g = 0; g < axis[2].bucketCount; g++) {
         const gl = histogram2DAsCsv(data.perBucket[g], schema, axis);
@@ -256,7 +260,7 @@ export class Converters {
      * @param val                  Value to convert.
      * @param {ContentsKind} kind  Type of value.
      */
-    public static valueToString(val: any, kind: ContentsKind): string {
+    public static valueToString(val: RowValue | null, kind: ContentsKind): string {
         if (val == null)
             // This should probably not happen
             return "missing";
@@ -274,6 +278,12 @@ export class Converters {
         } else {
             assert(false);
         }
+    }
+
+    public static rowToString(row: RowValue[], schema: SchemaClass): string {
+        const r = zip(row, schema.schema.map(d => d.kind),
+            (v, k) => Converters.valueToString(v, k));
+        return r.join(",");
     }
 
     /**
@@ -656,7 +666,7 @@ export class Heatmap {
      */
     public bucketsInRange(yMin: number, yMax: number): Heatmap {
         return new Heatmap(this.data.map(
-            (g, i) => g.map( (n, i1) =>
+            (g, _) => g.map( (n, i1) =>
                 ((yMin <= i1) && (i1 < yMax)) ? n : 0
             )));
     }
@@ -939,7 +949,12 @@ export interface IRawCancellable {
 
 // Typed version of the cancellable API, makes it easy to do
 // strong typing.
-export interface ICancellable<T> extends IRawCancellable {}
+interface ISimpleCancellable<T> extends IRawCancellable {
+    unused: T; // this is here just to force the typescript typechecker to check T
+    // I don't understand why otherwise it doesn't
+}
+
+export interface ICancellable<T> extends ISimpleCancellable<PartialResult<T>> {}
 
 export function px(dim: number): string {
     if (dim === 0)
@@ -958,7 +973,7 @@ export class Color {
             throw new Error("Color out of range: " + r +"," + g + "," + b)
     }
 
-    private static colorReg = new RegExp(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/).compile();
+    private static colorReg = new RegExp(/rgb\(\s*(\d+),\s*(\d+),\s*(\d+)\s*\)/);
 
     public toString(): string {
         return "rgb(" + Math.round(this.r * 255) + "," + Math.round(this.g * 255) + "," + Math.round(this.b * 255) + ")";
@@ -1007,9 +1022,9 @@ export function periodicSamples(data: string[], count: number): string[] {
 export type ColorMap = (d: number) => string;
 
 export function desaturateOutsideRange(c: ColorMap, x0: number, x1: number): ColorMap {
+    const [min, max] = reorder(x0, x1);
     return (value) => {
         const color = c(value);
-        const [min, max] = reorder(x0, x1);
         if (value < min || value > max) {
             const cValue = Color.parse(color);
             const b = cValue.brighten(4);

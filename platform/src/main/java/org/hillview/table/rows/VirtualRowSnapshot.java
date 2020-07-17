@@ -45,7 +45,7 @@ import java.util.*;
  *     row = it.getNextRow();
  * }
  */
-public class VirtualRowSnapshot extends BaseRowSnapshot {
+public class VirtualRowSnapshot extends BaseRowSnapshot implements ISketchWorkspace {
     static final long serialVersionUID = 1;
 
     /**

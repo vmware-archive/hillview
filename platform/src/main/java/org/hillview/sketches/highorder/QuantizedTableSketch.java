@@ -46,8 +46,8 @@ public class QuantizedTableSketch<
     }
 
     @Override
-    public void add(SW workspace, R result, int rowNumber) {
-        this.childSketch.add(workspace, result, rowNumber);
+    public void increment(SW workspace, R result, int rowNumber) {
+        this.childSketch.increment(workspace, result, rowNumber);
     }
 
     @Override

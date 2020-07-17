@@ -36,7 +36,7 @@ import org.junit.Test;
  */
 public class HistSketchTest extends BaseTest {
     @Test
-    public void Histogram1DTest() {
+    public void histogram1DTest() {
         final int numCols = 1;
         final int tableSize = 1000;
         Table myTable = TestTables.getRepIntTable(tableSize, numCols);
@@ -71,7 +71,7 @@ public class HistSketchTest extends BaseTest {
     }
 
     @Test
-    public void HistogramGeneric1DTest2() {
+    public void histogramGeneric1DTest2() {
         final int numCols = 1;
         final int bigSize = 100000;
         final SmallTable bigTable = TestTables.getIntTable(bigSize, numCols);
@@ -94,7 +94,7 @@ public class HistSketchTest extends BaseTest {
     }
 
     @Test
-    public void HeatmapSketchTest() {
+    public void histogram2DSketchTest() {
         final int numCols = 2;
         final int bigSize = 100000;
         final double rate = 0.5;
@@ -115,7 +115,30 @@ public class HistSketchTest extends BaseTest {
     }
 
     @Test
-    public void HeatmapGenericSketchTest() {
+    public void heatmap2DSketchTest() {
+        final int numCols = 2;
+        final int bigSize = 100000;
+        SmallTable bigTable = TestTables.getIntTable(bigSize, numCols);
+        String colName1 = bigTable.getSchema().getColumnNames().get(0);
+        String colName2 = bigTable.getSchema().getColumnNames().get(1);
+        IHistogramBuckets buckets1 = new DoubleHistogramBuckets(colName1, 1, 50, 10);
+        IHistogramBuckets buckets2 = new DoubleHistogramBuckets(colName2, 1, 50, 15);
+        ParallelDataSet<ITable> data0 = TestTables.makeParallel(bigTable, bigSize/10);
+        Groups<Groups<CountAndSingleton>> h0 = data0.blockingSketch(
+                new HeatmapSketch(bigTable.getSchema(), buckets2, buckets1));
+        Assert.assertNotNull(h0);
+        for (Groups<CountAndSingleton> g: h0.perBucket) {
+            for (CountAndSingleton c: g.perBucket) {
+                if (c.count == 1) {
+                    Assert.assertNotNull(c.row);
+                } else
+                    Assert.assertNull(c.row);
+            }
+        }
+    }
+
+    @Test
+    public void histogram2DgenericTest() {
         int numCols = 2;
         int bigSize = 100000;
         int xBuckets = 10;
@@ -147,7 +170,7 @@ public class HistSketchTest extends BaseTest {
     }
 
     @Test
-    public void HeatmapArrayGenericSketchTest() {
+    public void histogram3DSketchTest() {
         int numCols = 3;
         int bigSize = 100000;
         int xBuckets = 10;

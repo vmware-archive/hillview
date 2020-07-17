@@ -23,6 +23,7 @@ import org.hillview.table.api.Interval;
 import org.hillview.table.columns.ColumnQuantization;
 import org.hillview.table.columns.DoubleColumnQuantization;
 import org.hillview.table.columns.StringColumnQuantization;
+import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.HostList;
 import org.hillview.sketches.results.NextKList;
 import org.hillview.table.Schema;
@@ -87,10 +88,18 @@ public interface IJson extends Serializable {
         }
     }
 
+    class RowSnapshotSerializer implements JsonSerializer<RowSnapshot> {
+        @Override
+        public JsonElement serialize(RowSnapshot rowSnapshot, Type type, JsonSerializationContext jsonSerializationContext) {
+            return rowSnapshot.toJsonTree();
+        }
+    }
+
     // Use these instances for all your json serialization needs
     GsonBuilder builder = new GsonBuilder()
             .registerTypeAdapter(Schema.class, new Schema.Serializer())
             .registerTypeAdapter(Schema.class, new Schema.Deserializer())
+            .registerTypeAdapter(RowSnapshot.class, new RowSnapshotSerializer())
             .registerTypeAdapter(NextKList.class, new NextKSerializer())
             .registerTypeAdapter(Instant.class, new DateSerializer())
             .registerTypeAdapter(Count.class, new CountSerializer())

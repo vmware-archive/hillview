@@ -56,9 +56,9 @@ public class GroupBySketch<
     }
 
     @Override
-    public void add(GroupByWorkspace<SW> workspace, Groups<R> result, int rowNumber) {
+    public void increment(GroupByWorkspace<SW> workspace, Groups<R> result, int rowNumber) {
         if (workspace.column.isMissing(rowNumber)) {
-            this.missingSketch.add(workspace.missingWorkspace, result.perMissing, rowNumber);
+            this.missingSketch.increment(workspace.missingWorkspace, result.perMissing, rowNumber);
         } else {
             if (workspace.endColumn != null) {
                 // Interval columns: contribute to all buckets that overlap the interval
@@ -71,13 +71,13 @@ public class GroupBySketch<
                 }
                 int max = Math.min(index1, result.perBucket.size() - 1);
                 for (int index = Math.max(index0, 0); index <= max; index++) {
-                    this.bucketSketch.get(index).add(
+                    this.bucketSketch.get(index).increment(
                             workspace.bucketWorkspace.get(index), result.perBucket.get(index), rowNumber);
                 }
             } else {
                 int index = this.buckets.indexOf(workspace.column, rowNumber);
                 if (index >= 0 && index < result.perBucket.size())
-                    this.bucketSketch.get(index).add(workspace.bucketWorkspace.get(index), result.perBucket.get(index), rowNumber);
+                    this.bucketSketch.get(index).increment(workspace.bucketWorkspace.get(index), result.perBucket.get(index), rowNumber);
             }
         }
     }

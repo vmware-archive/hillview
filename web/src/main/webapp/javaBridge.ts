@@ -59,7 +59,7 @@ export function asContentsKind(kind: string): ContentsKind {
 }
 
 /**
- * This must match the data in GenericLogs.java
+ * This must match the data in LogFiles.java
  */
 export class GenericLogs {
     public static readonly timestampColumnName = "Timestamp";
@@ -127,12 +127,14 @@ export interface ConvertColumnInfo {
     columnIndex: number;
 }
 
+export type RowValue = number | string | number[];
+
 /// Same as FindSketch.Result
 export interface FindResult {
     before: number;
     at: number;
     after: number;
-    firstMatchingRow: any[];
+    firstMatchingRow: RowValue[];
 }
 
 export interface JdbcConnectionInformation {
@@ -219,7 +221,7 @@ export type Schema = IColumnDescription[];
 
 export interface RowData {
     count: number;
-    values: any[];
+    values: RowValue[];
 }
 
 export interface FileSizeSketchInfo {
@@ -281,7 +283,7 @@ export interface JSFilterInfo {
 
 export interface RowFilterDescription {
     order: RecordOrder;
-    data: any[];
+    data: RowValue[];
     comparison: string;
 }
 
@@ -311,10 +313,8 @@ export interface Groups<R> {
     perMissing: R;
 }
 
-export interface HistogramRequestInfo {
+export interface HistogramInfo {
     cd: IColumnDescription;
-    seed: number;
-    samplingRate: number;
     bucketCount: number;  // sometimes superseded by leftBoundaries
     // only used when doing string histograms
     leftBoundaries?: string[];
@@ -323,14 +323,24 @@ export interface HistogramRequestInfo {
     max?: number;
 }
 
-export interface QuantilesVectorInfo extends HistogramRequestInfo {
+export interface HistogramRequestInfo {
+    histos: HistogramInfo[];
+    samplingRate: number;
+    seed: number;
+}
+
+export interface HeatmapRequestInfo extends HistogramRequestInfo {
+    schema: Schema;
+}
+
+export interface QuantilesVectorInfo extends HistogramInfo {
     seed: number;
     quantileCount: number,
     quantilesColumn: string;
 }
 
 export interface QuantilesMatrixInfo extends QuantilesVectorInfo {
-    groupColumn: HistogramRequestInfo;
+    groupColumn: HistogramInfo;
 }
 
 export interface HeavyHittersFilterInfo {
@@ -345,13 +355,13 @@ export interface TopList {
 
 export interface ContainsArgs {
     order: RecordOrder;
-    row: any[];
+    row: RowValue[];
 }
 
 export interface NextKArgs {
     toFind: string | null;
     order: RecordOrder;
-    firstRow: any[] | null;
+    firstRow: RowValue[] | null;
     rowsOnScreen: number;
     columnsNoValue: string[] | null;
     aggregates: AggregateDescription[] | null;

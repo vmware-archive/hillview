@@ -40,7 +40,7 @@ public abstract class IncrementalTableSketch<
      * @param result     Result to add to.
      * @param rowNumber  Row number in the table.
      */
-    public abstract void add(W workspace, R result, int rowNumber);
+    public abstract void increment(W workspace, R result, int rowNumber);
 
     /**
      * Allocates a workspace for a sketch, that can later
@@ -66,7 +66,7 @@ public abstract class IncrementalTableSketch<
         IRowIterator it = data.getRowIterator();
         int row = it.getNextRow();
         while (row >= 0) {
-            this.add(workspace, result, row);
+            this.increment(workspace, result, row);
             row = it.getNextRow();
         }
         return result;

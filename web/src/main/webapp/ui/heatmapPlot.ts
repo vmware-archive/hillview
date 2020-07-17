@@ -136,21 +136,29 @@ export class HeatmapPlot extends Plot<Two<Groups<Groups<number>>>> {
         }
     }
 
-    /**
-     * Given two screen coordinates within the chart, return the count displayed at that coordinate.
-     */
-    public getCount(x: number, y: number): [number, number] {
+    public getBucketIndex(x: number, y: number): [number, number] | null {
         let xi = x / this.pointWidth;
         let yi = (this.getChartHeight() - y) / this.pointHeight;
         xi = Math.floor(xi);
         yi = Math.floor(yi);
         if (xi >= 0 && xi < this.xPoints && yi >= 0 && yi < this.yPoints) {
-            const value = this.data.first.perBucket[xi].perBucket[yi];
-            const conf = this.data.second != null ?
-                this.data.second.perBucket[xi].perBucket[yi] : null;
-            return valueWithConfidence(value, conf);
+            return [xi, yi];
         }
-        return valueWithConfidence(0, null);
+        return null;
+    }
+
+    /**
+     * Given two screen coordinates within the chart, return the count displayed at that coordinate.
+     */
+    public getCount(x: number, y: number): [number, number] {
+        const c = this.getBucketIndex(x, y);
+        if (c == null)
+            return valueWithConfidence(0, null);
+        const [xi, yi] = c;
+        const value = this.data.first.perBucket[xi].perBucket[yi];
+        const conf = this.data.second != null ?
+            this.data.second.perBucket[xi].perBucket[yi] : null;
+        return valueWithConfidence(value, conf);
     }
 
     public getMaxCount(): number {

@@ -39,7 +39,7 @@ class HeatmapColormap {
     public static logThreshold = 50;
     public logScale: boolean | null;  // if null this is decided based on data.
     protected originalMap: ColorMap;
-    protected map: ColorMap;
+    public map: ColorMap;
 
     constructor(public readonly min: number, public readonly max: number) {
         this.setMap(d3interpolateWarm);
@@ -99,7 +99,7 @@ export class HeatmapLegendPlot extends LegendPlot<Pair<number, number>> {
     private gradient: D3SvgElement; // Element that contains the definitions for the colors in the color map
 
     // Function that is called to update other elements when the color map changes.
-    private onColorMapChange: (ColorMap) => void;
+    private onColorMapChange: (c: ColorMap) => void;
     private contextMenu: ContextMenu;
     private colorMap: HeatmapColormap;
     private svgRectangle: D3SvgElement;
@@ -122,7 +122,7 @@ export class HeatmapLegendPlot extends LegendPlot<Pair<number, number>> {
         return this.data.second;
     }
 
-    public setColorMapChangeEventListener(listener: (ColorMap) => void): void {
+    public setColorMapChangeEventListener(listener: (c: ColorMap) => void): void {
         this.onColorMapChange = listener;
     }
 
@@ -212,7 +212,7 @@ export class HeatmapLegendPlot extends LegendPlot<Pair<number, number>> {
     public emphasizeRange(x0: number, x1: number): void {
         if (this.onColorMapChange != null) {
             this.colorMap.desaturateOutsideRange(x0 / this.width, x1 / this.width);
-            this.onColorMapChange(this.colorMap);
+            this.onColorMapChange(this.colorMap.map);
         }
     }
 
@@ -221,7 +221,7 @@ export class HeatmapLegendPlot extends LegendPlot<Pair<number, number>> {
         this.draw();
         // Notify the onColorChange listener (redraw the elements with new colors)
         if (this.onColorMapChange != null)
-            this.onColorMapChange(this.colorMap);
+            this.onColorMapChange(this.colorMap.map);
     }
 
     public setData(data: Pair<number, number>): void {

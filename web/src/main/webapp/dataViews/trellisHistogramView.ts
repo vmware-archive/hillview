@@ -311,7 +311,6 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
             const bucketData = histos.perBucket[i];
             const cdfp = this.cdfs[i];
             cdfp.setData(prefixSum(bucketData.perBucket.map((b) => Math.max(0, b))), discrete);
-
             const coarse = TrellisHistogramView.coarsen(bucketData, this.bucketCount);
             max = Math.max(max, Math.max(...coarse.perBucket));
             coarsened.push(coarse);
@@ -406,6 +405,7 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
                 .attr("height", this.shape.size.height)
                 .attr("y", this.coordinates[index].y);
         }
+        return true;
     }
 
     protected getCombineRenderer(title: PageTitle):

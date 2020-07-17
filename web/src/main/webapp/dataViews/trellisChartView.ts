@@ -253,7 +253,7 @@ export abstract class TrellisChartView<D> extends ChartView<D> {
             const posUp = this.position(x0, y0);
             const posDown = this.position(x1, y1);
             if (posUp.plotIndex == null || posDown.plotIndex == null)
-                return;
+                return true;
             this.selectSurfaces(posUp.plotIndex, posDown.plotIndex);
         }
         return this.dragMoveRectangle();
