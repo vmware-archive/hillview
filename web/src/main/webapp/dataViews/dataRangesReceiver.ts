@@ -31,7 +31,7 @@ import {SchemaClass} from "../schemaClass";
 import {ChartOptions, Resolution, Size} from "../ui/ui";
 import {PlottingSurface} from "../ui/plottingSurface";
 import {TrellisHistogramReceiver} from "./trellisHistogramView";
-import {HeatmapReceiver} from "./heatmapView";
+import {HeatmapReceiver, HeatmapWithDataReceiver} from "./heatmapView";
 import {Histogram2DReceiver} from "./histogram2DView";
 import {HistogramReceiver} from "./histogramView";
 import {AxisData} from "./axisData";
@@ -545,25 +545,31 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 const yArg = DataRangesReceiver.computeHistogramArgs(
                     this.cds[1], ranges[1], maxYBucketCount, exact, chartSize);
                 const args = createRequestArgs([xArg, yArg], false);
-                /*
-                const heatmapRequest: HeatmapRequestInfo = {
-                    ...args,
-                    schema: this.schema.schema
-                }
-                const rr = this.originator.createHeatmapRequest(heatmapRequest);
-                */
-                const rr = this.originator.createHistogram2DRequest(args);
                 const xAxis = new AxisData(this.cds[0], ranges[0], xArg.bucketCount);
                 const yAxis = new AxisData(this.cds[1], ranges[1], yArg.bucketCount);
                 if (this.title == null)
                     this.title = new PageTitle(
                         "Heatmap (" + this.schema.displayName(this.cds[0].name).displayName + ", " +
                         this.schema.displayName(this.cds[1].name).displayName + ")", this.provenance);
-                const renderer = new HeatmapReceiver(this.title, this.page,
-                    this.originator, this.rowCount, this.schema,
-                    [xAxis, yAxis], 1.0, rr, this.options.reusePage);
-                rr.chain(this.operation);
-                rr.invoke(renderer);
+                if (this.isPrivate()) {
+                    const rr = this.originator.createHistogram2DRequest(args);
+                    const renderer = new HeatmapReceiver(this.title, this.page,
+                        this.originator, this.rowCount, this.schema,
+                        [xAxis, yAxis], 1.0, rr, this.options.reusePage);
+                    rr.chain(this.operation);
+                    rr.invoke(renderer);
+                } else {
+                    const heatmapRequest: HeatmapRequestInfo = {
+                        ...args,
+                        schema: this.schema.schema
+                    }
+                    const rr = this.originator.createHeatmapRequest(heatmapRequest);
+                    const renderer = new HeatmapWithDataReceiver(this.title, this.page,
+                        this.originator, this.rowCount, this.schema,
+                        [xAxis, yAxis], 1.0, rr, this.options.reusePage);
+                    rr.chain(this.operation);
+                    rr.invoke(renderer);
+                }
                 break;
             }
             case "2DHistogram": {

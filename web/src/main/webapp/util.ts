@@ -30,8 +30,8 @@ import {
     kindIsString,
     RangeFilterArrayDescription,
     RangeFilterDescription,
-    RowFilterDescription,
-    SampleSet,
+    RowFilterDescription, RowValue,
+    SampleSet, Schema,
     StringFilterDescription
 } from "./javaBridge";
 import {AxisData} from "./dataViews/axisData";
@@ -40,6 +40,10 @@ import {SchemaClass} from "./schemaClass";
 export interface Pair<T1, T2> {
     first: T1;
     second: T2;
+}
+
+export interface Triple<T1, T2, T3> extends Pair<T1, T2> {
+    third: T3;
 }
 
 export interface Two<T> extends Pair<T, T> {}
@@ -256,7 +260,7 @@ export class Converters {
      * @param val                  Value to convert.
      * @param {ContentsKind} kind  Type of value.
      */
-    public static valueToString(val: any, kind: ContentsKind): string {
+    public static valueToString(val: RowValue | null, kind: ContentsKind): string {
         if (val == null)
             // This should probably not happen
             return "missing";
@@ -274,6 +278,12 @@ export class Converters {
         } else {
             assert(false);
         }
+    }
+
+    public static rowToString(row: RowValue[], schema: SchemaClass): string {
+        const r = zip(row, schema.schema.map(d => d.kind),
+            (v, k) => Converters.valueToString(v, k));
+        return r.join(",");
     }
 
     /**

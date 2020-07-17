@@ -16,23 +16,22 @@
  * limitations under the License.
  */
 
-import {ViewKind} from "./ui";
-
 /**
  * Maps each ViewKind to a url anchor in the github userManual.
  */
-export const helpUrl: Map<ViewKind, string> = new Map<ViewKind, string>()
-    .set("Table", "#33-table-views)")
-    .set("Histogram", "(#41-uni-dimensional-histogram-views)")
-    .set("2DHistogram", "(#43-two-dimensional-histogram-views)")
-    .set("Heatmap", "(#44-heatmap-views)")
-    .set("QuartileVector", "(#42-quartiles-view-for-histogram-buckets)")
-    .set("TrellisHistogram", "(#51-trellis-plots-of-1d-histograms)")
-    .set("TrellisHeatmap", "(#53-trellis-plots-of-heatmaps)")
-    .set("Trellis2DHistogram", "(#52-trellis-plots-of-2d-histograms)")
-    .set("TrellisQuartiles", "(#54-trellis-plots-of-quartile-vectors)")
-    .set("HeavyHitters", "(#34-frequent-elements-views)")
-    .set("Schema", "(#32-schema-views)")
-    .set("Load", "(#23-loading-data)")
-    .set("SVD Spectrum", "(#45-singular-value-spectrum-views)")
-    .set("CorrelationHeatmaps", "(#55-correlation-heatmaps)");
+export const helpUrl = {
+    "Table": "(#33-table-views)",
+    "Histogram": "(#41-uni-dimensional-histogram-views)",
+    "2DHistogram": "(#43-two-dimensional-histogram-views)",
+    "Heatmap": "(#44-heatmap-views)",
+    "QuartileVector": "(#42-quartiles-view-for-histogram-buckets)",
+    "TrellisHistogram": "(#51-trellis-plots-of-1d-histograms)",
+    "TrellisHeatmap": "(#53-trellis-plots-of-heatmaps)",
+    "Trellis2DHistogram": "(#52-trellis-plots-of-2d-histograms)",
+    "TrellisQuartiles": "(#54-trellis-plots-of-quartile-vectors)",
+    "HeavyHitters": "(#34-frequent-elements-views)",
+    "Schema": "(#32-schema-views)",
+    "Load": "(#23-loading-data)",
+    "SVD Spectrum": "(#45-singular-value-spectrum-views)",
+    "CorrelationHeatmaps": "(#55-correlation-heatmaps)"
+};

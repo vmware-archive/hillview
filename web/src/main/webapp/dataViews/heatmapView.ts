@@ -20,7 +20,7 @@ import {HeatmapSerialization, IViewSerialization} from "../datasetView";
 import {
     Groups,
     IColumnDescription, kindIsNumeric,
-    RemoteObjectId,
+    RemoteObjectId, RowValue,
 } from "../javaBridge";
 import {Receiver, RpcRequest} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
@@ -35,8 +35,8 @@ import {DragEventKind, Resolution} from "../ui/ui";
 import {
     Converters,
     Heatmap, histogram2DAsCsv,
-    ICancellable, makeInterval,
-    PartialResult, reorder,
+    ICancellable, makeInterval, Pair,
+    PartialResult, reorder, Triple,
     Two,
 } from "../util";
 import {AxisData} from "./axisData";
@@ -48,7 +48,11 @@ import {HeatmapLegendPlot} from "../ui/heatmapLegendPlot";
 /**
  * A HeatMapView renders information as a heatmap.
  */
-export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
+export class HeatmapView extends
+    ChartView<Triple<Groups<Groups<number>>, Groups<Groups<number>>, Groups<Groups<RowValue[]>>>> {
+    // Data has the following structure:
+    // first: heatmap data, second: confidence data, third: optional row corresponding to cells with 1 values
+
     protected colorLegend: HeatmapLegendPlot;
     protected plot: HeatmapPlot;
     protected legendSurface: HtmlPlottingSurface;
@@ -279,7 +283,8 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
         collector.finished();
     }
 
-    public updateView(data: Two<Groups<Groups<number>>>, keepColorMap: boolean): void {
+    public updateView(data: Triple<Groups<Groups<number>>, Groups<Groups<number>>, Groups<Groups<RowValue[]>>>,
+                      keepColorMap: boolean): void {
         this.createNewSurfaces(keepColorMap);
         if (data == null || data.first === null || data.first.perBucket.length === 0) {
             this.page.reportError("No data to display");
@@ -312,7 +317,8 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
         this.pointDescription = new TextOverlay(this.surface.getChart(),
             this.surface.getActualChartSize(),
             [this.schema.displayName(this.xAxisData.description.name).displayName,
-                this.schema.displayName(this.yAxisData.description.name).displayName, "count"], 40);
+                this.schema.displayName(this.yAxisData.description.name).displayName,
+                "count", "value"], 40);
         this.standardSummary();
         this.summary.set("data points", this.plot.getVisiblePoints());
         this.summary.set("distinct dots", this.plot.getDistinct());
@@ -329,6 +335,7 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
             samplingRate: this.samplingRate,
             columnDescription0: this.xAxisData.description,
             columnDescription1: this.yAxisData.description,
+
             xBucketCount: this.xAxisData.bucketCount,
             yBucketCount: this.yAxisData.bucketCount,
             ...ser,
@@ -436,9 +443,16 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
         const mouseY = position[1];
         const xs = this.xAxisData.invert(mouseX);
         const ys = this.yAxisData.invert(mouseY);
+        let data = "";
 
         const value = this.plot.getCount(mouseX, mouseY);
-        this.pointDescription.update([xs, ys, makeInterval(value)], mouseX, mouseY);
+        const index = this.plot.getBucketIndex(mouseX, mouseY);
+        if (index != null) {
+            const d = this.data.third.perBucket[index[0]].perBucket[index[1]];
+            if (d != null)
+                data = Converters.rowToString(d, this.schema);
+        }
+        this.pointDescription.update([xs, ys, makeInterval(value), data], mouseX, mouseY);
         this.colorLegend.highlight(value[0], value[1]);
     }
 
@@ -476,7 +490,7 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
 }
 
 /**
- * Renders a heatmap
+ * Receives a heatmap given data and confidences.
  */
 export class HeatmapReceiver extends Receiver<Two<Groups<Groups<number>>>> {
     protected view: HeatmapView;
@@ -504,7 +518,45 @@ export class HeatmapReceiver extends Receiver<Two<Groups<Groups<number>>>> {
             return;
         }
 
-        this.view.updateView(value.data, false);
+        this.view.updateView({ ...value.data, third: null }, false);
+    }
+
+    public onCompleted(): void {
+        super.onCompleted();
+        this.view.updateCompleted(this.elapsedMilliseconds());
+    }
+}
+
+/**
+ * Receives a heatmap given data and confidences.
+ */
+export class HeatmapWithDataReceiver extends Receiver<Pair<Groups<Groups<number>>, Groups<Groups<RowValue[]>>>> {
+    protected view: HeatmapView;
+
+    constructor(title: PageTitle,
+                page: FullPage,
+                remoteTable: TableTargetAPI,
+                protected rowCount: number,
+                protected schema: SchemaClass,
+                protected axisData: AxisData[],
+                protected samplingRate: number,
+                operation: RpcRequest<Pair<Groups<Groups<number>>, Groups<Groups<RowValue[]>>>>,
+                protected reusePage: boolean) {
+        super(reusePage ? page : page.dataset.newPage(title, page), operation, "histogram");
+        this.view = new HeatmapView(
+            remoteTable.remoteObjectId, rowCount, schema,
+            this.samplingRate, this.page);
+        this.view.setAxes(axisData[0], axisData[1]);
+        this.page.setDataView(this.view);
+    }
+
+    public onNext(value: PartialResult<Pair<Groups<Groups<number>>, Groups<Groups<RowValue[]>>>>): void {
+        super.onNext(value);
+        if (value == null) {
+            return;
+        }
+        const data = value.data;
+        this.view.updateView({ first: data.first, second: null, third: data.second }, false);
     }
 
     public onCompleted(): void {

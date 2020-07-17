@@ -101,7 +101,7 @@ export class TableTargetAPI extends RemoteObject {
     }
 
     public createFindRequest(
-        order: RecordOrder, topRow: any[],
+        order: RecordOrder, topRow: RowValue[],
         strFilter: StringFilterDescription, excludeTopRow: boolean, next: boolean):
         RpcRequest<FindResult> {
         return this.createStreamingRpcRequest<FindResult>("find", {
@@ -114,8 +114,8 @@ export class TableTargetAPI extends RemoteObject {
     }
 
     public createQuantileRequest(rowCount: number, o: RecordOrder, position: number):
-            RpcRequest<any[]> {
-        return this.createStreamingRpcRequest<any[]>("quantile", {
+            RpcRequest<RowValue[]> {
+        return this.createStreamingRpcRequest<RowValue[]>("quantile", {
             precision: 100,
             tableSize: rowCount,
             order: o,
@@ -201,7 +201,7 @@ export class TableTargetAPI extends RemoteObject {
         return this.createStreamingRpcRequest<Groups<Groups<SampleSet>>>("getQuantilesMatrix", args);
     }
 
-    public createContainsRequest(order: RecordOrder, row: any[]): RpcRequest<RemoteObjectId> {
+    public createContainsRequest(order: RecordOrder, row: RowValue[]): RpcRequest<RemoteObjectId> {
         const args: ContainsArgs = {
             order: order,
             row: row
@@ -209,7 +209,7 @@ export class TableTargetAPI extends RemoteObject {
         return this.createStreamingRpcRequest<RemoteObjectId>("contains", args);
     }
 
-    public createGetLogFragmentRequest(schema: Schema, row: any[], rowSchema: Schema, rowCount: number):
+    public createGetLogFragmentRequest(schema: Schema, row: RowValue[], rowSchema: Schema, rowCount: number):
         RpcRequest<NextKList> {
         return this.createStreamingRpcRequest<NextKList>("getLogFragment", {
             schema: schema,
@@ -387,8 +387,8 @@ RpcRequest<RemoteObjectId> {
     }
 
     public createHeatmapRequest(info: HeatmapRequestInfo):
-        RpcRequest<Pair<Groups<Groups<number>>, Groups<Groups<any[]>>>> {
-        return this.createStreamingRpcRequest<Pair<Groups<Groups<number>>, Groups<Groups<any[]>>>>(
+        RpcRequest<Pair<Groups<Groups<number>>, Groups<Groups<RowValue[]>>>> {
+        return this.createStreamingRpcRequest<Pair<Groups<Groups<number>>, Groups<Groups<RowValue[]>>>>(
             "heatmap", info);
     }
 

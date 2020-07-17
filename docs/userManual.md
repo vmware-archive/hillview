@@ -26,7 +26,7 @@ one row for an airline flight.  Columns in this dataset include: the date of the
 the origin and destination cities, the origin and destination states,
 the origin airport code, the distance flown, the departure and arrival delay.
 
-Updated on 2020 Jul 15.
+Updated on 2020 Jul 17.
 
 # Contents
 |Section|Reference|
@@ -1456,7 +1456,9 @@ displayed as a heatmap, where the color intensity indicates the number
 of points. The mapping between the color intensity and the count could
 be in log scale if the range is large or linear if the range is
 smaller. Next to the mouse an overlay box displays the x value, the y
-value and the count. A heatmap where neither axis is string
+value and the count; additionally, if the count is 1 (i.e., the point
+corresponds to a single data point), more information about that
+particular point is shown. A heatmap where neither axis is string
 will also display a line that gives the best [linear
 regression](https://en.wikipedia.org/wiki/Linear_regression).  between
 the values in the two columns.
