@@ -188,7 +188,8 @@ public final class TableTarget extends TableRpcTarget {
         this.runCompleteSketch(this.table, sk, request, context);
     }
 
-    static class QuantilesVectorInfo extends HistogramRequestInfo {
+    static class QuantilesVectorInfo extends HistogramInfo {
+        long seed;
         int quantileCount;
         /**
          * Column whose quantiles are being computed.
@@ -211,7 +212,7 @@ public final class TableTarget extends TableRpcTarget {
 
     static class QuantilesMatrixInfo extends QuantilesVectorInfo {
         @SuppressWarnings("NotNullFieldNotInitialized")
-        HistogramRequestInfo groupColumn;
+        HistogramInfo groupColumn;
     }
 
     @SuppressWarnings("unused")
@@ -247,10 +248,10 @@ public final class TableTarget extends TableRpcTarget {
     @SuppressWarnings("unused")
     @HillviewRpc
     public void histogramAndCDF(RpcRequest request, RpcRequestContext context) {
-        HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
-        assert info.length == 2;
-        TableSketch<Groups<Count>> sk = info[0].getSketch(); // Histogram
-        TableSketch<Groups<Count>> cdf = info[1].getSketch(); // CDF: also histogram but at finer granularity
+        HistogramRequestInfo info = request.parseArgs(HistogramRequestInfo.class);
+        assert info.size() == 2;
+        TableSketch<Groups<Count>> sk = info.getSketch(0); // Histogram
+        TableSketch<Groups<Count>> cdf = info.getSketch(1); // CDF: also histogram but at finer granularity
         ConcurrentSketch<ITable, Groups<Count>, Groups<Count>> csk =
                 new ConcurrentSketch<>(sk, cdf);
         DataWithCDFSketch<Groups<Count>> post = new DataWithCDFSketch<Groups<Count>>(csk);
@@ -260,31 +261,51 @@ public final class TableTarget extends TableRpcTarget {
 
     @HillviewRpc
     public void histogram2D(RpcRequest request, RpcRequestContext context) {
-        HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
-        assert info.length == 2;
+        HistogramRequestInfo info = request.parseArgs(HistogramRequestInfo.class);
+        assert info.size() == 2;
         Histogram2DSketch sk = new Histogram2DSketch(
-                info[1].getBuckets(),
-                info[0].getBuckets());
+                info.getBuckets(1),
+                info.getBuckets(0));
         this.runSketch(this.table, sk.andThen(
                 r -> new Two<>(r.toSerializable(s -> s.toSerializable(c -> c)), null)), request, context);
     }
 
+    static class HeatmapRequestInfo extends HistogramRequestInfo {
+        @SuppressWarnings("NotNullFieldNotInitialized")
+        Schema schema;
+    }
+
+    @HillviewRpc
+    public void heatmap(RpcRequest request, RpcRequestContext context) {
+        HeatmapRequestInfo info = request.parseArgs(HeatmapRequestInfo.class);
+        assert info.size() == 2;
+        HeatmapSketch sk = new HeatmapSketch(
+                info.schema,
+                info.getBuckets(1),
+                info.getBuckets(0));
+        this.runSketch(this.table, sk.andThen(
+                r -> new Pair<>(
+                        r.toSerializable(g -> g.toSerializable(CountAndSingleton::getCount)),
+                        r.toSerializable(g -> g.toSerializable(c -> c.row))
+                )), request, context);
+    }
+
     @HillviewRpc
     public void correlationHeatmaps(RpcRequest request, RpcRequestContext context) {
-        HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
-        IHistogramBuckets[] buckets = Linq.map(info, HistogramRequestInfo::getBuckets, IHistogramBuckets.class);
-        CorrelationSketch sk = new CorrelationSketch(buckets, info[0].samplingRate, info[0].seed);
+        HistogramRequestInfo info = request.parseArgs(HistogramRequestInfo.class);
+        IHistogramBuckets[] buckets = Linq.map(info.histos, HistogramInfo::getBuckets, IHistogramBuckets.class);
+        CorrelationSketch sk = new CorrelationSketch(buckets, info.samplingRate, info.seed);
         this.runSketch(this.table, sk, request, context);
     }
 
     @HillviewRpc
     public void histogram2DAndCDF(RpcRequest request, RpcRequestContext context) {
-        HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
-        assert info.length == 3;
+        HistogramRequestInfo info = request.parseArgs(HistogramRequestInfo.class);
+        assert info.size() == 3;
         TableSketch<Groups<Groups<Count>>> sk = new Histogram2DSketch(
-                info[1].getBuckets(),
-                info[0].getBuckets()).sampled(info[0].samplingRate, info[0].seed);
-        TableSketch<Groups<Count>> cdf = info[2].getSketch();
+                info.getBuckets(1),
+                info.getBuckets(0)).sampled(info.samplingRate, info.seed);
+        TableSketch<Groups<Count>> cdf = info.getSketch(2);
         ConcurrentSketch<ITable, Groups<Groups<Count>>, Groups<Count>> csk =
                 new ConcurrentSketch<ITable, Groups<Groups<Count>>, Groups<Count>>(sk, cdf);
         DataWithCDFSketch<Groups<Groups<Count>>> dwc = new DataWithCDFSketch<Groups<Groups<Count>>>(csk);
@@ -293,13 +314,13 @@ public final class TableTarget extends TableRpcTarget {
 
     @HillviewRpc
     public void histogram3D(RpcRequest request, RpcRequestContext context) {
-        HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
-        assert info.length == 3;
+        HistogramRequestInfo info = request.parseArgs(HistogramRequestInfo.class);
+        assert info.size() == 3;
         Histogram3DSketch sk = new Histogram3DSketch(
-                info[2].getBuckets(),
-                info[1].getBuckets(),
-                info[0].getBuckets());
-        TableSketch<Groups<Groups<Groups<Count>>>> sts = sk.sampled(info[0].samplingRate, info[0].seed);
+                info.getBuckets(2),
+                info.getBuckets(1),
+                info.getBuckets(0));
+        TableSketch<Groups<Groups<Groups<Count>>>> sts = sk.sampled(info.samplingRate, info.seed);
         this.runSketch(this.table, sts.andThen(res -> res.toSerializable(
                 r -> r.toSerializable(s -> s.toSerializable(c -> c)))), request, context);
     }

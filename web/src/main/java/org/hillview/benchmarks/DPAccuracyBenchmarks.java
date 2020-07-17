@@ -174,21 +174,26 @@ public class DPAccuracyBenchmarks extends Benchmarks {
         return abstot / (double) n;
     }
 
-    private TableRpcTarget.HistogramRequestInfo createHistogramRequest(String col, ColumnQuantization cq) {
+    private TableRpcTarget.HistogramRequestInfo
+    createHistogramRequest(String col, ColumnQuantization cq) {
         // Construct a histogram corresponding to the leaves.
         // We will manually aggregate buckets as needed for the accuracy test.
-        TableRpcTarget.HistogramRequestInfo info;
+        TableRpcTarget.HistogramInfo info;
         if (cq instanceof DoubleColumnQuantization) {
             DoubleColumnQuantization dq = (DoubleColumnQuantization)cq;
-            info = new TableRpcTarget.HistogramRequestInfo(new ColumnDescription(col, ContentsKind.Double),
-                    0, dq.globalMin, dq.globalMax, dq.getIntervalCount());
+            info = new TableRpcTarget.HistogramInfo(
+                    new ColumnDescription(col, ContentsKind.Double),
+                    dq.globalMin, dq.globalMax, dq.getIntervalCount());
         } else {
             // StringColumnQuantization
             StringColumnQuantization sq = (StringColumnQuantization)cq;
-            info = new TableRpcTarget.HistogramRequestInfo(new ColumnDescription(col, ContentsKind.String),0, sq.leftBoundaries);
+            info = new TableRpcTarget.HistogramInfo(
+                    new ColumnDescription(col, ContentsKind.String), sq.leftBoundaries);
         }
 
-        return info;
+        TableRpcTarget.HistogramRequestInfo result = new TableRpcTarget.HistogramRequestInfo();
+        result.histos = new TableRpcTarget.HistogramInfo[] { info };
+        return result;
     }
 
     private Pair<Double, Double> computeSingleColumnAccuracy(
@@ -198,8 +203,8 @@ public class DPAccuracyBenchmarks extends Benchmarks {
         // Construct a histogram corresponding to the leaves.
         // We will manually aggregate buckets as needed for the accuracy test.
         TableRpcTarget.HistogramRequestInfo info = createHistogramRequest(col, cq);
-        TableSketch<Groups<Count>> sk = info.getSketch(cq);
-        IntervalDecomposition dd = info.getDecomposition(cq);
+        TableSketch<Groups<Count>> sk = info.getSketch(0, cq);
+        IntervalDecomposition dd = info.getDecomposition(0, cq);
 
         System.out.println("Epsilon: " + epsilon);
         Groups<Count> hist = table.blockingSketch(sk); // Leaf counts.
@@ -227,16 +232,13 @@ public class DPAccuracyBenchmarks extends Benchmarks {
                                                         int iterations) {
         // Construct a histogram corresponding to the leaves.
         // We will manually aggregate buckets as needed for the accuracy test.
-        TableRpcTarget.HistogramRequestInfo[] info = new TableRpcTarget.HistogramRequestInfo[]
-                {
-                        createHistogramRequest(col1, cq1),
-                        createHistogramRequest(col2, cq2)
-                };
+        TableRpcTarget.HistogramRequestInfo info0 = createHistogramRequest(col1, cq1);
+        TableRpcTarget.HistogramRequestInfo info1 = createHistogramRequest(col2, cq2);
 
         Histogram2DSketch sk = new Histogram2DSketch(
-                info[0].getBuckets(), info[1].getBuckets());
-        IntervalDecomposition d0 = info[0].getDecomposition(cq1);
-        IntervalDecomposition d1 = info[1].getDecomposition(cq2);
+                info0.getBuckets(0), info1.getBuckets(0));
+        IntervalDecomposition d0 = info0.getDecomposition(0, cq1);
+        IntervalDecomposition d1 = info1.getDecomposition(0, cq2);
 
         System.out.println("Epsilon: " + epsilon);
         Groups<Groups<Count>> heatmap = table.blockingSketch(sk); // Leaf counts.

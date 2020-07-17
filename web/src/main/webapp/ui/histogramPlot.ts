@@ -90,7 +90,7 @@ export class HistogramPlot extends Plot<Two<Groups<number>>> implements IBarPlot
         const displayMax = this.maxYAxis == null ? this.max : this.maxYAxis;
         const chartWidth = this.getChartWidth();
         const chartHeight = this.getChartHeight();
-        const confidence = this.isPrivate ? this.data.second :
+        const confidence: number[] = this.isPrivate ? this.data.second.perBucket :
             new Array(this.data.first.perBucket.length); // filled with zeros
         const zippedData = d3zip(counts, confidence);
         const bars = this.plottingSurface
@@ -98,7 +98,7 @@ export class HistogramPlot extends Plot<Two<Groups<number>>> implements IBarPlot
             .selectAll("g")
             .data(zippedData)
             .enter().append("g")
-            .attr("transform", (d, i) => `translate(${i * this.barWidth}, 0)`);
+            .attr("transform", (d: number[], i: number) => `translate(${i * this.barWidth}, 0)`);
 
         this.yScale = d3scaleLinear()
             .domain([0, displayMax])
@@ -107,15 +107,15 @@ export class HistogramPlot extends Plot<Two<Groups<number>>> implements IBarPlot
         // Boxes can be taller than the maxYAxis height.  In this case yScale returns
         // a negative value, and we have to truncate the rectangles.
         bars.append("rect")
-            .attr("y", (d) => this.yScale(d[0]) < 0 ? 0 : this.yScale(d[0]))
-            .attr("fill", (d) => this.confident(d) ? "darkcyan" : "lightgrey")
-            .attr("height", (d) => chartHeight - this.yLabel(d[0]))
+            .attr("y", (d: number[]) => this.yScale(d[0]) < 0 ? 0 : this.yScale(d[0]))
+            .attr("fill", (d: number[]) => this.confident(d) ? "darkcyan" : "lightgrey")
+            .attr("height", (d: number[]) => chartHeight - this.yLabel(d[0]))
             .attr("width", this.barWidth - 1);
 
         // overflow signs if necessary
         bars.append("svg:path")
             // I am not sure how triangle size is measured; this 7 below seems to work find
-            .attr("d", symbol().type(symbolTriangle).size( (d) => this.yScale(d[0]) < 0 ? 7 * this.barWidth : 0))
+            .attr("d", symbol().type(symbolTriangle).size( (d: number[]) => this.yScale(d[0]) < 0 ? 7 * this.barWidth : 0))
             .attr("transform", () => `translate(${this.barWidth / 2}, 0)`)
             .style("fill", "red")
             .append("svg:title")
@@ -125,9 +125,9 @@ export class HistogramPlot extends Plot<Two<Groups<number>>> implements IBarPlot
             // confidence intervals
             bars.append("line")
                 .attr("x1", 0)
-                .attr("y1", (d) => this.yScale(d[0] - d[1]))
+                .attr("y1", (d: number[]) => this.yScale(d[0] - d[1]))
                 .attr("x2", 0)
-                .attr("y2", (d) => this.yScale(d[0] + d[1]))
+                .attr("y2", (d: number[]) => this.yScale(d[0] + d[1]))
                 .attr("stroke-width", 1)
                 .attr("stroke", "black")
                 .attr("stroke-linecap", "round")
@@ -137,14 +137,14 @@ export class HistogramPlot extends Plot<Two<Groups<number>>> implements IBarPlot
         bars.append("text")
             .attr("class", "histogramBoxLabel")
             .attr("x", this.barWidth / 2)
-            .attr("y", (d) => this.yLabel(d[0]))
+            .attr("y", (d: number[]) => this.yLabel(d[0]))
             .attr("text-anchor", "middle")
-            .attr("dy", (d) => d[0] <= (9 * displayMax / 10) ? "-.25em" : ".75em")
-            .text((d) => Plot.boxHeight(
+            .attr("dy", (d: number[]) => d[0] <= (9 * displayMax / 10) ? "-.25em" : ".75em")
+            .text((d: number[]) => Plot.boxHeight(
                 d[0], this.samplingRate, this.rowCount))
             .exit();
 
-        this.yAxis = d3axisLeft(this.yScale)
+        this.yAxis = d3axisLeft<number>(this.yScale)
             .tickFormat(d3format(".2s"));
 
         this.xAxisData.setResolution(chartWidth, AxisKind.Bottom, PlottingSurface.bottomMargin);

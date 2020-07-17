@@ -22,7 +22,7 @@ import {
     IColumnDescription, kindIsNumeric,
     RemoteObjectId,
 } from "../javaBridge";
-import {Receiver} from "../rpc";
+import {Receiver, RpcRequest} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
 import {BaseReceiver, TableTargetAPI} from "../modules";
 import {IDataView} from "../ui/dataview";
@@ -479,7 +479,7 @@ export class HeatmapView extends ChartView<Two<Groups<Groups<number>>>> {
  * Renders a heatmap
  */
 export class HeatmapReceiver extends Receiver<Two<Groups<Groups<number>>>> {
-    protected heatmap: HeatmapView;
+    protected view: HeatmapView;
 
     constructor(title: PageTitle,
                 page: FullPage,
@@ -488,14 +488,14 @@ export class HeatmapReceiver extends Receiver<Two<Groups<Groups<number>>>> {
                 protected schema: SchemaClass,
                 protected axisData: AxisData[],
                 protected samplingRate: number,
-                operation: ICancellable<Groups<Groups<number>>>,
+                operation: RpcRequest<Two<Groups<Groups<number>>>>,
                 protected reusePage: boolean) {
         super(reusePage ? page : page.dataset.newPage(title, page), operation, "histogram");
-        this.heatmap = new HeatmapView(
+        this.view = new HeatmapView(
             remoteTable.remoteObjectId, rowCount, schema,
             this.samplingRate, this.page);
-        this.heatmap.setAxes(axisData[0], axisData[1]);
-        this.page.setDataView(this.heatmap);
+        this.view.setAxes(axisData[0], axisData[1]);
+        this.page.setDataView(this.view);
     }
 
     public onNext(value: PartialResult<Two<Groups<Groups<number>>>>): void {
@@ -504,11 +504,11 @@ export class HeatmapReceiver extends Receiver<Two<Groups<Groups<number>>>> {
             return;
         }
 
-        this.heatmap.updateView(value.data, false);
+        this.view.updateView(value.data, false);
     }
 
     public onCompleted(): void {
         super.onCompleted();
-        this.heatmap.updateCompleted(this.elapsedMilliseconds());
+        this.view.updateCompleted(this.elapsedMilliseconds());
     }
 }

@@ -457,8 +457,8 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
     }
 
     protected setOrder(o: RecordOrder, preserveFirstRow: boolean): void {
-        let firstRow = null;
-        let minValues = null;
+        let firstRow: any[] = null;
+        let minValues: any[] = null;
         if (preserveFirstRow &&
             this.nextKList != null &&
             this.nextKList.rows != null &&
@@ -799,7 +799,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             this.page.reportError("Not enough views to compare");
             return;
         }
-        const label = (p) => p.pageId + ". " + p.title.getTextRepresentation(p) +
+        const label = (p: FullPage) => p.pageId + ". " + p.title.getTextRepresentation(p) +
             "(" + p.title.provenance + ")";
         dialog.addSelectFieldAsObject("view0", "First view",
             pages, label, "First view to compare");
@@ -992,7 +992,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                     ag.agkind + " of values in column " + this.schema.displayName(ag.cd.name),
                     0, true, false);
                 const aggIndex = i;
-                thd.oncontextmenu = (e: PointerEvent) => {
+                thd.oncontextmenu = (e: MouseEvent) => {
                     this.contextMenu.clear();
                     this.contextMenu.addItem({
                         text: "Remove",
@@ -1324,7 +1324,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                   cds: IColumnDescription[], last: boolean): void {
         this.grid.newRow();
         const position = this.startPosition + this.dataRowsDisplayed;
-        const rowContextMenu = (e: PointerEvent) => {
+        const rowContextMenu = (e: MouseEvent) => {
             this.contextMenu.clear();
             this.contextMenu.addItem({text: "Keep equal rows",
                 action: () => this.filterOnRowValue(row.values, "=="),
@@ -1688,8 +1688,8 @@ export class CorrelationMatrixReceiver extends BaseReceiver {
         super(page, operation, "Correlation matrix", tv.dataset);
     }
 
-    public run(): void {
-        super.run();
+    public run(value: RemoteObjectId): void {
+        super.run(value);
         const rr = this.tv.createProjectToEigenVectorsRequest(
                 this.remoteObject, this.numComponents, this.projectionName);
         rr.chain(this.operation);
@@ -1710,8 +1710,8 @@ class PCATableReceiver extends BaseReceiver {
         super(page, operation, progressInfo, tv.dataset);
     }
 
-    public run(): void {
-        super.run();
+    public run(value: RemoteObjectId): void {
+        super.run(value);
         const rr = this.remoteObject.createGetSummaryRequest();
         rr.chain(this.operation);
         rr.invoke(new PCASchemaReceiver(this.page, rr, this.remoteObject, this.tv,
@@ -1782,8 +1782,8 @@ export class TableOperationCompleted extends BaseReceiver {
         super(page, operation, "Table operation", page.dataset);
     }
 
-    public run(): void {
-        super.run();
+    public run(value: RemoteObjectId): void {
+        super.run(value);
         if (this.order == null) {
             const rr = this.remoteObject.createGetSummaryRequest();
             rr.chain(this.operation);

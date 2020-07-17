@@ -17,7 +17,7 @@
 
 import {OnCompleteReceiver} from "../rpc";
 import {
-    BucketsInfo,
+    BucketsInfo, HeatmapRequestInfo, HistogramInfo,
     HistogramRequestInfo,
     IColumnDescription,
     kindIsNumeric,
@@ -156,6 +156,22 @@ export class TrellisLayoutComputation {
     }
 }
 
+interface HistogramParameters extends HistogramInfo {
+    samplingRate: number;
+}
+
+function createRequestArgs(params: HistogramParameters[], sample: boolean): HistogramRequestInfo {
+    const samplingRate = sample ?
+        params.map(p => p.samplingRate).reduce((a, b) => Math.max(a,b)) :
+        1.0;
+    const seed = Seed.instance.getSampled(samplingRate);
+    return {
+        histos: params,
+        samplingRate,
+        seed
+    }
+}
+
 /**
  * Waits for 2 or 3 column stats to be received and then
  * initiates a 2D histogram, heatmap, or Trellis plot rendering.
@@ -205,7 +221,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
         range: BucketsInfo,
         bucketCount: number,
         exact: boolean,
-        chartSize: Size): HistogramRequestInfo {
+        chartSize: Size): HistogramParameters {
         if (kindIsString(cd.kind)) {
             const cdfBucketCount = range.stringQuantiles.length;
             let samplingRate = DataRangesReceiver.samplingRate(
@@ -217,7 +233,6 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 bounds = periodicSamples(range.stringQuantiles, bucketCount);
             return {
                 cd: cd,
-                seed: Seed.instance.getSampled(samplingRate),
                 samplingRate: samplingRate,
                 leftBoundaries: bounds,
                 bucketCount: bounds.length,
@@ -239,12 +254,11 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 samplingRate = DataRangesReceiver.samplingRate(
                     cdfCount, range.presentCount, range.missingCount, chartSize);
             // noinspection UnnecessaryLocalVariableJS
-            const args: HistogramRequestInfo = {
+            const args: HistogramParameters = {
                 cd: cd,
                 min: range.min - adjust,
                 max: range.max + adjust,
                 samplingRate: samplingRate,
-                seed: Seed.instance.getSampled(samplingRate),
                 bucketCount: cdfCount,
             };
             return args;
@@ -329,9 +343,10 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 const histoArgs = zip(this.cds, ranges,
                     (c, r) =>
                         DataRangesReceiver.computeHistogramArgs(c, r, pixels, true, size));
-                const rr = this.originator.createCorrelationHeatmapRequest(histoArgs);
+                const args = createRequestArgs(histoArgs, true);
+                const rr = this.originator.createCorrelationHeatmapRequest(args);
                 const common = this.commonArgs();
-                rr.invoke(new CorrelationHeatmapReceiver(common, histoArgs, ranges, rr));
+                rr.invoke(new CorrelationHeatmapReceiver(common, args, ranges, rr));
                 break;
             }
             case "QuartileVector": {
@@ -359,6 +374,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 const args: QuantilesVectorInfo = {
                     quantileCount: 4,  // we display quartiles
                     quantilesColumn: this.cds[1].name,
+                    seed: Seed.instance.get(),
                     ...histoArg
                 };
                 //const common = this.commonArgs();
@@ -374,7 +390,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                     return;
                 }
 
-                const args: HistogramRequestInfo[] = [];
+                const histos: HistogramParameters[] = [];
                 let maxXBucketCount = this.bucketCounts[0];
                 if (maxXBucketCount === 0) {
                     maxXBucketCount = Math.floor(chartSize.width / Resolution.minBarWidth);
@@ -383,12 +399,13 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 const histoArg = DataRangesReceiver.computeHistogramArgs(
                     this.cds[0], ranges[0], maxXBucketCount,
                     exact, chartSize);
-                args.push(histoArg);
+                histos.push(histoArg);
                 const cdfArg = DataRangesReceiver.computeHistogramArgs(
                     this.cds[0], ranges[0], 0,
                     exact, chartSize);
-                args.push(cdfArg);
+                histos.push(cdfArg);
 
+                const args = createRequestArgs(histos, true);
                 const rr = this.originator.createHistogramAndCDFRequest(args);
                 rr.chain(this.operation);
                 const axisData = new AxisData(this.cds[0], ranges[0], histoArg.bucketCount);
@@ -412,7 +429,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 const wArg = DataRangesReceiver.computeHistogramArgs(
                     this.cds[1], ranges[1], groups, exact, trellisShape.size);
                 // Window argument comes first
-                const args = [wArg, xArg];
+                const args = createRequestArgs([wArg, xArg], true);
                 const rr = this.originator.createHistogram2DRequest(args);
                 const xAxisData = new AxisData(this.cds[0], ranges[0], xArg.bucketCount);
                 const groupByAxis = new AxisData(this.cds[1], ranges[1], wArg.bucketCount);
@@ -485,7 +502,6 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                     maxXBucketCount = Math.floor(trellisShape.size.width / Resolution.minDotSize);
                     maxYBucketCount = Math.floor(trellisShape.size.height / Resolution.minDotSize);
                 }
-                const args: HistogramRequestInfo[] = [];
                 const xArg = DataRangesReceiver.computeHistogramArgs(
                     this.cds[0], ranges[0], maxXBucketCount, exact, trellisShape.size);
                 const yArg = DataRangesReceiver.computeHistogramArgs(
@@ -493,9 +509,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 const wArg = DataRangesReceiver.computeHistogramArgs(
                     this.cds[2], ranges[2], groupByBuckets(trellisShape), exact, chartSize);
                 // Window argument comes first
-                args.push(wArg);
-                args.push(xArg);
-                args.push(yArg);
+                const args = createRequestArgs([wArg, xArg, yArg], true);
                 const rr = this.originator.createHistogram3DRequest(args);
                 const xAxis = new AxisData(this.cds[0], ranges[0], xArg.bucketCount);
                 const yAxis = new AxisData(this.cds[1], ranges[1], yArg.bucketCount);
@@ -520,7 +534,6 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 break;
             }
             case "Heatmap": {
-                const args: HistogramRequestInfo[] = [];
                 let maxXBucketCount = this.bucketCounts[0];
                 if (maxXBucketCount === 0)
                     maxXBucketCount = Math.floor(chartSize.width / Resolution.minDotSize);
@@ -529,11 +542,16 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                     maxYBucketCount = Math.floor(chartSize.height / Resolution.minDotSize);
                 const xArg = DataRangesReceiver.computeHistogramArgs(
                     this.cds[0], ranges[0], maxXBucketCount, exact, chartSize);
-                args.push(xArg);
                 const yArg = DataRangesReceiver.computeHistogramArgs(
                     this.cds[1], ranges[1], maxYBucketCount, exact, chartSize);
-                args.push(yArg);
-
+                const args = createRequestArgs([xArg, yArg], false);
+                /*
+                const heatmapRequest: HeatmapRequestInfo = {
+                    ...args,
+                    schema: this.schema.schema
+                }
+                const rr = this.originator.createHeatmapRequest(heatmapRequest);
+                */
                 const rr = this.originator.createHistogram2DRequest(args);
                 const xAxis = new AxisData(this.cds[0], ranges[0], xArg.bucketCount);
                 const yAxis = new AxisData(this.cds[1], ranges[1], yArg.bucketCount);
@@ -549,7 +567,6 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 break;
             }
             case "2DHistogram": {
-                const args: HistogramRequestInfo[] = [];
                 let maxXBucketCount = this.bucketCounts[0];
                 if (maxXBucketCount === 0) {
                     maxXBucketCount = Math.floor(chartSize.width / Resolution.minBarWidth);
@@ -564,16 +581,14 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                     this.cds[0], ranges[0], maxXBucketCount,
                     // Relative views cannot sample
                     exact || this.options.relative, chartSize);
-                args.push(xarg);
                 const yarg = DataRangesReceiver.computeHistogramArgs(
                     this.cds[1], ranges[1], maxYBucketCount,
                     exact || this.options.relative, chartSize);
-                args.push(yarg);
                 // This last one represents the resolution for the CDF
                 const cdfArg = DataRangesReceiver.computeHistogramArgs(
                     this.cds[0], ranges[0], 0,
                     exact, chartSize);
-                args.push(cdfArg);
+                const args = createRequestArgs([xarg, yarg, cdfArg], true);
                 const rr = this.originator.createHistogram2DAndCDFRequest(args);
                 const xAxis = new AxisData(this.cds[0], ranges[0], xarg.bucketCount);
                 const yData = new AxisData(this.cds[1], ranges[1], yarg.bucketCount);
@@ -612,8 +627,8 @@ export class NewTargetReceiver extends BaseReceiver {
         super(page, operation, "Filter", dataset);
     }
 
-    public run(): void {
-        super.run(); // This sets this.remoteObject.
+    public run(value: RemoteObjectId): void {
+        super.run(value); // This sets this.remoteObject.
         const rr = this.remoteObject.createDataQuantilesRequest(this.cds, this.page, this.options.chartKind);
         rr.invoke(new DataRangesReceiver(this.remoteObject, this.page, rr, this.schema,
                   this.bucketCounts, this.cds, this.title, null, this.options));

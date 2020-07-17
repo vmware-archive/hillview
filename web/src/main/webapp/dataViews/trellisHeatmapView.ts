@@ -41,7 +41,7 @@ import {
     ICancellable,
     makeInterval,
     PartialResult,
-    reorder
+    reorder, Two
 } from "../util";
 import {HeatmapPlot} from "../ui/heatmapPlot";
 import {IViewSerialization, TrellisHeatmapSerialization} from "../datasetView";
@@ -321,7 +321,7 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
         let max = 0;
         for (let i = 0; i < histogram3d.perBucket.length; i++) {
             const buckets = histogram3d.perBucket[i];
-            const heatmap = { first: buckets, second: null };
+            const heatmap: Two<Groups<Groups<number>>> = { first: buckets, second: null };
             const plot = this.hps[i];
             // The order of these operations is important
             plot.setData(heatmap, this.xAxisData, this.yAxisData, this.schema, 2, this.isPrivate());
@@ -329,7 +329,7 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
         }
         if (this.shape.missingBucket) {
             const buckets = histogram3d.perMissing;
-            const heatmap = { first: buckets, second: null };
+            const heatmap: Two<Groups<Groups<number>>> = { first: buckets, second: null };
             const plot = this.hps[histogram3d.perBucket.length];
             // The order of these operations is important
             plot.setData(heatmap, this.xAxisData, this.yAxisData, this.schema, 2, this.isPrivate());
@@ -406,7 +406,7 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
     protected selectionCompleted(): void {
         const local = this.selectionIsLocal();
         let title: PageTitle;
-        let rr: RpcRequest<PartialResult<RemoteObjectId>>;
+        let rr: RpcRequest<RemoteObjectId>;
         if (local != null) {
             const origin = this.canvasToChart(this.selectionOrigin);
             const left = this.position(origin.x, origin.y);

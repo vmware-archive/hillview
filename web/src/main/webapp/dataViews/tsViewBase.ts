@@ -53,7 +53,7 @@ import {ErrorReporter} from "../ui/errReporter";
  * A base class for TableView and SchemaView.
  */
 export abstract class TSViewBase extends BigTableView {
-    protected defaultProvenance;
+    protected defaultProvenance: string;
 
     protected constructor(
         remoteObjectId: RemoteObjectId,
@@ -445,7 +445,7 @@ export abstract class TSViewBase extends BigTableView {
         let o = null;
         if (order != null) {
             o = order.clone();
-            if (!o.find(filter.column))
+            if (!o.find(filter.column.name))
                 o.addColumn(so);
         }
 

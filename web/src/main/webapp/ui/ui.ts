@@ -111,7 +111,7 @@ export class SpecialChars {
  * Remove all children of an HTML DOM object..
  */
 export function removeAllChildren(h: HTMLElement): void {
-    while (h.hasChildNodes())
+    while (h.lastChild != null)
         h.removeChild(h.lastChild);
 }
 

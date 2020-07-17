@@ -78,20 +78,21 @@ public class PrivateTableTarget extends TableRpcTarget implements IPrivateDatase
     // are computed at different bucket granularities.
     @HillviewRpc
     public void histogramAndCDF(RpcRequest request, RpcRequestContext context) {
-        HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
-        assert info.length == 2;
-        ColumnQuantization quantization = this.getPrivacySchema().quantization(info[0].cd.name);
+        HistogramRequestInfo info = request.parseArgs(HistogramRequestInfo.class);
+        assert info.size() == 2;
+        ColumnQuantization quantization = this.getPrivacySchema().quantization(
+                info.histos[0].cd.name);
         Converters.checkNull(quantization);
-        TableSketch<Groups<Count>> sk = info[0].getSketch(quantization); // Histogram
-        TableSketch<Groups<Count>> cdf = info[1].getSketch(quantization);
-        IntervalDecomposition d0 = info[0].getDecomposition(quantization);
-        IntervalDecomposition d1 = info[1].getDecomposition(quantization);
-        double epsilon = this.getPrivacySchema().epsilon(info[0].cd.name);
+        TableSketch<Groups<Count>> sk = info.getSketch(0, quantization); // Histogram
+        TableSketch<Groups<Count>> cdf = info.getSketch(1, quantization);
+        IntervalDecomposition d0 = info.getDecomposition(0, quantization);
+        IntervalDecomposition d1 = info.getDecomposition(1, quantization);
+        double epsilon = this.getPrivacySchema().epsilon(info.histos[0].cd.name);
         DPHistogram<Groups<Count>> privateHisto = new DPHistogram<>(
-                sk, this.wrapper.getColumnIndex(info[0].cd.name),
+                sk, this.wrapper.getColumnIndex(info.histos[0].cd.name),
                 d0, epsilon, false, this.wrapper.laplace);
         DPHistogram<Groups<Count>> privateCdf = new DPHistogram<>(
-                cdf, this.wrapper.getColumnIndex(info[0].cd.name),
+                cdf, this.wrapper.getColumnIndex(info.histos[0].cd.name),
                 d1, epsilon, true, this.wrapper.laplace);
         ConcurrentPostprocessedSketch<ITable, Groups<Count>, Groups<Count>,
                 Two<JsonGroups<Count>>, Two<JsonGroups<Count>>> ccp =
@@ -133,21 +134,22 @@ public class PrivateTableTarget extends TableRpcTarget implements IPrivateDatase
 
     @HillviewRpc
     public void histogram2D(RpcRequest request, RpcRequestContext context) {
-        HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
-        assert info.length == 2;
+        HistogramRequestInfo info = request.parseArgs(HistogramRequestInfo.class);
+        assert info.size() == 2;
         Histogram2DSketch sk = new Histogram2DSketch(
-                info[1].getBuckets(),
-                info[0].getBuckets());
-        ColumnQuantization q0 = this.getPrivacySchema().quantization(info[0].cd.name);
-        ColumnQuantization q1 = this.getPrivacySchema().quantization(info[1].cd.name);
+                info.getBuckets(1),
+                info.getBuckets(0));
+        ColumnQuantization q0 = this.getPrivacySchema().quantization(info.histos[0].cd.name);
+        ColumnQuantization q1 = this.getPrivacySchema().quantization(info.histos[1].cd.name);
         Converters.checkNull(q0);
         Converters.checkNull(q1);
-        IntervalDecomposition d0 = info[0].getDecomposition(q0);
-        IntervalDecomposition d1 = info[1].getDecomposition(q1);
-        double epsilon = this.getPrivacySchema().epsilon(info[0].cd.name, info[1].cd.name);
+        IntervalDecomposition d0 = info.getDecomposition(0, q0);
+        IntervalDecomposition d1 = info.getDecomposition(1, q1);
+        double epsilon = this.getPrivacySchema().epsilon(
+                info.histos[0].cd.name, info.histos[1].cd.name);
         DPHeatmapSketch<Groups<Count>, Groups<Groups<Count>>> hsk = new DPHeatmapSketch<>(
                 sk.quantized(new QuantizationSchema(q0, q1)),
-                this.wrapper.getColumnIndex(info[0].cd.name, info[1].cd.name),
+                this.wrapper.getColumnIndex(info.histos[0].cd.name, info.histos[1].cd.name),
                 d0, d1, epsilon, this.wrapper.laplace);
         this.runSketch(this.table, hsk, request, context);
     }

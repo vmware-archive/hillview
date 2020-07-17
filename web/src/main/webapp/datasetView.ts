@@ -118,7 +118,7 @@ export interface TrellisHeatmapSerialization extends
     HeatmapSerialization, TrellisShapeSerialization {}
 
 export interface CorrelationHeatmapSerialization extends IViewSerialization {
-    histoArgs: HistogramRequestInfo[];
+    histoArgs: HistogramRequestInfo;
     ranges: BucketsInfo[];
 }
 

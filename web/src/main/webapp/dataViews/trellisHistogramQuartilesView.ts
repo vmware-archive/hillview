@@ -18,8 +18,7 @@
 import {Receiver} from "../rpc";
 import {
     BucketsInfo,
-    Groups,
-    HistogramRequestInfo,
+    Groups, HistogramInfo,
     IColumnDescription, RangeFilterArrayDescription,
     RemoteObjectId, SampleSet
 } from "../javaBridge";
@@ -28,7 +27,7 @@ import {BaseReceiver, TableTargetAPI} from "../modules";
 import {SchemaClass} from "../schemaClass";
 import {
     allBuckets,
-    Converters, describeQuartiles, formatNumber,
+    Converters, describeQuartiles,
     ICancellable,
     PartialResult, quartileAsCsv,
 } from "../util";
@@ -38,7 +37,7 @@ import {
     TrellisQuartilesSerialization
 } from "../datasetView";
 import {IDataView} from "../ui/dataview";
-import {ChartOptions, DragEventKind, HtmlString, Resolution} from "../ui/ui";
+import {ChartOptions, DragEventKind, Resolution} from "../ui/ui";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {
     NewTargetReceiver,
@@ -253,7 +252,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
     }
 
     protected export(): void {
-        let lines = [];
+        let lines: string[] = [];
         const axisName = this.schema.displayName(this.groupByAxisData.description.name);
         let bucketNo = 0;
         for (const g of allBuckets(this.data)) {
@@ -374,6 +373,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
                 .attr("height", this.shape.size.height)
                 .attr("y", this.coordinates[index].y);
         }
+        return true;
     }
 
     protected getCombineRenderer(title: PageTitle):
@@ -427,7 +427,7 @@ export class TrellisHistogramQuartilesReceiver extends Receiver<Groups<Groups<Sa
                 remoteTable: TableTargetAPI,
                 protected rowCount: number,
                 protected schema: SchemaClass,
-                protected histoArgs: HistogramRequestInfo[],
+                protected histoArgs: HistogramInfo[],
                 protected range: BucketsInfo[],
                 protected qCol: IColumnDescription,
                 protected shape: TrellisShape,

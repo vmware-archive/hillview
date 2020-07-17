@@ -311,10 +311,8 @@ export interface Groups<R> {
     perMissing: R;
 }
 
-export interface HistogramRequestInfo {
+export interface HistogramInfo {
     cd: IColumnDescription;
-    seed: number;
-    samplingRate: number;
     bucketCount: number;  // sometimes superseded by leftBoundaries
     // only used when doing string histograms
     leftBoundaries?: string[];
@@ -323,14 +321,24 @@ export interface HistogramRequestInfo {
     max?: number;
 }
 
-export interface QuantilesVectorInfo extends HistogramRequestInfo {
+export interface HistogramRequestInfo {
+    histos: HistogramInfo[];
+    samplingRate: number;
+    seed: number;
+}
+
+export interface HeatmapRequestInfo extends HistogramRequestInfo {
+    schema: Schema;
+}
+
+export interface QuantilesVectorInfo extends HistogramInfo {
     seed: number;
     quantileCount: number,
     quantilesColumn: string;
 }
 
 export interface QuantilesMatrixInfo extends QuantilesVectorInfo {
-    groupColumn: HistogramRequestInfo;
+    groupColumn: HistogramInfo;
 }
 
 export interface HeavyHittersFilterInfo {

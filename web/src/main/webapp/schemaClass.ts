@@ -88,7 +88,7 @@ export class SchemaClass implements Serializable<SchemaClass> {
      * odd elements are new names.
      */
     public getRenameVector(): string[] {
-        const result = [];
+        const result: string[] = [];
         this.displayNameMap.forEach((v, k) => { result.push(k); result.push(v.displayName); });
         return result;
     }
@@ -201,7 +201,7 @@ export class SchemaClass implements Serializable<SchemaClass> {
         return this.find(original);
     }
 
-    public filter(predicate: (IColumnDescription) => boolean): SchemaClass {
+    public filter(predicate: (c: IColumnDescription) => boolean): SchemaClass {
         const cols = this.schema.filter(predicate);
         const result = new SchemaClass(cols);
         result.copyDisplayNames(this);

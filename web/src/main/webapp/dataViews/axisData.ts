@@ -144,17 +144,17 @@ export class AxisDescription {
         if (this.majorLabels != null)
             result.selectAll("text")
                 .append("title")
-                .text((d, i) => this.majorLabels[i]);
+                .text((d: any, i: number) => this.majorLabels[i]);
         if (this.majorTickPeriod !== 1)
             result.selectAll("line")
-                .filter((d, i) => i % this.majorTickPeriod === 0)
+                .filter((d: any, i: number) => i % this.majorTickPeriod === 0)
                 .attr("y2", 12);
         return result;
     }
 }
 
 // This value indicates that some data does not fall within a bucket.
-export const NoBucketIndex = null;
+export const NoBucketIndex: number = null;
 
 /**
  * Contains all information required to build an axis and a d3 scale associated to it.

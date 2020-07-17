@@ -235,8 +235,8 @@ export class LogFileReceiver extends BaseReceiver {
         super(page, operation, "GetLogFile", page.dataset);
     }
 
-    public run(): void {
-        super.run();
+    public run(value: RemoteObjectId): void {
+        super.run(value);
         // Prune the dataset; may increase efficiency
         const rr = this.remoteObject.createStreamingRpcRequest<RemoteObjectId>("prune", null);
         rr.chain(this.operation);
@@ -256,8 +256,8 @@ class PrunedLogFileReceiver extends BaseReceiver {
         super(page, operation, "prune", page.dataset);
     }
 
-    public run(): void {
-        super.run();
+    public run(value: RemoteObjectId): void {
+        super.run(value);
         const logWindow = window.open("log.html", "_blank");
         const viewer = new LogFileView(this.remoteObject.remoteObjectId, this.schema, this.filename);
         logWindow.onload = () => {

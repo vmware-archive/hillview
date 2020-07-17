@@ -129,7 +129,7 @@ export class PiePlot extends Plot<Two<Groups<number>>> {
         const arc = d3arc()
             .innerRadius(0)
             .outerRadius(radius);
-        let confidence;
+        let confidence: number[];
         if (this.isPrivate) {
             confidence = allBuckets(this.data.second);
         } else {
@@ -149,9 +149,9 @@ export class PiePlot extends Plot<Two<Groups<number>>> {
             .attr('transform', tr)
             .append("path")
             .attr("d", arc)
-            .attr('fill', (d,i) => this.color(i, counts.length))
+            .attr('fill', (d: number, i: number) => this.color(i, counts.length))
             .append("svg:title")
-            .text((d,i) => this.label(i) + ":" + this.countAsString(counts[i], confidence[i], sum))
+            .text((d: number, i: number) => this.label(i) + ":" + this.countAsString(counts[i], confidence[i], sum))
             .exit();
 
         let total = 0;
@@ -212,38 +212,38 @@ export class PiePlot extends Plot<Two<Groups<number>>> {
             .enter()
             .append("text")
             .attr("x", chartWidth / 2 - radius * 1.1)
-            .attr("y", (d) => d.value)
+            .attr("y", (d: ValueAndIndex) => d.value)
             .attr("font-size", fontSize)
             .attr("text-anchor", "end")
-            .text((d) => this.label(d.index))
+            .text((d: ValueAndIndex) => this.label(d.index))
             .append("svg:title")
-            .text((d) => this.countAsString(counts[d.index], confidence[d.index], sum));
+            .text((d: ValueAndIndex) => this.countAsString(counts[d.index], confidence[d.index], sum));
         drawing.data(rightLabelPosition)
             .enter()
             .append("text")
             .attr("x", chartWidth / 2 + radius * 1.1)
-            .attr("y", (d) => d.value)
+            .attr("y", (d: ValueAndIndex) => d.value)
             .attr("font-size", fontSize)
             .attr("text-anchor", "start")
-            .text((d) => this.label(d.index))
+            .text((d: ValueAndIndex) => this.label(d.index))
             .append("svg:title")
-            .text((d) => this.countAsString(counts[d.index], confidence[d.index], sum));
+            .text((d: ValueAndIndex) => this.countAsString(counts[d.index], confidence[d.index], sum));
         // lines connecting labels to pie segments
         drawing.data(rightLabelPosition)
             .enter()
             .append("line")
             .attr("x1", chartWidth / 2 + radius * 1.1 - textSpacing)
-            .attr("y1", (d) => d.value - fontSize / 2)
-            .attr("x2", (d, i) => chartWidth / 2 + eRad * Math.sin(rightPosition[i].value * Math.PI))
-            .attr("y2", (d, i) => chartHeight / 2 - eRad * Math.cos(rightPosition[i].value * Math.PI))
+            .attr("y1", (d: ValueAndIndex) => d.value - fontSize / 2)
+            .attr("x2", (d: ValueAndIndex, i: number) => chartWidth / 2 + eRad * Math.sin(rightPosition[i].value * Math.PI))
+            .attr("y2", (d: ValueAndIndex, i: number) => chartHeight / 2 - eRad * Math.cos(rightPosition[i].value * Math.PI))
             .attr("style", "stroke:black");
         drawing.data(leftLabelPosition)
             .enter()
             .append("line")
             .attr("x1", chartWidth / 2 - radius * 1.1 + textSpacing)
-            .attr("y1", (d) => d.value - fontSize / 2)
-            .attr("x2", (d, i) => chartWidth / 2 - eRad * Math.sin(leftPosition[i].value * Math.PI))
-            .attr("y2", (d, i) => chartHeight / 2 - eRad * Math.cos(leftPosition[i].value * Math.PI))
+            .attr("y1", (d: ValueAndIndex) => d.value - fontSize / 2)
+            .attr("x2", (d: ValueAndIndex, i: number) => chartWidth / 2 - eRad * Math.sin(leftPosition[i].value * Math.PI))
+            .attr("y2", (d: ValueAndIndex, i: number) => chartHeight / 2 - eRad * Math.cos(leftPosition[i].value * Math.PI))
             .attr("style", "stroke:black");
     }
 

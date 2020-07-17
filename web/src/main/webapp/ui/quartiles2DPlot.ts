@@ -25,6 +25,15 @@ import {PlottingSurface} from "./plottingSurface";
 import {D3Axis, D3Scale} from "./ui";
 import {SchemaClass} from "../schemaClass";
 
+interface Whisker {
+    x: number,
+    min: number,
+    max: number,
+    q1: number,
+    q2: number,
+    q3: number
+}
+
 /**
  * A QuartilesPlot draws a vector if whisker plots
  * on a PlottingSurface, including the axes.
@@ -87,7 +96,7 @@ export class Quartiles2DPlot extends Plot<Groups<SampleSet>> {
         this.yScale = d3scaleLinear()
             .range([chartHeight, 0])
             .domain([this.min, this.max]);
-        this.yAxis = d3axisLeft(this.yScale).tickFormat(d3format(".2s"));
+        this.yAxis = d3axisLeft<number>(this.yScale).tickFormat(d3format(".2s"));
         this.barWidth = chartWidth / bucketCount;
 
         this.plottingSurface.getCanvas().append("text")
@@ -108,7 +117,7 @@ export class Quartiles2DPlot extends Plot<Groups<SampleSet>> {
             const extra = q.samples;
             for (let i = q.samples.length; i < 3; i++)
                 extra.push(q.samples[q.samples.length - 1]);
-            const whisker = {
+            const whisker: Whisker = {
                 x: x,
                 min: q.min,
                 max: q.max,
@@ -119,9 +128,9 @@ export class Quartiles2DPlot extends Plot<Groups<SampleSet>> {
             whiskers.push(whisker);
         }
 
-        const yPos = d => chartHeight - (d - this.min) * yScale;
-        const xL = d => (d + .5) * this.barWidth - lineWidth / 2;
-        const xR = d => xL(d) + lineWidth;
+        const yPos = (d: number) => chartHeight - (d - this.min) * yScale;
+        const xL = (d: number) => (d + .5) * this.barWidth - lineWidth / 2;
+        const xR = (d: number) => xL(d) + lineWidth;
 
         const lineWidth = this.barWidth * 3/4;
         const support = this.plottingSurface.getChart()
@@ -130,48 +139,48 @@ export class Quartiles2DPlot extends Plot<Groups<SampleSet>> {
             .enter()
             .append("g");
         support.append("rect")
-            .attr("x", (l) => xL(l.x))
-            .attr("y", (l) => yPos(l.q3))
-            .attr("height", (l) => yPos(l.q1) - yPos(l.q3))
+            .attr("x", (l: Whisker) => xL(l.x))
+            .attr("y", (l: Whisker) => yPos(l.q3))
+            .attr("height", (l: Whisker) => yPos(l.q1) - yPos(l.q3))
             .attr("width", lineWidth)
             .attr("stroke-width", 1)
             .attr("stroke", "black")
             .attr("fill", "darkcyan");
         support.append("svg:line")
-            .attr("x1", (l) => xL(l.x) + lineWidth / 2)
-            .attr("y1", (l) => yPos(l.max))
-            .attr("x2", (l) => xL(l.x) + lineWidth / 2)
-            .attr("y2", (l) => yPos(l.q3))
+            .attr("x1", (l: Whisker) => xL(l.x) + lineWidth / 2)
+            .attr("y1", (l: Whisker) => yPos(l.max))
+            .attr("x2", (l: Whisker) => xL(l.x) + lineWidth / 2)
+            .attr("y2", (l: Whisker) => yPos(l.q3))
             .attr("stroke-width", 1)
             .attr("stroke", "black");
         support.append("svg:line")
-            .attr("x1", (l) => xL(l.x) + lineWidth / 2)
-            .attr("y1", (l) => yPos(l.q1))
-            .attr("x2", (l) => xL(l.x) + lineWidth / 2)
-            .attr("y2", (l) => yPos(l.min))
+            .attr("x1", (l: Whisker) => xL(l.x) + lineWidth / 2)
+            .attr("y1", (l: Whisker) => yPos(l.q1))
+            .attr("x2", (l: Whisker) => xL(l.x) + lineWidth / 2)
+            .attr("y2", (l: Whisker) => yPos(l.min))
             .attr("stroke-width", 1)
             .attr("stroke", "black");
         support.append("svg:line")
-            .attr("x1", (l) => xL(l.x))
-            .attr("x2", (l) => xR(l.x))
-            .attr("y1", (l) => yPos(l.min))
-            .attr("y2", (l) => yPos(l.min))
+            .attr("x1", (l: Whisker) => xL(l.x))
+            .attr("x2", (l: Whisker) => xR(l.x))
+            .attr("y1", (l: Whisker) => yPos(l.min))
+            .attr("y2", (l: Whisker) => yPos(l.min))
             .attr("stroke-width", 1)
             .attr("stroke", "black")
             .attr("stroke-linecap", "round");
         support.append("svg:line")
-            .attr("x1", (l) => xL(l.x))
-            .attr("x2", (l) => xR(l.x))
-            .attr("y1", (l) => yPos(l.max))
-            .attr("y2", (l) => yPos(l.max))
+            .attr("x1", (l: Whisker) => xL(l.x))
+            .attr("x2", (l: Whisker) => xR(l.x))
+            .attr("y1", (l: Whisker) => yPos(l.max))
+            .attr("y2", (l: Whisker) => yPos(l.max))
             .attr("stroke-width", 1)
             .attr("stroke", "black")
             .attr("stroke-linecap", "round");
         support.append("svg:line")
-            .attr("x1", (l) => xL(l.x))
-            .attr("x2", (l) => xR(l.x))
-            .attr("y1", (l) => yPos(l.q2))
-            .attr("y2", (l) => yPos(l.q2))
+            .attr("x1", (l: Whisker) => xL(l.x))
+            .attr("x2", (l: Whisker) => xR(l.x))
+            .attr("y1", (l: Whisker) => yPos(l.q2))
+            .attr("y2", (l: Whisker) => yPos(l.q2))
             .attr("stroke-width", 1)
             .attr("stroke", "black")
             .attr("stroke-linecap", "round");

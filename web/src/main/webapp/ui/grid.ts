@@ -54,7 +54,7 @@ export class Grid implements IHtmlElement {
             ...
         </table>
      */
-    public constructor(public readonly defaultColumnWidth) {
+    public constructor(public readonly defaultColumnWidth: number) {
         this.topLevel = document.createElement("div");
         this.topLevel.style.overflowX = "scroll";
         this.topLevel.style.width = "100%";
@@ -92,7 +92,7 @@ export class Grid implements IHtmlElement {
             const drag = d3drag()
                 .on("drag", () => this.drag(handle))
                 .on("start", () => this.dragStarted(handle));
-            d3select(handle).call(drag);
+            d3select<Element, unknown>(handle).call(drag);
             handle.ondblclick = () => this.resize(handle);
         }
         return resizable;

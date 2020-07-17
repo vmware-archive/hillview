@@ -473,6 +473,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
         const position = d3mouse(this.surface.getCanvas().node());
         const x = position[0];
         this.selectionCompleted(this.selectionOrigin.x, x);
+        return true;
     }
 
     /**

@@ -104,7 +104,7 @@ export function histogram2DAsCsv(
 
 export function histogram3DAsCsv(
     data: Groups<Groups<Groups<number>>>, schema: SchemaClass, axis: AxisData[]): string[] {
-    let lines = [];
+    let lines: string[] = [];
     const gAxis = schema.displayName(axis[2].description.name);
     for (let g = 0; g < axis[2].bucketCount; g++) {
         const gl = histogram2DAsCsv(data.perBucket[g], schema, axis);
@@ -656,7 +656,7 @@ export class Heatmap {
      */
     public bucketsInRange(yMin: number, yMax: number): Heatmap {
         return new Heatmap(this.data.map(
-            (g, i) => g.map( (n, i1) =>
+            (g, _) => g.map( (n, i1) =>
                 ((yMin <= i1) && (i1 < yMax)) ? n : 0
             )));
     }
@@ -939,7 +939,12 @@ export interface IRawCancellable {
 
 // Typed version of the cancellable API, makes it easy to do
 // strong typing.
-export interface ICancellable<T> extends IRawCancellable {}
+interface ISimpleCancellable<T> extends IRawCancellable {
+    unused: T; // this is here just to force the typescript typechecker to check T
+    // I don't understand why otherwise it doesn't
+}
+
+export interface ICancellable<T> extends ISimpleCancellable<PartialResult<T>> {}
 
 export function px(dim: number): string {
     if (dim === 0)

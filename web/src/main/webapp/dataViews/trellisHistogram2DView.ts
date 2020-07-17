@@ -30,7 +30,7 @@ import {
     ICancellable,
     PartialResult,
     percentString, reorder,
-    significantDigits
+    significantDigits, Two
 } from "../util";
 import {AxisData, AxisKind} from "./axisData";
 import {
@@ -403,7 +403,7 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
 
         for (let i = 0; i < data.perBucket.length; i++) {
             const buckets = data.perBucket[i];
-            const heatmap = { first: buckets, second: null };
+            const heatmap: Two<Groups<Groups<number>>> = { first: buckets, second: null };
             const plot = this.hps[i];
             plot.setData(heatmap, this.xAxisData, this.samplingRate, this.relative,
                 this.schema, this.legendPlot.colorMap, max, this.rowCount);
@@ -411,7 +411,7 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
         }
         if (this.shape.missingBucket) {
             const buckets = data.perMissing;
-            const heatmap = { first: buckets, second: null };
+            const heatmap: Two<Groups<Groups<number>>> = { first: buckets, second: null };
             const plot = this.hps[data.perBucket.length];
             plot.setData(heatmap, this.xAxisData, this.samplingRate, this.relative,
                 this.schema, this.legendPlot.colorMap, max, this.rowCount);
@@ -448,6 +448,7 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
                 .attr("height", this.shape.size.height)
                 .attr("y", this.coordinates[index].y);
         }
+        return true;
     }
 
     protected getCombineRenderer(title: PageTitle):

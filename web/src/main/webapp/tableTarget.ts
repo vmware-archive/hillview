@@ -49,7 +49,7 @@ import {
     StringColumnsFilterDescription,
     StringFilterDescription,
     TableSummary,
-    TopList, CreateIntervalColumnMapInfo
+    TopList, CreateIntervalColumnMapInfo, HeatmapRequestInfo
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
 import {FullPage, PageTitle} from "./ui/fullPage";
@@ -96,7 +96,7 @@ export class TableTargetAPI extends RemoteObject {
         super(remoteObjectId);
     }
 
-    public createSetRequest(r: RemoteObjectId, c: CombineOperators): RpcRequest<PartialResult<RemoteObjectId>> {
+    public createSetRequest(r: RemoteObjectId, c: CombineOperators): RpcRequest<RemoteObjectId> {
         return this.createStreamingRpcRequest<RemoteObjectId>("setOperation",
             { otherId: r, op: CombineOperators[c] });
     }
@@ -104,7 +104,7 @@ export class TableTargetAPI extends RemoteObject {
     public createFindRequest(
         order: RecordOrder, topRow: any[],
         strFilter: StringFilterDescription, excludeTopRow: boolean, next: boolean):
-        RpcRequest<PartialResult<FindResult>> {
+        RpcRequest<FindResult> {
         return this.createStreamingRpcRequest<FindResult>("find", {
             order: order,
             topRow: topRow,
@@ -115,7 +115,7 @@ export class TableTargetAPI extends RemoteObject {
     }
 
     public createQuantileRequest(rowCount: number, o: RecordOrder, position: number):
-            RpcRequest<PartialResult<any[]>> {
+            RpcRequest<any[]> {
         return this.createStreamingRpcRequest<any[]>("quantile", {
             precision: 100,
             tableSize: rowCount,
@@ -174,7 +174,7 @@ export class TableTargetAPI extends RemoteObject {
      * @param viewKind   How data will be displayed.
      */
     public createDataQuantilesRequest(cds: IColumnDescription[], page: FullPage, viewKind: ViewKind):
-        RpcRequest<PartialResult<BucketsInfo[]>> {
+        RpcRequest<BucketsInfo[]> {
         // Determine the resolution of the ranges request based on the plot kind.
         const bucketCounts: number[] = TableTargetAPI.rangesResolution(page, viewKind, cds);
         assert(bucketCounts.length === cds.length);
@@ -184,21 +184,21 @@ export class TableTargetAPI extends RemoteObject {
                 seed: kindIsString(c.kind) ? Seed.instance.get() : 0,
                 stringsToSample: b
             }});
-        return this.createStreamingRpcRequest<BucketsInfo>("getDataQuantiles", args);
+        return this.createStreamingRpcRequest<BucketsInfo[]>("getDataQuantiles", args);
     }
 
-    public createCorrelationHeatmapRequest(args: HistogramRequestInfo[]):
-        RpcRequest<PartialResult<Groups<Groups<number>>[]>> {
+    public createCorrelationHeatmapRequest(args: HistogramRequestInfo):
+        RpcRequest<Groups<Groups<number>>[]> {
         return this.createStreamingRpcRequest<Groups<Groups<number>>[]>("correlationHeatmaps", args);
     }
 
     public createQuantilesVectorRequest(args: QuantilesVectorInfo):
-        RpcRequest<PartialResult<Groups<SampleSet>>> {
+        RpcRequest<Groups<SampleSet>> {
         return this.createStreamingRpcRequest<Groups<SampleSet>>("getQuantilesVector", args);
     }
 
     public createQuantilesMatrixRequest(args: QuantilesMatrixInfo):
-        RpcRequest<PartialResult<Groups<Groups<SampleSet>>>> {
+        RpcRequest<Groups<Groups<SampleSet>>> {
         return this.createStreamingRpcRequest<Groups<Groups<SampleSet>>>("getQuantilesMatrix", args);
     }
 
@@ -211,7 +211,7 @@ export class TableTargetAPI extends RemoteObject {
     }
 
     public createGetLogFragmentRequest(schema: Schema, row: any[], rowSchema: Schema, rowCount: number):
-        RpcRequest<PartialResult<NextKList>> {
+        RpcRequest<NextKList> {
         return this.createStreamingRpcRequest<NextKList>("getLogFragment", {
             schema: schema,
             row: row,
@@ -231,7 +231,7 @@ export class TableTargetAPI extends RemoteObject {
      */
     public createNextKRequest(order: RecordOrder, firstRow: any[] | null, rowsOnScreen: number,
                               aggregates?: AggregateDescription[], columnsNoValue?: string[]):
-        RpcRequest<PartialResult<NextKList>> {
+        RpcRequest<NextKList> {
         const nextKArgs: NextKArgs = {
             toFind: null,
             order: order,
@@ -243,23 +243,23 @@ export class TableTargetAPI extends RemoteObject {
         return this.createStreamingRpcRequest<NextKList>("getNextK", nextKArgs);
     }
 
-    public createGetSummaryRequest(): RpcRequest<PartialResult<TableSummary>> {
+    public createGetSummaryRequest(): RpcRequest<TableSummary> {
         return this.createStreamingRpcRequest<TableSummary>("getSummary", null);
     }
 
-    public createHLogLogRequest(colName: string): RpcRequest<PartialResult<CountWithConfidence>> {
+    public createHLogLogRequest(colName: string): RpcRequest<CountWithConfidence> {
         return this.createStreamingRpcRequest<CountWithConfidence>("hLogLog",
             { columnName: colName, seed: Seed.instance.get() });
     }
 
-    public createBasicColStatsRequest(cols: string[]): RpcRequest<PartialResult<BasicColStats[]>> {
+    public createBasicColStatsRequest(cols: string[]): RpcRequest<BasicColStats[]> {
         return this.createStreamingRpcRequest<BasicColStats[]>("basicColStats", cols);
     }
 
     public createHeavyHittersRequest(columns: IColumnDescription[],
                                      percent: number,
                                      totalRows: number,
-                                     threshold: number): RpcRequest<PartialResult<TopList>> {
+                                     threshold: number): RpcRequest<TopList> {
         if (percent < threshold) {
             return this.createStreamingRpcRequest<TopList>("heavyHittersMG",
                 { columns: columns, amount: percent,
@@ -272,7 +272,7 @@ export class TableTargetAPI extends RemoteObject {
     }
 
     public createCheckHeavyRequest(r: RemoteObject, schema: Schema):
-            RpcRequest<PartialResult<TopList>> {
+            RpcRequest<TopList> {
         return this.createStreamingRpcRequest<TopList>("checkHeavy", {
             hittersId: r.remoteObjectId,
             schema: schema
@@ -280,7 +280,7 @@ export class TableTargetAPI extends RemoteObject {
     }
 
     public createFilterHeavyRequest(rid: RemoteObjectId, schema: Schema, includeSet: boolean):
-        RpcRequest<PartialResult<RemoteObjectId>> {
+        RpcRequest<RemoteObjectId> {
         return this.createStreamingRpcRequest<RemoteObjectId>("filterHeavy", {
             hittersId: rid,
             schema: schema,
@@ -289,7 +289,7 @@ export class TableTargetAPI extends RemoteObject {
     }
 
     public createFilterListHeavy(rid: RemoteObjectId, schema: Schema, includeSet: boolean, rowIndices: number[]):
-        RpcRequest<PartialResult<RemoteObjectId>> {
+        RpcRequest<RemoteObjectId> {
             return this.createStreamingRpcRequest<RemoteObjectId>("filterListHeavy", {
                 hittersId: rid,
                 schema: schema,
@@ -299,7 +299,7 @@ export class TableTargetAPI extends RemoteObject {
     }
 
     public createProjectToEigenVectorsRequest(r: RemoteObject, dimension: number, projectionName: string):
-    RpcRequest<PartialResult<RemoteObjectId>> {
+    RpcRequest<RemoteObjectId> {
         return this.createStreamingRpcRequest<RemoteObjectId>("projectToEigenVectors", {
             id: r.remoteObjectId,
             numComponents: dimension,
@@ -307,40 +307,40 @@ export class TableTargetAPI extends RemoteObject {
         });
     }
 
-    public createJSFilterRequest(filter: JSFilterInfo): RpcRequest<PartialResult<RemoteObjectId>> {
+    public createJSFilterRequest(filter: JSFilterInfo): RpcRequest<RemoteObjectId> {
         return this.createStreamingRpcRequest<RemoteObjectId>("jsFilter", filter);
     }
 
-    public createIntervalRequest(args: CreateIntervalColumnMapInfo): RpcRequest<PartialResult<RemoteObjectId>> {
+    public createIntervalRequest(args: CreateIntervalColumnMapInfo): RpcRequest<RemoteObjectId> {
         return this.createStreamingRpcRequest<RemoteObjectId>("createIntervalColumn", args);
     }
 
-    public createCompareDatasetsRequest(args: CompareDatasetsInfo): RpcRequest<PartialResult<RemoteObjectId>> {
+    public createCompareDatasetsRequest(args: CompareDatasetsInfo): RpcRequest<RemoteObjectId> {
         return this.createStreamingRpcRequest<RemoteObjectId>("compareDatasets", args);
     }
 
     public createRowFilterRequest(filter: RowFilterDescription):
-            RpcRequest<PartialResult<RemoteObjectId>> {
+            RpcRequest<RemoteObjectId> {
         return this.createStreamingRpcRequest<RemoteObjectId>("filterOnRow", filter);
     }
 
     public createFilterColumnRequest(filter: StringColumnFilterDescription):
-            RpcRequest<PartialResult<RemoteObjectId>> {
+            RpcRequest<RemoteObjectId> {
         return this.createStreamingRpcRequest<RemoteObjectId>("filterColumn", filter);
     }
 
     public createFilterColumnsRequest(filter: StringColumnsFilterDescription):
-        RpcRequest<PartialResult<RemoteObjectId>> {
+        RpcRequest<RemoteObjectId> {
         return this.createStreamingRpcRequest<RemoteObjectId>("filterColumns", filter);
     }
 
     public createFilterComparisonRequest(filter: ComparisonFilterDescription):
-    RpcRequest<PartialResult<RemoteObjectId>> {
+    RpcRequest<RemoteObjectId> {
         return this.createStreamingRpcRequest<RemoteObjectId>("filterComparison", filter);
     }
 
     public createCorrelationMatrixRequest(columnNames: string[], totalRows: number, toSample: boolean):
-RpcRequest<PartialResult<RemoteObjectId>> {
+RpcRequest<RemoteObjectId> {
         return this.createStreamingRpcRequest<RemoteObjectId>("correlationMatrix", {
             columnNames: columnNames,
             totalRows: totalRows,
@@ -349,12 +349,12 @@ RpcRequest<PartialResult<RemoteObjectId>> {
         });
     }
 
-    public createProjectRequest(schema: Schema): RpcRequest<PartialResult<RemoteObjectId>> {
+    public createProjectRequest(schema: Schema): RpcRequest<RemoteObjectId> {
         return this.createStreamingRpcRequest<RemoteObjectId>("project", schema);
     }
 
     public createSpectrumRequest(columnNames: string[], totalRows: number, toSample: boolean):
-    RpcRequest<PartialResult<EigenVal>> {
+    RpcRequest<EigenVal> {
         return this.createStreamingRpcRequest<EigenVal>("spectrum", {
             columnNames: columnNames,
             totalRows: totalRows,
@@ -364,61 +364,67 @@ RpcRequest<PartialResult<RemoteObjectId>> {
     }
 
     public createJSCreateColumnRequest(c: CreateColumnJSMapInfo):
-        RpcRequest<PartialResult<string>> {
+        RpcRequest<string> {
         return this.createStreamingRpcRequest<string>("jsCreateColumn", c);
     }
 
     public createKVCreateColumnRequest(c: ExtractValueFromKeyMapInfo):
-        RpcRequest<PartialResult<string>> {
+        RpcRequest<string> {
         return this.createStreamingRpcRequest<string>("kvCreateColumn", c);
     }
 
     public createFilterRequest(f: RangeFilterArrayDescription):
-        RpcRequest<PartialResult<RemoteObjectId>> {
+        RpcRequest<RemoteObjectId> {
         return this.createStreamingRpcRequest<RemoteObjectId>("filterRanges", f);
     }
 
-    public createHistogram2DAndCDFRequest(info: HistogramRequestInfo[]):
-        RpcRequest<PartialResult<Pair<Groups<Groups<number>>, Groups<number>>>> {
+    public createHistogram2DAndCDFRequest(info: HistogramRequestInfo):
+        RpcRequest<Pair<Groups<Groups<number>>, Groups<number>>> {
         return this.createStreamingRpcRequest<Pair<Groups<Groups<number>>, Groups<number>>>("histogram2DAndCDF", info);
     }
 
-    public createHistogram2DRequest(info: HistogramRequestInfo[]): RpcRequest<PartialResult<Two<Groups<Groups<number>>>>> {
+    public createHistogram2DRequest(info: HistogramRequestInfo): RpcRequest<Two<Groups<Groups<number>>>> {
         return this.createStreamingRpcRequest<Two<Groups<Groups<number>>>>("histogram2D", info);
     }
 
-    public createHistogram3DRequest(info: HistogramRequestInfo[]): RpcRequest<PartialResult<Groups<Groups<Groups<number>>>>> {
+    public createHeatmapRequest(info: HeatmapRequestInfo):
+        RpcRequest<Pair<Groups<Groups<number>>, Groups<Groups<any[]>>>> {
+        return this.createStreamingRpcRequest<Pair<Groups<Groups<number>>, Groups<Groups<any[]>>>>(
+            "heatmap", info);
+    }
+
+    public createHistogram3DRequest(info: HistogramRequestInfo): RpcRequest<Groups<Groups<Groups<number>>>> {
         return this.createStreamingRpcRequest<Groups<Groups<Groups<number>>>>("histogram3D", info);
     }
 
-    public createHistogramAndCDFRequest(info: HistogramRequestInfo[]):
-    RpcRequest<PartialResult<Pair<Groups<number>, Groups<number>>>> {
-        return this.createStreamingRpcRequest<Pair<Groups<number>, Groups<number>>>(
+    public createHistogramAndCDFRequest(info: HistogramRequestInfo):
+    RpcRequest<Two<Two<Groups<number>>>> {
+        return this.createStreamingRpcRequest<Two<Two<Groups<number>>>>(
             "histogramAndCDF", info);
     }
 
     public createSampledControlPointsRequest(rowCount: number, numSamples: number, columnNames: string[]):
-            RpcRequest<PartialResult<RemoteObjectId>> {
+            RpcRequest<RemoteObjectId> {
         return this.createStreamingRpcRequest<RemoteObjectId>("sampledControlPoints",
             {rowCount: rowCount, numSamples: numSamples, columnNames: columnNames, seed: Seed.instance.get() });
     }
 
     public createCategoricalCentroidsControlPointsRequest(
         categoricalColumnName: string, numericalColumnNames: string[]):
-            RpcRequest<PartialResult<RemoteObjectId>> {
+            RpcRequest<RemoteObjectId> {
         return this.createStreamingRpcRequest<RemoteObjectId>("categoricalCentroidsControlPoints", {
                 categoricalColumnName: categoricalColumnName,
                 numericalColumnNames: numericalColumnNames } );
     }
 
-    public createMDSProjectionRequest(id: RemoteObjectId): RpcRequest<PartialResult<PointSet>> {
+    public createMDSProjectionRequest(id: RemoteObjectId): RpcRequest<PointSet> {
         return this.createStreamingRpcRequest<PointSet>(
             "makeMDSProjection", { id: id, seed: Seed.instance.get() });
     }
 
     public createLAMPMapRequest(controlPointsId: RemoteObjectId,
                                 colNames: string[], controlPoints: PointSet, newColNames: string[]):
-            RpcRequest<PartialResult<RemoteObjectId>> {
+            RpcRequest<RemoteObjectId> {
         return this.createStreamingRpcRequest<RemoteObjectId>("lampMap",
             {controlPointsId: controlPointsId, colNames: colNames,
                 newLowDimControlPoints: controlPoints, newColNames: newColNames });
@@ -669,8 +675,8 @@ export abstract class BaseReceiver extends OnCompleteReceiver<RemoteObjectId> {
         this.remoteObject = null;
     }
 
-    public run(): void {
-        if (this.value != null)
-            this.remoteObject = new TableTargetAPI(this.value);
+    public run(value: RemoteObjectId): void {
+        if (value != null)
+            this.remoteObject = new TableTargetAPI(value);
     }
 }

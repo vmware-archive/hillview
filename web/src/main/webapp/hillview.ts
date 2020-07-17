@@ -31,4 +31,5 @@ const public_symbols = {
     createHillview,
 };
 
+// @ts-ignore
 window["hillview"] = public_symbols;

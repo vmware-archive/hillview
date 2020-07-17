@@ -22,7 +22,6 @@
 import {FullPage, PageTitle} from "./fullPage";
 import {TableTargetAPI} from "../modules";
 import {SchemaClass} from "../schemaClass";
-import {PartialResult} from "../util";
 import {Receiver, RpcRequest} from "../rpc";
 import {ChartOptions} from "./ui";
 
@@ -63,8 +62,10 @@ export interface ReceiverCommonArgs extends CommonArgs {
 }
 
 export abstract class ReceiverCommon<T> extends Receiver<T> {
-    protected constructor(protected args: ReceiverCommonArgs, operation: RpcRequest<PartialResult<T>>, description: string) {
-        super(args.options.reusePage ? args.originalPage : args.originalPage.dataset.newPage(args.title, args.originalPage),
+    protected constructor(protected args: ReceiverCommonArgs,
+                          operation: RpcRequest<T>, description: string) {
+        super(args.options.reusePage ? args.originalPage :
+            args.originalPage.dataset.newPage(args.title, args.originalPage),
             operation, description)
     }
 }

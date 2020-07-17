@@ -93,21 +93,21 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
 
     @HillviewRpc
     public void histogramAndCDF(RpcRequest request, RpcRequestContext context) {
-        HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
-        assert info.length == 2;
+        HistogramRequestInfo info = request.parseArgs(HistogramRequestInfo.class);
+        assert info.size() == 2;
 
-        ColumnDescription cd = info[0].cd;  // both args should be on the same column
+        ColumnDescription cd = info.histos[0].cd;  // both args should be on the same column
         ColumnQuantization quantization = this.getPrivacySchema().quantization(cd.name);
         double epsilon = this.getPrivacySchema().epsilon(cd.name);
         if (quantization == null)
             throw new RuntimeException("No quantization information for column " + cd.name);
 
-        IntervalDecomposition d0 = info[0].getDecomposition(quantization);
-        IntervalDecomposition d1 = info[1].getDecomposition(quantization);
+        IntervalDecomposition d0 = info.getDecomposition(0, quantization);
+        IntervalDecomposition d1 = info.getDecomposition(1, quantization);
         JsonGroups<Count> histo = this.database.histogram(
-                cd, info[0].getBuckets(quantization), this.wrapper.columnLimits, quantization, this.rowCount);
+                cd, info.getBuckets(0, quantization), this.wrapper.columnLimits, quantization, this.rowCount);
         JsonGroups<Count> cdf = this.database.histogram(
-                cd, info[1].getBuckets(quantization), this.wrapper.columnLimits, quantization, this.rowCount);
+                cd, info.getBuckets(1, quantization), this.wrapper.columnLimits, quantization, this.rowCount);
         ISketch<ITable, JsonGroups<Count>> preHisto = new PrecomputedSketch<>(histo);
         ISketch<ITable, JsonGroups<Count>> preCdf = new PrecomputedSketch<>(cdf);
         int colIindex = this.wrapper.getColumnIndex(cd.name);
@@ -150,24 +150,25 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
 
     @HillviewRpc
     public void histogram2D(RpcRequest request, RpcRequestContext context) {
-        HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
-        assert info.length == 2;
+        HistogramRequestInfo info = request.parseArgs(HistogramRequestInfo.class);
+        assert info.size() == 2;
         JsonGroups<JsonGroups<Count>> heatmap = this.database.histogram2D(
-                info[0].cd, info[1].cd,
-                info[0].getBuckets(), info[1].getBuckets(),
+                info.histos[0].cd, info.histos[1].cd,
+                info.getBuckets(0), info.getBuckets(1),
                 this.wrapper.columnLimits,
                 null, null);
-        double epsilon = this.getPrivacySchema().epsilon(info[0].cd.name, info[1].cd.name);
-        ColumnQuantization q0 = this.getPrivacySchema().quantization(info[0].cd.name);
-        ColumnQuantization q1 = this.getPrivacySchema().quantization(info[1].cd.name);
+        double epsilon = this.getPrivacySchema().epsilon(
+                info.histos[0].cd.name, info.histos[1].cd.name);
+        ColumnQuantization q0 = this.getPrivacySchema().quantization(info.histos[0].cd.name);
+        ColumnQuantization q1 = this.getPrivacySchema().quantization(info.histos[1].cd.name);
         Converters.checkNull(q0);
         Converters.checkNull(q1);
-        IntervalDecomposition d0 = info[0].getDecomposition(q0);
-        IntervalDecomposition d1 = info[1].getDecomposition(q1);
+        IntervalDecomposition d0 = info.getDecomposition(0, q0);
+        IntervalDecomposition d1 = info.getDecomposition(1, q1);
         ISketch<ITable, JsonGroups<JsonGroups<Count>>> sk = new PrecomputedSketch<>(heatmap);
         DPHeatmapSketch<JsonGroups<Count>, JsonGroups<JsonGroups<Count>>> noisyHeatmap =
                 new DPHeatmapSketch<>(
-                sk, this.wrapper.getColumnIndex(info[0].cd.name, info[1].cd.name),
+                sk, this.wrapper.getColumnIndex(info.histos[0].cd.name, info.histos[1].cd.name),
                 d0, d1, epsilon, this.wrapper.laplace);
         this.runSketch(this.table, noisyHeatmap, request, context);
     }

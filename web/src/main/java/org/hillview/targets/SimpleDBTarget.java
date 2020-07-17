@@ -165,14 +165,14 @@ public class SimpleDBTarget extends TableRpcTarget {
 
     @HillviewRpc
     public void histogramAndCDF(RpcRequest request, RpcRequestContext context) {
-        HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
-        assert info.length == 2;
-        ColumnDescription cd = info[0].cd;  // both args should be on the same column
+        HistogramRequestInfo info = request.parseArgs(HistogramRequestInfo.class);
+        assert info.size() == 2;
+        ColumnDescription cd = info.histos[0].cd;  // both args should be on the same column
         @Nullable
         JsonGroups<Count> histo = this.database.histogram(
-                cd, info[0].getBuckets(), this.columnLimits, null, this.rowCount);
+                cd, info.getBuckets(0), this.columnLimits, null, this.rowCount);
         JsonGroups<Count> cdf = this.database.histogram(
-                cd, info[1].getBuckets(), this.columnLimits, null, this.rowCount);
+                cd, info.getBuckets(1), this.columnLimits, null, this.rowCount);
         Pair<JsonGroups<Count>, JsonGroups<Count>> result = new Pair<>(
                 histo, cdf.prefixSum(Count::add, JsonGroups::new));
         ISketch<ITable, Pair<JsonGroups<Count>, JsonGroups<Count>>> sk =
@@ -182,11 +182,11 @@ public class SimpleDBTarget extends TableRpcTarget {
 
     @HillviewRpc
     public void histogram2D(RpcRequest request, RpcRequestContext context) {
-        HistogramRequestInfo[] info = request.parseArgs(HistogramRequestInfo[].class);
-        assert info.length == 2;
+        HistogramRequestInfo info = request.parseArgs(HistogramRequestInfo.class);
+        assert info.size() == 2;
         JsonGroups<JsonGroups<Count>> heatmap = this.database.histogram2D(
-                info[0].cd, info[1].cd,
-                info[0].getBuckets(), info[1].getBuckets(),
+                info.histos[0].cd, info.histos[1].cd,
+                info.getBuckets(0), info.getBuckets(1),
                 this.columnLimits,
                 null, null);
         ISketch<ITable, JsonGroups<JsonGroups<Count>>> sk =

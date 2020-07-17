@@ -20,7 +20,7 @@ import {BaseReceiver, ChartView} from "../modules";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {
     assert,
-    Converters, GroupsClass, Heatmap,
+    Converters, Heatmap,
     histogram2DAsCsv,
     ICancellable,
     makeInterval,
@@ -58,7 +58,7 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
      */
     protected coordinates: Point[];
 
-    constructor(args: CommonArgs, protected histoArgs: HistogramRequestInfo[],
+    constructor(args: CommonArgs, protected histoArgs: HistogramRequestInfo,
                 protected ranges: BucketsInfo[], page: FullPage) {
         super(args.remoteObject.remoteObjectId, args.rowCount, args.schema, page, "CorrelationHeatmaps")
         this.menu = new TopMenu([this.exportMenu(),
@@ -74,10 +74,10 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
         this.createDiv("legend");
         this.createDiv("chart");
         this.createDiv("summary");
-        this.xAxes = zip(this.histoArgs, this.ranges,
+        this.xAxes = zip(this.histoArgs.histos, this.ranges,
             (h, r) => new AxisData(h.cd, r, h.bucketCount));
         // exact same code, but the resolution will be different
-        this.yAxes = zip(this.histoArgs, this.ranges,
+        this.yAxes = zip(this.histoArgs.histos, this.ranges,
             (h, r) => new AxisData(h.cd, r, h.bucketCount));
     }
 
@@ -99,7 +99,7 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
     }
 
     protected export(): void {
-        let result = [];
+        let result: string[] = [];
         let xAxis = 1;
         let yAxis = 0;
         for (const h of this.data) {
@@ -147,6 +147,7 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
             return false;
         const position = d3mouse(this.surface.getCanvas().node());
         this.selectionCompleted(this.selectionOrigin.x, position[0], this.selectionOrigin.y, position[1]);
+        return true;
     }
 
     /**
@@ -170,19 +171,21 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
         const rr = this.createFilterRequest(filter);
         const renderer = new NewTargetReceiver(new PageTitle(this.page.title.format,
             Converters.filterArrayDescription(filter)),
-            this.histoArgs.map(h => h.cd),
-            this.schema, this.histoArgs.map(_ => 0), this.page, rr, this.dataset, {
+            this.histoArgs.histos.map(h => h.cd),
+            this.schema, this.histoArgs.histos.map(_ => 0), this.page, rr, this.dataset, {
                 chartKind: "CorrelationHeatmaps", reusePage: false,
             });
         rr.invoke(renderer);
     }
 
     protected getCombineRenderer(title: PageTitle): (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
-        const cds = this.histoArgs.map(b => b.cd);
+        const cds = this.histoArgs.histos.map(b => b.cd);
         const zeros = cds.map(_ => 0);
+        const schema = this.schema;
+        const dataset = this.dataset;
         return function (page: FullPage, operation: ICancellable<RemoteObjectId>) {
             return new NewTargetReceiver(title, cds,
-                this.schema, zeros, page, operation, this.dataset, {
+                schema, zeros, page, operation, dataset, {
                     chartKind: "CorrelationHeatmaps", reusePage: false,
                 });
         };
@@ -193,7 +196,7 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
      * @param position   Array with two mouse coordinates x and y in canvas.
      */
     protected getMousePosition(position: number[]): MousePosition | null {
-        const charts = this.histoArgs.length - 1;
+        const charts = this.histoArgs.histos.length - 1;
         const x = position[0] - this.surface.leftMargin;
         const y = position[1] - this.surface.topMargin - this.headerHeight;
         if (x < 0 || x > charts * this.chartSize)
@@ -243,8 +246,8 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
 
     refresh(): void {
         const collector = new DataRangesReceiver(this,
-            this.page, null, this.schema, this.histoArgs.map(b => b.bucketCount),
-            this.histoArgs.map(b => b.cd), this.page.title, null,{
+            this.page, null, this.schema, this.histoArgs.histos.map(b => b.bucketCount),
+            this.histoArgs.histos.map(b => b.cd), this.page.title, null,{
                 chartKind: "CorrelationHeatmaps", reusePage: true
             });
         collector.run(this.ranges);
@@ -297,14 +300,14 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
 
         this.surfaces = [];
         this.coordinates = [];
-        const windows = this.histoArgs.length - 1;
+        const windows = this.histoArgs.histos.length - 1;
         this.chartSize = Math.round(this.surface.getActualChartSize().width / windows);
         this.headerHeight = Resolution.lineHeight;
 
         // noinspection JSSuspiciousNameCombination
         const chartHeight = this.chartSize;
-        for (let y = 0; y < this.histoArgs.length; y++) {
-            for (let x = y + 1; x < this.histoArgs.length; x++) {
+        for (let y = 0; y < this.histoArgs.histos.length; y++) {
+            for (let x = y + 1; x < this.histoArgs.histos.length; x++) {
                 const xCorner = this.surface.leftMargin + (x - 1) * this.chartSize;
                 const yCorner = y * chartHeight
                     + this.headerHeight + this.surface.topMargin;
@@ -324,8 +327,8 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
                 this.hps.push(hp);
             }
         }
-        for (let x = 1; x < this.histoArgs.length; x++) {
-            const title = this.histoArgs[x].cd.name;
+        for (let x = 1; x < this.histoArgs.histos.length; x++) {
+            const title = this.histoArgs.histos[x].cd.name;
             const canvas = this.surface.getCanvas();
             const xCorner = this.surface.leftMargin + (x - 1) * this.chartSize;
             canvas.append("text")
@@ -338,8 +341,8 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
                 .append("title")
                 .text(title);
         }
-        for (let i = 0; i < this.histoArgs.length - 1; i++) {
-            const title = this.histoArgs[i].cd.name;
+        for (let i = 0; i < this.histoArgs.histos.length - 1; i++) {
+            const title = this.histoArgs.histos[i].cd.name;
             const canvas = this.surface.getCanvas();
             const x = this.surface.leftMargin / 2;
             const y = i * chartHeight + this.headerHeight + this.surface.topMargin + chartHeight / 2;
@@ -361,8 +364,8 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
             return;
         this.data = data;
         this.createNewSurfaces(keepColorMap);
-        assert(this.histoArgs.length * (this.histoArgs.length - 1) / 2 === data.length);
-        const charts = this.histoArgs.length;
+        assert(this.histoArgs.histos.length * (this.histoArgs.histos.length - 1) / 2 === data.length);
+        const charts = this.histoArgs.histos.length;
         this.setupMouse();
         this.pointDescription = new TextOverlay(this.surface.getCanvas(),
             this.surface.getActualChartSize(),
@@ -427,8 +430,8 @@ interface MousePosition {
 export class CorrelationHeatmapReceiver extends ReceiverCommon<Groups<Groups<number>>[]> {
     protected view: CorrelationHeatmapView;
 
-    constructor(common: ReceiverCommonArgs, histoArgs: HistogramRequestInfo[], ranges: BucketsInfo[],
-                operation: RpcRequest<PartialResult<Groups<Groups<number>>[]>>) {
+    constructor(common: ReceiverCommonArgs, histoArgs: HistogramRequestInfo, ranges: BucketsInfo[],
+                operation: RpcRequest<Groups<Groups<number>>[]>) {
         super(common, operation, "correlations")
         this.view = new CorrelationHeatmapView(this.args, histoArgs, ranges, this.page);
         this.page.setDataView(this.view);

@@ -24,7 +24,7 @@ esac
 
 ${SUDO} ${INSTALL} install wget maven ${NODEJS} ${NPM} ${LIBFORTRAN} unzip gzip
 echo "Installing typescript compiler"
-${SUDO} npm install -g typescript@3.7
+${SUDO} npm install -g typescript@3.9
 
 pushd ..
 if [ ! -d apache-tomcat-${TOMCATVERSION} ]; then
