@@ -251,8 +251,10 @@ public class CassandraSSTableLoader extends TextFileLoader {
         return (int) this.rowCount;
     }
 
-    /** Instead of checking the columnn' name to find which one to load,
-     * this method uses boolean marker stored at columnToLoad to recognize the needed columns */
+    /**
+     * Instead of checking the columnn' name to find which one to load, this method
+     * uses boolean marker stored at columnToLoad to recognize the needed columns
+     */
     private List<IAppendableColumn> createColumns(boolean[] columnToLoad, int columnCountToLoad) {
         List<ColumnDescription> cols = Converters.checkNull(this.actualSchema).getColumnDescriptions();
         List<IAppendableColumn> result = new ArrayList<IAppendableColumn>(columnCountToLoad);
@@ -265,7 +267,10 @@ public class CassandraSSTableLoader extends TextFileLoader {
         return result;
     }
 
-    /** This is the general column loader that can be triggered once the initialization is complete */
+    /**
+     * This is the general column loader that can be triggered once the
+     * initialization is complete
+     */
     public ITable load() {
         try {
             if (this.lazyLoading) {
@@ -277,11 +282,12 @@ public class CassandraSSTableLoader extends TextFileLoader {
                 }
                 assert this.actualSchema != null;
                 IColumnLoader loader = new CassandraSSTableLoader.SSTableColumnLoader(this.ssTableReader,
-                    this.actualSchema);
+                        this.actualSchema);
                 return Table.createLazyTable(cds, this.getRowCount(), this.filename, loader);
             } else {
                 int columnCountToLoad = Converters.checkNull(this.actualSchema).getColumnCount();
-                // columns loader will load all column, so all item of columnToLoad need to be TRUE
+                // columns loader will load all column, so all item of columnToLoad need to be
+                // TRUE
                 boolean[] columnToLoad = new boolean[columnCountToLoad];
                 Arrays.fill(columnToLoad, Boolean.TRUE);
                 List<IAppendableColumn> columns = createColumns(columnToLoad, columnToLoad.length);
@@ -293,12 +299,14 @@ public class CassandraSSTableLoader extends TextFileLoader {
         }
     }
 
-    /** Lazy and non-lazy loader will call this function to load specific column marked by columnToLoad */
+    /**
+     * Lazy and non-lazy loader will call this function to load specific column
+     * marked by columnToLoad
+     */
     private static void loadColumns(SSTableReader ssTableReader, List<IAppendableColumn> columns,
             boolean[] columnToLoad) {
         ISSTableScanner currentScanner = ssTableReader.getScanner();
-        Spliterators.spliteratorUnknownSize(currentScanner,
-        Spliterator.CONCURRENT).forEachRemaining( (partition) -> {
+        Spliterators.spliteratorUnknownSize(currentScanner, Spliterator.CONCURRENT).forEachRemaining((partition) -> {
             Unfiltered unfiltered = partition.next();
             if (unfiltered instanceof Row) {
                 Row row = (Row) unfiltered;
@@ -332,8 +340,8 @@ public class CassandraSSTableLoader extends TextFileLoader {
                                     case DATE:
                                     case TIME:
                                     case BLOB:
-                                        col.append(cellType.getSerializer()
-                                                .toCQLLiteral(((Cell) cd).value()).toString());
+                                        col.append(
+                                                cellType.getSerializer().toCQLLiteral(((Cell) cd).value()).toString());
                                         break;
                                     case INT:
                                         col.append((Integer) value);
@@ -380,12 +388,13 @@ public class CassandraSSTableLoader extends TextFileLoader {
                     i++;
                 }
             }
-        });;
+        });
+        ;
     }
 
     private static boolean bigDecimalInRange(BigDecimal bigDecimal) {
         Range<BigDecimal> doubleRange = Range.between(BigDecimal.valueOf(Double.MIN_VALUE),
-            BigDecimal.valueOf(Double.MAX_VALUE));
+                BigDecimal.valueOf(Double.MAX_VALUE));
         if (!doubleRange.contains(bigDecimal)) {
             throw new RuntimeException("BigDecimal value is outside the range of Double");
         }

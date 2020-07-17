@@ -25,7 +25,10 @@ public class CassandraConnectionInfo extends JdbcConnectionInformation {
 
     /** Port for establishing probe connection */
     public int jmxPort;
-    /** Local Cassandra installation directory (can be found at bin/install-cassandra.sh) */
+    /**
+     * Local Cassandra installation directory (can be found at
+     * bin/install-cassandra.sh)
+     */
     public String cassandraRootDir;
 
     @Override

@@ -42,14 +42,19 @@ public class CassandraDatabase {
     private static final String ssTableUtilDir = "bin/sstableutil";
 
     public CassandraConnectionInfo info;
-    /** Session: Connection to Cassandra cluster for executing client-side queries */
+    /**
+     * Session: Connection to Cassandra cluster for executing client-side queries
+     */
     @Nullable
     private Cluster cluster;
     @Nullable
     private Session session;
     @Nullable
     private Metadata metadata;
-    /** Probe: Connection to Cassandra node that enables Hillview to execute server-side query */
+    /**
+     * Probe: Connection to Cassandra node that enables Hillview to execute
+     * server-side query
+     */
     @Nullable
     private final INodeProbeFactory nodeProbeFactory;
     @Nullable
@@ -57,14 +62,15 @@ public class CassandraDatabase {
     private final List<CassTable> cassTables = new ArrayList<CassTable>();
     private final List<TokenRange> tokenRanges = new ArrayList<TokenRange>();
 
-    /** This class enables Hillview to execute server-side and client-side queries, such as
-     * getting sstable path, list of stored tables, list of token-range, and also the row count
-     * of a specific table.
-     * The flow of execution to locate a set of table partitions is as follows:
-     * - CassandraDatabase establishes NodeProbe connection to get full token-range and its endpoints
-     * - CassandraDatabase find the sstable path by running sstableutil
-     * - Finally, CassandraSSTableReader uses both output to read the local token-range
-    */
+    /**
+     * This class enables Hillview to execute server-side and client-side queries,
+     * such as getting sstable path, list of stored tables, list of token-range, and
+     * also the row count of a specific table. The flow of execution to locate a set
+     * of table partitions is as follows: - CassandraDatabase establishes NodeProbe
+     * connection to get full token-range and its endpoints - CassandraDatabase find
+     * the sstable path by running sstableutil - Finally, CassandraSSTableReader
+     * uses both output to read the local token-range
+     */
     public CassandraDatabase(CassandraConnectionInfo info) {
         this.info = info;
         try {
@@ -74,8 +80,8 @@ public class CassandraDatabase {
             this.setStoredTableInfo();
             this.setTokenRanges();
         } catch (Exception e) {
-            HillviewLogger.instance.error("Failed initializing CassandraDatabase partitions",
-                    "{0}", this.info.toString());
+            HillviewLogger.instance.error("Failed initializing CassandraDatabase partitions", "{0}",
+                    this.info.toString());
             throw new RuntimeException(e);
         }
     }
@@ -103,14 +109,13 @@ public class CassandraDatabase {
 
     /**
      * Connection for running server-side query.
-    */
+     */
     private void connectLocalProbe() throws IOException {
         Converters.checkNull(this.nodeProbeFactory);
         if (Utilities.isNullOrEmpty(info.user))
             this.probe = this.nodeProbeFactory.create(info.host, info.jmxPort);
         else
-            this.probe = this.nodeProbeFactory.create(info.host, info.jmxPort,
-                info.user, info.password);
+            this.probe = this.nodeProbeFactory.create(info.host, info.jmxPort, info.user, info.password);
     }
 
     public static class TokenRange {
@@ -118,14 +123,14 @@ public class CassandraDatabase {
         public String end_token;
         public List<String> endpoints = new ArrayList<>();
 
-        public TokenRange (String rawEntry) {
+        public TokenRange(String rawEntry) {
             try {
                 String[] arr = rawEntry.split(":");
                 this.start_token = arr[1].split(",")[0];
                 this.end_token = arr[2].split(",")[0];
 
                 String rawEndpoints = arr[3].replace(", rpc_endpoints", "");
-                rawEndpoints = rawEndpoints.substring(1,rawEndpoints.length()-1);
+                rawEndpoints = rawEndpoints.substring(1, rawEndpoints.length() - 1);
                 String[] ips = rawEndpoints.split(",");
                 endpoints.addAll(Arrays.asList(ips));
             } catch (Exception e) {
@@ -134,14 +139,15 @@ public class CassandraDatabase {
         }
 
         public String toString() {
-            return "start: " + this.start_token + ", end: " + this.end_token +
-                ", endpoints: " + this.endpoints.toString();
+            return "start: " + this.start_token + ", end: " + this.end_token + ", endpoints: "
+                    + this.endpoints.toString();
         }
     }
 
     /**
-     * Shows key-range (table partition) and endpoints (replica) which stores each key-range.
-     * This key-range distribution is the same on every node in the cluster.
+     * Shows key-range (table partition) and endpoints (replica) which stores each
+     * key-range. This key-range distribution is the same on every node in the
+     * cluster.
      */
     private void setTokenRanges() throws IOException {
         String keyspace = this.info.database;
@@ -161,7 +167,7 @@ public class CassandraDatabase {
             this.tables = tables;
         }
 
-        public String toString(){
+        public String toString() {
             StringBuilder result = new StringBuilder(" - " + this.keyspace);
             for (String table : this.tables) {
                 result.append("\n\t").append(table);
@@ -170,7 +176,10 @@ public class CassandraDatabase {
         }
     }
 
-    /** The list of keyspaces and tables are obtained from cluster connection's metadata */
+    /**
+     * The list of keyspaces and tables are obtained from cluster connection's
+     * metadata
+     */
     private void setStoredTableInfo() {
         List<KeyspaceMetadata> keyspaces = Converters.checkNull(this.metadata).getKeyspaces();
         String keyspace;
@@ -179,27 +188,26 @@ public class CassandraDatabase {
         for (KeyspaceMetadata kMetadata : keyspaces) {
             keyspace = kMetadata.getName();
             tables = this.metadata.getKeyspace(keyspace).getTables();
-            tableNames = tables.stream().map(AbstractTableMetadata::getName)
-                .collect(Collectors.toList());
+            tableNames = tables.stream().map(AbstractTableMetadata::getName).collect(Collectors.toList());
             this.cassTables.add(new CassTable(keyspace, tableNames));
         }
     }
 
-    /** Returns list of tables stored in the cluster  */
+    /** Returns list of tables stored in the cluster */
     public List<CassTable> getStoredTableInfo() {
         return this.cassTables;
     }
 
     /**
-     * Given the keyspace and table name, sstableutil will return the sstable-related files.
-     * Using sstableutil command is better than doing manually sstable search. Although we know
-     * the sstable parent dir from cassandra.yaml, we need to rule out the outdated sstables.
-     * And sstableutil is built specifically to identify which version are the most updated.
-      */
+     * Given the keyspace and table name, sstableutil will return the
+     * sstable-related files. Using sstableutil command is better than doing
+     * manually sstable search. Although we know the sstable parent dir from
+     * cassandra.yaml, we need to rule out the outdated sstables. And sstableutil is
+     * built specifically to identify which version are the most updated.
+     */
     public List<String> getSSTablePath() {
         List<String> result = new ArrayList<>();
-        boolean isWindows = System.getProperty("os.name")
-            .toLowerCase().startsWith("windows");
+        boolean isWindows = System.getProperty("os.name").toLowerCase().startsWith("windows");
         Path ssTableUtilPath = Paths.get(ssTableUtilDir);
         Path cassandraPath = Paths.get(info.cassandraRootDir);
 
@@ -214,7 +222,7 @@ public class CassandraDatabase {
             Scanner s = new Scanner(p.getInputStream());
             while (s.hasNext()) {
                 String output = s.next();
-                if (output.endsWith(ssTableFileMarker)){
+                if (output.endsWith(ssTableFileMarker)) {
                     result.add(output);
                 }
             }
@@ -225,20 +233,15 @@ public class CassandraDatabase {
         return result;
     }
 
-    public String toString(){
+    public String toString() {
         StringBuilder result = new StringBuilder("Available Keyspaces and Tables:");
         for (CassTable cassTable : this.cassTables) {
             result.append(System.lineSeparator()).append(cassTable.toString());
         }
-        result.append(System.lineSeparator())
-                .append(System.lineSeparator())
-                .append("Table partition of ")
-                .append(this.info.database)
-                .append(":");
+        result.append(System.lineSeparator()).append(System.lineSeparator()).append("Table partition of ")
+                .append(this.info.database).append(":");
         for (TokenRange tokenRange : this.tokenRanges) {
-            result.append(System.lineSeparator())
-                    .append("\t")
-                    .append(tokenRange.toString());
+            result.append(System.lineSeparator()).append("\t").append(tokenRange.toString());
         }
         return result.toString();
     }
