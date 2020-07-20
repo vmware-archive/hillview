@@ -27,13 +27,19 @@ import javax.annotation.Nullable;
 
 import com.datastax.driver.core.*;
 import com.datastax.driver.core.Cluster.Builder;
+import com.google.common.annotations.VisibleForTesting;
 
+import org.apache.cassandra.dht.IPartitioner;
+import org.apache.cassandra.dht.Range;
+import org.apache.cassandra.dht.Token.TokenFactory;
 import org.apache.cassandra.tools.INodeProbeFactory;
 import org.apache.cassandra.tools.NodeProbe;
 import org.apache.cassandra.tools.NodeProbeFactory;
+import org.apache.cassandra.utils.FBUtilities;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Utilities;
+import org.apache.cassandra.dht.Token;
 
 public class CassandraDatabase {
     /** All SSTable always ended with this marker */
@@ -51,6 +57,8 @@ public class CassandraDatabase {
     private Session session;
     @Nullable
     private Metadata metadata;
+    @Nullable
+    private IPartitioner partitioner;
     /**
      * Probe: Connection to Cassandra node that enables Hillview to execute
      * server-side query
@@ -60,7 +68,7 @@ public class CassandraDatabase {
     @Nullable
     private NodeProbe probe;
     private final List<CassTable> cassTables = new ArrayList<CassTable>();
-    private final List<TokenRange> tokenRanges = new ArrayList<TokenRange>();
+    private final List<CassandraTokenRange> tokenRanges = new ArrayList<CassandraTokenRange>();
 
     /**
      * This class enables Hillview to execute server-side and client-side queries,
@@ -98,6 +106,7 @@ public class CassandraDatabase {
         this.cluster = b.build();
         this.session = this.cluster.connect();
         this.metadata = this.cluster.getMetadata();
+        this.partitioner = FBUtilities.newPartitioner(this.metadata.getPartitioner());
     }
 
     public void closeClusterConnection() {
@@ -118,16 +127,26 @@ public class CassandraDatabase {
             this.probe = this.nodeProbeFactory.create(info.host, info.jmxPort, info.user, info.password);
     }
 
-    public static class TokenRange {
-        public String start_token;
-        public String end_token;
+    public static class CassandraTokenRange {
+        public Range<Token> tokenRange;
         public List<String> endpoints = new ArrayList<>();
 
-        public TokenRange(String rawEntry) {
+        @VisibleForTesting
+        public CassandraTokenRange(Token start, Token end, List<String> endpoints) {
+            this.tokenRange = new Range<Token>(start, end);
+            this.endpoints = endpoints;
+        }
+
+        public CassandraTokenRange(String rawEntry, IPartitioner partitioner) {
             try {
                 String[] arr = rawEntry.split(":");
-                this.start_token = arr[1].split(",")[0];
-                this.end_token = arr[2].split(",")[0];
+                String start_token = arr[1].split(",")[0];
+                String end_token = arr[2].split(",")[0];
+                TokenFactory tf = partitioner.getTokenFactory();
+
+                Token start = tf.fromString(start_token);
+                Token end = tf.fromString(end_token);
+                this.tokenRange = new Range<Token>(start, end);
 
                 String rawEndpoints = arr[3].replace(", rpc_endpoints", "");
                 rawEndpoints = rawEndpoints.substring(1, rawEndpoints.length() - 1);
@@ -139,8 +158,10 @@ public class CassandraDatabase {
         }
 
         public String toString() {
-            return "start: " + this.start_token + ", end: " + this.end_token + ", endpoints: "
-                    + this.endpoints.toString();
+            StringBuilder sb = new StringBuilder();
+            sb.append("tokenRange: " + this.tokenRange.toString());
+            sb.append(", endpoints: " + this.endpoints.toString());
+            return sb.toString();
         }
     }
 
@@ -151,11 +172,15 @@ public class CassandraDatabase {
      */
     private void setTokenRanges() throws IOException {
         String keyspace = this.info.database;
-        TokenRange tr;
+        CassandraTokenRange tr;
         for (String tokenRangeString : Converters.checkNull(this.probe).describeRing(keyspace)) {
-            tr = new TokenRange(tokenRangeString);
+            tr = new CassandraTokenRange(tokenRangeString, this.partitioner);
             this.tokenRanges.add(tr);
         }
+    }
+
+    public List<CassandraTokenRange> getTokenRanges() {
+        return this.tokenRanges;
     }
 
     public static class CassTable {
@@ -168,10 +193,11 @@ public class CassandraDatabase {
         }
 
         public String toString() {
-            StringBuilder result = new StringBuilder(" - " + this.keyspace);
+            StringBuilder result = new StringBuilder(this.keyspace + ": [");
             for (String table : this.tables) {
-                result.append("\n\t").append(table);
+                result.append(" ").append(table);
             }
+            result.append("]\n");
             return result.toString();
         }
     }
@@ -240,7 +266,7 @@ public class CassandraDatabase {
         }
         result.append(System.lineSeparator()).append(System.lineSeparator()).append("Table partition of ")
                 .append(this.info.database).append(":");
-        for (TokenRange tokenRange : this.tokenRanges) {
+        for (CassandraTokenRange tokenRange : this.tokenRanges) {
             result.append(System.lineSeparator()).append("\t").append(tokenRange.toString());
         }
         return result.toString();

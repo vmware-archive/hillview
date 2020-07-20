@@ -23,10 +23,11 @@ import org.hillview.storage.CassandraConnectionInfo;
 import org.hillview.storage.CassandraDatabase;
 import org.hillview.storage.CassandraFileReference;
 import org.hillview.storage.IFileReference;
-import org.hillview.utils.Linq;
+import org.hillview.storage.CassandraDatabase.CassandraTokenRange;
 
 import javax.annotation.Nullable;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class FindCassandraFilesMap implements IMap<Empty, List<IFileReference>> {
@@ -39,9 +40,13 @@ public class FindCassandraFilesMap implements IMap<Empty, List<IFileReference>> 
 
     @Override
     public List<IFileReference> apply(@Nullable Empty empty) {
+        List<IFileReference> result = new ArrayList<IFileReference>();
         CassandraDatabase db = new CassandraDatabase(this.conn);
         List<String> ssTables = db.getSSTablePath();
+        List<CassandraTokenRange> tokenRanges = db.getTokenRanges();
         db.closeClusterConnection();
-        return Linq.map(ssTables, CassandraFileReference::new);
+        for (String ssTable : ssTables)
+            result.add(new CassandraFileReference(ssTable, tokenRanges));
+        return result;
     }
 }

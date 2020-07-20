@@ -26,6 +26,7 @@ import java.util.List;
 import org.hillview.storage.CassandraConnectionInfo;
 import org.hillview.storage.CassandraDatabase;
 import org.hillview.storage.CassandraSSTableLoader;
+import org.hillview.storage.CassandraDatabase.CassTable;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;
@@ -137,6 +138,24 @@ public class SSTableTest extends BaseTest {
         }
     }
 
+    /** Make sure the local cassandra instance has the necessary table that will be tested */
+    @Test
+    public void testStoredTableInfo() {
+        CassandraConnectionInfo conn = null;
+        CassandraDatabase db = null;
+        try {
+            // Connecting to Cassandra node and get some data
+            conn = this.getConnectionInfo();
+            db = new CassandraDatabase(conn);
+        } catch (Exception e) {
+            // this will fail if local Cassandra is not running, but we don't want to fail the test.
+            this.ignoringException("Failed connecting to local cassandra", e);
+            return;
+        }
+        List<CassTable> storedTable = db.getStoredTableInfo();
+        assert(storedTable.toString().contains("cassdb: [ test counter flights users]"));
+    }
+
     /** Shows the interaction between CassandraDatabase.java and CassandraSSTableLoader.java */
     @Test
     public void testCassandraDatabase() {
@@ -147,7 +166,7 @@ public class SSTableTest extends BaseTest {
             conn = this.getConnectionInfo();
             db = new CassandraDatabase(conn);
         } catch (Exception e) {
-            // this will fail if no running Cassandra instance, but we don't want to fail the test.
+            // this will fail if local Cassandra is not running, but we don't want to fail the test.
             this.ignoringException("Failed connecting to local cassandra", e);
             return;
         }
@@ -175,7 +194,7 @@ public class SSTableTest extends BaseTest {
             conn.table = "test";
             db = new CassandraDatabase(conn);
         } catch (Exception e) {
-            // this will fail if no running Cassandra instance, but we don't want to fail the test.
+            // this will fail if local Cassandra is not running, but we don't want to fail the test.
             this.ignoringException("Failed connecting to local cassandra", e);
             return;
         }
@@ -188,7 +207,6 @@ public class SSTableTest extends BaseTest {
         ;
         Assert.assertNotNull(table);
         Assert.assertEquals("Table[20x2]", table.toString());
-        System.out.println(ssTableLoader.getSchema().getColumnNames());
         List<IColumn> listCols = table.getLoadedColumns(ssTableLoader.getSchema().getColumnNames());
 
         Assert.assertEquals("Mr. Test", listCols.get(11).getString(0));
@@ -223,7 +241,7 @@ public class SSTableTest extends BaseTest {
             conn.table = "counter";
             db = new CassandraDatabase(conn);
         } catch (Exception e) {
-            // this will fail if no running Cassandra instance, but we don't want to fail the test.
+            // this will fail if local Cassandra is not running, but we don't want to fail the test.
             this.ignoringException("Failed connecting to local cassandra", e);
             return;
         }
