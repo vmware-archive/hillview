@@ -65,8 +65,6 @@ import java.util.stream.StreamSupport;
  * Knows how to read a local Cassandra's SSTable file.
  */
 public class CassandraSSTableLoader extends TextFileLoader {
-    private final static String LocalCassandraEndpoint = "127.0.0.1";
-
     @Nullable
     private final Schema actualSchema;
     private final String ssTablePath;
@@ -79,16 +77,19 @@ public class CassandraSSTableLoader extends TextFileLoader {
     private final PartitionColumns columnDefinitions;
     private final IPartitioner partitioner;
     private final List<CassandraTokenRange> tokenRanges;
+    private static String localEndpoint;
 
     static {
         // Initializing Cassandra's general configuration
         DatabaseDescriptor.clientInitialization(false);
     }
 
-    public CassandraSSTableLoader(String ssTablePath, List<CassandraTokenRange> tokenRanges, boolean lazyLoading) {
+    public CassandraSSTableLoader(String ssTablePath, List<CassandraTokenRange> tokenRanges, String localEndpoint,
+            boolean lazyLoading) {
         super(ssTablePath);
         this.ssTablePath = ssTablePath;
         this.tokenRanges = tokenRanges;
+        CassandraSSTableLoader.localEndpoint = localEndpoint;
         this.lazyLoading = lazyLoading;
 
         try {
@@ -116,7 +117,7 @@ public class CassandraSSTableLoader extends TextFileLoader {
         super(ssTablePath);
         this.ssTablePath = ssTablePath;
         this.lazyLoading = lazyLoading;
-
+        CassandraSSTableLoader.localEndpoint = "127.0.0.1";
         try {
             Descriptor descriptor = Descriptor.fromFilename(this.ssTablePath);
 
@@ -256,7 +257,7 @@ public class CassandraSSTableLoader extends TextFileLoader {
 
         for (CassandraTokenRange tr : this.tokenRanges) {
             // Load the partition if the local endpoint is listed as the first endpoint
-            if (tr.endpoints.get(0).equals(CassandraSSTableLoader.LocalCassandraEndpoint)) {
+            if (tr.endpoints.get(0).equals(CassandraSSTableLoader.localEndpoint)) {
                 DataRange range = DataRange.forTokenRange(tr.tokenRange);
                 SSTableReadsListener listener = CassandraSSTableLoader.newReadCountUpdater();
                 ISSTableScanner currentScanner = this.ssTableReader.getScanner(cf, range, false, listener);
@@ -382,7 +383,7 @@ public class CassandraSSTableLoader extends TextFileLoader {
 
         for (CassandraTokenRange tr : tokenRanges) {
             // Load the partition if the local endpoint is listed as the first endpoint
-            if (tr.endpoints.get(0).equals(CassandraSSTableLoader.LocalCassandraEndpoint)) {
+            if (tr.endpoints.get(0).equals(CassandraSSTableLoader.localEndpoint)) {
                 DataRange range = DataRange.forTokenRange(tr.tokenRange);
                 SSTableReadsListener listener = CassandraSSTableLoader.newReadCountUpdater();
                 ISSTableScanner currentScanner = ssTableReader.getScanner(cf, range, false, listener);

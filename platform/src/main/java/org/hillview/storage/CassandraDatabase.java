@@ -17,7 +17,11 @@
 
 package org.hillview.storage;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -46,8 +50,9 @@ public class CassandraDatabase {
     public static final String ssTableFileMarker = "big-Data.db";
     /** The default path of Cassandra's sstableutil tool */
     private static final String ssTableUtilDir = "bin/sstableutil";
+    private static final String cassandraYamlPath = "conf/cassandra.yaml";
 
-    public CassandraConnectionInfo info;
+    private CassandraConnectionInfo info;
     /**
      * Session: Connection to Cassandra cluster for executing client-side queries
      */
@@ -69,6 +74,7 @@ public class CassandraDatabase {
     private NodeProbe probe;
     private final List<CassTable> cassTables = new ArrayList<CassTable>();
     private final List<CassandraTokenRange> tokenRanges = new ArrayList<CassandraTokenRange>();
+    private final String localEndpoint;
 
     /**
      * This class enables Hillview to execute server-side and client-side queries,
@@ -87,6 +93,7 @@ public class CassandraDatabase {
             this.connectCassCluster();
             this.setStoredTableInfo();
             this.setTokenRanges();
+            this.localEndpoint = this.discoverLocalEndpoint();
         } catch (Exception e) {
             HillviewLogger.instance.error("Failed initializing CassandraDatabase partitions", "{0}",
                     this.info.toString());
@@ -165,6 +172,37 @@ public class CassandraDatabase {
         }
     }
 
+    private String discoverLocalEndpoint() {
+        Path cassandraPath = Paths.get(this.info.cassandraRootDir);
+        Path cassandraYaml = Paths.get(cassandraPath.toString(), CassandraDatabase.cassandraYamlPath);
+        String IPAddress = null;
+        try {
+            File cassandraConfig = cassandraYaml.toFile();
+            Scanner myReader = new Scanner(cassandraConfig);
+            String nodeName = null;
+            while (myReader.hasNextLine()) {
+                String content = myReader.nextLine();
+                if (content.startsWith("listen_address:")) {
+                    nodeName = content.replace("listen_address: ", "");
+                    break;
+                }
+            }
+            myReader.close();
+            Converters.checkNull(nodeName);
+            InetAddress inet = InetAddress.getByName(nodeName);
+            IPAddress = inet.getHostAddress();
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (UnknownHostException e) {
+            throw new RuntimeException(e);
+        }
+        return IPAddress;
+    }
+
+    public String getLocalEndpoint() {
+        return this.localEndpoint;
+    }
+
     /**
      * Shows key-range (table partition) and endpoints (replica) which stores each
      * key-range. This key-range distribution is the same on every node in the
@@ -234,8 +272,8 @@ public class CassandraDatabase {
     public List<String> getSSTablePath() {
         List<String> result = new ArrayList<>();
         boolean isWindows = System.getProperty("os.name").toLowerCase().startsWith("windows");
-        Path ssTableUtilPath = Paths.get(ssTableUtilDir);
-        Path cassandraPath = Paths.get(info.cassandraRootDir);
+        Path ssTableUtilPath = Paths.get(CassandraDatabase.ssTableUtilDir);
+        Path cassandraPath = Paths.get(this.info.cassandraRootDir);
 
         String sstableCommand = ssTableUtilPath.toString();
         if (isWindows)

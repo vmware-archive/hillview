@@ -44,9 +44,10 @@ public class FindCassandraFilesMap implements IMap<Empty, List<IFileReference>> 
         CassandraDatabase db = new CassandraDatabase(this.conn);
         List<String> ssTables = db.getSSTablePath();
         List<CassandraTokenRange> tokenRanges = db.getTokenRanges();
+        String localEndpoint = db.getLocalEndpoint();
         db.closeClusterConnection();
         for (String ssTable : ssTables)
-            result.add(new CassandraFileReference(ssTable, tokenRanges));
+            result.add(new CassandraFileReference(ssTable, tokenRanges, localEndpoint));
         return result;
     }
 }

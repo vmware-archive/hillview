@@ -27,16 +27,18 @@ import org.hillview.utils.Converters;
 public class CassandraFileReference implements IFileReference {
     private final String pathname;
     private final List<CassandraTokenRange> tokenRanges;
+    private final String localEndpoint;
 
-    public CassandraFileReference(final String pathname, final List<CassandraTokenRange> tokenRanges) {
+    public CassandraFileReference(final String pathname, final List<CassandraTokenRange> tokenRanges, String localEndpoint) {
         this.pathname = pathname;
         this.tokenRanges = tokenRanges;
+        this.localEndpoint = localEndpoint;
     }
 
     @Override
     public ITable load() {
         TextFileLoader loader;
-        loader = new CassandraSSTableLoader(this.pathname, this.tokenRanges, true);
+        loader = new CassandraSSTableLoader(this.pathname, this.tokenRanges, this.localEndpoint, true);
         return Converters.checkNull(loader.load());
     }
 
