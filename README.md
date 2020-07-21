@@ -209,7 +209,7 @@ $ ./stop.py config.json
 Query the status of the services:
 
 ```
-$ ./status config.json
+$ ./status.py config.json
 ```
 
 ## 3.3. Data management
