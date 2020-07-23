@@ -107,6 +107,7 @@ table {
     background: linear-gradient(#f9f9f9,#e4e4e4);
     border: 1px solid black;
     font-weight: bold;
+    padding: 2px 5px;
 }
 
 .tableView td.header.selected {
@@ -355,8 +356,8 @@ textarea:focus, input:focus {
 }
 
 table.menu {
-    box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.5);
-    border: 1px solid grey;
+    /* box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.5); */
+    /* border: 1px solid grey; */
     font-size:small;
     z-index: 10;
 }
@@ -382,6 +383,10 @@ td.menuItem.disabled {
 
 td.menuItem.disabled.selected {
     color: grey;
+}
+
+td.dummyMenu {
+    background: transparent !important;
 }
 
 table.menu td.selected {
