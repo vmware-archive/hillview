@@ -640,46 +640,6 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
               },
               true
             );
-            this.contextMenu.addExpandableItem(
-              {
-                text: "More...",
-                action: () => this.contextMenu.expandMenu("More..."),
-                help: "List of available charts to draw. " + "",
-              },
-              true
-            );
-            this.contextMenu.addItem({
-                text: "Histogram",
-                action: () => this.chart(this.schema.getDescriptions(this.getSelectedColNames()),
-                    this.getSelectedColCount() === 1 ? "Histogram" : "2DHistogram"),
-                help: "Plot the data in the selected columns as a histogram. " +
-                    "Applies to one or two columns only.",
-            }, selectedCount >= 1 && selectedCount <= 2);
-            this.contextMenu.addItem({
-                text: "Quartile vector",
-                action: () => this.chart(this.schema.getDescriptions(this.getSelectedColNames()), "QuartileVector"),
-                help: "Plot the data in the selected columns as a vector of quartiles. " +
-                    "Applies to one or two columns only.",
-            }, selectedCount == 2);
-            this.contextMenu.addItem({
-                text: "Heatmap",
-                action: () => this.chart(this.schema.getDescriptions(this.getSelectedColNames()), "Heatmap"),
-                help: "Plot the data in the selected columns as a heatmap. " +
-                    "Applies to two columns only.",
-            }, selectedCount === 2);
-            this.contextMenu.addItem({
-                text: "Trellis histograms",
-                action: () => this.chart(this.schema.getDescriptions(this.getSelectedColNames()),
-                    selectedCount > 2 ? "Trellis2DHistogram" : "TrellisHistogram"),
-                help: "Plot the data in the selected columns as a Trellis plot of histograms. " +
-                    "Applies to two or three columns only.",
-            }, selectedCount >= 2 && selectedCount <= 3);
-            this.contextMenu.addItem({
-                text: "Trellis heatmaps",
-                action: () => this.chart(this.schema.getDescriptions(this.getSelectedColNames()), "TrellisHeatmap"),
-                help: "Plot the data in the selected columns as a Trellis plot of heatmaps. " +
-                    "Applies to three columns only.",
-            }, selectedCount === 3 && !this.isPrivate());
             this.contextMenu.addItem({
                 text: "Rename...",
                 action: () => this.renameColumn(),
@@ -760,17 +720,80 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                         },
                         help: "Extract a value associated with a specific key."
                     }, !this.isPrivate());
-            this.contextMenu.addExpandableItem(
+            this.contextMenu.insertSubMenu( "Charts...",
               {
-                text: "Edit...",
-                action: () => this.contextMenu.expandMenu("Edit..."),
-                help: "List of available charts to draw. " + "",
+                text: "Histogram",
+                action: () =>
+                  this.chart(
+                    this.schema.getDescriptions(this.getSelectedColNames()),
+                    this.getSelectedColCount() === 1
+                      ? "Histogram"
+                      : "2DHistogram"
+                  ),
+                help:
+                  "Plot the data in the selected columns as a histogram. " +
+                  "Applies to one or two columns only.",
               },
-              true
+              selectedCount >= 1 && selectedCount <= 2
             );
-            this.contextMenu.addDummySubMenu("Charts...");
-            this.contextMenu.addDummySubMenu("More...");
-            this.contextMenu.addDummySubMenu("Edit...");
+            this.contextMenu.insertSubMenu( "Charts...",
+              {
+                text: "Quartile vector",
+                action: () =>
+                  this.chart(
+                    this.schema.getDescriptions(this.getSelectedColNames()),
+                    "QuartileVector"
+                  ),
+                help:
+                  "Plot the data in the selected columns as a vector of quartiles. " +
+                  "Applies to one or two columns only.",
+              },
+              selectedCount == 2
+            );
+            this.contextMenu.insertSubMenu( "Charts...",
+              {
+                text: "Heatmap",
+                action: () =>
+                  this.chart(
+                    this.schema.getDescriptions(this.getSelectedColNames()),
+                    "Heatmap"
+                  ),
+                help:
+                  "Plot the data in the selected columns as a heatmap. " +
+                  "Applies to two columns only.",
+              },
+              selectedCount === 2
+            );
+            this.contextMenu.insertSubMenu( "Charts...",
+              {
+                text: "Trellis histograms",
+                action: () =>
+                  this.chart(
+                    this.schema.getDescriptions(this.getSelectedColNames()),
+                    selectedCount > 2
+                      ? "Trellis2DHistogram"
+                      : "TrellisHistogram"
+                  ),
+                help:
+                  "Plot the data in the selected columns as a Trellis plot of histograms. " +
+                  "Applies to two or three columns only.",
+              },
+              selectedCount >= 2 && selectedCount <= 3
+            );
+            this.contextMenu.insertSubMenu( "Charts...",
+              {
+                text: "Trellis heatmaps",
+                action: () =>
+                  this.chart(
+                    this.schema.getDescriptions(this.getSelectedColNames()),
+                    "TrellisHeatmap"
+                  ),
+                help:
+                  "Plot the data in the selected columns as a Trellis plot of heatmaps. " +
+                  "Applies to three columns only.",
+              },
+              selectedCount === 3 && !this.isPrivate()
+            );
             this.contextMenu.show(e);
         };
     }
