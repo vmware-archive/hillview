@@ -640,6 +640,14 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
               },
               true
             );
+            this.contextMenu.addExpandableItem(
+              {
+                text: "More...",
+                action: () => this.contextMenu.expandMenu("More..."),
+                help: "List of available charts to draw. " + "",
+              },
+              true
+            );
             this.contextMenu.addItem({
                 text: "Histogram",
                 action: () => this.chart(this.schema.getDescriptions(this.getSelectedColNames()),
@@ -752,7 +760,17 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                         },
                         help: "Extract a value associated with a specific key."
                     }, !this.isPrivate());
+            this.contextMenu.addExpandableItem(
+              {
+                text: "Edit...",
+                action: () => this.contextMenu.expandMenu("Edit..."),
+                help: "List of available charts to draw. " + "",
+              },
+              true
+            );
             this.contextMenu.addDummySubMenu("Charts...");
+            this.contextMenu.addDummySubMenu("More...");
+            this.contextMenu.addDummySubMenu("Edit...");
             this.contextMenu.show(e);
         };
     }

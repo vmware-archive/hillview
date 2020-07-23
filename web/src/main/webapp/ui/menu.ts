@@ -192,10 +192,10 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
     const index = this.find(parentText);
     if (index < 0) throw new Error("Cannot find menu item " + parentText);
 
-    this.insertSubMenu(index, index + 0, "Chart-A");
-    this.insertSubMenu(index, index + 1, "Chart-B");
-    this.insertSubMenu(index, index + 2, "Chart-C");
-    this.insertSubMenu(index, index + 3, "Chart-D");
+    this.insertSubMenu(index, index + 0, parentText + "-A");
+    this.insertSubMenu(index, index + 1, parentText + "-B");
+    this.insertSubMenu(index, index + 2, parentText + "-C");
+    this.insertSubMenu(index, index + 3, parentText + "-D");
   }
 
   public addExpandableItem(mi: MI, enabled: boolean): HTMLTableDataCellElement {
@@ -224,6 +224,10 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
         // remove submenu if the parentMenu is not selected
         if ( this.selectedParentMenu != -1 && index != this.selectedParentMenu) {
             this.hideAllSubMenu();
+        }
+        // Show subMenu when parent menu is active
+        if (cell.classList.contains("expandableMenu")) {
+            this.expandMenu(cell.firstChild.textContent);
         }
         cell.classList.add("selected");
         this.outer.focus();
