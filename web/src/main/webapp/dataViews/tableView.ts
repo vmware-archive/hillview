@@ -639,6 +639,16 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 help: "Plot the data in the selected columns as a histogram. " +
                     "Applies to one or two columns only.",
             }, selectedCount >= 1 && selectedCount <= 2);
+            this.contextMenu.addExpandableItem(
+              {
+                text: "Charts...",
+                action: () => this.contextMenu.expandMenu(),
+                help:
+                  "List of available charts to draw. " +
+                  "",
+              },
+              true
+            );
             this.contextMenu.addItem({
                 text: "Quartile vector",
                 action: () => this.chart(this.schema.getDescriptions(this.getSelectedColNames()), "QuartileVector"),
