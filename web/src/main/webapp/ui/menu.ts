@@ -147,7 +147,6 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
     this.rows.push(trow);
     const cell = trow.insertCell(0);
     this.cells.push(cell);
-    this.subMenuCells[index] = emptySubMenu();
     if (mi.text === "---") cell.innerHTML = "<hr>";
     else cell.textContent = mi.text;
     cell.id = makeId(mi.text);
