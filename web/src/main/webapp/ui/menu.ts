@@ -66,13 +66,11 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
   public selectedIndex: number; // -1 if no item is selected
   public selectedParentMenu: number; // -1 if no item is selected
   public selectedSubMenu: number; // -1 if no item is selected
-  public subMenuActive: boolean; // -1 if no item is selected
 
   protected constructor() {
     this.items = [];
     this.cells = [];
     this.subMenuCells = [];
-    this.subMenuActive = false;
     this.selectedParentMenu = -1;
     this.rows = [];
     this.selectedIndex = -1;
@@ -137,7 +135,6 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
     this.subMenuCells[index].cells.forEach((cell) => {
       cell.style.display = "block";
     });
-    this.subMenuActive = true;
   }
 
   public addItem(mi: MI, enabled: boolean): HTMLTableDataCellElement {
