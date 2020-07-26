@@ -18,7 +18,6 @@
 package org.hillview.storage;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -88,6 +87,7 @@ public class CassandraDatabase {
     public CassandraDatabase(CassandraConnectionInfo info) {
         this.info = info;
         try {
+            this.info.host = this.convertEndpointToIP(this.info.host);
             this.nodeProbeFactory = new NodeProbeFactory();
             this.connectLocalProbe();
             this.connectCassCluster();
@@ -129,7 +129,7 @@ public class CassandraDatabase {
     private void connectLocalProbe() throws IOException {
         Converters.checkNull(this.nodeProbeFactory);
         if (Utilities.isNullOrEmpty(info.user))
-            this.probe = this.nodeProbeFactory.create(info.host, info.jmxPort);
+            this.probe = this.nodeProbeFactory.create("127.0.0.1", info.jmxPort);
         else
             this.probe = this.nodeProbeFactory.create(info.host, info.jmxPort, info.user, info.password);
     }
@@ -172,31 +172,33 @@ public class CassandraDatabase {
         }
     }
 
-    private String discoverLocalEndpoint() {
-        Path cassandraPath = Paths.get(this.info.cassandraRootDir);
-        Path cassandraYaml = Paths.get(cassandraPath.toString(), CassandraDatabase.cassandraYamlPath);
+    private String convertEndpointToIP(String endpoint) {
         String IPAddress = null;
         try {
-            File cassandraConfig = cassandraYaml.toFile();
-            Scanner myReader = new Scanner(cassandraConfig);
-            String nodeName = null;
-            while (myReader.hasNextLine()) {
-                String content = myReader.nextLine();
-                if (content.startsWith("listen_address:")) {
-                    nodeName = content.replace("listen_address: ", "");
-                    break;
-                }
-            }
-            myReader.close();
-            Converters.checkNull(nodeName);
-            InetAddress inet = InetAddress.getByName(nodeName);
+            InetAddress inet = InetAddress.getByName(endpoint);
             IPAddress = inet.getHostAddress();
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
         } catch (UnknownHostException e) {
             throw new RuntimeException(e);
         }
         return IPAddress;
+    }
+
+    private String discoverLocalEndpoint() throws Exception {
+        Path cassandraPath = Paths.get(this.info.cassandraRootDir);
+        Path cassandraYaml = Paths.get(cassandraPath.toString(), CassandraDatabase.cassandraYamlPath);
+        String nodeName = null;
+        File cassandraConfig = cassandraYaml.toFile();
+        Scanner myReader = new Scanner(cassandraConfig);
+        while (myReader.hasNextLine()) {
+            String content = myReader.nextLine();
+            if (content.startsWith("listen_address:")) {
+                nodeName = content.replace("listen_address: ", "");
+                break;
+            }
+        }
+        myReader.close();
+        Converters.checkNull(nodeName);
+        return this.convertEndpointToIP(nodeName);
     }
 
     public String getLocalEndpoint() {
