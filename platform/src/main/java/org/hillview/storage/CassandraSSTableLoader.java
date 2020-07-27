@@ -280,63 +280,37 @@ public class CassandraSSTableLoader extends TextFileLoader {
      * Instead of checking the columnn' name to find which one to load, this method
      * uses boolean marker stored at columnToLoad to recognize the needed columns
      */
-    private List<IAppendableColumn> createColumns(boolean[] columnToLoad, int columnCountToLoad) {
+    private List<IAppendableColumn> createColumns(List<String> names) {
         List<ColumnDescription> cols = Converters.checkNull(this.actualSchema).getColumnDescriptions();
-        List<IAppendableColumn> result = new ArrayList<IAppendableColumn>(columnCountToLoad);
-        int i = 0;
+        List<IAppendableColumn> result = new ArrayList<IAppendableColumn>(names.size());
         for (ColumnDescription cd : cols) {
-            if (columnToLoad[i])
+            if (names.contains(cd.name))
                 result.add(BaseListColumn.create(cd));
-            i++;
         }
         return result;
     }
 
     public class SSTableColumnLoader implements IColumnLoader {
         private final SSTableReader ssTableReader;
-        private final Schema actualSchema;
         private final List<CassandraTokenRange> tokenRanges;
         private final PartitionColumns columnDefinitions;
-        private int columnCountToLoad;
 
-        SSTableColumnLoader(SSTableReader ssTableReader, Schema actualSchema, PartitionColumns columnDefinitions,
+        SSTableColumnLoader(SSTableReader ssTableReader, PartitionColumns columnDefinitions,
                 List<CassandraTokenRange> tokenRanges) {
             this.ssTableReader = ssTableReader;
-            this.actualSchema = actualSchema;
             this.columnDefinitions = columnDefinitions;
             this.tokenRanges = tokenRanges;
         }
 
-        private boolean[] getColumnMarker(List<String> names) {
-            this.columnCountToLoad = 0;
-            List<String> colNames = this.actualSchema.getColumnNames();
-            boolean[] result = new boolean[colNames.size()];
-            int i = 0;
-            for (String cn : colNames) {
-                if (names.contains(cn)) {
-                    result[i] = true;
-                    this.columnCountToLoad++;
-                } else {
-                    result[i] = false;
-                }
-                i++;
-            }
-            return result;
-        }
-
         @Override
         public List<? extends IColumn> loadColumns(List<String> names) {
-            boolean[] columnToLoad = this.getColumnMarker(names);
-            List<IAppendableColumn> columns = createColumns(columnToLoad, this.columnCountToLoad);
-            PartitionColumns newColDef = columnDefinitions;
-            int i = 0;
-            for (ColumnDefinition columnDefinition : columnDefinitions) {
-                if (!columnToLoad[i])
-                    // Filter the column to only load the one marked true by columnToLoad[]
-                    newColDef = newColDef.without(columnDefinition);
-                i++;
+            List<IAppendableColumn> columns = createColumns(names);
+            PartitionColumns.Builder builder = PartitionColumns.builder();
+            for (ColumnDefinition c : columnDefinitions) {
+                if (names.contains(c.toString()))
+                    builder.add(c);
             }
-
+            PartitionColumns newColDef = builder.build();
             CassandraSSTableLoader.loadColumns(this.ssTableReader, columns, newColDef, this.tokenRanges);
             return columns;
         }
@@ -356,14 +330,10 @@ public class CassandraSSTableLoader extends TextFileLoader {
                 }
                 assert this.actualSchema != null;
                 IColumnLoader loader = new CassandraSSTableLoader.SSTableColumnLoader(this.ssTableReader,
-                        this.actualSchema, this.columnDefinitions, this.tokenRanges);
+                        this.columnDefinitions, this.tokenRanges);
                 return Table.createLazyTable(cds, this.getRowCount(), this.filename, loader);
             } else {
-                int columnCountToLoad = Converters.checkNull(this.actualSchema).getColumnCount();
-                // loads all column, so all item of columnToLoad need to be TRUE
-                boolean[] columnToLoad = new boolean[columnCountToLoad];
-                Arrays.fill(columnToLoad, Boolean.TRUE);
-                List<IAppendableColumn> columns = createColumns(columnToLoad, columnToLoad.length);
+                List<IAppendableColumn> columns = createColumns(Converters.checkNull(this.actualSchema.getColumnNames()));
                 CassandraSSTableLoader.loadColumns(this.ssTableReader, columns, this.columnDefinitions,
                         this.tokenRanges);
                 return new Table(columns, this.ssTablePath, null);
@@ -388,7 +358,6 @@ public class CassandraSSTableLoader extends TextFileLoader {
                 SSTableReadsListener listener = CassandraSSTableLoader.newReadCountUpdater();
                 ISSTableScanner currentScanner = ssTableReader.getScanner(cf, range, false, listener);
 
-                // ISSTableScanner currentScanner = ssTableReader.getScanner();
                 Spliterators.spliteratorUnknownSize(currentScanner, Spliterator.CONCURRENT)
                         .forEachRemaining((partition) -> {
                             Unfiltered unfiltered = partition.next();
