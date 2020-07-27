@@ -31,7 +31,7 @@ def start_aggregator(config, agg):
     assert isinstance(config, ClusterConfiguration)
     message = "Starting aggregator " + str(agg)
     logger.info(message)
-    rh.run_remote_shell_command(config.service_folder + "/hillview-aggregator-manager.sh start")
+    agg.run_remote_shell_command(config.service_folder + "/hillview-aggregator-manager.sh start")
 
 def main():
     """Main function"""
