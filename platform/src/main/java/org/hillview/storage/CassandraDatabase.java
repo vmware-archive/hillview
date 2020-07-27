@@ -18,7 +18,9 @@
 package org.hillview.storage;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
@@ -32,6 +34,7 @@ import com.datastax.driver.core.*;
 import com.datastax.driver.core.Cluster.Builder;
 import com.google.common.annotations.VisibleForTesting;
 
+import org.apache.cassandra.config.Config;
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.dht.Range;
 import org.apache.cassandra.dht.Token.TokenFactory;
@@ -42,6 +45,7 @@ import org.apache.cassandra.utils.FBUtilities;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Utilities;
+import org.yaml.snakeyaml.Yaml;
 import org.apache.cassandra.dht.Token;
 
 public class CassandraDatabase {
@@ -92,7 +96,7 @@ public class CassandraDatabase {
             this.connectLocalProbe();
             this.connectCassCluster();
             this.setStoredTableInfo();
-            this.setTokenRanges();
+            this.discoverTokenRanges();
             this.localEndpoint = this.discoverLocalEndpoint();
         } catch (Exception e) {
             HillviewLogger.instance.error("Failed initializing CassandraDatabase partitions", "{0}",
@@ -131,7 +135,7 @@ public class CassandraDatabase {
         if (Utilities.isNullOrEmpty(info.user))
             this.probe = this.nodeProbeFactory.create("127.0.0.1", info.jmxPort);
         else
-            this.probe = this.nodeProbeFactory.create(info.host, info.jmxPort, info.user, info.password);
+            this.probe = this.nodeProbeFactory.create("127.0.0.1", info.jmxPort, info.user, info.password);
     }
 
     public static class CassandraTokenRange {
@@ -186,19 +190,10 @@ public class CassandraDatabase {
     private String discoverLocalEndpoint() throws Exception {
         Path cassandraPath = Paths.get(this.info.cassandraRootDir);
         Path cassandraYaml = Paths.get(cassandraPath.toString(), CassandraDatabase.cassandraYamlPath);
-        String nodeName = null;
-        File cassandraConfig = cassandraYaml.toFile();
-        Scanner myReader = new Scanner(cassandraConfig);
-        while (myReader.hasNextLine()) {
-            String content = myReader.nextLine();
-            if (content.startsWith("listen_address:")) {
-                nodeName = content.replace("listen_address: ", "");
-                break;
-            }
-        }
-        myReader.close();
-        Converters.checkNull(nodeName);
-        return this.convertEndpointToIP(nodeName);
+        Yaml yamlConfig = new Yaml();
+        InputStream is = new FileInputStream(cassandraYaml.toFile());
+        Config config = yamlConfig.loadAs(is, Config.class);
+        return this.convertEndpointToIP(config.listen_address);
     }
 
     public String getLocalEndpoint() {
@@ -206,11 +201,11 @@ public class CassandraDatabase {
     }
 
     /**
-     * Shows key-range (table partition) and endpoints (replica) which stores each
+     * Discover key-range (table partition) and endpoints (replica) which stores each
      * key-range. This key-range distribution is the same on every node in the
      * cluster.
      */
-    private void setTokenRanges() throws IOException {
+    private void discoverTokenRanges() throws IOException {
         String keyspace = this.info.database;
         CassandraTokenRange tr;
         for (String tokenRangeString : Converters.checkNull(this.probe).describeRing(keyspace)) {
