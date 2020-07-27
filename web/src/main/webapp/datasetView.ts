@@ -245,7 +245,7 @@ export class DatasetView implements IHtmlElement {
         cancel.title = "Do not update the privacy policy.";
         this.privacyEditor.appendChild(cancel);
 
-        if (HillviewToplevel.instance.uiconfig.enableAdvanced) {
+        if (HillviewToplevel.instance.uiconfig.enableManagement) {
             const save = document.createElement("button");
             save.textContent = "Save";
             save.title = "Write the privacy policy to disk, overwriting the existing policy on disk.";
