@@ -64,8 +64,8 @@ export class LoadMenu extends RemoteObject implements IDataView {
     public configReceived(uiconfig: UIConfig): void {
         HillviewToplevel.instance.setUIConfig(uiconfig);
         this.createMenus();
-        if (!uiconfig.enableAdvanced)
-            this.showAdvanced(false);
+        if (!uiconfig.enableManagement)
+            this.showManagement(false);
     }
 
     private createMenus(): void {
@@ -336,8 +336,8 @@ export class LoadMenu extends RemoteObject implements IDataView {
 
     public toggleAdvanced(): void {
         // writing it this way will work with undefined values.
-        HillviewToplevel.instance.uiconfig.enableAdvanced = !HillviewToplevel.instance.uiconfig.enableAdvanced;
-        this.showAdvanced(HillviewToplevel.instance.uiconfig.enableAdvanced);
+        HillviewToplevel.instance.uiconfig.enableManagement = !HillviewToplevel.instance.uiconfig.enableManagement;
+        this.showManagement(HillviewToplevel.instance.uiconfig.enableManagement);
     }
 
     public loadSavedDialog(): void {
@@ -372,9 +372,8 @@ export class LoadMenu extends RemoteObject implements IDataView {
             this.page.reportError("Error reconstructing view");
     }
 
-    public showAdvanced(show: boolean): void {
+    public showManagement(show: boolean): void {
         this.menu.enable("Manage", show);
-        this.loadMenu.enable("Federated DB tables...", show);
     }
 
     // noinspection JSMethodCanBeStatic

@@ -2,6 +2,6 @@
     "enableSaveAs": true,
     "localDbMenu": true,
     "showTestMenu": true,
-    "enableAdvanced": true,
+    "enableManagement": true,
     "privateIsCsv": true
 }
