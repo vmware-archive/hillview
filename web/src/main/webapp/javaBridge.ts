@@ -85,7 +85,7 @@ export interface UIConfig {
     enableSaveAs?: boolean;  // save as menu enabled
     localDbMenu?: boolean;   // show the local db connection
     showTestMenu?: boolean;  // the test menu is shown
-    enableAdvanced?: boolean;  // advanced menus enabled
+    enableManagement?: boolean;  // management menu enabled
     privateIsCsv?: boolean;    // the private dataset is in csv form
 }
 

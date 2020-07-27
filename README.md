@@ -6,13 +6,13 @@ The hillview user interface executes in a browser.
 
 Contents:
 
-[1. Documentation](#1-Documentation)
+[1. Documentation](#1-documentation)
 
-[2. Local installation](#2-Installing-and-running-Hillview-on-a-local-machine)
+[2. Local installation](#2-installing-and-running-hillview-on-a-local-machine)
 
-[3. Cluster installation](#3-Deploying-the-Hillview-service-on-a-cluster)
+[3. Cluster installation](#3-deploying-the-hillview-service-on-a-cluster)
 
-[4. Developing Hillview](#4-Developing-Hillview)
+[4. Developing Hillview](#4-developing-hillview)
 
 # 1. Documentation
 
@@ -36,7 +36,7 @@ Experimental use of Hillview using [differential privacy](privacy.md).
 
 # 2. Installing and running Hillview on a local machine
 
-For developing Hillview see [below](#4.-developing-hillview).
+For developing Hillview see [below](#4-developing-hillview).
 
 ## 2.1 Linux of MacOS
 
@@ -178,6 +178,14 @@ machine as a one-machine cluster.
 ```
 
 ## 3.2 Deployment scripts
+
+First install Hillview locally:
+
+```
+$ bin/install.sh
+```
+
+Edit the config.json file as described above.
 
 All deployment scripts are written in Python, and are in the `bin` folder.
 
