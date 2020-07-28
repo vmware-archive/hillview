@@ -76,7 +76,7 @@ public class SSTableTest extends BaseTest {
         File directoryPath = new File(this.ssTableDir);
         if (!directoryPath.exists())
             return;
-        CassandraSSTableLoader ssTableLoader = new CassandraSSTableLoader(this.ssTablePath, lazyLoading);
+        CassandraSSTableLoader ssTableLoader = CassandraSSTableLoader.getCassandraSSTableLoader(this.ssTablePath, lazyLoading);
         ITable table = ssTableLoader.load();
         Assert.assertNotNull(table);
         Assert.assertEquals("Table[4x15]", table.toString());
@@ -88,7 +88,8 @@ public class SSTableTest extends BaseTest {
         if (!directoryPath.exists())
             return;
         boolean lazyLoading = false;
-        CassandraSSTableLoader ssTableLoader = new CassandraSSTableLoader(this.ssTablePath, lazyLoading);
+        CassandraSSTableLoader ssTableLoader = CassandraSSTableLoader
+                .getCassandraSSTableLoader(this.ssTablePath, lazyLoading);
         int rowCount = ssTableLoader.getRowCount();
         Assert.assertEquals(15, rowCount);
     }
@@ -99,7 +100,8 @@ public class SSTableTest extends BaseTest {
         if (!directoryPath.exists())
             return;
         boolean lazyLoading = true;
-        CassandraSSTableLoader ssTableLoader = new CassandraSSTableLoader(this.ssTablePath, lazyLoading);
+        CassandraSSTableLoader ssTableLoader = CassandraSSTableLoader
+                .getCassandraSSTableLoader(this.ssTablePath, lazyLoading);
         ITable table = ssTableLoader.load();
         Assert.assertNotNull(table);
 
@@ -175,7 +177,8 @@ public class SSTableTest extends BaseTest {
         String ssTablePath = db.getSSTablePath().get(0);
         Assert.assertTrue(ssTablePath.endsWith(CassandraDatabase.ssTableFileMarker));
         // Reading the SSTable of flights data
-        CassandraSSTableLoader ssTableLoader = new CassandraSSTableLoader(ssTablePath, conn.lazyLoading);
+        CassandraSSTableLoader ssTableLoader = CassandraSSTableLoader
+                .getCassandraSSTableLoader(ssTablePath, conn.lazyLoading);
         ITable table = ssTableLoader.load();
         Assert.assertNotNull(table);
         Assert.assertEquals("Table[15x100]", table.toString());
@@ -202,7 +205,8 @@ public class SSTableTest extends BaseTest {
         Assert.assertEquals(1, arrSSTablePath.size());
         String ssTablePath = db.getSSTablePath().get(0);
         Assert.assertTrue(ssTablePath.endsWith(CassandraDatabase.ssTableFileMarker));
-        CassandraSSTableLoader ssTableLoader = new CassandraSSTableLoader(ssTablePath, conn.lazyLoading);
+        CassandraSSTableLoader ssTableLoader = CassandraSSTableLoader
+                .getCassandraSSTableLoader(ssTablePath, conn.lazyLoading);
         ITable table = ssTableLoader.load();
         ;
         Assert.assertNotNull(table);
@@ -249,7 +253,8 @@ public class SSTableTest extends BaseTest {
         Assert.assertEquals(1, arrSSTablePath.size());
         String ssTablePath = db.getSSTablePath().get(0);
         Assert.assertTrue(ssTablePath.endsWith(CassandraDatabase.ssTableFileMarker));
-        CassandraSSTableLoader ssTableLoader = new CassandraSSTableLoader(ssTablePath, conn.lazyLoading);
+        CassandraSSTableLoader ssTableLoader = CassandraSSTableLoader
+                .getCassandraSSTableLoader(ssTablePath, conn.lazyLoading);
         ITable table = ssTableLoader.load();
         Assert.assertNotNull(table);
         IColumn column = table.getLoadedColumn("counter");

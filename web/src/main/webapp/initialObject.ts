@@ -225,4 +225,11 @@ export class InitialObject extends RemoteObject {
             this.loadSimpleDBTable(jdbcConn, loadMenuPage);
         }
     }
+    public loadFederatedDBTable(jdbcConn: JdbcConnectionInformation, cassConn: CassandraConnectionInfo, loadMenuPage: FullPage): void {
+        if (jdbcConn.databaseKind == "cassandra") {
+            this.loadCassandraFiles(cassConn, loadMenuPage);
+        } else {
+            this.loadDBTable(jdbcConn, loadMenuPage);
+        }
+    }
 }

@@ -234,7 +234,8 @@ export class LoadMenu extends RemoteObject implements IDataView {
                 text: "Federated DB tables...",
                 action: () => {
                     const dialog = new DBDialog();
-                    dialog.setAction(() => this.init.loadDBTable(dialog.getConnection(), this.page));
+                    dialog.setAction(() => this.init.loadFederatedDBTable(dialog.getConnection(),
+                        dialog.getCassandraConnection(), this.page));
                     dialog.show();
                 },
                 help: "A set of database tables residing in databases on each worker machine."

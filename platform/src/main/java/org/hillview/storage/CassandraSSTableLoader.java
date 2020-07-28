@@ -77,7 +77,7 @@ public class CassandraSSTableLoader extends TextFileLoader {
     private final PartitionColumns columnDefinitions;
     private final IPartitioner partitioner;
     private final List<CassandraTokenRange> tokenRanges;
-    private static String localEndpoint;
+    private final String localEndpoint;
 
     static {
         // Initializing Cassandra's general configuration
@@ -89,7 +89,7 @@ public class CassandraSSTableLoader extends TextFileLoader {
         super(ssTablePath);
         this.ssTablePath = ssTablePath;
         this.tokenRanges = tokenRanges;
-        CassandraSSTableLoader.localEndpoint = localEndpoint;
+        this.localEndpoint = localEndpoint;
         this.lazyLoading = lazyLoading;
 
         try {
@@ -113,32 +113,17 @@ public class CassandraSSTableLoader extends TextFileLoader {
      * generated token range will cover all partition in a single range.
      */
     @VisibleForTesting
-    public CassandraSSTableLoader(String ssTablePath, boolean lazyLoading) {
-        super(ssTablePath);
-        this.ssTablePath = ssTablePath;
-        this.lazyLoading = lazyLoading;
-        CassandraSSTableLoader.localEndpoint = "127.0.0.1";
+    public static CassandraSSTableLoader getCassandraSSTableLoader(String ssTablePath, boolean lazyLoading) {
         try {
-            Descriptor descriptor = Descriptor.fromFilename(this.ssTablePath);
-
-            this.partitioner = FBUtilities.newPartitioner(descriptor);
-
-            // Generate single token range to include all partition
+            Descriptor descriptor = Descriptor.fromFilename(ssTablePath);
+            IPartitioner partitioner = FBUtilities.newPartitioner(descriptor);
             List<String> endpoints = new ArrayList<>();
-            endpoints.add("127.0.0.1");
             List<CassandraTokenRange> tokenRanges = new ArrayList<>();
+            endpoints.add("127.0.0.1");
             tokenRanges.add(
                     new CassandraTokenRange(partitioner.getMinimumToken(), partitioner.getMaximumToken(), endpoints));
-            this.tokenRanges = tokenRanges;
-            this.metadata = this.getSSTableMetadata(descriptor);
-            this.columnDefinitions = this.metadata.partitionColumns();
-            this.ssTableReader = SSTableReader.openNoValidation(descriptor, this.metadata);
-            // Get the schema of the current SSTable
-            this.actualSchema = this.convertSchema();
-            this.computeRowCount();
+            return new CassandraSSTableLoader(ssTablePath, tokenRanges, "127.0.0.1", lazyLoading);
         } catch (Exception e) {
-            HillviewLogger.instance.error("Failed initializing Metadata and SStable partitions", "{0}",
-                    this.ssTablePath);
             throw new RuntimeException(e);
         }
     }
@@ -250,14 +235,12 @@ public class CassandraSSTableLoader extends TextFileLoader {
 
     private void computeRowCount() {
         this.rowCount = 0;
-        PartitionColumns newColDef = this.columnDefinitions;
-        for (ColumnDefinition columnDefinition : this.columnDefinitions)
-            newColDef = newColDef.without(columnDefinition);
-        ColumnFilter cf = ColumnFilter.selection(newColDef);
+        PartitionColumns.Builder builder = PartitionColumns.builder();
+        ColumnFilter cf = ColumnFilter.selection(builder.build());
 
         for (CassandraTokenRange tr : this.tokenRanges) {
             // Load the partition if the local endpoint is listed as the first endpoint
-            if (tr.endpoints.get(0).equals(CassandraSSTableLoader.localEndpoint)) {
+            if (tr.endpoints.get(0).equals(this.localEndpoint)) {
                 DataRange range = DataRange.forTokenRange(tr.tokenRange);
                 SSTableReadsListener listener = CassandraSSTableLoader.newReadCountUpdater();
                 ISSTableScanner currentScanner = this.ssTableReader.getScanner(cf, range, false, listener);
@@ -294,12 +277,14 @@ public class CassandraSSTableLoader extends TextFileLoader {
         private final SSTableReader ssTableReader;
         private final List<CassandraTokenRange> tokenRanges;
         private final PartitionColumns columnDefinitions;
+        private final String localEndpoint;
 
         SSTableColumnLoader(SSTableReader ssTableReader, PartitionColumns columnDefinitions,
-                List<CassandraTokenRange> tokenRanges) {
+                List<CassandraTokenRange> tokenRanges, String localEndpoint) {
             this.ssTableReader = ssTableReader;
             this.columnDefinitions = columnDefinitions;
             this.tokenRanges = tokenRanges;
+            this.localEndpoint = localEndpoint;
         }
 
         @Override
@@ -311,7 +296,8 @@ public class CassandraSSTableLoader extends TextFileLoader {
                     builder.add(c);
             }
             PartitionColumns newColDef = builder.build();
-            CassandraSSTableLoader.loadColumns(this.ssTableReader, columns, newColDef, this.tokenRanges);
+            CassandraSSTableLoader.loadColumns(this.ssTableReader, columns, newColDef, this.tokenRanges,
+                    this.localEndpoint);
             return columns;
         }
     }
@@ -330,12 +316,13 @@ public class CassandraSSTableLoader extends TextFileLoader {
                 }
                 assert this.actualSchema != null;
                 IColumnLoader loader = new CassandraSSTableLoader.SSTableColumnLoader(this.ssTableReader,
-                        this.columnDefinitions, this.tokenRanges);
+                        this.columnDefinitions, this.tokenRanges, this.localEndpoint);
                 return Table.createLazyTable(cds, this.getRowCount(), this.filename, loader);
             } else {
-                List<IAppendableColumn> columns = createColumns(Converters.checkNull(this.actualSchema.getColumnNames()));
+                List<IAppendableColumn> columns = createColumns(
+                        Converters.checkNull(this.actualSchema.getColumnNames()));
                 CassandraSSTableLoader.loadColumns(this.ssTableReader, columns, this.columnDefinitions,
-                        this.tokenRanges);
+                        this.tokenRanges, this.localEndpoint);
                 return new Table(columns, this.ssTablePath, null);
             }
         } catch (Exception ex) {
@@ -348,12 +335,12 @@ public class CassandraSSTableLoader extends TextFileLoader {
      * marked by columnToLoad
      */
     private static void loadColumns(SSTableReader ssTableReader, List<IAppendableColumn> columns,
-            PartitionColumns columnDefinitions, List<CassandraTokenRange> tokenRanges) {
+            PartitionColumns columnDefinitions, List<CassandraTokenRange> tokenRanges, String localEndpoint) {
         ColumnFilter cf = ColumnFilter.selection(columnDefinitions);
 
         for (CassandraTokenRange tr : tokenRanges) {
             // Load the partition if the local endpoint is listed as the first endpoint
-            if (tr.endpoints.get(0).equals(CassandraSSTableLoader.localEndpoint)) {
+            if (tr.endpoints.get(0).equals(localEndpoint)) {
                 DataRange range = DataRange.forTokenRange(tr.tokenRange);
                 SSTableReadsListener listener = CassandraSSTableLoader.newReadCountUpdater();
                 ISSTableScanner currentScanner = ssTableReader.getScanner(cf, range, false, listener);
