@@ -21,7 +21,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -90,7 +89,6 @@ public class CassandraDatabase {
     public CassandraDatabase(CassandraConnectionInfo info) {
         this.info = info;
         try {
-            this.info.host = this.convertEndpointToIP(this.info.host);
             this.nodeProbeFactory = new NodeProbeFactory();
             this.connectLocalProbe();
             this.connectCassCluster();
@@ -175,24 +173,14 @@ public class CassandraDatabase {
         }
     }
 
-    private String convertEndpointToIP(String endpoint) {
-        String IPAddress = null;
-        try {
-            InetAddress inet = InetAddress.getByName(endpoint);
-            IPAddress = inet.getHostAddress();
-        } catch (UnknownHostException e) {
-            throw new RuntimeException(e);
-        }
-        return IPAddress;
-    }
-
     private String discoverLocalEndpoint() throws Exception {
         Path cassandraPath = Paths.get(this.info.cassandraRootDir);
         Path cassandraYaml = Paths.get(cassandraPath.toString(), CassandraDatabase.cassandraYamlPath);
         Yaml yamlConfig = new Yaml();
         InputStream is = new FileInputStream(cassandraYaml.toFile());
         Config config = yamlConfig.loadAs(is, Config.class);
-        return this.convertEndpointToIP(config.listen_address);
+        InetAddress inet = InetAddress.getByName(config.listen_address);
+        return inet.getHostAddress().toString();
     }
 
     public String getLocalEndpoint() {
