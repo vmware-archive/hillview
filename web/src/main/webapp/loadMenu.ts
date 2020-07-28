@@ -233,7 +233,7 @@ export class LoadMenu extends RemoteObject implements IDataView {
             {
                 text: "Federated DB tables...",
                 action: () => {
-                    const dialog = new DBDialog();
+                    const dialog = new DBDialog(true);
                     dialog.setAction(() => this.init.loadFederatedDBTable(dialog.getConnection(),
                         dialog.getCassandraConnection(), this.page));
                     dialog.show();
@@ -244,14 +244,13 @@ export class LoadMenu extends RemoteObject implements IDataView {
             loadMenuItems.push({
                 text: "Local DB table...",
                 action: () => {
-                    const dialog = new DBDialog();
-                    dialog.setAction(() => this.init.loadLocalDBTable(dialog.getConnection(),
-                        dialog.getCassandraConnection(), this.page));
+                    const dialog = new DBDialog(false);
+                    dialog.setAction(() => this.init.loadSimpleDBTable(dialog.getConnection(), this.page));
                     dialog.show();
                 },
-                help: "A database table in a single database." });
+                help: "A database table in a single database."
+            });
         this.loadMenu = new SubMenu(loadMenuItems);
-
         const items: TopMenuItem[] = [
             { text: "Test datasets", help: "Hardwired datasets for testing Hillview.",
                 subMenu: this.testDatasetsMenu,
@@ -585,24 +584,29 @@ class OrcFileDialog extends Dialog {
  * Dialog asking the user which DB table to load.
  */
 class DBDialog extends Dialog {
-    constructor() {
+    constructor(isFederated: boolean) {
         super("Load DB tables", "Loads one table on each machine that is part of the service.");
-        const sel = this.addSelectField("databaseKind", "Database kind", ["cassandra", "mysql", "impala"], "cassandra",
+        var arrDB = ["mysql", "impala"];
+        if (isFederated) arrDB.push("cassandra");
+        const sel = this.addSelectField("databaseKind", "Database kind", arrDB, "mysql",
             "The kind of database.");
         sel.onchange = () => this.dbChanged();
         const host = this.addTextField("host", "Host", FieldKind.String, "localhost",
             "Machine name where database is located; each machine will open a connection to this host");
         host.required = true;
-        const dbDir = this.addTextField("dbDir", "DB Directory", FieldKind.String, null,
-            "Absolute path of dCassandra's installation directory");
-        dbDir.required = true;
-        const port = this.addTextField("port", "Port", FieldKind.Integer, "9042",
+        if (isFederated) {
+            var dbDir = this.addTextField("dbDir", "DB Directory", FieldKind.String, null,
+                "Absolute path of dCassandra's installation directory");
+            this.hideInputField("dbDir", dbDir);
+        }
+        const port = this.addTextField("port", "Port", FieldKind.Integer, "3306",
             "Network port to connect to database.");
         port.required = true;
-        const jmxPort = this.addTextField("jmxPort", "JMX Port", FieldKind.Integer, "7199",
-        "Cassandra's JMX port to connect to server-side tools.");
-        jmxPort.required = true;
-        this.hideField("jmxPort");
+        if (isFederated) {
+            var jmxPort = this.addTextField("jmxPort", "JMX Port", FieldKind.Integer, null,
+                "Cassandra's JMX port to connect to server-side tools.");
+            this.hideInputField("jmxPort", jmxPort);
+        }
         const database = this.addTextField("database", "Database", FieldKind.String, null,
             "Name of database to load.");
         database.required = true;
@@ -621,19 +625,19 @@ class DBDialog extends Dialog {
         switch (db) {
             case "mysql":
                 this.setFieldValue("port", "3306");
-                this.hideField("jmxPort");
-                this.hideField("dbDir");
+                this.hideInputField("jmxPort");
+                this.hideInputField("dbDir");
                 break;
             case "impala":
                 this.setFieldValue("port", "21050");
-                this.hideField("jmxPort");
-                this.hideField("dbDir");
+                this.hideInputField("jmxPort");
+                this.hideInputField("dbDir");
                 break;
             case "cassandra":
                 this.setFieldValue("port", "9042");
                 this.setFieldValue("jmxPort", "7199");
-                this.showField("jmxPort");
-                this.showField("dbDir");
+                this.showInputField("jmxPort");
+                this.showInputField("dbDir");
                 break;
         }
     }
@@ -669,8 +673,8 @@ class DBDialog extends Dialog {
             };
     }
 
-    public hideField(fieldName: string){
-        var field = document.getElementById(fieldName);
+    public hideInputField(fieldName: string, field?: HTMLElement) {
+        if (field === undefined) field = document.getElementById(fieldName);
         if (field != null) {
             this.setFieldValue(fieldName, "");
             field.removeAttribute("required");
@@ -679,8 +683,8 @@ class DBDialog extends Dialog {
         }
     }
 
-    public showField(fieldName: string){
-        var field = document.getElementById(fieldName);
+    public showInputField(fieldName: string, field?: HTMLElement){
+        if (field === undefined) field = document.getElementById(fieldName);
         if (field != null) {
             field.removeAttribute("disabled");
             field.setAttribute("required", "");
