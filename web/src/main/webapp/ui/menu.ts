@@ -157,20 +157,6 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
         return cell;
     }
 
-    public addExpandableItem(mi: MI, enabled: boolean): HTMLTableDataCellElement {
-        const cell = this.addItem(mi, enabled);
-        cell.classList.add("expandableMenu");
-
-        const arrow = document.createElement("span");
-        arrow.textContent = "▸";
-        arrow.classList.add("menuArrow");
-        cell.appendChild(arrow);
-
-        // reset the action so that it doesn't hide() after click
-        this.enable(mi.text, enabled);
-        return cell;
-    }
-
     /**
      * Highlight a menu item (based on mouse position on keyboard actions).
      * @param {number} index      Index of item to highlight.
@@ -349,13 +335,25 @@ export class ContextMenu extends BaseMenu<MenuItem> implements IHtmlElement {
         }
     }
 
+    public addExpandableItem(mi: MenuItem, enabled: boolean): number {
+        const cell = this.addItem(mi, enabled);
+        cell.classList.add("expandableMenu");
+
+        const arrow = document.createElement("span");
+        arrow.textContent = "▸";
+        arrow.classList.add("menuArrow");
+        cell.appendChild(arrow);
+
+        // reset the action so that it doesn't hide() after click
+        this.enable(mi.text, enabled);
+        return this.cells.length - 1;
+    }
+
     /**
      * Inserting subMenu must be done in the end of all parent menu insert. If the
      * submenu exceed the length of all main menu, we need to add dummyMenu
      * */
-    public insertSubMenu(parentText: string, mi: MenuItem, enabled: boolean): void {
-        const parentIndex = this.find(parentText);
-        if (parentIndex < 0) throw new Error("Cannot find menu item " + parentText);
+    public insertSubMenu(parentIndex: number, mi: MenuItem, enabled: boolean): void {
         if (this.subMenuCells[parentIndex] === undefined)
             this.subMenuCells[parentIndex] = emptySubMenu();
 

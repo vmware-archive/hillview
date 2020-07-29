@@ -107,7 +107,6 @@ table {
     background: linear-gradient(#f9f9f9,#e4e4e4);
     border: 1px solid black;
     font-weight: bold;
-    padding: 2px 5px;
 }
 
 .tableView td.header.selected {

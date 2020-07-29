@@ -632,7 +632,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 action: () => this.showColumns(-1, true),
                 help: "Sort the data first on this column, in decreasing order",
             }, !this.isPrivate());
-            this.contextMenu.addExpandableItem(
+            const chartMenuIdx = this.contextMenu.addExpandableItem(
               {
                 text: "Charts",
                 action: () => null,
@@ -720,8 +720,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                         },
                         help: "Extract a value associated with a specific key."
                     }, !this.isPrivate());
-            this.contextMenu.insertSubMenu( "Charts",
-              {
+            this.contextMenu.insertSubMenu( chartMenuIdx, {
                 text: "Histogram",
                 action: () =>
                   this.chart(
@@ -736,8 +735,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
               },
               selectedCount >= 1 && selectedCount <= 2
             );
-            this.contextMenu.insertSubMenu( "Charts",
-              {
+            this.contextMenu.insertSubMenu( chartMenuIdx, {
                 text: "Quartile vector",
                 action: () =>
                   this.chart(
@@ -750,8 +748,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
               },
               selectedCount == 2
             );
-            this.contextMenu.insertSubMenu( "Charts",
-              {
+            this.contextMenu.insertSubMenu( chartMenuIdx, {
                 text: "Heatmap",
                 action: () =>
                   this.chart(
@@ -764,8 +761,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
               },
               selectedCount === 2
             );
-            this.contextMenu.insertSubMenu( "Charts",
-              {
+            this.contextMenu.insertSubMenu( chartMenuIdx, {
                 text: "Trellis histograms",
                 action: () =>
                   this.chart(
@@ -780,8 +776,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
               },
               selectedCount >= 2 && selectedCount <= 3
             );
-            this.contextMenu.insertSubMenu( "Charts",
-              {
+            this.contextMenu.insertSubMenu( chartMenuIdx, {
                 text: "Trellis heatmaps",
                 action: () =>
                   this.chart(
