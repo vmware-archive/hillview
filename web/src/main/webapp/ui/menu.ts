@@ -135,7 +135,7 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
         this.selectedParentMenu = index;
         if (index < 0) throw new Error("Cannot find menu item " + parentMenu);
         this.subMenuCells[index].cells.forEach((cell) => {
-            cell.style.display = "block";
+            cell.style.display = "table-cell";
         });
     }
 

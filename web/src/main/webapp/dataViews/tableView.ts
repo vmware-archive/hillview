@@ -636,7 +636,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
               {
                 text: "Charts",
                 action: () => null,
-                help: "List of available charts to draw. " + "",
+                help: "List of available charts to draw. ",
               }
             );
             this.contextMenu.addItem({
