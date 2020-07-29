@@ -202,7 +202,7 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
 
         const arrow = document.createElement("span");
         arrow.textContent = "▸";
-        arrow.style.float = "right";
+        arrow.classList.add("menuArrow");
         cell.appendChild(arrow);
 
         // reset the action so that it doesn't hide() after click
@@ -376,10 +376,7 @@ export class ContextMenu extends BaseMenu<MenuItem> implements IHtmlElement {
         const cell = this.cells[index];
         if (mi.action != null && enabled) {
             if (cell.classList.contains("expandableMenu")) {
-              cell.onclick = () => {
-                // this.hide();
-                mi.action();
-              };
+              // no operation because expandableMenu only expand its submenus
             } else {
               cell.onclick = () => {
                 this.hide();

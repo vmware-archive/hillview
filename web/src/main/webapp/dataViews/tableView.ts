@@ -634,8 +634,8 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             }, !this.isPrivate());
             this.contextMenu.addExpandableItem(
               {
-                text: "Charts...",
-                action: () => this.contextMenu.expandMenu("Charts..."),
+                text: "Charts",
+                action: () => null,
                 help: "List of available charts to draw. " + "",
               },
               true
@@ -720,7 +720,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                         },
                         help: "Extract a value associated with a specific key."
                     }, !this.isPrivate());
-            this.contextMenu.insertSubMenu( "Charts...",
+            this.contextMenu.insertSubMenu( "Charts",
               {
                 text: "Histogram",
                 action: () =>
@@ -736,7 +736,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
               },
               selectedCount >= 1 && selectedCount <= 2
             );
-            this.contextMenu.insertSubMenu( "Charts...",
+            this.contextMenu.insertSubMenu( "Charts",
               {
                 text: "Quartile vector",
                 action: () =>
@@ -750,7 +750,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
               },
               selectedCount == 2
             );
-            this.contextMenu.insertSubMenu( "Charts...",
+            this.contextMenu.insertSubMenu( "Charts",
               {
                 text: "Heatmap",
                 action: () =>
@@ -764,7 +764,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
               },
               selectedCount === 2
             );
-            this.contextMenu.insertSubMenu( "Charts...",
+            this.contextMenu.insertSubMenu( "Charts",
               {
                 text: "Trellis histograms",
                 action: () =>
@@ -780,7 +780,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
               },
               selectedCount >= 2 && selectedCount <= 3
             );
-            this.contextMenu.insertSubMenu( "Charts...",
+            this.contextMenu.insertSubMenu( "Charts",
               {
                 text: "Trellis heatmaps",
                 action: () =>
