@@ -632,13 +632,11 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 action: () => this.showColumns(-1, true),
                 help: "Sort the data first on this column, in decreasing order",
             }, !this.isPrivate());
-            const chartMenuIdx = this.contextMenu.addExpandableItem(
-              {
-                text: "Charts",
-                action: () => null,
-                help: "List of available charts to draw. ",
-              }
-            );
+            const chartMenuIdx = this.contextMenu.addExpandableItem({
+              text: "Charts",
+              action: () => null,
+              help: "List of available charts to draw. ",
+            });
             this.contextMenu.addItem({
                 text: "Rename...",
                 action: () => this.renameColumn(),
@@ -732,7 +730,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                   "Plot the data in the selected columns as a histogram. " +
                   "Applies to one or two columns only.",
               },
-              selectedCount >= 1 && selectedCount <= 2, false
+              selectedCount >= 1 && selectedCount <= 2
             );
             this.contextMenu.insertSubMenu( chartMenuIdx, {
                 text: "Quartile vector",
@@ -745,7 +743,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                   "Plot the data in the selected columns as a vector of quartiles. " +
                   "Applies to one or two columns only.",
               },
-              selectedCount == 2, false
+              selectedCount == 2
             );
             this.contextMenu.insertSubMenu( chartMenuIdx, {
                 text: "Heatmap",
@@ -758,7 +756,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                   "Plot the data in the selected columns as a heatmap. " +
                   "Applies to two columns only.",
               },
-              selectedCount === 2, false
+              selectedCount === 2
             );
             this.contextMenu.insertSubMenu( chartMenuIdx, {
                 text: "Trellis histograms",
@@ -773,7 +771,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                   "Plot the data in the selected columns as a Trellis plot of histograms. " +
                   "Applies to two or three columns only.",
               },
-              selectedCount >= 2 && selectedCount <= 3, false
+              selectedCount >= 2 && selectedCount <= 3
             );
             this.contextMenu.insertSubMenu( chartMenuIdx, {
                 text: "Trellis heatmaps",
@@ -786,7 +784,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                   "Plot the data in the selected columns as a Trellis plot of heatmaps. " +
                   "Applies to three columns only.",
               },
-              selectedCount === 3 && !this.isPrivate(), true
+              selectedCount === 3 && !this.isPrivate()
             );
             this.contextMenu.show(e);
         };

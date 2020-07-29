@@ -41,16 +41,14 @@ export interface MenuItem extends BaseMenuItem {
 }
 
 interface subMenuCells {
+    dummySubMenu: HTMLTableDataCellElement;
     cells: HTMLTableDataCellElement[];
-    upperBorder: HTMLTableDataCellElement;
-    lowerBorder: HTMLTableDataCellElement;
 }
 
-function emptySubMenu(): subMenuCells {
+function initSubMenu(): subMenuCells {
     return {
-        cells: [],
-        upperBorder: undefined,
-        lowerBorder: undefined
+        dummySubMenu: undefined,
+        cells: []
     }
 }
 
@@ -143,7 +141,14 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
         const index = this.items.length;
         this.items.push(mi);
         const trow = this.tableBody.insertRow();
+
+        const dummySubMenu = trow.insertCell(0);
+        dummySubMenu.classList.add("dummyMenu");
+        dummySubMenu.onmouseenter = () => this.hide();
+        this.subMenuCells[index] = initSubMenu();
+        this.subMenuCells[index].dummySubMenu = dummySubMenu;
         this.rows.push(trow);
+
         const cell = trow.insertCell(0);
         this.cells.push(cell);
         if (mi.text === "---")
@@ -353,11 +358,7 @@ export class ContextMenu extends BaseMenu<MenuItem> implements IHtmlElement {
      * Inserting subMenu must be done in the end of all parent menu insert. If the
      * submenu exceed the length of all main menu, we need to add dummyMenu
      * */
-    public insertSubMenu(parentIndex: number, mi: MenuItem, enabled: boolean,
-            isLastSubMenu: boolean): void {
-        if (this.subMenuCells[parentIndex] === undefined)
-            this.subMenuCells[parentIndex] = emptySubMenu();
-
+    public insertSubMenu(parentIndex: number, mi: MenuItem, enabled: boolean): void {
         const subMenuIndex = this.subMenuCells[parentIndex].cells.length;
         const subMenuPlacementIdx = parentIndex + subMenuIndex;
         if (this.rows[subMenuPlacementIdx] === undefined) {
@@ -382,21 +383,6 @@ export class ContextMenu extends BaseMenu<MenuItem> implements IHtmlElement {
         cell.onmouseenter = () => this.selectSubMenu(parentIndex, subIndex);
         cell.onmouseleave = () => this.selectSubMenu(parentIndex, -1);
         this.setSubMenuAction(parentIndex, subMenuIndex, mi, enabled);
-
-        // Adding upperBorder: to clear the menu when the cursor hover above 1st submenu
-        if (subMenuPlacementIdx > 0 && this.subMenuCells[parentIndex].cells.length == 1) {
-            const upperBorder = this.rows[subMenuPlacementIdx - 1].insertCell(1);
-            upperBorder.classList.add("dummyMenu");
-            upperBorder.onmouseenter = () => this.clear();
-            this.subMenuCells[parentIndex].upperBorder = upperBorder;
-        }
-        // Adding lowerBorder: to clear the menu when the cursor hover under last submenu
-        if (isLastSubMenu && this.cells.length > subMenuPlacementIdx + 1) {
-            const lowerBorder = this.rows[subMenuPlacementIdx + 1].insertCell(1);
-            lowerBorder.classList.add("dummyMenu");
-            lowerBorder.onmouseenter = () => this.clear();
-            this.subMenuCells[parentIndex].lowerBorder = lowerBorder;
-        }
     }
 
     public setSubMenuAction(parentIndex: number, subMenuIndex: number,
