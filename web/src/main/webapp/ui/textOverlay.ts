@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {truncate} from "../util";
+import {assert, truncate} from "../util";
 import {D3SvgElement, Resolution, Size} from "./ui";
 
 /**
@@ -66,17 +66,18 @@ export class TextOverlay {
 
     /**
      * Update the contents of the overlay.
-     * @param values  Values corresponding to the keys.
+     * @param values  Values corresponding to the keys; may be shorter than the number of keys,
+     *                and then the rest is filled with "".
      * @param x       X screen coordinate.
      * @param y       Y screen coordinate.
      */
     public update(values: string[], x: number, y: number): void {
-        let index = 0;
-        for (let v of values) {
+        assert(values.length <= this.lines.length);
+        for (let index = 0; index < this.lines.length; index++) {
+            let v = values.length > index ? values[index] : "";
             v = truncate(v, 100);
             this.lines[index]
                 .text(this.keys[index] + " = " + v);
-            index++;
         }
 
         // compute width
@@ -89,14 +90,12 @@ export class TextOverlay {
         if (this.parentSize.height < y + this.height)
             y -= this.height;
 
-        index = 0;
         let crtY = y;
-        for (const v of values) {
+        for (let index = 0; index < this.lines.length; index++) {
             this.lines[index]
                 .attr("x", x)
                 .attr("y", crtY);
             crtY += Resolution.lineHeight;
-            index++;
         }
         this.rect
             .attr("x", x)

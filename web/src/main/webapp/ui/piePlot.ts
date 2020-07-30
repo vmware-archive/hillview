@@ -73,7 +73,7 @@ export class PiePlot extends Plot<Two<Groups<number>>> {
             return "white";  // missing
         if (kindIsString(this.xAxisData.description.kind))
             return Plot.categoricalMap(index);
-        return Plot.colorMap(index / count);
+        return Plot.defaultColorMap(index / count);
     }
 
     private label(bucketIndex: number): string {

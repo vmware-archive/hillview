@@ -17,8 +17,15 @@
 
 import {axisBottom as d3axisBottom, axisLeft as d3axisLeft,} from "d3-axis";
 import {scaleLinear as d3scaleLinear, scaleTime as d3scaleTime,} from "d3-scale";
-import {BucketsInfo, ContentsKind, IColumnDescription, kindIsString, RangeFilterDescription} from "../javaBridge";
-import {assert, Converters, formatDate, formatNumber, significantDigits, truncate,} from "../util";
+import {
+    BucketsInfo,
+    ContentsKind,
+    IColumnDescription,
+    kindIsString,
+    RangeFilterDescription,
+    RowValue
+} from "../javaBridge";
+import {assert, binarySearch, Converters, formatDate, formatNumber, significantDigits, truncate,} from "../util";
 import {AnyScale, D3Axis, D3SvgElement, SpecialChars} from "../ui/ui";
 import {SchemaClass} from "../schemaClass";
 
@@ -458,5 +465,21 @@ export class AxisData {
      */
     public bucketDescription(bucket: number | null, maxChars: number): string {
         return this.bucketBoundaries(bucket).toString(maxChars);
+    }
+
+    public bucketIndex(value: RowValue): number {
+        if (kindIsString(this.description.kind)) {
+            const index = binarySearch(this.dataRange.stringQuantiles, value as string,
+                (s1, s2) => s1.localeCompare(s2));
+            return Math.abs(index);
+        } else {
+            const v = value as number;
+            if (value >= this.dataRange.max)
+                return this.bucketCount - 1;
+            if (value <= this.dataRange.min)
+                return 0;
+            return Math.floor(((v - this.dataRange.min) * (this.bucketCount - 1) /
+                (this.dataRange.max - this.dataRange.min)));
+        }
     }
 }

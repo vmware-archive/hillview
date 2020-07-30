@@ -116,7 +116,7 @@ export abstract class Plot<D> {
         return max;
     }
 
-    public static colorMap(d: number): string {
+    public static defaultColorMap(d: number): string {
         // The rainbow color map starts and ends with a similar hue
         // so we skip the first 20% of it.
         return d3interpolateRainbow(d * .8 + .2);

@@ -3,6 +3,8 @@ import {D3SvgElement, Point, Rectangle, Resolution} from "./ui";
 import {mouse as d3mouse} from "d3-selection";
 import {drag as d3drag} from "d3-drag";
 import {HtmlPlottingSurface} from "./plottingSurface";
+import {ColorMapKind} from "./heatmapLegendPlot";
+import {ColorMap} from "../util";
 
 /**
  * A Plot for the legend of a chart.
@@ -37,6 +39,16 @@ export abstract class LegendPlot<D> extends Plot<D> {
         this.x = (this.getChartWidth() - this.width) / 2;
         surface.topLevel.tabIndex = 1;  // necessary to get key events?
         surface.topLevel.onkeydown = (e) => this.keyDown(e);
+    }
+
+    public abstract setColorMapKind(kind: ColorMapKind): void;
+
+    moved(): void {
+        // Recompute position
+        this.x = (this.getChartWidth() - this.width) / 2;
+        this.legendRect = new Rectangle(
+            { x: this.x, y: this.y },
+            { width: this.width, height: this.height });
     }
 
     protected createRectangle() {
@@ -153,4 +165,6 @@ export abstract class LegendPlot<D> extends Plot<D> {
     public legendRectangle(): Rectangle {
         return this.legendRect;
     }
+
+    public abstract getColorMap(): ColorMap;
 }
