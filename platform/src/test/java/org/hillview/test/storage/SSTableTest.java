@@ -215,8 +215,10 @@ public class SSTableTest extends BaseTest {
 
         Assert.assertEquals("Mr. Test", listCols.get(11).getString(0));
         Assert.assertEquals(45000, listCols.get(12).getInt(0));
+        Assert.assertEquals(true, listCols.get(12).isMissing(1));
         Assert.assertEquals("", listCols.get(14).getString(0));
-        Assert.assertEquals(0, listCols.get(10).getInt(0));
+        Assert.assertEquals(true, listCols.get(10).isMissing(0));
+        Assert.assertEquals(true, listCols.get(10).isMissing(1));
         Assert.assertEquals("true", listCols.get(3).getString(0));
         Assert.assertEquals("35", listCols.get(0).getString(0));
         Assert.assertEquals("/127.0.0.1", listCols.get(9).getString(0));

@@ -51,6 +51,8 @@ import org.apache.cassandra.io.sstable.format.SSTableReader;
 import org.apache.cassandra.io.sstable.format.SSTableReadsListener;
 import org.apache.cassandra.io.sstable.metadata.MetadataComponent;
 import org.apache.cassandra.io.sstable.metadata.MetadataType;
+import org.apache.cassandra.serializers.TypeSerializer;
+
 import javax.annotation.Nullable;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -337,6 +339,7 @@ public class CassandraSSTableLoader extends TextFileLoader {
     private static void loadColumns(SSTableReader ssTableReader, List<IAppendableColumn> columns,
             PartitionColumns columnDefinitions, List<CassandraTokenRange> tokenRanges, String localEndpoint) {
         ColumnFilter cf = ColumnFilter.selection(columnDefinitions);
+        List<TypeSerializer<?>> arrSerializer = new ArrayList<>();
 
         for (CassandraTokenRange tr : tokenRanges) {
             // Load the partition if the local endpoint is listed as the first endpoint
@@ -356,8 +359,10 @@ public class CassandraSSTableLoader extends TextFileLoader {
                                 // Extracting the value for each column from a single row
                                 for (ColumnData cd : row) {
                                     col = columns.get(currentColumn);
-                                    AbstractType<?> cellType = cd.column().cellValueType();
-                                    value = cellType.getSerializer().deserialize(((Cell) cd).value());
+                                    if (arrSerializer.size() < columns.size())
+                                        arrSerializer.add(cd.column().cellValueType().getSerializer());
+                                    TypeSerializer<?> serializer = arrSerializer.get(currentColumn);
+                                    value = serializer.deserialize(((Cell) cd).value());
                                     if (value == null) {
                                         col.appendMissing();
                                     } else {
@@ -376,7 +381,7 @@ public class CassandraSSTableLoader extends TextFileLoader {
                                             case DATE:
                                             case TIME:
                                             case BLOB:
-                                                col.append(cellType.getSerializer().toCQLLiteral(((Cell) cd).value())
+                                                col.append(serializer.toCQLLiteral(((Cell) cd).value())
                                                         .toString());
                                                 break;
                                             case INT:
