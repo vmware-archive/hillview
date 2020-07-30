@@ -125,6 +125,7 @@ export function dataRange(data: RowValue[], cd: IColumnDescription): BucketsInfo
         for (const c of sorted) {
             if (c == previous)
                 continue;
+            previous = c;
             unique.push(c);
         }
         if (unique.length < Resolution.max2DBucketCount) {
