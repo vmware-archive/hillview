@@ -323,7 +323,10 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
                     x: xCorner,
                     y: yCorner
                 } );
-                const hp = new HeatmapPlot(surface, this.colorLegend, false);
+                const hp = new HeatmapPlot(
+                    surface, this.colorLegend.getColorMap(),
+                    null, 0,
+                    false);
                 this.hps.push(hp);
             }
         }
@@ -380,8 +383,8 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
         let index = 0;
         for (let y = 0; y < charts; y++) {
             for (let x = y + 1; x < charts; x++) {
-                this.hps[index].setData({first: data[index], second: null},
-                    this.xAxes[x],  this.yAxes[y],
+                this.hps[index].setData({ first: data[index], second: null, third: null },
+                    this.xAxes[x],  this.yAxes[y], null,
                     this.schema, 0, this.isPrivate());
                 max = Math.max(max, this.hps[index].getMaxCount());
                 index++;

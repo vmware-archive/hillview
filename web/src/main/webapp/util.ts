@@ -20,18 +20,18 @@
  */
 
 import {ErrorReporter} from "./ui/errReporter";
-import {DragEventKind, HtmlString, pageReferenceFormat, Size} from "./ui/ui";
+import {DragEventKind, HtmlString, pageReferenceFormat, Resolution, Size} from "./ui/ui";
 import {
-    AggregateDescription,
+    AggregateDescription, BucketsInfo,
     ComparisonFilterDescription,
     ContentsKind,
-    Groups,
+    Groups, IColumnDescription,
     kindIsNumeric,
     kindIsString,
     RangeFilterArrayDescription,
     RangeFilterDescription,
     RowFilterDescription, RowValue,
-    SampleSet, Schema,
+    SampleSet,
     StringFilterDescription
 } from "./javaBridge";
 import {AxisData} from "./dataViews/axisData";
@@ -74,6 +74,69 @@ export function histogramAsCsv(data: Groups<number>, schema: SchemaClass, axis: 
     line = "missing," + data.perMissing;
     lines.push(line);
     return lines;
+}
+
+/**
+ * Find el in the array a.  If found returns the index.  If not found returns the negative of
+ * the index where the element would be inserted.
+ * @param a  Sorted array of values.
+ * @param el Value to search.
+ * @param comparator  Comparator function for two values of type T.
+ */
+export function binarySearch<T>(a: T[], el: T, comparator: (e1: T, e2: T) => number): number {
+    var m = 0;
+    var n = a.length - 1;
+    while (m <= n) {
+        var k = (n + m) >> 1;
+        var cmp = comparator(el, a[k]);
+        if (cmp > 0) {
+            m = k + 1;
+        } else if (cmp < 0) {
+            n = k - 1;
+        } else {
+            return k;
+        }
+    }
+    return -m - 1;
+}
+
+export function dataRange(data: RowValue[], cd: IColumnDescription): BucketsInfo {
+    const present = data.filter((e) => e !== null);
+    let b: BucketsInfo = {
+        allStringsKnown: false,
+        max: 0,
+        maxBoundary: "",
+        min: 0,
+        missingCount: data.length - present.length,
+        presentCount: present.length,
+        stringQuantiles: []
+    };
+    if (present.length === 0)
+        return b;
+    if (kindIsNumeric(cd.kind)) {
+        const numbers = present.map((v) => v as number);
+        b.min = numbers.reduce((a, b) => Math.min(a, b));
+        b.max = numbers.reduce((a, b) => Math.max(a, b));
+    } else {
+        const strings = present.map((v) => v as string);
+        const sorted = strings.sort();
+        const unique = [];
+        let previous = null;
+        for (const c of sorted) {
+            if (c == previous)
+                continue;
+            unique.push(c);
+        }
+        if (unique.length < Resolution.max2DBucketCount) {
+            b.stringQuantiles = unique;
+            b.allStringsKnown = true;
+        } else {
+            for (let i = 0; i < Resolution.max2DBucketCount; i++)
+                b.stringQuantiles.push(unique[Math.round(i * unique.length / Resolution.max2DBucketCount)]);
+            b.allStringsKnown = false;
+        }
+    }
+    return b;
 }
 
 export function histogram2DAsCsv(
@@ -203,9 +266,7 @@ export class Converters {
     }
 
     public static doubleFromDate(value: Date | null): number | null {
-        if (value == null)
-            return null;
-        return value.getTime();
+        return value?.getTime();
     }
 
     /**
@@ -278,12 +339,6 @@ export class Converters {
         } else {
             assert(false);
         }
-    }
-
-    public static rowToString(row: RowValue[], schema: SchemaClass): string {
-        const r = zip(row, schema.schema.map(d => d.kind),
-            (v, k) => Converters.valueToString(v, k));
-        return r.join(",");
     }
 
     /**

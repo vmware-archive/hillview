@@ -18,13 +18,17 @@
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {HeatmapSerialization, IViewSerialization} from "../datasetView";
 import {
+    BucketsInfo,
     Groups,
-    IColumnDescription, kindIsNumeric,
-    RemoteObjectId, RowValue,
+    IColumnDescription,
+    kindIsNumeric,
+    kindIsString,
+    RemoteObjectId,
+    RowValue,
 } from "../javaBridge";
 import {Receiver, RpcRequest} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
-import {BaseReceiver, TableTargetAPI} from "../modules";
+import {BaseReceiver, ChartView, TableTargetAPI} from "../modules";
 import {IDataView} from "../ui/dataview";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {HeatmapPlot} from "../ui/heatmapPlot";
@@ -33,17 +37,25 @@ import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
 import {DragEventKind, Resolution} from "../ui/ui";
 import {
+    assert,
     Converters,
-    Heatmap, histogram2DAsCsv,
-    ICancellable, makeInterval, Pair,
-    PartialResult, reorder, Triple,
+    dataRange,
+    Heatmap,
+    histogram2DAsCsv,
+    ICancellable,
+    makeInterval,
+    Pair,
+    PartialResult,
+    reorder,
+    Triple,
     Two,
+    zip,
 } from "../util";
 import {AxisData} from "./axisData";
 import {DataRangesReceiver, NewTargetReceiver} from "./dataRangesReceiver";
-import {ChartView} from "../modules";
 import {Dialog, FieldKind, saveAs} from "../ui/dialog";
-import {HeatmapLegendPlot} from "../ui/heatmapLegendPlot";
+import {ColorMapKind, HeatmapLegendPlot} from "../ui/heatmapLegendPlot";
+import {HistogramLegendPlot} from "../ui/histogramLegendPlot";
 
 /**
  * A HeatMapView renders information as a heatmap.
@@ -51,11 +63,15 @@ import {HeatmapLegendPlot} from "../ui/heatmapLegendPlot";
 export class HeatmapView extends
     ChartView<Triple<Groups<Groups<number>>, Groups<Groups<number>>, Groups<Groups<RowValue[]>>>> {
     // Data has the following structure:
-    // first: heatmap data, second: confidence data, third: optional row corresponding to cells with 1 values
+    // first: heatmap data, second: confidence data, third: optional row corresponding to cells with 1 values,
+    // with one cell for each column in the detailColumns schema.
 
     protected colorLegend: HeatmapLegendPlot;
+    protected detailLegend: HistogramLegendPlot;
     protected plot: HeatmapPlot;
     protected legendSurface: HtmlPlottingSurface;
+    protected detailLegendDiv: HTMLDivElement;
+    protected detailLegendSurface: HtmlPlottingSurface;
     protected xPoints: number;
     protected yPoints: number;
     protected readonly viewMenu: SubMenu;
@@ -63,15 +79,27 @@ export class HeatmapView extends
     protected yAxisData: AxisData;
     protected legendDiv: HTMLDivElement;
     protected confThreshold: number;
-    private readonly defaultProvenance: string = "Fron heatmap";
+    private readonly defaultProvenance: string = "From heatmap";
+    private showDetails: boolean;  // true if we display data about 1-sized boxes
+    private detailIndex: number;  // column that is used to display the detail colormap
 
     constructor(remoteObjectId: RemoteObjectId,
                 rowCount: number,
                 schema: SchemaClass,
+                // columns that are displayed when hovering over boxes with count 1.
+                // null when displaying private data.  First two columns are the X and Y axes.
+                protected detailColumns: SchemaClass | null,
                 protected samplingRate: number,
                 page: FullPage) {
         super(remoteObjectId, rowCount, schema, page, "Heatmap");
+        if (detailColumns != null)
+            assert(detailColumns.length >= 2);
         this.confThreshold = 2;
+        this.detailLegendSurface = null;
+        this.detailLegendDiv = null;
+        this.detailLegend = null;
+        this.showDetails = false;
+        this.detailIndex = 2;
         this.viewMenu = new SubMenu([
             {
                 text: "refresh",
@@ -111,6 +139,10 @@ export class HeatmapView extends
                 text: "Show/hide regression",
                 action: () => this.toggleRegression(),
                 help: "Show or hide the linear regression line"
+            }, {
+                text: "Change detail column...",
+                action: () => this.changeDetailsColumn(),
+                help: "Change the column that is used for displaying the second color map."
             }
         ]);
         this.menu = new TopMenu([
@@ -120,10 +152,29 @@ export class HeatmapView extends
         ]);
 
         this.viewMenu.enable("Confidence threshold...", this.isPrivate());
+        this.viewMenu.enable("Change detail column...", this.detailColumns?.length >= 2);
         this.page.setMenu(this.menu);
+        this.detailLegendDiv = this.makeToplevelDiv("detailLegend");
         this.createDiv("legend");
         this.createDiv("chart");
         this.createDiv("summary");
+    }
+
+    public changeDetailsColumn(): void {
+        if (this.detailColumns == null)
+            return;
+        const dialog = new Dialog("Details column",
+            "Select the column used to display the second color map.");
+        let input = dialog.addColumnSelectField("column", "Column:",
+            this.detailColumns.allDisplayNames().slice(2), null,
+            "Data in this column will be used for the second color map.");
+        input.required = true;
+        dialog.setAction(() => {
+            const c = dialog.getColumnName("column");
+            this.detailIndex = this.detailColumns.columnIndex(this.schema.fromDisplayName(c));
+            this.resize();
+        });
+        dialog.show();
     }
 
     private quartileView(): void {
@@ -192,35 +243,51 @@ export class HeatmapView extends
             return;
         }
         const rr = this.createDataQuantilesRequest(
-            [this.xAxisData.description, this.yAxisData.description],
+            this.getColumns(),
             this.page, "Heatmap");
         rr.invoke(new DataRangesReceiver(
             this, this.page, rr, this.schema, [x, y],
-            [this.xAxisData.description, this.yAxisData.description], null,
+            this.getColumns(), null,
             this.defaultProvenance, { chartKind: "Heatmap", exact: true, reusePage: true }));
     }
 
     protected createNewSurfaces(keepColorMap: boolean): void {
+        if (this.detailLegendSurface != null)
+            this.detailLegendSurface.destroy();
         if (this.legendSurface != null)
             this.legendSurface.destroy();
         if (this.surface != null)
             this.surface.destroy();
 
+        if (this.showDetails)
+            this.detailLegendSurface = new HtmlPlottingSurface(this.detailLegendDiv, this.page,
+                { height: Resolution.legendSpaceHeight });
         this.legendSurface = new HtmlPlottingSurface(this.legendDiv, this.page,
             { height: Resolution.legendSpaceHeight * 2 / 3 });
-        if (keepColorMap)
+        if (keepColorMap) {
+            this.colorLegend.moved();
             this.colorLegend.setSurface(this.legendSurface);
-        else {
+            if (this.showDetails) {
+                this.detailLegend.moved();
+                this.detailLegend.setSurface(this.detailLegendSurface);
+            }
+        } else {
             this.colorLegend = new HeatmapLegendPlot(
                 this.legendSurface,
                 (xl, xr) => this.legendSelectionCompleted(xl, xr));
             this.colorLegend.setColorMapChangeEventListener(
                 () => this.updateView(this.data, true));
+            if (this.showDetails) {
+                this.detailLegend = new HistogramLegendPlot(this.detailLegendSurface, null);
+            }
         }
 
         this.surface = new HtmlPlottingSurface(this.chartDiv, this.page,
             { topMargin: 20, leftMargin: Resolution.heatmapLabelWidth });
-        this.plot = new HeatmapPlot(this.surface, this.colorLegend, true);
+        this.plot = new HeatmapPlot(
+            // The color maps may not be yet set, but they will be by the time we use them.
+            this.surface, this.colorLegend?.getColorMap(), this.detailLegend?.getColorMap(),
+            this.detailIndex, true);
     }
 
     protected legendSelectionCompleted(xl: number, xr: number): void {
@@ -257,7 +324,7 @@ export class HeatmapView extends
     }
 
     protected replaceAxis(pageId: string, eventKind: DragEventKind): void {
-        if (this.data == null)
+        if (this.data === null)
             return;
         const sourceRange = this.getSourceAxisRange(pageId, eventKind);
         if (sourceRange === null)
@@ -274,7 +341,7 @@ export class HeatmapView extends
 
         const collector = new DataRangesReceiver(this,
             this.page, null, this.schema, [0, 0],  // any number of buckets
-            [this.xAxisData.description, this.yAxisData.description], null,
+            this.getColumns(), null,
             Converters.eventToString(pageId, eventKind), {
                 chartKind: "Heatmap", exact: this.samplingRate >= 1,
                 relative: false, pieChart: false, reusePage: true
@@ -285,8 +352,8 @@ export class HeatmapView extends
 
     public updateView(data: Triple<Groups<Groups<number>>, Groups<Groups<number>>, Groups<Groups<RowValue[]>>>,
                       keepColorMap: boolean): void {
-        this.createNewSurfaces(keepColorMap);
-        if (data == null || data.first === null || data.first.perBucket.length === 0) {
+        this.showDetails = false;
+        if (data?.first === null || data.first.perBucket.length === 0) {
             this.page.reportError("No data to display");
             return;
         }
@@ -299,26 +366,63 @@ export class HeatmapView extends
             return;
         }
 
+        let detailsAxisData: AxisData = null;
+        let detailLegendColumn: IColumnDescription = null;
+        let range: BucketsInfo = null;
+        if (this.data.third != null) {
+            if (this.detailColumns.schema.length <= 2) {
+                this.showDetails = false;
+            } else {
+                detailLegendColumn = this.detailColumns.schema[this.detailIndex];
+                const detailData: RowValue[] = this.data.third.perBucket.reduce(
+                    (v, b) => v.concat(b.perBucket.map(r => r != null ? r[this.detailIndex] : r)), []);
+                range = dataRange(detailData, detailLegendColumn);
+                this.showDetails = range.presentCount > 0;
+                let legendBucketCount: number;
+                // noinspection JSObjectNullOrUndefined
+                if (kindIsString(detailLegendColumn.kind)) {
+                    // noinspection JSObjectNullOrUndefined
+                    legendBucketCount = range.stringQuantiles.length;
+                } else if (detailLegendColumn.kind === "Integer") {
+                    // noinspection JSObjectNullOrUndefined
+                    legendBucketCount = Math.min(range.max - range.min, Resolution.max2DBucketCount);
+                } else {
+                    legendBucketCount = Resolution.max2DBucketCount;
+                }
+                detailsAxisData = new AxisData(detailLegendColumn, range, legendBucketCount);
+            }
+        }
+
+        this.createNewSurfaces(keepColorMap);
         if (this.isPrivate()) {
             const cols = [this.xAxisData.description.name, this.yAxisData.description.name];
             const eps = this.dataset.getEpsilon(cols);
             this.page.setEpsilon(eps, cols);
         }
 
-        // The order of these operations is important
-        this.plot.setData(data, this.xAxisData, this.yAxisData, this.schema, this.confThreshold, this.isPrivate());
+        // The order of these operations is important:
+        // Data must be set in each legend, then the kind, then it can be drawn.
+        // The heatmap itself can only be drawn after the colormaps have been set.
+        this.plot.setData(data, this.xAxisData, this.yAxisData, detailsAxisData, this.schema, this.confThreshold, this.isPrivate());
         if (!keepColorMap) {
             this.colorLegend.setData({first: 1, second: this.plot.getMaxCount() });
         }
+        if (this.showDetails) {
+            this.colorLegend.setColorMapKind(ColorMapKind.Grayscale);
+        }
         this.colorLegend.draw();
+        if (this.showDetails) {
+            this.detailLegend.setData(detailsAxisData, false, this.detailColumns);
+            this.detailLegend.draw();
+        }
         this.plot.draw();
 
         this.setupMouse();
+        const cols = this.getColumns().map((c) => this.schema.displayName(c.name).displayName);
+        cols.splice(2, 0, "count");
         this.pointDescription = new TextOverlay(this.surface.getChart(),
             this.surface.getActualChartSize(),
-            [this.schema.displayName(this.xAxisData.description.name).displayName,
-                this.schema.displayName(this.yAxisData.description.name).displayName,
-                "count", "value"], 40);
+            cols, 40);
         this.standardSummary();
         this.summary.set("data points", this.plot.getVisiblePoints());
         this.summary.set("distinct dots", this.plot.getDistinct());
@@ -332,10 +436,10 @@ export class HeatmapView extends
         const ser = super.serialize();
         // noinspection UnnecessaryLocalVariableJS
         const result: HeatmapSerialization = {
+            detailedColumns: this.detailColumns != null ? this.detailColumns.serialize() : null,
             samplingRate: this.samplingRate,
             columnDescription0: this.xAxisData.description,
             columnDescription1: this.yAxisData.description,
-
             xBucketCount: this.xAxisData.bucketCount,
             yBucketCount: this.yAxisData.bucketCount,
             ...ser,
@@ -350,7 +454,8 @@ export class HeatmapView extends
             return null;
         }
         const schema: SchemaClass = new SchemaClass([]).deserialize(ser.schema);
-        const hv = new HeatmapView(ser.remoteObjectId, ser.rowCount, schema, ser.samplingRate, page);
+        const detailed: SchemaClass = new SchemaClass([]).deserialize(ser.detailedColumns);
+        const hv = new HeatmapView(ser.remoteObjectId, ser.rowCount, schema, detailed, ser.samplingRate, page);
         hv.setAxes(
             new AxisData(ser.columnDescription0, null, ser.xBucketCount),
             new AxisData(ser.columnDescription1, null, ser.yBucketCount));
@@ -396,16 +501,23 @@ export class HeatmapView extends
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
-            return new NewTargetReceiver(title, [this.xAxisData.description, this.yAxisData.description],
+            return new NewTargetReceiver(title, this.getColumns(),
                 this.schema, [0, 0], page, operation, this.dataset, {
                 exact: true, chartKind: "Heatmap", reusePage: false,
             });
         };
     }
 
+    public getColumns(): IColumnDescription[] {
+        if (this.detailColumns != null)
+            return this.detailColumns.schema;
+        return [this.xAxisData.description, this.yAxisData.description];
+    }
+
     public swapAxes(): void {
-        const cds: IColumnDescription[] = [
-            this.yAxisData.description, this.xAxisData.description];
+        const cds: IColumnDescription[] = this.getColumns();
+        cds[0] = this.yAxisData.description;
+        cds[1] = this.xAxisData.description;
         const rr = this.createDataQuantilesRequest(cds, this.page, "Heatmap");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0], cds, null, "swap axes",{
@@ -419,7 +531,7 @@ export class HeatmapView extends
         const ranges = [this.xAxisData.dataRange, this.yAxisData.dataRange];
         const collector = new DataRangesReceiver(this,
             this.page, null, this.schema, [this.xAxisData.bucketCount, this.yAxisData.bucketCount],
-            [this.xAxisData.description, this.yAxisData.description], this.page.title, null,{
+            this.getColumns(), this.page.title, null,{
                 chartKind: "Heatmap", exact: this.samplingRate >= 1, reusePage: true,
             });
         collector.run(ranges);
@@ -441,19 +553,30 @@ export class HeatmapView extends
         const position = d3mouse(this.surface.getChart().node());
         const mouseX = position[0];
         const mouseY = position[1];
-        const xs = this.xAxisData.invert(mouseX);
-        const ys = this.yAxisData.invert(mouseY);
-        let data = "";
+        let data: string[] = null;
 
-        const value = this.plot.getCount(mouseX, mouseY);
-        const index = this.plot.getBucketIndex(mouseX, mouseY);
-        if (index != null) {
-            const d = this.data.third.perBucket[index[0]].perBucket[index[1]];
-            if (d != null)
-                data = Converters.rowToString(d, this.schema);
+        if (this.showDetails) {
+            const index = this.plot.getBucketIndex(mouseX, mouseY);
+            if (index != null) {
+                const d = this.data.third.perBucket[index[0]].perBucket[index[1]];
+                if (d != null) {
+                    // We will use the information from the point itself for the first two
+                    // columns.
+                    data = zip(d, this.detailColumns.schema,
+                        (v, desc) => Converters.valueToString(v, desc.kind));
+                    data.splice(2, 0, "1"); // We know that the count is 1.
+                }
+            }
         }
-        this.pointDescription.update([xs, ys, makeInterval(value), data], mouseX, mouseY);
-        this.colorLegend.highlight(value[0], value[1]);
+
+        if (data == null) {
+            const xs = this.xAxisData.invert(mouseX);
+            const ys = this.yAxisData.invert(mouseY);
+            const value = this.plot.getCount(mouseX, mouseY);
+            this.colorLegend.highlight(value[0], value[1]);
+            data = [xs, ys, makeInterval(value)];
+        }
+        this.pointDescription.update(data, mouseX, mouseY);
     }
 
     protected dragStart(): void {
@@ -481,7 +604,7 @@ export class HeatmapView extends
         const rr = this.createFilterRequest(f);
         const renderer = new NewTargetReceiver(new PageTitle(this.page.title.format,
             Converters.filterArrayDescription(f)),
-            [this.xAxisData.description, this.yAxisData.description],
+            this.getColumns(),
             this.schema, [0, 0], this.page, rr, this.dataset, {
             exact: this.samplingRate >= 1, chartKind: "Heatmap", reusePage: false,
         });
@@ -506,7 +629,7 @@ export class HeatmapReceiver extends Receiver<Two<Groups<Groups<number>>>> {
                 protected reusePage: boolean) {
         super(reusePage ? page : page.dataset.newPage(title, page), operation, "histogram");
         this.view = new HeatmapView(
-            remoteTable.remoteObjectId, rowCount, schema,
+            remoteTable.remoteObjectId, rowCount, schema, null,
             this.samplingRate, this.page);
         this.view.setAxes(axisData[0], axisData[1]);
         this.page.setDataView(this.view);
@@ -514,10 +637,8 @@ export class HeatmapReceiver extends Receiver<Two<Groups<Groups<number>>>> {
 
     public onNext(value: PartialResult<Two<Groups<Groups<number>>>>): void {
         super.onNext(value);
-        if (value == null) {
+        if (value == null)
             return;
-        }
-
         this.view.updateView({ ...value.data, third: null }, false);
     }
 
@@ -528,7 +649,7 @@ export class HeatmapReceiver extends Receiver<Two<Groups<Groups<number>>>> {
 }
 
 /**
- * Receives a heatmap given data and confidences.
+ * Receives a heatmap and data for each cell which has a count of 1.
  */
 export class HeatmapWithDataReceiver extends Receiver<Pair<Groups<Groups<number>>, Groups<Groups<RowValue[]>>>> {
     protected view: HeatmapView;
@@ -538,13 +659,14 @@ export class HeatmapWithDataReceiver extends Receiver<Pair<Groups<Groups<number>
                 remoteTable: TableTargetAPI,
                 protected rowCount: number,
                 protected schema: SchemaClass,
+                protected detailedColumns: SchemaClass,
                 protected axisData: AxisData[],
                 protected samplingRate: number,
                 operation: RpcRequest<Pair<Groups<Groups<number>>, Groups<Groups<RowValue[]>>>>,
                 protected reusePage: boolean) {
         super(reusePage ? page : page.dataset.newPage(title, page), operation, "histogram");
         this.view = new HeatmapView(
-            remoteTable.remoteObjectId, rowCount, schema,
+            remoteTable.remoteObjectId, rowCount, schema, detailedColumns,
             this.samplingRate, this.page);
         this.view.setAxes(axisData[0], axisData[1]);
         this.page.setDataView(this.view);
@@ -552,9 +674,8 @@ export class HeatmapWithDataReceiver extends Receiver<Pair<Groups<Groups<number>
 
     public onNext(value: PartialResult<Pair<Groups<Groups<number>>, Groups<Groups<RowValue[]>>>>): void {
         super.onNext(value);
-        if (value == null) {
+        if (value === null)
             return;
-        }
         const data = value.data;
         this.view.updateView({ first: data.first, second: null, third: data.second }, false);
     }

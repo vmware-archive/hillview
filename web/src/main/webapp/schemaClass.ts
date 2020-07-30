@@ -101,6 +101,8 @@ export class SchemaClass implements Serializable<SchemaClass> {
     }
 
     public deserialize(data: SchemaClassSerialization): SchemaClass {
+        if (data == null)
+            return null;
         this.schema = data.schema;
         const dn: string[] = data.displayNameMap;
 

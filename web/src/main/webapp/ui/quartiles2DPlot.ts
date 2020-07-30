@@ -78,7 +78,7 @@ export class Quartiles2DPlot extends Plot<Groups<SampleSet>> {
     }
 
     private drawBars(): void {
-        if (this.data == null || this.data.perBucket == null)
+        if (this.data?.perBucket == null)
             return;
         const bucketCount = this.data.perBucket.length;
         const maxes = this.data.perBucket.map(v => v.max);

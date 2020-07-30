@@ -650,7 +650,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 action: () => this.chart(this.schema.getDescriptions(this.getSelectedColNames()), "Heatmap"),
                 help: "Plot the data in the selected columns as a heatmap. " +
                     "Applies to two columns only.",
-            }, selectedCount === 2);
+            }, selectedCount >= 2);
             this.contextMenu.addItem({
                 text: "Trellis histograms",
                 action: () => this.chart(this.schema.getDescriptions(this.getSelectedColNames()),
