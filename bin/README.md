@@ -7,7 +7,7 @@
 * `force-gc.sh`: asks a Java process to execute GC
 * `forever.sh`: runs another command in a loop forever
 * `frontend-start.sh`: start the Hillview front-end service on the local machine
-* `install-dependencies.sh`: install all dependencies needed to build Hillview
+* `install-dependencies.sh`: install all dependencies needed to build or develop Hillview
 * `install.sh`: install the binary release of Hillview on a U*x system
 * `lib.sh`: a small library of useful shell functions used by other scripts
 * `package-binaries.sh`: used to build an archive with executables and scripts which
