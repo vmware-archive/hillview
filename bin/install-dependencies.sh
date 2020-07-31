@@ -73,15 +73,16 @@ if [ ${USERDEPS} -eq 0 ]; then
   cd ../..
 fi
 
-cd web/src/main/webapp
+pushd ${mydir}/../web/src/main/webapp
 echo "Installing Javascript packages"
 rm -f node_modules/typescript
 npm install
 npm link typescript
-cd ${SAVEDIR}
+popd
 
 if [ ${USERDEPS} -eq 0 ]; then
   if [ ${INSTALL_CASSANDRA} -eq 1 ]; then
       ./${mydir}/install-cassandra.sh
   fi
 fi
+cd ${SAVEDIR}
