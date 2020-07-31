@@ -391,7 +391,7 @@ public class CassandraSSTableLoader extends TextFileLoader {
                                 ByteBuffer byteBuff = ((Cell) cd).value();
                                 value = serializers.get(colType).deserialize(byteBuff);
                                 // Missing column case #2
-                                // Where loaded missing column(s) is still loaded and the capacity is 0
+                                // Where the missing column(s) is loaded and the capacity is 0
                                 if (byteBuff.capacity() == 0) {
                                     col.appendMissing(); 
                                 } else {
@@ -474,7 +474,7 @@ public class CassandraSSTableLoader extends TextFileLoader {
                                 currentColumn++;
                             }
                             // Missing column case #3
-                            // Where unloaded missing column(s) is AFTER last non missing column
+                            // Where unloaded missing column(s) is AFTER the last non missing column
                             while (currentColumn != colCount) {
                                 col = columns.get(currentColumn);
                                 col.appendMissing();
