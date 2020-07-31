@@ -32,6 +32,7 @@ import org.apache.cassandra.config.ColumnDefinition;
 import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.cql3.CQL3Type;
 import org.apache.cassandra.cql3.ColumnIdentifier;
+import org.apache.cassandra.cql3.Duration;
 import org.apache.cassandra.db.rows.Cell;
 import org.apache.cassandra.db.rows.ColumnData;
 import org.apache.cassandra.db.rows.Row;
@@ -54,6 +55,7 @@ import org.apache.cassandra.serializers.SimpleDateSerializer;
 import org.apache.cassandra.serializers.TimeSerializer;
 import org.apache.cassandra.serializers.TimestampSerializer;
 import org.apache.cassandra.serializers.TypeSerializer;
+import org.apache.cassandra.serializers.DurationSerializer;
 
 import javax.annotation.Nullable;
 
@@ -170,7 +172,6 @@ public class CassandraSSTableLoader extends TextFileLoader {
             case TEXT:
             case TIMEUUID:
             case UUID:
-            case DURATION:
             case BLOB:
             case VARCHAR:
                 kind = ContentsKind.String;
@@ -192,6 +193,9 @@ public class CassandraSSTableLoader extends TextFileLoader {
             case TIMESTAMP:
             case DATE:
                 kind = ContentsKind.Date;
+                break;
+            case DURATION:
+                kind = ContentsKind.Duration;
                 break;
             case EMPTY:
             default:
@@ -374,7 +378,7 @@ public class CassandraSSTableLoader extends TextFileLoader {
                             for (ColumnData cd : row) {
                                 col = columns.get(currentColumn);
                                 // Missing column case #1 
-                                // Where missing column(s) is between idx 0 until last non missing column
+                                // Where unloaded missing column(s) is between idx 0 until last non missing column
                                 while (cd.column().name.prefixComparison != arrPrefixComparison
                                         .get(currentColumn)) {
                                     // The column with null value will not be included, so here 
@@ -386,73 +390,91 @@ public class CassandraSSTableLoader extends TextFileLoader {
                                 CQL3Type colType = cd.column().type.asCQL3Type();
                                 ByteBuffer byteBuff = ((Cell) cd).value();
                                 value = serializers.get(colType).deserialize(byteBuff);
-                                switch ((CQL3Type.Native) colType) {
-                                    case DURATION:
-                                    case ASCII:
-                                    case BOOLEAN:
-                                    case INET:
-                                    case TEXT:
-                                    case TIMEUUID:
-                                    case UUID:
-                                    case VARCHAR:
-                                        col.append(value.toString());
-                                        break;
-                                    case BLOB:
-                                        col.append(serializers.get(colType).toCQLLiteral(byteBuff)
-                                                .toString());
-                                        break;
-                                    case INT:
-                                        col.append((Integer) value);
-                                        break;
-                                    case SMALLINT:
-                                        col.append(((Short) value).intValue());
-                                        break;
-                                    case TINYINT:
-                                        col.append(((Byte) value).intValue());
-                                        break;
-                                    case VARINT:
-                                        col.append(((BigInteger) value).doubleValue());
-                                        break;
-                                    case BIGINT:
-                                        col.append(((Long) value).doubleValue());
-                                        break;
-                                    case DECIMAL:
-                                        if (bigDecimalInRange((BigDecimal) value))
-                                            col.append(((BigDecimal) value).doubleValue());
-                                        break;
-                                    case DOUBLE:
-                                        col.append((Double) value);
-                                        break;
-                                    case FLOAT:
-                                        col.append(((Float) value).doubleValue());
-                                        break;
-                                    case COUNTER:
-                                        col.append(CounterContext.instance().total(byteBuff));
-                                        break;
-                                    case TIME:
-                                        // TODO: Convert Time type to Java Time instead of Java Instant
-                                        long myTime = TimeSerializer.instance.deserialize(byteBuff);
-                                        // Downgrade to millis and append 2000-1-1 as the date
-                                        myTime = myTime / 1000000 + 946706400000L;
-                                        col.append(Instant.ofEpochMilli(myTime));
-                                        break;
-                                    case TIMESTAMP:
-                                        col.append(TimestampSerializer.instance.deserialize(byteBuff)
-                                                .toInstant());
-                                        break;
-                                    case DATE:
-                                        long msTime = SimpleDateSerializer
-                                                .dayToTimeInMillis(ByteBufferUtil.toInt(byteBuff));
-                                        col.append(Instant.ofEpochMilli(msTime));
-                                        break;
-                                    case EMPTY:
-                                    default:
-                                        throw new RuntimeException("Unhandled column type " + colType.toString());
+                                // Missing column case #2
+                                // Where loaded missing column(s) is still loaded and the capacity is 0
+                                if (byteBuff.capacity() == 0) {
+                                    col.appendMissing(); 
+                                } else {
+                                    switch ((CQL3Type.Native) colType) {
+                                        case ASCII:
+                                        case BOOLEAN:
+                                        case INET:
+                                        case TEXT:
+                                        case TIMEUUID:
+                                        case UUID:
+                                        case VARCHAR:
+                                            col.append(value.toString());
+                                            break;
+                                        case BLOB:
+                                            col.append(serializers.get(colType).toCQLLiteral(byteBuff).toString());
+                                            break;
+                                        case INT:
+                                            col.append((Integer) value);
+                                            break;
+                                        case SMALLINT:
+                                            col.append(((Short) value).intValue());
+                                            break;
+                                        case TINYINT:
+                                            col.append(((Byte) value).intValue());
+                                            break;
+                                        case VARINT:
+                                            col.append(((BigInteger) value).doubleValue());
+                                            break;
+                                        case BIGINT:
+                                            col.append(((Long) value).doubleValue());
+                                            break;
+                                        case DECIMAL:
+                                            if (bigDecimalInRange((BigDecimal) value))
+                                                col.append(((BigDecimal) value).doubleValue());
+                                            break;
+                                        case DOUBLE:
+                                            col.append((Double) value);
+                                            break;
+                                        case FLOAT:
+                                            col.append(((Float) value).doubleValue());
+                                            break;
+                                        case COUNTER:
+                                            col.append(CounterContext.instance().total(byteBuff));
+                                            break;
+                                        case TIME:
+                                            // TODO: Convert Time type to Java Time instead of Java Instant
+                                            long myTime = TimeSerializer.instance.deserialize(byteBuff);
+                                            // Downgrade to millis and append 2000-1-1 as the date
+                                            myTime = myTime / 1000000 + 946706400000L;
+                                            col.append(Instant.ofEpochMilli(myTime));
+                                            break;
+                                        case TIMESTAMP:
+                                            col.append(
+                                                    TimestampSerializer.instance.deserialize(byteBuff).toInstant());
+                                            break;
+                                        case DATE:
+                                            long msTime = SimpleDateSerializer
+                                                    .dayToTimeInMillis(ByteBufferUtil.toInt(byteBuff));
+                                            col.append(Instant.ofEpochMilli(msTime));
+                                            break;
+                                        case DURATION:
+                                            Duration duration = DurationSerializer.instance.deserialize(byteBuff);
+                                            if (duration.getMonths() == 0) {
+                                                int days = duration.getDays();
+                                                long nanos = duration.getNanoseconds();
+                                                long millis = (nanos + Duration.NANOS_PER_HOUR * 24 * days) / 1000000;
+                                                col.append(Converters.toDuration(millis));
+                                            } else {
+                                                // java.time.Duration support day and time (but not month and year)
+                                                throw new RuntimeException(
+                                                        "Failed to convert Duration with months != 0");
+                                            }
+                                            break;
+                                        case EMPTY:
+                                        default:
+                                            throw new RuntimeException(
+                                                    "Unhandled column type " + colType.toString());
+                                    }
                                 }
                                 currentColumn++;
                             }
-                            // Missing column case #2
-                            // Where missing column(s) is AFTER last non missing column
+                            // Missing column case #3
+                            // Where unloaded missing column(s) is AFTER last non missing column
                             while (currentColumn != colCount) {
                                 col = columns.get(currentColumn);
                                 col.appendMissing();

@@ -105,7 +105,7 @@ INSERT INTO test (id, name, salary, text, int, boolean, ascii, inet, timeuuid, s
    tinyint, varint, bigint, decimal, double, float, time, timestamp, date, duration, blob)
    VALUES(now(),'Mr. Test', 45000, null, null, true, '35', '127.0.0.1', 50554d6e-29bb-11e5-b345-feff819cdc9f,
     1, 2, 10, toTimestamp(now()), 3.7875, 6714592679.3400884579357, 3.14753, '13:30:23.123',
-    '2017-05-05 15:00:00.000', '2020-07-14', P4Y6M3DT12H30M5S, textAsBlob('adb14fbe076f6b94444c660e36a400151f26fc6f')
+    '2017-05-05 15:00:00.000', '2020-07-14', P1DT12H30M5S, textAsBlob('adb14fbe076f6b94444c660e36a400151f26fc6f')
 );
 
 
