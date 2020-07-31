@@ -5,6 +5,29 @@
 set -e
 set -x
 
+usage() {
+    echo "install-dependencies.sh [-h][-u]"
+    echo "Install dependencies needed by Hillview"
+    echo "-u: Install only dependencies needed to run Hillview (not to develop)"
+    echo "-h: help"
+    exit 1
+}
+
+# If this is 1 we only install dependencies needed for using Hillview,
+# but not for developing Hillview
+USERDEPS=0
+while getopts uh FLAG; do
+   case ${FLAG} in
+      u) USERDEPS=1  # no dependecies for developers
+        echo "User dependencies only"
+         ;;
+      h) usage
+         ;;
+      *) usage
+         ;;
+   esac
+done
+
 # Set to 0 if you don't want to install cassandra locally for tests
 INSTALL_CASSANDRA=1
 SAVEDIR=$PWD
@@ -41,12 +64,14 @@ else
 fi
 popd
 
-echo "Downloading test data"
-cd ${mydir}/../data/ontime
-./download.py
-cd ../ontime_private
-./gen_metadata.py
-cd ../..
+if [ ${USERDEPS} -eq 0 ]; then
+  echo "Downloading test data"
+  cd ${mydir}/../data/ontime
+  ./download.py
+  cd ../ontime_private
+  ./gen_metadata.py
+  cd ../..
+fi
 
 cd web/src/main/webapp
 echo "Installing Javascript packages"
@@ -55,6 +80,8 @@ npm install
 npm link typescript
 cd ${SAVEDIR}
 
-if [ ${INSTALL_CASSANDRA} -eq 1 ]; then
-    ./${mydir}/install-cassandra.sh
+if [ ${USERDEPS} -eq 0 ]; then
+  if [ ${INSTALL_CASSANDRA} -eq 1 ]; then
+      ./${mydir}/install-cassandra.sh
+  fi
 fi

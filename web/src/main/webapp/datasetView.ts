@@ -78,12 +78,17 @@ export interface HistogramSerialization extends IViewSerialization {
     columnDescription: IColumnDescription;
 }
 
-export interface HeatmapSerialization extends IViewSerialization {
+export interface BaseHeatmapSerialization extends IViewSerialization {
     samplingRate: number;
     columnDescription0: IColumnDescription;
     columnDescription1: IColumnDescription;
     xBucketCount: number;
     yBucketCount: number;
+
+}
+
+export interface HeatmapSerialization extends BaseHeatmapSerialization {
+    detailedColumns: SchemaClassSerialization;
 }
 
 export interface QuantileVectorSerialization extends IViewSerialization {
@@ -92,7 +97,7 @@ export interface QuantileVectorSerialization extends IViewSerialization {
     xBucketCount: number;
 }
 
-export interface Histogram2DSerialization extends HeatmapSerialization {
+export interface Histogram2DSerialization extends BaseHeatmapSerialization {
     relative: boolean;
 }
 
@@ -115,7 +120,7 @@ export interface TrellisHistogram2DSerialization extends
     Histogram2DSerialization, TrellisShapeSerialization {}
 
 export interface TrellisHeatmapSerialization extends
-    HeatmapSerialization, TrellisShapeSerialization {}
+    BaseHeatmapSerialization, TrellisShapeSerialization {}
 
 export interface CorrelationHeatmapSerialization extends IViewSerialization {
     histoArgs: HistogramRequestInfo;

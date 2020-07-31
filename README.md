@@ -36,11 +36,11 @@ Experimental use of Hillview using [differential privacy](privacy.md).
 
 # 2. Installing and running Hillview on a local machine
 
-For developing Hillview see [below](#4-developing-hillview).
-
 ## 2.1 Linux of MacOS
 
 ### 2.1.1 Installing on Linux or MacOS
+
+This will install pre-built binaries.
 
 * Install Java 8.  At this point newer versions of Java will *not* work.
 * clone this github repository

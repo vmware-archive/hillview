@@ -31,7 +31,7 @@ def download(startyear, startmonth, endyear, endmonth):
         if not os.path.exists(canonical + ".csv.gz"):
             filename = basename + ".zip"
             url = "https://transtats.bts.gov/PREZIP/" + filename
-            execute_command("wget -q " + url)
+            execute_command("wget --cipher 'DEFAULT:!DH' -q " + url)
             execute_command("unzip -o " + filename)
             os.unlink(filename)
             os.unlink("readme.html")

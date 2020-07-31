@@ -242,8 +242,9 @@ export abstract class TSViewBase extends BigTableView {
 
     protected chart(cds: IColumnDescription[], chartKind: ViewKind): void {
         const exact = this.isPrivate(); // If private, do not sample
-        const rr = this.createDataQuantilesRequest(cds, this.page, chartKind);
-        const buckets = cds.map(_ => 0);
+        const cols = chartKind === "Heatmap" ? cds.slice(0,2) : cds;
+        const rr = this.createDataQuantilesRequest(cols, this.page, chartKind);
+        const buckets = cols.map(_ => 0);
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             buckets, cds, null, this.defaultProvenance, {
             reusePage: false, relative: false,

@@ -20,8 +20,11 @@ import {Plot} from "./plot";
 import {Resolution} from "./ui";
 import {SchemaClass} from "../schemaClass";
 import {LegendPlot} from "./legendPlot";
-import {HtmlPlottingSurface} from "./plottingSurface";
+import {HtmlPlottingSurface, PlottingSurface} from "./plottingSurface";
 import {ColorMap, desaturateOutsideRange} from "../util";
+import {kindIsString} from "../javaBridge";
+import {interpolateCool as d3interpolateCool, interpolateWarm as d3interpolateWarm} from "d3-scale-chromatic";
+import {ColorMapKind} from "./heatmapLegendPlot";
 
 /**
  * Displays a legend for a 2D histogram.
@@ -41,7 +44,6 @@ export class HistogramLegendPlot extends LegendPlot<void> {
         super(surface, onSelectionCompleted);
         this.y = Resolution.legendSpaceHeight / 3;
         this.createRectangle();
-        this.colorMap = Plot.colorMap;
     }
 
     public draw(): void {
@@ -108,6 +110,24 @@ export class HistogramLegendPlot extends LegendPlot<void> {
         super.draw();
     }
 
+    public setColorMapKind(kind: ColorMapKind): void {
+        if (kindIsString(this.axisData.description.kind))
+            // keep the existing one: categorical.
+            return;
+        switch (kind) {
+            case ColorMapKind.Cool:
+                this.colorMap = d3interpolateCool;
+                break;
+            case ColorMapKind.Warm:
+                this.colorMap = d3interpolateWarm;
+                break;
+            case ColorMapKind.Grayscale:
+                this.colorMap = (x: number) => `rgb(
+                ${Math.round(255 * (1 - x))},${Math.round(255 * (1 - x))},${Math.round(255 * (1 - x))})`;
+                break;
+        }
+    }
+
     /**
      * Highlight the color with the specified index.  Special values:
      * - colorIndex is bucketCount: missing box
@@ -130,10 +150,18 @@ export class HistogramLegendPlot extends LegendPlot<void> {
         }
     }
 
+    public getColorMap(): ColorMap {
+        return (x) => this.colorMap(x / this.axisData.bucketCount);
+    }
+
     public setData(axis: AxisData, missingLegend: boolean, schema: SchemaClass): void {
         this.axisData = axis;
         this.missingLegend = missingLegend;
         this.schema = schema;
+        if (kindIsString(axis.description.kind))
+            this.colorMap = (d) => Plot.categoricalMap(Math.round(d * (this.axisData.bucketCount - 1)));
+        else
+            this.colorMap = Plot.defaultColorMap;
     }
 
     /**
@@ -142,7 +170,7 @@ export class HistogramLegendPlot extends LegendPlot<void> {
      */
     public emphasizeRange(x0: number, x1: number): void {
         this.colorMap = desaturateOutsideRange(
-            Plot.colorMap, x0, x1);
+            Plot.defaultColorMap, x0, x1);
     }
 
     public setSurface(surface: HtmlPlottingSurface): void {

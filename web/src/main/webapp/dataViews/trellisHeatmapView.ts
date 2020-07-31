@@ -18,7 +18,7 @@
 import {
     Groups,
     IColumnDescription, RangeFilterArrayDescription,
-    RemoteObjectId
+    RemoteObjectId, RowValue
 } from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
 import {BaseReceiver, TableTargetAPI} from "../modules";
@@ -41,7 +41,7 @@ import {
     ICancellable,
     makeInterval,
     PartialResult,
-    reorder, Two
+    reorder, Triple
 } from "../util";
 import {HeatmapPlot} from "../ui/heatmapPlot";
 import {IViewSerialization, TrellisHeatmapSerialization} from "../datasetView";
@@ -164,7 +164,8 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
         }
         this.hps = [];
         this.createAllSurfaces((surface) => {
-            const hp = new HeatmapPlot(surface, this.colorLegend, false);
+            const hp = new HeatmapPlot(
+                surface, this.colorLegend.getColorMap(), null, 0,false);
             this.hps.push(hp);
         });
     }
@@ -321,18 +322,20 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
         let max = 0;
         for (let i = 0; i < histogram3d.perBucket.length; i++) {
             const buckets = histogram3d.perBucket[i];
-            const heatmap: Two<Groups<Groups<number>>> = { first: buckets, second: null };
+            const heatmap: Triple<Groups<Groups<number>>, Groups<Groups<number>>, Groups<Groups<RowValue[]>>> =
+                { first: buckets, second: null, third: null };
             const plot = this.hps[i];
             // The order of these operations is important
-            plot.setData(heatmap, this.xAxisData, this.yAxisData, this.schema, 2, this.isPrivate());
+            plot.setData(heatmap, this.xAxisData, this.yAxisData, null, this.schema, 2, this.isPrivate());
             max = Math.max(max, plot.getMaxCount());
         }
         if (this.shape.missingBucket) {
             const buckets = histogram3d.perMissing;
-            const heatmap: Two<Groups<Groups<number>>> = { first: buckets, second: null };
+            const heatmap: Triple<Groups<Groups<number>>, Groups<Groups<number>>, Groups<Groups<RowValue[]>>> =
+                { first: buckets, second: null, third: null };
             const plot = this.hps[histogram3d.perBucket.length];
             // The order of these operations is important
-            plot.setData(heatmap, this.xAxisData, this.yAxisData, this.schema, 2, this.isPrivate());
+            plot.setData(heatmap, this.xAxisData, this.yAxisData, null, this.schema, 2, this.isPrivate());
             max = Math.max(max, plot.getMaxCount());
         }
 

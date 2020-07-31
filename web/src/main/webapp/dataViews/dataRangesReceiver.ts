@@ -561,11 +561,12 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 } else {
                     const heatmapRequest: HeatmapRequestInfo = {
                         ...args,
-                        schema: this.schema.schema
+                        // this.cds has all the columns that we want to display.
+                        schema: this.cds
                     }
                     const rr = this.originator.createHeatmapRequest(heatmapRequest);
                     const renderer = new HeatmapWithDataReceiver(this.title, this.page,
-                        this.originator, this.rowCount, this.schema,
+                        this.originator, this.rowCount, this.schema, new SchemaClass(this.cds),
                         [xAxis, yAxis], 1.0, rr, this.options.reusePage);
                     rr.chain(this.operation);
                     rr.invoke(renderer);
@@ -635,7 +636,9 @@ export class NewTargetReceiver extends BaseReceiver {
 
     public run(value: RemoteObjectId): void {
         super.run(value); // This sets this.remoteObject.
-        const rr = this.remoteObject.createDataQuantilesRequest(this.cds, this.page, this.options.chartKind);
+        // cds could be longer than buckets -- e.g., for heatmaps.
+        const cols = this.cds.slice(0, this.bucketCounts.length);
+        const rr = this.remoteObject.createDataQuantilesRequest(cols, this.page, this.options.chartKind);
         rr.invoke(new DataRangesReceiver(this.remoteObject, this.page, rr, this.schema,
                   this.bucketCounts, this.cds, this.title, null, this.options));
     }

@@ -101,7 +101,7 @@ export class HeatmapLegendPlot extends LegendPlot<Pair<number, number>> {
     // Function that is called to update other elements when the color map changes.
     private onColorMapChange: (c: ColorMap) => void;
     private contextMenu: ContextMenu;
-    private colorMap: HeatmapColormap;
+    public colorMap: HeatmapColormap;
     private svgRectangle: D3SvgElement;
     private axisElement: D3SvgElement;
     protected xAxis: D3Axis;
@@ -158,10 +158,7 @@ export class HeatmapLegendPlot extends LegendPlot<Pair<number, number>> {
         }
     }
 
-    /**
-     * The context menu is added only when a colormap change event listener is set.
-     */
-    private enableContextMenu(): void {
+    private createContextMenu(): void {
         this.contextMenu = new ContextMenu(
             // menus cannot be attached to SVG objects
             (this.plottingSurface as HtmlPlottingSurface).topLevel, [
@@ -243,7 +240,6 @@ export class HeatmapLegendPlot extends LegendPlot<Pair<number, number>> {
             .range([0, Resolution.legendBarWidth]);
         const ticks = Math.min(this.max(), 10);
         this.xAxis = d3axisBottom(this.scale).ticks(ticks);
-        this.drawn = true;
     }
 
     public getXAxis(): AxisDescription {
@@ -255,8 +251,9 @@ export class HeatmapLegendPlot extends LegendPlot<Pair<number, number>> {
     }
 
     public draw(): void {
+        this.drawn = true;
         if (this.contextMenu == null)
-            this.enableContextMenu();
+            this.createContextMenu();
         if (this.svgRectangle != null) {
             this.svgRectangle.remove();
             this.axisElement.remove();
@@ -311,5 +308,9 @@ export class HeatmapLegendPlot extends LegendPlot<Pair<number, number>> {
 
     invert(x: number): number {
         return this.scale.invert(x);
+    }
+
+    public getColorMap(): ColorMap {
+        return (x) => this.colorMap.apply(x);
     }
 }

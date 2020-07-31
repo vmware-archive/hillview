@@ -16,22 +16,23 @@
  */
 
 import {AxisData, AxisKind} from "../dataViews/axisData";
-import {Groups, kindIsString} from "../javaBridge";
-import {assert, regression, Two, valueWithConfidence} from "../util";
+import {Groups, kindIsString, RowValue} from "../javaBridge";
+import {assert, ColorMap, regression, Triple, valueWithConfidence} from "../util";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {SchemaClass} from "../schemaClass";
 import {D3SvgElement, Resolution} from "./ui";
-import {HeatmapLegendPlot} from "./heatmapLegendPlot";
 
 interface Dot {
     x: number;
     y: number;
-    v: number;
+    count: number;
+    valueIndex: number;  // index in detailColorMap
     confident: boolean;
 }
 
-export class HeatmapPlot extends Plot<Two<Groups<Groups<number>>>> {
+export class HeatmapPlot
+    extends Plot<Triple<Groups<Groups<number>>, Groups<Groups<number>>, Groups<Groups<RowValue[]>>>> {
     protected pointWidth: number; // in pixels
     protected pointHeight: number; // in pixels
     protected max: number;  // maximum count
@@ -46,7 +47,9 @@ export class HeatmapPlot extends Plot<Two<Groups<Groups<number>>>> {
     protected regressionLine: D3SvgElement;
 
     public constructor(surface: PlottingSurface,
-                       protected legendPlot: HeatmapLegendPlot,
+                       protected colorMap: ColorMap,
+                       protected detailColorMap: ColorMap,
+                       protected detailIndex: number,
                        protected showAxes: boolean) {
         super(surface);
         this.dots = null;
@@ -94,10 +97,14 @@ export class HeatmapPlot extends Plot<Two<Groups<Groups<number>>>> {
         const ctx: CanvasRenderingContext2D = htmlCanvas.getContext("2d");
         for (const dot of this.dots) {
             ctx.beginPath();
-            if (dot.confident)
-                ctx.fillStyle = this.legendPlot.getColor(dot.v);
-            else
+            if (dot.confident) {
+                if (this.detailColorMap != null && dot.count === 1)
+                    ctx.fillStyle = this.detailColorMap(dot.valueIndex);
+                else
+                    ctx.fillStyle = this.colorMap(dot.count);
+            } else {
                 ctx.fillStyle = "lightgrey";
+            }
             ctx.fillRect(dot.x, dot.y, this.pointWidth, this.pointHeight);
             ctx.closePath();
         }
@@ -173,7 +180,8 @@ export class HeatmapPlot extends Plot<Two<Groups<Groups<number>>>> {
         return this.distinct;
     }
 
-    public setData(heatmap: Two<Groups<Groups<number>>>, xData: AxisData, yData: AxisData,
+    public setData(heatmap: Triple<Groups<Groups<number>>, Groups<Groups<number>>, Groups<Groups<RowValue[]>>>,
+                   xData: AxisData, yData: AxisData, detailData: AxisData,
                    schema: SchemaClass, confThreshold: number, isPrivate: boolean): void {
         this.data = heatmap;
         this.xAxisData = xData;
@@ -202,25 +210,31 @@ export class HeatmapPlot extends Plot<Two<Groups<Groups<number>>>> {
         for (let x = 0; x < this.xPoints; x++) {
             for (let y = 0; y < this.yPoints; y++) {
                 const b = this.data.first.perBucket[x].perBucket[y];
-                const v = Math.max(0, b);
-                let conf;
+                const count = Math.max(0, b);
+                let conf: boolean;
+                let valueIndex = 0;
                 if (!isPrivate) {
                     conf = true;
                 } else {
                     const confidence = this.data.second.perBucket[x].perBucket[y];
                     conf = b >= (confThreshold * confidence);
                 }
-                if (v > this.max)
-                    this.max = v;
-                if ((this.isPrivate && conf) || (!this.isPrivate && v !== 0)) {
-                    const rec = {
+                if (count === 1 && this.data.third != null && detailData != null) { // could happen if we have only 2 cols.
+                    const value = this.data.third.perBucket[x].perBucket[y][this.detailIndex];
+                    valueIndex = detailData.bucketIndex(value);
+                }
+                if (count > this.max)
+                    this.max = count;
+                if ((this.isPrivate && conf) || (!this.isPrivate && count !== 0)) {
+                    const rec: Dot = {
                         x: x * this.pointWidth,
                         // +1 because it's the upper corner
                         y: this.getChartHeight() - (y + 1) * this.pointHeight,
-                        v: v,
+                        count,
+                        valueIndex,
                         confident: conf
                     };
-                    this.visible += v;
+                    this.visible += count;
                     this.distinct++;
                     this.dots.push(rec);
                 }

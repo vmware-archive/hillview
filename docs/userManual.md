@@ -26,7 +26,7 @@ one row for an airline flight.  Columns in this dataset include: the date of the
 the origin and destination cities, the origin and destination states,
 the origin airport code, the distance flown, the departure and arrival delay.
 
-Updated on 2020 Jul 22.
+Updated on 2020 Jul 30.
 
 # Contents
 |Section|Reference|
@@ -1447,23 +1447,22 @@ In a 2D histogram users can select data in two ways:
 
 ### 4.4. Heatmap views
 
-A heatmap view displays the data in two columns.  Neither of the two
-columns can be a string column.  The two columns are mapped to the two
+A heatmap view displays the data in two columns or more columns.
+The first two columns are mapped to the two
 axes of a plot, then the screen is divided into small patches a few
 pixels wide and the number of data points that falls within each patch
 is counted.  The number of values that falls within each patch is
 displayed as a heatmap, where the color intensity indicates the number
 of points. The mapping between the color intensity and the count could
-be in log scale if the range is large or linear if the range is
-smaller. Next to the mouse an overlay box displays the x value, the y
+be in log scale if the range is large.  Next to the mouse an overlay box displays the x value, the y
 value and the count; additionally, if the count is 1 (i.e., the point
 corresponds to a single data point), more information about that
-particular point is shown. A heatmap where neither axis is string
+particular point is shown.  A heatmap where neither axis is string
 will also display a line that gives the best [linear
-regression](https://en.wikipedia.org/wiki/Linear_regression).  between
+regression](https://en.wikipedia.org/wiki/Linear_regression) between
 the values in the two columns.
 
-Currently heatmaps do not display details about the missing values.
+Currently heatmaps do not display the missing values.
 
 ![A heatmap](hillview-heatmap.png)
 
@@ -1479,8 +1478,26 @@ of values in the heatmap:
 
 ![Highlighted heatmap](highlighted-heatmap.png)
 
-By selecting a range of data within the colormap one can select only the data
-corresponding to the respective buckets in the heatmap.
+If the user selects three or more columns when displaying a heatmap, the way a heatmap
+is displayed changed as shown below, to display additional details about each cell:
+
+![Heatmap with details](heatmap-details.png)
+
+Notice that there are two color legends.  The bottom color legend shows the count
+for each heatmap cell that has 2 or more values.  The top color legend is used only for
+cells that have exactly 1 value.  In this case the color is used to map the value in a
+third column to a color.  In the example above the X axis is named "start_time:end_time",
+the Y axis is "operator_id".  For each cell the color is either:
+ - white for a cell with no values
+ - a shade of grey when the cell has more than 2 values; the shade indicates the count
+ - a color, indicating the "operator_name" value, according to the top legend
+
+Moreover, in a heatmap with details, on mouse-over the overlay will display additional data
+about the unique row in the table corresponding to the current point.  In the following image
+the overlayed information displays information from two additional columns, "operator_name" and
+"worker_id".
+
+[Heatmap details overlay](heatmap-detail-overlay.png)
 
 The heatmap view menu has the following operations:
 
@@ -1498,8 +1515,20 @@ The heatmap view menu has the following operations:
   of the data in the two columns that are used for the heatmap
   display.
 
+* Quartiles vector: Draw the data in the heatmap as a [histogram of quartiles](#42-quartiles-view-for-histogram-buckets).
+  This is only possible if the Y axis is a numeric column.
+
 * group by: Groups data by a third column creating a [Trellis plot]
   (#53-trellis-plots-of-heatmaps).
+
+* Confidence threshold...: this option is only available if the data displayed
+  uses differential privacy.  This is a factor that is multiplied with the confidence
+  of each data value; only data whose count exceeds the result is displayed.
+
+* Show/hide regression: will toggle the linear regression line (if available)
+
+* Change detail column...: offer the user the option to choose the column that is used to display
+  additional details.
 
 For a description of the combine menu see [combining two views](#56-combining-two-views).
 

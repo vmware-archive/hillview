@@ -754,9 +754,9 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                   ),
                 help:
                   "Plot the data in the selected columns as a heatmap. " +
-                  "Applies to two columns only.",
+                  "Applies to two or more columns only.",
               },
-              selectedCount === 2
+              selectedCount >= 2
             );
             this.contextMenu.insertSubMenu( chartMenuIdx, {
                 text: "Trellis histograms",
