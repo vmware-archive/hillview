@@ -30,14 +30,14 @@ done
 
 # Set to 0 if you don't want to install cassandra locally for tests
 INSTALL_CASSANDRA=1
-SAVEDIR=$PWD
+SAVEDIR=${PWD}
 mydir="$(dirname "$0")"
-if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
+if [[ ! -d "${mydir}" ]]; then mydir="${PWD}"; fi
 source ${mydir}/lib.sh
 
 echo "Installing programs needed to build"
 
-case "$OSTYPE" in
+case "${OSTYPE}" in
     linux*)
     # Location where node.js version 11 resides.
         echo "Installing curl"

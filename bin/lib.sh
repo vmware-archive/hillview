@@ -5,6 +5,7 @@
 TOMCATVERSION="9.0.4"
 CASSANDRA_INSTALLATION_DIR=${HOME}/cassandra
 CASSANDRA_VERSION="3.11.7"
+HILLVIEW_VERSION="0.8-alpha"
 
 # Detect operating system
 # Sets "INSTALL" to the program that can install software
