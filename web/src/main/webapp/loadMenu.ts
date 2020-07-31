@@ -617,7 +617,9 @@ class DBDialog extends Dialog {
             "(Optional) The name of the user opening the connection.");
         this.addTextField("password", "Password", FieldKind.Password, null,
             "(Optional) The password for the user opening the connection.");
-        this.setCacheTitle("DBDialog");
+        // not caching the federated connection because the cache failed to show all Cassandra's fields
+        if (!isFederated)
+            this.setCacheTitle("DBDialog");
     }
 
     public dbChanged(): void {
