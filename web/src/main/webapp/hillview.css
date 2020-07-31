@@ -127,7 +127,7 @@ table {
 }
 
 .tableView .empty {
-    background: #f0f0f0;
+    background: #eeeeee;
 }
 
 .tableView .empty.selected {
@@ -354,9 +354,13 @@ textarea:focus, input:focus {
     margin: 1px;
 }
 
+span.menuArrow {
+    float: right;
+}
+
 table.menu {
-    box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.5);
-    border: 1px solid grey;
+    /* box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.5); */
+    /* border: 1px solid grey; */
     font-size:small;
     z-index: 10;
 }
@@ -366,7 +370,7 @@ table.menu.topMenu {
 }
 
 table.menu td {
-    background: rgb(239, 239, 239);
+    background: rgb(224, 224, 224);
     color: rgb(0, 0, 0);
     border: 0;
     padding: 5px 10px;
@@ -382,6 +386,10 @@ td.menuItem.disabled {
 
 td.menuItem.disabled.selected {
     color: grey;
+}
+
+td.dummyMenu {
+    background: transparent !important;
 }
 
 table.menu td.selected {

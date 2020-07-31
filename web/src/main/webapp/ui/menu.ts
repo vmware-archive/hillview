@@ -40,6 +40,18 @@ export interface MenuItem extends BaseMenuItem {
     readonly action: () => void;
 }
 
+interface subMenuCells {
+    dummySubMenu: HTMLTableDataCellElement;
+    cells: HTMLTableDataCellElement[];
+}
+
+function initSubMenu(): subMenuCells {
+    return {
+        dummySubMenu: undefined,
+        cells: []
+    }
+}
+
 abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
     public items: MI[];
     /**
@@ -49,11 +61,18 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
     public outer: HTMLTableElement;
     public tableBody: HTMLTableSectionElement;
     public cells: HTMLTableDataCellElement[];
-    public selectedIndex: number;  // -1 if no item is selected
+    public subMenuCells: subMenuCells[];
+    public rows: HTMLTableRowElement[];
+    public selectedIndex: number; // -1 if no item is selected
+    public selectedParentMenu: number; // -1 if no item is selected
+    public selectedSubMenu: number; // -1 if no item is selected
 
     protected constructor() {
         this.items = [];
         this.cells = [];
+        this.subMenuCells = [];
+        this.selectedParentMenu = -1;
+        this.rows = [];
         this.selectedIndex = -1;
         this.outer = document.createElement("table");
         this.outer.classList.add("menu", "hidden");
@@ -73,7 +92,7 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
     public keyAction(e: KeyboardEvent): void {
         if (e.code === "ArrowDown" && this.selectedIndex < this.cells.length - 1) {
             this.select(this.selectedIndex + 1);
-        } else if (e.code === "ArrowUp"  && this.selectedIndex > 0) {
+        } else if (e.code === "ArrowUp" && this.selectedIndex > 0) {
             this.select(this.selectedIndex - 1);
         } else if (e.code === "Enter" && this.selectedIndex >= 0) {
             // emulate a mouse click on this cell
@@ -109,10 +128,27 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
         return this.cells[index];
     }
 
+    public expandMenu(parentMenu: string) {
+        const index = this.find(parentMenu);
+        this.selectedParentMenu = index;
+        if (index < 0) throw new Error("Cannot find menu item " + parentMenu);
+        this.subMenuCells[index].cells.forEach((cell) => {
+            cell.style.display = "table-cell";
+        });
+    }
+
     public addItem(mi: MI, enabled: boolean): HTMLTableDataCellElement {
         const index = this.items.length;
         this.items.push(mi);
         const trow = this.tableBody.insertRow();
+
+        const dummySubMenu = trow.insertCell(0);
+        dummySubMenu.classList.add("dummyMenu");
+        dummySubMenu.onmouseenter = () => this.hide();
+        this.subMenuCells[index] = initSubMenu();
+        this.subMenuCells[index].dummySubMenu = dummySubMenu;
+        this.rows.push(trow);
+
         const cell = trow.insertCell(0);
         this.cells.push(cell);
         if (mi.text === "---")
@@ -139,6 +175,12 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
         if (index >= 0 && index < this.cells.length) {
             const cell = this.cells[index];
             if (selected) {
+                // remove submenu if the parentMenu is not selected
+                if (this.selectedParentMenu != -1 && index != this.selectedParentMenu)
+                    this.hideAllSubMenu();
+                // Show subMenu when parent menu is active
+                if (cell.classList.contains("expandableMenu"))
+                    this.expandMenu(cell.firstChild.textContent);
                 cell.classList.add("selected");
                 this.outer.focus();
             } else {
@@ -165,6 +207,43 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
         this.setAction(this.items[index], enabled);
     }
 
+    public hideAllSubMenu(): void {
+        this.subMenuCells[this.selectedParentMenu].cells.forEach((cell) => {
+            cell.style.display = "none";
+            cell.classList.remove("selected");
+        });
+        this.markSelect(this.selectedParentMenu, false);
+        this.selectedParentMenu = -1;
+        this.selectedSubMenu = -1;
+    }
+
+    public markSelectSubMenu(index: number, selected: boolean): void {
+        if (index >= 0 &&
+            index < this.subMenuCells[this.selectedParentMenu].cells.length) {
+            const cell = this.subMenuCells[this.selectedParentMenu].cells[index];
+            if (selected) {
+                cell.classList.add("selected");
+                this.outer.focus();
+            } else {
+                cell.classList.remove("selected");
+            }
+        }
+    }
+
+    public selectSubMenu(parentIndex: number, subIndex: number): void {
+        if (subIndex == -1) {
+            this.markSelectSubMenu(this.selectedSubMenu, false);
+        } else {
+            this.markSelect(parentIndex, true);
+            if (subIndex < 0 ||
+                subIndex >= this.subMenuCells[parentIndex].cells.length) {
+                subIndex = -1; // no one
+            }
+            this.selectedSubMenu = subIndex;
+            this.markSelectSubMenu(this.selectedSubMenu, true);
+        }
+    }
+
     public enableItem(mi: MI, enabled: boolean): void {
         this.enable(mi.text, enabled);
     }
@@ -176,6 +255,8 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
         this.tableBody.remove();
         this.items = [];
         this.cells = [];
+        this.rows = [];
+        this.subMenuCells = [];
         this.tableBody = this.outer.createTBody();
     }
 
@@ -249,10 +330,72 @@ export class ContextMenu extends BaseMenu<MenuItem> implements IHtmlElement {
     public setAction(mi: MenuItem, enabled: boolean): void {
         const index = this.find(mi.text);
         const cell = this.cells[index];
-        if (mi.action != null && enabled)
-            cell.onclick = () => { this.hide(); mi.action(); };
-        else
+        if (mi.action != null && enabled) {
+            if (cell.classList.contains("expandableMenu")) {
+              // no operation because expandableMenu only expand its submenus
+            } else {
+              cell.onclick = () => {
+                this.hide();
+                mi.action();
+              };
+            }
+        } else {
             cell.onclick = () => this.hide();
+        }
+    }
+
+    public addExpandableItem(mi: MenuItem): number {
+        const cell = this.addItem(mi, true);
+        cell.classList.add("expandableMenu");
+        const arrow = document.createElement("span");
+        arrow.textContent = "▸";
+        arrow.classList.add("menuArrow");
+        cell.appendChild(arrow);
+        return this.cells.length - 1;
+    }
+
+    /**
+     * Inserting subMenu must be done in the end of all parent menu insert. If the
+     * submenu exceed the length of all main menu, we need to add dummyMenu
+     * */
+    public insertSubMenu(parentIndex: number, mi: MenuItem, enabled: boolean): void {
+        const subMenuIndex = this.subMenuCells[parentIndex].cells.length;
+        const subMenuPlacementIdx = parentIndex + subMenuIndex;
+        if (this.rows[subMenuPlacementIdx] === undefined) {
+            const trow = this.tableBody.insertRow();
+            this.rows.push(trow);
+            const cell = trow.insertCell(0);
+            cell.classList.add("dummyMenu");
+        }
+        const cell = this.rows[subMenuPlacementIdx].insertCell(1);
+        cell.id = makeId(mi.text);
+        cell.style.textAlign = "left";
+        cell.style.display = "none";
+        cell.classList.add("menuItem");
+        if (enabled) cell.classList.remove("disabled");
+        else cell.classList.add("disabled");
+        if (mi.help != null) cell.title = mi.help;
+        if (mi.text === "---") cell.innerHTML = "<hr>";
+        else cell.textContent = mi.text;
+
+        var subIndex = this.subMenuCells[parentIndex].cells.length;
+        this.subMenuCells[parentIndex].cells.push(cell);
+        cell.onmouseenter = () => this.selectSubMenu(parentIndex, subIndex);
+        cell.onmouseleave = () => this.selectSubMenu(parentIndex, -1);
+        this.setSubMenuAction(parentIndex, subMenuIndex, mi, enabled);
+    }
+
+    public setSubMenuAction(parentIndex: number, subMenuIndex: number,
+        mi: MenuItem, enabled: boolean): void {
+        const cell = this.subMenuCells[parentIndex].cells[subMenuIndex];
+        if (mi.action != null && enabled) {
+            cell.onclick = () => {
+                this.hide();
+                mi.action();
+            };
+        } else {
+            cell.onclick = () => this.hide();
+        }
     }
 }
 
