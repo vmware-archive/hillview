@@ -62,6 +62,7 @@ import com.google.common.annotations.VisibleForTesting;
 import java.util.stream.Stream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.stream.StreamSupport;
 import java.time.Instant;
@@ -383,10 +384,11 @@ public class CassandraSSTableLoader extends TextFileLoader {
                                     col = columns.get(currentColumn);
                                 }
                                 CQL3Type colType = cd.column().type.asCQL3Type();
-                                value = serializers.get(colType).deserialize(((Cell) cd).value());
+                                ByteBuffer byteBuff = ((Cell) cd).value();
+                                value = serializers.get(colType).deserialize(byteBuff);
                                 switch ((CQL3Type.Native) colType) {
-                                    case ASCII:
                                     case DURATION:
+                                    case ASCII:
                                     case BOOLEAN:
                                     case INET:
                                     case TEXT:
@@ -396,7 +398,7 @@ public class CassandraSSTableLoader extends TextFileLoader {
                                         col.append(value.toString());
                                         break;
                                     case BLOB:
-                                        col.append(serializers.get(colType).toCQLLiteral(((Cell) cd).value())
+                                        col.append(serializers.get(colType).toCQLLiteral(byteBuff)
                                                 .toString());
                                         break;
                                     case INT:
@@ -425,22 +427,22 @@ public class CassandraSSTableLoader extends TextFileLoader {
                                         col.append(((Float) value).doubleValue());
                                         break;
                                     case COUNTER:
-                                        col.append(CounterContext.instance().total(((Cell) cd).value()));
+                                        col.append(CounterContext.instance().total(byteBuff));
                                         break;
                                     case TIME:
-                                        // TODO: Convert Time type to Java Time instead of Java Instant 
-                                        long myTime = TimeSerializer.instance.deserialize(((Cell) cd).value());
+                                        // TODO: Convert Time type to Java Time instead of Java Instant
+                                        long myTime = TimeSerializer.instance.deserialize(byteBuff);
                                         // Downgrade to millis and append 2000-1-1 as the date
                                         myTime = myTime / 1000000 + 946706400000L;
                                         col.append(Instant.ofEpochMilli(myTime));
                                         break;
                                     case TIMESTAMP:
-                                        col.append(TimestampSerializer.instance.deserialize(((Cell) cd).value())
+                                        col.append(TimestampSerializer.instance.deserialize(byteBuff)
                                                 .toInstant());
                                         break;
                                     case DATE:
                                         long msTime = SimpleDateSerializer
-                                                .dayToTimeInMillis(ByteBufferUtil.toInt(((Cell) cd).value()));
+                                                .dayToTimeInMillis(ByteBufferUtil.toInt(byteBuff));
                                         col.append(Instant.ofEpochMilli(msTime));
                                         break;
                                     case EMPTY:
