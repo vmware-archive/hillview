@@ -52,13 +52,14 @@ public class CassandraDatabase {
     /** The default path of Cassandra's sstableutil tool */
     private static final String ssTableUtilDir = "bin/sstableutil";
     private static final String cassandraYamlPath = "conf/cassandra.yaml";
+    private static final String localhost = "127.0.0.1";
 
     private CassandraConnectionInfo info;
-    /**
-     * Session: Connection to Cassandra cluster for executing client-side queries
-     */
     @Nullable
     private Cluster cluster;
+    /**
+     * Connection to Cassandra cluster for executing client-side queries
+     */
     @Nullable
     private Session session;
     @Nullable
@@ -74,7 +75,7 @@ public class CassandraDatabase {
     @Nullable
     private NodeProbe probe;
     private final List<CassTable> cassTables = new ArrayList<CassTable>();
-    private final List<CassandraTokenRange> tokenRanges = new ArrayList<CassandraTokenRange>();
+    private final List<CassandraTokenRange> tokenRanges;
     private final String localEndpoint;
 
     /**
@@ -93,7 +94,7 @@ public class CassandraDatabase {
             this.connectLocalProbe();
             this.connectCassCluster();
             this.setStoredTableInfo();
-            this.discoverTokenRanges();
+            this.tokenRanges = this.discoverTokenRanges();
             this.localEndpoint = this.discoverLocalEndpoint();
         } catch (Exception e) {
             HillviewLogger.instance.error("Failed initializing CassandraDatabase partitions", "{0}",
@@ -130,9 +131,10 @@ public class CassandraDatabase {
     private void connectLocalProbe() throws IOException {
         Converters.checkNull(this.nodeProbeFactory);
         if (Utilities.isNullOrEmpty(info.user))
-            this.probe = this.nodeProbeFactory.create("127.0.0.1", info.jmxPort);
+            this.probe = this.nodeProbeFactory.create(CassandraDatabase.localhost, info.jmxPort);
         else
-            this.probe = this.nodeProbeFactory.create("127.0.0.1", info.jmxPort, info.user, info.password);
+            this.probe = this.nodeProbeFactory.create(
+                    CassandraDatabase.localhost, info.jmxPort, info.user, info.password);
     }
 
     public static class CassandraTokenRange {
@@ -192,13 +194,15 @@ public class CassandraDatabase {
      * key-range. This key-range distribution is the same on every node in the
      * cluster.
      */
-    private void discoverTokenRanges() throws IOException {
+    private List<CassandraTokenRange> discoverTokenRanges() throws IOException {
+        List<CassandraTokenRange> tokenRanges = new ArrayList<>();
         String keyspace = this.info.database;
         CassandraTokenRange tr;
         for (String tokenRangeString : Converters.checkNull(this.probe).describeRing(keyspace)) {
             tr = new CassandraTokenRange(tokenRangeString, this.partitioner);
-            this.tokenRanges.add(tr);
+            tokenRanges.add(tr);
         }
+        return tokenRanges;
     }
 
     public List<CassandraTokenRange> getTokenRanges() {
@@ -230,13 +234,10 @@ public class CassandraDatabase {
      */
     private void setStoredTableInfo() {
         List<KeyspaceMetadata> keyspaces = Converters.checkNull(this.metadata).getKeyspaces();
-        String keyspace;
-        Collection<TableMetadata> tables;
-        List<String> tableNames;
         for (KeyspaceMetadata kMetadata : keyspaces) {
-            keyspace = kMetadata.getName();
-            tables = this.metadata.getKeyspace(keyspace).getTables();
-            tableNames = tables.stream().map(AbstractTableMetadata::getName).collect(Collectors.toList());
+            String keyspace = kMetadata.getName();
+            Collection<TableMetadata> tables = this.metadata.getKeyspace(keyspace).getTables();
+            List<String> tableNames = tables.stream().map(AbstractTableMetadata::getName).collect(Collectors.toList());
             this.cassTables.add(new CassTable(keyspace, tableNames));
         }
     }
@@ -255,7 +256,7 @@ public class CassandraDatabase {
      */
     public List<String> getSSTablePath() {
         List<String> result = new ArrayList<>();
-        boolean isWindows = System.getProperty("os.name").toLowerCase().startsWith("windows");
+        boolean isWindows = Utilities.runningOnWindows();
         Path ssTableUtilPath = Paths.get(CassandraDatabase.ssTableUtilDir);
         Path cassandraPath = Paths.get(this.info.cassandraRootDir);
 

@@ -117,11 +117,12 @@ public class CassandraSSTableLoader extends TextFileLoader {
     }
 
     /**
-     * This is to support loading local sstable test without a token-range. The
-     * generated token range will cover all partition in a single range.
+     * This function is only used for testing. This will support loading local
+     * sstable test without a token-range. The generated token range will cover all
+     * partition in a single range.
      */
     @VisibleForTesting
-    public static CassandraSSTableLoader getCassandraSSTableLoader(String ssTablePath, boolean lazyLoading) {
+    public static CassandraSSTableLoader getTestTableLoader(String ssTablePath, boolean lazyLoading) {
         try {
             Descriptor descriptor = Descriptor.fromFilename(ssTablePath);
             IPartitioner partitioner = FBUtilities.newPartitioner(descriptor);
@@ -264,20 +265,15 @@ public class CassandraSSTableLoader extends TextFileLoader {
     }
 
     public int getRowCount() {
-        if (this.rowCount > Integer.MAX_VALUE || this.rowCount < Integer.MIN_VALUE)
-            throw new RuntimeException("The number of rows exceeds Integer.MAX_VALUE");
-        return (int) this.rowCount;
+        return Converters.toInt(this.rowCount);
     }
 
-    /**
-     * Instead of checking the columnn' name to find which one to load, this method
-     * uses boolean marker stored at columnToLoad to recognize the needed columns
-     */
     private List<IAppendableColumn> createColumns(List<String> names) {
+        Set<String> namesSet = new HashSet<String>(names);
         List<ColumnDescription> cols = Converters.checkNull(this.actualSchema).getColumnDescriptions();
         List<IAppendableColumn> result = new ArrayList<IAppendableColumn>(names.size());
         for (ColumnDescription cd : cols) {
-            if (names.contains(cd.name))
+            if (namesSet.contains(cd.name))
                 result.add(BaseListColumn.create(cd));
         }
         return result;
@@ -341,149 +337,128 @@ public class CassandraSSTableLoader extends TextFileLoader {
     }
 
     /**
-     * Lazy and non-lazy loader will call this function to load specific column
-     * marked by columnToLoad
+     * This function will load specific column listed at columnDefinitions and in certain token ranges 
      */
     private static void loadColumns(SSTableReader ssTableReader, List<IAppendableColumn> columns,
             PartitionColumns columnDefinitions, List<CassandraTokenRange> tokenRanges, String localEndpoint) {
-        int colCount = columnDefinitions.size();
         ColumnFilter cf = ColumnFilter.selection(columnDefinitions);
-        List<Long> arrPrefixComparison = new ArrayList<>();
-        HashMap<CQL3Type, TypeSerializer<?>> serializers = new HashMap<CQL3Type, TypeSerializer<?>>();
+        TypeSerializer<?>[] serializers = new TypeSerializer<?>[columnDefinitions.size()];
         Iterator<ColumnDefinition> colIter = columnDefinitions.regulars.simpleColumns();
+        int i = 0;
         // init reusable serializer and prefixComparison
-        while(colIter.hasNext()) {
+        while (colIter.hasNext()) {
             ColumnDefinition cd = colIter.next();
-            CQL3Type type = cd.type.asCQL3Type();
-            serializers.put(type, type.getType().getSerializer());
-            arrPrefixComparison.add(cd.name.prefixComparison);
+            serializers[i] = cd.type.asCQL3Type().getType().getSerializer();
+            i++;
         }
 
         for (CassandraTokenRange tr : tokenRanges) {
             // Load the partition if the local endpoint is listed as the first endpoint
-            if (tr.endpoints.get(0).equals(localEndpoint)) {
-                DataRange range = DataRange.forTokenRange(tr.tokenRange);
-                SSTableReadsListener listener = CassandraSSTableLoader.newReadCountUpdater();
-                ISSTableScanner currentScanner = ssTableReader.getScanner(cf, range, false, listener);
-
-                Spliterators.spliteratorUnknownSize(currentScanner, Spliterator.CONCURRENT)
-                    .forEachRemaining((partition) -> {
-                        Unfiltered unfiltered = partition.next();
-                        if (unfiltered instanceof Row) {
-                            Row row = (Row) unfiltered;
-                            int currentColumn = 0;
-                            Object value;
-                            IAppendableColumn col;
-                            // Extracting the value of each column from a single row
-                            for (ColumnData cd : row) {
-                                col = columns.get(currentColumn);
-                                // Missing column case #1 
-                                // Where unloaded missing column(s) is between idx 0 until last non missing column
-                                while (cd.column().name.prefixComparison != arrPrefixComparison
-                                        .get(currentColumn)) {
-                                    // The column with null value will not be included, so here 
-                                    // we add the null identifier for the skipped column(s)
-                                    col.appendMissing();
-                                    currentColumn++;
-                                    col = columns.get(currentColumn);
-                                }
-                                CQL3Type colType = cd.column().type.asCQL3Type();
-                                ByteBuffer byteBuff = ((Cell) cd).value();
-                                value = serializers.get(colType).deserialize(byteBuff);
-                                // Missing column case #2
-                                // Where the missing column(s) is loaded and the capacity is 0
-                                if (byteBuff.capacity() == 0) {
-                                    col.appendMissing(); 
-                                } else {
-                                    switch ((CQL3Type.Native) colType) {
-                                        case ASCII:
-                                        case BOOLEAN:
-                                        case INET:
-                                        case TEXT:
-                                        case TIMEUUID:
-                                        case UUID:
-                                        case VARCHAR:
-                                            col.append(value.toString());
-                                            break;
-                                        case BLOB:
-                                            col.append(serializers.get(colType).toCQLLiteral(byteBuff).toString());
-                                            break;
-                                        case INT:
-                                            col.append((Integer) value);
-                                            break;
-                                        case SMALLINT:
-                                            col.append(((Short) value).intValue());
-                                            break;
-                                        case TINYINT:
-                                            col.append(((Byte) value).intValue());
-                                            break;
-                                        case VARINT:
-                                            col.append(((BigInteger) value).doubleValue());
-                                            break;
-                                        case BIGINT:
-                                            col.append(((Long) value).doubleValue());
-                                            break;
-                                        case DECIMAL:
-                                            if (bigDecimalInRange((BigDecimal) value))
-                                                col.append(((BigDecimal) value).doubleValue());
-                                            break;
-                                        case DOUBLE:
-                                            col.append((Double) value);
-                                            break;
-                                        case FLOAT:
-                                            col.append(((Float) value).doubleValue());
-                                            break;
-                                        case COUNTER:
-                                            col.append(CounterContext.instance().total(byteBuff));
-                                            break;
-                                        case TIME:
-                                            // TODO: Convert Time type to Java Time instead of Java Instant
-                                            long myTime = TimeSerializer.instance.deserialize(byteBuff);
-                                            // Downgrade to millis and append 2000-1-1 as the date
-                                            myTime = myTime / 1000000 + 946706400000L;
-                                            col.append(Instant.ofEpochMilli(myTime));
-                                            break;
-                                        case TIMESTAMP:
-                                            col.append(
-                                                    TimestampSerializer.instance.deserialize(byteBuff).toInstant());
-                                            break;
-                                        case DATE:
-                                            long msTime = SimpleDateSerializer
-                                                    .dayToTimeInMillis(ByteBufferUtil.toInt(byteBuff));
-                                            col.append(Instant.ofEpochMilli(msTime));
-                                            break;
-                                        case DURATION:
-                                            Duration duration = DurationSerializer.instance.deserialize(byteBuff);
-                                            if (duration.getMonths() == 0) {
-                                                int days = duration.getDays();
-                                                long nanos = duration.getNanoseconds();
-                                                long millis = (nanos + Duration.NANOS_PER_HOUR * 24 * days) / 1000000;
-                                                col.append(Converters.toDuration(millis));
-                                            } else {
-                                                // java.time.Duration support day and time (but not month and year)
-                                                throw new RuntimeException(
-                                                        "Failed to convert Duration with months != 0");
-                                            }
-                                            break;
-                                        case EMPTY:
-                                        default:
+            if (!tr.endpoints.get(0).equals(localEndpoint)) continue;
+            DataRange range = DataRange.forTokenRange(tr.tokenRange);
+            SSTableReadsListener listener = CassandraSSTableLoader.newReadCountUpdater();
+            ISSTableScanner currentScanner = ssTableReader.getScanner(cf, range, false, listener);
+            Spliterators.spliteratorUnknownSize(currentScanner, Spliterator.CONCURRENT)
+                .forEachRemaining((partition) -> {
+                    Unfiltered unfiltered = partition.next();
+                    if (unfiltered instanceof Row) {
+                        Row row = (Row) unfiltered;
+                        int currentColumn = 0;
+                        Object value;
+                        IAppendableColumn col;
+                        // Extracting the value of each column from a single row
+                        for (ColumnDefinition colDef : columnDefinitions) {
+                            ColumnData cd = row.getCell(colDef);
+                            col = columns.get(currentColumn);
+                            CQL3Type colType = cd.column().type.asCQL3Type();
+                            ByteBuffer byteBuff = ((Cell) cd).value();
+                            // The column that has null value can be identified by its buffer capacity
+                            if (byteBuff.capacity() == 0) {
+                                col.appendMissing(); 
+                            } else {
+                                value = serializers[currentColumn].deserialize(byteBuff);
+                                switch ((CQL3Type.Native) colType) {
+                                    case ASCII:
+                                    case BOOLEAN:
+                                    case INET:
+                                    case TEXT:
+                                    case TIMEUUID:
+                                    case UUID:
+                                    case VARCHAR:
+                                        col.append(value.toString());
+                                        break;
+                                    case BLOB:
+                                        col.append(serializers[currentColumn].toCQLLiteral(byteBuff).toString());
+                                        break;
+                                    case INT:
+                                        col.append((Integer) value);
+                                        break;
+                                    case SMALLINT:
+                                        col.append(((Short) value).intValue());
+                                        break;
+                                    case TINYINT:
+                                        col.append(((Byte) value).intValue());
+                                        break;
+                                    case VARINT:
+                                        col.append(((BigInteger) value).doubleValue());
+                                        break;
+                                    case BIGINT:
+                                        col.append(((Long) value).doubleValue());
+                                        break;
+                                    case DECIMAL:
+                                        if (bigDecimalInRange((BigDecimal) value))
+                                            col.append(((BigDecimal) value).doubleValue());
+                                        break;
+                                    case DOUBLE:
+                                        col.append((Double) value);
+                                        break;
+                                    case FLOAT:
+                                        col.append(((Float) value).doubleValue());
+                                        break;
+                                    case COUNTER:
+                                        col.append(CounterContext.instance().total(byteBuff));
+                                        break;
+                                    case TIME:
+                                        // TODO: Convert Time type to Java Time instead of Java Instant
+                                        long myTime = TimeSerializer.instance.deserialize(byteBuff);
+                                        // Downgrade to millis and append 2000-1-1 as the date
+                                        myTime = myTime / 1000000 + 946706400000L;
+                                        col.append(Instant.ofEpochMilli(myTime));
+                                        break;
+                                    case TIMESTAMP:
+                                        col.append(
+                                                TimestampSerializer.instance.deserialize(byteBuff).toInstant());
+                                        break;
+                                    case DATE:
+                                        long msTime = SimpleDateSerializer
+                                                .dayToTimeInMillis(ByteBufferUtil.toInt(byteBuff));
+                                        col.append(Instant.ofEpochMilli(msTime));
+                                        break;
+                                    case DURATION:
+                                        Duration duration = DurationSerializer.instance.deserialize(byteBuff);
+                                        if (duration.getMonths() == 0) {
+                                            int days = duration.getDays();
+                                            long nanos = duration.getNanoseconds();
+                                            long millis = (nanos + Duration.NANOS_PER_HOUR * 24 * days) / 1000000;
+                                            col.append(Converters.toDuration(millis));
+                                        } else {
+                                            // java.time.Duration support day and time (but not month and year)
                                             throw new RuntimeException(
-                                                    "Unhandled column type " + colType.toString());
-                                    }
+                                                    "Failed to convert Duration with months != 0");
+                                        }
+                                        break;
+                                    case EMPTY:
+                                    default:
+                                        throw new RuntimeException(
+                                                "Unhandled column type " + colType.toString());
                                 }
-                                currentColumn++;
                             }
-                            // Missing column case #3
-                            // Where unloaded missing column(s) is AFTER the last non missing column
-                            while (currentColumn != colCount) {
-                                col = columns.get(currentColumn);
-                                col.appendMissing();
-                                currentColumn++;
-                            }
+                            currentColumn++;
                         }
-                    });
-                ;
-            }
+                    }
+                });
+            ;
+            
         }
     }
 
