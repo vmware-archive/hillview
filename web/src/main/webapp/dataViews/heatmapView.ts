@@ -385,7 +385,7 @@ export class HeatmapView extends
                     legendBucketCount = range.stringQuantiles.length;
                 } else if (detailLegendColumn.kind === "Integer") {
                     // noinspection JSObjectNullOrUndefined
-                    legendBucketCount = Math.min(range.max - range.min, Resolution.max2DBucketCount);
+                    legendBucketCount = Math.min(range.max - range.min + 1, Resolution.max2DBucketCount);
                 } else {
                     legendBucketCount = Resolution.max2DBucketCount;
                 }

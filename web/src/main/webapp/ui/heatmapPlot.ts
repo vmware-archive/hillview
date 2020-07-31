@@ -16,7 +16,7 @@
  */
 
 import {AxisData, AxisKind} from "../dataViews/axisData";
-import {BucketsInfo, Groups, kindIsString, RowValue} from "../javaBridge";
+import {Groups, kindIsString, RowValue} from "../javaBridge";
 import {assert, ColorMap, regression, Triple, valueWithConfidence} from "../util";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
