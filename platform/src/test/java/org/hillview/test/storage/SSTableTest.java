@@ -20,6 +20,7 @@ package org.hillview.test.storage;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 
@@ -208,33 +209,56 @@ public class SSTableTest extends BaseTest {
         CassandraSSTableLoader ssTableLoader = CassandraSSTableLoader
                 .getCassandraSSTableLoader(ssTablePath, conn.lazyLoading);
         ITable table = ssTableLoader.load();
-        ;
         Assert.assertNotNull(table);
         Assert.assertEquals("Table[20x2]", table.toString());
         List<IColumn> listCols = table.getLoadedColumns(ssTableLoader.getSchema().getColumnNames());
 
-        Assert.assertEquals("Mr. Test", listCols.get(11).getString(0));
-        Assert.assertEquals(45000, listCols.get(12).getInt(0));
-        Assert.assertEquals(true, listCols.get(12).isMissing(1));
-        Assert.assertEquals("", listCols.get(14).getString(0));
+        // ascii type
+        Assert.assertEquals("35", listCols.get(0).getString(0));
+        Assert.assertEquals(true, listCols.get(0).isMissing(1));
+        // bigint type
+        Assert.assertEquals(true, listCols.get(1).isMissing(1));
+        // blob type
+        Assert.assertEquals("0x61646231346662653037366636623934343434633636306533366134303031353166323666633666",
+                listCols.get(2).getString(0));
+        // boolean type
+        Assert.assertEquals("true", listCols.get(3).getString(0));
+        // date type
+        Assert.assertEquals("2020-07-14T00:00:00Z", listCols.get(4).getDate(0).toString());
+        // decimal type
+        Assert.assertEquals(3.7875, listCols.get(5).getDouble(0), 1);
+        // double type
+        Assert.assertEquals(true, listCols.get(6).isMissing(1));
+        Assert.assertEquals("6.714592679340089E9", Double.toString(listCols.get(6).getDouble(0)));
+        // duration type
+        Assert.assertEquals("4y6mo3d12h30m5s", listCols.get(7).getString(0));
+        // float type
+        Assert.assertEquals(true, listCols.get(8).isMissing(1));
+        Assert.assertEquals(3.1475300788879395, listCols.get(8).getDouble(0), 1);
+        // inet type
+        Assert.assertEquals("/127.0.0.1", listCols.get(9).getString(0));
+        // int type
         Assert.assertEquals(true, listCols.get(10).isMissing(0));
         Assert.assertEquals(true, listCols.get(10).isMissing(1));
-        Assert.assertEquals("true", listCols.get(3).getString(0));
-        Assert.assertEquals("35", listCols.get(0).getString(0));
-        Assert.assertEquals("/127.0.0.1", listCols.get(9).getString(0));
-        Assert.assertEquals("50554d6e-29bb-11e5-b345-feff819cdc9f", listCols.get(17).getString(0));
+        // name: string type 
+        Assert.assertEquals("Mr. Test", listCols.get(11).getString(0));
+        // salary: integer type
+        Assert.assertEquals(45000, listCols.get(12).getInt(0));
+        Assert.assertEquals(true, listCols.get(12).isMissing(1));
+        // smallint type
         Assert.assertEquals(1, listCols.get(13).getInt(0));
-        Assert.assertEquals(2, listCols.get(18).getInt(0));
-        Assert.assertEquals(10, listCols.get(19).getDouble(0), 1);
-        Assert.assertEquals(3.7875, listCols.get(5).getDouble(0), 1);
-        Assert.assertEquals("6.714592679340089E9", Double.toString(listCols.get(6).getDouble(0)));
-        Assert.assertEquals(3.1475300788879395, listCols.get(8).getDouble(0), 1);
-        Assert.assertEquals("13:30:23.123000000", listCols.get(15).getString(0));
+        // text type
+        Assert.assertEquals(null, listCols.get(14).getString(0));
+        // time type
+        Assert.assertEquals(Instant.ofEpochMilli(946755023123L), listCols.get(15).getDate(0));
+        // timestamp type
         Assert.assertEquals("2017-05-05T20:00:00Z", listCols.get(16).getDate(0).toString());
-        Assert.assertEquals("2020-07-14", listCols.get(4).getString(0));
-        Assert.assertEquals("4y6mo3d12h30m5s", listCols.get(7).getString(0));
-        Assert.assertEquals("0x61646231346662653037366636623934343434633636306533366134303031353166323666633666",
-            listCols.get(2).getString(0));
+        // timeuuid type
+        Assert.assertEquals("50554d6e-29bb-11e5-b345-feff819cdc9f", listCols.get(17).getString(0));
+        // tinyint type
+        Assert.assertEquals(2, listCols.get(18).getInt(0));
+        // varint type
+        Assert.assertEquals(10, listCols.get(19).getDouble(0), 1);
     }
 
     @Test

@@ -25,7 +25,7 @@ import org.hillview.table.Schema;
 import org.hillview.table.Table;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
-
+import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.cassandra.utils.FBUtilities;
 import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.config.ColumnDefinition;
@@ -42,7 +42,6 @@ import org.apache.cassandra.db.PartitionColumns;
 import org.apache.cassandra.db.SerializationHeader;
 import org.apache.cassandra.db.context.CounterContext;
 import org.apache.cassandra.db.filter.ColumnFilter;
-import org.apache.cassandra.db.marshal.AbstractType;
 import org.apache.cassandra.db.marshal.UTF8Type;
 import org.apache.cassandra.dht.*;
 import org.apache.cassandra.io.sstable.Descriptor;
@@ -51,6 +50,9 @@ import org.apache.cassandra.io.sstable.format.SSTableReader;
 import org.apache.cassandra.io.sstable.format.SSTableReadsListener;
 import org.apache.cassandra.io.sstable.metadata.MetadataComponent;
 import org.apache.cassandra.io.sstable.metadata.MetadataType;
+import org.apache.cassandra.serializers.SimpleDateSerializer;
+import org.apache.cassandra.serializers.TimeSerializer;
+import org.apache.cassandra.serializers.TimestampSerializer;
 import org.apache.cassandra.serializers.TypeSerializer;
 
 import javax.annotation.Nullable;
@@ -62,6 +64,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.StreamSupport;
+import java.time.Instant;
 
 /**
  * Knows how to read a local Cassandra's SSTable file.
@@ -167,8 +170,6 @@ public class CassandraSSTableLoader extends TextFileLoader {
             case TIMEUUID:
             case UUID:
             case DURATION:
-            case TIME:
-            case DATE:
             case BLOB:
             case VARCHAR:
                 kind = ContentsKind.String;
@@ -186,7 +187,9 @@ public class CassandraSSTableLoader extends TextFileLoader {
             case COUNTER:
                 kind = ContentsKind.Double;
                 break;
+            case TIME:
             case TIMESTAMP:
+            case DATE:
                 kind = ContentsKind.Date;
                 break;
             case EMPTY:
@@ -338,8 +341,18 @@ public class CassandraSSTableLoader extends TextFileLoader {
      */
     private static void loadColumns(SSTableReader ssTableReader, List<IAppendableColumn> columns,
             PartitionColumns columnDefinitions, List<CassandraTokenRange> tokenRanges, String localEndpoint) {
+        int colCount = columnDefinitions.size();
         ColumnFilter cf = ColumnFilter.selection(columnDefinitions);
-        List<TypeSerializer<?>> arrSerializer = new ArrayList<>();
+        List<Long> arrPrefixComparison = new ArrayList<>();
+        HashMap<CQL3Type, TypeSerializer<?>> serializers = new HashMap<CQL3Type, TypeSerializer<?>>();
+        Iterator<ColumnDefinition> colIter = columnDefinitions.regulars.simpleColumns();
+        // init reusable serializer and prefixComparison
+        while(colIter.hasNext()) {
+            ColumnDefinition cd = colIter.next();
+            CQL3Type type = cd.type.asCQL3Type();
+            serializers.put(type, type.getType().getSerializer());
+            arrPrefixComparison.add(cd.name.prefixComparison);
+        }
 
         for (CassandraTokenRange tr : tokenRanges) {
             // Load the partition if the local endpoint is listed as the first endpoint
@@ -349,82 +362,102 @@ public class CassandraSSTableLoader extends TextFileLoader {
                 ISSTableScanner currentScanner = ssTableReader.getScanner(cf, range, false, listener);
 
                 Spliterators.spliteratorUnknownSize(currentScanner, Spliterator.CONCURRENT)
-                        .forEachRemaining((partition) -> {
-                            Unfiltered unfiltered = partition.next();
-                            if (unfiltered instanceof Row) {
-                                Row row = (Row) unfiltered;
-                                int currentColumn = 0;
-                                Object value;
-                                IAppendableColumn col;
-                                // Extracting the value for each column from a single row
-                                for (ColumnData cd : row) {
-                                    col = columns.get(currentColumn);
-                                    if (arrSerializer.size() < columns.size())
-                                        arrSerializer.add(cd.column().cellValueType().getSerializer());
-                                    TypeSerializer<?> serializer = arrSerializer.get(currentColumn);
-                                    value = serializer.deserialize(((Cell) cd).value());
-                                    if (value == null) {
-                                        col.appendMissing();
-                                    } else {
-                                        CQL3Type colType = cd.column().type.asCQL3Type();
-                                        switch ((CQL3Type.Native) colType) {
-                                            case BOOLEAN:
-                                            case ASCII:
-                                            case INET:
-                                            case TEXT:
-                                            case TIMEUUID:
-                                            case UUID:
-                                            case DURATION:
-                                            case VARCHAR:
-                                                col.append(value.toString());
-                                                break;
-                                            case DATE:
-                                            case TIME:
-                                            case BLOB:
-                                                col.append(serializer.toCQLLiteral(((Cell) cd).value())
-                                                        .toString());
-                                                break;
-                                            case INT:
-                                                col.append((Integer) value);
-                                                break;
-                                            case SMALLINT:
-                                                col.append(((Short) value).intValue());
-                                                break;
-                                            case TINYINT:
-                                                col.append(((Byte) value).intValue());
-                                                break;
-                                            case VARINT:
-                                                col.append(((BigInteger) value).doubleValue());
-                                                break;
-                                            case BIGINT:
-                                                col.append(((Long) value).doubleValue());
-                                                break;
-                                            case DECIMAL:
-                                                if (bigDecimalInRange((BigDecimal) value))
-                                                    col.append(((BigDecimal) value).doubleValue());
-                                                break;
-                                            case DOUBLE:
-                                                col.append((Double) value);
-                                                break;
-                                            case FLOAT:
-                                                col.append(((Float) value).doubleValue());
-                                                break;
-                                            case COUNTER:
-                                                col.append(CounterContext.instance().total(((Cell) cd).value()));
-                                                break;
-                                            case TIMESTAMP:
-                                                col.append(((Date) value).toInstant());
-                                                break;
-                                            case EMPTY:
-                                            default:
-                                                throw new RuntimeException(
-                                                        "Unhandled column type " + colType.toString());
-                                        }
-                                    }
+                    .forEachRemaining((partition) -> {
+                        Unfiltered unfiltered = partition.next();
+                        if (unfiltered instanceof Row) {
+                            Row row = (Row) unfiltered;
+                            int currentColumn = 0;
+                            Object value;
+                            IAppendableColumn col;
+                            // Extracting the value of each column from a single row
+                            for (ColumnData cd : row) {
+                                col = columns.get(currentColumn);
+                                // Missing column case #1 
+                                // Where missing column(s) is between idx 0 until last non missing column
+                                while (cd.column().name.prefixComparison != arrPrefixComparison
+                                        .get(currentColumn)) {
+                                    // The column with null value will not be included, so here 
+                                    // we add the null identifier for the skipped column(s)
+                                    col.appendMissing();
                                     currentColumn++;
+                                    col = columns.get(currentColumn);
                                 }
+                                CQL3Type colType = cd.column().type.asCQL3Type();
+                                value = serializers.get(colType).deserialize(((Cell) cd).value());
+                                switch ((CQL3Type.Native) colType) {
+                                    case ASCII:
+                                    case DURATION:
+                                    case BOOLEAN:
+                                    case INET:
+                                    case TEXT:
+                                    case TIMEUUID:
+                                    case UUID:
+                                    case VARCHAR:
+                                        col.append(value.toString());
+                                        break;
+                                    case BLOB:
+                                        col.append(serializers.get(colType).toCQLLiteral(((Cell) cd).value())
+                                                .toString());
+                                        break;
+                                    case INT:
+                                        col.append((Integer) value);
+                                        break;
+                                    case SMALLINT:
+                                        col.append(((Short) value).intValue());
+                                        break;
+                                    case TINYINT:
+                                        col.append(((Byte) value).intValue());
+                                        break;
+                                    case VARINT:
+                                        col.append(((BigInteger) value).doubleValue());
+                                        break;
+                                    case BIGINT:
+                                        col.append(((Long) value).doubleValue());
+                                        break;
+                                    case DECIMAL:
+                                        if (bigDecimalInRange((BigDecimal) value))
+                                            col.append(((BigDecimal) value).doubleValue());
+                                        break;
+                                    case DOUBLE:
+                                        col.append((Double) value);
+                                        break;
+                                    case FLOAT:
+                                        col.append(((Float) value).doubleValue());
+                                        break;
+                                    case COUNTER:
+                                        col.append(CounterContext.instance().total(((Cell) cd).value()));
+                                        break;
+                                    case TIME:
+                                        // TODO: Convert Time type to Java Time instead of Java Instant 
+                                        long myTime = TimeSerializer.instance.deserialize(((Cell) cd).value());
+                                        // Downgrade to millis and append 2000-1-1 as the date
+                                        myTime = myTime / 1000000 + 946706400000L;
+                                        col.append(Instant.ofEpochMilli(myTime));
+                                        break;
+                                    case TIMESTAMP:
+                                        col.append(TimestampSerializer.instance.deserialize(((Cell) cd).value())
+                                                .toInstant());
+                                        break;
+                                    case DATE:
+                                        long msTime = SimpleDateSerializer
+                                                .dayToTimeInMillis(ByteBufferUtil.toInt(((Cell) cd).value()));
+                                        col.append(Instant.ofEpochMilli(msTime));
+                                        break;
+                                    case EMPTY:
+                                    default:
+                                        throw new RuntimeException("Unhandled column type " + colType.toString());
+                                }
+                                currentColumn++;
                             }
-                        });
+                            // Missing column case #2
+                            // Where missing column(s) is AFTER last non missing column
+                            while (currentColumn != colCount) {
+                                col = columns.get(currentColumn);
+                                col.appendMissing();
+                                currentColumn++;
+                            }
+                        }
+                    });
                 ;
             }
         }
