@@ -52,8 +52,6 @@ import org.apache.cassandra.io.sstable.format.SSTableReadsListener;
 import org.apache.cassandra.io.sstable.metadata.MetadataComponent;
 import org.apache.cassandra.io.sstable.metadata.MetadataType;
 import org.apache.cassandra.serializers.SimpleDateSerializer;
-import org.apache.cassandra.serializers.TimeSerializer;
-import org.apache.cassandra.serializers.TimestampSerializer;
 import org.apache.cassandra.serializers.TypeSerializer;
 import org.apache.cassandra.serializers.DurationSerializer;
 
@@ -86,6 +84,8 @@ public class CassandraSSTableLoader extends TextFileLoader {
     private final IPartitioner partitioner;
     private final List<CassandraTokenRange> tokenRanges;
     private final String localEndpoint;
+    private static final org.apache.commons.lang3.Range<BigDecimal> doubleRange = org.apache.commons.lang3.Range
+            .between(BigDecimal.valueOf(Double.MIN_VALUE), BigDecimal.valueOf(Double.MAX_VALUE));
 
     static {
         // Initializing Cassandra's general configuration
@@ -199,6 +199,7 @@ public class CassandraSSTableLoader extends TextFileLoader {
                 kind = ContentsKind.Duration;
                 break;
             case EMPTY:
+                kind = ContentsKind.None;
             default:
                 throw new RuntimeException("Unhandled column type " + type.toString());
         }
@@ -342,13 +343,16 @@ public class CassandraSSTableLoader extends TextFileLoader {
     private static void loadColumns(SSTableReader ssTableReader, List<IAppendableColumn> columns,
             PartitionColumns columnDefinitions, List<CassandraTokenRange> tokenRanges, String localEndpoint) {
         ColumnFilter cf = ColumnFilter.selection(columnDefinitions);
-        TypeSerializer<?>[] serializers = new TypeSerializer<?>[columnDefinitions.size()];
+        TypeSerializer<?>[] arrSerializers = new TypeSerializer<?>[columnDefinitions.size()];
+        CQL3Type[] arrColTypes = new CQL3Type[columnDefinitions.size()];
         Iterator<ColumnDefinition> colIter = columnDefinitions.regulars.simpleColumns();
         int i = 0;
         // init reusable serializer and prefixComparison
         while (colIter.hasNext()) {
             ColumnDefinition cd = colIter.next();
-            serializers[i] = cd.type.asCQL3Type().getType().getSerializer();
+            CQL3Type colType = cd.type.asCQL3Type();
+            arrColTypes[i] = colType;
+            arrSerializers[i] = colType.getType().getSerializer();
             i++;
         }
 
@@ -364,20 +368,18 @@ public class CassandraSSTableLoader extends TextFileLoader {
                     if (unfiltered instanceof Row) {
                         Row row = (Row) unfiltered;
                         int currentColumn = 0;
-                        Object value;
                         IAppendableColumn col;
                         // Extracting the value of each column from a single row
                         for (ColumnDefinition colDef : columnDefinitions) {
                             ColumnData cd = row.getCell(colDef);
                             col = columns.get(currentColumn);
-                            CQL3Type colType = cd.column().type.asCQL3Type();
                             ByteBuffer byteBuff = ((Cell) cd).value();
                             // The column that has null value can be identified by its buffer capacity
                             if (byteBuff.capacity() == 0) {
                                 col.appendMissing(); 
                             } else {
-                                value = serializers[currentColumn].deserialize(byteBuff);
-                                switch ((CQL3Type.Native) colType) {
+                                Object value = arrSerializers[currentColumn].deserialize(byteBuff);
+                                switch ((CQL3Type.Native) arrColTypes[currentColumn]) {
                                     case ASCII:
                                     case BOOLEAN:
                                     case INET:
@@ -388,7 +390,7 @@ public class CassandraSSTableLoader extends TextFileLoader {
                                         col.append(value.toString());
                                         break;
                                     case BLOB:
-                                        col.append(serializers[currentColumn].toCQLLiteral(byteBuff).toString());
+                                        col.append(arrSerializers[currentColumn].toCQLLiteral(byteBuff).toString());
                                         break;
                                     case INT:
                                         col.append((Integer) value);
@@ -406,8 +408,7 @@ public class CassandraSSTableLoader extends TextFileLoader {
                                         col.append(((Long) value).doubleValue());
                                         break;
                                     case DECIMAL:
-                                        if (bigDecimalInRange((BigDecimal) value))
-                                            col.append(((BigDecimal) value).doubleValue());
+                                        col.append(bigDecimalToDouble((BigDecimal) value));
                                         break;
                                     case DOUBLE:
                                         col.append((Double) value);
@@ -420,14 +421,11 @@ public class CassandraSSTableLoader extends TextFileLoader {
                                         break;
                                     case TIME:
                                         // TODO: Convert Time type to Java Time instead of Java Instant
-                                        long myTime = TimeSerializer.instance.deserialize(byteBuff);
                                         // Downgrade to millis and append 2000-1-1 as the date
-                                        myTime = myTime / 1000000 + 946706400000L;
-                                        col.append(Instant.ofEpochMilli(myTime));
+                                        col.append(Instant.ofEpochMilli( ((Long) value) / 1000000 + 946706400000L));
                                         break;
                                     case TIMESTAMP:
-                                        col.append(
-                                                TimestampSerializer.instance.deserialize(byteBuff).toInstant());
+                                        col.append(((Date) value).toInstant());
                                         break;
                                     case DATE:
                                         long msTime = SimpleDateSerializer
@@ -444,13 +442,11 @@ public class CassandraSSTableLoader extends TextFileLoader {
                                         } else {
                                             // java.time.Duration support day and time (but not month and year)
                                             throw new RuntimeException(
-                                                    "Failed to convert Duration with months != 0");
+                                                    "Cassandra Durations with months are not supported");
                                         }
                                         break;
                                     case EMPTY:
-                                    default:
-                                        throw new RuntimeException(
-                                                "Unhandled column type " + colType.toString());
+                                        break;
                                 }
                             }
                             currentColumn++;
@@ -462,12 +458,10 @@ public class CassandraSSTableLoader extends TextFileLoader {
         }
     }
 
-    private static boolean bigDecimalInRange(BigDecimal bigDecimal) {
-        org.apache.commons.lang3.Range<BigDecimal> doubleRange = org.apache.commons.lang3.Range
-                .between(BigDecimal.valueOf(Double.MIN_VALUE), BigDecimal.valueOf(Double.MAX_VALUE));
-        if (!doubleRange.contains(bigDecimal)) {
+    private static Double bigDecimalToDouble(BigDecimal bigDecimal) {
+        if (!CassandraSSTableLoader.doubleRange.contains(bigDecimal))
             throw new RuntimeException("BigDecimal value is outside the range of Double");
-        }
-        return true;
+        else 
+            return bigDecimal.doubleValue();
     }
 }
