@@ -118,7 +118,7 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
     }
 
     public hide(): void {
-        this.outer.classList.add("hidden");
+        // this.outer.classList.add("hidden");
     }
 
     public getCell(mi: MI): HTMLTableCellElement {
@@ -159,6 +159,7 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
         cell.style.textAlign = "left";
         if (mi.help != null)
             cell.title = mi.help;
+        cell.classList.add("mainMenu");
         cell.classList.add("menuItem");
         cell.onmouseenter = () => this.select(index);
         cell.onmouseleave = () => this.select(-1);
