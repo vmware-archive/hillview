@@ -157,7 +157,7 @@ public class SSTableTest extends BaseTest {
             return;
         }
         List<CassTable> storedTable = db.getStoredTableInfo();
-        assert(storedTable.toString().contains("cassdb: [ test counter flights users]"));
+        Assert.assertTrue(storedTable.toString().contains("cassdb: [ test counter flights users]"));
     }
 
     /** Shows the interaction between CassandraDatabase.java and CassandraSSTableLoader.java */

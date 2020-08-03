@@ -178,7 +178,6 @@ public class Utilities {
 
     /**
      * Checks whether the local OS is Windows
-     * 
      */
     public static boolean runningOnWindows() {
         return System.getProperty("os.name").toLowerCase().startsWith("windows");

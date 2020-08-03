@@ -247,13 +247,6 @@ public class CassandraDatabase {
         return this.cassTables;
     }
 
-    /**
-     * Given the keyspace and table name, sstableutil will return the
-     * sstable-related files. Using sstableutil command is better than doing
-     * manually sstable search. Although we know the sstable parent dir from
-     * cassandra.yaml, we need to rule out the outdated sstables. And sstableutil is
-     * built specifically to identify which version are the most updated.
-     */
     public List<String> getSSTablePath() {
         List<String> result = new ArrayList<>();
         boolean isWindows = Utilities.runningOnWindows();
@@ -263,6 +256,12 @@ public class CassandraDatabase {
         String sstableCommand = ssTableUtilPath.toString();
         if (isWindows)
             sstableCommand += ".bat";
+        
+        // Given the keyspace and table name, sstableutil will return the
+        // sstable-related files. Using sstableutil command is better than doing
+        // manually sstable search. Although we know the sstable parent dir from
+        // cassandra.yaml, we need to rule out the outdated sstables. And sstableutil is
+        // built specifically to identify which version are the most updated.
         ProcessBuilder builder = new ProcessBuilder(sstableCommand, this.info.database, this.info.table);
         builder.directory(cassandraPath.toFile());
         try {
