@@ -5,6 +5,7 @@ set -ex
 
 mydir="$(dirname "$0")"
 if [[ ! -d "${mydir}" ]]; then mydir="${PWD}"; fi
+# shellcheck source=./lib.sh
 source ${mydir}/lib.sh
 
 # Download Cassandra and extract it to $CASSANDRA_INSTALLATION_DIR/cassandra
