@@ -134,6 +134,7 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
         if (index < 0) throw new Error("Cannot find menu item " + parentMenu);
         this.subMenuCells[index].cells.forEach((cell) => {
             cell.style.display = "table-cell";
+            cell.classList.add("menuShadow");
         });
     }
 
@@ -159,6 +160,7 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
         cell.style.textAlign = "left";
         if (mi.help != null)
             cell.title = mi.help;
+        cell.classList.add("menuShadow");
         cell.classList.add("menuItem");
         cell.onmouseenter = () => this.select(index);
         cell.onmouseleave = () => this.select(-1);
@@ -211,6 +213,7 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
         this.subMenuCells[this.selectedParentMenu].cells.forEach((cell) => {
             cell.style.display = "none";
             cell.classList.remove("selected");
+            cell.classList.remove("menuShadow");
         });
         this.markSelect(this.selectedParentMenu, false);
         this.selectedParentMenu = -1;
