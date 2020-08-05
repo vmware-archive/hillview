@@ -215,6 +215,11 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
         const bucketCount = this.xPoints;
         const canvas = this.surface.getCanvas();
 
+        // Must setup legend before drawing the data to have the colormap
+        const missingShown = this.histograms().perBucket.map(b => b.perMissing).reduce(add);
+        this.legendPlot.setData(this.yAxisData, missingShown > 0, this.schema);
+        this.legendPlot.draw();
+
         const heatmap: Two<Groups<Groups<number>>> = {first: this.histograms(), second: null};
         this.plot.setData(heatmap, this.xAxisData, this.samplingRate, this.relative,
             this.schema, this.legendPlot.colorMap, maxYAxis, this.rowCount);
@@ -226,10 +231,6 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
             this.cdfPlot.setData(this.cdf().perBucket, discrete);
             this.cdfPlot.draw();
         }
-
-        const missingShown = this.histograms().perBucket.map(b => b.perMissing).reduce(add);
-        this.legendPlot.setData(this.yAxisData, missingShown > 0, this.schema);
-        this.legendPlot.draw();
 
         this.setupMouse();
         if (this.stacked)

@@ -33,9 +33,9 @@ import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;
 import org.hillview.utils.Converters;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
-@SuppressWarnings("FieldCanBeLocal")
 public class SSTableTest extends BaseTest {
     /* The directory where cassandra is installed (check bin/install-cassandra.sh) */
     private final String cassandraRootDir = System.getenv("HOME") + "/cassandra";
@@ -72,6 +72,7 @@ public class SSTableTest extends BaseTest {
         Assert.assertEquals(8, counter);
     }
 
+    @Ignore
     @Test
     public void testReadingSSTable() {
         boolean lazyLoading = false;
@@ -84,6 +85,7 @@ public class SSTableTest extends BaseTest {
         Assert.assertEquals("Table[4x15]", table.toString());
     }
 
+    @Ignore
     @Test
     public void testRowCount() {
         File directoryPath = new File(this.ssTableDir);
@@ -96,6 +98,7 @@ public class SSTableTest extends BaseTest {
         Assert.assertEquals(15, rowCount);
     }
 
+    @Ignore
     @Test
     public void testLazyLoading() {
         File directoryPath = new File(this.ssTableDir);
@@ -161,6 +164,7 @@ public class SSTableTest extends BaseTest {
     }
 
     /** Shows the interaction between CassandraDatabase.java and CassandraSSTableLoader.java */
+    @Ignore
     @Test
     public void testCassandraDatabase() {
         CassandraConnectionInfo conn;

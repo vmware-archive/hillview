@@ -26,6 +26,7 @@ import org.apache.orc.Writer;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.api.*;
+import org.hillview.utils.Converters;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -107,8 +108,7 @@ public class OrcFileWriter implements ITableWriter {
                             ((BytesColumnVector)cv).setVal(outRowNo, s.getBytes());
                             break;
                         case Date:
-                            Instant inst = col.getDate(nextRow);
-                            assert inst != null;
+                            Instant inst = Converters.toDate(col.getDouble(nextRow));
                             TimestampColumnVector tscv = (TimestampColumnVector)cv;
                             tscv.time[outRowNo] = inst.toEpochMilli();
                             tscv.nanos[outRowNo] = inst.getNano();

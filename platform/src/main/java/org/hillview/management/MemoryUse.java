@@ -28,7 +28,6 @@ import java.text.NumberFormat;
 public class MemoryUse extends ControlMessage {
     static final long serialVersionUID = 1;
     public Status remoteServerAction(HillviewServer server) {
-
         /*
          * This is not a reliable way to force GC.  The results
          * may still include dead memory.

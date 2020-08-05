@@ -31,9 +31,7 @@ public class PersistedKeyLoader implements KeyLoader {
                 digest = MessageDigest.getInstance("SHA-256");
                 byte[] hash = digest.digest(key); // Just in case we got an adversarial input.
                 Key sk = new SecretKeySpec(hash, "AES");
-
                 Files.write(this.keyPath, sk.getEncoded());
-
                 return sk;
             } catch (NoSuchAlgorithmException | IOException e) {
                 throw new RuntimeException(e);

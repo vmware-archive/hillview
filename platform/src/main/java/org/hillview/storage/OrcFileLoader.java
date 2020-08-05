@@ -264,10 +264,8 @@ public class OrcFileLoader extends TextFileLoader {
                             to.append(Converters.toString(value));
                             break;
                         case Double:
-                            to.append(Converters.toDouble(value));
-                            break;
                         case Date:
-                            to.append(value);
+                            to.append(Converters.toDouble(value));
                             break;
                     }
                     break;
@@ -289,10 +287,8 @@ public class OrcFileLoader extends TextFileLoader {
                             to.append(Converters.toString(instant));
                             break;
                         case Double:
-                            to.append(Converters.toDouble(instant));
-                            break;
                         case Date:
-                            to.append(instant);
+                            to.append(Converters.toDouble(instant));
                             break;
                     }
                     break;

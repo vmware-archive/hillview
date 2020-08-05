@@ -37,6 +37,7 @@ public class ClusterConfig {
     public static class AggregatorConfig {
         @Nullable
         String name;
+        @Nullable
         String[] workers;
     }
 
@@ -81,6 +82,7 @@ public class ClusterConfig {
     private void validate() {
         if (this.webserver == null)
             throw new RuntimeException("webserver not defined");
+        //noinspection ConstantConditions
         if (this.getWorkers() == null)
             throw new RuntimeException("workers not defined");
         if (this.worker_port == -1)
@@ -120,8 +122,9 @@ public class ClusterConfig {
         } else {
             assert this.aggregators != null;
             for (AggregatorConfig a : this.aggregators) {
-                for (String w : a.workers)
-                    workers.add(new HostAndPort(w, this.worker_port));
+                if (a.workers != null)
+                    for (String w : a.workers)
+                        workers.add(new HostAndPort(w, this.worker_port));
             }
         }
         return new HostList(workers);

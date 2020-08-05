@@ -199,7 +199,7 @@ export class LogFileView extends TableTargetAPI implements IHtmlElement, OnNextK
                     if (value == null) {
                         rowSpan.appendChild(makeMissing());
                     } else {
-                        let shownValue = Converters.valueToString(value, col.kind);
+                        let shownValue = Converters.valueToString(value, col.kind, true);
                         if (col.name === GenericLogs.lineNumberColumn) {
                             // left pad the line number
                             shownValue = ("00000" + shownValue).slice(-5);

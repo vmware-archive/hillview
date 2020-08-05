@@ -381,7 +381,7 @@ export class ContextMenu extends BaseMenu<MenuItem> implements IHtmlElement {
         if (mi.text === "---") cell.innerHTML = "<hr>";
         else cell.textContent = mi.text;
 
-        var subIndex = this.subMenuCells[parentIndex].cells.length;
+        const subIndex = this.subMenuCells[parentIndex].cells.length;
         this.subMenuCells[parentIndex].cells.push(cell);
         cell.onmouseenter = () => this.selectSubMenu(parentIndex, subIndex);
         cell.onmouseleave = () => this.selectSubMenu(parentIndex, -1);

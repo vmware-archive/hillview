@@ -66,16 +66,8 @@ public class StringArrayColumn extends BaseArrayColumn
         return this.getString(rowIndex) == null;
     }
 
-    @Override
-    public void set(int rowIndex, @Nullable Object value) {
-        if (value == null || value instanceof String)
-            this.set(rowIndex, (String)value);
-        else
-            throw new UnsupportedOperationException("Wrong value type");
-    }
-
     public void setMissing(int rowIndex) {
-        this.set(rowIndex, (String)null);
+        this.set(rowIndex, null);
     }
 
     @Override

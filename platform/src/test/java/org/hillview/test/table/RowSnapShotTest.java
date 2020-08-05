@@ -19,12 +19,13 @@ package org.hillview.test.table;
 
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.ContentsKind;
-import org.hillview.table.columns.DateListColumn;
+import org.hillview.table.columns.DoubleListColumn;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.Table;
 import org.hillview.table.rows.VirtualRowSnapshot;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.test.BaseTest;
+import org.hillview.utils.Converters;
 import org.hillview.utils.TestTables;
 import org.junit.Assert;
 import org.junit.Test;
@@ -38,10 +39,10 @@ public class RowSnapShotTest extends BaseTest {
     public void rowDateSnapshotTest() {
         Instant now = Instant.now();
         final String name = "Date";
-        DateListColumn col = new DateListColumn(
+        DoubleListColumn col = new DoubleListColumn(
                 new ColumnDescription(name, ContentsKind.Date));
         col.appendMissing();
-        col.append(now);
+        col.append(Converters.toDouble(now));
         Table tbl = new Table(Collections.singletonList(col), null, null);
         RowSnapshot rs = new RowSnapshot(tbl, 0);
         Instant i = rs.getDate(name);

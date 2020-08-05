@@ -13,5 +13,5 @@ export JAVA_OPTS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=
 # LOGGING=" -Djava.util.logging.config.file=logging.properties"
 export JAVA_OPTS="$JAVA_OPTS$LOGGING"
 export CATALINA_PID="catalina.pid"
-cd ${mydir}/..
+cd ${mydir}/.. || exit 1
 ./apache-tomcat-${TOMCATVERSION}/bin/catalina.sh run

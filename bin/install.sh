@@ -7,9 +7,9 @@ if [[ ! -d "${mydir}" ]]; then mydir="${PWD}"; fi
 source "{$mydir}/lib.sh"
 
 SAVEDIR=${PWD}
-cd ${mydir}
+cd ${mydir} || exit 1
 source ./install-dependencies.sh -u
 cd ..
 wget https://github.com/vmware/hillview/releases/download/v${HILLVIEW_VERSION}/hillview-bin.zip
 unzip hillview-bin.zip
-cd ${SAVEDIR}
+cd ${SAVEDIR} || exit 1

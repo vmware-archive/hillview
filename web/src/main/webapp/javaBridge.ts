@@ -24,11 +24,11 @@ export type RemoteObjectId = string;
 export type Comparison = "==" | "!=" | "<" | ">" | "<=" | ">=";
 
 export type ContentsKind = "Json" | "String" | "Integer" |
-    "Double" | "Date" | "Duration" | "Interval";
+    "Double" | "Date" | "Duration" | "Interval" | "Time";
 /* We are not using an enum for ContentsKind because JSON deserialization does not
    return an enum from a string. */
 export const allContentsKind: ContentsKind[] =
-    ["Json", "String", "Integer", "Double", "Date", "Duration", "Interval"];
+    ["Json", "String", "Integer", "Double", "Date", "Duration", "Interval", "Time"];
 export function asContentsKind(kind: string): ContentsKind {
     switch (kind) {
         case "Json": {
@@ -45,6 +45,9 @@ export function asContentsKind(kind: string): ContentsKind {
         }
         case "Date": {
             return "Date";
+        }
+        case "Time": {
+            return "Time";
         }
         case "Duration": {
             return "Duration";

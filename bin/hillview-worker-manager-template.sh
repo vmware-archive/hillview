@@ -8,7 +8,7 @@ PIDFILE="hillview-worker.pid"
 # File storing PID of the forever process that runs the hillview worker
 FOREVERPID="forever-worker.pid"
 
-cd ${SERVICE_DIRECTORY}
+cd ${SERVICE_DIRECTORY} || exit 1
 
 start() {
     echo "Starting worker"

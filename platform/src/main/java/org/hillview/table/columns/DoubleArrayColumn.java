@@ -23,8 +23,6 @@ import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IDoubleColumn;
 import org.hillview.table.api.IMutableColumn;
 
-import javax.annotation.Nullable;
-
 /**
  * Column of doubles, implemented as an array of doubles and a BitSet of missing values.
  */
@@ -62,14 +60,6 @@ public class DoubleArrayColumn
 
     @Override
     public double getDouble(final int rowIndex) { return this.data[rowIndex];}
-
-    @Override
-    public void set(int rowIndex, @Nullable Object value) {
-        if (value == null)
-            this.setMissing(rowIndex);
-        else
-            this.set(rowIndex, (double)value);
-    }
 
     @Override
     public void set(final int rowIndex, final double value)

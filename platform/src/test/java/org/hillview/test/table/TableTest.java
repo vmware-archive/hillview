@@ -22,7 +22,7 @@ import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMembershipSet;
 import org.hillview.table.api.ITable;
-import org.hillview.table.columns.DateListColumn;
+import org.hillview.table.columns.DoubleListColumn;
 import org.hillview.table.columns.IntArrayColumn;
 import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.test.BaseTest;
@@ -87,17 +87,17 @@ public class TableTest extends BaseTest {
 
     @Test
     public void dateColumnCompressTest() {
-        final DateListColumn dates = new DateListColumn(
+        final DoubleListColumn dates = new DoubleListColumn(
                 new ColumnDescription("Test", ContentsKind.Date));
         Instant first = LocalDate.of(2010, Month.APRIL, 1).atStartOfDay().toInstant(ZoneOffset.UTC);
-        dates.append(first);
-        dates.append(first.plusSeconds(10));
+        dates.append(Converters.toDouble(first));
+        dates.append(Converters.toDouble(first.plusSeconds(10)));
         IMembershipSet set = new FullMembershipSet(2);
         IColumn col = dates.compress(set);
+        Assert.assertFalse(col.isMissing(0));
         double d = col.getDouble(0);
-        Instant i = col.getDate(0);
-        Assert.assertNotNull(i);
-        Assert.assertEquals(Converters.toDouble(i), d, .1);
+        Instant f = Converters.toDate(d);
+        Assert.assertEquals(f, first);
     }
 
     @Test

@@ -24,7 +24,7 @@ import org.hillview.utils.HillviewLogger;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
-import java.time.Instant;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -61,11 +61,6 @@ public class LazyColumn extends BaseColumn {
     }
 
     @Override
-    public Instant getDate(final int rowIndex) {
-        return this.ensureLoaded().getDate(rowIndex);
-    }
-
-    @Override
     public int getInt(final int rowIndex) {
         return this.ensureLoaded().getInt(rowIndex);
     }
@@ -81,13 +76,17 @@ public class LazyColumn extends BaseColumn {
     }
 
     @Override
+    public LocalTime getTime(final int rowIndex) {
+        return this.ensureLoaded().getTime(rowIndex);
+    }
+
+    @Override
     public String getString(final int rowIndex) {
         return this.ensureLoaded().getString(rowIndex);
     }
 
     @Override
     public boolean isMissing(final int rowIndex) { return this.ensureLoaded().isMissing(rowIndex); }
-
 
     @Override
     public double asDouble(int rowIndex) {

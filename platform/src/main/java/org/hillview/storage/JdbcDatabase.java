@@ -478,7 +478,7 @@ public class JdbcDatabase {
                         col.appendMissing();
                     } else {
                         Instant instant = ts.toInstant();
-                        col.append(instant);
+                        col.append(Converters.toDouble(instant));
                     }
                     break;
                 case Types.BINARY:

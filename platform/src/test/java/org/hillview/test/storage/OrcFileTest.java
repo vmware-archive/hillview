@@ -107,7 +107,7 @@ public class OrcFileTest extends BaseTest {
         ColumnDescription str = new ColumnDescription("Str", ContentsKind.String);
         StringArrayColumn strCol = new StringArrayColumn(str, 2);
         strCol.set(0, "Something");
-        strCol.set(1, (String)null);
+        strCol.set(1, null);
         List<IColumn> cols = new ArrayList<IColumn>();
         cols.add(strCol);
         Table tbl = new Table(cols, null, null);

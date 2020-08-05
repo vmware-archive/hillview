@@ -3,9 +3,7 @@
 
 #REPLACE_WITH_VARIABLES
 
-# File storing PID of the hillview worker
-PIDFILE="hillview-webserevr.pid"
-cd ${SERVICE_DIRECTORY}
+cd ${SERVICE_DIRECTORY} || exit 1
 
 start() {
     if [ "x${CLEANUP}" == "x1" ]; then

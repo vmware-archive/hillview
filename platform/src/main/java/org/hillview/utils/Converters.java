@@ -96,6 +96,12 @@ public class Converters {
         return s;
     }
 
+    public static String toString(@Nullable LocalTime t) {
+        if (t == null)
+            return "missing";
+        return t.toString();
+    }
+
     /**
      * Compare two strings. In Hillview the null string is the greatest value.
      * @param left   Left string to compare.
@@ -140,6 +146,14 @@ public class Converters {
         if (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE)
             throw new RuntimeException("Cannot convert to int " + value);
         return (int)value;
+    }
+
+    public static LocalTime toTime(double value) {
+        return LocalTime.ofNanoOfDay(Converters.toLong(value * 1000));
+    }
+
+    public static double toDouble(LocalTime time) {
+        return (double)(time.toNanoOfDay() / 1000);
     }
 
     public static int toIntClamp(double value) {

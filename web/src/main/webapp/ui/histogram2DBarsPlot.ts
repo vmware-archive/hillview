@@ -161,7 +161,7 @@ export class Histogram2DBarsPlot extends Histogram2DBase {
         return d.count * scale;
     }
 
-    public getBarInfo(mouseX: number, y: number): BarInfo {
+    public getBarInfo(mouseX: number, dy: number): BarInfo {
         const bucketWidth = this.getChartWidth() / this.xPoints;
         let bucketIndex = Math.floor(mouseX / bucketWidth);
         const withinBucketOffset = mouseX - bucketIndex * bucketWidth;

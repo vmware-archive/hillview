@@ -84,11 +84,11 @@ export function histogramAsCsv(data: Groups<number>, schema: SchemaClass, axis: 
  * @param comparator  Comparator function for two values of type T.
  */
 export function binarySearch<T>(a: T[], el: T, comparator: (e1: T, e2: T) => number): number {
-    var m = 0;
-    var n = a.length - 1;
+    let m = 0;
+    let n = a.length - 1;
     while (m <= n) {
-        var k = (n + m) >> 1;
-        var cmp = comparator(el, a[k]);
+        const k = (n + m) >> 1;
+        const cmp = comparator(el, a[k]);
         if (cmp > 0) {
             m = k + 1;
         } else if (cmp < 0) {
@@ -266,14 +266,18 @@ export class Converters {
         return new Date(value);
     }
 
+    public static timeFromDouble(value: number): Date | null {
+        return Converters.dateFromDouble(value);
+    }
+
     public static doubleFromDate(value: Date | null): number | null {
         return value?.getTime();
     }
 
     /**
-     * Convert a value expressed in milliseconds to a time interval.
+     * Convert a value expressed in milliseconds to a time duration.
      */
-    public static intervalFromDouble(val: number): string {
+    public static durationFromDouble(val: number): string {
         if (val === 0)
             return "0";
         const ms = val % 1000;
@@ -319,24 +323,29 @@ export class Converters {
 
     /**
      * Convert a value in a table cell to a string representation.
-     * @param val                  Value to convert.
-     * @param {ContentsKind} kind  Type of value.
+     * @param val   Value to convert.
+     * @param kind  Type of value.
+     * @param human If true this is for human consumption, else it is for machine consumption.
      */
-    public static valueToString(val: RowValue | null, kind: ContentsKind): string {
+    public static valueToString(val: RowValue | null, kind: ContentsKind, human: boolean): string {
         if (val == null)
             // This should probably not happen
             return "missing";
-        if (kindIsNumeric(kind))
-            return String(val);
-        else if (kind === "Date")
+        if (kindIsNumeric(kind)) {
+            if (human)
+                return significantDigits(val as number);
+            else
+                return String(val);
+        } else if (kind === "Date") {
             return formatDate(Converters.dateFromDouble(val as number));
-        else if (kindIsString(kind))
+        } else if (kind === "Time" || kind === "Duration") {
+            return formatTime(Converters.timeFromDouble(val as number));
+        } else if (kindIsString(kind)) {
             return val as string;
-        else if (kind == "Interval") {
+        } else if (kind == "Interval") {
             const arr = val as number[];
-            return "[" + String(arr[0]) + ":" + String(arr[1]) + "]";
-        } else if (kind == "Duration") {
-            return val.toString();  // TODO
+            return "[" + this.valueToString(arr[0], "Double", human) + ":" +
+                this.valueToString(arr[1], "Double", human) + "]";
         } else {
             assert(false);
         }
@@ -350,7 +359,7 @@ export class Converters {
         const min = kindIsNumeric(f.cd.kind) ? f.min : f.minString;
         const max = kindIsNumeric(f.cd.kind) ? f.max : f.maxString;
         return "Filtered on " + f.cd.name + " in range " +
-            Converters.valueToString(min, f.cd.kind) + " - " + Converters.valueToString(max, f.cd.kind);
+            Converters.valueToString(min, f.cd.kind, true) + " - " + Converters.valueToString(max, f.cd.kind, true);
     }
 
     public static filterArrayDescription(f: RangeFilterArrayDescription): string {
@@ -415,16 +424,17 @@ export class Converters {
         switch (kind) {
             case "Json":
             case "String":
-                str = this.valueToString(filter.stringValue, kind);
+                str = this.valueToString(filter.stringValue, kind, true);
                 break;
             case "Integer":
             case "Double":
             case "Date":
+            case "Time":
             case "Duration":
-                str = this.valueToString(filter.doubleValue, kind);
+                str = this.valueToString(filter.doubleValue, kind, true);
                 break;
             case "Interval":
-                str = this.valueToString([filter.doubleValue, filter.intervalEnd], kind);
+                str = this.valueToString([filter.doubleValue, filter.intervalEnd], kind, true);
                 break;
         }
         return filter.column.name + " " + filter.comparison + " " + str;
@@ -596,24 +606,35 @@ export function formatDate(d: Date): string {
     const year = d.getFullYear();
     const month = d.getMonth() + 1;
     const day = d.getDate();
+    const df = String(year) + "/" + zeroPad(month, 2) + "/" + zeroPad(day, 2);
+    const time = formatTime(d);
+    if (time != "")
+        return df + " " + time;
+    return df;
+}
+
+/**
+ * This is a time encoded as a date.  Ignore the date part and just
+ * return the time.
+ */
+export function formatTime(d: Date): string {
     const hour = d.getHours();
     const minutes = d.getMinutes();
     const seconds = d.getSeconds();
     const ms = d.getMilliseconds();
-    const df = String(year) + "/" + zeroPad(month, 2) + "/" + zeroPad(day, 2);
-    let suffix = "";
+    let time = "";
     if (ms !== 0)
-        suffix = "." + zeroPad(ms, 3);
-    if (seconds !== 0 || suffix !== "")
-        suffix = ":" + zeroPad(seconds, 2) + suffix;
-    if (minutes !== 0 || suffix !== "")
-        suffix = ":" + zeroPad(minutes, 2) + suffix;
-    if (hour !== 0 || suffix !== "") {
-        if (suffix === "")
-            suffix = ":00";
-        suffix = " " + zeroPad(hour, 2) + suffix;
+        time = "." + zeroPad(ms, 3);
+    if (seconds !== 0 || time !== "")
+        time = ":" + zeroPad(seconds, 2) + time;
+    if (minutes !== 0 || time !== "")
+        time = ":" + zeroPad(minutes, 2) + time;
+    if (hour !== 0 || time !== "") {
+        if (time === "")
+            time = ":00";
+        time = zeroPad(hour, 2) + time;
     }
-    return df + suffix;
+    return time;
 }
 
 /**

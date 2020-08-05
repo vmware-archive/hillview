@@ -24,6 +24,7 @@ import org.hillview.utils.DateParsing;
 
 import javax.annotation.Nullable;
 import java.time.Instant;
+import java.time.LocalTime;
 import java.util.function.Function;
 
 public interface IStringColumn extends IColumn {
@@ -64,7 +65,7 @@ public interface IStringColumn extends IColumn {
         return hash.hashChars(this.getString(rowIndex));
     }
 
-    class DateParserHelper implements Function<Integer, Instant> {
+    class DateParserHelper implements Function<Integer, Double> {
         final IStringColumn column;
         @Nullable
         DateParsing parser = null;
@@ -75,13 +76,14 @@ public interface IStringColumn extends IColumn {
 
         @Override
         @Nullable
-        public Instant apply(Integer index) {
+        public Double apply(Integer index) {
             String s = this.column.getString(index);
             if (s == null)
                 return null;
             if (this.parser == null)
                 this.parser = new DateParsing(s);
-            return this.parser.parse(s);
+            Instant i = this.parser.parse(s);
+            return Converters.toDouble(i);
         }
     }
 
@@ -93,7 +95,7 @@ public interface IStringColumn extends IColumn {
         switch(kind) {
             case Json:
             case String:
-                this.convert(newColumn, set, this::getString);
+                this.convertToString(newColumn, set, this::getString);
                 break;
             case Integer: {
                 Function<Integer, Integer> f = rowIndex -> {
@@ -103,7 +105,7 @@ public interface IStringColumn extends IColumn {
                         return null;
                     return Integer.parseInt(s);
                 };
-                this.convert(newColumn, set, f);
+                this.convertToInt(newColumn, set, f);
                 break;
             }
             case Double: {
@@ -114,12 +116,17 @@ public interface IStringColumn extends IColumn {
                         return null;
                     return Double.parseDouble(s);
                 };
-                this.convert(newColumn, set, f);
+                this.convertToDouble(newColumn, set, f);
                 break;
             }
             case Date: {
-                Function<Integer, Instant> p = new DateParserHelper(this);
-                this.convert(newColumn, set, p);
+                Function<Integer, Double> p = new DateParserHelper(this);
+                this.convertToDouble(newColumn, set, p);
+                break;
+            }
+            case Time: {
+                //noinspection ConstantConditions
+                this.convertToDouble(newColumn, set, row -> Converters.toDouble(LocalTime.parse(this.getString(row))));
                 break;
             }
             case Duration:

@@ -23,7 +23,6 @@ import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
-import java.time.Instant;
 
 /**
  * A quantized column has an attached quantization policy and another (real) column.
@@ -96,12 +95,6 @@ public class QuantizedColumn extends BaseColumn {
         if (this.quantization == null)
             return this.data.getDouble(rowIndex);
         return this.quantization.roundDown(this.data.getDouble(rowIndex));
-    }
-
-    @Override
-    public Instant getDate(final int rowIndex) {
-        double d = this.getDouble(rowIndex);
-        return Converters.toDate(d);
     }
 
     @Override
@@ -217,6 +210,7 @@ public class QuantizedColumn extends BaseColumn {
             case Date:
             case Double:
             case Duration:
+            case Time:
                 return hash.hashLong(Double.doubleToRawLongBits(this.getDouble(rowIndex)));
             default:
                 throw new RuntimeException("Unexpected data type");

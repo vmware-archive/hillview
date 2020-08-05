@@ -107,12 +107,27 @@ public class ColumnTest extends BaseTest {
     }
 
     @Test
+    public void testTimeListColumn() {
+        final int size = 10000000;
+        final ColumnDescription desc = new ColumnDescription("test0", ContentsKind.Time);
+        final DoubleListColumn col = new DoubleListColumn(desc);
+        for (int i = 0; i < size; i++)
+            col.append((double) i);
+
+        Assert.assertEquals(col.sizeInRows(), size);
+        Assert.assertEquals(col.getDouble(0), 0.0, 10e-3);
+        for (int i = 0; i < size; i++)
+            Assert.assertEquals(i, col.getDouble(i), 1e-3);
+        Assert.assertEquals(col.asDouble(0), 0.0, 1e-3);
+    }
+
+    @Test
     public void testStringColumn() {
         ColumnDescription desc = new ColumnDescription("Cat", ContentsKind.String);
         StringListColumn col = new StringListColumn(desc);
         col.append("First");
         col.append("First");
-        col.append((String) null);
+        col.append(null);
         col.appendMissing();
         col.append("Second");
         for (int i = 0; i < 100000; i++) {

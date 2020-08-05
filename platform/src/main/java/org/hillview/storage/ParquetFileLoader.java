@@ -133,7 +133,7 @@ public class ParquetFileLoader extends TextFileLoader {
                     long nanosOfDay = nt.getTimeOfDayNanos();
                     long epochSeconds = (julianDay - JULIAN_DAY_NUMBER_FOR_UNIX_EPOCH) * 24 * 60 * 60;
                     Instant inst = Instant.ofEpochSecond(epochSeconds, nanosOfDay);
-                    col.append(inst);
+                    col.append(Converters.toDouble(inst));
                     break;
                 }
                 default:

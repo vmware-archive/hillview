@@ -449,6 +449,11 @@ public class CassandraSSTableLoader extends TextFileLoader {
                                         break;
                                 }
                             }
+<<<<<<< HEAD
+=======
+                            col = columns.get(currentColumn);
+                            //col.append(value);
+>>>>>>> Remove many column types
                             currentColumn++;
                         }
                     }

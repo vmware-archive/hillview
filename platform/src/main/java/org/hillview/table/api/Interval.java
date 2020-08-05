@@ -17,7 +17,9 @@
 
 package org.hillview.table.api;
 
+import net.openhft.hashing.LongHashFunction;
 import org.hillview.dataset.api.IJson;
+import org.hillview.utils.HashUtil;
 
 import java.io.Serializable;
 
@@ -66,5 +68,11 @@ public class Interval implements Serializable, IJson {
         if (c != 0)
             return c;
         return Double.compare(this.end, column.getEndpoint(rowIndex, false));
+    }
+
+    public long hash(LongHashFunction hash) {
+        return HashUtil.murmurHash3(
+                hash.hashLong(Double.doubleToRawLongBits(this.start)),
+                hash.hashLong(Double.doubleToRawLongBits(this.end)));
     }
 }

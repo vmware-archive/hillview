@@ -26,10 +26,12 @@ import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalTime;
 import java.util.List;
 
 /*
- * Column of objects of any type; only for moving data around. Size of column expected to be small.
+ * Column of objects of any type; only for moving data around.
+ * Size of column expected to be small.
  */
 public final class ObjectArrayColumn extends BaseArrayColumn {
     static final long serialVersionUID = 1;
@@ -66,6 +68,7 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
             case Date:
             case Double:
             case Duration:
+            case Time:
                 return this.getDouble(rowIndex);
             case Interval:
                 return this.getEndpoint(rowIndex, true);
@@ -102,30 +105,26 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
                             assert sj != null;
                             return si.compareTo(sj);
                         }
-                        case Date: {
-                            Instant ii = ObjectArrayColumn.this.getDate(i);
-                            Instant ij = ObjectArrayColumn.this.getDate(j);
-                            assert ii != null;
-                            assert ij != null;
-                            return ii.compareTo(ij);
-                        }
                         case Integer:
                             return Integer.compare(ObjectArrayColumn.this.getInt(i),
                                     ObjectArrayColumn.this.getInt(j));
+                        case Date:
                         case Double:
+                        case Duration:
                             return Double.compare(ObjectArrayColumn.this.getDouble(i),
                                     ObjectArrayColumn.this.getDouble(j));
-                        case Duration: {
-                            Duration di = ObjectArrayColumn.this.getDuration(i);
-                            Duration dj = ObjectArrayColumn.this.getDuration(j);
-                            assert di != null;
-                            assert dj != null;
-                            return di.compareTo(dj);
-                        }
                         case Interval:
                         {
                             Interval ii = ObjectArrayColumn.this.getInterval(i);
                             Interval ij = ObjectArrayColumn.this.getInterval(j);
+                            assert ii != null;
+                            assert ij != null;
+                            return ii.compareTo(ij);
+                        }
+                        case Time:
+                        {
+                            LocalTime ii = ObjectArrayColumn.this.getTime(i);
+                            LocalTime ij = ObjectArrayColumn.this.getTime(j);
                             assert ii != null;
                             assert ij != null;
                             return ii.compareTo(ij);
@@ -170,8 +169,8 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
     }
 
     @Override
-    public Instant getDate(final int rowIndex) {
-        return (Instant) this.data[rowIndex];
+    public LocalTime getTime(final int rowIndex) {
+        return (LocalTime)this.data[rowIndex];
     }
 
     @Override
@@ -267,17 +266,16 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
                 assert str != null;
                 return hash.hashChars(str);
             case Date:
-                Instant inst = this.getDate(rowIndex);
-                assert inst != null;
-                return hash.hashLong(Double.doubleToLongBits(Converters.toDouble(inst)));
+            case Double:
+            case Duration:
+            case Time:
+                return hash.hashLong(Double.doubleToLongBits(this.getDouble(rowIndex)));
             case Integer:
                 return hash.hashInt(this.getInt(rowIndex));
-            case Double:
-                return hash.hashLong(Double.doubleToLongBits(this.getDouble(rowIndex)));
-            case Duration:
-                Duration d = this.getDuration(rowIndex);
-                assert d != null;
-                return hash.hashLong(Double.doubleToLongBits(Converters.toDouble(d)));
+            case Interval:
+                Interval i = this.getInterval(rowIndex);
+                assert i != null;
+                return i.hash(hash);
             default:
                 throw new RuntimeException("Unexpected data type");
         }

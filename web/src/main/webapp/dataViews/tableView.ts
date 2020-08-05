@@ -241,7 +241,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             line = row.count.toString();
             for (let j = 0; j < row.values.length; j++) {
                 const kind = this.order.sortOrientationList[j].columnDescription.kind;
-                let a = Converters.valueToString(row.values[j], kind);
+                let a = Converters.valueToString(row.values[j], kind, false);
                 if (kindIsString(kind))
                     a = JSON.stringify(a);
                 line += "," + a;
@@ -633,9 +633,9 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 help: "Sort the data first on this column, in decreasing order",
             }, !this.isPrivate());
             const chartMenuIdx = this.contextMenu.addExpandableItem({
-              text: "Charts",
-              action: () => null,
-              help: "List of available charts to draw. ",
+                text: "Charts",
+                action: () => null,
+                help: "Choose a chart to draw. ",
             });
             this.contextMenu.addItem({
                 text: "Rename...",
@@ -647,25 +647,25 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 action: () => this.heavyHittersDialog(),
                 help: "Find the values that occur most frequently in the selected columns.",
             }, !this.isPrivate());
-            if (selectedCount > 1 &&
-                all(this.getSelectedColNames(), b => this.isNumericColumn(b))) {
-                this.contextMenu.addItem({
-                    text: "Correlation",
-                    action: () => this.correlate(),
-                    help: "Compute pairwise corellation between a set of numeric columns"
-                }, true);
-                this.contextMenu.addItem({
-                    text: "PCA...",
-                    action: () => this.pca(true),
-                    help: "Perform Principal Component Analysis on a set of numeric columns. " +
-                        "This produces a smaller set of columns that preserve interesting properties of the data.",
-                }, !this.isPrivate());
-                this.contextMenu.addItem({
-                    text: "Plot Singular Value Spectrum",
-                    action: () => this.spectrum(true),
-                    help: "Plot singular values for the selected columns. ",
-                }, !this.isPrivate());
-            }
+            this.contextMenu.addItem({
+                text: "Correlation",
+                action: () => this.correlate(),
+                help: "Compute pairwise corellation between a set of numeric columns"
+            }, selectedCount > 1 &&
+                all(this.getSelectedColNames(), b => this.isNumericColumn(b)));
+            this.contextMenu.addItem({
+                text: "PCA...",
+                action: () => this.pca(true),
+                help: "Perform Principal Component Analysis on a set of numeric columns. " +
+                    "This produces a smaller set of columns that preserve interesting properties of the data.",
+            }, selectedCount > 1 &&
+                all(this.getSelectedColNames(), b => this.isNumericColumn(b)) && !this.isPrivate());
+            this.contextMenu.addItem({
+                text: "Plot Singular Value Spectrum",
+                action: () => this.spectrum(true),
+                help: "Plot singular values for the selected columns. ",
+            }, selectedCount > 1 &&
+                all(this.getSelectedColNames(), b => this.isNumericColumn(b)) && !this.isPrivate());
             this.contextMenu.addItem({
                 text: "Filter...",
                 action: () => {
@@ -706,26 +706,23 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             this.contextMenu.addItem({
                 text: "Aggregate...",
                 action: () => this.aggregateDialog(),
-                help: "Compute aggregations on some columns"
+                help: "Compute an aggregate value for each row."
             }, all(this.getSelectedColNames(), (b) => this.isNumericColumn(b)) && !this.isPrivate());
-            if (selectedCount === 1 && this.isKVColumn(this.getSelectedColNames()[0]))
-                    this.contextMenu.addItem({
-                        text: "Extract value...",
-                        action: () => {
-                            const colName = this.getSelectedColNames()[0];
-                            this.createKVColumnDialog(colName, this.tableRowsDesired);
-                        },
-                        help: "Extract a value associated with a specific key."
-                    }, !this.isPrivate());
+            this.contextMenu.addItem({
+                text: "Extract value...",
+                action: () => {
+                    const colName = this.getSelectedColNames()[0];
+                    this.createKVColumnDialog(colName, this.tableRowsDesired);
+                },
+                help: "Extract a value associated with a specific key. " +
+                    " This is only applicable for some structured string or JSON columns."
+            }, selectedCount === 1 && this.isKVColumn(this.getSelectedColNames()[0]) && !this.isPrivate());
             this.contextMenu.insertSubMenu( chartMenuIdx, {
                 text: "Histogram",
                 action: () =>
                   this.chart(
                     this.schema.getDescriptions(this.getSelectedColNames()),
-                    this.getSelectedColCount() === 1
-                      ? "Histogram"
-                      : "2DHistogram"
-                  ),
+                    this.getSelectedColCount() === 1 ? "Histogram" : "2DHistogram"),
                 help:
                   "Plot the data in the selected columns as a histogram. " +
                   "Applies to one or two columns only.",
@@ -736,9 +733,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 text: "Quartile vector",
                 action: () =>
                   this.chart(
-                    this.schema.getDescriptions(this.getSelectedColNames()),
-                    "QuartileVector"
-                  ),
+                    this.schema.getDescriptions(this.getSelectedColNames()), "QuartileVector"),
                 help:
                   "Plot the data in the selected columns as a vector of quartiles. " +
                   "Applies to one or two columns only.",
@@ -749,9 +744,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 text: "Heatmap",
                 action: () =>
                   this.chart(
-                    this.schema.getDescriptions(this.getSelectedColNames()),
-                    "Heatmap"
-                  ),
+                    this.schema.getDescriptions(this.getSelectedColNames()), "Heatmap"),
                 help:
                   "Plot the data in the selected columns as a heatmap. " +
                   "Applies to two or more columns only.",
@@ -763,10 +756,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 action: () =>
                   this.chart(
                     this.schema.getDescriptions(this.getSelectedColNames()),
-                    selectedCount > 2
-                      ? "Trellis2DHistogram"
-                      : "TrellisHistogram"
-                  ),
+                    selectedCount > 2 ? "Trellis2DHistogram" : "TrellisHistogram"),
                 help:
                   "Plot the data in the selected columns as a Trellis plot of histograms. " +
                   "Applies to two or three columns only.",
@@ -777,9 +767,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 text: "Trellis heatmaps",
                 action: () =>
                   this.chart(
-                    this.schema.getDescriptions(this.getSelectedColNames()),
-                    "TrellisHeatmap"
-                  ),
+                    this.schema.getDescriptions(this.getSelectedColNames()), "TrellisHeatmap"),
                 help:
                   "Plot the data in the selected columns as a Trellis plot of heatmaps. " +
                   "Applies to three columns only.",
@@ -995,7 +983,12 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                         title += "Range is [" + Converters.dateFromDouble(pm.globalMin as number) +
                             ", " + Converters.dateFromDouble(pm.globalMax as number) + "]\n";
                         title += "Bucket size is "
-                            + Converters.intervalFromDouble(pm.granularity) + "\n";
+                            + Converters.durationFromDouble(pm.granularity) + "\n";
+                    } else if (cd.kind === "Time") {
+                        title += "Range is [" + Converters.timeFromDouble(pm.globalMin as number) +
+                            ", " + Converters.timeFromDouble(pm.globalMax as number) + "]\n";
+                        title += "Bucket size is "
+                            + Converters.durationFromDouble(pm.granularity) + "\n";
                     } else {
                         title += "Range is [" + formatNumber(pm.globalMin as number) + ", " +
                             formatNumber(pm.globalMax as number) + "]\n";
@@ -1484,7 +1477,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                     cell.appendChild(makeMissing());
                     shownValue = "missing";
                 } else {
-                    shownValue = Converters.valueToString(row.values[dataIndex], cd.kind);
+                    shownValue = Converters.valueToString(row.values[dataIndex], cd.kind, true);
                     const high = this.findBar.highlight(shownValue, this.strFilter);
                     cell.appendChild(high);
                 }

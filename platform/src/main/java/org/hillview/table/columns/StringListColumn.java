@@ -229,7 +229,7 @@ public class StringListColumn extends BaseListColumn implements IStringColumn {
 
     @Override
     public void appendMissing() {
-        this.append((String)null);
+        this.append(null);
     }
 
     @Override

@@ -20,7 +20,6 @@ package org.hillview.maps;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
-import org.hillview.table.api.IDoubleColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.table.columns.IntervalColumn;
 import org.hillview.utils.Converters;

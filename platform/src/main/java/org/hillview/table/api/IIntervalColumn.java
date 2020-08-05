@@ -28,11 +28,11 @@ public interface IIntervalColumn extends IColumn {
                 kind, set, newColName);
         switch(kind) {
             case Json:
-                this.convert(newColumn, set, row -> "{ start: " + this.getEndpoint(row, true) +
+                this.convertToString(newColumn, set, row -> "{ start: " + this.getEndpoint(row, true) +
                         ", end: " + this.getEndpoint(row, false));
                 break;
             case String:
-                this.convert(newColumn, set, this::asString);
+                this.convertToString(newColumn, set, this::asString);
                 break;
             case Integer:
             case Double:

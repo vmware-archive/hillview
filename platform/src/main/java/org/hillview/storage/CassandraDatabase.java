@@ -54,7 +54,8 @@ public class CassandraDatabase {
     private static final String cassandraYamlPath = "conf/cassandra.yaml";
     private static final String localhost = "127.0.0.1";
 
-    private CassandraConnectionInfo info;
+    public final CassandraConnectionInfo info;
+    /** Session: Connection to Cassandra cluster for executing client-side queries */
     @Nullable
     private Cluster cluster;
     /**
@@ -210,8 +211,8 @@ public class CassandraDatabase {
     }
 
     public static class CassTable {
-        public String keyspace;
-        public List<String> tables;
+        public final String keyspace;
+        public final List<String> tables;
 
         public CassTable(String keyspace, List<String> tables) {
             this.keyspace = keyspace;

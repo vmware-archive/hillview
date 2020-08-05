@@ -34,6 +34,7 @@ import org.hillview.table.filters.JSFilterDescription;
 import org.hillview.table.membership.SparseMembershipSet;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.table.rows.VirtualRowSnapshot;
+import org.hillview.utils.Converters;
 import org.hillview.utils.DateParsing;
 import org.hillview.utils.TestTables;
 import org.junit.Assert;
@@ -195,7 +196,7 @@ public class JavascriptTest extends BaseTest {
         ITable outTable = ((LocalDataSet<ITable>)mapped).data;
         Assert.assertNotNull(outTable);
         IColumn dateColumn = outTable.getLoadedColumn("Date");
-        Instant instant = dateColumn.getDate(0);
+        Instant instant = Converters.toDate(dateColumn.getDouble(0));
         String expectedDate = "1990-01-01";
         DateParsing simple = new DateParsing(expectedDate);
         Instant expected = simple.parse(expectedDate);

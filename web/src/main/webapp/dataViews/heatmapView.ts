@@ -563,7 +563,7 @@ export class HeatmapView extends
                     // We will use the information from the point itself for the first two
                     // columns.
                     data = zip(d, this.detailColumns.schema,
-                        (v, desc) => Converters.valueToString(v, desc.kind));
+                        (v, desc) => Converters.valueToString(v, desc.kind, false));
                     data.splice(2, 0, "1"); // We know that the count is 1.
                 }
             }

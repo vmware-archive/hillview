@@ -31,6 +31,7 @@ import org.hillview.utils.Converters;
 import javax.annotation.Nullable;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalTime;
 import java.util.*;
 
 /**
@@ -112,6 +113,7 @@ public class RowSnapshot extends BaseRowSnapshot
     @Override
     public boolean exists() { return true; }
 
+    @Override
     public boolean isMissing(String colName) { return (this.fields.get(colName) == null); }
 
     @Override
@@ -143,20 +145,25 @@ public class RowSnapshot extends BaseRowSnapshot
         return o;
     }
 
+    @Override
+    @Nullable
     public String getString(String colName) {
         return (String) this.fields.get(colName);
     }
 
+    @Override
     public String asString(String colName) {
         Object obj = this.getObject(colName);
         assert obj != null;
         return obj.toString();
     }
 
+    @Override
     public int getInt(String colName) {
         return (int)this.fields.get(colName);
     }
 
+    @Override
     public double getDouble(String colName) {
         return (double)this.fields.get(colName);
     }
@@ -166,16 +173,28 @@ public class RowSnapshot extends BaseRowSnapshot
         return this.getDouble(colName);
     }
 
+    @Override
+    @Nullable
     public Instant getDate(String colName) {
         if (this.isMissing(colName))
             return null;
         return Converters.toDate(this.getDouble(colName));
     }
 
+    @Override
+    @Nullable
     public Duration getDuration(String colName) {
         if (this.isMissing(colName))
             return null;
         return Converters.toDuration(this.getDouble(colName));
+    }
+
+    @Override
+    @Nullable
+    public LocalTime getTime(String colName) {
+        if (this.isMissing(colName))
+            return null;
+        return Converters.toTime(this.getDouble(colName));
     }
 
     /**

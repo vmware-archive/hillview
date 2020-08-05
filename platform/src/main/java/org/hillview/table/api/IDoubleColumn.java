@@ -21,6 +21,7 @@ import net.openhft.hashing.LongHashFunction;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
+import java.time.*;
 import java.util.function.BiFunction;
 
 public interface IDoubleColumn extends IColumn {
@@ -35,7 +36,22 @@ public interface IDoubleColumn extends IColumn {
     default String asString(final int rowIndex) {
         if (this.isMissing(rowIndex))
             return null;
-        return Double.toString(this.getDouble(rowIndex));
+        double d = this.getDouble(rowIndex);
+        switch (this.getKind()) {
+            case Double:
+                return Double.toString(d);
+            case Date:
+                Instant dt = Converters.toDate(d);
+                return Converters.toString(dt);
+            case Duration:
+                Duration du = Converters.toDuration(d);
+                return du.toString();
+            case Time:
+                LocalTime t = Converters.toTime(d);
+                return t.toString();
+            default:
+                throw new RuntimeException("Unexpected column kind " + this.getKind());
+        }
     }
 
     @Override
@@ -68,21 +84,92 @@ public interface IDoubleColumn extends IColumn {
     default IColumn convertKind(ContentsKind kind, String newColName, IMembershipSet set) {
         IMutableColumn newColumn = this.allocateConvertedColumn(
                 kind, set, newColName);
-        switch(kind) {
-            case Json:
-            case String:
-                this.convert(newColumn, set, row -> Double.toString(this.getDouble(row)));
+        switch (this.getKind()) {
+            case Double: {
+                switch (kind) {
+                    case Json:
+                    case String:
+                        this.convertToString(newColumn, set, this::asString);
+                        break;
+                    case Integer:
+                        this.convertToInt(newColumn, set, row -> Converters.toInt(this.getDouble(row)));
+                        break;
+                    case Double:
+                        this.convertToDouble(newColumn, set, this::getDouble);
+                        break;
+                    case Time:
+                    case Interval:
+                    case Date:
+                    case Duration:
+                        throw new UnsupportedOperationException("Conversion from " + this.getKind()
+                                + " to " + kind + " is not supported.");
+                    default:
+                        throw new RuntimeException("Unexpected column kind " + this.getKind());
+                }
                 break;
-            case Integer:
-                this.convert(newColumn, set, row -> Converters.toInt(this.getDouble(row)));
-                break;
-            case Double:
-                this.convert(newColumn, set, this::getDouble);
-                break;
+            }
             case Date:
+                switch (kind) {
+                    case Json:
+                    case String:
+                        this.convertToString(newColumn, set, this::asString);
+                        break;
+                    case Date:
+                        this.convertToDouble(newColumn, set, this::getDouble);
+                        break;
+                    case Time:
+                        this.convertToDouble(newColumn, set, row -> {
+                            Instant i = Converters.toDate(this.getDouble(row));
+                            return Converters.toDouble(LocalDateTime.ofInstant(i, ZoneId.systemDefault()).toLocalTime());
+                        });
+                    case Integer:
+                    case Double:
+                    case Duration:
+                    case Interval:
+                        throw new UnsupportedOperationException("Conversion from " + this.getKind()
+                                + " to " + kind + " is not supported.");
+                    default:
+                        throw new RuntimeException("Unexpected column kind " + this.getKind());
+                }
+                break;
             case Duration:
-                throw new UnsupportedOperationException("Conversion from " + this.getKind()
-                        + " to " + kind + " is not supported.");
+                switch (kind) {
+                    case Json:
+                    case String:
+                        this.convertToString(newColumn, set, this::asString);
+                        break;
+                    case Duration:
+                        this.convertToDouble(newColumn, set, this::getDouble);
+                        break;
+                    case Integer:
+                    case Double:
+                    case Date:
+                    case Time:
+                        throw new UnsupportedOperationException("Conversion from " + this.getKind()
+                                + " to " + kind + " is not supported.");
+                    default:
+                        throw new RuntimeException("Unexpected column kind " + this.getKind());
+                }
+                break;
+            case Time:
+                switch(kind) {
+                    case Json:
+                    case String:
+                        this.convertToString(newColumn, set, this::asString);
+                        break;
+                    case Time:
+                        this.convertToDouble(newColumn, set, this::getDouble);
+                        break;
+                    case Integer:
+                    case Double:
+                    case Date:
+                    case Duration:
+                        throw new UnsupportedOperationException("Conversion from " + this.getKind()
+                                + " to " + kind + " is not supported.");
+                    default:
+                        throw new RuntimeException("Unexpected column kind " + this.getKind());
+                }
+                break;
             default:
                 throw new RuntimeException("Unexpected column kind " + this.getKind());
         }

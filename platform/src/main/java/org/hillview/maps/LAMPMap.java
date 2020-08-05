@@ -22,7 +22,6 @@ import org.hillview.table.ColumnDescription;
 
 import org.hillview.table.api.*;
 import org.hillview.table.columns.DoubleArrayColumn;
-import org.hillview.table.columns.SparseColumn;
 import org.hillview.utils.Converters;
 import org.jblas.DoubleMatrix;
 import org.jblas.MatrixFunctions;
@@ -68,10 +67,7 @@ public class LAMPMap implements IMap<ITable, ITable> {
         for (int i = 0; i < this.lowDims; i++) {
             ColumnDescription cd = new ColumnDescription(
                     this.newColNames[i], ContentsKind.Double);
-            if (set.useSparseColumn(set.getSize()))
-                newColumns.add(new SparseColumn(cd, colSize));
-            else
-                newColumns.add(new DoubleArrayColumn(cd, colSize));
+            newColumns.add(new DoubleArrayColumn(cd, colSize));
         }
 
         IRowIterator rowIt = data.getRowIterator();

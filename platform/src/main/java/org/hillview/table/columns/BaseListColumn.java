@@ -21,8 +21,6 @@ import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.IAppendableColumn;
 
 import javax.annotation.Nullable;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.BitSet;
 
@@ -72,34 +70,6 @@ public abstract class BaseListColumn extends BaseColumn implements IAppendableCo
     }
 
     @Override
-    public void append(@Nullable Object obj) {
-        if (obj == null) {
-            this.appendMissing();
-            return;
-        }
-        switch (this.description.kind) {
-            case String:
-            case Json:
-                this.append((String)obj);
-                break;
-            case Date:
-                this.append((Instant)obj);
-                break;
-            case Integer:
-                this.append((int)obj);
-                break;
-            case Double:
-                this.append((double)obj);
-                break;
-            case Duration:
-                this.append((Duration)obj);
-                break;
-            default:
-                throw new RuntimeException("Unexpected kind " + this.description.kind);
-        }
-    }
-
-    @Override
     public void appendMissing() {
         assert this.missing != null;
         final int segmentId = this.size >> LogSegmentSize;
@@ -129,14 +99,12 @@ public abstract class BaseListColumn extends BaseColumn implements IAppendableCo
                 return new StringListColumn(desc);
             case None:
                 return new EmptyColumn(desc);
-            case Date:
-                return new DateListColumn(desc);
             case Integer:
                 return new IntListColumn(desc);
+            case Date:
             case Double:
-                return new DoubleListColumn(desc);
             case Duration:
-                return new DurationListColumn(desc);
+                return new DoubleListColumn(desc);
             default:
                 throw new RuntimeException("Unexpected description " + desc.toString());
         }

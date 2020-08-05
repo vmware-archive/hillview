@@ -24,7 +24,7 @@ import org.hillview.table.api.IMutableColumn;
 import org.hillview.table.api.Interval;
 
 import java.time.Duration;
-import java.time.Instant;
+import java.time.LocalTime;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -60,17 +60,17 @@ public abstract class BaseColumn implements IColumn {
     }
 
     @Override
-    public Instant getDate(final int rowIndex) {
-        throw new UnsupportedOperationException(this.toString());
-    }
-
-    @Override
     public int getInt(final int rowIndex) {
         throw new UnsupportedOperationException(this.toString());
     }
 
     @Override
     public Duration getDuration(final int rowIndex) {
+        throw new UnsupportedOperationException(this.toString());
+    }
+
+    @Override
+    public LocalTime getTime(final int rowIndex) {
         throw new UnsupportedOperationException(this.toString());
     }
 
@@ -110,9 +110,6 @@ public abstract class BaseColumn implements IColumn {
             ColumnDescription description, int maxSize, int usedSize) {
         if (usedSize > maxSize)
             throw new IllegalArgumentException("maxSize " + maxSize + " < usedsize " + usedSize);
-        if (usedSize == 0 || (maxSize / usedSize > 4))
-            return new SparseColumn(description, maxSize);
-        else
-            return BaseArrayColumn.create(description, maxSize);
+        return BaseArrayColumn.create(description, maxSize);
     }
 }
