@@ -26,7 +26,7 @@ one row for an airline flight.  Columns in this dataset include: the date of the
 the origin and destination cities, the origin and destination states,
 the origin airport code, the distance flown, the departure and arrival delay.
 
-Updated on 2020 Jul 30.
+Updated on 2020 Aug 05.
 
 # Contents
 |Section|Reference|
@@ -50,7 +50,8 @@ Updated on 2020 Jul 30.
 |2.3.6.|[Reading JSON files](#236-reading-json-files)|
 |2.3.7.|[Reading ORC files](#237-reading-orc-files)|
 |2.3.8.|[Reading data from SQL databases](#238-reading-data-from-sql-databases)|
-|2.3.9.|[Reading Parquet files](#239-reading-parquet-files)|
+|2.3.9.|[Reading data from Cassandra databases](#239-reading-data-from-cassandra-databases)|
+|2.3.10.|[Reading Parquet files](#2310-reading-parquet-files)|
 |2.4.|[Navigating multiple datasets](#24-navigating-multiple-datasets)|
 |3.|[Data views](#3-data-views)|
 |3.1.|[The heading of a view](#31-the-heading-of-a-view)|
@@ -214,7 +215,7 @@ storage.
   files](#236-reading-json-files).
 
 * Parquet files: allows the user to [read the data from a set of
-  Parquet files](#239-reading-parquet-files).
+  Parquet files](#2310-reading-parquet-files).
 
 * ORC files: allows the user to [read the data from a set of ORC
   files](#237-reading-orc-files).
@@ -425,7 +426,7 @@ on the local user machine.
 
 The following menu allows the user to specify the data to load.
 
-![Specifying database connections](db-menu.png)
+![Specifying database connections](db-menu-mysql.png)
 
 * database kind: A drop-down menu indicating the kind of database to
   load data from.  Currently we support 'mysql' and 'impala'.
@@ -448,7 +449,41 @@ Numeric values are converted either to integers (if they fit into
 32-bits) or to doubles.  Boolean values are read as strings
 containing two values, "true" and "false".
 
-#### 2.3.9. Reading Parquet files
+#### 2.3.9. Reading data from Cassandra databases
+
+Hillview instance is required to be running on each Cassandra node.
+Thus, Hillview must be deployed in a cluster mode with all Cassandra
+nodes listed as the workers in the config.json. Moreover, Hillview
+must have access to Cassandra's directories because each Hillview
+workers will directly read local Cassandra's SSTables. 
+
+The following menu allows the user to specify the data to load.
+
+![Specifying Cassandra database connections](db-menu-cassandra.png)
+
+* database kind: Indicating the kind of database that we will connect 
+  to, which is Cassandra. We also support another DB, 'mysql' and 
+  'impala'.
+
+* host: One of the network name/IP address of the machines hosting 
+  Cassandra cluster. Every node in Cassandra cluster are the same 
+  (no master-slave concept), thus Hillview can connect to any node.
+
+* db directory: The directory where Cassandra is located/installed.
+  
+* port: The network port where Cassandra service is listening.
+
+* jmx port: The JMX port where Cassandra does inter-node communication.
+
+* database: The database/keyspace to load data from.
+
+* table: The table to load data from.
+
+* user: The name of the user connecting to the database.
+
+* password: Credentials of the user connecting to the database.
+
+#### 2.3.10. Reading Parquet files
 
 Hillview can read data from [Apache Parquet
 files](http://parquet.apache.org), a columnar storage format.  The
