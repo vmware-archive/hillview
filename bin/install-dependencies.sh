@@ -33,6 +33,7 @@ INSTALL_CASSANDRA=1
 SAVEDIR=${PWD}
 mydir="$(dirname "$0")"
 if [[ ! -d "${mydir}" ]]; then mydir="${PWD}"; fi
+# shellcheck source=./lib.sh
 source ${mydir}/lib.sh
 
 echo "Installing programs needed to build"
@@ -42,7 +43,7 @@ case "${OSTYPE}" in
     # Location where node.js version 11 resides.
         echo "Installing curl"
         ${SUDO} ${INSTALL} install curl -y
-	curl -sL https://deb.nodesource.com/setup_12.x | ${SUDO} -E bash -
+        curl -sL https://deb.nodesource.com/setup_12.x | ${SUDO} -E bash -
 esac
 
 ${SUDO} ${INSTALL} install wget maven ${NODEJS} ${NPM} ${LIBFORTRAN} unzip gzip
@@ -65,12 +66,13 @@ fi
 popd
 
 if [ ${USERDEPS} -eq 0 ]; then
-  echo "Downloading test data"
-  cd ${mydir}/../data/ontime
-  ./download.py
-  cd ../ontime_private
-  ./gen_metadata.py
-  cd ../..
+    echo "Downloading test data"
+    pushd ${mydir}/../data/ontime
+    ./download.py
+    popd
+    pushd ${mydir}/../data/ontime_private
+    ./gen_metadata.py
+    popd
 fi
 
 pushd ${mydir}/../web/src/main/webapp
@@ -81,8 +83,8 @@ npm link typescript
 popd
 
 if [ ${USERDEPS} -eq 0 ]; then
-  if [ ${INSTALL_CASSANDRA} -eq 1 ]; then
+    if [ ${INSTALL_CASSANDRA} -eq 1 ]; then
       ./${mydir}/install-cassandra.sh
-  fi
+    fi
 fi
 cd ${SAVEDIR}

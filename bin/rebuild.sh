@@ -13,6 +13,7 @@ usage() {
 
 mydir="$(dirname "$0")"
 if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
+# shellcheck source=./lib.sh
 source ${mydir}/lib.sh
 
 # Bail out on first error; verbose
@@ -38,7 +39,8 @@ done
 
 if [ "x${TOOLSARGS}" != "x" ]; then
    pushd ${mydir}/../cassandra-shaded
-   mvn install
+   mvn clean package
+   mvn install:install-file -DcreateChecksum=true -Dfile=./target/shaded-cassandra-all.jar -DgroupId=org.hillview  -DartifactId=shaded-cassandra-all -Dversion=1.0 -Dpackaging=jar
    popd
 fi
 export MAVEN_OPTS="-Xmx2048M"
