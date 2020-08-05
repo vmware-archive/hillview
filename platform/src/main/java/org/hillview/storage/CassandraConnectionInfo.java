@@ -17,16 +17,25 @@
 
 package org.hillview.storage;
 
+/**
+ * This information is required to open a Cassandra database connection.
+ */
 public class CassandraConnectionInfo extends JdbcConnectionInformation {
     static final long serialVersionUID = 1;
 
     /** Port for establishing probe connection */
     public int jmxPort;
-    /** Local Cassandra installation directory (can be found at bin/install-cassandra.sh) */
+    /**
+     * Local Cassandra installation directory (can be found at
+     * bin/install-cassandra.sh)
+     */
     public String cassandraRootDir;
 
     @Override
     public String toString() {
-        return this.cassandraRootDir + "/" + this.port;
+        StringBuilder sb = new StringBuilder(super.toString());
+        sb.append("  jmxPort : " + this.jmxPort + "\n");
+        sb.append("  cassandraRootDir : " + this.cassandraRootDir + "\n");
+        return sb.toString();
     }
 }

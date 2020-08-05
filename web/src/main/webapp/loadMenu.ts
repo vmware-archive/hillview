@@ -17,7 +17,7 @@
 
 import {DatasetView} from "./datasetView";
 import {InitialObject} from "./initialObject";
-import {FileSetDescription, JdbcConnectionInformation, Status, UIConfig} from "./javaBridge";
+import {FileSetDescription, JdbcConnectionInformation, CassandraConnectionInfo, Status, UIConfig} from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject} from "./rpc";
 import {Test} from "./test";
 import {IDataView} from "./ui/dataview";
@@ -233,8 +233,9 @@ export class LoadMenu extends RemoteObject implements IDataView {
             {
                 text: "Federated DB tables...",
                 action: () => {
-                    const dialog = new DBDialog();
-                    dialog.setAction(() => this.init.loadDBTable(dialog.getConnection(), this.page));
+                    const dialog = new DBDialog(true);
+                    dialog.setAction(() => this.init.loadFederatedDBTable(dialog.getConnection(),
+                        dialog.getCassandraConnection(), this.page));
                     dialog.show();
                 },
                 help: "A set of database tables residing in databases on each worker machine."
@@ -243,13 +244,13 @@ export class LoadMenu extends RemoteObject implements IDataView {
             loadMenuItems.push({
                 text: "Local DB table...",
                 action: () => {
-                    const dialog = new DBDialog();
+                    const dialog = new DBDialog(false);
                     dialog.setAction(() => this.init.loadSimpleDBTable(dialog.getConnection(), this.page));
                     dialog.show();
                 },
-                help: "A database table in a single database." });
+                help: "A database table in a single database."
+            });
         this.loadMenu = new SubMenu(loadMenuItems);
-
         const items: TopMenuItem[] = [
             { text: "Test datasets", help: "Hardwired datasets for testing Hillview.",
                 subMenu: this.testDatasetsMenu,
@@ -583,17 +584,29 @@ class OrcFileDialog extends Dialog {
  * Dialog asking the user which DB table to load.
  */
 class DBDialog extends Dialog {
-    constructor() {
+    constructor(isFederated: boolean) {
         super("Load DB tables", "Loads one table on each machine that is part of the service.");
-        const sel = this.addSelectField("databaseKind", "Database kind", ["mysql", "impala"], "mysql",
+        var arrDB = ["mysql", "impala"];
+        if (isFederated) arrDB.push("cassandra");
+        const sel = this.addSelectField("databaseKind", "Database kind", arrDB, "mysql",
             "The kind of database.");
         sel.onchange = () => this.dbChanged();
-        const host = this.addTextField("host", "Host", FieldKind.String, "localhost",
+        const host = this.addTextField("host", "Host", FieldKind.String, null,
             "Machine name where database is located; each machine will open a connection to this host");
         host.required = true;
+        if (isFederated) {
+            var dbDir = this.addTextField("dbDir", "DB Directory", FieldKind.String, null,
+                "Absolute path of dCassandra's installation directory");
+            this.hideInputField("dbDir", dbDir);
+        }
         const port = this.addTextField("port", "Port", FieldKind.Integer, "3306",
             "Network port to connect to database.");
         port.required = true;
+        if (isFederated) {
+            var jmxPort = this.addTextField("jmxPort", "JMX Port", FieldKind.Integer, null,
+                "Cassandra's JMX port to connect to server-side tools.");
+            this.hideInputField("jmxPort", jmxPort);
+        }
         const database = this.addTextField("database", "Database", FieldKind.String, null,
             "Name of database to load.");
         database.required = true;
@@ -604,7 +617,9 @@ class DBDialog extends Dialog {
             "(Optional) The name of the user opening the connection.");
         this.addTextField("password", "Password", FieldKind.Password, null,
             "(Optional) The password for the user opening the connection.");
-        this.setCacheTitle("DBDialog");
+        // not caching the federated connection because the cache failed to show all Cassandra's fields
+        if (!isFederated)
+            this.setCacheTitle("DBDialog");
     }
 
     public dbChanged(): void {
@@ -612,9 +627,19 @@ class DBDialog extends Dialog {
         switch (db) {
             case "mysql":
                 this.setFieldValue("port", "3306");
+                this.hideInputField("jmxPort");
+                this.hideInputField("dbDir");
                 break;
             case "impala":
                 this.setFieldValue("port", "21050");
+                this.hideInputField("jmxPort");
+                this.hideInputField("dbDir");
+                break;
+            case "cassandra":
+                this.setFieldValue("port", "9042");
+                this.setFieldValue("jmxPort", "7199");
+                this.showInputField("jmxPort");
+                this.showInputField("dbDir");
                 break;
         }
     }
@@ -630,6 +655,43 @@ class DBDialog extends Dialog {
             databaseKind: this.getFieldValue("databaseKind"),
             lazyLoading: true,
         };
+    }
+
+    public getCassandraConnection(): CassandraConnectionInfo {
+        if (this.getFieldValue("databaseKind") != "cassandra")
+            return null;
+        else
+            return {
+                host: this.getFieldValue("host"),
+                port: this.getFieldValueAsNumber("port"),
+                database: this.getFieldValue("database"),
+                table: this.getFieldValue("table"),
+                user: this.getFieldValue("user"),
+                password: this.getFieldValue("password"),
+                databaseKind: this.getFieldValue("databaseKind"),
+                lazyLoading: true,
+                jmxPort: this.getFieldValueAsNumber("jmxPort"),
+                cassandraRootDir: this.getFieldValue("dbDir"),
+            };
+    }
+
+    public hideInputField(fieldName: string, field?: HTMLElement) {
+        if (field === undefined) field = document.getElementById(fieldName);
+        if (field != null) {
+            this.setFieldValue(fieldName, "");
+            field.removeAttribute("required");
+            field.setAttribute("disabled", "");
+            field.parentElement.style.display = 'none';
+        }
+    }
+
+    public showInputField(fieldName: string, field?: HTMLElement){
+        if (field === undefined) field = document.getElementById(fieldName);
+        if (field != null) {
+            field.removeAttribute("disabled");
+            field.setAttribute("required", "");
+            field.parentElement.style.display = 'block';
+        }
     }
 }
 

@@ -148,7 +148,12 @@ export interface JdbcConnectionInformation {
     lazyLoading: boolean;
 }
 
-export type DataKinds = "csv" | "orc" | "parquet" | "json" | "hillviewlog" | "db" | "genericlog";
+export interface CassandraConnectionInfo extends JdbcConnectionInformation {
+    jmxPort: number;
+    cassandraRootDir: string;
+}
+
+export type DataKinds = "csv" | "orc" | "parquet" | "json" | "hillviewlog" | "db" | "genericlog" | "sstable";
 
 export interface FileSetDescription {
     fileKind: DataKinds;

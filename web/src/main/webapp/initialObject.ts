@@ -21,6 +21,7 @@ import {
     FileSetDescription,
     FileSizeSketchInfo,
     JdbcConnectionInformation,
+    CassandraConnectionInfo,
     RemoteObjectId,
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject} from "./rpc";
@@ -42,7 +43,12 @@ export interface HillviewLogs {
     kind: "Hillview logs";
 }
 
-export type DataLoaded = FilesLoaded | TablesLoaded | HillviewLogs | IDatasetSerialization;
+export interface SSTableFilesLoaded {
+    kind: "SSTable";
+    description: CassandraConnectionInfo;
+}
+
+export type DataLoaded = FilesLoaded | TablesLoaded | HillviewLogs | IDatasetSerialization | SSTableFilesLoaded;
 
 export function getDescription(data: DataLoaded): PageTitle {
     switch (data.kind) {
@@ -58,6 +64,8 @@ export function getDescription(data: DataLoaded): PageTitle {
                 "loaded from database");
         case "Hillview logs":
             return new PageTitle("logs", "Hillview installation logs");
+        case "SSTable":
+            return new PageTitle(data.description.database + "/" + data.description.table, "loaded from files");
     }
 }
 
@@ -182,6 +190,13 @@ export class InitialObject extends RemoteObject {
         rr.invoke(observer);
     }
 
+    public loadCassandraFiles(conn: CassandraConnectionInfo, loadMenuPage: FullPage): void {
+        const rr = this.createStreamingRpcRequest<RemoteObjectId>("findCassandraFiles", conn);
+        const observer = new FilesReceiver(loadMenuPage, rr,
+            { kind: "SSTable", description: conn });
+        rr.invoke(observer);
+    }
+
     public loadLogs(loadMenuPage: FullPage): void {
         // Use a guid to force the request to reload every time
         const rr = this.createStreamingRpcRequest<RemoteObjectId>("findLogs", getUUID());
@@ -201,5 +216,13 @@ export class InitialObject extends RemoteObject {
         const observer = new RemoteTableReceiver(loadMenuPage, rr,
             { kind: "DB", description: conn }, "loading database table");
         rr.invoke(observer);
+    }
+
+    public loadFederatedDBTable(jdbcConn: JdbcConnectionInformation, cassConn: CassandraConnectionInfo, loadMenuPage: FullPage): void {
+        if (jdbcConn.databaseKind == "cassandra") {
+            this.loadCassandraFiles(cassConn, loadMenuPage);
+        } else {
+            this.loadDBTable(jdbcConn, loadMenuPage);
+        }
     }
 }

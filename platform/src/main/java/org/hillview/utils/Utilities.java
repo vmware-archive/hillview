@@ -177,6 +177,13 @@ public class Utilities {
     }
 
     /**
+     * Checks whether the local OS is Windows
+     */
+    public static boolean runningOnWindows() {
+        return System.getProperty("os.name").toLowerCase().startsWith("windows");
+    }
+    
+    /**
      * PartialResult does not implement IJson, but some variants of it do.
      * @param pr  Partial result.
      * @param <T> Type of data in partial result.
