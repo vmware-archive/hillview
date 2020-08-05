@@ -388,10 +388,8 @@ td.menuItem.disabled.selected {
     color: grey;
 }
 
-td.mainMenu {
-    /* border-right: 5px solid red; */
-    /* box-shadow: 10px 0 5px -2px grey; */
-    box-shadow: 5px 7px 11px -2px grey;
+td.menuShadow {
+    box-shadow: 5px 6px 6px 1px grey;
 }
 
 td.dummyMenu {
