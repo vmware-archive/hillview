@@ -39,8 +39,7 @@ done
 
 if [ "x${TOOLSARGS}" != "x" ]; then
    pushd ${mydir}/../cassandra-shaded
-   mvn clean package
-   mvn install:install-file -DcreateChecksum=true -Dfile=./target/shaded-cassandra-all.jar -DgroupId=org.hillview  -DartifactId=shaded-cassandra-all -Dversion=1.0 -Dpackaging=jar
+   mvn clean install
    popd
 fi
 export MAVEN_OPTS="-Xmx2048M"

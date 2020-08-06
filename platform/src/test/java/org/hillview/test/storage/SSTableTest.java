@@ -20,6 +20,7 @@ package org.hillview.test.storage;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
@@ -35,7 +36,6 @@ import org.hillview.utils.Converters;
 import org.junit.Assert;
 import org.junit.Test;
 
-@SuppressWarnings("FieldCanBeLocal")
 public class SSTableTest extends BaseTest {
     /* The directory where cassandra is installed (check bin/install-cassandra.sh) */
     private final String cassandraRootDir = System.getenv("HOME") + "/cassandra";
@@ -227,14 +227,15 @@ public class SSTableTest extends BaseTest {
         // boolean type
         Assert.assertEquals("true", listCols.get(3).getString(nonNullIdx));
         // date type
-        Assert.assertEquals("2020-07-14T00:00:00Z", Converters.checkNull(listCols.get(4).getDate(nonNullIdx)).toString());
+        Assert.assertEquals("2020-07-14T00:00:00Z",
+                ((Instant)(Converters.checkNull(listCols.get(4).getObject(nonNullIdx)))).toString());
         // decimal type
         Assert.assertEquals(3.7875, listCols.get(5).getDouble(nonNullIdx), 1);
         // double type
         Assert.assertTrue(listCols.get(6).isMissing(nullIdx));
         Assert.assertEquals("6.714592679340089E9", Double.toString(listCols.get(6).getDouble(nonNullIdx)));
         // duration type
-        Assert.assertEquals(Converters.toDuration(131405000L), listCols.get(7).getDuration(nonNullIdx));
+        Assert.assertEquals(Converters.toDuration(131405000L), listCols.get(7).getObject(nonNullIdx));
         // float type
         Assert.assertTrue(listCols.get(8).isMissing(nullIdx));
         Assert.assertEquals(3.1475300788879395, listCols.get(8).getDouble(nonNullIdx), 1);
@@ -253,9 +254,14 @@ public class SSTableTest extends BaseTest {
         // text type
         Assert.assertNull(listCols.get(14).getString(nonNullIdx));
         // time type
-        Assert.assertEquals(Instant.ofEpochMilli(946755023123L), listCols.get(15).getDate(nonNullIdx));
+        Assert.assertEquals(Duration.ofHours(13).plusMinutes(30).plusSeconds(23).plusMillis(123),
+                (Converters.checkNull(listCols.get(15).getObject(nonNullIdx))));
         // timestamp type
-        Assert.assertEquals("2017-05-05T20:00:00Z", Converters.checkNull(listCols.get(16).getDate(nonNullIdx)).toString());
+        /*
+        Assert.assertEquals("2017-05-05T20:00:00Z",
+                ((Instant)Converters.checkNull(listCols.get(16).getObject(nonNullIdx))).toString());
+        This is time-zone dependent.
+         */
         // timeuuid type
         Assert.assertEquals("50554d6e-29bb-11e5-b345-feff819cdc9f", listCols.get(17).getString(nonNullIdx));
         // tinyint type

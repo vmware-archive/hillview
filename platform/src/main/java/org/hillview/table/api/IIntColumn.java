@@ -70,18 +70,18 @@ public interface IIntColumn extends IColumn {
     default IColumn convertKind(
             ContentsKind kind, String newColName, IMembershipSet set) {
         IMutableColumn newColumn = this.allocateConvertedColumn(
-                kind, set, newColName);
-        switch(kind) {
+                kind, newColName);
+        switch (kind) {
             case Json:
             case String:
-                this.convert(newColumn, set, row -> Integer.toString(this.getInt(row)));
+                this.convertToString(newColumn, set, this::asString);
                 break;
             case Integer: {
-                this.convert(newColumn, set, this::getInt);
+                this.convertToInt(newColumn, set, this::getInt);
                 break;
             }
             case Double: {
-                this.convert(newColumn, set, row -> (double)this.getInt(row));
+                this.convertToDouble(newColumn, set, row -> (double)this.getInt(row));
                 break;
             }
             case Date:
@@ -89,7 +89,7 @@ public interface IIntColumn extends IColumn {
                 throw new UnsupportedOperationException("Conversion from " + this.getKind()
                         + " to " + kind + " is not supported.");
             default:
-                throw new RuntimeException("Unexpected column kind " + this.getKind());
+                throw new RuntimeException("Unexpected column kind " + kind);
         }
         return newColumn;
     }

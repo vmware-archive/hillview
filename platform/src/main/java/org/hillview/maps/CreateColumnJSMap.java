@@ -26,12 +26,10 @@ import org.hillview.table.api.*;
 import org.hillview.table.columns.BaseColumn;
 import org.hillview.table.columns.IntervalColumn;
 import org.hillview.table.rows.JSVirtualRowSnapshot;
-import org.hillview.utils.Converters;
 import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;
-import java.time.Instant;
 import java.util.HashMap;
 
 /**
@@ -116,9 +114,9 @@ public class CreateColumnJSMap extends AppendColumnMap {
                             col.set(r, value.toString());
                             break;
                         case Date:
+                        case Time:
                             double timestampLocal = value.invokeMember("getTime").asDouble();
-                            Instant instant = Converters.toDate(timestampLocal);
-                            col.set(r, instant);
+                            col.set(r, timestampLocal);
                             break;
                         case Integer:
                             col.set(r, value.asInt());
@@ -128,13 +126,11 @@ public class CreateColumnJSMap extends AppendColumnMap {
                             break;
                         case Duration:
                             // TODO
-                            col.set(r, value);
                             break;
                         case Interval:
                             Value v0 = value.getArrayElement(0);
                             Value v1 = value.getArrayElement(1);
                             col.set(r, v0.asDouble());
-                            assert endCol != null;
                             endCol.set(r, v1.asDouble());
                             break;
                         default:

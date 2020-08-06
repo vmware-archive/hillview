@@ -67,6 +67,7 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
                 case Integer:
                     same = this.getInt(cn) == other.getInt(cn);
                     break;
+                case Time:
                 case Date:
                 case Double:
                 case Duration:
@@ -104,6 +105,7 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
                 case Integer:
                     hashCode = HashUtil.murmurHash3(hashCode, this.getInt(cn));
                     break;
+                case Time:
                 case Date:
                 case Double:
                 case Duration:
@@ -164,6 +166,7 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
                 case Integer:
                     c = Integer.compare(this.getInt(cn), other.getInt(cn));
                     break;
+                case Time:
                 case Date:
                 case Double:
                 case Duration:

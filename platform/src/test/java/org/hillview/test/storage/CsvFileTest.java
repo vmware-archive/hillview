@@ -185,8 +185,8 @@ public class CsvFileTest extends BaseTest {
     public void writeSmallFileTest() throws IOException {
         ColumnDescription nulls = new ColumnDescription("AllNulls", ContentsKind.String);
         StringListColumn first = new StringListColumn(nulls);
-        first.append((String)null);
-        first.append((String)null);
+        first.append(null);
+        first.append(null);
         ColumnDescription empty = new ColumnDescription("AllEmpty", ContentsKind.String);
         StringListColumn second = new StringListColumn(empty);
         second.append("");

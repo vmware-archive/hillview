@@ -21,7 +21,6 @@ import org.hillview.dataset.api.IMap;
 import org.hillview.table.*;
 import org.hillview.table.api.*;
 import org.hillview.table.columns.DoubleArrayColumn;
-import org.hillview.table.columns.SparseColumn;
 import org.hillview.utils.BlasConversions;
 import org.hillview.utils.Converters;
 import org.jblas.DoubleMatrix;
@@ -86,11 +85,7 @@ public class LinearProjectionMap implements IMap<ITable, ITable> {
                     this.newColNames[j], ContentsKind.Double);
             IMembershipSet set = table.getMembershipSet();
             int colSize = table.getMembershipSet().getMax();
-            IMutableColumn column;
-            if (set.useSparseColumn(set.getSize()))
-                column = new SparseColumn(colDesc, colSize);
-            else
-                column = new DoubleArrayColumn(colDesc, colSize);
+            IMutableColumn column = new DoubleArrayColumn(colDesc, colSize);
             IRowIterator it = table.getMembershipSet().getIterator();
             int row = it.getNextRow();
             int i = 0;

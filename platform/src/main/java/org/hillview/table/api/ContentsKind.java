@@ -27,12 +27,13 @@ import javax.annotation.Nullable;
 public enum ContentsKind {
     None,     /* Data kind is unknown */
     String,
-    Date,  /* java.time.LocalDateTime values */
+    Date,     /* aka date including time */
     Integer,
     Json,
     Double,
     Interval, /* A pair of values that can be converted to double: start, end */
-    Duration; /* java.time.Duration values */
+    Time,     /* aka time of day */
+    Duration; /* aka time duration */
 
     /**
      * The minimum value representable by this kind.
@@ -55,6 +56,8 @@ public enum ContentsKind {
                 return Converters.toDuration(java.lang.Long.MIN_VALUE);
             case Interval:
                 return org.hillview.table.api.Interval.minimumValue;
+            case Time:
+                return (double)0;
             default:
                 throw new RuntimeException("Unexpected kind " + this);
         }
@@ -75,6 +78,7 @@ public enum ContentsKind {
                 // We store dates and durations as doubles
             case Integer:
             case Double:
+            case Time:
             default:
                 return false;
         }
@@ -91,6 +95,7 @@ public enum ContentsKind {
             case Integer:
             case Double:
             case Interval:
+            case Time:
             default:
                 return false;
         }
@@ -101,11 +106,13 @@ public enum ContentsKind {
             case String:
             case Json:
             case None:
-            case Date:
+            case Interval:
                 return false;
-            case Duration:
             case Integer:
             case Double:
+            case Date:
+            case Time:
+            case Duration:
             default:
                 return true;
         }

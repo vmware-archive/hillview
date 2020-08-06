@@ -19,8 +19,12 @@ package org.hillview.table.columns;
 
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.*;
+import org.hillview.utils.Converters;
+import org.hillview.utils.DateParsing;
 
 import javax.annotation.Nullable;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.BitSet;
 
@@ -32,6 +36,9 @@ public class DoubleListColumn
     static final long serialVersionUID = 1;
 
     private final ArrayList<double[]> segments;
+    // Only used for Date kinds
+    @Nullable
+    private DateParsing dateParser;
 
     public DoubleListColumn(final ColumnDescription desc) {
         super(desc);
@@ -90,7 +97,21 @@ public class DoubleListColumn
             this.parseEmptyOrNull();
         else {
             try {
-                this.append(Double.parseDouble(s));
+                switch (this.getKind()) {
+                    case Double:
+                        this.append(Double.parseDouble(s));
+                        break;
+                    case Date:
+                        if (this.dateParser == null)
+                            this.dateParser = new DateParsing(s);
+                        Instant dt = this.dateParser.parse(s);
+                        this.append(Converters.toDouble(dt));
+                        break;
+                    case Duration:
+                        this.append(Converters.toDouble(Duration.parse(s)));
+                    default:
+                        throw new RuntimeException("Unexpected kind " + this.getKind());
+                }
             } catch (Exception ex) {
                 this.parsingExceptionCount++;
                 this.parseEmptyOrNull();

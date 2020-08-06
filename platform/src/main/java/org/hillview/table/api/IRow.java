@@ -18,8 +18,6 @@
 package org.hillview.table.api;
 
 import javax.annotation.Nullable;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -49,10 +47,6 @@ public interface IRow extends Map<String, Object> {
     Object getObject(final String colName);
     @Nullable
     String asString(String colName);
-    @Nullable
-    Instant getDate(String colName);
-    @Nullable
-    Duration getDuration(String colName);
     @Nullable
     String getString(String colName);
     int getInt(String colName);

@@ -104,7 +104,7 @@ public class BatchLogAnalysis {
 
         /* Get y-tick-labels errorCodeLabels and x-tick-labels timeLabels */
         heatmapData.errorCodeLabels = leftBoundaries;
-        for (int x = 0; x < numOfTimestampBuckets; x++){    // save the start time only of each bucket
+        for (int x = 0; x < numOfTimestampBuckets; x++) {    // save the start time only of each bucket
             double time = dataRange.min + x * (dataRange.max - dataRange.min) / numOfTimestampBuckets;
             Instant instantTime = Converters.toDate(time);
             String stringDate = Converters.toString(instantTime);

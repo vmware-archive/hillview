@@ -30,7 +30,7 @@ import java.util.Set;
 public class QuantizationSchema implements IJson {
     static final long serialVersionUID = 1;
     // We use a LinkedHashMap for deterministic serialization
-    private LinkedHashMap<String, ColumnQuantization> quantization;
+    private final LinkedHashMap<String, ColumnQuantization> quantization;
 
     public QuantizationSchema() {
         this.quantization = new LinkedHashMap<String, ColumnQuantization>();

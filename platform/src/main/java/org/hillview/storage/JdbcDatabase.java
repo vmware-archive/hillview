@@ -247,19 +247,12 @@ public class JdbcDatabase {
         assert table.getNumOfRows() == 1;
         RowSnapshot row = new RowSnapshot(table, 0);
         DataRange range = new DataRange();
-        if (cd.kind == ContentsKind.Double) {
+        if (cd.kind == ContentsKind.Double || cd.kind == ContentsKind.Date) {
             range.min = row.getDouble("min");
             range.max = row.getDouble("max");
         } else if (cd.kind == ContentsKind.Integer) {
             range.min = row.getInt("min");
             range.max = row.getInt("max");
-        } else if (cd.kind == ContentsKind.Date) {
-            Instant min = row.getDate("min");
-            Instant max = row.getDate("max");
-            if (min != null)
-                range.min = Converters.toDouble(min);
-            if (max != null)
-                range.max = Converters.toDouble(max);
         }
         range.presentCount = Converters.toLong(row.getDouble("nonnulls"));
         range.missingCount = Converters.toLong(row.getDouble("total")) - range.presentCount;
@@ -478,7 +471,7 @@ public class JdbcDatabase {
                         col.appendMissing();
                     } else {
                         Instant instant = ts.toInstant();
-                        col.append(instant);
+                        col.append(Converters.toDouble(instant));
                     }
                     break;
                 case Types.BINARY:

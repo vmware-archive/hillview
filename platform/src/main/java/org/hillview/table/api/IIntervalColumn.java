@@ -25,14 +25,14 @@ public interface IIntervalColumn extends IColumn {
     default IColumn convertKind(
             ContentsKind kind, String newColName, IMembershipSet set) {
         IMutableColumn newColumn = this.allocateConvertedColumn(
-                kind, set, newColName);
+                kind, newColName);
         switch(kind) {
             case Json:
-                this.convert(newColumn, set, row -> "{ start: " + this.getEndpoint(row, true) +
+                this.convertToString(newColumn, set, row -> "{ start: " + this.getEndpoint(row, true) +
                         ", end: " + this.getEndpoint(row, false));
                 break;
             case String:
-                this.convert(newColumn, set, this::asString);
+                this.convertToString(newColumn, set, this::asString);
                 break;
             case Integer:
             case Double:

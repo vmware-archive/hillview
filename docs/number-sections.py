@@ -117,15 +117,15 @@ def rewrite(source, destination, headings, commentStart, commentEnd):
 
 def main():
     headings = Headings()
-    input = "userManual.src"
+    inputFile = "userManual.src"
     output = "userManual.md"
-    rewrite(input, output, headings, "<!--", "-->")
-    input = "../web/src/main/webapp/ui/helpUrl.src"
+    rewrite(inputFile, output, headings, "<!--", "-->")
+    inputFile = "../web/src/main/webapp/ui/helpUrl.src"
     output = "../web/src/main/webapp/ui/helpUrl.ts"
     try:
-        rewrite(input, output, headings, "/*", "*/")
+        rewrite(inputFile, output, headings, "/*", "*/")
     except Exception as e:
-        raise Exception("Error fixing file " + input) from e
+        raise Exception("Error fixing file " + inputFile) from e
 
 if __name__ == "__main__":
     main()

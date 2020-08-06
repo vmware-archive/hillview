@@ -20,8 +20,8 @@ import org.hillview.table.*;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.columns.StringArrayColumn;
-import org.hillview.table.columns.DateArrayColumn;
 import org.hillview.table.columns.DoubleArrayColumn;
+import org.hillview.utils.Converters;
 import org.hillview.utils.Randomness;
 import org.junit.Assert;
 
@@ -82,14 +82,15 @@ public class TestUtil {
 
     private static IColumn getRandDateArray(int size, String colName) {
         final ColumnDescription desc = new ColumnDescription(colName, ContentsKind.Date);
-        Instant[] data = new Instant[size];
+        double[] data = new double[size];
         final Randomness rn = new Randomness(0);
         for (int i = 0; i < size; i++) {
-            data[i] =  LocalDateTime.of(1940 + rn.nextInt(70),
+             Instant inst = LocalDateTime.of(1940 + rn.nextInt(70),
                     rn.nextInt(11) + 1, rn.nextInt(28) + 1, rn.nextInt(24), rn.nextInt(60))
                     .toInstant(ZoneOffset.UTC);
+            data[i] = Converters.toDouble(inst);
         }
-        return new DateArrayColumn(desc, data);
+        return new DoubleArrayColumn(desc, data);
     }
 
     private static IColumn getStringArray(int size, String colName) {

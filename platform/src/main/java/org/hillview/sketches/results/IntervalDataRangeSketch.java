@@ -17,7 +17,6 @@
 
 package org.hillview.sketches.results;
 
-import org.hillview.dataset.api.TableSketch;
 import org.hillview.sketches.DoubleDataRangeSketch;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;

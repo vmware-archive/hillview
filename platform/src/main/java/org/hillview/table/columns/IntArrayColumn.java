@@ -20,8 +20,6 @@ package org.hillview.table.columns;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.*;
 
-import javax.annotation.Nullable;
-
 /**
  * Column of integers, implemented as an array of integers and a BitSet of missing values.
  */
@@ -67,14 +65,6 @@ public final class IntArrayColumn
     @Override
     public int getInt(final int rowIndex) {
         return this.data[rowIndex];
-    }
-
-    @Override
-    public void set(int rowIndex, @Nullable Object value) {
-        if (value == null)
-            this.setMissing(rowIndex);
-        else
-            this.set(rowIndex, (int)value);
     }
 
     public void set(final int rowIndex, final int value) {

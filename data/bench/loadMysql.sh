@@ -3,7 +3,7 @@
 
 set -ex
 
-# year=2017
+year=2017
 #../../bin/download-data.py ../../bin/config-aws.json "data/ontime/${year}*"
 #mv ec2-*/* .
 #rm -rf ec2-*

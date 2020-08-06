@@ -217,15 +217,18 @@ export class SchemaView extends TSViewBase {
                             let avg;
                             let stddev;
                             if (cd.kind === "Date") {
-                                avg = Converters.valueToString(cs.moments[0], "Date");
-                                stddev = Converters.intervalFromDouble(cs.moments[1]);
+                                avg = Converters.valueToString(cs.moments[0], "Date", true);
+                                stddev = Converters.durationFromDouble(cs.moments[1]);
+                            } if (cd.kind === "Date") {
+                                avg = Converters.valueToString(cs.moments[0], "Time", true);
+                                stddev = Converters.durationFromDouble(cs.moments[1]);
                             } else {
                                 avg = significantDigits(cs.moments[0]);
                                 stddev = significantDigits(cs.moments[1]);
                             }
                             data.push(
-                                Converters.valueToString(cs.min, cd.kind),
-                                Converters.valueToString(cs.max, cd.kind),
+                                Converters.valueToString(cs.min, cd.kind, true),
+                                Converters.valueToString(cs.max, cd.kind, true),
                                 avg, stddev);
                         }
                     }

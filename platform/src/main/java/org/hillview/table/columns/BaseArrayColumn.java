@@ -65,14 +65,13 @@ public abstract class BaseArrayColumn extends BaseColumn {
             case Json:
             case String:
                 return new StringArrayColumn(description, size);
-            case Date:
-                return new DateArrayColumn(description, size);
             case Integer:
                 return new IntArrayColumn(description, size);
+            case Date:
             case Double:
-                return new DoubleArrayColumn(description, size);
             case Duration:
-                return new DurationArrayColumn(description, size);
+            case Time:
+                return new DoubleArrayColumn(description, size);
             default:
                 throw new RuntimeException("Unexpected column kind " + description.toString());
         }

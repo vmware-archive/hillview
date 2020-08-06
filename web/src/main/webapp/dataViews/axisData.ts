@@ -25,7 +25,15 @@ import {
     RangeFilterDescription,
     RowValue
 } from "../javaBridge";
-import {assert, binarySearch, Converters, formatDate, formatNumber, significantDigits, truncate,} from "../util";
+import {
+    assert,
+    binarySearch,
+    Converters,
+    formatDate,
+    formatNumber,
+    formatTime,
+    truncate,
+} from "../util";
 import {AnyScale, D3Axis, D3SvgElement, SpecialChars} from "../ui/ui";
 import {SchemaClass} from "../schemaClass";
 
@@ -46,19 +54,7 @@ class BucketBoundary {
     }
 
     public toString(): string {
-        switch (this.kind) {
-            case "Json":
-            case "String":
-                return this.value.toString();
-            case "Integer":
-            case "Double":
-            case "Interval":
-                return significantDigits(this.value as number);
-            case "Date":
-                return Converters.dateFromDouble(this.value as number).toString();
-            case "Duration":
-                return this.value.toString();
-        }
+        return Converters.valueToString(this.value, this.kind, true);
     }
 
     public getNumber(): number | null {
@@ -318,7 +314,8 @@ export class AxisData {
                 this.axis = new AxisDescription(axis, labelPeriod, rotate, fullLabels);
                 break;
             }
-            case "Date": {
+            case "Date":
+            case "Time": {
                 const minDate: Date = Converters.dateFromDouble(domain[0]);
                 const maxDate: Date = Converters.dateFromDouble(domain[1]);
                 this.scale = d3scaleTime()
@@ -374,6 +371,8 @@ export class AxisData {
             result = formatNumber(inv as number);
         else if (this.description.kind === "Date")
             result = formatDate(inv as Date);
+        else if (this.description.kind === "Time")
+            result = formatTime(inv as Date);
         else
             result = inv.toString();
         return result;
@@ -386,7 +385,7 @@ export class AxisData {
             result = Math.round(inv as number);
         } else if (this.description.kind === "Double" || this.description.kind == "Interval") {
             result = inv as number;
-        } else if (this.description.kind === "Date") {
+        } else if (this.description.kind === "Date" || this.description.kind == "Time") {
             result = Converters.doubleFromDate(inv as Date);
         }
         return result;
@@ -449,6 +448,7 @@ export class AxisData {
             case "Interval":
             case "Double":
             case "Date":
+            case "Time":
                 return new BucketBoundaries(
                      new BucketBoundary(start, valueKind, true),
                      new BucketBoundary(end, valueKind, inclusive)

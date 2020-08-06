@@ -26,7 +26,7 @@ def addPrimaryKey():
 
 def main():
     """Main function"""
-    addPrimaryKey();
+    addPrimaryKey()
 
 if __name__ == "__main__":
     main()

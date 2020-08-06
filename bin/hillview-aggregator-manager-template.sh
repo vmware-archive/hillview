@@ -6,7 +6,7 @@
 FOREVERPID="forever-aggregator.pid"
 PIDFILE="hillview-aggregator.pid"
 
-cd ${SERVICE_DIRECTORY}
+cd ${SERVICE_DIRECTORY} || exit 1
 
 start() {
     if [ "x${CLEANUP}" == "x1" ]; then

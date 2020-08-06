@@ -20,7 +20,7 @@ import {Plot} from "./plot";
 import {Resolution} from "./ui";
 import {SchemaClass} from "../schemaClass";
 import {LegendPlot} from "./legendPlot";
-import {HtmlPlottingSurface, PlottingSurface} from "./plottingSurface";
+import {HtmlPlottingSurface} from "./plottingSurface";
 import {ColorMap, desaturateOutsideRange} from "../util";
 import {kindIsString} from "../javaBridge";
 import {interpolateCool as d3interpolateCool, interpolateWarm as d3interpolateWarm} from "d3-scale-chromatic";

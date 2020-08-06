@@ -18,8 +18,6 @@
 package org.hillview.table.api;
 
 import javax.annotation.Nullable;
-import java.time.Duration;
-import java.time.LocalDateTime;
 
 /**
  * Interface implemented by a column whose data can be mutated.
@@ -30,16 +28,14 @@ public interface IMutableColumn extends IColumn {
     @SuppressWarnings("UnusedReturnValue")
     IColumn seal();
 
-    void set(final int rowIndex, @Nullable final Object value);
-    default void set(final int rowIndex, @Nullable final String value)
-    { this.set(rowIndex, (Object)value); }
-    default void set(final int rowIndex, final int value)
-    { this.set(rowIndex, (Object)value); }
-    default void set(final int rowIndex, final double value)
-    { this.set(rowIndex, (Object)value); }
-    default void set(final int rowIndex, @Nullable final LocalDateTime value)
-    { this.set(rowIndex, (Object)value); }
-    default void set(final int rowIndex, @Nullable final Duration value)
-    { this.set(rowIndex, (Object)value); }
+    default void set(final int rowIndex, @Nullable final String value) {
+        throw new UnsupportedOperationException();
+    }
+    default void set(final int rowIndex, final int value) {
+        throw new UnsupportedOperationException();
+    }
+    default void set(final int rowIndex, final double value) {
+        throw new UnsupportedOperationException();
+    }
     void setMissing(final int rowIndex);
 }

@@ -401,6 +401,9 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
             this.maxYAxis = max;
         }
 
+        this.legendPlot.setData(this.legendAxisData, this.legendAxisData.dataRange.missingCount > 0, this.schema);
+        this.legendPlot.draw();
+
         for (let i = 0; i < data.perBucket.length; i++) {
             const buckets = data.perBucket[i];
             const heatmap: Two<Groups<Groups<number>>> = { first: buckets, second: null };
@@ -432,8 +435,6 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
                 "percent",
                 "count" /* TODO:, "cdf" */], 40);
 
-        this.legendPlot.setData(this.legendAxisData, this.legendAxisData.dataRange.missingCount > 0, this.schema);
-        this.legendPlot.draw();
         this.standardSummary();
         this.summary.display();
     }

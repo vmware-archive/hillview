@@ -217,7 +217,7 @@ export class HeavyHittersView extends BigTableView {
                     const value = this.nextKList.rows[i].values[j];
                     const kind = this.columnsShown[j].kind;
                     if (value != null) {
-                        let v = Converters.valueToString(value, kind);
+                        let v = Converters.valueToString(value, kind, false);
                         if (kindIsString(kind))
                             v = JSON.stringify(v);
                         line += v;
@@ -368,7 +368,7 @@ export class HeavyHittersView extends BigTableView {
                         row.push(makeMissing());
                     else
                         row.push(makeSpan(Converters.valueToString(
-                            value, this.columnsShown[j].kind), false));
+                            value, this.columnsShown[j].kind, true), false));
                 }
                 row.push(this.valueToHtml(nextKList.rows[i].count));
                 row.push(this.valueToHtml((nextKList.rows[i].count / nextKList.rowsScanned) * 100));

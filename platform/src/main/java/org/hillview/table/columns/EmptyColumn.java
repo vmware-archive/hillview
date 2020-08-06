@@ -26,19 +26,19 @@ import javax.annotation.Nullable;
 /**
  * An empty column does not really store any data - all values are null.
  */
-public class EmptyColumn extends BaseColumn implements IAppendableColumn {
+public class EmptyColumn extends BaseColumn implements IAppendableColumn, IMutableColumn {
     static final long serialVersionUID = 1;
 
     private int size;
     private boolean sealed;
 
-    private EmptyColumn(String name, int size) {
+    public EmptyColumn(String name, int size) {
         super(new ColumnDescription(name, ContentsKind.None));
         this.size = size;
         this.sealed = true;
     }
 
-    EmptyColumn(ColumnDescription desc) {
+    public EmptyColumn(ColumnDescription desc) {
         super(desc);
         this.size = 0;
         this.sealed = false;
@@ -51,12 +51,7 @@ public class EmptyColumn extends BaseColumn implements IAppendableColumn {
     }
 
     @Override
-    public void append(@Nullable Object value) {
-        if (value == null)
-            this.appendMissing();
-        else
-            throw new RuntimeException("Appending value to empty column" + value);
-    }
+    public void setMissing(int rowIndex) { }
 
     @Override
     public void appendMissing() {

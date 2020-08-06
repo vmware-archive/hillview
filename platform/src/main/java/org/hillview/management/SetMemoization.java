@@ -26,7 +26,7 @@ import org.hillview.dataset.remoting.HillviewServer;
  */
 public class SetMemoization extends ControlMessage {
     static final long serialVersionUID = 1;
-    private boolean state;
+    private final boolean state;
 
     public SetMemoization(boolean state) {
         this.state = state;

@@ -20,13 +20,12 @@ package org.hillview.table.api;
 import net.openhft.hashing.LongHashFunction;
 import org.hillview.table.*;
 import org.hillview.table.columns.*;
+import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.ICast;
 
 import javax.annotation.Nullable;
 import java.io.Serializable;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.function.Function;
 
 /**
@@ -42,10 +41,6 @@ public interface IColumn extends Serializable, ICast {
     @Nullable
     String getString(int rowIndex);
     @Nullable
-    Instant getDate(int rowIndex);
-    @Nullable
-    Duration getDuration(int rowIndex);
-    @Nullable
     Interval getInterval(int rowIndex);
     double getEndpoint(int rowIndex, boolean start);
     /**
@@ -53,9 +48,11 @@ public interface IColumn extends Serializable, ICast {
      */
     int getParsingExceptionCount();
 
-    /* This function is inefficient, it should be used sparingly. It
-       will cast the value to an Object, boxing it if necessary. It returns null
-       if the row is missing.
+    /**
+     * Returns the Java object encoded in the specified row.
+     * This function is inefficient, it should be used sparingly. It
+     * will cast the value to an Object, boxing it if necessary. It returns null
+     * if the data is missing.
      */
     @Nullable
     default Object getObject(final int rowIndex) {
@@ -66,16 +63,48 @@ public interface IColumn extends Serializable, ICast {
             case Json:
             case String:
                 return this.getString(rowIndex);
-            case Date:
-                return this.getDate(rowIndex);
             case Integer:
                 return this.getInt(rowIndex);
             case Double:
                 return this.getDouble(rowIndex);
             case Duration:
-                return this.getDuration(rowIndex);
+                return Converters.toDuration(this.getDouble(rowIndex));
+            case Time:
+                return Converters.toTime(this.getDouble(rowIndex));
+            case Date:
+                return Converters.toDate(this.getDouble(rowIndex));
             case Interval:
                 return this.getInterval(rowIndex);
+            case None:
+            default:
+                throw new RuntimeException("Unexpected data type");
+        }
+    }
+
+    /**
+     * Returns the data represented in the column at the respective position.
+     * Should be used sparingly, since it boxes scalars.
+     */
+    @Nullable
+    default Object getData(final int rowIndex) {
+        if (rowIndex < 0)
+            throw new RuntimeException("Checking for negative row " + rowIndex);
+        if (this.isMissing(rowIndex)) { return null; }
+        switch (this.getDescription().kind) {
+            case Json:
+            case String:
+                return this.getString(rowIndex);
+            case Integer:
+                return this.getInt(rowIndex);
+            case Double:
+            case Duration:
+            case Time:
+            case Date:
+                return this.getDouble(rowIndex);
+            case Interval:
+                return this.getInterval(rowIndex);
+            case None:
+                return null;
             default:
                 throw new RuntimeException("Unexpected data type");
         }
@@ -130,7 +159,7 @@ public interface IColumn extends Serializable, ICast {
             final int i = rowIt.getNextRow();
             if (i < 0)
                 break;
-            result.set(row, this.getObject(i));
+            result.set(row, this.getData(i));
             row++;
         }
         return result;
@@ -143,11 +172,8 @@ public interface IColumn extends Serializable, ICast {
     IColumn rename(String newName);
 
     default IMutableColumn allocateConvertedColumn(
-        ContentsKind kind, IMembershipSet set, String newColName) {
+            ContentsKind kind, String newColName) {
         ColumnDescription cd = new ColumnDescription(newColName, kind);
-        if (set.useSparseColumn())
-            return new SparseColumn(cd, this.sizeInRows());
-
         switch (kind) {
             case Json:
             case String:
@@ -155,25 +181,62 @@ public interface IColumn extends Serializable, ICast {
             case Integer:
                 return new IntArrayColumn(cd, this.sizeInRows());
             case Double:
-                return new DoubleArrayColumn(cd, this.sizeInRows());
             case Date:
-                return new DateArrayColumn(cd, this.sizeInRows());
             case Duration:
-                return new DurationArrayColumn(cd, this.sizeInRows());
+            case Time:
+                return new DoubleArrayColumn(cd, this.sizeInRows());
+            case None:
+                return new EmptyColumn(cd.name, this.sizeInRows());
             default:
-                throw new RuntimeException("Unexpected column kind " + kind);
+                throw new RuntimeException("Conversion to column of kind " + kind + " not supported");
         }
     }
 
-    default <T> void convert(IMutableColumn dest, IMembershipSet set,
-                             Function<Integer, T> converter) {
+    default void convertToString(IMutableColumn dest, IMembershipSet set,
+                                 Function<Integer, String> converter) {
         IRowIterator it = set.getIterator();
         int rowIndex = it.getNextRow();
         while (rowIndex >= 0) {
             if (this.isMissing(rowIndex)) {
                 dest.setMissing(rowIndex);
             } else {
-                T result = converter.apply(rowIndex);
+                String result = converter.apply(rowIndex);
+                if (result == null)
+                    dest.setMissing(rowIndex);
+                else
+                    dest.set(rowIndex, result);
+            }
+            rowIndex = it.getNextRow();
+        }
+    }
+
+    default void convertToDouble(IMutableColumn dest, IMembershipSet set,
+                                 Function<Integer, Double> converter) {
+        IRowIterator it = set.getIterator();
+        int rowIndex = it.getNextRow();
+        while (rowIndex >= 0) {
+            if (this.isMissing(rowIndex)) {
+                dest.setMissing(rowIndex);
+            } else {
+                Double result = converter.apply(rowIndex);
+                if (result == null)
+                    dest.setMissing(rowIndex);
+                else
+                    dest.set(rowIndex, result);
+            }
+            rowIndex = it.getNextRow();
+        }
+    }
+
+    default void convertToInt(IMutableColumn dest, IMembershipSet set,
+                              Function<Integer, Integer> converter) {
+        IRowIterator it = set.getIterator();
+        int rowIndex = it.getNextRow();
+        while (rowIndex >= 0) {
+            if (this.isMissing(rowIndex)) {
+                dest.setMissing(rowIndex);
+            } else {
+                Integer result = converter.apply(rowIndex);
                 if (result == null)
                     dest.setMissing(rowIndex);
                 else
