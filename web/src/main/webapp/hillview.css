@@ -360,7 +360,7 @@ span.menuArrow {
 
 table.menu {
     /* box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.5); */
-    /* border: 1px solid grey; */
+    border: 1px solid grey;
     font-size:small;
     z-index: 10;
 }
@@ -404,6 +404,7 @@ table.menu td.selected {
 
 table.dropdown {
     position: fixed;  /* relative to browser window */
+    border: 0;
 }
 
 .hidden {
