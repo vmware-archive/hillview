@@ -465,9 +465,9 @@ The following menu allows the user to specify the data to load.
   to, which is Cassandra. We also support another DB, 'mysql' and 
   'impala'.
 
-* host: The network name/IP address of Hillview's root node. A root 
-  node is responsible for running Hillview web server interface as  
-  well as Cassandra instance at the background.
+* host: One of the network name/IP address of the machines hosting 
+  Cassandra cluster. Every node in Cassandra cluster are the same 
+  (no master-slave concept), thus Hillview can connect to any node.
 
 * db directory: The directory where Cassandra is located/installed.
   
