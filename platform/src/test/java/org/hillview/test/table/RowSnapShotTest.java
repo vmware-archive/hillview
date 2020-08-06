@@ -45,13 +45,12 @@ public class RowSnapShotTest extends BaseTest {
         col.append(Converters.toDouble(now));
         Table tbl = new Table(Collections.singletonList(col), null, null);
         RowSnapshot rs = new RowSnapshot(tbl, 0);
-        Instant i = rs.getDate(name);
-        Assert.assertNull(i);
+        Assert.assertTrue(rs.isMissing(name));
         Object o = rs.getObject(name);
         Assert.assertNull(o);
 
         rs = new RowSnapshot(tbl, 1);
-        i = rs.getDate(name);
+        Instant i = Converters.toDate(rs.getDouble(name));
         Assert.assertNotNull(i);
         Assert.assertEquals(i, now);
         o = rs.getObject(name);

@@ -22,9 +22,6 @@ import org.hillview.table.api.*;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalTime;
 import java.util.*;
 
 /**
@@ -204,21 +201,6 @@ public class VirtualRowSnapshot extends BaseRowSnapshot implements ISketchWorksp
     @Override
     public double getDouble(String colName) {
         return this.getColumnChecked(colName).getDouble(this.rowIndex);
-    }
-
-    @Override
-    public Instant getDate(String colName) {
-        return Converters.toDate(this.getColumnChecked(colName).getDouble(this.rowIndex));
-    }
-
-    @Override
-    public LocalTime getTime(String colName) {
-        return this.getColumnChecked(colName).getTime(this.rowIndex);
-    }
-
-    @Override
-    public Duration getDuration(String colName) {
-        return this.getColumnChecked(colName).getDuration(this.rowIndex);
     }
 
     @Override

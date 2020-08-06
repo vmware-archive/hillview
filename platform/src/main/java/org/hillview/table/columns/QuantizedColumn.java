@@ -106,12 +106,6 @@ public class QuantizedColumn extends BaseColumn {
     }
 
     @Override
-    public Duration getDuration(final int rowIndex) {
-        double d = this.getDouble(rowIndex);
-        return Converters.toDuration(d);
-    }
-
-    @Override
     public String getString(final int rowIndex) {
         if (this.quantization == null)
             return this.data.getString(rowIndex);

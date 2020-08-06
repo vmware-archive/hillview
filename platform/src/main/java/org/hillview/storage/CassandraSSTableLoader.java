@@ -25,7 +25,6 @@ import org.hillview.table.Schema;
 import org.hillview.table.Table;
 import org.hillview.utils.Converters;
 import org.hillview.utils.HillviewLogger;
-import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.cassandra.utils.FBUtilities;
 import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.config.ColumnDefinition;
@@ -34,7 +33,6 @@ import org.apache.cassandra.cql3.CQL3Type;
 import org.apache.cassandra.cql3.ColumnIdentifier;
 import org.apache.cassandra.cql3.Duration;
 import org.apache.cassandra.db.rows.Cell;
-import org.apache.cassandra.db.rows.ColumnData;
 import org.apache.cassandra.db.rows.Row;
 import org.apache.cassandra.db.rows.Unfiltered;
 import org.apache.cassandra.db.rows.UnfilteredRowIterator;
@@ -65,7 +63,6 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.stream.StreamSupport;
-import java.time.Instant;
 
 /**
  * Knows how to read a local Cassandra's SSTable file.
@@ -191,15 +188,16 @@ public class CassandraSSTableLoader extends TextFileLoader {
                 kind = ContentsKind.Double;
                 break;
             case TIME:
+            case DURATION:
+                kind = ContentsKind.Duration;
+                break;
             case TIMESTAMP:
             case DATE:
                 kind = ContentsKind.Date;
                 break;
-            case DURATION:
-                kind = ContentsKind.Duration;
-                break;
             case EMPTY:
                 kind = ContentsKind.None;
+                break;
             default:
                 throw new RuntimeException("Unhandled column type " + type.toString());
         }
@@ -209,9 +207,9 @@ public class CassandraSSTableLoader extends TextFileLoader {
     public String toString() {
         CFMetaData metadata = this.metadata;
         StringBuilder sb = new StringBuilder("SSTable path: " + ssTablePath + "\n");
-        sb.append("Column size : " + metadata.partitionColumns().size() + "\n");
+        sb.append("Column size : ").append(metadata.partitionColumns().size()).append("\n");
         for (ColumnDefinition colDef : this.columnDefinitions) {
-            sb.append(colDef.toString() + " " + colDef.type.asCQL3Type() + "\n");
+            sb.append(colDef.toString()).append(" ").append(colDef.type.asCQL3Type()).append("\n");
         }
         return sb.toString();
     }
@@ -233,7 +231,7 @@ public class CassandraSSTableLoader extends TextFileLoader {
     }
 
     public Schema getSchema() {
-        return this.actualSchema;
+        return Converters.checkNull(this.actualSchema);
     }
 
     private static SSTableReadsListener newReadCountUpdater() {
@@ -259,7 +257,7 @@ public class CassandraSSTableLoader extends TextFileLoader {
                 Spliterator<UnfilteredRowIterator> splititer = Spliterators.spliteratorUnknownSize(currentScanner,
                         Spliterator.IMMUTABLE);
                 Stream<UnfilteredRowIterator> partitions = StreamSupport.stream(splititer, false)
-                        .filter((p) -> p.hasNext()).filter(r -> r.next() instanceof Row);
+                        .filter(Iterator::hasNext).filter(r -> r.next() instanceof Row);
                 this.rowCount += partitions.count();
             }
         }
@@ -315,13 +313,13 @@ public class CassandraSSTableLoader extends TextFileLoader {
      */
     public ITable load() {
         try {
+            Converters.checkNull(this.actualSchema);
             if (this.lazyLoading) {
                 List<ColumnDescription> cds = new ArrayList<ColumnDescription>(this.columnDefinitions.size());
                 for (ColumnDefinition colDef : this.columnDefinitions) {
                     ColumnDescription cd = CassandraSSTableLoader.getDescription(colDef);
                     cds.add(cd);
                 }
-                assert this.actualSchema != null;
                 IColumnLoader loader = new CassandraSSTableLoader.SSTableColumnLoader(this.ssTableReader,
                         this.columnDefinitions, this.tokenRanges, this.localEndpoint);
                 return Table.createLazyTable(cds, this.getRowCount(), this.filename, loader);
@@ -371,9 +369,9 @@ public class CassandraSSTableLoader extends TextFileLoader {
                         IAppendableColumn col;
                         // Extracting the value of each column from a single row
                         for (ColumnDefinition colDef : columnDefinitions) {
-                            ColumnData cd = row.getCell(colDef);
+                            Cell cd = row.getCell(colDef);
                             col = columns.get(currentColumn);
-                            ByteBuffer byteBuff = ((Cell) cd).value();
+                            ByteBuffer byteBuff = cd.value();
                             // The column that has null value can be identified by its buffer capacity
                             if (byteBuff.capacity() == 0) {
                                 col.appendMissing(); 
@@ -390,7 +388,7 @@ public class CassandraSSTableLoader extends TextFileLoader {
                                         col.append(value.toString());
                                         break;
                                     case BLOB:
-                                        col.append(arrSerializers[currentColumn].toCQLLiteral(byteBuff).toString());
+                                        col.append(arrSerializers[currentColumn].toCQLLiteral(byteBuff));
                                         break;
                                     case INT:
                                         col.append((Integer) value);
@@ -402,35 +400,35 @@ public class CassandraSSTableLoader extends TextFileLoader {
                                         col.append(((Byte) value).intValue());
                                         break;
                                     case VARINT:
-                                        col.append(((BigInteger) value).doubleValue());
+                                        col.append(((BigInteger)value).doubleValue());
                                         break;
                                     case BIGINT:
-                                        col.append(((Long) value).doubleValue());
+                                        col.append(((Long)value).doubleValue());
                                         break;
                                     case DECIMAL:
                                         col.append(bigDecimalToDouble((BigDecimal) value));
                                         break;
                                     case DOUBLE:
-                                        col.append((Double) value);
+                                        col.append((Double)value);
                                         break;
                                     case FLOAT:
-                                        col.append(((Float) value).doubleValue());
+                                        col.append(((Float)value).doubleValue());
                                         break;
                                     case COUNTER:
                                         col.append(CounterContext.instance().total(byteBuff));
                                         break;
                                     case TIME:
-                                        // TODO: Convert Time type to Java Time instead of Java Instant
-                                        // Downgrade to millis and append 2000-1-1 as the date
-                                        col.append(Instant.ofEpochMilli( ((Long) value) / 1000000 + 946706400000L));
+                                        // Time is in nanoseconds; convert to duration
+                                        col.append((double)((Long)value / 1000000));
                                         break;
                                     case TIMESTAMP:
-                                        col.append(((Date) value).toInstant());
+                                        // This is the same as Converters.toDouble(((Date)value).toInstant())
+                                        col.append(((Date)value).getTime());
                                         break;
                                     case DATE:
-                                        long msTime = SimpleDateSerializer
-                                                .dayToTimeInMillis(ByteBufferUtil.toInt(byteBuff));
-                                        col.append(Instant.ofEpochMilli(msTime));
+                                        // Same as Converters.toDouble(Converters.toDate(...))
+                                        long msTime = SimpleDateSerializer.dayToTimeInMillis((Integer)value);
+                                        col.append(msTime);
                                         break;
                                     case DURATION:
                                         Duration duration = DurationSerializer.instance.deserialize(byteBuff);
@@ -438,7 +436,8 @@ public class CassandraSSTableLoader extends TextFileLoader {
                                             int days = duration.getDays();
                                             long nanos = duration.getNanoseconds();
                                             long millis = (nanos + Duration.NANOS_PER_HOUR * 24 * days) / 1000000;
-                                            col.append(Converters.toDuration(millis));
+                                            // This is the same as Converters.toDouble(Converters.toDuration(millis))
+                                            col.append(millis);
                                         } else {
                                             // java.time.Duration support day and time (but not month and year)
                                             throw new RuntimeException(
@@ -449,17 +448,10 @@ public class CassandraSSTableLoader extends TextFileLoader {
                                         break;
                                 }
                             }
-<<<<<<< HEAD
-=======
-                            col = columns.get(currentColumn);
-                            //col.append(value);
->>>>>>> Remove many column types
                             currentColumn++;
                         }
                     }
                 });
-            ;
-            
         }
     }
 

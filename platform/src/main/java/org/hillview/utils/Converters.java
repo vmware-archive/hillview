@@ -149,11 +149,11 @@ public class Converters {
     }
 
     public static LocalTime toTime(double value) {
-        return LocalTime.ofNanoOfDay(Converters.toLong(value * 1000));
+        return LocalTime.ofNanoOfDay(Converters.toLong(value * 1000000));
     }
 
     public static double toDouble(LocalTime time) {
-        return (double)(time.toNanoOfDay() / 1000);
+        return (double)(time.toNanoOfDay() / 1000000);
     }
 
     public static int toIntClamp(double value) {

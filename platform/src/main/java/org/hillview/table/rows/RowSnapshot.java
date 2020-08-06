@@ -29,9 +29,6 @@ import org.hillview.table.api.Interval;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalTime;
 import java.util.*;
 
 /**
@@ -59,11 +56,7 @@ public class RowSnapshot extends BaseRowSnapshot
                 this.fields.put(c.getName(), null);
                 continue;
             }
-            ContentsKind kind = c.getKind();
-            if (kind == ContentsKind.Date || kind == ContentsKind.Duration)
-                this.fields.put(c.getName(), c.getDouble(rowIndex));
-            else
-                this.fields.put(c.getName(), c.getObject(rowIndex));
+            this.fields.put(c.getName(), c.getData(rowIndex));
         }
         this.cachedHashcode = this.computeHashCode(schema);
     }
@@ -75,12 +68,8 @@ public class RowSnapshot extends BaseRowSnapshot
      */
     public RowSnapshot(RowSnapshot other, Schema schema) {
         this.schema = schema;
-        for (ColumnDescription cd : schema.getColumnDescriptions()) {
-            if (cd.kind == ContentsKind.Date || cd.kind == ContentsKind.Duration)
-                this.fields.put(cd.name, other.getDouble(cd.name));
-            else
-                this.fields.put(cd.name, other.getObject(cd.name));
-        }
+        for (ColumnDescription cd : schema.getColumnDescriptions())
+            this.fields.put(cd.name, other.fields.get(cd.name));
         this.cachedHashcode = this.computeHashCode(this.schema);
     }
 
@@ -137,12 +126,16 @@ public class RowSnapshot extends BaseRowSnapshot
         Object o = this.fields.get(colName);
         if (o == null)
             return null;
-        ContentsKind kind = this.schema.getKind(colName);
-        if (kind == ContentsKind.Date)
-            return Converters.toDate(this.getDouble(colName));
-        else if (kind == ContentsKind.Duration)
-            return Converters.toDuration(this.getDouble(colName));
-        return o;
+        switch (this.schema.getKind(colName)) {
+            case Date:
+                return Converters.toDate((double)o);
+            case Duration:
+                return Converters.toDuration((double)o);
+            case Time:
+                return Converters.toTime((double)o);
+            default:
+                return o;
+        }
     }
 
     @Override
@@ -171,30 +164,6 @@ public class RowSnapshot extends BaseRowSnapshot
     @Override
     public double asDouble(String colName) {
         return this.getDouble(colName);
-    }
-
-    @Override
-    @Nullable
-    public Instant getDate(String colName) {
-        if (this.isMissing(colName))
-            return null;
-        return Converters.toDate(this.getDouble(colName));
-    }
-
-    @Override
-    @Nullable
-    public Duration getDuration(String colName) {
-        if (this.isMissing(colName))
-            return null;
-        return Converters.toDuration(this.getDouble(colName));
-    }
-
-    @Override
-    @Nullable
-    public LocalTime getTime(String colName) {
-        if (this.isMissing(colName))
-            return null;
-        return Converters.toTime(this.getDouble(colName));
     }
 
     /**

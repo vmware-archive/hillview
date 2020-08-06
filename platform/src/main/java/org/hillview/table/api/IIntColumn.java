@@ -70,8 +70,8 @@ public interface IIntColumn extends IColumn {
     default IColumn convertKind(
             ContentsKind kind, String newColName, IMembershipSet set) {
         IMutableColumn newColumn = this.allocateConvertedColumn(
-                kind, set, newColName);
-        switch(kind) {
+                kind, newColName);
+        switch (kind) {
             case Json:
             case String:
                 this.convertToString(newColumn, set, this::asString);

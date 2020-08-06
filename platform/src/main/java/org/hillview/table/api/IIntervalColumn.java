@@ -25,7 +25,7 @@ public interface IIntervalColumn extends IColumn {
     default IColumn convertKind(
             ContentsKind kind, String newColName, IMembershipSet set) {
         IMutableColumn newColumn = this.allocateConvertedColumn(
-                kind, set, newColName);
+                kind, newColName);
         switch(kind) {
             case Json:
                 this.convertToString(newColumn, set, row -> "{ start: " + this.getEndpoint(row, true) +

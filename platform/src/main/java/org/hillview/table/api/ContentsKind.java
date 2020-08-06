@@ -27,13 +27,13 @@ import javax.annotation.Nullable;
 public enum ContentsKind {
     None,     /* Data kind is unknown */
     String,
-    Date,  /* java.time.Instant values */
+    Date,     /* aka date including time */
     Integer,
     Json,
     Double,
     Interval, /* A pair of values that can be converted to double: start, end */
-    Time,     /* java.time.LocalTime values */
-    Duration; /* java.time.Duration values */
+    Time,     /* aka time of day */
+    Duration; /* aka time duration */
 
     /**
      * The minimum value representable by this kind.

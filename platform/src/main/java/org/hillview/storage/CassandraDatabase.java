@@ -75,7 +75,6 @@ public class CassandraDatabase {
     private final INodeProbeFactory nodeProbeFactory;
     @Nullable
     private NodeProbe probe;
-    private final List<CassTable> cassTables = new ArrayList<CassTable>();
     private final List<CassandraTokenRange> tokenRanges;
     private final String localEndpoint;
 
@@ -94,7 +93,6 @@ public class CassandraDatabase {
             this.nodeProbeFactory = new NodeProbeFactory();
             this.connectLocalProbe();
             this.connectCassCluster();
-            this.setStoredTableInfo();
             this.tokenRanges = this.discoverTokenRanges();
             this.localEndpoint = this.discoverLocalEndpoint();
         } catch (Exception e) {
@@ -169,10 +167,8 @@ public class CassandraDatabase {
         }
 
         public String toString() {
-            StringBuilder sb = new StringBuilder();
-            sb.append("tokenRange: " + this.tokenRange.toString());
-            sb.append(", endpoints: " + this.endpoints.toString());
-            return sb.toString();
+            return "tokenRange: " + this.tokenRange.toString() +
+                    ", endpoints: " + this.endpoints.toString();
         }
     }
 
@@ -183,7 +179,7 @@ public class CassandraDatabase {
         InputStream is = new FileInputStream(cassandraYaml.toFile());
         Config config = yamlConfig.loadAs(is, Config.class);
         InetAddress inet = InetAddress.getByName(config.listen_address);
-        return inet.getHostAddress().toString();
+        return inet.getHostAddress();
     }
 
     public String getLocalEndpoint() {
@@ -198,6 +194,7 @@ public class CassandraDatabase {
     private List<CassandraTokenRange> discoverTokenRanges() throws IOException {
         List<CassandraTokenRange> tokenRanges = new ArrayList<>();
         String keyspace = this.info.database;
+        assert this.partitioner != null;
         CassandraTokenRange tr;
         for (String tokenRangeString : Converters.checkNull(this.probe).describeRing(keyspace)) {
             tr = new CassandraTokenRange(tokenRangeString, this.partitioner);
@@ -229,23 +226,17 @@ public class CassandraDatabase {
         }
     }
 
-    /**
-     * The list of keyspaces and tables are obtained from cluster connection's
-     * metadata
-     */
-    private void setStoredTableInfo() {
+    /** Returns list of tables stored in the cluster */
+    public List<CassTable> getStoredTableInfo() {
+        List<CassTable> cassTables = new ArrayList<>();
         List<KeyspaceMetadata> keyspaces = Converters.checkNull(this.metadata).getKeyspaces();
         for (KeyspaceMetadata kMetadata : keyspaces) {
             String keyspace = kMetadata.getName();
             Collection<TableMetadata> tables = this.metadata.getKeyspace(keyspace).getTables();
             List<String> tableNames = tables.stream().map(AbstractTableMetadata::getName).collect(Collectors.toList());
-            this.cassTables.add(new CassTable(keyspace, tableNames));
+            cassTables.add(new CassTable(keyspace, tableNames));
         }
-    }
-
-    /** Returns list of tables stored in the cluster */
-    public List<CassTable> getStoredTableInfo() {
-        return this.cassTables;
+        return cassTables;
     }
 
     public List<String> getSSTablePath() {
@@ -284,9 +275,6 @@ public class CassandraDatabase {
 
     public String toString() {
         StringBuilder result = new StringBuilder("Available Keyspaces and Tables:");
-        for (CassTable cassTable : this.cassTables) {
-            result.append(System.lineSeparator()).append(cassTable.toString());
-        }
         result.append(System.lineSeparator()).append(System.lineSeparator()).append("Table partition of ")
                 .append(this.info.database).append(":");
         for (CassandraTokenRange tokenRange : this.tokenRanges) {

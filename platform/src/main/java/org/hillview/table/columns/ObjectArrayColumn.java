@@ -24,9 +24,6 @@ import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
 import java.security.InvalidParameterException;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalTime;
 import java.util.List;
 
 /*
@@ -44,7 +41,7 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
     }
 
     private ObjectArrayColumn(final ColumnDescription description,
-                             final Object[] data) {
+                              final Object[] data) {
         super(description, data.length);
         this.data = data;
     }
@@ -111,20 +108,13 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
                         case Date:
                         case Double:
                         case Duration:
+                        case Time:
                             return Double.compare(ObjectArrayColumn.this.getDouble(i),
                                     ObjectArrayColumn.this.getDouble(j));
                         case Interval:
                         {
                             Interval ii = ObjectArrayColumn.this.getInterval(i);
                             Interval ij = ObjectArrayColumn.this.getInterval(j);
-                            assert ii != null;
-                            assert ij != null;
-                            return ii.compareTo(ij);
-                        }
-                        case Time:
-                        {
-                            LocalTime ii = ObjectArrayColumn.this.getTime(i);
-                            LocalTime ij = ObjectArrayColumn.this.getTime(j);
                             assert ii != null;
                             assert ij != null;
                             return ii.compareTo(ij);
@@ -161,28 +151,19 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
 
     @Override
     public double getDouble(final int rowIndex) {
-        if (this.getKind() == ContentsKind.Date)
-            return Converters.toDouble((Instant)this.data[rowIndex]);
-        else if (this.getKind() == ContentsKind.Duration)
-            return Converters.toDouble((Duration)this.data[rowIndex]);
         return (double)this.data[rowIndex];
     }
 
-    @Override
-    public LocalTime getTime(final int rowIndex) {
-        return (LocalTime)this.data[rowIndex];
-    }
-
-    @Override
-    public Duration getDuration(final int rowIndex) {
-        return (Duration)this.data[rowIndex];
-    }
     @Override
     public String getString(final int rowIndex) {
         return (String)this.data[rowIndex];
     }
 
     public void set(final int rowIndex, @Nullable final Object value) {
+        assert(value == null ||
+                value instanceof String ||
+                value instanceof Integer ||
+                value instanceof Double);
         this.data[rowIndex] = value;
     }
 
@@ -212,10 +193,10 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
         int i = 0, j = 0, k = 0;
         while (k < mergeLeft.length) {
             if (mergeLeft[k]) {
-                merged.set(k, left.getObject(i));
+                merged.set(k, left.getData(i));
                 i++;
             } else {
-                merged.set(k, right.getObject(j));
+                merged.set(k, right.getData(j));
                 j++;
             }
             k++;
@@ -240,13 +221,13 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
         int i = 0, j = 0, k = 0;
         while (k < size) {
             if (mergeOrder.get(k) < 0) {
-                merged.set(k, left.getObject(i));
+                merged.set(k, left.getData(i));
                 i++;
             } else if (mergeOrder.get(k) > 0) {
-                merged.set(k, right.getObject(j));
+                merged.set(k, right.getData(j));
                 j++;
             } else {
-                merged.set(k, right.getObject(j));
+                merged.set(k, right.getData(j));
                 i++;
                 j++;
             }

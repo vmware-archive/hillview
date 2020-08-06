@@ -95,8 +95,7 @@ public class TableTest extends BaseTest {
         IMembershipSet set = new FullMembershipSet(2);
         IColumn col = dates.compress(set);
         Assert.assertFalse(col.isMissing(0));
-        double d = col.getDouble(0);
-        Instant f = Converters.toDate(d);
+        Instant f = (Instant)col.getObject(0);
         Assert.assertEquals(f, first);
     }
 

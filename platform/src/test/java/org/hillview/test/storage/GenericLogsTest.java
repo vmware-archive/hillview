@@ -238,7 +238,7 @@ public class GenericLogsTest extends BaseTest {
         Assert.assertEquals("Table[14x8]", table.toString());
         @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
         RowSnapshot row = new RowSnapshot(table, 0);
-        Instant i = row.getDate("Timestamp");
+        Instant i = (Instant)row.getObject("Timestamp");
         Assert.assertNotNull(i);
         int prio = row.getInt("SyslogPriority");
         Assert.assertEquals(187, prio);

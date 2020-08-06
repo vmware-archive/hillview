@@ -83,7 +83,7 @@ public interface IDoubleColumn extends IColumn {
     @Override
     default IColumn convertKind(ContentsKind kind, String newColName, IMembershipSet set) {
         IMutableColumn newColumn = this.allocateConvertedColumn(
-                kind, set, newColName);
+                kind, newColName);
         switch (this.getKind()) {
             case Double: {
                 switch (kind) {

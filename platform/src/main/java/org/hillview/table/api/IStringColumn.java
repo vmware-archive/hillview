@@ -91,7 +91,7 @@ public interface IStringColumn extends IColumn {
     default IColumn convertKind(
             ContentsKind kind, String newColName, IMembershipSet set) {
         IMutableColumn newColumn = this.allocateConvertedColumn(
-                kind, set, newColName);
+                kind, newColName);
         switch(kind) {
             case Json:
             case String:

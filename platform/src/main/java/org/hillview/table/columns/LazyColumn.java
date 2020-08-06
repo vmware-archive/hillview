@@ -23,8 +23,6 @@ import org.hillview.table.api.*;
 import org.hillview.utils.HillviewLogger;
 
 import javax.annotation.Nullable;
-import java.time.Duration;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -63,21 +61,6 @@ public class LazyColumn extends BaseColumn {
     @Override
     public int getInt(final int rowIndex) {
         return this.ensureLoaded().getInt(rowIndex);
-    }
-
-    @Override
-    public Duration getDuration(final int rowIndex) {
-        return this.ensureLoaded().getDuration(rowIndex);
-    }
-
-    @Override
-    public Interval getInterval(final int rowIndex) {
-        return this.ensureLoaded().getInterval(rowIndex);
-    }
-
-    @Override
-    public LocalTime getTime(final int rowIndex) {
-        return this.ensureLoaded().getTime(rowIndex);
     }
 
     @Override

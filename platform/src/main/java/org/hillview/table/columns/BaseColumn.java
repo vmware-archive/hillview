@@ -23,8 +23,6 @@ import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IMutableColumn;
 import org.hillview.table.api.Interval;
 
-import java.time.Duration;
-import java.time.LocalTime;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -61,16 +59,6 @@ public abstract class BaseColumn implements IColumn {
 
     @Override
     public int getInt(final int rowIndex) {
-        throw new UnsupportedOperationException(this.toString());
-    }
-
-    @Override
-    public Duration getDuration(final int rowIndex) {
-        throw new UnsupportedOperationException(this.toString());
-    }
-
-    @Override
-    public LocalTime getTime(final int rowIndex) {
         throw new UnsupportedOperationException(this.toString());
     }
 
