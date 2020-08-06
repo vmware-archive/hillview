@@ -455,6 +455,17 @@ export function findElement(cssselector: string, allowNull?: boolean): HTMLEleme
 }
 
 /**
+ * Returns an input box element containing the specified text.
+ * @param text       Text to insert as the value.
+ */
+export function makeInputBox(text: string | null): HTMLElement {
+    const inputBox = document.createElement("input");
+    if (text != null)
+        inputBox.value = text;
+    return inputBox;
+}
+
+/**
  * Returns a span element containing the specified text.
  * @param text       Text to insert in span.
  * @param highlight  If true the span has class highlight.

@@ -37,7 +37,7 @@ import {IDataView} from "./ui/dataview";
 import {FullPage, PageTitle} from "./ui/fullPage";
 import {ContextMenu, MenuItem, SubMenu, TopMenuItem} from "./ui/menu";
 import {IHtmlElement, removeAllChildren, ViewKind} from "./ui/ui";
-import {assert, cloneArray, EnumIterators, ICancellable} from "./util";
+import {assert, cloneArray, EnumIterators, ICancellable, getUUID} from "./util";
 import {TrellisHeatmapView} from "./dataViews/trellisHeatmapView";
 import {TrellisHistogram2DView} from "./dataViews/trellisHistogram2DView";
 import {TrellisHistogramView} from "./dataViews/trellisHistogramView";
@@ -46,6 +46,7 @@ import {OnCompleteReceiver} from "./rpc";
 import {QuartilesHistogramView} from "./dataViews/quartilesHistogramView";
 import {TrellisHistogramQuartilesView} from "./dataViews/trellisHistogramQuartilesView";
 import {saveAs} from "./ui/dialog";
+import {showBookmarkURL} from "./ui/dialog";
 
 export interface IViewSerialization {
     viewKind: ViewKind;
@@ -177,6 +178,11 @@ export class DatasetView implements IHtmlElement {
         this.topLevel.appendChild(this.pageContainer);
         this.topLevel.appendChild(document.createElement("hr"));
         this.menu = new ContextMenu(this.topLevel, [{
+            text: "Bookmark this tab",
+            action: () => this.createBookmark(),
+            help: "Save the views in this tab to Hillview's directory.\n" +
+                "This tab can be loaded later by visiting the given URL.",
+        }, {
             text: "Save this tab to file",
             action: () => this.saveToFile(),
             help: "Save the views in this tab to a local file;\n" +
@@ -577,6 +583,24 @@ export class DatasetView implements IHtmlElement {
             // so there is no point minimizing it here.
         }
     }
+
+    public createBookmark(): void {
+        const ser = this.serialize();
+        const content = JSON.stringify(ser);
+        const id = getUUID();
+        const filename = id + ".txt";
+        const bookmarkInfo: string[] = [filename, content];
+
+        const rr = this.remoteObject.createStreamingRpcRequest<string[]>("createBookmark", bookmarkInfo);
+        const updateReceiver = new CreateBookmarkReceiver(this, this.loadMenuPage, false, rr);
+        rr.invoke(updateReceiver);
+        updateReceiver.onCompleted();
+        // TODO: find out how can we get the hostname dynamically
+        const hostname = "localhost";
+        const url = hostname + ":8080/bookmark/" + id;
+
+        showBookmarkURL(url);
+    }
 }
 
 class UploadPrivacyReceiver extends OnCompleteReceiver<string> {
@@ -590,4 +614,15 @@ class UploadPrivacyReceiver extends OnCompleteReceiver<string> {
         console.log("Privacy policy has been updated.");
         this.dataset.refresh();
     }
+}
+
+class CreateBookmarkReceiver extends OnCompleteReceiver<string[]> {
+  public constructor( protected dataset: DatasetView, page: FullPage, protected rebuild: boolean, operation: ICancellable<string[]>) {
+    super(page, operation, "create bookmark");
+  }
+
+  // noinspection JSUnusedLocalSymbols
+  public run(value: string[]): void {
+    console.log("Bookmark has been created.");
+  }
 }

@@ -37,6 +37,8 @@ import org.jblas.DoubleMatrix;
 import javax.annotation.Nullable;
 import javax.websocket.Session;
 import java.util.List;
+import java.io.File;
+import java.io.FileWriter;
 
 /**
  * This is the most important RpcTarget, representing a remote table.
@@ -186,6 +188,28 @@ public final class TableTarget extends TableRpcTarget {
         SaveAsOrcSketch sk = new SaveAsOrcSketch(
                 args.folder, args.schema, Utilities.arrayToMap(args.renameMap), true);
         this.runCompleteSketch(this.table, sk, request, context);
+    }
+
+    @HillviewRpc
+    public void createBookmark(RpcRequest request, RpcRequestContext context) {
+        String[] bookmarkInfo = request.parseArgs(String[].class);
+        try {
+            // TODO: This dir should be created by default during the installation
+            String bookmarkDir = "bookmark";
+            File directory = new File(bookmarkDir);
+            if (!directory.exists())
+                directory.mkdir();
+
+            File file = new File(bookmarkDir, bookmarkInfo[0]);
+            if (!file.createNewFile())
+                HillviewLogger.instance.warn("Same bookmark file already exists");
+            
+            FileWriter writer = new FileWriter(file);
+            writer.write(bookmarkInfo[1]);
+            writer.close();
+        } catch (Exception e) {
+            HillviewLogger.instance.warn("Failed saving bookmark file", "{0}", e.getMessage());
+        }
     }
 
     static class QuantilesVectorInfo extends HistogramInfo {
