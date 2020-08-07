@@ -37,6 +37,7 @@ import org.jblas.DoubleMatrix;
 import javax.annotation.Nullable;
 import javax.websocket.Session;
 import java.util.List;
+import java.util.UUID;
 import java.io.File;
 import java.io.FileWriter;
 
@@ -192,24 +193,23 @@ public final class TableTarget extends TableRpcTarget {
 
     @HillviewRpc
     public void createBookmark(RpcRequest request, RpcRequestContext context) {
-        String[] bookmarkInfo = request.parseArgs(String[].class);
+        String content = request.parseArgs(String.class);
+        String guid = UUID.randomUUID().toString();
         try {
             // TODO: This dir should be created by default during the installation
-            String bookmarkDir = "bookmark";
+            String bookmarkDir = BookmarkServlet.bookmarkDirectory;
             File directory = new File(bookmarkDir);
-            if (!directory.exists())
-                directory.mkdir();
-
-            File file = new File(bookmarkDir, bookmarkInfo[0]);
-            if (!file.createNewFile())
-                HillviewLogger.instance.warn("Same bookmark file already exists");
-            
+            if (!directory.exists()) directory.mkdir();
+            File file = new File(BookmarkServlet.bookmarkDirectory,
+                guid + BookmarkServlet.bookmarkExtension);
             FileWriter writer = new FileWriter(file);
-            writer.write(bookmarkInfo[1]);
+            writer.write(content);
             writer.close();
         } catch (Exception e) {
             HillviewLogger.instance.warn("Failed saving bookmark file", "{0}", e.getMessage());
         }
+        // TODO: This directRPCReply might be better if we move it to rpc related class
+        InitialObjectTarget.directRPCReply(request, context, guid);
     }
 
     static class QuantilesVectorInfo extends HistogramInfo {

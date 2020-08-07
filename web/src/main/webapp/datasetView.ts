@@ -37,12 +37,12 @@ import {IDataView} from "./ui/dataview";
 import {FullPage, PageTitle} from "./ui/fullPage";
 import {ContextMenu, MenuItem, SubMenu, TopMenuItem} from "./ui/menu";
 import {IHtmlElement, removeAllChildren, ViewKind} from "./ui/ui";
-import {assert, cloneArray, EnumIterators, ICancellable, getUUID} from "./util";
+import {assert, cloneArray, EnumIterators, ICancellable, PartialResult} from "./util";
 import {TrellisHeatmapView} from "./dataViews/trellisHeatmapView";
 import {TrellisHistogram2DView} from "./dataViews/trellisHistogram2DView";
 import {TrellisHistogramView} from "./dataViews/trellisHistogramView";
 import JSONEditor, {JSONEditorOptions} from "jsoneditor";
-import {OnCompleteReceiver} from "./rpc";
+import {OnCompleteReceiver, Receiver} from "./rpc";
 import {QuartilesHistogramView} from "./dataViews/quartilesHistogramView";
 import {TrellisHistogramQuartilesView} from "./dataViews/trellisHistogramQuartilesView";
 import {saveAs} from "./ui/dialog";
@@ -587,19 +587,9 @@ export class DatasetView implements IHtmlElement {
     public createBookmark(): void {
         const ser = this.serialize();
         const content = JSON.stringify(ser);
-        const id = getUUID();
-        const filename = id + ".txt";
-        const bookmarkInfo: string[] = [filename, content];
-
-        const rr = this.remoteObject.createStreamingRpcRequest<string[]>("createBookmark", bookmarkInfo);
-        const updateReceiver = new CreateBookmarkReceiver(this, this.loadMenuPage, false, rr);
+        const rr = this.remoteObject.createStreamingRpcRequest<string>("createBookmark", content);
+        const updateReceiver = new CreateBookmarkURLReceiver(this, this.loadMenuPage, false, rr);
         rr.invoke(updateReceiver);
-        updateReceiver.onCompleted();
-        // TODO: find out how can we get the hostname dynamically
-        const hostname = "localhost";
-        const url = hostname + ":8080/bookmark/" + id;
-
-        showBookmarkURL(url);
     }
 }
 
@@ -616,13 +606,20 @@ class UploadPrivacyReceiver extends OnCompleteReceiver<string> {
     }
 }
 
-class CreateBookmarkReceiver extends OnCompleteReceiver<string[]> {
-  public constructor( protected dataset: DatasetView, page: FullPage, protected rebuild: boolean, operation: ICancellable<string[]>) {
-    super(page, operation, "create bookmark");
-  }
+class CreateBookmarkURLReceiver extends Receiver<string> {
+    public constructor( protected dataset: DatasetView, page: FullPage, protected rebuild: boolean, operation: ICancellable<string>) {
+        super(page, operation, "create bookmark");
+    }
 
-  // noinspection JSUnusedLocalSymbols
-  public run(value: string[]): void {
-    console.log("Bookmark has been created.");
-  }
+    // noinspection JSUnusedLocalSymbols
+    public run(value: string): void {
+        console.log("Bookmark has been created.");
+    }
+
+    public onNext(value: PartialResult<string>): void {
+        super.onNext(value);
+        const url = window.location.hostname + ":" + window.location.port + "/bookmark?id=" + value.data;
+        showBookmarkURL(url);
+        super.onCompleted();
+    }
 }

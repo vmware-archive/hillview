@@ -18,7 +18,7 @@
 import {DatasetView} from "./datasetView";
 import {InitialObject} from "./initialObject";
 import {FileSetDescription, JdbcConnectionInformation, CassandraConnectionInfo, Status, UIConfig} from "./javaBridge";
-import {OnCompleteReceiver, RemoteObject} from "./rpc";
+import {OnCompleteReceiver, Receiver, RemoteObject} from "./rpc";
 import {Test} from "./test";
 import {IDataView} from "./ui/dataview";
 import {Dialog, FieldKind} from "./ui/dialog";
@@ -26,7 +26,7 @@ import {ErrorDisplay} from "./ui/errReporter";
 import {FullPage} from "./ui/fullPage";
 import {MenuItem, SubMenu, TopMenu, TopMenuItem} from "./ui/menu";
 import {ViewKind} from "./ui/ui";
-import {Converters, ICancellable, loadFile, getUUID} from "./util";
+import {Converters, ICancellable, loadFile, getUUID, PartialResult} from "./util";
 import {HillviewToplevel} from "./toplevel";
 
 /**
@@ -49,6 +49,8 @@ export class LoadMenu extends RemoteObject implements IDataView {
         this.console = new ErrorDisplay();
         this.top.appendChild(this.console.getHTMLRepresentation());
         this.getUIConfig();
+        // Check whether the user is trying to visit a bookmark link
+        this.tryOpeningBookmark();
     }
 
     public getRemoteObjectId(): string | null {
@@ -360,17 +362,24 @@ export class LoadMenu extends RemoteObject implements IDataView {
         dialog.show();
     }
 
-    public loaded(savedViewJson: string, title: string): void {
+    public loaded(savedViewJson: string, title?: string): void {            
         const json = JSON.parse(savedViewJson);
         if (json == null || json.views == null || json.remoteObjectId == null) {
             this.page.reportError("File could not be parsed");
             return;
         }
+        if (title === undefined) title = json.views[0].title;
         this.page.reportError("Reconstructing " + json.views.length + " views");
         const dataset = new DatasetView(json.remoteObjectId, title, json, this.page);
         const success = dataset.reconstruct(json);
         if (!success)
             this.page.reportError("Error reconstructing view");
+    }
+
+    public tryOpeningBookmark(): void {
+        const rr = this.createStreamingRpcRequest<string>("openingBookmark", null);
+        const updateReceiver = new CreateBookmarkContentReceiver(this.page, rr, this);
+        rr.invoke(updateReceiver);
     }
 
     public showManagement(show: boolean): void {
@@ -745,5 +754,28 @@ class PingReceiver extends OnCompleteReceiver<string[]> {
 
     public run(value: string[]): void {
         this.page.reportError(value.toString());
+    }
+}
+
+class CreateBookmarkContentReceiver extends Receiver<string> {
+    loadMenu: LoadMenu;
+
+    public constructor(page: FullPage, operation: ICancellable<string>, loadMenu: LoadMenu) {
+        super(page, operation, "open bookmark");
+        this.loadMenu = loadMenu;
+    }
+
+    // noinspection JSUnusedLocalSymbols
+    public run(value: string[]): void {
+        console.log("Try opening bookmark.");
+    }   
+
+    public onNext(value: PartialResult<string>): void {
+        super.onNext(value);
+        super.onCompleted();
+        if (value.data != null) {
+            const title = value.data;
+            this.loadMenu.loaded(value.data);
+        }
     }
 }
