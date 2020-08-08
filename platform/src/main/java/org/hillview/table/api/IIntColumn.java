@@ -86,10 +86,12 @@ public interface IIntColumn extends IColumn {
             }
             case Date:
             case Duration:
+            case LocalDate:
+            case Time:
+            case None:
+            case Interval:
                 throw new UnsupportedOperationException("Conversion from " + this.getKind()
                         + " to " + kind + " is not supported.");
-            default:
-                throw new RuntimeException("Unexpected column kind " + kind);
         }
         return newColumn;
     }

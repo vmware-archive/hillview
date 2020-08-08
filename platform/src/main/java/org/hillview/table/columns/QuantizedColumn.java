@@ -22,7 +22,6 @@ import org.hillview.table.api.*;
 import org.hillview.utils.Converters;
 
 import javax.annotation.Nullable;
-import java.time.Duration;
 
 /**
  * A quantized column has an attached quantization policy and another (real) column.
@@ -84,9 +83,13 @@ public class QuantizedColumn extends BaseColumn {
             case Date:
             case Double:
             case Duration:
+            case Time:
+            case LocalDate:
                 return this.getDouble(rowIndex);
             default:
-                throw new RuntimeException("Unexpected data type");
+            case Interval:
+            case None:
+                throw new RuntimeException("Unexpected data kind " + this.description.kind);
         }
     }
 
@@ -130,9 +133,13 @@ public class QuantizedColumn extends BaseColumn {
             case Duration:
             case Double:
             case Date:
+            case LocalDate:
+            case Time:
                 return this.quantization.outOfRange(this.data.asDouble(rowIndex));
+            case None:
+            case Interval:
             default:
-                throw new RuntimeException("Unexpected data type");
+                throw new RuntimeException("Unexpected data kind " + QuantizedColumn.this.description.kind);
         }
     }
 
@@ -170,10 +177,14 @@ public class QuantizedColumn extends BaseColumn {
                         case Duration:
                         case Double:
                         case Date:
+                        case LocalDate:
+                        case Time:
                             return Double.compare(QuantizedColumn.this.getDouble(i),
                                     QuantizedColumn.this.getDouble(j));
                         default:
-                            throw new RuntimeException("Unexpected data type");
+                        case Interval:
+                        case None: // handled above
+                            throw new RuntimeException("Unexpected data kind " + QuantizedColumn.this.description.kind);
                     }
                 }
             }
@@ -205,8 +216,11 @@ public class QuantizedColumn extends BaseColumn {
             case Double:
             case Duration:
             case Time:
+            case LocalDate:
                 return hash.hashLong(Double.doubleToRawLongBits(this.getDouble(rowIndex)));
             default:
+            case Interval:
+            case None: // handled above
                 throw new RuntimeException("Unexpected data type");
         }
     }

@@ -24,6 +24,7 @@ import org.hillview.table.columns.*;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.test.BaseTest;
+import org.hillview.utils.Converters;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -33,23 +34,21 @@ import java.time.Instant;
 public class ColumnTest extends BaseTest {
     @Test
     public void testContentsKind() {
-        Object o = ContentsKind.Integer.minimumValue();
+        Object o = ContentsKind.Integer.defaultValue();
         Assert.assertNotNull(o);
-        Assert.assertEquals(Integer.MIN_VALUE, o);
-        o = ContentsKind.Date.minimumValue();
+        Assert.assertEquals(0, o);
+        o = ContentsKind.Date.defaultValue();
         Instant now = Instant.now();
         Assert.assertNotNull(o);
-        Assert.assertTrue(now.isAfter((Instant)o));
-        o = ContentsKind.String.minimumValue();
+        Assert.assertTrue(now.isAfter(Converters.toDate((double)o)));
+        o = ContentsKind.String.defaultValue();
         Assert.assertEquals("", o);
-        o = ContentsKind.Duration.minimumValue();
-        Instant later = Instant.now();
-        Duration duration = Duration.between(now, later);
+        o = ContentsKind.Duration.defaultValue();
         Assert.assertNotNull(o);
-        Assert.assertEquals(1, duration.compareTo((Duration)o));
-        o = ContentsKind.Double.minimumValue();
+        Assert.assertEquals(Duration.ofDays(0), Converters.toDuration((double)o));
+        o = ContentsKind.Double.defaultValue();
         Assert.assertNotNull(o);
-        Assert.assertEquals(-Double.MAX_VALUE, o);
+        Assert.assertEquals(0.0, o);
     }
 
     @Test

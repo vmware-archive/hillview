@@ -78,9 +78,10 @@ types:
   * JSON (strings that represent JSON values)
   * Double (64-bit floating point)
   * Integer (32-bit)
-  * Date+time (the Java Instant class is used to represent such date+time values
-    on the server side; dates include time zone information)
-  * Durations (represented using the Java Duration class)
+  * Date: a date including time and timezone
+  * LocalDate: a date includ time, but without any timezone information
+  * Time: a time within a day
+  * Durations (differences between two times)
   * Intervals: an interval contains two double values.
     Operations on interval values are described in section (#interval-values).
 

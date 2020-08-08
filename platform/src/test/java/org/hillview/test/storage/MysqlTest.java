@@ -38,7 +38,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.sql.SQLException;
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 /**
  * Most of theses tests assume that the MySQL test database from
@@ -214,10 +214,10 @@ public class MysqlTest extends JdbcTest {
         DataRange range = db.numericDataRange(
                 new ColumnDescription("hire_date", ContentsKind.Date), null);
         Assert.assertNotNull(range);
-        Instant first = parseOneDate("1985/01/01");
-        Instant last = parseOneDate("2000/01/28");
-        Assert.assertEquals(first, Converters.toDate(range.min));
-        Assert.assertEquals(last, Converters.toDate(range.max));
+        LocalDateTime first = parseOneLocalDate("1985/01/01");
+        LocalDateTime last = parseOneLocalDate("2000/01/28");
+        Assert.assertEquals(first, Converters.toLocalDate(range.min));
+        Assert.assertEquals(last, Converters.toLocalDate(range.max));
         Assert.assertEquals(300024, range.presentCount);
         Assert.assertEquals(0, range.missingCount);
         db.disconnect();
@@ -235,12 +235,12 @@ public class MysqlTest extends JdbcTest {
             this.ignoringException("Cannot connect to database", e);
             return;
         }
-        Instant first = parseOneDate("1952/02/01");
-        Instant last = parseOneDate("1965/02/01");
+        LocalDateTime first = parseOneLocalDate("1952/02/01");
+        LocalDateTime last = parseOneLocalDate("1965/02/01");
         DoubleHistogramBuckets buckets = new DoubleHistogramBuckets("birth_date",
                 Converters.toDouble(first), Converters.toDouble(last), 10);
         JsonGroups<Count> histogram = db.histogram(
-                new ColumnDescription("birth_date", ContentsKind.Date), buckets,
+                new ColumnDescription("birth_date", ContentsKind.LocalDate), buckets,
                 null, null, 300024);
         Assert.assertNotNull(histogram);
         Assert.assertEquals(10, histogram.size());
@@ -263,14 +263,14 @@ public class MysqlTest extends JdbcTest {
             this.ignoringException("Cannot connect to database", e);
             return;
         }
-        Instant first = parseOneDate("1952/02/01");
-        Instant last = parseOneDate("1965/02/01");
+        LocalDateTime first = parseOneLocalDate("1952/02/01");
+        LocalDateTime last = parseOneLocalDate("1965/02/01");
         DoubleHistogramBuckets buckets = new DoubleHistogramBuckets("birth_date",
                 Converters.toDouble(first), Converters.toDouble(last), 10);
         DoubleColumnQuantization quantization = new DoubleColumnQuantization("birth_date",
                 86400, Converters.toDouble(first), Converters.toDouble(last));
         JsonGroups<Count> histogram = db.histogram(
-                new ColumnDescription("birth_date", ContentsKind.Date),
+                new ColumnDescription("birth_date", ContentsKind.LocalDate),
                 buckets, null, quantization, 300024);
         Assert.assertNotNull(histogram);
         Assert.assertEquals(10, histogram.size());
@@ -293,16 +293,16 @@ public class MysqlTest extends JdbcTest {
             this.ignoringException("Cannot connect to database", e);
             return;
         }
-        Instant first = parseOneDate("1955/01/01");
-        Instant last = parseOneDate("1965/02/01");
+        LocalDateTime first = parseOneLocalDate("1955/01/01");
+        LocalDateTime last = parseOneLocalDate("1965/02/01");
         DoubleHistogramBuckets buckets = new DoubleHistogramBuckets("birth_date",
                 Converters.toDouble(first), Converters.toDouble(last), 10);
-        Instant firstQ = parseOneDate("1952/02/01");
-        Instant lastQ = parseOneDate("1965/02/01");
+        LocalDateTime firstQ = parseOneLocalDate("1952/02/01");
+        LocalDateTime lastQ = parseOneLocalDate("1965/02/01");
         DoubleColumnQuantization quantization = new DoubleColumnQuantization("birth_date",
                 86400, Converters.toDouble(firstQ), Converters.toDouble(lastQ));
         JsonGroups<Count> histogram = db.histogram(
-                new ColumnDescription("birth_date", ContentsKind.Date),
+                new ColumnDescription("birth_date", ContentsKind.LocalDate),
                 buckets, null, quantization, 232730);
         Assert.assertNotNull(histogram);
         Assert.assertEquals(10, histogram.size());

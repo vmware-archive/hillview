@@ -612,6 +612,13 @@ class ComparisonFilterDialog extends Dialog {
                 return null;
             }
             doubleValue = Converters.doubleFromDate(date);
+        } else if (columnDescription.kind === "LocalDate") {
+            const date = new Date(value);
+            if (date == null) {
+                this.reporter.reportError("Could not parse '" + value + "' as a date");
+                return null;
+            }
+            doubleValue = Converters.doubleFromLocalDate(date);
         } else if (!kindIsString(columnDescription.kind)) {
             doubleValue = parseFloat(value);
             if (doubleValue == null) {

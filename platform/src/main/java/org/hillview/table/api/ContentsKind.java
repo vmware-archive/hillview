@@ -17,29 +17,25 @@
 
 package org.hillview.table.api;
 
-import org.hillview.utils.Converters;
-
 import javax.annotation.Nullable;
 
 /**
  * Describes the kind of data that is in the column,
  */
 public enum ContentsKind {
-    None,     /* Data kind is unknown */
-    String,
-    Date,     /* aka date including time */
-    Integer,
-    Json,
-    Double,
-    Interval, /* A pair of values that can be converted to double: start, end */
-    Time,     /* aka time of day */
-    Duration; /* aka time duration */
+    None,     /* Data kind is unknown or it's all nulls */
+    String,   /* Represented by Strings */
+    Date,     /* Internally stored as Double, Objects are Instant */
+    Integer,  /* Java 32-bit integers */
+    Json,     /* A String that we expect can be parsed as a Json object */
+    Double,   /* A Double value */
+    Interval, /* A pair of double values that can be converted to double: start, end */
+    Time,     /* Internally stored as Double, Objects are LocalTime */
+    Duration, /* Internally stored as Double, Objects are Duration */
+    LocalDate;/* Internally stored as Double, Objects are LocalDateTime */
 
-    /**
-     * The minimum value representable by this kind.
-     */
     @Nullable
-    public Object minimumValue() {
+    public Object defaultValue() {
         switch (this) {
             case None:
                 return null;
@@ -47,17 +43,15 @@ public enum ContentsKind {
             case Json:
                 return "";
             case Date:
-                return Converters.toDate(Long.MIN_VALUE);
-            case Integer:
-                return java.lang.Integer.MIN_VALUE;
-            case Double:
-                return -java.lang.Double.MAX_VALUE;
+            case LocalDate:
             case Duration:
-                return Converters.toDuration(java.lang.Long.MIN_VALUE);
-            case Interval:
-                return org.hillview.table.api.Interval.minimumValue;
+            case Double:
             case Time:
-                return (double)0;
+                return 0.0;
+            case Integer:
+                return 0;
+            case Interval:
+                return org.hillview.table.api.Interval.defaultValue;
             default:
                 throw new RuntimeException("Unexpected kind " + this);
         }
@@ -79,6 +73,7 @@ public enum ContentsKind {
             case Integer:
             case Double:
             case Time:
+            case LocalDate:
             default:
                 return false;
         }
@@ -96,6 +91,7 @@ public enum ContentsKind {
             case Double:
             case Interval:
             case Time:
+            case LocalDate:
             default:
                 return false;
         }
@@ -113,6 +109,7 @@ public enum ContentsKind {
             case Date:
             case Time:
             case Duration:
+            case LocalDate:
             default:
                 return true;
         }

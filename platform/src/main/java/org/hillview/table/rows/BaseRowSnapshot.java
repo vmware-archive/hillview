@@ -60,6 +60,8 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
                 return false;
             boolean same;
             switch (kinds.get(i)) {
+                case None:
+                    return true;
                 case String:
                 case Json:
                     same = this.asString(cn).equals(other.asString(cn));
@@ -71,6 +73,7 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
                 case Date:
                 case Double:
                 case Duration:
+                case LocalDate:
                     same = this.getDouble(cn) == other.getDouble(cn);
                     break;
                 case Interval:
@@ -97,6 +100,9 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
             if (this.isMissing(cn))
                 continue;
             switch (kinds.get(i)) {
+                case None:
+                    hashCode = 0;
+                    break;
                 case String:
                 case Json:
                     //noinspection ConstantConditions
@@ -109,6 +115,7 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
                 case Date:
                 case Double:
                 case Duration:
+                case LocalDate:
                     hashCode = HashUtil.murmurHash3(hashCode, Double.hashCode(this.getDouble(cn)));
                     break;
                 case Interval:
@@ -159,6 +166,9 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
             else if (otherMissing)
                 c = -1;
             else switch (cso.columnDescription.kind) {
+                case None:
+                    c = 0;
+                    break;
                 case String:
                 case Json:
                     c = this.getString(cn).compareTo(other.getString(cn));
@@ -170,6 +180,7 @@ public abstract class BaseRowSnapshot implements IRow, Serializable {
                 case Date:
                 case Double:
                 case Duration:
+                case LocalDate:
                     c = Double.compare(this.getDouble(cn), other.getDouble(cn));
                     break;
                 case Interval:

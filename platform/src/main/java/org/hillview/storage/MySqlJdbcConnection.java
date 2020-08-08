@@ -32,7 +32,9 @@ import org.hillview.utils.Linq;
 
 import javax.annotation.Nullable;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.function.Function;
@@ -107,6 +109,11 @@ public class MySqlJdbcConnection extends JdbcConnection {
                 Instant maxDate = Converters.toDate(filter.max);
                 minString = this.dateFormatter.format(minDate);
                 maxString = this.dateFormatter.format(maxDate);
+            } else if (filter.cd.kind == ContentsKind.LocalDate) {
+                LocalDateTime minDate = Converters.toLocalDate(filter.min);
+                LocalDateTime maxDate = Converters.toLocalDate(filter.max);
+                minString = this.dateFormatter.format(minDate);
+                maxString = this.dateFormatter.format(maxDate);
             } else {
                 minString = Double.toString(filter.min);
                 maxString = Double.toString(filter.max);
@@ -141,6 +148,14 @@ public class MySqlJdbcConnection extends JdbcConnection {
             } else if (this.cd.kind == ContentsKind.Date) {
                 DoubleColumnQuantization q = this.getDoubleQuantization();
                 Instant minDate = Converters.toDate(q.globalMin);
+                String minString = this.dateFormatter.format(minDate);
+                double g = 1000.0 * q.granularity;
+                return "TIMESTAMPADD(MICROSECOND, FLOOR(TIMESTAMPDIFF(MICROSECOND, " +
+                        "'" + minString + "', " + cd.name + ") / " + g + ") * " + g + ", '" +
+                        minString + "')";
+            } else if (this.cd.kind == ContentsKind.LocalDate) {
+                DoubleColumnQuantization q = this.getDoubleQuantization();
+                LocalDateTime minDate = Converters.toLocalDate(q.globalMin);
                 String minString = this.dateFormatter.format(minDate);
                 double g = 1000.0 * q.granularity;
                 return "TIMESTAMPADD(MICROSECOND, FLOOR(TIMESTAMPDIFF(MICROSECOND, " +
@@ -199,7 +214,7 @@ public class MySqlJdbcConnection extends JdbcConnection {
         String quote(ColumnDescription cd, String value) {
             if (cd.kind.isString()) {
                 return "BINARY '" + value + "'";
-            } else if (cd.kind == ContentsKind.Date) {
+            } else if (cd.kind == ContentsKind.Date || cd.kind == ContentsKind.LocalDate) {
                 return "'" + value + "'";
             } else {
                 return value;
@@ -216,6 +231,11 @@ public class MySqlJdbcConnection extends JdbcConnection {
             return this.quote(this.dateFormatter.format(i));
         }
 
+        String quoteLocalDate(double value) {
+            LocalDateTime i = Converters.toLocalDate(value);
+            return this.quote(this.dateFormatter.format(i));
+        }
+
         String min() {
             if (quantization == null)
                 return "";
@@ -223,6 +243,9 @@ public class MySqlJdbcConnection extends JdbcConnection {
             if (this.cd.kind == ContentsKind.Date) {
                 DoubleColumnQuantization q = this.getDoubleQuantization();
                 return this.quoteDate(q.globalMin);
+            } if (this.cd.kind == ContentsKind.LocalDate) {
+                DoubleColumnQuantization q = this.getDoubleQuantization();
+                return this.quoteLocalDate(q.globalMin);
             } else {
                 Converters.checkNull(this.quantization);
                 return quote(this.quantization.minAsString());
@@ -236,6 +259,9 @@ public class MySqlJdbcConnection extends JdbcConnection {
             if (this.cd.kind == ContentsKind.Date) {
                 DoubleColumnQuantization q = this.getDoubleQuantization();
                 return this.quoteDate(q.globalMax);
+            } if (this.cd.kind == ContentsKind.LocalDate) {
+                DoubleColumnQuantization q = this.getDoubleQuantization();
+                return this.quoteLocalDate(q.globalMax);
             } else {
                 Converters.checkNull(this.quantization);
                 return this.quote(this.quantization.maxAsString());
@@ -287,6 +313,16 @@ public class MySqlJdbcConnection extends JdbcConnection {
                 return "CAST(FLOOR(TIMESTAMPDIFF(MICROSECOND, '" + this.dateFormatter.format(minDate)
                         + "', " + cd.name + ") * " +
                         scale + ") as UNSIGNED)";
+            } else if (this.cd.kind == ContentsKind.LocalDate) {
+                DoubleHistogramBuckets buckets = this.getDoubleBuckets();
+                LocalDateTime minDate = Converters.toLocalDate(buckets.minValue);
+                LocalDateTime maxDate = Converters.toLocalDate(buckets.maxValue);
+                double min = minDate.atZone(ZoneOffset.systemDefault()).toInstant().toEpochMilli() * 1000.0;
+                double max = maxDate.atZone(ZoneOffset.systemDefault()).toInstant().toEpochMilli() * 1000.0;
+                double scale = (double)buckets.bucketCount / (max - min);
+                return "CAST(FLOOR(TIMESTAMPDIFF(MICROSECOND, '" + this.dateFormatter.format(minDate)
+                        + "', " + cd.name + ") * " +
+                        scale + ") as UNSIGNED)";
             } else {
                 if (!this.cd.kind.isNumeric())
                     throw new RuntimeException("Unexpected kind " + this.cd.kind);
@@ -301,6 +337,8 @@ public class MySqlJdbcConnection extends JdbcConnection {
             Converters.checkNull(this.cd);
             if (this.cd.kind == ContentsKind.Date) {
                 return this.quoteDate(this.getDoubleBuckets().minValue);
+            } if (this.cd.kind == ContentsKind.LocalDate) {
+                return this.quoteLocalDate(this.getDoubleBuckets().minValue);
             } else if (this.cd.kind.isString()) {
                 return this.quote(this.getStringBuckets().minValue);
             } else {
@@ -312,6 +350,8 @@ public class MySqlJdbcConnection extends JdbcConnection {
             Converters.checkNull(this.cd);
             if (this.cd.kind == ContentsKind.Date) {
                 return this.quoteDate(this.getDoubleBuckets().maxValue);
+            } if (this.cd.kind == ContentsKind.LocalDate) {
+                return this.quoteLocalDate(this.getDoubleBuckets().maxValue);
             } else if (this.cd.kind.isString()) {
                 return this.quote(Converters.checkNull(this.getStringBuckets().maxValue));
             } else {

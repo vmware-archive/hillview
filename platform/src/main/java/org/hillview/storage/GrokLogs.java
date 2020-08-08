@@ -25,7 +25,8 @@ import org.hillview.utils.DateParsing;
 import org.hillview.utils.GrokExtra;
 import org.hillview.utils.HillviewLogger;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.io.BufferedReader;
@@ -49,9 +50,9 @@ public class GrokLogs extends LogFiles {
         private final Grok grok;
 
         @Nullable
-        private final Instant start;
+        private final LocalDateTime start;
         @Nullable
-        private final Instant end;
+        private final LocalDateTime end;
         @Nullable
         DateParsing dateTimeParser = null;
         /**
@@ -62,7 +63,7 @@ public class GrokLogs extends LogFiles {
         @Nullable
         private List<ColumnDescription> columnDescriptions = null;
 
-        LogFileLoader(final String path, @Nullable Instant start, @Nullable Instant end) {
+        LogFileLoader(final String path, @Nullable LocalDateTime start, @Nullable LocalDateTime end) {
             super(path);
             GrokCompiler grokCompiler = GrokCompiler.newInstance();
             grokCompiler.registerDefaultPatterns();
@@ -183,10 +184,17 @@ public class GrokLogs extends LogFiles {
                                     (this.start != null || this.end != null)) {
                                 if (this.dateTimeParser == null)
                                     this.dateTimeParser = new DateParsing(currentTimestamp);
-                                Instant parsed = this.dateTimeParser.parse(currentTimestamp);
-                                if (this.start != null && this.start.isAfter(parsed))
+
+                                LocalDateTime date;
+                                if (this.dateTimeParser.isLocalDate()) {
+                                    date = this.dateTimeParser.parseLocalDate(currentTimestamp);
+                                } else {
+                                    date = LocalDateTime.ofInstant(
+                                            this.dateTimeParser.parseDate(currentTimestamp), ZoneOffset.UTC);
+                                }
+                                if (this.start != null && this.start.isAfter(date))
                                     continue;
-                                if (this.end != null && this.end.isBefore(parsed))
+                                if (this.end != null && this.end.isBefore(date))
                                     // We assume timestamps are monotone, and thus
                                     // we won't see another one smaller.  So we end
                                     // parsing here.
@@ -228,7 +236,7 @@ public class GrokLogs extends LogFiles {
         }
     }
 
-    public LogFileLoader getFileLoader(String path, @Nullable Instant start, @Nullable Instant end) {
+    public LogFileLoader getFileLoader(String path, @Nullable LocalDateTime start, @Nullable LocalDateTime end) {
         return new LogFileLoader(path, start, end);
     }
 

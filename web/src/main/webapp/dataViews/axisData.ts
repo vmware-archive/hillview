@@ -314,6 +314,15 @@ export class AxisData {
                 this.axis = new AxisDescription(axis, labelPeriod, rotate, fullLabels);
                 break;
             }
+            case "LocalDate": {
+                const minDate: Date = Converters.localDateFromDouble(domain[0]);
+                const maxDate: Date = Converters.localDateFromDouble(domain[1]);
+                this.scale = d3scaleTime()
+                    .domain([minDate, maxDate])
+                    .range([0, pixels]);
+                this.axis = new AxisDescription(axisCreator(this.scale), 1, false, null);
+                break;
+            }
             case "Date":
             case "Time": {
                 const minDate: Date = Converters.dateFromDouble(domain[0]);
@@ -367,9 +376,10 @@ export class AxisData {
             result = formatNumber(Math.round(inv as number));
         else if (kindIsString(this.description.kind))
             result = this.getString(inv as number, true);
-        else if (this.description.kind === "Double" || this.description.kind == "Interval")
+        else if (this.description.kind == "Interval")
+            // Intervals are mapped to scalars on axes.
             result = formatNumber(inv as number);
-        else if (this.description.kind === "Date")
+        else if (this.description.kind === "Date" || this.description.kind === "LocalDate")
             result = formatDate(inv as Date);
         else if (this.description.kind === "Time")
             result = formatTime(inv as Date);
@@ -387,6 +397,8 @@ export class AxisData {
             result = inv as number;
         } else if (this.description.kind === "Date" || this.description.kind == "Time") {
             result = Converters.doubleFromDate(inv as Date);
+        } else if (this.description.kind == "LocalDate") {
+            result = Converters.doubleFromLocalDate(inv as Date);
         }
         return result;
     }
@@ -449,6 +461,7 @@ export class AxisData {
             case "Double":
             case "Date":
             case "Time":
+            case "LocalDate":
                 return new BucketBoundaries(
                      new BucketBoundary(start, valueKind, true),
                      new BucketBoundary(end, valueKind, inclusive)

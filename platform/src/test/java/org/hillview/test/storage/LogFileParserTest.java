@@ -67,21 +67,19 @@ public class LogFileParserTest extends BaseTest {
         LocalDate date = LocalDate.of(2017, 10, 12);
         LocalTime time = LocalTime.of(2, 17, 42, 722000000);
         LocalDateTime dt = LocalDateTime.of(date, time);
-        ZonedDateTime zdt = dt.atZone(ZoneId.systemDefault());
-        Instant instant = zdt.toInstant();
-        Assert.assertEquals(getValue(table, LogFiles.timestampColumnName, 0), instant);
-        Assert.assertEquals(getValue(table, "Role", 0), "worker");
-        Assert.assertEquals(getValue(table, "Level", 0), "INFO");
-        Assert.assertEquals(getValue(table, "Machine", 0), "ubuntu");
-        Assert.assertEquals(getValue(table, "Thread", 0), "main");
-        Assert.assertEquals(getValue(table, "Class", 0), "org.hillview.dataset.LocalDataSet");
-        Assert.assertEquals(getValue(table, "Method", 0), "<clinit>");
-        Assert.assertEquals(getValue(table, "Message", 0), "Detect CPUs");
-        Assert.assertEquals(getValue(table, "Arguments", 0), "Using 3 processors");
-        Assert.assertEquals(getValue(table, LogFiles.lineNumberColumn, 0), 1);
-        Assert.assertEquals(getValue(table, LogFiles.directoryColumn, 0), "./");
-        Assert.assertEquals(getValue(table, LogFiles.filenameColumn, 0), f.getName());
-        Assert.assertNull(getValue(table, LogFiles.parseErrorColumn, 0));
+        Assert.assertEquals(dt, getValue(table, LogFiles.timestampColumnName, 0));
+        Assert.assertEquals("worker", getValue(table, "Role", 0));
+        Assert.assertEquals("INFO", getValue(table, "Level", 0));
+        Assert.assertEquals("ubuntu", getValue(table, "Machine", 0));
+        Assert.assertEquals("main", getValue(table, "Thread", 0));
+        Assert.assertEquals("org.hillview.dataset.LocalDataSet", getValue(table, "Class", 0));
+        Assert.assertEquals("<clinit>", getValue(table, "Method", 0));
+        Assert.assertEquals("Detect CPUs", getValue(table, "Message", 0));
+        Assert.assertEquals("Using 3 processors", getValue(table, "Arguments", 0));
+        Assert.assertEquals(1, getValue(table, LogFiles.lineNumberColumn, 0));
+        Assert.assertEquals("./", getValue(table, LogFiles.directoryColumn, 0));
+        Assert.assertEquals(f.getName(), getValue(table, LogFiles.filenameColumn, 0));
+        Assert.assertNull  (getValue(table, LogFiles.parseErrorColumn, 0));
     }
 
     @Test

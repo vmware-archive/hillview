@@ -260,10 +260,18 @@ export function describeQuartiles(data: SampleSet): string[] {
  * Direct counterpart of corresponding Java class
  */
 export class Converters {
-    public static dateFromDouble(value: number): Date | null {
+    public static dateFromDouble(value: number | null): Date | null {
         if (value == null)
             return null;
         return new Date(value);
+    }
+
+    // Javascript dates are always UTC
+    public static localDateFromDouble(value: number | null): Date | null {
+        if (value == null)
+            return null;
+        const offset = new Date().getTimezoneOffset();
+        return new Date(value + offset * 60 * 1000);
     }
 
     public static timeFromDouble(value: number): Date | null {
@@ -272,6 +280,13 @@ export class Converters {
 
     public static doubleFromDate(value: Date | null): number | null {
         return value?.getTime();
+    }
+
+    public static doubleFromLocalDate(value: Date | null): number | null {
+        if (value === null)
+            return null;
+        const offset = new Date().getTimezoneOffset();
+        return value.getTime() + offset * 60 * 1000;
     }
 
     /**
@@ -346,6 +361,9 @@ export class Converters {
             const arr = val as number[];
             return "[" + this.valueToString(arr[0], "Double", human) + ":" +
                 this.valueToString(arr[1], "Double", human) + "]";
+        } else if (kind === "LocalDate") {
+            const date = Converters.localDateFromDouble(val as number);
+            return formatDate(date);
         } else {
             assert(false);
         }
@@ -431,6 +449,7 @@ export class Converters {
             case "Date":
             case "Time":
             case "Duration":
+            case "LocalDate":
                 str = this.valueToString(filter.doubleValue, kind, true);
                 break;
             case "Interval":

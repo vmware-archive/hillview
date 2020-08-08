@@ -74,15 +74,10 @@ public class BasicColStats extends DataRange {
 
         boolean extractString = false;
         boolean numeric = false;
-        switch (column.getKind()) {
-            case String:
-            case Json:
-                extractString = this.computeStringMax;
-                break;
-            default:
-                numeric = true;
-                break;
-        }
+        if (column.getKind().isString())
+            extractString = this.computeStringMax;
+        else
+            numeric = true;
         while (currRow >= 0) {
             if (column.isMissing(currRow)) {
                 this.missingCount++;

@@ -183,6 +183,9 @@ public class OrcFileLoader extends TextFileLoader {
                         case None:
                         case Date:
                         case Duration:
+                        case Interval:
+                        case Time:
+                        case LocalDate:
                             throw new RuntimeException("Cannot convert long to " + to.getKind());
                         case Json:
                         case String:
@@ -205,6 +208,9 @@ public class OrcFileLoader extends TextFileLoader {
                         case None:
                         case Date:
                         case Duration:
+                        case LocalDate:
+                        case Interval:
+                        case Time:
                             throw new RuntimeException("Cannot convert double to " + to.getKind());
                         case Json:
                         case String:
@@ -226,6 +232,9 @@ public class OrcFileLoader extends TextFileLoader {
                         case None:
                         case Date:
                         case Duration:
+                        case Time:
+                        case LocalDate:
+                        case Interval:
                             throw new RuntimeException("Cannot convert string to " + to.getKind());
                         case Json:
                         case String:
@@ -257,6 +266,8 @@ public class OrcFileLoader extends TextFileLoader {
                         case None:
                         case Integer:
                         case Duration:
+                        case Time:
+                        default:
                             throw new RuntimeException("Cannot convert ORC date to "
                                     + to.getKind());
                         case Json:
@@ -265,6 +276,7 @@ public class OrcFileLoader extends TextFileLoader {
                             break;
                         case Double:
                         case Date:
+                        case LocalDate:
                             to.append(Converters.toDouble(value));
                             break;
                     }
@@ -280,6 +292,8 @@ public class OrcFileLoader extends TextFileLoader {
                         case None:
                         case Integer:
                         case Duration:
+                        case Time:
+                        case Interval:
                             throw new RuntimeException("Cannot convert ORC timestamp to "
                                     + to.getKind());
                         case Json:
@@ -288,6 +302,7 @@ public class OrcFileLoader extends TextFileLoader {
                             break;
                         case Double:
                         case Date:
+                        case LocalDate:
                             to.append(Converters.toDouble(instant));
                             break;
                     }

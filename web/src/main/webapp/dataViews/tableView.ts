@@ -984,6 +984,11 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                             ", " + Converters.dateFromDouble(pm.globalMax as number) + "]\n";
                         title += "Bucket size is "
                             + Converters.durationFromDouble(pm.granularity) + "\n";
+                    } else if (cd.kind === "LocalDate") {
+                        title += "Range is [" + Converters.localDateFromDouble(pm.globalMin as number) +
+                            ", " + Converters.localDateFromDouble(pm.globalMax as number) + "]\n";
+                        title += "Bucket size is "
+                            + Converters.durationFromDouble(pm.granularity) + "\n";
                     } else if (cd.kind === "Time") {
                         title += "Range is [" + Converters.timeFromDouble(pm.globalMin as number) +
                             ", " + Converters.timeFromDouble(pm.globalMax as number) + "]\n";
@@ -1121,6 +1126,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             case "Double":
             case "Date":
             case "Duration":
+            case "LocalDate":
                 doubleValue = value as number;
                 break;
             case "Interval":

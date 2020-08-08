@@ -37,8 +37,8 @@ public class Interval implements Serializable, IJson {
         this.end = end;
     }
 
-    public static final Interval minimumValue =
-            new Interval(-java.lang.Double.MAX_VALUE, -java.lang.Double.MAX_VALUE);
+    public static final Interval defaultValue =
+            new Interval(0.0, 0.0);
 
     public static String toString(Double start, Double end) {
         return "[" + start + " : " + end + "]";

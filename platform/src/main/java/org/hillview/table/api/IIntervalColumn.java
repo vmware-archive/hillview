@@ -28,16 +28,20 @@ public interface IIntervalColumn extends IColumn {
                 kind, newColName);
         switch(kind) {
             case Json:
-                this.convertToString(newColumn, set, row -> "{ start: " + this.getEndpoint(row, true) +
-                        ", end: " + this.getEndpoint(row, false));
+                this.convertToString(newColumn, set, row -> "[" + this.getEndpoint(row, true) +
+                        ", " + this.getEndpoint(row, false) + "]");
                 break;
             case String:
                 this.convertToString(newColumn, set, this::asString);
                 break;
+            case Interval:
             case Integer:
             case Double:
             case Date:
             case Duration:
+            case Time:
+            case LocalDate:
+            case None:
                 throw new UnsupportedOperationException("Conversion from " + this.getKind()
                         + " to " + kind + " is not supported.");
             default:

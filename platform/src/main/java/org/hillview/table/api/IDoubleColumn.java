@@ -48,7 +48,15 @@ public interface IDoubleColumn extends IColumn {
                 return du.toString();
             case Time:
                 LocalTime t = Converters.toTime(d);
-                return t.toString();
+                return Converters.toString(t);
+            case LocalDate:
+                LocalDateTime lt = Converters.toLocalDate(d);
+                return Converters.toString(lt);
+            case None:
+            case Integer:
+            case Interval:
+            case String:
+            case Json:
             default:
                 throw new RuntimeException("Unexpected column kind " + this.getKind());
         }
@@ -82,8 +90,7 @@ public interface IDoubleColumn extends IColumn {
 
     @Override
     default IColumn convertKind(ContentsKind kind, String newColName, IMembershipSet set) {
-        IMutableColumn newColumn = this.allocateConvertedColumn(
-                kind, newColName);
+        IMutableColumn newColumn = this.allocateConvertedColumn(kind, newColName);
         switch (this.getKind()) {
             case Double: {
                 switch (kind) {
@@ -101,9 +108,10 @@ public interface IDoubleColumn extends IColumn {
                     case Interval:
                     case Date:
                     case Duration:
+                    case LocalDate:
                         throw new UnsupportedOperationException("Conversion from " + this.getKind()
                                 + " to " + kind + " is not supported.");
-                    default:
+                    case None:
                         throw new RuntimeException("Unexpected column kind " + this.getKind());
                 }
                 break;
@@ -122,13 +130,18 @@ public interface IDoubleColumn extends IColumn {
                             Instant i = Converters.toDate(this.getDouble(row));
                             return Converters.toDouble(LocalDateTime.ofInstant(i, ZoneId.systemDefault()).toLocalTime());
                         });
+                    case LocalDate:
+                        this.convertToDouble(newColumn, set, row -> {
+                            Instant i = Converters.toDate(this.getDouble(row));
+                            return Converters.toDouble(i.atZone(ZoneOffset.UTC).toLocalDateTime());
+                        });
                     case Integer:
                     case Double:
                     case Duration:
                     case Interval:
                         throw new UnsupportedOperationException("Conversion from " + this.getKind()
                                 + " to " + kind + " is not supported.");
-                    default:
+                    case None:
                         throw new RuntimeException("Unexpected column kind " + this.getKind());
                 }
                 break;
@@ -163,9 +176,16 @@ public interface IDoubleColumn extends IColumn {
                     case Integer:
                     case Double:
                     case Date:
-                    case Duration:
                         throw new UnsupportedOperationException("Conversion from " + this.getKind()
                                 + " to " + kind + " is not supported.");
+                    case Duration:
+                        this.convertToDouble(newColumn, set, row -> {
+                            double d = this.getDouble(row);
+                            LocalTime t = Converters.toTime(d);
+                            Duration duration = Duration.ofNanos(t.toNanoOfDay());
+                            return Converters.toDouble(duration);
+                        });
+                        break;
                     default:
                         throw new RuntimeException("Unexpected column kind " + this.getKind());
                 }

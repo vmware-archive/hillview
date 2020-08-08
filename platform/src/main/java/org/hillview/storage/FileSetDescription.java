@@ -129,9 +129,10 @@ public class FileSetDescription implements IJson {
                     String format = FileSetDescription.this.getLogFormat();
                     assert format != null;
                     GrokLogs genLog = new GrokLogs(format);
+                    //noinspection ConstantConditions
                     loader = genLog.getFileLoader(this.pathname,
-                            Converters.toDate(FileSetDescription.this.startTime),
-                            Converters.toDate(FileSetDescription.this.endTime));
+                            Converters.toLocalDate(FileSetDescription.this.startTime),
+                            Converters.toLocalDate(FileSetDescription.this.endTime));
                     break;
                 default:
                     throw new RuntimeException(
