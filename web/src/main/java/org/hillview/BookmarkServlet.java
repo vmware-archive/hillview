@@ -29,34 +29,21 @@ public class BookmarkServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     public static final String bookmarkDirectory = "bookmark";
     public static final String bookmarkExtension = ".txt";
-    public static String bookmarkID;
-    public static boolean openingBookmark;
-
-    public void init() throws ServletException {
-        bookmarkID = "";
-        openingBookmark = false;
-    }
 
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // TODO: match the bookmarkID with the client session to enable opening bookmark at the same time
-        request.getSession();
-
-        BookmarkServlet.openingBookmark = true;
-        BookmarkServlet.bookmarkID = request.getParameter("id");
+        String bookmarkID = request.getParameter("id");
+        response.setHeader("Set-Cookie", "BOOKMARKID=" + bookmarkID);
         response.sendRedirect("/");
     }
 
-    public static String openingBookmark() {
-        if (openingBookmark) {
-            openingBookmark = false;
-            try {
-                File file = new File(BookmarkServlet.bookmarkDirectory,
-                        BookmarkServlet.bookmarkID + BookmarkServlet.bookmarkExtension);
-                return FileUtils.readFileToString(file, StandardCharsets.UTF_8);
-            } catch (Exception e) {
-                throw new RuntimeException("Cannot read bookmark", e);
-            }
+    public static String openingBookmark(String bookmarkID) {
+        try {
+            File file = new File(BookmarkServlet.bookmarkDirectory,
+                    bookmarkID + BookmarkServlet.bookmarkExtension);
+            return FileUtils.readFileToString(file, StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            // Bookmark link is broken. Failed to find bookmarked content
+            return "";
         }
-        return "";
     }
 }

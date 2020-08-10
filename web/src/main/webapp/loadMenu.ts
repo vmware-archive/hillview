@@ -21,12 +21,12 @@ import {FileSetDescription, JdbcConnectionInformation, CassandraConnectionInfo, 
 import {OnCompleteReceiver, Receiver, RemoteObject} from "./rpc";
 import {Test} from "./test";
 import {IDataView} from "./ui/dataview";
-import {Dialog, FieldKind} from "./ui/dialog";
+import {Dialog, FieldKind, notifyBrokenBookmarkURL} from "./ui/dialog";
 import {ErrorDisplay} from "./ui/errReporter";
 import {FullPage} from "./ui/fullPage";
 import {MenuItem, SubMenu, TopMenu, TopMenuItem} from "./ui/menu";
 import {ViewKind} from "./ui/ui";
-import {Converters, ICancellable, loadFile, getUUID, PartialResult} from "./util";
+import {Converters, ICancellable, loadFile, getUUID, PartialResult, getCookie, deleteCookie} from "./util";
 import {HillviewToplevel} from "./toplevel";
 
 /**
@@ -377,9 +377,14 @@ export class LoadMenu extends RemoteObject implements IDataView {
     }
 
     public tryOpeningBookmark(): void {
-        const rr = this.createStreamingRpcRequest<string>("openingBookmark", null);
-        const updateReceiver = new CreateBookmarkContentReceiver(this.page, rr, this);
-        rr.invoke(updateReceiver);
+        // TODO: store the BOOKMARKID cookie name in the config file
+        const bookmarkID = getCookie("BOOKMARKID");
+        if (bookmarkID != "") {
+            deleteCookie("BOOKMARKID");
+            const rr = this.createStreamingRpcRequest<string>("openingBookmark", bookmarkID);
+            const updateReceiver = new CreateBookmarkContentReceiver(this.page, rr, bookmarkID, this);
+            rr.invoke(updateReceiver);
+        }
     }
 
     public showManagement(show: boolean): void {
@@ -759,9 +764,12 @@ class PingReceiver extends OnCompleteReceiver<string[]> {
 
 class CreateBookmarkContentReceiver extends Receiver<string> {
     loadMenu: LoadMenu;
+    bookmarkID: string;
 
-    public constructor(page: FullPage, operation: ICancellable<string>, loadMenu: LoadMenu) {
+    public constructor(page: FullPage, operation: ICancellable<string>,
+            bookmarkID: string, loadMenu: LoadMenu) {
         super(page, operation, "open bookmark");
+        this.bookmarkID = bookmarkID;
         this.loadMenu = loadMenu;
     }
 
@@ -776,6 +784,8 @@ class CreateBookmarkContentReceiver extends Receiver<string> {
         if (value.data != null) {
             const title = value.data;
             this.loadMenu.loaded(value.data);
+        } else {
+            notifyBrokenBookmarkURL(this.bookmarkID);
         }
     }
 }

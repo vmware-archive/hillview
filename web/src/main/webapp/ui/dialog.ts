@@ -788,12 +788,20 @@ export function saveAs(filename: string, contents: string): void {
 
 /**
  * Save data in a file on the local filesystem.
- * @param {string} filename  File to save data to.
- * @param {string} contents  Contents to write in file.
+ * @param {string} url  Url to display.
  */
 export function showBookmarkURL(url: string): void {
     const notify = new NotifyBookmarkDialog(
-      "Bookmark has been saved",
-      url, "Access the bookmark using this link.");
+        "Bookmark has been saved.",
+        url, "Access the bookmark using this link");
+    notify.show();
+}
+
+export function notifyBrokenBookmarkURL(bookmarkID: string): void {
+    const notify = new NotifyDialog(
+        "Bookmark link is broken.",
+        "Bookmark id = " + bookmarkID + " can't be found.",
+        "Bookmark link is broken"
+    );
     notify.show();
 }

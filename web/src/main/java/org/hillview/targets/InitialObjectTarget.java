@@ -116,7 +116,8 @@ public class InitialObjectTarget extends RpcTarget {
 
     @HillviewRpc
     public void openingBookmark(RpcRequest request, RpcRequestContext context) {
-        String content = BookmarkServlet.openingBookmark();
+        String bookmarkID = request.parseArgs(String.class);
+        String content = BookmarkServlet.openingBookmark(bookmarkID);
         if (content.isEmpty())
             InitialObjectTarget.directRPCReply(request, context, null);
         else
