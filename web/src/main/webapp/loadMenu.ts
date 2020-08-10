@@ -362,7 +362,7 @@ export class LoadMenu extends RemoteObject implements IDataView {
         dialog.show();
     }
 
-    public loaded(savedViewJson: string, title?: string): void {            
+    public loaded(savedViewJson: string, title?: string): void {
         const json = JSON.parse(savedViewJson);
         if (json == null || json.views == null || json.remoteObjectId == null) {
             this.page.reportError("File could not be parsed");
@@ -377,7 +377,6 @@ export class LoadMenu extends RemoteObject implements IDataView {
     }
 
     public tryOpeningBookmark(): void {
-        // TODO: store the BOOKMARKID cookie name in the config file
         const bookmarkID = getCookie("BOOKMARKID");
         if (bookmarkID != "") {
             deleteCookie("BOOKMARKID");
