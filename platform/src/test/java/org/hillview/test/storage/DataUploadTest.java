@@ -20,13 +20,19 @@ package org.hillview.test.storage;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.hillview.main.DataUpload;
+import org.hillview.storage.OrcFileLoader;
+import org.hillview.table.api.ContentsKind;
+import org.hillview.table.api.IColumn;
+import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;
+import org.hillview.utils.Converters;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 
 public class DataUploadTest extends BaseTest {
     @Test
@@ -71,6 +77,17 @@ public class DataUploadTest extends BaseTest {
         int parts = upload.run(
                 "-f", file, "-o",
                 "-l", "200000", "-h", "-d", dir.toString());
+
+        OrcFileLoader loader = new OrcFileLoader(dir.toString() + "/2016_10.orc", null, false);
+        ITable table = loader.load();
+        Assert.assertNotNull(table);
+        IColumn date = table.getLoadedColumn("FlightDate");
+        Assert.assertNotNull(date);
+        Assert.assertEquals(ContentsKind.LocalDate, date.getKind());
+        LocalDateTime dt = (LocalDateTime)date.getObject(0);
+        Assert.assertNotNull(dt);
+        Assert.assertEquals(0, dt.getHour());
+
         File d = dir.toFile();
         FileUtils.deleteDirectory(d);
         this.deleteOrcChecksums(file, parts);

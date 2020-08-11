@@ -30,6 +30,8 @@ import org.hillview.utils.Converters;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 /**
@@ -114,13 +116,22 @@ public class OrcFileWriter implements ITableWriter {
                             assert s != null;
                             ((BytesColumnVector)cv).setVal(outRowNo, s.getBytes());
                             break;
-                        case LocalDate:
-                        case Date:
+                        case Date: {
                             Instant inst = Converters.toDate(col.getDouble(nextRow));
-                            TimestampColumnVector tscv = (TimestampColumnVector)cv;
+                            TimestampColumnVector tscv = (TimestampColumnVector) cv;
                             tscv.time[outRowNo] = inst.toEpochMilli();
-                            tscv.nanos[outRowNo] = inst.getNano();
+                            tscv.nanos[outRowNo] = inst.getNano() % Converters.NANOS_TO_MILLIS;
                             break;
+                        }
+                        case LocalDate: {
+                            LocalDateTime ldt = Converters.toLocalDate(col.getDouble(nextRow));
+                            TimestampColumnVector tscv = (TimestampColumnVector) cv;
+                            long seconds = ldt.toEpochSecond(ZoneOffset.UTC);
+                            int nanos = ldt.getNano();
+                            tscv.time[outRowNo] = seconds * 1000 + nanos / Converters.NANOS_TO_MILLIS;
+                            tscv.nanos[outRowNo] = nanos % Converters.NANOS_TO_MILLIS;
+                            break;
+                        }
                         case Integer:
                             int iv = col.getInt(nextRow);
                             ((LongColumnVector)cv).vector[outRowNo] = iv;

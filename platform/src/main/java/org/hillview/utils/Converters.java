@@ -26,6 +26,10 @@ import java.util.Locale;
  * Conversion to and from doubles of various supported datatypes.
  */
 public class Converters {
+    public static final long NANOS_TO_SECONDS = 1_000_000_000;
+    public static final int NANOS_TO_MILLIS = 1_000_000;
+    public static final int SECONDS_TO_DAY = 24 * 3600;
+
     private static final LocalDateTime baseLocalTime = LocalDateTime.of(
             LocalDate.of(1970, 1, 1),
             LocalTime.of(0, 0));
@@ -174,11 +178,11 @@ public class Converters {
     }
 
     public static LocalTime toTime(double value) {
-        return LocalTime.ofNanoOfDay(Converters.toLong(value * 1000000));
+        return LocalTime.ofNanoOfDay(Converters.toLong(value * NANOS_TO_MILLIS));
     }
 
     public static double toDouble(LocalTime time) {
-        return (double)(time.toNanoOfDay() / 1000000);
+        return (double)(time.toNanoOfDay() / NANOS_TO_MILLIS);
     }
 
     public static LocalDateTime toLocalDate(Instant i) {

@@ -354,7 +354,7 @@ export class Converters {
         } else if (kind === "Date") {
             return formatDate(Converters.dateFromDouble(val as number));
         } else if (kind === "Time" || kind === "Duration") {
-            return formatTime(Converters.timeFromDouble(val as number));
+            return formatTime(Converters.timeFromDouble(val as number), true);
         } else if (kindIsString(kind)) {
             return val as string;
         } else if (kind == "Interval") {
@@ -626,7 +626,7 @@ export function formatDate(d: Date): string {
     const month = d.getMonth() + 1;
     const day = d.getDate();
     const df = String(year) + "/" + zeroPad(month, 2) + "/" + zeroPad(day, 2);
-    const time = formatTime(d);
+    const time = formatTime(d, false);
     if (time != "")
         return df + " " + time;
     return df;
@@ -635,8 +635,10 @@ export function formatDate(d: Date): string {
 /**
  * This is a time encoded as a date.  Ignore the date part and just
  * return the time.
+ * @param d date that only has a time component.
+ * @param nonEmpty if true return 00:00 when the result is empty.
  */
-export function formatTime(d: Date): string {
+export function formatTime(d: Date, nonEmpty: boolean): string {
     const hour = d.getHours();
     const minutes = d.getMinutes();
     const seconds = d.getSeconds();
@@ -652,6 +654,10 @@ export function formatTime(d: Date): string {
         if (time === "")
             time = ":00";
         time = zeroPad(hour, 2) + time;
+    }
+    if (nonEmpty) {
+        if (time == "")
+            return "00:00";
     }
     return time;
 }

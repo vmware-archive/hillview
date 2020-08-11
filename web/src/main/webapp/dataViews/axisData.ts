@@ -314,7 +314,8 @@ export class AxisData {
                 this.axis = new AxisDescription(axis, labelPeriod, rotate, fullLabels);
                 break;
             }
-            case "LocalDate": {
+            case "LocalDate":
+            case "Time": {
                 const minDate: Date = Converters.localDateFromDouble(domain[0]);
                 const maxDate: Date = Converters.localDateFromDouble(domain[1]);
                 this.scale = d3scaleTime()
@@ -323,8 +324,7 @@ export class AxisData {
                 this.axis = new AxisDescription(axisCreator(this.scale), 1, false, null);
                 break;
             }
-            case "Date":
-            case "Time": {
+            case "Date": {
                 const minDate: Date = Converters.dateFromDouble(domain[0]);
                 const maxDate: Date = Converters.dateFromDouble(domain[1]);
                 this.scale = d3scaleTime()
@@ -382,7 +382,7 @@ export class AxisData {
         else if (this.description.kind === "Date" || this.description.kind === "LocalDate")
             result = formatDate(inv as Date);
         else if (this.description.kind === "Time")
-            result = formatTime(inv as Date);
+            result = formatTime(inv as Date, true);
         else
             result = inv.toString();
         return result;

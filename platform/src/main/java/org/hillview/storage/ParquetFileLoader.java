@@ -43,7 +43,8 @@ import org.hillview.utils.Converters;
 import org.hillview.utils.Linq;
 
 import java.io.IOException;
-import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -131,8 +132,8 @@ public class ParquetFileLoader extends TextFileLoader {
                     NanoTime nt = NanoTime.fromBinary(val);
                     int julianDay = nt.getJulianDay();
                     long nanosOfDay = nt.getTimeOfDayNanos();
-                    long epochSeconds = (julianDay - JULIAN_DAY_NUMBER_FOR_UNIX_EPOCH) * 24 * 60 * 60;
-                    Instant inst = Instant.ofEpochSecond(epochSeconds, nanosOfDay);
+                    long epochSeconds = (julianDay - JULIAN_DAY_NUMBER_FOR_UNIX_EPOCH) * Converters.SECONDS_TO_DAY + nanosOfDay / Converters.NANOS_TO_SECONDS;
+                    LocalDateTime inst = LocalDateTime.ofEpochSecond(epochSeconds, Converters.toInt(nanosOfDay % Converters.NANOS_TO_SECONDS), ZoneOffset.UTC);
                     col.append(Converters.toDouble(inst));
                     break;
                 }
@@ -160,7 +161,7 @@ public class ParquetFileLoader extends TextFileLoader {
                 kind = ContentsKind.String;
                 break;
             case INT96:
-                kind = ContentsKind.Date;
+                kind = ContentsKind.LocalDate;
                 break;
             default:
                 throw new RuntimeException("Unexpected column kind " + cd.getType());

@@ -289,7 +289,7 @@ public class OrcFileLoader extends TextFileLoader {
                     long milli = tcv.time[row];
                     int nanos = tcv.nanos[row];
                     LocalDateTime ldt = LocalDateTime.ofEpochSecond(milli / 1000, 0, ZoneOffset.UTC);
-                    ldt = ldt.plusNanos((milli % 1000) * 1000000 + nanos);
+                    ldt = ldt.plusNanos((milli % 1000) * Converters.NANOS_TO_MILLIS + nanos);
                     switch (to.getKind()) {
                         case None:
                         case Integer:
