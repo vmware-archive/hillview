@@ -196,15 +196,16 @@ public final class TableTarget extends TableRpcTarget {
         String content = request.parseArgs(String.class);
         String guid = UUID.randomUUID().toString();
         try {
-            File file = new File(BookmarkServlet.bookmarkDirectory,
-                guid + BookmarkServlet.bookmarkExtension);
+            File file = new File(InitialObjectTarget.bookmarkDirectory,
+                guid + InitialObjectTarget.bookmarkExtension);
             FileWriter writer = new FileWriter(file);
             writer.write(content);
             writer.close();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        PrecomputedSketch<ITable, JsonString> empty = new PrecomputedSketch<ITable, JsonString>(new JsonString(guid));
+        JsonString bookmarkFile = new JsonString(guid + InitialObjectTarget.bookmarkExtension);
+        PrecomputedSketch<ITable, JsonString> empty = new PrecomputedSketch<ITable, JsonString>(bookmarkFile);
         this.runCompleteSketch(this.table, empty, request, context);
     }
 

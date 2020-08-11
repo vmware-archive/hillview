@@ -18,7 +18,7 @@
 import {DatasetView} from "./datasetView";
 import {InitialObject} from "./initialObject";
 import {FileSetDescription, JdbcConnectionInformation, CassandraConnectionInfo, Status, UIConfig} from "./javaBridge";
-import {OnCompleteReceiver, Receiver, RemoteObject} from "./rpc";
+import {OnCompleteReceiver, RemoteObject} from "./rpc";
 import {Test} from "./test";
 import {IDataView} from "./ui/dataview";
 import {Dialog, FieldKind} from "./ui/dialog";
@@ -26,7 +26,7 @@ import {ErrorDisplay} from "./ui/errReporter";
 import {FullPage} from "./ui/fullPage";
 import {MenuItem, SubMenu, TopMenu, TopMenuItem} from "./ui/menu";
 import {ViewKind} from "./ui/ui";
-import {Converters, ICancellable, loadFile, getUUID, PartialResult, getCookie, deleteCookie} from "./util";
+import {Converters, ICancellable, loadFile, getUUID} from "./util";
 import {HillviewToplevel} from "./toplevel";
 
 /**
@@ -42,7 +42,7 @@ export class LoadMenu extends RemoteObject implements IDataView {
     private loadMenu: SubMenu;
     public readonly viewKind: ViewKind;
 
-    constructor(protected init: InitialObject, protected page: FullPage) {
+    constructor(protected init: InitialObject, protected page: FullPage, protected bookmarkFile: string) {
         super(init.remoteObjectId);
         this.viewKind = "Load";
         this.top = document.createElement("div");
@@ -50,7 +50,7 @@ export class LoadMenu extends RemoteObject implements IDataView {
         this.top.appendChild(this.console.getHTMLRepresentation());
         this.getUIConfig();
         // Check whether the user is trying to visit a bookmark link
-        this.tryOpeningBookmark();
+        if (bookmarkFile != null) this.openingBookmark(bookmarkFile);
     }
 
     public getRemoteObjectId(): string | null {
@@ -376,14 +376,10 @@ export class LoadMenu extends RemoteObject implements IDataView {
             this.page.reportError("Error reconstructing view");
     }
 
-    public tryOpeningBookmark(): void {
-        const bookmarkID = getCookie("BOOKMARKID");
-        if (bookmarkID != "") {
-            deleteCookie("BOOKMARKID");
-            const rr = this.createStreamingRpcRequest<object>("openingBookmark", bookmarkID);
-            const updateReceiver = new CreateBookmarkContentReceiver(this.page, rr, bookmarkID, this);
-            rr.invoke(updateReceiver);
-        }
+    public openingBookmark(bookmarkFile: string): void {
+        const rr = this.createStreamingRpcRequest<object>("openingBookmark", bookmarkFile);
+        const updateReceiver = new CreateBookmarkContentReceiver(this.page, rr, bookmarkFile, this);
+        rr.invoke(updateReceiver);
     }
 
     public showManagement(show: boolean): void {

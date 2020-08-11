@@ -17,6 +17,7 @@
 
 package org.hillview.targets;
 
+import org.apache.commons.io.FileUtils;
 import org.hillview.*;
 import org.hillview.sketches.PrecomputedSketch;
 import org.hillview.table.PrivacySchema;
@@ -33,7 +34,10 @@ import org.hillview.utils.*;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
+
+import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.SQLException;
@@ -49,6 +53,9 @@ public class InitialObjectTarget extends RpcTarget {
 
     private static final String LOCALHOST = "127.0.0.1";
     private static final String ENV_VARIABLE = "WEB_CLUSTER_DESCRIPTOR";
+
+    public static final String bookmarkDirectory = "bookmark";
+    public static final String bookmarkExtension = ".txt";
 
     @Nullable
     private IDataSet<Empty> emptyDataset = null;
@@ -102,8 +109,15 @@ public class InitialObjectTarget extends RpcTarget {
 
     @HillviewRpc
     public void openingBookmark(RpcRequest request, RpcRequestContext context) {
-        String bookmarkID = request.parseArgs(String.class);
-        String content = BookmarkServlet.openingBookmark(bookmarkID);
+        String bookmarkFile = request.parseArgs(String.class);
+        String content;
+        try {
+            File file = new File(InitialObjectTarget.bookmarkDirectory, bookmarkFile);
+            content = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            // Bookmark link is broken. Failed to find bookmarked content
+            throw new RuntimeException(e);
+        }
         PrecomputedSketch<Empty, JsonString> sk = new PrecomputedSketch<Empty, JsonString>(new JsonString(content));
         this.runCompleteSketch(this.emptyDataset, sk, request, context);
     }

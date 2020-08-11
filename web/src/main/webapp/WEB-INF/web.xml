@@ -37,14 +37,4 @@
         <param-name>org.apache.tomcat.websocket.binaryBufferSize</param-name>
         <param-value>32768</param-value>
     </context-param>
-    
-    <servlet>
-        <servlet-name>BookmarkServlet</servlet-name>
-        <servlet-class>org.hillview.BookmarkServlet</servlet-class>
-    </servlet>
-    <!-- The mapping for bookmark servlet -->
-    <servlet-mapping>
-        <servlet-name>BookmarkServlet</servlet-name>
-        <url-pattern>/bookmark</url-pattern>
-    </servlet-mapping>
 </web-app>

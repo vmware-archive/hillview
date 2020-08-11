@@ -37,12 +37,12 @@ import {IDataView} from "./ui/dataview";
 import {FullPage, PageTitle} from "./ui/fullPage";
 import {ContextMenu, MenuItem, SubMenu, TopMenuItem} from "./ui/menu";
 import {IHtmlElement, removeAllChildren, ViewKind} from "./ui/ui";
-import {assert, cloneArray, EnumIterators, ICancellable, PartialResult} from "./util";
+import {assert, cloneArray, EnumIterators, ICancellable} from "./util";
 import {TrellisHeatmapView} from "./dataViews/trellisHeatmapView";
 import {TrellisHistogram2DView} from "./dataViews/trellisHistogram2DView";
 import {TrellisHistogramView} from "./dataViews/trellisHistogramView";
 import JSONEditor, {JSONEditorOptions} from "jsoneditor";
-import {OnCompleteReceiver, Receiver} from "./rpc";
+import {OnCompleteReceiver} from "./rpc";
 import {QuartilesHistogramView} from "./dataViews/quartilesHistogramView";
 import {TrellisHistogramQuartilesView} from "./dataViews/trellisHistogramQuartilesView";
 import {saveAs} from "./ui/dialog";
@@ -612,7 +612,7 @@ class CreateBookmarkURLReceiver extends OnCompleteReceiver<string> {
     }
 
     public run(value: string): void {
-        const url = window.location.hostname + ":" + window.location.port + "/bookmark?id=" + value;
+        const url = window.location.hostname + ":" + window.location.port + "?bookmark=" + value;
         showBookmarkURL(url);
         console.log("Bookmark has been created.");
     }
