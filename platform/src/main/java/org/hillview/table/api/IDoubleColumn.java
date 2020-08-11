@@ -128,13 +128,46 @@ public interface IDoubleColumn extends IColumn {
                     case Time:
                         this.convertToDouble(newColumn, set, row -> {
                             Instant i = Converters.toDate(this.getDouble(row));
-                            return Converters.toDouble(LocalDateTime.ofInstant(i, ZoneId.systemDefault()).toLocalTime());
+                            return Converters.toDouble(Converters.toTime(i));
                         });
+                        break;
                     case LocalDate:
                         this.convertToDouble(newColumn, set, row -> {
                             Instant i = Converters.toDate(this.getDouble(row));
-                            return Converters.toDouble(i.atZone(ZoneOffset.UTC).toLocalDateTime());
+                            return Converters.toDouble(Converters.toLocalDate(i));
                         });
+                        break;
+                    case Integer:
+                    case Double:
+                    case Duration:
+                    case Interval:
+                        throw new UnsupportedOperationException("Conversion from " + this.getKind()
+                                + " to " + kind + " is not supported.");
+                    case None:
+                        throw new RuntimeException("Unexpected column kind " + this.getKind());
+                }
+                break;
+            case LocalDate:
+                switch (kind) {
+                    case Json:
+                    case String:
+                        this.convertToString(newColumn, set, this::asString);
+                        break;
+                    case LocalDate:
+                        this.convertToDouble(newColumn, set, this::getDouble);
+                        break;
+                    case Time:
+                        this.convertToDouble(newColumn, set, row -> {
+                            LocalDateTime i = Converters.toLocalDate(this.getDouble(row));
+                            return Converters.toDouble(Converters.toTime(i));
+                        });
+                        break;
+                    case Date:
+                        this.convertToDouble(newColumn, set, row -> {
+                            LocalDateTime i = Converters.toLocalDate(this.getDouble(row));
+                            return Converters.toDouble(Converters.toDate(i));
+                        });
+                        break;
                     case Integer:
                     case Double:
                     case Duration:

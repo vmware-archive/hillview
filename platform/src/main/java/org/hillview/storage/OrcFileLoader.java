@@ -35,8 +35,8 @@ import org.hillview.utils.Linq;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -121,7 +121,7 @@ public class OrcFileLoader extends TextFileLoader {
                 return ContentsKind.Double;
             case DATE:
             case TIMESTAMP:
-                return ContentsKind.Date;
+                return ContentsKind.LocalDate;
             case BINARY:
             case DECIMAL:
             case VARCHAR:
@@ -131,7 +131,7 @@ public class OrcFileLoader extends TextFileLoader {
             case STRUCT:
             case UNION:
             default:
-                throw new RuntimeException("Compltex ORC column kind not supported in Hillview "
+                throw new RuntimeException("ORC column kind not supported in Hillview "
                         + desc.getCategory());
         }
     }
@@ -258,10 +258,10 @@ public class OrcFileLoader extends TextFileLoader {
                 case DATE: {
                     LongColumnVector lcv = (LongColumnVector) vec;
                     long l = lcv.vector[row];
-                    // see https://orc.apache.org/docs/encodings.html
+                    // shttps://orc.apache.org/specification/ORCv1/
                     // Dates do not have hours/minutes, just a number of days
-                    Instant instant = Instant.ofEpochSecond(0);
-                    Instant value = instant.plus(l, ChronoUnit.DAYS);
+                    LocalDateTime ldt = LocalDateTime.ofEpochSecond(0, 0, ZoneOffset.UTC);
+                    LocalDateTime value = ldt.plusDays(l);
                     switch (to.getKind()) {
                         case None:
                         case Integer:
@@ -275,19 +275,21 @@ public class OrcFileLoader extends TextFileLoader {
                             to.append(Converters.toString(value));
                             break;
                         case Double:
-                        case Date:
                         case LocalDate:
                             to.append(Converters.toDouble(value));
+                            break;
+                        case Date:
+                            to.append(Converters.toDouble(Converters.toDate(value)));
                             break;
                     }
                     break;
                 }
                 case TIMESTAMP: {
                     TimestampColumnVector tcv = (TimestampColumnVector) vec;
-                    long time = tcv.time[row];
+                    long milli = tcv.time[row];
                     int nanos = tcv.nanos[row];
-                    Instant instant = Instant.ofEpochMilli(time);
-                    instant = instant.plusNanos(nanos);
+                    LocalDateTime ldt = LocalDateTime.ofEpochSecond(milli / 1000, 0, ZoneOffset.UTC);
+                    ldt = ldt.plusNanos((milli % 1000) * 1000000 + nanos);
                     switch (to.getKind()) {
                         case None:
                         case Integer:
@@ -298,12 +300,14 @@ public class OrcFileLoader extends TextFileLoader {
                                     + to.getKind());
                         case Json:
                         case String:
-                            to.append(Converters.toString(instant));
+                            to.append(Converters.toString(ldt));
                             break;
                         case Double:
                         case Date:
+                            to.append(Converters.toDouble(Converters.toDate(ldt)));
+                            break;
                         case LocalDate:
-                            to.append(Converters.toDouble(instant));
+                            to.append(Converters.toDouble(ldt));
                             break;
                     }
                     break;

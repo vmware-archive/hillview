@@ -181,6 +181,22 @@ public class Converters {
         return (double)(time.toNanoOfDay() / 1000000);
     }
 
+    public static LocalDateTime toLocalDate(Instant i) {
+        return LocalDateTime.ofInstant(i, ZoneOffset.UTC);
+    }
+
+    public static LocalTime toTime(Instant i) {
+        return toTime(toLocalDate(i));
+    }
+
+    public static LocalTime toTime(LocalDateTime ldt) {
+        return ldt.toLocalTime();
+    }
+
+    public static Instant toDate(LocalDateTime ldt) {
+        return ldt.toInstant(ZoneOffset.UTC);
+    }
+
     public static int toIntClamp(double value) {
         if (value <= Integer.MIN_VALUE)
             return Integer.MIN_VALUE;

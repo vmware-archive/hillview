@@ -270,12 +270,12 @@ export class Converters {
     public static localDateFromDouble(value: number | null): Date | null {
         if (value == null)
             return null;
-        const offset = new Date().getTimezoneOffset();
+        const offset = new Date(value).getTimezoneOffset();
         return new Date(value + offset * 60 * 1000);
     }
 
     public static timeFromDouble(value: number): Date | null {
-        return Converters.dateFromDouble(value);
+        return Converters.localDateFromDouble(value);
     }
 
     public static doubleFromDate(value: Date | null): number | null {
@@ -285,7 +285,7 @@ export class Converters {
     public static doubleFromLocalDate(value: Date | null): number | null {
         if (value === null)
             return null;
-        const offset = new Date().getTimezoneOffset();
+        const offset = value.getTimezoneOffset();
         return value.getTime() + offset * 60 * 1000;
     }
 

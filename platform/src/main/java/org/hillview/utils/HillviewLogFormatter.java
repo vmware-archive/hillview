@@ -26,7 +26,7 @@ import java.util.logging.SimpleFormatter;
 
 public class HillviewLogFormatter extends SimpleFormatter {
     private final String newline = System.lineSeparator();
-    private final DateFormat df = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss.SSS");
+    private final DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
     private final StringBuilder builder = new StringBuilder();
 
     @SuppressWarnings("ConstantConditions")
