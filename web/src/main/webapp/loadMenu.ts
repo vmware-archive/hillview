@@ -241,6 +241,8 @@ export class LoadMenu extends RemoteObject implements IDataView {
                 help: "A set of database tables residing in databases on each worker machine."
             });
         if (HillviewToplevel.instance.uiconfig.localDbMenu)
+            // This is only used for testing differentially-private loading from a
+            // local database.
             loadMenuItems.push({
                 text: "Local DB table...",
                 action: () => {
