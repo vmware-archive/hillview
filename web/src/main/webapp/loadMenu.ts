@@ -42,13 +42,15 @@ export class LoadMenu extends RemoteObject implements IDataView {
     private loadMenu: SubMenu;
     public readonly viewKind: ViewKind;
 
-    constructor(protected init: InitialObject, protected page: FullPage) {
+    constructor(protected init: InitialObject, protected page: FullPage, protected bookmarkFile: string) {
         super(init.remoteObjectId);
         this.viewKind = "Load";
         this.top = document.createElement("div");
         this.console = new ErrorDisplay();
         this.top.appendChild(this.console.getHTMLRepresentation());
         this.getUIConfig();
+        // Check whether the user is trying to visit a bookmark link
+        if (bookmarkFile != null) this.openingBookmark(bookmarkFile);
     }
 
     public getRemoteObjectId(): string | null {
@@ -360,17 +362,24 @@ export class LoadMenu extends RemoteObject implements IDataView {
         dialog.show();
     }
 
-    public loaded(savedViewJson: string, title: string): void {
+    public loaded(savedViewJson: string, title?: string): void {
         const json = JSON.parse(savedViewJson);
         if (json == null || json.views == null || json.remoteObjectId == null) {
             this.page.reportError("File could not be parsed");
             return;
         }
+        if (title === undefined) title = json.views[0].title;
         this.page.reportError("Reconstructing " + json.views.length + " views");
         const dataset = new DatasetView(json.remoteObjectId, title, json, this.page);
         const success = dataset.reconstruct(json);
         if (!success)
             this.page.reportError("Error reconstructing view");
+    }
+
+    public openingBookmark(bookmarkFile: string): void {
+        const rr = this.createStreamingRpcRequest<object>("openingBookmark", bookmarkFile);
+        const updateReceiver = new CreateBookmarkContentReceiver(this.page, rr, bookmarkFile, this);
+        rr.invoke(updateReceiver);
     }
 
     public showManagement(show: boolean): void {
@@ -746,4 +755,20 @@ class PingReceiver extends OnCompleteReceiver<string[]> {
     public run(value: string[]): void {
         this.page.reportError(value.toString());
     }
+}
+
+class CreateBookmarkContentReceiver extends OnCompleteReceiver<object> {
+    loadMenu: LoadMenu;
+    bookmarkID: string;
+
+    public constructor(page: FullPage, operation: ICancellable<object>,
+            bookmarkID: string, loadMenu: LoadMenu) {
+        super(page, operation, "open bookmark");
+        this.bookmarkID = bookmarkID;
+        this.loadMenu = loadMenu;
+    }
+
+    public run(value: object): void {
+        this.loadMenu.loaded(JSON.stringify(value));
+    }   
 }

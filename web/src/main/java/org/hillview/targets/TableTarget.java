@@ -37,6 +37,9 @@ import org.jblas.DoubleMatrix;
 import javax.annotation.Nullable;
 import javax.websocket.Session;
 import java.util.List;
+import java.util.UUID;
+import java.io.File;
+import java.io.FileWriter;
 
 /**
  * This is the most important RpcTarget, representing a remote table.
@@ -186,6 +189,24 @@ public final class TableTarget extends TableRpcTarget {
         SaveAsOrcSketch sk = new SaveAsOrcSketch(
                 args.folder, args.schema, Utilities.arrayToMap(args.renameMap), true);
         this.runCompleteSketch(this.table, sk, request, context);
+    }
+
+    @HillviewRpc
+    public void createBookmark(RpcRequest request, RpcRequestContext context) {
+        String content = request.parseArgs(String.class);
+        String guid = UUID.randomUUID().toString();
+        try {
+            File file = new File(InitialObjectTarget.bookmarkDirectory,
+                guid + InitialObjectTarget.bookmarkExtension);
+            FileWriter writer = new FileWriter(file);
+            writer.write(content);
+            writer.close();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        JsonString bookmarkFile = new JsonString(guid + InitialObjectTarget.bookmarkExtension);
+        PrecomputedSketch<ITable, JsonString> empty = new PrecomputedSketch<ITable, JsonString>(bookmarkFile);
+        this.runCompleteSketch(this.table, empty, request, context);
     }
 
     static class QuantilesVectorInfo extends HistogramInfo {

@@ -17,7 +17,7 @@
 
 import {drag as d3drag} from "d3-drag";
 import {event as d3event, select as d3select} from "d3-selection";
-import {cloneArray, makeId, makeSpan, px} from "../util";
+import {cloneArray, makeId, makeSpan, makeInputBox, px} from "../util";
 import {EditBox} from "./editBox";
 import {IHtmlElement, Point} from "./ui";
 import {DisplayName} from "../schemaClass";
@@ -740,6 +740,40 @@ export class NotifyDialog extends DialogBase {
     }
 }
 
+
+/**
+ * Bookmark notification with a copy link button.
+ */
+export class NotifyBookmarkDialog extends NotifyDialog {
+    constructor(title: string, url: string | null, toolTip: string) {
+        super(title, null, toolTip);
+
+        const nodrag = d3drag()
+            .on("start", () => this.dragEnd());
+
+        const urlBox = makeInputBox(url) as HTMLInputElement;
+        urlBox.style.width = "100%";
+        urlBox.style.float = "left";
+        this.fieldsDiv.appendChild(urlBox);
+
+        const copyButton = document.createElement("button");
+        copyButton.textContent = "Copy Link";
+        copyButton.classList.add("confirm");
+        copyButton.addEventListener("click", () => {
+            urlBox.select();
+            urlBox.setSelectionRange(0, 99999);
+            document.execCommand("copy");
+            this.hide();
+        });
+
+        // replace the confirm button with copy button
+        this.buttonsDiv.replaceChild(
+          copyButton,
+          this.buttonsDiv.firstElementChild
+        );
+    }
+}
+
 /**
  * Save data in a file on the local filesystem.
  * @param {string} filename  File to save data to.
@@ -750,5 +784,16 @@ export function saveAs(filename: string, contents: string): void {
     FileSaver.saveAs(blob, filename);
     const notify = new NotifyDialog("File has been saved.",
         "Look for file " + filename, "File has been saved");
+    notify.show();
+}
+
+/**
+ * Save data in a file on the local filesystem.
+ * @param {string} url  Url to display.
+ */
+export function showBookmarkURL(url: string): void {
+    const notify = new NotifyBookmarkDialog(
+        "Bookmark has been saved.",
+        url, "Access the bookmark using this link");
     notify.show();
 }

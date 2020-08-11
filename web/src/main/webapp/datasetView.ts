@@ -46,6 +46,7 @@ import {OnCompleteReceiver} from "./rpc";
 import {QuartilesHistogramView} from "./dataViews/quartilesHistogramView";
 import {TrellisHistogramQuartilesView} from "./dataViews/trellisHistogramQuartilesView";
 import {saveAs} from "./ui/dialog";
+import {showBookmarkURL} from "./ui/dialog";
 
 export interface IViewSerialization {
     viewKind: ViewKind;
@@ -177,6 +178,11 @@ export class DatasetView implements IHtmlElement {
         this.topLevel.appendChild(this.pageContainer);
         this.topLevel.appendChild(document.createElement("hr"));
         this.menu = new ContextMenu(this.topLevel, [{
+            text: "Bookmark this tab",
+            action: () => this.createBookmark(),
+            help: "Create a web page that will automatically reload the views currently displayed.\n" +
+                "This tab can be loaded later by visiting the given URL.",
+        }, {
             text: "Save this tab to file",
             action: () => this.saveToFile(),
             help: "Save the views in this tab to a local file;\n" +
@@ -577,6 +583,14 @@ export class DatasetView implements IHtmlElement {
             // so there is no point minimizing it here.
         }
     }
+
+    public createBookmark(): void {
+        const ser = this.serialize();
+        const content = JSON.stringify(ser);
+        const rr = this.remoteObject.createStreamingRpcRequest<string>("createBookmark", content);
+        const updateReceiver = new CreateBookmarkURLReceiver(this, this.loadMenuPage, false, rr);
+        rr.invoke(updateReceiver);
+    }
 }
 
 class UploadPrivacyReceiver extends OnCompleteReceiver<string> {
@@ -589,5 +603,17 @@ class UploadPrivacyReceiver extends OnCompleteReceiver<string> {
     public run(value: string): void {
         console.log("Privacy policy has been updated.");
         this.dataset.refresh();
+    }
+}
+
+class CreateBookmarkURLReceiver extends OnCompleteReceiver<string> {
+    public constructor( protected dataset: DatasetView, page: FullPage, protected rebuild: boolean, operation: ICancellable<string>) {
+        super(page, operation, "create bookmark");
+    }
+
+    public run(value: string): void {
+        const url = window.location.hostname + ":" + window.location.port + "?bookmark=" + value;
+        showBookmarkURL(url);
+        console.log("Bookmark has been created.");
     }
 }
