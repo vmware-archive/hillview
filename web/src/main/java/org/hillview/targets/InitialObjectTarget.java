@@ -55,7 +55,7 @@ public class InitialObjectTarget extends RpcTarget {
     private static final String ENV_VARIABLE = "WEB_CLUSTER_DESCRIPTOR";
 
     public static final String bookmarkDirectory = "bookmark";
-    public static final String bookmarkExtension = ".txt";
+    public static final String bookmarkExtension = ".json";
 
     @Nullable
     private IDataSet<Empty> emptyDataset = null;
