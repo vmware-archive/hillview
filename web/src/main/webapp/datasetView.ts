@@ -180,7 +180,7 @@ export class DatasetView implements IHtmlElement {
         this.menu = new ContextMenu(this.topLevel, [{
             text: "Bookmark this tab",
             action: () => this.createBookmark(),
-            help: "Save the views in this tab to Hillview's directory.\n" +
+            help: "Create a web page that will automatically reload the views currently displayed.\n" +
                 "This tab can be loaded later by visiting the given URL.",
         }, {
             text: "Save this tab to file",

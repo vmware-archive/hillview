@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {bookmarkFile} from "./hillview";
+import {bookmarkFileToLoad} from "./hillview";
 import {DatasetView} from "./datasetView";
 import {InitialObject} from "./initialObject";
 import {LoadMenu} from "./loadMenu";
@@ -51,7 +51,7 @@ export class HillviewToplevel implements IHtmlElement {
             null, null);
 
         this.topLevel.appendChild(page.getHTMLRepresentation());
-        const menu = new LoadMenu(InitialObject.instance, page, bookmarkFile);
+        const menu = new LoadMenu(InitialObject.instance, page, bookmarkFileToLoad);
         page.setDataView(menu);
         page.getTitleElement().ondblclick = () => menu.toggleAdvanced();
 

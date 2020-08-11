@@ -17,8 +17,8 @@
 
 // Check whether there is a bookmark parameter in the url
 const url = new URL(window.location.href);
-const bookmarkFile: string = url.searchParams.get("bookmark");
-export {bookmarkFile}
+const bookmarkFileToLoad: string = url.searchParams.get("bookmark");
+export { bookmarkFileToLoad };
 
 import {createHillview} from "./toplevel";
 
