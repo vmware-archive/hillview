@@ -24,6 +24,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.logging.Level;
 
 /**
@@ -44,7 +45,12 @@ public class BaseTest {
      */
     public static Instant parseOneDate(String s) {
         DateParsing parser = new DateParsing(s);
-        return parser.parse(s);
+        return parser.parseDate(s);
+    }
+
+    public static LocalDateTime parseOneLocalDate(String s) {
+        DateParsing parser = new DateParsing(s);
+        return parser.parseLocalDate(s);
     }
 
     @BeforeClass

@@ -36,7 +36,6 @@ import org.junit.Test;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 
 /**
@@ -75,7 +74,7 @@ public class GenericLogsTest extends BaseTest {
         Grok grok = grokCompiler.compile(pattern);
         List<ColumnDescription> cols = GrokExtra.getColumnsFromPattern(grok);
         Assert.assertEquals(cols.size(), 3);
-        Assert.assertEquals("Timestamp", cols.get(0).name);
+        Assert.assertEquals(LogFiles.timestampColumnName, cols.get(0).name);
         Assert.assertEquals("Logsource", cols.get(1).name);
         Assert.assertEquals("Message", cols.get(2).name);
 
@@ -83,7 +82,7 @@ public class GenericLogsTest extends BaseTest {
         grok = grokCompiler.compile(pattern);
         cols = GrokExtra.getColumnsFromPattern(grok);
         Assert.assertEquals(cols.size(), 3);
-        Assert.assertEquals("Timestamp", cols.get(0).name);
+        Assert.assertEquals(LogFiles.timestampColumnName, cols.get(0).name);
         Assert.assertEquals("Level", cols.get(1).name);
         Assert.assertEquals("Message", cols.get(2).name);
     }
@@ -106,8 +105,7 @@ public class GenericLogsTest extends BaseTest {
         Assert.assertEquals(ts, m.capture().get("Timestamp"));
 
         DateParsing parsing = new DateParsing(ts);
-        Instant i = parsing.parse(ts);
-        LocalDateTime ldt = LocalDateTime.ofInstant(i, ZoneOffset.systemDefault());
+        LocalDateTime ldt = parsing.parseLocalDate(ts);
         Assert.assertEquals(2018, ldt.getYear());
         Assert.assertEquals(9, ldt.getMonthValue());
     }
@@ -189,12 +187,8 @@ public class GenericLogsTest extends BaseTest {
         String path = "../data/sample_logs/syslog";
         GrokLogs logs = new GrokLogs("%{SYSLOG}");
         LocalDateTime now = LocalDateTime.now();
-        Instant start = LocalDateTime.of(now.getYear(), 10, 7, 6, 0, 0)
-                .atZone(ZoneOffset.systemDefault())
-                .toInstant();
-        Instant end = LocalDateTime.of(now.getYear(), 10, 7, 9, 0, 0)
-                .atZone(ZoneOffset.systemDefault())
-                .toInstant();
+        LocalDateTime start = LocalDateTime.of(now.getYear(), 10, 7, 6, 0, 0);
+        LocalDateTime end = LocalDateTime.of(now.getYear(), 10, 7, 9, 0, 0);
 
         TextFileLoader fileLoader = logs.getFileLoader(path, start, end);
         ITable table = fileLoader.load();
@@ -238,7 +232,7 @@ public class GenericLogsTest extends BaseTest {
         Assert.assertEquals("Table[14x8]", table.toString());
         @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
         RowSnapshot row = new RowSnapshot(table, 0);
-        Instant i = (Instant)row.getObject("Timestamp");
+        Instant i = (Instant)row.getObject(LogFiles.timestampColumnName);
         Assert.assertNotNull(i);
         int prio = row.getInt("SyslogPriority");
         Assert.assertEquals(187, prio);

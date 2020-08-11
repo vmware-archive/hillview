@@ -216,11 +216,8 @@ export class SchemaView extends TSViewBase {
                         } else {
                             let avg;
                             let stddev;
-                            if (cd.kind === "Date") {
-                                avg = Converters.valueToString(cs.moments[0], "Date", true);
-                                stddev = Converters.durationFromDouble(cs.moments[1]);
-                            } if (cd.kind === "Date") {
-                                avg = Converters.valueToString(cs.moments[0], "Time", true);
+                            if (cd.kind === "Date" || cd.kind === "Time" || cd.kind === "LocalDate") {
+                                avg = Converters.valueToString(cs.moments[0], cd.kind, true);
                                 stddev = Converters.durationFromDouble(cs.moments[1]);
                             } else {
                                 avg = significantDigits(cs.moments[0]);
@@ -388,7 +385,8 @@ export class SchemaView extends TSViewBase {
 
             if (allE && stat.presentCount === 0)
                 this.display.selectedRows.add(i);
-            if (this.schema.get(i).kind === "Date") {
+            const kind = this.schema.get(i).kind;
+            if (kind === "Date" || kind === "Time" || kind === "LocalDate") {
                 if (stat.moments[0] === 0.0)
                     this.display.selectedRows.add(i);
                 continue;

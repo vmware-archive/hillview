@@ -25,6 +25,8 @@ import org.hillview.utils.DateParsing;
 import javax.annotation.Nullable;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.BitSet;
 
@@ -104,11 +106,21 @@ public class DoubleListColumn
                     case Date:
                         if (this.dateParser == null)
                             this.dateParser = new DateParsing(s);
-                        Instant dt = this.dateParser.parse(s);
+                        Instant dt = this.dateParser.parseDate(s);
                         this.append(Converters.toDouble(dt));
+                        break;
+                    case LocalDate:
+                        if (this.dateParser == null)
+                            this.dateParser = new DateParsing(s);
+                        LocalDateTime ldt = this.dateParser.parseLocalDate(s);
+                        this.append(Converters.toDouble(ldt));
                         break;
                     case Duration:
                         this.append(Converters.toDouble(Duration.parse(s)));
+                        break;
+                    case Time:
+                        this.append(Converters.toDouble(LocalTime.parse(s)));
+                        break;
                     default:
                         throw new RuntimeException("Unexpected kind " + this.getKind());
                 }

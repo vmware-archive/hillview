@@ -31,6 +31,7 @@ import org.hillview.utils.*;
 import javax.annotation.Nullable;
 import java.sql.*;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -388,6 +389,8 @@ public class JdbcDatabase {
             case Types.DATE:
             case Types.TIME:
             case Types.TIMESTAMP:
+                kind = ContentsKind.LocalDate;
+                break;
             case Types.TIME_WITH_TIMEZONE:
             case Types.TIMESTAMP_WITH_TIMEZONE:
                 kind = ContentsKind.Date;
@@ -463,7 +466,16 @@ public class JdbcDatabase {
                     break;
                 case Types.DATE:
                 case Types.TIME:
-                case Types.TIMESTAMP:
+                case Types.TIMESTAMP: {
+                    Timestamp ts = data.getTimestamp(colIndex);
+                    if (ts == null) {
+                        col.appendMissing();
+                    } else {
+                        LocalDateTime ldt = ts.toLocalDateTime();
+                        col.append(Converters.toDouble(ldt));
+                    }
+                    break;
+                }
                 case Types.TIME_WITH_TIMEZONE:
                 case Types.TIMESTAMP_WITH_TIMEZONE:
                     Timestamp ts = data.getTimestamp(colIndex);

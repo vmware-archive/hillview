@@ -89,7 +89,7 @@ public class SimpleDBTarget extends TableRpcTarget {
 
     @Override
     public String toString() {
-        return "Local database: " + this.jdbc.toString();
+        return "Local database: " + this.jdbc.database;
     }
 
     @HillviewRpc

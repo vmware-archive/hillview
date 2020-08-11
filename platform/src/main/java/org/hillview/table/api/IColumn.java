@@ -75,6 +75,8 @@ public interface IColumn extends Serializable, ICast {
                 return Converters.toDate(this.getDouble(rowIndex));
             case Interval:
                 return this.getInterval(rowIndex);
+            case LocalDate:
+                return Converters.toLocalDate(this.getDouble(rowIndex));
             case None:
             default:
                 throw new RuntimeException("Unexpected data type");
@@ -100,6 +102,7 @@ public interface IColumn extends Serializable, ICast {
             case Duration:
             case Time:
             case Date:
+            case LocalDate:
                 return this.getDouble(rowIndex);
             case Interval:
                 return this.getInterval(rowIndex);
@@ -184,9 +187,11 @@ public interface IColumn extends Serializable, ICast {
             case Date:
             case Duration:
             case Time:
+            case LocalDate:
                 return new DoubleArrayColumn(cd, this.sizeInRows());
             case None:
                 return new EmptyColumn(cd.name, this.sizeInRows());
+            case Interval:
             default:
                 throw new RuntimeException("Conversion to column of kind " + kind + " not supported");
         }

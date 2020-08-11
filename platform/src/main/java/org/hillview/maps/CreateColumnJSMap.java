@@ -118,6 +118,12 @@ public class CreateColumnJSMap extends AppendColumnMap {
                             double timestampLocal = value.invokeMember("getTime").asDouble();
                             col.set(r, timestampLocal);
                             break;
+                        case LocalDate:
+                            double ts = value.invokeMember("getTime").asDouble();
+                            // ts is the local time; we have to adjust for the timezone
+                            double offset = value.invokeMember("getTimezoneOffset").asDouble();
+                            col.set(r, ts - offset * 60 * 1000);
+                            break;
                         case Integer:
                             col.set(r, value.asInt());
                             break;
@@ -131,6 +137,7 @@ public class CreateColumnJSMap extends AppendColumnMap {
                             Value v0 = value.getArrayElement(0);
                             Value v1 = value.getArrayElement(1);
                             col.set(r, v0.asDouble());
+                            assert endCol != null;
                             endCol.set(r, v1.asDouble());
                             break;
                         default:

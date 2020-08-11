@@ -23,7 +23,9 @@ import org.hillview.utils.Converters;
 import org.hillview.utils.DateParsing;
 
 import javax.annotation.Nullable;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.function.Function;
 
@@ -69,9 +71,11 @@ public interface IStringColumn extends IColumn {
         final IStringColumn column;
         @Nullable
         DateParsing parser = null;
+        final boolean toLocalDate;
 
-        DateParserHelper(IStringColumn col) {
+        DateParserHelper(IStringColumn col, boolean toLocalDate) {
             this.column = col;
+            this.toLocalDate = toLocalDate;
         }
 
         @Override
@@ -82,8 +86,13 @@ public interface IStringColumn extends IColumn {
                 return null;
             if (this.parser == null)
                 this.parser = new DateParsing(s);
-            Instant i = this.parser.parse(s);
-            return Converters.toDouble(i);
+            if (toLocalDate) {
+                LocalDateTime ld = this.parser.parseLocalDate(s);
+                return Converters.toDouble(ld);
+            } else {
+                Instant i = this.parser.parseDate(s);
+                return Converters.toDouble(i);
+            }
         }
     }
 
@@ -119,8 +128,13 @@ public interface IStringColumn extends IColumn {
                 this.convertToDouble(newColumn, set, f);
                 break;
             }
+            case LocalDate: {
+                Function<Integer, Double> p = new DateParserHelper(this, true);
+                this.convertToDouble(newColumn, set, p);
+                break;
+            }
             case Date: {
-                Function<Integer, Double> p = new DateParserHelper(this);
+                Function<Integer, Double> p = new DateParserHelper(this, false);
                 this.convertToDouble(newColumn, set, p);
                 break;
             }
@@ -129,9 +143,11 @@ public interface IStringColumn extends IColumn {
                 this.convertToDouble(newColumn, set, row -> Converters.toDouble(LocalTime.parse(this.getString(row))));
                 break;
             }
-            case Duration:
-                throw new UnsupportedOperationException("Conversion from " + this.getKind()
-                        + " to " + kind + " is not supported.");
+            case Duration: {
+                //noinspection ConstantConditions
+                this.convertToDouble(newColumn, set, row -> Converters.toDouble(Duration.parse(this.getString(row))));
+                break;
+            }
             default:
                 throw new RuntimeException("Unexpected column kind " + this.getKind());
         }

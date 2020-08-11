@@ -4,7 +4,7 @@
     "name": "DayOfWeek"
   },
   {
-    "kind": "Date",
+    "kind": "LocalDate",
     "name": "FlightDate"
   },
   {

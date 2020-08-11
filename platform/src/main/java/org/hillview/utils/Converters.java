@@ -26,9 +26,14 @@ import java.util.Locale;
  * Conversion to and from doubles of various supported datatypes.
  */
 public class Converters {
-    private static final Instant baseTime = LocalDateTime.of(
+    public static final long NANOS_TO_SECONDS = 1_000_000_000;
+    public static final int NANOS_TO_MILLIS = 1_000_000;
+    public static final int SECONDS_TO_DAY = 24 * 3600;
+
+    private static final LocalDateTime baseLocalTime = LocalDateTime.of(
             LocalDate.of(1970, 1, 1),
-            LocalTime.of(0, 0)).toInstant(ZoneOffset.UTC);
+            LocalTime.of(0, 0));
+    private static final Instant baseTime = baseLocalTime.toInstant(ZoneOffset.UTC);
 
     public static double toDouble(final Instant d) {
         Duration span = Duration.between(baseTime, d);
@@ -59,6 +64,16 @@ public class Converters {
         return toDate((double)d);
     }
 
+    public static double toDouble(LocalDateTime date) {
+        Duration span = Duration.between(baseLocalTime, date);
+        return Converters.toDouble(span);
+    }
+
+    public static LocalDateTime toLocalDate(double value) {
+        Duration span = toDuration(value);
+        return baseLocalTime.plus(span);
+    }
+
     public static Duration toDuration(final double d) {
         return Duration.ofMillis(toLong(d));
     }
@@ -79,27 +94,41 @@ public class Converters {
             .withLocale(Locale.US)
             .withZone(ZoneId.systemDefault());
 
+    static String stripSuffix(String dateTime) {
+        if (dateTime.endsWith(".000"))
+            dateTime = dateTime.substring(0, dateTime.length() - 4);
+        if (dateTime.endsWith(" 00:00:00"))
+            return dateTime.substring(0, dateTime.length() - 9);
+        if (dateTime.endsWith(":00"))
+            return dateTime.substring(0, dateTime.length() - 3);
+        return dateTime;
+    }
+
     /**
      * Convert a date to a string.  Must be the same algorithm as the
      * one used in JavaScript to convert dates.
      */
+    @Nullable
     public static String toString(@Nullable Instant d) {
         if (d == null)
-            return "missing";
+            return null;
         String s = formatter.format(d);
-        if (s.endsWith(".000"))
-            s = s.substring(0, s.length() - 4);
-        if (s.endsWith(" 00:00:00"))
-            return s.substring(0, s.length() - 9);
-        if (s.endsWith(":00"))
-            return s.substring(0, s.length() - 3);
-        return s;
+        return stripSuffix(s);
     }
 
+    @Nullable
     public static String toString(@Nullable LocalTime t) {
         if (t == null)
-            return "missing";
+            return null;
         return t.toString();
+    }
+
+    @Nullable
+    public static String toString(@Nullable LocalDateTime t) {
+        if (t == null)
+            return null;
+        String s = formatter.format(t);
+        return stripSuffix(s);
     }
 
     /**
@@ -149,11 +178,27 @@ public class Converters {
     }
 
     public static LocalTime toTime(double value) {
-        return LocalTime.ofNanoOfDay(Converters.toLong(value * 1000000));
+        return LocalTime.ofNanoOfDay(Converters.toLong(value * NANOS_TO_MILLIS));
     }
 
     public static double toDouble(LocalTime time) {
-        return (double)(time.toNanoOfDay() / 1000000);
+        return (double)(time.toNanoOfDay() / NANOS_TO_MILLIS);
+    }
+
+    public static LocalDateTime toLocalDate(Instant i) {
+        return LocalDateTime.ofInstant(i, ZoneOffset.UTC);
+    }
+
+    public static LocalTime toTime(Instant i) {
+        return toTime(toLocalDate(i));
+    }
+
+    public static LocalTime toTime(LocalDateTime ldt) {
+        return ldt.toLocalTime();
+    }
+
+    public static Instant toDate(LocalDateTime ldt) {
+        return ldt.toInstant(ZoneOffset.UTC);
     }
 
     public static int toIntClamp(double value) {

@@ -40,7 +40,7 @@ import org.hillview.utils.TestTables;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 /**
  * Test the Graal Javascript engine.
@@ -190,25 +190,25 @@ public class JavascriptTest extends BaseTest {
         LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);
         String function = "function map(row) { return new Date(1970 + row['Age'], 0, 1); }";
         CreateColumnJSMap.Info info = new CreateColumnJSMap.Info(
-                function, table.getSchema(), "Date", ContentsKind.Date, null);
+                function, table.getSchema(), "Date", ContentsKind.LocalDate, null);
         CreateColumnJSMap map = new CreateColumnJSMap(info);
         IDataSet<ITable> mapped = lds.blockingMap(map);
         ITable outTable = ((LocalDataSet<ITable>)mapped).data;
         Assert.assertNotNull(outTable);
         IColumn dateColumn = outTable.getLoadedColumn("Date");
-        Instant instant = Converters.toDate(dateColumn.getDouble(0));
+        LocalDateTime date = Converters.toLocalDate(dateColumn.getDouble(0));
         String expectedDate = "1990-01-01";
         DateParsing simple = new DateParsing(expectedDate);
-        Instant expected = simple.parse(expectedDate);
-        Assert.assertEquals(expected, instant);
+        LocalDateTime expected = simple.parseLocalDate(expectedDate);
+        Assert.assertEquals(expected, date);
 
         String data = outTable.toLongString(3);
         String someDate = "1990-01-01";
         DateParsing parsing = new DateParsing(someDate);
         Assert.assertEquals("Table[3x15]\n" +
-                "Mike,20," + parsing.parse("1990-01-01") + "\n" +
-                "John,30," + parsing.parse("2000-01-01") + "\n" +
-                "Tom,10," + parsing.parse("1980-01-01") + "\n", data);
+                "Mike,20," + parsing.parseLocalDate("1990-01-01") + "\n" +
+                "John,30," + parsing.parseLocalDate("2000-01-01") + "\n" +
+                "Tom,10," + parsing.parseLocalDate("1980-01-01") + "\n", data);
     }
 
     @Test
@@ -274,10 +274,10 @@ public class JavascriptTest extends BaseTest {
         ITable table = TestTables.testRepTable();
         LocalDataSet<ITable> lds = new LocalDataSet<ITable>(table);
         // Add a date column
-        ColumnDescription outCol = new ColumnDescription("Date", ContentsKind.Date);
+        ColumnDescription outCol = new ColumnDescription("Date", ContentsKind.LocalDate);
         String function = "function map(row) { return new Date(1970 + row['Age'], 0, 1); }";
         CreateColumnJSMap.Info info = new CreateColumnJSMap.Info(
-                function, table.getSchema(), "Date", ContentsKind.Date, null);
+                function, table.getSchema(), "Date", ContentsKind.LocalDate, null);
         CreateColumnJSMap map = new CreateColumnJSMap(info);
         IDataSet<ITable> mapped = lds.blockingMap(map);
         // Convert the date column
@@ -289,7 +289,7 @@ public class JavascriptTest extends BaseTest {
         Schema outSchema = table.getSchema().clone();
         outSchema.append(outCol);
         CreateColumnJSMap.Info info1 = new CreateColumnJSMap.Info(
-                function, outSchema, "Later", ContentsKind.Date, null);
+                function, outSchema, "Later", ContentsKind.LocalDate, null);
         map = new CreateColumnJSMap(info1);
         mapped = mapped.blockingMap(map);
         ITable outTable = ((LocalDataSet<ITable>)mapped).data;
@@ -299,8 +299,8 @@ public class JavascriptTest extends BaseTest {
         String someDate = "1990-01-01";
         DateParsing p = new DateParsing(someDate);
         Assert.assertEquals("Table[4x15]\n" +
-                "Mike,20," + p.parse("1990-01-01") + "," + p.parse("2000-01-01") + "\n" +
-                "John,30," + p.parse("2000-01-01") + "," + p.parse("2010-01-01") + "\n" +
-                "Tom,10," + p.parse("1980-01-01") + ","+ p.parse("1990-01-01") + "\n", data);
+                "Mike,20," + p.parseLocalDate("1990-01-01") + "," + p.parseLocalDate("2000-01-01") + "\n" +
+                "John,30," + p.parseLocalDate("2000-01-01") + "," + p.parseLocalDate("2010-01-01") + "\n" +
+                "Tom,10," + p.parseLocalDate("1980-01-01") + ","+ p.parseLocalDate("1990-01-01") + "\n", data);
     }
 }

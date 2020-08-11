@@ -282,6 +282,8 @@ public class ComparisonFilterDescription implements ITableFilterDescription {
                 case Double:
                 case Duration:
                 case Date:
+                case Time:
+                case LocalDate:
                     assert ComparisonFilterDescription.this.doubleValue != null;
                     double d = ComparisonFilterDescription.this.doubleValue;
                     switch (ComparisonFilterDescription.this.comparison) {
@@ -337,6 +339,7 @@ public class ComparisonFilterDescription implements ITableFilterDescription {
                             throw new RuntimeException("Unexpected comparison operation " +
                                     ComparisonFilterDescription.this.comparison);
                     }
+                case None:
                 default:
                     throw new RuntimeException("Unexpected kind " + this.column.getKind());
             }

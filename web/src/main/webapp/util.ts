@@ -260,18 +260,33 @@ export function describeQuartiles(data: SampleSet): string[] {
  * Direct counterpart of corresponding Java class
  */
 export class Converters {
-    public static dateFromDouble(value: number): Date | null {
+    public static dateFromDouble(value: number | null): Date | null {
         if (value == null)
             return null;
         return new Date(value);
     }
 
+    // Javascript dates are always UTC
+    public static localDateFromDouble(value: number | null): Date | null {
+        if (value == null)
+            return null;
+        const offset = new Date(value).getTimezoneOffset();
+        return new Date(value + offset * 60 * 1000);
+    }
+
     public static timeFromDouble(value: number): Date | null {
-        return Converters.dateFromDouble(value);
+        return Converters.localDateFromDouble(value);
     }
 
     public static doubleFromDate(value: Date | null): number | null {
         return value?.getTime();
+    }
+
+    public static doubleFromLocalDate(value: Date | null): number | null {
+        if (value === null)
+            return null;
+        const offset = value.getTimezoneOffset();
+        return value.getTime() + offset * 60 * 1000;
     }
 
     /**
@@ -339,13 +354,16 @@ export class Converters {
         } else if (kind === "Date") {
             return formatDate(Converters.dateFromDouble(val as number));
         } else if (kind === "Time" || kind === "Duration") {
-            return formatTime(Converters.timeFromDouble(val as number));
+            return formatTime(Converters.timeFromDouble(val as number), true);
         } else if (kindIsString(kind)) {
             return val as string;
         } else if (kind == "Interval") {
             const arr = val as number[];
             return "[" + this.valueToString(arr[0], "Double", human) + ":" +
                 this.valueToString(arr[1], "Double", human) + "]";
+        } else if (kind === "LocalDate") {
+            const date = Converters.localDateFromDouble(val as number);
+            return formatDate(date);
         } else {
             assert(false);
         }
@@ -431,6 +449,7 @@ export class Converters {
             case "Date":
             case "Time":
             case "Duration":
+            case "LocalDate":
                 str = this.valueToString(filter.doubleValue, kind, true);
                 break;
             case "Interval":
@@ -618,7 +637,7 @@ export function formatDate(d: Date): string {
     const month = d.getMonth() + 1;
     const day = d.getDate();
     const df = String(year) + "/" + zeroPad(month, 2) + "/" + zeroPad(day, 2);
-    const time = formatTime(d);
+    const time = formatTime(d, false);
     if (time != "")
         return df + " " + time;
     return df;
@@ -627,8 +646,10 @@ export function formatDate(d: Date): string {
 /**
  * This is a time encoded as a date.  Ignore the date part and just
  * return the time.
+ * @param d date that only has a time component.
+ * @param nonEmpty if true return 00:00 when the result is empty.
  */
-export function formatTime(d: Date): string {
+export function formatTime(d: Date, nonEmpty: boolean): string {
     const hour = d.getHours();
     const minutes = d.getMinutes();
     const seconds = d.getSeconds();
@@ -644,6 +665,10 @@ export function formatTime(d: Date): string {
         if (time === "")
             time = ":00";
         time = zeroPad(hour, 2) + time;
+    }
+    if (nonEmpty) {
+        if (time == "")
+            return "00:00";
     }
     return time;
 }

@@ -30,6 +30,8 @@ import org.hillview.utils.Converters;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 /**
@@ -50,6 +52,10 @@ public class OrcFileWriter implements ITableWriter {
             ColumnDescription cd = schema.getDescription(col);
             TypeDescription current;
             switch (cd.kind) {
+                case Interval:
+                case Time:
+                case Duration:
+                    throw new RuntimeException("Datatype not supported in Orc" + cd.kind);
                 default:
                     throw new RuntimeException("Unexpected data type " + cd.kind);
                 case String:
@@ -58,12 +64,12 @@ public class OrcFileWriter implements ITableWriter {
                     current = TypeDescription.createString();
                     break;
                 case Date:
+                case LocalDate:
                     current = TypeDescription.createTimestamp();
                     break;
                 case Integer:
                     current = TypeDescription.createInt();
                     break;
-                case Duration:
                 case Double:
                     current = TypeDescription.createDouble();
                     break;
@@ -100,6 +106,9 @@ public class OrcFileWriter implements ITableWriter {
 
                     switch (col.getKind()) {
                         case None:
+                        case Interval:
+                        case Time:
+                        case Duration:
                             break;
                         case String:
                         case Json:
@@ -107,19 +116,27 @@ public class OrcFileWriter implements ITableWriter {
                             assert s != null;
                             ((BytesColumnVector)cv).setVal(outRowNo, s.getBytes());
                             break;
-                        case Date:
+                        case Date: {
                             Instant inst = Converters.toDate(col.getDouble(nextRow));
-                            TimestampColumnVector tscv = (TimestampColumnVector)cv;
+                            TimestampColumnVector tscv = (TimestampColumnVector) cv;
                             tscv.time[outRowNo] = inst.toEpochMilli();
-                            tscv.nanos[outRowNo] = inst.getNano();
+                            tscv.nanos[outRowNo] = inst.getNano() % Converters.NANOS_TO_MILLIS;
                             break;
+                        }
+                        case LocalDate: {
+                            LocalDateTime ldt = Converters.toLocalDate(col.getDouble(nextRow));
+                            TimestampColumnVector tscv = (TimestampColumnVector) cv;
+                            long seconds = ldt.toEpochSecond(ZoneOffset.UTC);
+                            int nanos = ldt.getNano();
+                            tscv.time[outRowNo] = seconds * 1000 + nanos / Converters.NANOS_TO_MILLIS;
+                            tscv.nanos[outRowNo] = nanos % Converters.NANOS_TO_MILLIS;
+                            break;
+                        }
                         case Integer:
                             int iv = col.getInt(nextRow);
                             ((LongColumnVector)cv).vector[outRowNo] = iv;
                             break;
                         case Double:
-                        case Duration:
-                            // TODO: durations are doubles, not clear what else we can do
                             double d = col.getDouble(nextRow);
                             ((DoubleColumnVector)cv).vector[outRowNo] = d;
                             break;

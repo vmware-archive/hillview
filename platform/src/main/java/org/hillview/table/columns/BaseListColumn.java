@@ -104,7 +104,10 @@ public abstract class BaseListColumn extends BaseColumn implements IAppendableCo
             case Date:
             case Double:
             case Duration:
+            case LocalDate:
+            case Time:
                 return new DoubleListColumn(desc);
+            case Interval:
             default:
                 throw new RuntimeException("Unexpected description " + desc.toString());
         }

@@ -27,13 +27,11 @@ import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.HostList;
 import org.hillview.sketches.results.NextKList;
 import org.hillview.table.Schema;
-import org.hillview.utils.Converters;
 import org.hillview.utils.HostAndPort;
 import org.hillview.utils.RuntimeTypeAdapterFactory;
 
 import java.io.Serializable;
 import java.lang.reflect.Type;
-import java.time.Instant;
 
 // Unfortunately this module introduces many circular dependencies, because it has
 // to register various type adaptors.
@@ -65,22 +63,6 @@ public interface IJson extends Serializable {
         }
     }
 
-    class DateSerializer implements JsonSerializer<Instant> {
-        public JsonElement serialize(Instant data, Type typeOfSchema, JsonSerializationContext
-                unused) {
-            double d = Converters.toDouble(data);
-            return new JsonPrimitive(d);
-        }
-    }
-
-    class DateDeserializer implements JsonDeserializer<Instant> {
-        public Instant deserialize(JsonElement data, Type typeOfSchema, JsonDeserializationContext
-                unused) {
-            double d = data.getAsDouble();
-            return Converters.toDate(d);
-        }
-    }
-
     class NextKSerializer
             implements JsonSerializer<NextKList> {
         public JsonElement serialize(NextKList data, Type typeOfSchema, JsonSerializationContext unused) {
@@ -101,7 +83,6 @@ public interface IJson extends Serializable {
             .registerTypeAdapter(Schema.class, new Schema.Deserializer())
             .registerTypeAdapter(RowSnapshot.class, new RowSnapshotSerializer())
             .registerTypeAdapter(NextKList.class, new NextKSerializer())
-            .registerTypeAdapter(Instant.class, new DateSerializer())
             .registerTypeAdapter(Count.class, new CountSerializer())
             .registerTypeAdapter(Interval.class, new IntervalSerializer())
             .registerTypeAdapter(Interval.class, new IntervalDeserializer())

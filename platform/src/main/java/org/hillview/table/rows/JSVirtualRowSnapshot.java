@@ -50,9 +50,12 @@ public class JSVirtualRowSnapshot extends VirtualRowSnapshot {
         IColumn col = this.getColumnChecked((String)key);
         ContentsKind kind = col.getKind();
         String k = (String)key;
-        if (kind == ContentsKind.Date) {
+        if (kind == ContentsKind.Date || kind == ContentsKind.Time) {
             double dateEncoding = super.getDouble(k);
             return this.engine.eval("js","new Date(" + dateEncoding + ")");
+        } else if (kind == ContentsKind.LocalDate) {
+            double dateEncoding = super.getDouble(k);
+            return this.engine.eval("js","new Date(" + dateEncoding + " + (new Date(0).getTimezoneOffset() * 60000))");
         } else if (kind == ContentsKind.Interval) {
             double start = super.getEndpoint(k, true);
             double end = super.getEndpoint(k, false);

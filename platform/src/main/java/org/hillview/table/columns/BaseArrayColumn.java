@@ -62,6 +62,8 @@ public abstract class BaseArrayColumn extends BaseColumn {
      */
     public static IMutableColumn create(ColumnDescription description, int size) {
         switch (description.kind) {
+            case None:
+                return new EmptyColumn(description.name, size);
             case Json:
             case String:
                 return new StringArrayColumn(description, size);
@@ -71,7 +73,9 @@ public abstract class BaseArrayColumn extends BaseColumn {
             case Double:
             case Duration:
             case Time:
+            case LocalDate:
                 return new DoubleArrayColumn(description, size);
+            case Interval:
             default:
                 throw new RuntimeException("Unexpected column kind " + description.toString());
         }

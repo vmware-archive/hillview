@@ -17,6 +17,7 @@
 
 package org.hillview.table.columns;
 
+import jnr.ffi.annotations.In;
 import net.openhft.hashing.LongHashFunction;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.*;
@@ -66,11 +67,13 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
             case Double:
             case Duration:
             case Time:
+            case LocalDate:
                 return this.getDouble(rowIndex);
             case Interval:
                 return this.getEndpoint(rowIndex, true);
+            case None:
             default:
-                throw new RuntimeException("Unexpected data type");
+                throw new RuntimeException("Unexpected data kind " + this.description.kind);
         }
     }
 
@@ -84,6 +87,8 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
         return new IndexComparator() {
             @Override
             public int compare(final int i, final int j) {
+                if (ObjectArrayColumn.this.description.kind == ContentsKind.None)
+                    return 0;
                 final boolean iMissing = ObjectArrayColumn.this.isMissing(i);
                 final boolean jMissing = ObjectArrayColumn.this.isMissing(j);
                 if (iMissing && jMissing) {
@@ -109,6 +114,7 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
                         case Double:
                         case Duration:
                         case Time:
+                        case LocalDate:
                             return Double.compare(ObjectArrayColumn.this.getDouble(i),
                                     ObjectArrayColumn.this.getDouble(j));
                         case Interval:
@@ -119,6 +125,7 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
                             assert ij != null;
                             return ii.compareTo(ij);
                         }
+                        // case None:  done above.
                         default:
                             throw new RuntimeException("Unexpected data type");
                     }
@@ -250,6 +257,7 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
             case Double:
             case Duration:
             case Time:
+            case LocalDate:
                 return hash.hashLong(Double.doubleToLongBits(this.getDouble(rowIndex)));
             case Integer:
                 return hash.hashInt(this.getInt(rowIndex));
@@ -258,7 +266,8 @@ public final class ObjectArrayColumn extends BaseArrayColumn {
                 assert i != null;
                 return i.hash(hash);
             default:
-                throw new RuntimeException("Unexpected data type");
+            case None:  // handled above
+                throw new RuntimeException("Unexpected data kind " + ObjectArrayColumn.this.description.kind);
         }
     }
 }

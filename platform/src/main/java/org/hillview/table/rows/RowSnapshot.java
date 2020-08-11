@@ -133,6 +133,14 @@ public class RowSnapshot extends BaseRowSnapshot
                 return Converters.toDuration((double)o);
             case Time:
                 return Converters.toTime((double)o);
+            case LocalDate:
+                return Converters.toLocalDate((double)o);
+            case None:
+            case String:
+            case Json:
+            case Double:
+            case Integer:
+            case Interval:
             default:
                 return o;
         }
@@ -190,10 +198,7 @@ public class RowSnapshot extends BaseRowSnapshot
             if (o == null) {
                 if (set != null && set.contains(c)) {
                     ContentsKind kind = cd.kind;
-                    if (kind == ContentsKind.Date || kind == ContentsKind.Duration)
-                        // These types are represented as doubles in the row snapshot.
-                        kind = ContentsKind.Double;
-                    converted[i] = kind.minimumValue();
+                    converted[i] = kind.defaultValue();
                 } else {
                     converted[i] = null;
                 }

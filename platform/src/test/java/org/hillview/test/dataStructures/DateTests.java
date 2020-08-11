@@ -25,90 +25,75 @@ import org.hillview.utils.DateParsing;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
 import java.time.*;
 
 public final class DateTests extends BaseTest {
     @Test
     public void parseDates() {
-        DateParsing parsing = new DateParsing("1979-01-01 00:00:00 +0000 UTC");
-        Instant instant = parsing.parse("1979-01-01 00:00:00 +0000 UTC");
-        Instant expected = LocalDate.of(1979, 1, 1)
-                .atStartOfDay(ZoneOffset.UTC)
-                .toInstant();
-        Assert.assertEquals(instant, expected);
-
-        parsing = new DateParsing("2017-01-01");
-        instant = parsing.parse("2017-01-01");
-        expected = LocalDate.of(2017, 1, 1)
-                .atStartOfDay(ZoneOffset.systemDefault())
-                .toInstant();
-        Assert.assertEquals(instant, expected);
-        instant = parsing.parse("1999-12-10");
-        expected = LocalDate.of(1999, 12, 10)
-                .atStartOfDay(ZoneOffset.systemDefault())
-                .toInstant();
-        Assert.assertEquals(instant, expected);
+        DateParsing parsing = new DateParsing("2017-01-01");
+        LocalDateTime ldt = parsing.parseLocalDate("2017-01-01");
+        LocalDateTime expectedLdt = LocalDate.of(2017, 1, 1).atStartOfDay();
+        Assert.assertEquals(ldt, expectedLdt);
+        ldt = parsing.parseLocalDate("1999-12-10");
+        expectedLdt = LocalDate.of(1999, 12, 10).atStartOfDay();
+        Assert.assertEquals(expectedLdt, ldt);
 
         parsing = new DateParsing("2018/01/27");
-        instant = parsing.parse("2018/01/27");
-        expected = LocalDate.of(2018, 1, 27)
-                .atStartOfDay(ZoneOffset.systemDefault())
-                .toInstant();
-        Assert.assertEquals(instant, expected);
+        ldt = parsing.parseLocalDate("2018/01/27");
+        expectedLdt = LocalDate.of(2018, 1, 27).atStartOfDay();
+        Assert.assertEquals(expectedLdt, ldt);
 
         parsing = new DateParsing("2017-01-01 10:10:10");
-        instant = parsing.parse("2017-01-01 10:10:10");
-        expected = LocalDateTime.of(2017, 1, 1, 10, 10, 10)
-                .atZone(ZoneOffset.systemDefault())
-                .toInstant();
-        Assert.assertEquals(instant, expected);
+        ldt = parsing.parseLocalDate("2017-01-01 10:10:10");
+        expectedLdt = LocalDateTime.of(2017, 1, 1, 10, 10, 10);
+        Assert.assertEquals(expectedLdt, ldt);
 
         parsing = new DateParsing("2017-01-01 10:10:10.555");
-        instant = parsing.parse("2017-01-01 10:10:10.555");
-        expected = LocalDateTime.of(2017, 1, 1, 10, 10, 10, 555000000)
-                .atZone(ZoneOffset.systemDefault())
-                .toInstant();
-        Assert.assertEquals(instant, expected);
+        ldt = parsing.parseLocalDate("2017-01-01 10:10:10.555");
+        expectedLdt = LocalDateTime.of(2017, 1, 1, 10, 10, 10, 555000000);
+        Assert.assertEquals(expectedLdt, ldt);
 
-        instant = parsing.parse("2017-01-01 10:10:10.666");
-        expected = LocalDateTime.of(2017, 1, 1, 10, 10, 10, 666000000)
-                .atZone(ZoneOffset.systemDefault())
-                .toInstant();
-        Assert.assertEquals(instant, expected);
+        ldt = parsing.parseLocalDate("2017-01-01 10:10:10.666");
+        expectedLdt = LocalDateTime.of(2017, 1, 1, 10, 10, 10, 666000000);
+        Assert.assertEquals(expectedLdt, ldt);
 
         parsing = new DateParsing("2017-01-01 10:10:10.5");
-        instant = parsing.parse("2017-01-01 10:10:10.1");
-        expected = LocalDateTime.of(2017, 1, 1, 10, 10, 10, 100000000)
-                .atZone(ZoneOffset.systemDefault())
-                .toInstant();
-        Assert.assertEquals(instant, expected);
-
-        parsing = new DateParsing("2010-12-27T10:50:44.000-08:00");
-        instant = parsing.parse("2010-12-27T10:50:44.000-08:00");
-        expected = LocalDateTime.of(2010, 12, 27, 10, 50, 44)
-                .atZone(ZoneOffset.systemDefault())
-                .toInstant();
-        Assert.assertEquals(instant, expected);
+        ldt = parsing.parseLocalDate("2017-01-01 10:10:10.1");
+        expectedLdt = LocalDateTime.of(2017, 1, 1, 10, 10, 10, 100000000);
+        Assert.assertEquals(expectedLdt, ldt);
 
         parsing = new DateParsing("2017-10-05T14:05:35.454000");
-        instant = parsing.parse("2017-10-05T14:05:35.454000");
-        expected = LocalDateTime.of(2017, 10, 5, 14, 5, 35, 454000000)
-                .atZone(ZoneOffset.systemDefault())
-                .toInstant();
-        Assert.assertEquals(instant, expected);
+        ldt = parsing.parseLocalDate("2017-10-05T14:05:35.454000");
+        expectedLdt = LocalDateTime.of(2017, 10, 5, 14, 5, 35, 454000000);
+        Assert.assertEquals(expectedLdt, ldt);
 
         // This test has a little race which may fail around the new year.
         // I have no idea how to make it better.
         parsing = new DateParsing("Oct  7 06:47:01");
-        instant = parsing.parse("Oct  7 06:47:01");
+        ldt = parsing.parseLocalDate("Oct  7 06:47:01");
         LocalDateTime now = LocalDateTime.now();
-        expected = LocalDateTime.of(now.getYear(), 10, 7, 6, 47, 1)
-                .atZone(ZoneOffset.systemDefault())
-                .toInstant();
-        Assert.assertEquals(instant, expected);
+        expectedLdt = LocalDateTime.of(now.getYear(), 10, 7, 6, 47, 1);
+        Assert.assertEquals(expectedLdt, ldt);
 
-        instant = parsing.parse("Oct 10 06:47:01");
-        expected = LocalDateTime.of(now.getYear(), 10, 10, 6, 47, 1)
+        ldt = parsing.parseLocalDate("Oct 10 06:47:01");
+        expectedLdt = LocalDateTime.of(now.getYear(), 10, 10, 6, 47, 1);
+        Assert.assertEquals(expectedLdt, ldt);
+    }
+
+    @Test
+    public void testTZ() {
+        DateParsing parsing = new DateParsing("1979-01-01 00:00:00 +0000 UTC");
+        Instant instant = parsing.parseDate("1979-01-01 00:00:00 +0000 UTC");
+        Instant expected = LocalDate.of(1979, 1, 1)
+                .atStartOfDay(ZoneOffset.UTC)
+                .toInstant();
+        Assert.assertEquals(expected, instant);
+
+        parsing = new DateParsing("2010-12-27T10:50:44.000-08:00");
+        instant = parsing.parseDate("2010-12-27T10:50:44.000-08:00");
+        expected = LocalDateTime.of(2010, 12, 27, 10, 50, 44)
                 .atZone(ZoneOffset.systemDefault())
                 .toInstant();
         Assert.assertEquals(instant, expected);
@@ -117,19 +102,36 @@ public final class DateTests extends BaseTest {
     @Test
     public void testFormat() {
         DateParsing parsing = new DateParsing("2017-10-05T14:05:35.454000");
-        Instant instant = parsing.parse("2017-10-05T14:05:35.454000");
+        LocalDateTime ldt = parsing.parseLocalDate("2017-10-05T14:05:35.454000");
 
-        String repr = Converters.toString(instant);
+        String repr = Converters.toString(ldt);
         Assert.assertEquals("2017/10/05 14:05:35.454", repr);
 
-        instant = parsing.parse("2017-10-05T14:05:00.000");
-        repr = Converters.toString(instant);
+        ldt = parsing.parseLocalDate("2017-10-05T14:05:00.000");
+        repr = Converters.toString(ldt);
         Assert.assertEquals("2017/10/05 14:05", repr);
+    }
+
+    //@Test
+    public void offsetTest() {
+        // This test seems to exhibit a bug in the JS interpreter
+        OutputStream stdout = new ByteArrayOutputStream();
+        Context context = Context.newBuilder("js").out(stdout).build();
+        String func = "function f() { print(new Date().getTimezoneOffset()); print(new Date(0).getTimezoneOffset()); }";
+        context.eval("js", func);
+        Value function = context.eval("js", "() => f()");
+        assert function.canExecute();
+        function.execute();
+        String[] debug = stdout.toString().split("\n");
+        Assert.assertEquals(2, debug.length);
+        Assert.assertEquals(debug[0], debug[1]);
     }
 
     @Test
     public void compareJavascriptTest() {
-        Context context = Context.create();
+        /* Captures print statements in the script for debugging. */
+        OutputStream stdout = new ByteArrayOutputStream();
+        Context context = Context.newBuilder("js").out(stdout).build();
         // This function should be the same as the one in util.ts.
         String jsConverter =
                 "function zeroPad(num, length) {\n" +
@@ -141,8 +143,32 @@ public final class DateTests extends BaseTest {
                 "    }\n" +
                 "    return zeroString + n;\n" +
                 "}" +
-                "function formatDate(ds) {\n" +
+                "function formatTime(d) {\n" +
+                "    var hour = d.getHours();\n" +
+                "    var minutes = d.getMinutes();\n" +
+                "    var seconds = d.getSeconds();\n" +
+                "    var ms = d.getMilliseconds();\n" +
+                "    var time = \"\";\n" +
+                "    if (ms !== 0)\n" +
+                "        time = \".\" + zeroPad(ms, 3);\n" +
+                "    if (seconds !== 0 || time !== \"\")\n" +
+                "        time = \":\" + zeroPad(seconds, 2) + time;\n" +
+                "    if (minutes !== 0 || time !== \"\")\n" +
+                "        time = \":\" + zeroPad(minutes, 2) + time;\n" +
+                "    if (hour !== 0 || time !== \"\") {\n" +
+                "        if (time === \"\")\n" +
+                "            time = \":00\";\n" +
+                "        time = zeroPad(hour, 2) + time;\n" +
+                "    }\n" +
+                "    return time;\n" +
+                "}\n" +
+                "function formatDate(ds, local) {\n" +
                 "    var d = new Date(ds);\n" +
+                "    if (local) {\n" +
+                // For some strange reason new Date().getTimezoneOffset() does not give the same result!
+                "        var offset = d.getTimezoneOffset();\n" +
+                "        d = new Date(ds + offset * 60 * 1000);\n" +
+                "    }\n" +
                 "    if (d == null)\n" +
                 "        return \"missing\";\n" +
                 "    var year = d.getFullYear();\n" +
@@ -153,22 +179,13 @@ public final class DateTests extends BaseTest {
                 "    var seconds = d.getSeconds();\n" +
                 "    var ms = d.getMilliseconds();\n" +
                 "    var df = String(year) + \"/\" + zeroPad(month, 2) + \"/\" + zeroPad(day, 2);\n" +
-                "    var suffix = \"\";\n" +
-                "    if (ms !== 0)\n" +
-                "        suffix = \".\" + zeroPad(ms, 3);\n" +
-                "    if (seconds !== 0 || suffix !== \"\")\n" +
-                "        suffix = \":\" + zeroPad(seconds, 2) + suffix;\n" +
-                "    if (minutes !== 0 || suffix !== \"\")\n" +
-                "        suffix = \":\" + zeroPad(minutes, 2) + suffix;\n" +
-                "    if (hour !== 0 || suffix !== \"\") {\n" +
-                "        if (suffix === \"\")\n" +
-                "            suffix = \":00\";\n" +
-                "        suffix = \" \" + zeroPad(hour, 2) + suffix;\n" +
-                "    }\n" +
-                "    return df + suffix;\n" +
+                "    var time = formatTime(d);\n" +
+                "    if (time != \"\")\n" +
+                "        return df + \" \" + time;\n" +
+                "    return df;\n" +
                 "}\n";
         context.eval("js", jsConverter);
-        Value function = context.eval("js", "d => formatDate(d)");
+        Value function = context.eval("js", "(d, l) => formatDate(d, l)");
         assert function.canExecute();
         String[] dates = new String[] {
                 "2017-01-01",
@@ -180,7 +197,6 @@ public final class DateTests extends BaseTest {
                 "2017-01-01 10:10:10.666",
                 "2017-01-01 10:10:10.5",
                 "2017-01-01 10:10:10.1",
-                "2010-12-27T10:50:44.000-08:00",
                 "2017-10-05T14:05:35.454000",
                 "Oct  7 06:47:01",
                 "Oct 10 06:47:01",
@@ -188,17 +204,27 @@ public final class DateTests extends BaseTest {
         };
 
         for (String d: dates) {
-            /*
-            Captures print statements in the script for debugging.
-            StringWriter writer = new StringWriter();
-            engine.getContext().setWriter(writer);
-            */
             DateParsing parsing = new DateParsing(d);
-            Instant instant = parsing.parse(d);
-            String s = Converters.toString(instant);
-            double dbl = Converters.toDouble(instant);
-            String value = function.execute(dbl).asString();
-            //System.out.println(s + "=>\n" + writer);
+            LocalDateTime ldt = parsing.parseLocalDate(d);
+            String s = Converters.toString(ldt);
+            double dbl = Converters.toDouble(ldt);
+            String value = function.execute(dbl, true).asString();
+            /* Debugging output
+            String debug = stdout.toString();
+            System.out.println(s + "=>" + debug);
+             */
+            Assert.assertEquals(s, value);
+        }
+
+        dates = new String[] {
+                "2010-12-27T10:50:44.000-08:00"
+        };
+        for (String d: dates) {
+            DateParsing parsing = new DateParsing(d);
+            Instant ldt = parsing.parseDate(d);
+            String s = Converters.toString(ldt);
+            double dbl = Converters.toDouble(ldt);
+            String value = function.execute(dbl, false).asString();
             Assert.assertEquals(s, value);
         }
     }

@@ -33,7 +33,7 @@ public class DateParsing {
      */
     @Nullable
     private DateTimeFormatter parserFormatter;
-    
+
     enum ParseKind {
         DateNoZone,   // No time component
         DateWithZone, // No time component, but with time zone
@@ -105,7 +105,7 @@ public class DateParsing {
                 put(DateTimeFormatter.ISO_OFFSET_DATE, ParseKind.DateWithZone);
                 put(DateTimeFormatter.ISO_DATE, ParseKind.DateWithZone);
                 put(DateTimeFormatter.ISO_LOCAL_DATE_TIME, ParseKind.DateTimeNoZone);
-                put(DateTimeFormatter.ISO_OFFSET_DATE_TIME, ParseKind.DateTimeNoZone);
+                put(DateTimeFormatter.ISO_OFFSET_DATE_TIME, ParseKind.DateTimeWithZone);
                 put(DateTimeFormatter.ISO_ZONED_DATE_TIME, ParseKind.DateTimeWithZone);
                 put(DateTimeFormatter.ISO_DATE_TIME, ParseKind.DateTimeWithZone);
                 put(DateTimeFormatter.ISO_ORDINAL_DATE, ParseKind.DateNoZone);
@@ -177,25 +177,46 @@ public class DateParsing {
         throw new RuntimeException("Could not guess parsing format for date " + s);
     }
 
-
-    public Instant parse(String s) {
+    public LocalDateTime parseLocalDate(String s) {
         s = Utilities.singleSpaced(s);
         Converters.checkNull(this.parserFormatter);
         switch (this.kind) {
             case DateNoZone:
+                return LocalDate.parse(s, this.parserFormatter)
+                        .atStartOfDay();
+            case DateTimeNoZone:
+                return LocalDateTime.parse(s, this.parserFormatter);
+            default:
+                throw new HillviewException("Unexpected datetime format" + this.kind);
+        }
+    }
+
+    public Instant parseDate(String s) {
+        s = Utilities.singleSpaced(s);
+        Converters.checkNull(this.parserFormatter);
+        switch (this.kind) {
             case DateWithZone: // TODO we are ingnoring the offset for this case.
                 return LocalDate.parse(s, this.parserFormatter)
                         .atStartOfDay(ZoneId.systemDefault())
-                        .toInstant();
-            case DateTimeNoZone:
-                return LocalDateTime.parse(s, this.parserFormatter)
-                        .atZone(ZoneId.systemDefault())
                         .toInstant();
             case DateTimeWithZone:
                 return ZonedDateTime.parse(s, this.parserFormatter)
                         .toInstant();
             default:
                 throw new HillviewException("Unexpected datetime format" + this.kind);
+        }
+    }
+
+    public boolean isLocalDate() {
+        switch (this.kind) {
+            case DateNoZone:
+            case DateTimeNoZone:
+                return true;
+            case DateWithZone:
+            case DateTimeWithZone:
+                return false;
+            default:
+                throw new RuntimeException("Unexpected date kind " + this.kind);
         }
     }
 }

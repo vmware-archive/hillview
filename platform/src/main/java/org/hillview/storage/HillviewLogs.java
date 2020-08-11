@@ -41,7 +41,7 @@ public class HillviewLogs extends LogFiles {
             "([^,]*),([^,]*),([^,]*),?(.*)");
 
     static {
-        HillviewLogs.schema.append(new ColumnDescription(LogFiles.timestampColumnName, ContentsKind.Date));
+        HillviewLogs.schema.append(new ColumnDescription(LogFiles.timestampColumnName, ContentsKind.LocalDate));
         HillviewLogs.schema.append(new ColumnDescription("Role", ContentsKind.String));
         HillviewLogs.schema.append(new ColumnDescription("Level", ContentsKind.String));
         HillviewLogs.schema.append(new ColumnDescription("Machine", ContentsKind.String));

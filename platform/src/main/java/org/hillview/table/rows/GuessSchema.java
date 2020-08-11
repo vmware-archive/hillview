@@ -28,6 +28,8 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.time.Duration;
+import java.time.LocalTime;
 import java.util.HashMap;
 
 /**
@@ -74,9 +76,10 @@ public class GuessSchema {
             new HashMap<ContentsKind, ContentsKind[]>();
 
     static {
-        successor.put(ContentsKind.None, new ContentsKind[]{
+        successor.put(ContentsKind.None, new ContentsKind[] {
                 ContentsKind.Integer, ContentsKind.Double,
                 ContentsKind.Duration, ContentsKind.Date,
+                ContentsKind.Time, ContentsKind.LocalDate,
                 ContentsKind.Json, ContentsKind.String
         });
         successor.put(ContentsKind.Integer,
@@ -85,11 +88,12 @@ public class GuessSchema {
         });
         successor.put(ContentsKind.Double,
                 new ContentsKind[] { ContentsKind.Json, ContentsKind.String });
-        successor.put(ContentsKind.Date, new ContentsKind[]
-                { ContentsKind.String });
-        successor.put(ContentsKind.Duration, new ContentsKind[]
-                {  ContentsKind.String });
+        successor.put(ContentsKind.Date, new ContentsKind[] { ContentsKind.String });
+        successor.put(ContentsKind.Duration, new ContentsKind[] { ContentsKind.String });
+        successor.put(ContentsKind.LocalDate, new ContentsKind[] { ContentsKind.String });
+        successor.put(ContentsKind.Time, new ContentsKind[] { ContentsKind.String });
         successor.put(ContentsKind.Json, new ContentsKind[] { ContentsKind.String });
+        // no successors for Interval and String
     }
 
     @Nullable
@@ -210,16 +214,38 @@ public class GuessSchema {
             return CanParse.AsNull;
         switch (with) {
             case None:
-            case Duration:
-                // TODO: how do durations look as strings?
+            case Interval:
                 return CanParse.No;
             case String:
                 return CanParse.Yes;
+            case Time:
+                try {
+                    LocalTime.parse(value);
+                    return CanParse.Yes;
+                } catch (Exception ex) {
+                    return CanParse.No;
+                }
+            case Duration:
+                try {
+                    Duration.parse(value);
+                    return CanParse.Yes;
+                } catch (Exception ex) {
+                    return CanParse.No;
+                }
             case Date:
                 try {
                     if (this.dateParser == null)
                         this.dateParser = new DateParsing(value);
-                    this.dateParser.parse(value);
+                    this.dateParser.parseDate(value);
+                    return CanParse.Yes;
+                } catch (Exception ex) {
+                    return CanParse.No;
+                }
+            case LocalDate:
+                try {
+                    if (this.dateParser == null)
+                        this.dateParser = new DateParsing(value);
+                    this.dateParser.parseLocalDate(value);
                     return CanParse.Yes;
                 } catch (Exception ex) {
                     return CanParse.No;
