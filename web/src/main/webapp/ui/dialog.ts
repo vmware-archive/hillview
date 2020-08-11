@@ -752,7 +752,8 @@ export class NotifyBookmarkDialog extends NotifyDialog {
             .on("start", () => this.dragEnd());
 
         const urlBox = makeInputBox(url) as HTMLInputElement;
-        urlBox.style.width = "-webkit-fill-available";
+        urlBox.style.width = "100%";
+        urlBox.style.float = "left";
         this.fieldsDiv.appendChild(urlBox);
 
         const copyButton = document.createElement("button");
