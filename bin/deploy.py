@@ -39,6 +39,7 @@ def prepare_webserver(config):
     message = "Preparing web server " + str(rh)
     logger.info(message)
     rh.create_remote_folder(config.service_folder)
+    rh.create_remote_folder(config.service_folder + "/bookmark")
     rh.run_remote_shell_command("chown " + config.get_user() + " " + config.service_folder)
 
     major = config.tomcat_version[0:config.tomcat_version.find('.')]

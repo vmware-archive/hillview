@@ -33,7 +33,6 @@ import org.hillview.utils.*;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
-import com.google.gson.JsonObject;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -101,27 +100,12 @@ public class InitialObjectTarget extends RpcTarget {
         this.runCompleteSketch(this.emptyDataset, sk, request, context);
     }
 
-    public static void directRPCReply(RpcRequest request, RpcRequestContext context, String data) {
-        Session session = context.getSessionIfOpen();
-        if (session == null)
-            return;
-        JsonObject json = new JsonObject();
-        json.addProperty("done", 1.0);
-        json.addProperty("data", data);
-        RpcReply reply = request.createReply(json);
-        RpcServer.sendReply(reply, session);
-        RpcServer.requestCompleted(request, session);
-        request.syncCloseSession(session);
-    }
-
     @HillviewRpc
     public void openingBookmark(RpcRequest request, RpcRequestContext context) {
         String bookmarkID = request.parseArgs(String.class);
         String content = BookmarkServlet.openingBookmark(bookmarkID);
-        if (content.isEmpty())
-            InitialObjectTarget.directRPCReply(request, context, null);
-        else
-            InitialObjectTarget.directRPCReply(request, context, content);
+        PrecomputedSketch<Empty, JsonString> sk = new PrecomputedSketch<Empty, JsonString>(new JsonString(content));
+        this.runCompleteSketch(this.emptyDataset, sk, request, context);
     }
 
     @HillviewRpc

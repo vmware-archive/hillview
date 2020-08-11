@@ -196,20 +196,16 @@ public final class TableTarget extends TableRpcTarget {
         String content = request.parseArgs(String.class);
         String guid = UUID.randomUUID().toString();
         try {
-            // TODO: This dir should be created by default during the installation
-            String bookmarkDir = BookmarkServlet.bookmarkDirectory;
-            File directory = new File(bookmarkDir);
-            if (!directory.exists()) directory.mkdir();
             File file = new File(BookmarkServlet.bookmarkDirectory,
                 guid + BookmarkServlet.bookmarkExtension);
             FileWriter writer = new FileWriter(file);
             writer.write(content);
             writer.close();
         } catch (Exception e) {
-            HillviewLogger.instance.warn("Failed saving bookmark file", "{0}", e.getMessage());
+            throw new RuntimeException(e);
         }
-        // TODO: This directRPCReply might be better if we move it to rpc related class
-        InitialObjectTarget.directRPCReply(request, context, guid);
+        PrecomputedSketch<ITable, JsonString> empty = new PrecomputedSketch<ITable, JsonString>(new JsonString(guid));
+        this.runCompleteSketch(this.table, empty, request, context);
     }
 
     static class QuantilesVectorInfo extends HistogramInfo {

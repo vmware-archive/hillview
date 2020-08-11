@@ -21,7 +21,7 @@ import {FileSetDescription, JdbcConnectionInformation, CassandraConnectionInfo, 
 import {OnCompleteReceiver, Receiver, RemoteObject} from "./rpc";
 import {Test} from "./test";
 import {IDataView} from "./ui/dataview";
-import {Dialog, FieldKind, notifyBrokenBookmarkURL} from "./ui/dialog";
+import {Dialog, FieldKind} from "./ui/dialog";
 import {ErrorDisplay} from "./ui/errReporter";
 import {FullPage} from "./ui/fullPage";
 import {MenuItem, SubMenu, TopMenu, TopMenuItem} from "./ui/menu";
@@ -380,7 +380,7 @@ export class LoadMenu extends RemoteObject implements IDataView {
         const bookmarkID = getCookie("BOOKMARKID");
         if (bookmarkID != "") {
             deleteCookie("BOOKMARKID");
-            const rr = this.createStreamingRpcRequest<string>("openingBookmark", bookmarkID);
+            const rr = this.createStreamingRpcRequest<object>("openingBookmark", bookmarkID);
             const updateReceiver = new CreateBookmarkContentReceiver(this.page, rr, bookmarkID, this);
             rr.invoke(updateReceiver);
         }
@@ -761,30 +761,18 @@ class PingReceiver extends OnCompleteReceiver<string[]> {
     }
 }
 
-class CreateBookmarkContentReceiver extends Receiver<string> {
+class CreateBookmarkContentReceiver extends OnCompleteReceiver<object> {
     loadMenu: LoadMenu;
     bookmarkID: string;
 
-    public constructor(page: FullPage, operation: ICancellable<string>,
+    public constructor(page: FullPage, operation: ICancellable<object>,
             bookmarkID: string, loadMenu: LoadMenu) {
         super(page, operation, "open bookmark");
         this.bookmarkID = bookmarkID;
         this.loadMenu = loadMenu;
     }
 
-    // noinspection JSUnusedLocalSymbols
-    public run(value: string[]): void {
-        console.log("Try opening bookmark.");
+    public run(value: object): void {
+        this.loadMenu.loaded(JSON.stringify(value));
     }   
-
-    public onNext(value: PartialResult<string>): void {
-        super.onNext(value);
-        super.onCompleted();
-        if (value.data != null) {
-            const title = value.data;
-            this.loadMenu.loaded(value.data);
-        } else {
-            notifyBrokenBookmarkURL(this.bookmarkID);
-        }
-    }
 }

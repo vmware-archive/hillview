@@ -796,12 +796,3 @@ export function showBookmarkURL(url: string): void {
         url, "Access the bookmark using this link");
     notify.show();
 }
-
-export function notifyBrokenBookmarkURL(bookmarkID: string): void {
-    const notify = new NotifyDialog(
-        "Bookmark link is broken.",
-        "Bookmark id = " + bookmarkID + " can't be found.",
-        "Bookmark link is broken"
-    );
-    notify.show();
-}

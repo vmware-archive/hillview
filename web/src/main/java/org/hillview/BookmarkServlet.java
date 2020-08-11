@@ -43,7 +43,7 @@ public class BookmarkServlet extends HttpServlet {
             return FileUtils.readFileToString(file, StandardCharsets.UTF_8);
         } catch (Exception e) {
             // Bookmark link is broken. Failed to find bookmarked content
-            return "";
+            throw new RuntimeException(e); 
         }
     }
 }

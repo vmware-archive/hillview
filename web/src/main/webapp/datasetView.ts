@@ -606,20 +606,14 @@ class UploadPrivacyReceiver extends OnCompleteReceiver<string> {
     }
 }
 
-class CreateBookmarkURLReceiver extends Receiver<string> {
+class CreateBookmarkURLReceiver extends OnCompleteReceiver<string> {
     public constructor( protected dataset: DatasetView, page: FullPage, protected rebuild: boolean, operation: ICancellable<string>) {
         super(page, operation, "create bookmark");
     }
 
-    // noinspection JSUnusedLocalSymbols
     public run(value: string): void {
-        console.log("Bookmark has been created.");
-    }
-
-    public onNext(value: PartialResult<string>): void {
-        super.onNext(value);
-        const url = window.location.hostname + ":" + window.location.port + "/bookmark?id=" + value.data;
+        const url = window.location.hostname + ":" + window.location.port + "/bookmark?id=" + value;
         showBookmarkURL(url);
-        super.onCompleted();
+        console.log("Bookmark has been created.");
     }
 }
