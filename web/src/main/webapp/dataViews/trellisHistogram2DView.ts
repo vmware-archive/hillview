@@ -24,7 +24,7 @@ import {FullPage, PageTitle} from "../ui/fullPage";
 import {BaseReceiver, TableTargetAPI} from "../modules";
 import {SchemaClass} from "../schemaClass";
 import {
-    add,
+    add, assertNever,
     Converters, GroupsClass, Heatmap,
     histogram3DAsCsv,
     ICancellable,
@@ -165,6 +165,8 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
                     return null;
                 // TODO
                 return null;
+            default:
+                assertNever(event);
         }
     }
 
@@ -348,6 +350,9 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
         const ser: TrellisHistogram2DSerialization = {
             ...super.serialize(),
             ...this.shape,
+            xRange: this.xAxisData.dataRange,
+            yRange: this.legendAxisData.dataRange,
+            gRange: this.groupByAxisData.dataRange,
             samplingRate: this.samplingRate,
             columnDescription0: this.xAxisData.description,
             columnDescription1: this.legendAxisData.description,
@@ -361,16 +366,16 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
 
     public static reconstruct(ser: TrellisHistogram2DSerialization, page: FullPage): IDataView {
         if (ser.remoteObjectId == null || ser.rowCount == null || ser.xWindows == null ||
-            ser.yWindows == null || ser.windowCount ||
-            ser.samplingRate == null || ser.schema == null)
+            ser.yWindows == null || ser.windowCount === null || ser.yRange === null || ser.xRange === null ||
+            ser.samplingRate == null || ser.schema == null || ser.relative == null)
             return null;
         const schema = new SchemaClass([]).deserialize(ser.schema);
         const shape = TrellisChartView.deserializeShape(ser, page);
         const view = new TrellisHistogram2DView(ser.remoteObjectId, ser.rowCount,
             schema, shape, ser.samplingRate, page);
-        view.setAxes(new AxisData(ser.columnDescription0, null, ser.xBucketCount),
-            new AxisData(ser.columnDescription1, null, ser.yBucketCount),
-            new AxisData(ser.groupByColumn, null, ser.windowCount),
+        view.setAxes(new AxisData(ser.columnDescription0, ser.xRange, ser.xBucketCount),
+            new AxisData(ser.columnDescription1, ser.yRange, ser.yBucketCount),
+            new AxisData(ser.groupByColumn, ser.gRange, ser.windowCount),
             ser.relative);
         return view;
     }

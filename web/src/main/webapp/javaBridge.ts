@@ -83,6 +83,7 @@ export interface UIConfig {
     showTestMenu?: boolean;  // the test menu is shown
     enableManagement?: boolean;  // management menu enabled
     privateIsCsv?: boolean;    // the private dataset is in csv form
+    hideSuggestions?: boolean; // do not display the suggestions
 }
 
 export interface ColumnQuantization {

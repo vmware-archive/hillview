@@ -37,7 +37,7 @@ import {IDataView} from "./ui/dataview";
 import {FullPage, PageTitle} from "./ui/fullPage";
 import {ContextMenu, MenuItem, SubMenu, TopMenuItem} from "./ui/menu";
 import {IHtmlElement, removeAllChildren, ViewKind} from "./ui/ui";
-import {assert, cloneArray, EnumIterators, ICancellable} from "./util";
+import {assertNever, cloneArray, EnumIterators, ICancellable} from "./util";
 import {TrellisHeatmapView} from "./dataViews/trellisHeatmapView";
 import {TrellisHistogram2DView} from "./dataViews/trellisHistogram2DView";
 import {TrellisHistogramView} from "./dataViews/trellisHistogramView";
@@ -47,11 +47,12 @@ import {QuartilesHistogramView} from "./dataViews/quartilesHistogramView";
 import {TrellisHistogramQuartilesView} from "./dataViews/trellisHistogramQuartilesView";
 import {saveAs} from "./ui/dialog";
 import {showBookmarkURL} from "./ui/dialog";
+import {CorrelationHeatmapView} from "./dataViews/correlationHeatmapView";
 
 export interface IViewSerialization {
     viewKind: ViewKind;
     pageId: number;
-    sourcePageId: number;
+    sourcePageId: number | null;
     title: string;
     provenance: string;
     remoteObjectId: RemoteObjectId;
@@ -76,6 +77,7 @@ export interface HistogramSerialization extends IViewSerialization {
     bucketCount: number;
     samplingRate: number;
     isPie: boolean;
+    range: BucketsInfo;
     columnDescription: IColumnDescription;
 }
 
@@ -85,7 +87,8 @@ export interface BaseHeatmapSerialization extends IViewSerialization {
     columnDescription1: IColumnDescription;
     xBucketCount: number;
     yBucketCount: number;
-
+    xRange: BucketsInfo;
+    yRange: BucketsInfo;
 }
 
 export interface HeatmapSerialization extends BaseHeatmapSerialization {
@@ -96,6 +99,7 @@ export interface QuantileVectorSerialization extends IViewSerialization {
     columnDescription0: IColumnDescription;
     columnDescription1: IColumnDescription;
     xBucketCount: number;
+    xRange: BucketsInfo;
 }
 
 export interface Histogram2DSerialization extends BaseHeatmapSerialization {
@@ -112,6 +116,7 @@ export interface TrellisShapeSerialization {
     yWindows: number;
     windowCount: number;
     missingBucket: boolean;
+    gRange: BucketsInfo;
 }
 
 export interface TrellisHistogramSerialization extends
@@ -149,7 +154,7 @@ export class DatasetView implements IHtmlElement {
     private readonly pageContainer: HTMLElement;
     private pageCounter: number;
     public readonly allPages: FullPage[];
-    public privacySchema: PrivacySchema = null;
+    public privacySchema: PrivacySchema | null = null;
     protected privacyEditor: HTMLElement;
     private readonly menu: ContextMenu;
 
@@ -225,11 +230,11 @@ export class DatasetView implements IHtmlElement {
         const copy = cloneArray(columns);
         copy.sort();
         const key = copy.join("+");
-        let eps = this.privacySchema.epsilons[key];
+        let eps = this.privacySchema!.epsilons[key];
         if (eps == null)
-            eps = this.privacySchema.defaultEpsilons[copy.length.toString()];
+            eps = this.privacySchema!.defaultEpsilons[copy.length.toString()];
         if (eps == null)
-            eps = this.privacySchema.defaultEpsilon;
+            eps = this.privacySchema!.defaultEpsilon;
         return eps;
     }
 
@@ -237,7 +242,7 @@ export class DatasetView implements IHtmlElement {
         const copy = cloneArray(columns);
         copy.sort();
         const key = copy.join("+");
-        this.privacySchema.epsilons[key] = epsilon;
+        this.privacySchema!.epsilons[key] = epsilon;
         this.uploadPrivacy(JSON.stringify(this.privacySchema), false);
     }
 
@@ -347,7 +352,7 @@ export class DatasetView implements IHtmlElement {
             help: "Select the current view; later it can be combined with another view, " +
                   "using one of the operations below.",
         });
-        combineMenu.push({text: "---", action: null, help: null});
+        combineMenu.push({text: "---", action: null, help: ""});
         EnumIterators.getNamesAndValues(CombineOperators)
             .forEach((c) => combineMenu.push({
                 text: c.name,
@@ -374,8 +379,7 @@ export class DatasetView implements IHtmlElement {
      * @param {FullPage} after     Page to insert after; if null insertion is done at the end.
      */
     public insertAfter(toInsert: FullPage, after: FullPage | null): void {
-        assert(toInsert !== null);
-        const pageRepresentation = toInsert.getHTMLRepresentation();
+        const pageRepresentation = toInsert!.getHTMLRepresentation();
         if (after == null) {
             this.pageContainer.appendChild(pageRepresentation);
             this.allPages.push(toInsert);
@@ -476,7 +480,7 @@ export class DatasetView implements IHtmlElement {
             return false;
         const page = this.reconstructPage(new PageTitle(vs.title, vs.provenance),
             vs.pageId, vs.sourcePageId);
-        let view: IDataView = null;
+        let view: IDataView | null = null;
         switch (vs.viewKind) {
             case "Table":
                 view = TableView.reconstruct(vs as TableSerialization, page);
@@ -514,14 +518,22 @@ export class DatasetView implements IHtmlElement {
             case "SVD Spectrum":
                 view = SpectrumView.reconstruct(vs as SpectrumSerialization, page);
                 break;
+            case "CorrelationHeatmaps":
+                view = CorrelationHeatmapView.reconstruct(vs as CorrelationHeatmapSerialization, page);
+                break;
             case "Load":
-                // These do not need to be reconstructed ever.
+                 // These do not need to be reconstructed ever.
+                break;
+            case "LogFileView":
+                // TODO
+                break;
             default:
+                assertNever(vs.viewKind);
                 break;
         }
         if (view != null) {
-            view.refresh();
             page.setDataView(view);
+            view.refresh();
             return true;
         }
         return false;
@@ -529,19 +541,22 @@ export class DatasetView implements IHtmlElement {
 
     /**
      * reconstruct a dataset view from serialized information.
-     * @param {Object} obj  Serialized description of the dataset read back.
-     * @returns {boolean}   True if the reconstruction succeeded.
+     * @param obj  Serialized description of the dataset read back.
+     * @returns The number of failures.
      */
-    public reconstruct(obj: object): boolean {
+    public reconstruct(obj: object): number {
         const dss = obj as IDatasetSerialization;
         if (dss.views == null)
-            return false;
+            return 1;
         if (!Array.isArray(dss.views))
-            return false;
-        for (const v of dss.views)
-            if (!this.reconstructView(v))
-                return false;
-        return true;
+            return 1;
+        let failures = 0;
+        for (const v of dss.views) {
+            if (!this.reconstructView(v)) {
+                failures++;
+            }
+        }
+        return failures;
     }
 
     public serialize(): IDatasetSerialization {
@@ -577,7 +592,7 @@ export class DatasetView implements IHtmlElement {
 
     public refresh(): void {
         for (const page of  this.allPages) {
-            page.getDataView().refresh();
+            page.getDataView()!.refresh();
             // TODO: refresh will un-minimize the page
             // but that will only happen when the asynchronous request comes back,
             // so there is no point minimizing it here.

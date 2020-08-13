@@ -31,6 +31,7 @@ import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
 import {ChartOptions, DragEventKind, Resolution} from "../ui/ui";
 import {
+    assertNever,
     Converters,
     describeQuartiles,
     ICancellable,
@@ -96,7 +97,7 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
 
     public trellis(): void {
         const columns: DisplayName[] = this.schema.displayNamesExcluding(
-            [this.xAxisData.description.name, this.yAxisData.description.name]);
+            [this.xAxisData.description.name, this.qCol.name]);
         this.chooseTrellis(columns);
     }
 
@@ -104,7 +105,7 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
         const groupBy = this.schema.findByDisplayName(colName);
         const cds: IColumnDescription[] = [
             this.xAxisData.description,
-            this.yAxisData.description,
+            this.qCol,
             groupBy];
         const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisQuartiles");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
@@ -129,6 +130,8 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
                 return this.yAxisData;
             case "XAxis":
                 return this.xAxisData;
+            default:
+                assertNever(event);
         }
         return null;
     }
@@ -157,6 +160,7 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
         // noinspection UnnecessaryLocalVariableJS
         const result: QuantileVectorSerialization = {
             ...super.serialize(),
+            xRange: this.xAxisData.dataRange,
             columnDescription0: this.xAxisData.description,
             columnDescription1: this.qCol,
             xBucketCount: this.xAxisData.bucketCount,
@@ -170,11 +174,11 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
         const xPoints: number = ser.xBucketCount;
         const schema: SchemaClass = new SchemaClass([]).deserialize(ser.schema);
         if (cd0 === null || cd1 === null || schema === null ||
-            xPoints === null)
+            xPoints === null || ser.xRange === null)
             return null;
 
         const hv = new QuartilesHistogramView(ser.remoteObjectId, ser.rowCount, schema, cd1, page);
-        hv.setAxis(new AxisData(cd0, null, ser.xBucketCount));
+        hv.setAxis(new AxisData(cd0, ser.xRange, ser.xBucketCount));
         return hv;
     }
 
@@ -256,7 +260,17 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
     }
 
     public refresh(): void {
-        /* TODO */
+        const cds = [this.xAxisData.description, this.qCol];
+        const ranges = [this.xAxisData.dataRange];
+        const collector = new DataRangesReceiver(this,
+            this.page, null, this.schema,
+            [this.xAxisData.bucketCount],
+            cds, this.page.title, null,{
+                chartKind: "QuartileVector", exact: true,
+                reusePage: true
+            });
+        collector.run(ranges);
+        collector.finished();
     }
 
     public onMouseEnter(): void {

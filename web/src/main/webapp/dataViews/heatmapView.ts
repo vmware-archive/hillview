@@ -37,7 +37,7 @@ import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
 import {DragEventKind, Resolution} from "../ui/ui";
 import {
-    assert,
+    assert, assertNever,
     Converters,
     dataRange,
     Heatmap,
@@ -67,11 +67,11 @@ export class HeatmapView extends
     // with one cell for each column in the detailColumns schema.
 
     protected colorLegend: HeatmapLegendPlot;
-    protected detailLegend: HistogramLegendPlot;
+    protected detailLegend: HistogramLegendPlot | null;
     protected plot: HeatmapPlot;
     protected legendSurface: HtmlPlottingSurface;
-    protected detailLegendDiv: HTMLDivElement;
-    protected detailLegendSurface: HtmlPlottingSurface;
+    protected detailLegendDiv: HTMLDivElement | null;
+    protected detailLegendSurface: HtmlPlottingSurface | null;
     protected xPoints: number;
     protected yPoints: number;
     protected readonly viewMenu: SubMenu;
@@ -116,8 +116,8 @@ export class HeatmapView extends
                 help: "Change the number of buckets used to draw this histogram. ",
             }, {
                 text: "table",
-                action: () => this.showTable([this.xAxisData.description,
-                     this.yAxisData.description], this.defaultProvenance),
+                action: () => this.showTable([this.xAxisData.description!,
+                     this.yAxisData.description!], this.defaultProvenance),
                 help: "View the data underlying this view as a table.",
             }, {
                 text: "histogram",
@@ -171,18 +171,18 @@ export class HeatmapView extends
         input.required = true;
         dialog.setAction(() => {
             const c = dialog.getColumnName("column");
-            this.detailIndex = this.detailColumns.columnIndex(this.schema.fromDisplayName(c));
+            this.detailIndex = this.detailColumns!.columnIndex(this.schema.fromDisplayName(c)!);
             this.resize();
         });
         dialog.show();
     }
 
     private quartileView(): void {
-        if (!kindIsNumeric(this.yAxisData.description.kind)) {
+        if (!kindIsNumeric(this.yAxisData.description!.kind)) {
             this.page.reportError("Quartiles require a numeric second column");
             return;
         }
-        const cds = [this.xAxisData.description, this.yAxisData.description];
+        const cds = [this.xAxisData.description!, this.yAxisData.description!];
         const rr = this.createDataQuantilesRequest(cds, this.page, "QuartileVector");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0], cds, null, this.defaultProvenance,{
@@ -320,6 +320,8 @@ export class HeatmapView extends
                 return this.xAxisData;
             case "YAxis":
                 return this.yAxisData;
+            default:
+                assertNever(event);
         }
     }
 
@@ -442,23 +444,26 @@ export class HeatmapView extends
             columnDescription1: this.yAxisData.description,
             xBucketCount: this.xAxisData.bucketCount,
             yBucketCount: this.yAxisData.bucketCount,
+            xRange: this.xAxisData.dataRange,
+            yRange: this.yAxisData.dataRange,
             ...ser,
         };
         return result;
     }
 
-    public static reconstruct(ser: HeatmapSerialization, page: FullPage): IDataView {
-        if (ser.columnDescription0 == null || ser.columnDescription1 == null ||
-            ser.samplingRate == null || ser.schema == null ||
-            ser.xBucketCount == null || ser.yBucketCount == null) {
+    public static reconstruct(ser: HeatmapSerialization, page: FullPage): IDataView | null {
+        if (ser.columnDescription0 === null || ser.columnDescription1 === null ||
+            ser.samplingRate === null || ser.schema === null ||
+            ser.xBucketCount === null || ser.yBucketCount === null ||
+            ser.xRange === null || ser.yRange === null) {
             return null;
         }
         const schema: SchemaClass = new SchemaClass([]).deserialize(ser.schema);
         const detailed: SchemaClass = new SchemaClass([]).deserialize(ser.detailedColumns);
         const hv = new HeatmapView(ser.remoteObjectId, ser.rowCount, schema, detailed, ser.samplingRate, page);
         hv.setAxes(
-            new AxisData(ser.columnDescription0, null, ser.xBucketCount),
-            new AxisData(ser.columnDescription1, null, ser.yBucketCount));
+            new AxisData(ser.columnDescription0, ser.xRange, ser.xBucketCount),
+            new AxisData(ser.columnDescription1, ser.yRange, ser.yBucketCount));
         return hv;
     }
 

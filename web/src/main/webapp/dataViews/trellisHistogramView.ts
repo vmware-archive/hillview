@@ -25,7 +25,7 @@ import {FullPage, PageTitle} from "../ui/fullPage";
 import {BaseReceiver, TableTargetAPI} from "../modules";
 import {DisplayName, SchemaClass} from "../schemaClass";
 import {
-    add,
+    add, assertNever,
     Converters, histogram2DAsCsv,
     ICancellable, makeInterval,
     PartialResult,
@@ -220,7 +220,7 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
         const ranges = [this.xAxisData.dataRange, this.groupByAxisData.dataRange];
         const collector = new DataRangesReceiver(this,
             this.page, null, this.schema,
-            [this.bucketCount, this.groupByAxisData.bucketCount],
+            [this.xAxisData.bucketCount, this.groupByAxisData.bucketCount],
             cds, this.page.title, null,{
                 chartKind: "TrellisHistogram", exact: this.samplingRate >= 1,
                 relative: false, reusePage: true
@@ -234,26 +234,28 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
         const ser: TrellisHistogramSerialization = {
             ...super.serialize(),
             ...this.shape,
+            gRange: this.groupByAxisData.dataRange,
             isPie: false,
             bucketCount: this.bucketCount,
             samplingRate: this.samplingRate,
             columnDescription: this.xAxisData.description,
-            groupByColumn: this.groupByAxisData.description
+            groupByColumn: this.groupByAxisData.description,
+            range: this.xAxisData.dataRange
         };
         return ser;
     }
 
     public static reconstruct(ser: TrellisHistogramSerialization, page: FullPage): IDataView {
         if (ser.remoteObjectId == null || ser.rowCount == null || ser.xWindows == null ||
-            ser.yWindows == null || ser.windowCount ||
-            ser.samplingRate == null || ser.schema == null)
+            ser.yWindows == null || ser.windowCount === null || ser.gRange === null ||
+            ser.samplingRate == null || ser.schema == null || ser.range == null)
             return null;
         const schema = new SchemaClass([]).deserialize(ser.schema);
         const shape = TrellisChartView.deserializeShape(ser, page);
         const view = new TrellisHistogramView(ser.remoteObjectId, ser.rowCount,
             schema, shape, ser.samplingRate, page);
-        view.setAxes(new AxisData(ser.columnDescription, null, ser.bucketCount),
-            new AxisData(ser.groupByColumn, null, ser.windowCount));
+        view.setAxes(new AxisData(ser.columnDescription, ser.range, ser.bucketCount),
+            new AxisData(ser.groupByColumn, ser.gRange, ser.windowCount));
         return view;
     }
 
@@ -392,6 +394,8 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
             case "YAxis":
                 // TODO
                 return null;
+            default:
+                assertNever(event);
         }
     }
 

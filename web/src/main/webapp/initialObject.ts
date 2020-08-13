@@ -27,7 +27,7 @@ import {
 import {OnCompleteReceiver, RemoteObject} from "./rpc";
 import {BaseReceiver} from "./tableTarget";
 import {FullPage, PageTitle} from "./ui/fullPage";
-import {ICancellable, significantDigits, getUUID} from "./util";
+import {ICancellable, significantDigits, getUUID, assertNever} from "./util";
 
 export interface FilesLoaded {
     kind: "Files";

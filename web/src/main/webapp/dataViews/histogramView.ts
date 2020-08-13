@@ -41,7 +41,7 @@ import {
     ICancellable, makeInterval,
     PartialResult,
     percentString,
-    significantDigits, Two,
+    significantDigits, Two, assertNever,
 } from "../util";
 import {AxisData} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
@@ -149,6 +149,8 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
                     missingCount: this.histogram().first.perMissing
                 };
                 return new AxisData(null, range, 0);
+            default:
+                assertNever(event);
         }
     }
 
@@ -208,7 +210,8 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
             samplingRate: this.samplingRate,
             bucketCount: this.bucketCount,
             columnDescription: this.xAxisData.description,
-            isPie: this.pie
+            isPie: this.pie,
+            range: this.xAxisData.dataRange
         };
         return result;
     }
@@ -217,12 +220,12 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
         const args: CommonArgs = this.validateSerialization(ser);
         if (args == null ||
             ser.columnDescription == null || ser.samplingRate == null ||
-            ser.bucketCount == null)
+            ser.bucketCount == null || ser.range == null)
             return null;
 
         const hv = new HistogramView(
             ser.remoteObjectId, ser.rowCount, args.schema, ser.samplingRate, ser.isPie, page);
-        hv.setAxis(new AxisData(ser.columnDescription, null, ser.bucketCount));
+        hv.setAxis(new AxisData(ser.columnDescription, ser.range, ser.bucketCount));
         hv.bucketCount = ser.bucketCount;
         return hv;
     }

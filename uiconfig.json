@@ -3,5 +3,6 @@
     "localDbMenu": true,
     "showTestMenu": true,
     "enableManagement": true,
-    "privateIsCsv": true
+    "privateIsCsv": true,
+    "hideSuggestions": true
 }

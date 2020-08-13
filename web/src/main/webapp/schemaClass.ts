@@ -100,7 +100,7 @@ export class SchemaClass implements Serializable<SchemaClass> {
         };
     }
 
-    public deserialize(data: SchemaClassSerialization): SchemaClass {
+    public deserialize(data: SchemaClassSerialization): SchemaClass | null {
         if (data == null)
             return null;
         this.schema = data.schema;
@@ -120,7 +120,7 @@ export class SchemaClass implements Serializable<SchemaClass> {
     }
 
     public allDisplayNames(): DisplayName[] {
-        return this.columnNames.map((c) => this.displayName(c));
+        return this.columnNames.map((c) => this.displayName(c)!);
     }
 
     /**
@@ -130,7 +130,7 @@ export class SchemaClass implements Serializable<SchemaClass> {
     public displayNamesExcluding(names: string[]): DisplayName[] {
         return this.columnNames
             .filter((n) => names.indexOf(n) < 0)
-            .map((c) => this.displayName(c));
+            .map((c) => this.displayName(c)!);
     }
 
     /**
@@ -147,7 +147,7 @@ export class SchemaClass implements Serializable<SchemaClass> {
     /**
      * Given a display name get the real column name.
      */
-    public fromDisplayName(displayName: DisplayName): string | null {
+    public fromDisplayName(displayName: DisplayName | null): string | null {
         if (displayName == null)
             return null;
         if (this.reverseDisplayNameMap.has(displayName.displayName))
@@ -189,7 +189,7 @@ export class SchemaClass implements Serializable<SchemaClass> {
         return this.columnMap.get(colName);
     }
 
-    public find(colName: string): IColumnDescription {
+    public find(colName: string | null): IColumnDescription | null {
         if (colName == null)
             return null;
         const colIndex = this.columnIndex(colName);
@@ -198,7 +198,7 @@ export class SchemaClass implements Serializable<SchemaClass> {
         return null;
     }
 
-    public findByDisplayName(displayName: DisplayName | null): IColumnDescription {
+    public findByDisplayName(displayName: DisplayName | null): IColumnDescription | null {
         const original = this.fromDisplayName(displayName);
         return this.find(original);
     }
@@ -246,8 +246,8 @@ export class SchemaClass implements Serializable<SchemaClass> {
         return result;
     }
 
-    public getDescriptions(columns: string[]): IColumnDescription[] {
-        const cds: IColumnDescription[] = [];
+    public getDescriptions(columns: string[]): (IColumnDescription | null)[] {
+        const cds: (IColumnDescription | null)[] = [];
         columns.forEach((v) => {
             const colDesc = this.find(v);
             cds.push(colDesc);

@@ -26,7 +26,7 @@ import {FullPage, PageTitle} from "../ui/fullPage";
 import {BaseReceiver, TableTargetAPI} from "../modules";
 import {SchemaClass} from "../schemaClass";
 import {
-    allBuckets,
+    allBuckets, assertNever,
     Converters, describeQuartiles,
     ICancellable,
     PartialResult, quartileAsCsv,
@@ -124,6 +124,8 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
             case "YAxis":
                 // TODO
                 return null;
+            default:
+                assertNever(event);
         }
     }
 
@@ -276,7 +278,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
         const ranges = [this.xAxisData.dataRange, null, this.groupByAxisData.dataRange];
         const collector = new DataRangesReceiver(this,
             this.page, null, this.schema,
-            [this.xAxisData.bucketCount, this.groupByAxisData.bucketCount],
+            [this.xAxisData.bucketCount, 0, this.groupByAxisData.bucketCount],
             cds, this.page.title, null,{
                 chartKind: "TrellisQuartiles", reusePage: true
             });
@@ -289,6 +291,8 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
         const ser: TrellisQuartilesSerialization = {
             ...super.serialize(),
             ...this.shape,
+            xRange: this.xAxisData.dataRange,
+            gRange: this.groupByAxisData.dataRange,
             columnDescription0: this.xAxisData.description,
             columnDescription1: this.qCol,
             xBucketCount: this.xAxisData.bucketCount,
@@ -299,15 +303,15 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
 
     public static reconstruct(ser: TrellisQuartilesSerialization, page: FullPage): IDataView {
         if (ser.remoteObjectId == null || ser.rowCount == null || ser.xWindows == null ||
-            ser.yWindows == null || ser.windowCount ||
-            ser.schema == null)
+            ser.yWindows == null || ser.windowCount === null ||
+            ser.schema == null || ser.gRange === null || ser.xRange === null)
             return null;
         const schema = new SchemaClass([]).deserialize(ser.schema);
         const shape = TrellisChartView.deserializeShape(ser, page);
         const view = new TrellisHistogramQuartilesView(ser.remoteObjectId, ser.rowCount,
             schema, ser.columnDescription1, shape, page);
-        view.setAxes(new AxisData(ser.columnDescription0, null, ser.xBucketCount),
-            new AxisData(ser.groupByColumn, null, ser.windowCount));
+        view.setAxes(new AxisData(ser.columnDescription0, ser.xRange, ser.xBucketCount),
+            new AxisData(ser.groupByColumn, ser.gRange, ser.windowCount));
         return view;
     }
 

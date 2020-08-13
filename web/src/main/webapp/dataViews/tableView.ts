@@ -62,7 +62,7 @@ import {
     significantDigits,
     significantDigitsHtml,
     truncate,
-    all, percent
+    all, percent, assertNever
 } from "../util";
 import {SchemaView} from "../modules";
 import {SpectrumReceiver} from "./spectrumView";
@@ -90,7 +90,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
     protected cellsPerColumn: Map<string, HTMLElement[]>;
     protected selectedColumns = new SelectionStateMachine();
     protected message: HTMLElement;
-    protected strFilter: StringFilterDescription;
+    protected strFilter: StringFilterDescription | null;
     public aggregates: AggregateDescription[] | null;
 
     // The following elements are used for Find
@@ -414,7 +414,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         }
         const order = this.order.invert();
         const rr = this.createNextKRequest(order, this.nextKList.rows[0].values,
-            this.tableRowsDesired, this.aggregates);
+            this.tableRowsDesired, this.aggregates, null);
         rr.invoke(new NextKReceiver(this.getPage(), this, rr, true, order, null));
     }
 
@@ -426,7 +426,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             return;
         }
         const o = this.order.clone();
-        const rr = this.createNextKRequest(o, null, this.tableRowsDesired, this.aggregates);
+        const rr = this.createNextKRequest(o, null, this.tableRowsDesired, this.aggregates, null);
         rr.invoke(new NextKReceiver(this.getPage(), this, rr, false, o, null));
     }
 
@@ -438,7 +438,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             return;
         }
         const order = this.order.invert();
-        const rr = this.createNextKRequest(order, null, this.tableRowsDesired, this.aggregates);
+        const rr = this.createNextKRequest(order, null, this.tableRowsDesired, this.aggregates, null);
         rr.invoke(new NextKReceiver(this.getPage(), this, rr, true, order, null));
     }
 
@@ -452,7 +452,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         const o = this.order.clone();
         const rr = this.createNextKRequest(
             o, this.nextKList.rows[this.nextKList.rows.length - 1].values,
-            this.tableRowsDesired, this.aggregates);
+            this.tableRowsDesired, this.aggregates, null);
         rr.invoke(new NextKReceiver(this.getPage(), this, rr, false, o, null));
     }
 
@@ -582,7 +582,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             this.nextKList.rows.length > 0)
             firstRow = this.nextKList.rows[0].values;
         const rr = this.createNextKRequest(this.order, firstRow,
-            this.tableRowsDesired, this.aggregates);
+            this.tableRowsDesired, this.aggregates, null);
         rr.invoke(new NextKReceiver(this.page, this, rr, false, this.order, null));
     }
 
@@ -968,9 +968,9 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             const cd = this.schema.get(i);
             cds.push(cd);
 
-            const kindString = cd.kind;
+            const kindString = cd.kind.toString();
             const name = this.schema.displayName(cd.name);
-            let title = name + "\nType is " + kindString + "\n";
+            let title = name.displayName + "\nType is " + kindString + "\n";
             if (this.isPrivate()) {
                 const pm = this.dataset.privacySchema.quantization.quantization[cd.name];
                 if (pm != null) {
@@ -1127,6 +1127,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             case "Date":
             case "Duration":
             case "LocalDate":
+            case "Time":
                 doubleValue = value as number;
                 break;
             case "Interval":
@@ -1134,6 +1135,8 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 doubleValue = a[0];
                 intervalEnd = a[1];
                 break;
+            default:
+                assertNever(cd.kind);
         }
         const cfd: ComparisonFilterDescription = {
             column: cd,
@@ -1356,7 +1359,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
 
     public moveRowToTop(row: RowData): void {
         const rr = this.createNextKRequest(
-            this.order, row.values, this.tableRowsDesired, this.aggregates);
+            this.order, row.values, this.tableRowsDesired, this.aggregates, null);
         rr.invoke(new NextKReceiver(this.page, this, rr, false, this.order, null));
     }
 
@@ -1626,7 +1629,7 @@ export class NextKReceiver extends Receiver<NextKList> {
                 operation: ICancellable<NextKList>,
                 protected reverse: boolean,
                 protected order: RecordOrder,
-                protected result: FindResult) {
+                protected result: FindResult | null) {
         super(page, operation, "Getting table rows");
     }
 
@@ -1651,13 +1654,13 @@ export class SchemaReceiver extends OnCompleteReceiver<TableSummary> {
      * @param operation       Operation that will bring the results.
      * @param remoteObject    Table object.
      * @param dataset         Dataset that this is a part of.
-     * @param schema          Schema that is used to display the data.
+     * @param schema          Schema that is used to display the data - if not null.
      * @param viewKind        What view to use.  If null we get to choose.
      */
     constructor(page: FullPage, operation: ICancellable<TableSummary>,
                 protected remoteObject: TableTargetAPI,
                 protected dataset: DatasetView,
-                protected schema: SchemaClass,
+                protected schema: SchemaClass | null,
                 protected viewKind: ViewKind | null) {
         super(page, operation, "Get schema");
     }
@@ -1709,7 +1712,7 @@ class QuantileReceiver extends OnCompleteReceiver<RowValue[]> {
 
     public run(firstRow: RowValue[]): void {
         const rr = this.tv.createNextKRequest(
-            this.order, firstRow, this.tv.tableRowsDesired, this.tv.aggregates);
+            this.order, firstRow, this.tv.tableRowsDesired, this.tv.aggregates, null);
         rr.chain(this.operation);
         rr.invoke(new NextKReceiver(this.page, this.tv, rr, false, this.order, null));
     }
@@ -1793,7 +1796,7 @@ class PCASchemaReceiver extends OnCompleteReceiver<TableSummary> {
         const table = new TableView(
             this.remoteObject.remoteObjectId, this.tv.rowCount, schema, this.page);
         this.page.setDataView(table);
-        const rr = table.createNextKRequest(o, null, this.tableRowsDesired, null);
+        const rr = table.createNextKRequest(o, null, this.tableRowsDesired, null, null);
         rr.chain(this.operation);
         rr.invoke(new NextKReceiver(this.page, table, rr, false, o, null));
     }
@@ -1836,7 +1839,7 @@ export class TableOperationCompleted extends BaseReceiver {
             table.aggregates = this.aggregates;
             this.page.setDataView(table);
             const rr = table.createNextKRequest(
-                this.order, null, this.tableRowsDesired, this.aggregates);
+                this.order, null, this.tableRowsDesired, this.aggregates, null);
             rr.chain(this.operation);
             rr.invoke(new NextKReceiver(this.page, table, rr, false, this.order, null));
         }
@@ -1861,7 +1864,7 @@ export class FindReceiver extends OnCompleteReceiver<FindResult> {
             return;
         }
         const rr = this.tv.createNextKRequest(
-            this.order, result.firstMatchingRow, this.tv.tableRowsDesired, this.tv.aggregates);
+            this.order, result.firstMatchingRow, this.tv.tableRowsDesired, this.tv.aggregates, null);
         rr.chain(this.operation);
         rr.invoke(new NextKReceiver(this.page, this.tv, rr, false, this.order, result));
     }

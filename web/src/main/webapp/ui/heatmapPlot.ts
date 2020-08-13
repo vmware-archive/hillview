@@ -17,7 +17,7 @@
 
 import {AxisData, AxisKind} from "../dataViews/axisData";
 import {Groups, kindIsString, RowValue} from "../javaBridge";
-import {assert, ColorMap, regression, Triple, valueWithConfidence} from "../util";
+import {ColorMap, regression, Triple, valueWithConfidence} from "../util";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {SchemaClass} from "../schemaClass";
@@ -52,7 +52,7 @@ export class HeatmapPlot
                        protected detailIndex: number,
                        protected showAxes: boolean) {
         super(surface);
-        this.dots = null;
+        this.dots = [];
         this.isPrivate = false;
         this.showRegression = true;
         this.regressionLine = null;
@@ -76,8 +76,6 @@ export class HeatmapPlot
 
         const canvas = this.plottingSurface.getCanvas();
         if (this.showAxes) {
-            assert(this.yAxisData != null);
-            assert(this.xAxisData != null);
             canvas.append("text")
                 .text(this.yAxisData.getDisplayNameString(this.schema))
                 .attr("dominant-baseline", "text-before-edge");
@@ -94,7 +92,7 @@ export class HeatmapPlot
         htmlCanvas.height = this.getChartHeight();
         htmlCanvas.width = this.getChartWidth();
         // draw the image onto the canvas.
-        const ctx: CanvasRenderingContext2D = htmlCanvas.getContext("2d");
+        const ctx: CanvasRenderingContext2D = htmlCanvas.getContext("2d")!;
         for (const dot of this.dots) {
             ctx.beginPath();
             if (dot.confident) {
@@ -119,8 +117,8 @@ export class HeatmapPlot
 
         if (this.xAxisData != null &&
             this.yAxisData != null &&
-            !kindIsString(this.yAxisData.description.kind) &&
-            !kindIsString(this.xAxisData.description.kind) &&
+            !kindIsString(this.yAxisData.description!.kind) &&
+            !kindIsString(this.xAxisData.description!.kind) &&
             !this.isPrivate &&
             this.showRegression) {
             // It makes no sense to do regressions for string values.

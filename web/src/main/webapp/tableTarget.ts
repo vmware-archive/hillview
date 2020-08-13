@@ -55,7 +55,7 @@ import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
 import {FullPage, PageTitle} from "./ui/fullPage";
 import {HtmlString, PointSet, Resolution, SpecialChars, ViewKind} from "./ui/ui";
 import {
-    assert,
+    assert, assertNever,
     ICancellable,
     Pair,
     Seed,
@@ -80,7 +80,7 @@ export interface OnNextK extends CompletedWithTime {
     updateView(nextKList: NextKList,
                revert: boolean,
                order: RecordOrder,
-               result: FindResult): void;
+               result: FindResult | null): void;
 }
 
 /**
@@ -160,9 +160,17 @@ export class TableTargetAPI extends RemoteObject {
                 return [maxBuckets, maxBuckets, maxWindows];
             case "TrellisHistogram":
                 return [width, maxWindows];
+            case "Table":
+            case "Schema":
+            case "Load":
+            case "HeavyHitters":
+            case "SVD Spectrum":
+            case "LogFileView":
+                // Shoudld not occur
+                assert(false);
+                return [];
             default:
-                assert(false, "Unhandled case " + viewKind);
-                return null;
+                assertNever(viewKind);
         }
     }
 
@@ -229,14 +237,14 @@ export class TableTargetAPI extends RemoteObject {
      *                         "minimum possible value" instead of "null".
      */
     public createNextKRequest(order: RecordOrder, firstRow: RowValue[] | null, rowsOnScreen: number,
-                              aggregates?: AggregateDescription[], columnsNoValue?: string[]):
+                              aggregates: AggregateDescription[] | null, columnsNoValue: string[] | null):
         RpcRequest<NextKList> {
         const nextKArgs: NextKArgs = {
             toFind: null,
-            order: order,
-            firstRow: firstRow,
-            rowsOnScreen: rowsOnScreen,
-            columnsNoValue: columnsNoValue,
+            order,
+            firstRow,
+            rowsOnScreen,
+            columnsNoValue,
             aggregates
         };
         return this.createStreamingRpcRequest<NextKList>("getNextK", nextKArgs);
@@ -455,7 +463,7 @@ export class SummaryMessage {
             summary.appendSafeString(k + ": ");
             if (this.approx.has(k))
                 summary.appendSafeString(SpecialChars.approx);
-            summary.append(significantDigitsHtml(v));
+            summary.append(significantDigitsHtml(v)!);
         });
         summary.setInnerHtml(this.parent);
     }
@@ -479,11 +487,11 @@ type CommonPlots = "chart"  // Contains the chart (or charts for trellis views)
 export abstract class BigTableView extends TableTargetAPI implements IDataView, CompletedWithTime {
     protected topLevel: HTMLElement;
     public readonly dataset: DatasetView;
-    protected chartDiv: HTMLDivElement;
-    protected summaryDiv: HTMLDivElement;
+    protected chartDiv: HTMLDivElement | null;
+    protected summaryDiv: HTMLDivElement | null;
     // This may not exist.
-    protected legendDiv: HTMLDivElement;
-    protected summary: SummaryMessage;
+    protected legendDiv: HTMLDivElement | null;
+    protected summary: SummaryMessage | null;
 
     /**
      * Create a view for a big table.
@@ -568,14 +576,14 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
     }
 
     protected standardSummary(): void {
-        this.summary.set("row count", this.rowCount, this.isPrivate());
+        this.summary!.set("row count", this.rowCount, this.isPrivate());
     }
 
     /**
      * Validate the serialization.  Returns null on failure.
      * @param ser  Serialization of a view.
      */
-    public static validateSerialization(ser: IViewSerialization): CommonArgs {
+    public static validateSerialization(ser: IViewSerialization): CommonArgs | null {
         if (ser.schema == null || ser.rowCount == null || ser.remoteObjectId == null ||
             ser.provenance == null || ser.title == null || ser.viewKind == null ||
             ser.pageId == null)
@@ -615,6 +623,12 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
     }
 
     public abstract resize(): void;
+
+    /**
+     * The refresh method should be able to execute based solely on
+     * the state serialized by calling "serialize", which is
+     * reloaded by "reconstruct".
+     */
     public abstract refresh(): void;
 
     public getHTMLRepresentation(): HTMLElement {
@@ -642,8 +656,13 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
         if (renderer == null)
             return;
 
-        const view = this.dataset.findPage(pageId).dataView;
-        const rr = this.createSetRequest(view.getRemoteObjectId(), how);
+        const view = this.dataset.findPage(pageId)?.dataView;
+        if (view == null)
+            return;
+        const rid = view.getRemoteObjectId();
+        if (rid === null)
+            return;
+        const rr = this.createSetRequest(rid, how);
         const receiver = renderer(this.getPage(), rr);
         rr.invoke(receiver);
     }
@@ -671,11 +690,9 @@ export abstract class BaseReceiver extends OnCompleteReceiver<RemoteObjectId> {
                           public description: string,
                           protected dataset: DatasetView) { // may be null for the first table
         super(page, operation, description);
-        this.remoteObject = null;
     }
 
     public run(value: RemoteObjectId): void {
-        if (value != null)
-            this.remoteObject = new TableTargetAPI(value);
+        this.remoteObject = new TableTargetAPI(value);
     }
 }

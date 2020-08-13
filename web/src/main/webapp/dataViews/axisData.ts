@@ -26,7 +26,7 @@ import {
     RowValue
 } from "../javaBridge";
 import {
-    assert,
+    assert, assertNever,
     binarySearch,
     Converters,
     formatDate,
@@ -157,15 +157,16 @@ export class AxisDescription {
 }
 
 // This value indicates that some data does not fall within a bucket.
-export const NoBucketIndex: number = null;
+export const NoBucketIndex: number | null = null;
 
 /**
  * Contains all information required to build an axis and a d3 scale associated to it.
  */
 export class AxisData {
-    public scale: AnyScale;
-    public axis: AxisDescription;
-    public displayRange: BucketsInfo; // the range used to draw the data; may be adjusted from this.dataRange
+    // The following are set only when the resolution is set.
+    public scale: AnyScale | null;
+    public axis: AxisDescription | null;
+    public displayRange: BucketsInfo | null; // the range used to draw the data; may be adjusted from this.dataRange
 
     public constructor(public description: IColumnDescription | null, // may be null for e.g., the Y col in a histogram
                        // dataRange is the original range of the data
@@ -174,10 +175,10 @@ export class AxisData {
         this.displayRange = dataRange;
         const kind = description == null ? null : description.kind;
         if (dataRange != null) {
-            if (kindIsString(kind)) {
+            if (kindIsString(kind!)) {
                 this.displayRange = {
                     min: -.5,
-                    max: dataRange.stringQuantiles.length - .5,
+                    max: dataRange.stringQuantiles!.length - .5,
                     presentCount: dataRange.presentCount,
                     missingCount: dataRange.missingCount,
                     allStringsKnown: dataRange.allStringsKnown,
@@ -186,8 +187,8 @@ export class AxisData {
                 };
             } else if (kind === "Integer") {
                 this.displayRange = {
-                    min: dataRange.min - .5,
-                    max: dataRange.max + .5,
+                    min: dataRange.min! - .5,
+                    max: dataRange.max! + .5,
                     presentCount: dataRange.presentCount,
                     missingCount: dataRange.missingCount
                 };
@@ -198,7 +199,9 @@ export class AxisData {
         this.axis = null;
     }
 
-    public getDisplayNameString(schema: SchemaClass): string {
+    public getDisplayNameString(schema: SchemaClass): string | null {
+        if (this.description == null)
+            return null;
         return schema.displayName(this.description.name).displayName;
     }
 
@@ -333,10 +336,12 @@ export class AxisData {
                 this.axis = new AxisDescription(axisCreator(this.scale), 1, false, null);
                 break;
             }
-            default: {
-                console.log("Unexpected data kind for axis" + this.description.kind);
+            case "Duration": {
+                // TODO
                 break;
             }
+            default:
+                assertNever(this.description.kind);
         }
     }
 
@@ -461,13 +466,18 @@ export class AxisData {
             case "Double":
             case "Date":
             case "Time":
+            case "Duration":
             case "LocalDate":
                 return new BucketBoundaries(
                      new BucketBoundary(start, valueKind, true),
                      new BucketBoundary(end, valueKind, inclusive)
                  );
+            case "String":
+            case "Json":
+                // handled above
+                return null;
             default:
-                assert(false, "Unhandled data type " + valueKind);
+                assertNever(valueKind);
         }
     }
 

@@ -568,7 +568,7 @@ export class Dialog extends DialogBase {
      * @return       A reference to the select html input field.
      */
     public addColumnSelectField(fieldName: string, labelText: string,
-                                options: DisplayName[], value: DisplayName,
+                                options: DisplayName[], value: DisplayName | null,
                                 toolTip: string): HTMLInputElement | HTMLSelectElement {
         let v = null;
         if (value !== null)

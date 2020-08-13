@@ -22,7 +22,7 @@ import {
 import {D3Axis, D3Scale, D3SvgElement, Resolution} from "./ui";
 import {ContextMenu} from "./menu";
 import {HtmlPlottingSurface, PlottingSurface} from "./plottingSurface";
-import {assert, ColorMap, desaturateOutsideRange, Pair} from "../util";
+import {assert, assertNever, ColorMap, desaturateOutsideRange, Pair} from "../util";
 import {scaleLinear as d3scaleLinear, scaleLog as d3scaleLog} from "d3-scale";
 import {axisBottom as d3axisBottom} from "d3-axis";
 import {AxisDescription} from "../dataViews/axisData";
@@ -155,6 +155,8 @@ export class HeatmapLegendPlot extends LegendPlot<Pair<number, number>> {
                 this.colorMap.setMap((x: number) => `rgb(
                 ${Math.round(255 * (1 - x))},${Math.round(255 * (1 - x))},${Math.round(255 * (1 - x))})`);
                 break;
+            default:
+                assertNever(kind);
         }
     }
 

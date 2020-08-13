@@ -35,7 +35,7 @@ import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
 import {ChartOptions, DragEventKind, Resolution} from "../ui/ui";
 import {
-    add,
+    add, assertNever,
     Converters, Heatmap,
     histogram2DAsCsv,
     ICancellable,
@@ -193,6 +193,8 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
                     missingCount: missing
                 };
                 return new AxisData(null, range, this.yAxisData.bucketCount);
+            default:
+                assertNever(event);
         }
         return null;
     }
@@ -268,7 +270,9 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
             columnDescription0: this.xAxisData.description,
             columnDescription1: this.yAxisData.description,
             xBucketCount: this.xPoints,
-            yBucketCount: this.yPoints
+            yBucketCount: this.yPoints,
+            xRange: this.xAxisData.dataRange,
+            yRange: this.yAxisData.dataRange
         };
         return result;
     }
@@ -282,12 +286,12 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
         const yPoints: number = ser.yBucketCount;
         const schema: SchemaClass = new SchemaClass([]).deserialize(ser.schema);
         if (cd0 === null || cd1 === null || samplingRate === null || schema === null ||
-            xPoints === null || yPoints == null)
+            xPoints === null || yPoints === null || ser.xRange === null || ser.yRange === null)
             return null;
 
         const hv = new Histogram2DView(ser.remoteObjectId, ser.rowCount, schema, samplingRate, page);
-        hv.setAxes(new AxisData(cd0, null, ser.xBucketCount),
-            new AxisData(cd1, null, ser.yBucketCount), relative);
+        hv.setAxes(new AxisData(cd0, ser.xRange, ser.xBucketCount),
+            new AxisData(cd1, ser.yRange, ser.yBucketCount), relative);
         hv.xPoints = xPoints;
         hv.yPoints = yPoints;
         return hv;

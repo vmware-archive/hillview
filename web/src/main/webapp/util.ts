@@ -64,7 +64,8 @@ export function zip<T, S, R>(a: T[], b: S[], f: (ae: T, be: S) => R): R[] {
 
 export function histogramAsCsv(data: Groups<number>, schema: SchemaClass, axis: AxisData): string[] {
     const lines: string[] = [];
-    let line = JSON.stringify(schema.displayName(axis.description.name).displayName) + ",count";
+    const displayName = schema.displayName(axis.description!.name);
+    let line = JSON.stringify(displayName!.displayName) + ",count";
     lines.push(line);
     for (let x = 0; x < data.perBucket.length; x++) {
         const bx = axis.bucketDescription(x, 0);
@@ -133,7 +134,7 @@ export function dataRange(data: RowValue[], cd: IColumnDescription): BucketsInfo
             b.allStringsKnown = true;
         } else {
             for (let i = 0; i < Resolution.max2DBucketCount; i++)
-                b.stringQuantiles.push(unique[Math.round(i * unique.length / Resolution.max2DBucketCount)]);
+                b.stringQuantiles!.push(unique[Math.round(i * unique.length / Resolution.max2DBucketCount)]);
             b.allStringsKnown = false;
         }
     }
@@ -144,8 +145,8 @@ export function histogram2DAsCsv(
     data: Groups<Groups<number>>, schema: SchemaClass, axis: AxisData[]): string[] {
     const lines: string[] = [];
 
-    const yAxis = schema.displayName(axis[1].description.name);
-    const xAxis = schema.displayName(axis[0].description.name);
+    const yAxis = schema.displayName(axis[1].description!.name);
+    const xAxis = schema.displayName(axis[0].description!.name);
     let line = "";
     for (let y = 0; y < axis[1].bucketCount; y++) {
         const by = axis[1].bucketDescription(y, 0);
@@ -173,7 +174,7 @@ export function histogram2DAsCsv(
 export function histogram3DAsCsv(
     data: Groups<Groups<Groups<number>>>, schema: SchemaClass, axis: AxisData[]): string[] {
     let lines: string[] = [];
-    const gAxis = schema.displayName(axis[2].description.name);
+    const gAxis = schema.displayName(axis[2].description!.name);
     for (let g = 0; g < axis[2].bucketCount; g++) {
         const gl = histogram2DAsCsv(data.perBucket[g], schema, axis);
         const first = gl[0];
@@ -194,7 +195,7 @@ export function histogram3DAsCsv(
 export function quartileAsCsv(g: Groups<SampleSet>, schema: SchemaClass, axis: AxisData): string[] {
     const lines: string[] = [];
     let line = "";
-    const axisName = schema.displayName(axis.description.name);
+    const axisName = schema.displayName(axis.description!.name);
     for (let x = 0; x < axis.bucketCount; x++) {
         const bx = axis.bucketDescription(x, 0);
         const l = JSON.stringify( axisName + " " + bx);
@@ -274,12 +275,14 @@ export class Converters {
         return new Date(value + offset * 60 * 1000);
     }
 
-    public static timeFromDouble(value: number): Date | null {
+    public static timeFromDouble(value: number | null): Date | null {
         return Converters.localDateFromDouble(value);
     }
 
     public static doubleFromDate(value: Date | null): number | null {
-        return value?.getTime();
+        if (value === null)
+            return null;
+        return value.getTime();
     }
 
     public static doubleFromLocalDate(value: Date | null): number | null {
@@ -354,7 +357,8 @@ export class Converters {
         } else if (kind === "Date") {
             return formatDate(Converters.dateFromDouble(val as number));
         } else if (kind === "Time" || kind === "Duration") {
-            return formatTime(Converters.timeFromDouble(val as number), true);
+            const time = Converters.timeFromDouble(val as number);
+            return formatTime(time, true);
         } else if (kindIsString(kind)) {
             return val as string;
         } else if (kind == "Interval") {
@@ -432,6 +436,8 @@ export class Converters {
             case "GAxis":
                 result += " Grouping "
                 break;
+            default:
+                assertNever(event);
         }
         return result + " from " + pageReferenceFormat(pageId);
     }
@@ -455,6 +461,8 @@ export class Converters {
             case "Interval":
                 str = this.valueToString([filter.doubleValue, filter.intervalEnd], kind, true);
                 break;
+            default:
+                assertNever(kind);
         }
         return filter.column.name + " " + filter.comparison + " " + str;
     }
@@ -537,7 +545,7 @@ export interface Serializable<T> {
      * Initialize the current object from the specified object.
      * @returns The same object if deserialization is successful, null otherwise.
      */
-    deserialize(data: object): T;
+    deserialize(data: object): T | null;
 }
 
 /**
@@ -630,7 +638,7 @@ function zeroPad(num: number, length: number): string {
  * The suffix may be omitted if it is zero.
  * This should match the algorithm in the Java Converters.toString(Instant) method.
  */
-export function formatDate(d: Date): string {
+export function formatDate(d: Date | null): string {
     if (d == null)
         return "missing";
     const year = d.getFullYear();
@@ -643,13 +651,29 @@ export function formatDate(d: Date): string {
     return df;
 }
 
+export function assertNever(x: never): never {
+    throw new Error("Unexpected object: " + x);
+}
+
+export function disableSuggestions(visible: boolean): void {
+    const vis = visible ? "block" : "none";
+    const suggestions = document.getElementById("suggestions");
+    if (suggestions !== null)
+        suggestions.style.display = vis;
+    const anchor = document.getElementById("suggestions-anchor");
+    if (anchor !== null)
+        anchor.style.display = vis;
+}
+
 /**
  * This is a time encoded as a date.  Ignore the date part and just
  * return the time.
  * @param d date that only has a time component.
  * @param nonEmpty if true return 00:00 when the result is empty.
  */
-export function formatTime(d: Date, nonEmpty: boolean): string {
+export function formatTime(d: Date | null, nonEmpty: boolean): string {
+    if (d === null)
+        return "missing";
     const hour = d.getHours();
     const minutes = d.getMinutes();
     const seconds = d.getSeconds();
@@ -691,7 +715,7 @@ export function makeId(text: string): string {
  * Convert a number to an html string by keeping only the most significant digits
  * and adding a suffix.
  */
-export function significantDigitsHtml(n: number): HtmlString {
+export function significantDigitsHtml(n: number | null): HtmlString | null {
     if (n === null)
         return null;
     let suffix = "";
@@ -956,7 +980,8 @@ export function browserWindowSize(): Size {
 
 export function openInNewTab(url: string): void {
     const win = window.open(url, "_blank");
-    win.focus();
+    if (win != null)
+        win.focus();
 }
 
 /**
@@ -1095,7 +1120,7 @@ export class Color {
     /**
      * Parse a color in the format rgb(r, g, b).
      */
-    public static parse(s: string): Color {
+    public static parse(s: string): Color | null {
         const m = Color.colorReg.exec(s);
         if (m == null)
             return null;
@@ -1116,7 +1141,7 @@ export class Color {
  * @param count  Number of strings to return.
  * @returns      At most count strings equi-spaced.
  */
-export function periodicSamples(data: string[], count: number): string[] {
+export function periodicSamples(data: string[], count: number): string[] | null {
     if (data == null)
         return null;
 
@@ -1140,8 +1165,10 @@ export function desaturateOutsideRange(c: ColorMap, x0: number, x1: number): Col
         const color = c(value);
         if (value < min || value > max) {
             const cValue = Color.parse(color);
-            const b = cValue.brighten(4);
-            return b.toString();
+            if (cValue != null) {
+                const b = cValue.brighten(4);
+                return b.toString();
+            }
         }
         return color;
     }
