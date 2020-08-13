@@ -35,6 +35,7 @@ import {
 } from "./dataRangesReceiver";
 import {Receiver, RpcRequest} from "../rpc";
 import {
+    assertNever,
     Converters,
     GroupsClass, Heatmap,
     histogram3DAsCsv,
@@ -108,8 +109,9 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
 
     public static reconstruct(ser: TrellisHeatmapSerialization, page: FullPage): IDataView {
         if (ser.columnDescription0 == null || ser.columnDescription1 == null ||
-            ser.samplingRate == null || ser.schema == null ||
-            ser.xBucketCount == null || ser.yBucketCount == null) {
+            ser.samplingRate == null || ser.schema == null || ser.windowCount === null ||
+            ser.xBucketCount == null || ser.yBucketCount == null ||
+            ser.yRange === null || ser.xRange === null || ser.gRange === null) {
             return null;
         }
         const shape = TrellisChartView.deserializeShape(ser, page);
@@ -118,9 +120,9 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
 
         const schema: SchemaClass = new SchemaClass([]).deserialize(ser.schema);
         const hv = new TrellisHeatmapView(ser.remoteObjectId, ser.rowCount, schema, shape, ser.samplingRate, page);
-        hv.setAxes(new AxisData(ser.columnDescription0, null, ser.xBucketCount),
-            new AxisData(ser.columnDescription1, null, ser.yBucketCount),
-            new AxisData(ser.groupByColumn, null, ser.windowCount));
+        hv.setAxes(new AxisData(ser.columnDescription0, ser.xRange, ser.xBucketCount),
+            new AxisData(ser.columnDescription1, ser.yRange, ser.yBucketCount),
+            new AxisData(ser.groupByColumn, ser.gRange, ser.windowCount));
         return hv;
     }
 
@@ -129,6 +131,9 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
         const ser: TrellisHeatmapSerialization = {
             ...super.serialize(),
             ...this.shape,
+            xRange: this.xAxisData.dataRange,
+            yRange: this.yAxisData.dataRange,
+            gRange: this.groupByAxisData.dataRange,
             samplingRate: this.samplingRate,
             columnDescription0: this.xAxisData.description,
             columnDescription1: this.yAxisData.description,
@@ -196,6 +201,8 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
                 return this.xAxisData;
             case "YAxis":
                 return this.yAxisData;
+            default:
+                assertNever(event);
         }
     }
 

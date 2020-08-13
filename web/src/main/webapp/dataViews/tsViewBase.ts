@@ -391,7 +391,7 @@ export abstract class TSViewBase extends BigTableView {
      * @param aggregates        Aggregations that should be computed.
      */
     protected showFilterDialog(
-        displayColName: DisplayName, order: RecordOrder | null, tableRowsDesired: number,
+        displayColName: DisplayName | null, order: RecordOrder | null, tableRowsDesired: number,
         aggregates: AggregateDescription[] | null): void {
         const cd = this.schema.findByDisplayName(displayColName);
         const ef = new FilterDialog(cd, this.schema);
@@ -425,7 +425,7 @@ export abstract class TSViewBase extends BigTableView {
      * @param aggregates        Aggregations that should be computed.
      */
     protected showCompareDialog(
-        displayName: DisplayName, order: RecordOrder | null, tableRowsDesired: number,
+        displayName: DisplayName | null, order: RecordOrder | null, tableRowsDesired: number,
         aggregates: AggregateDescription[] | null): void {
         const cfd = new ComparisonFilterDialog(displayName, this.schema, this.page.getErrorReporter());
         cfd.setAction(() => this.runComparisonFilter(

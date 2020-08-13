@@ -37,17 +37,17 @@ export interface MenuItem extends BaseMenuItem {
     /**
      * Action that is executed when the item is selected by the user.
      */
-    readonly action: () => void;
+    readonly action: (() => void) | null;
 }
 
-interface subMenuCells {
-    dummySubMenu: HTMLTableDataCellElement;
+interface SubMenuCells {
+    dummySubMenu: HTMLTableDataCellElement | null;
     cells: HTMLTableDataCellElement[];
 }
 
-function initSubMenu(): subMenuCells {
+function initSubMenu(): SubMenuCells {
     return {
-        dummySubMenu: undefined,
+        dummySubMenu: null,
         cells: []
     }
 }
@@ -61,7 +61,7 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
     public outer: HTMLTableElement;
     public tableBody: HTMLTableSectionElement;
     public cells: HTMLTableDataCellElement[];
-    public subMenuCells: subMenuCells[];
+    public subMenuCells: SubMenuCells[];
     public rows: HTMLTableRowElement[];
     public selectedIndex: number; // -1 if no item is selected
     public selectedParentMenu: number; // -1 if no item is selected
@@ -128,7 +128,9 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
         return this.cells[index];
     }
 
-    public expandMenu(parentMenu: string) {
+    public expandMenu(parentMenu: string | null) {
+        if (parentMenu === null)
+            return;
         const index = this.find(parentMenu);
         this.selectedParentMenu = index;
         if (index < 0) throw new Error("Cannot find menu item " + parentMenu);
@@ -182,7 +184,7 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
                     this.hideAllSubMenu();
                 // Show subMenu when parent menu is active
                 if (cell.classList.contains("expandableMenu"))
-                    this.expandMenu(cell.firstChild.textContent);
+                    this.expandMenu(cell.firstChild!.textContent);
                 cell.classList.add("selected");
                 this.outer.focus();
             } else {
@@ -288,7 +290,8 @@ export class ContextMenu extends BaseMenu<MenuItem> implements IHtmlElement {
      */
     constructor(parent: Element, mis?: MenuItem[]) {
         super();
-        this.addItems(mis);
+        if (mis != null)
+            this.addItems(mis);
         this.outer.classList.add("dropdown");
         this.outer.classList.add("menu");
         this.outer.onmouseleave = () => { this.hide(); };
@@ -337,10 +340,10 @@ export class ContextMenu extends BaseMenu<MenuItem> implements IHtmlElement {
             if (cell.classList.contains("expandableMenu")) {
               // no operation because expandableMenu only expand its submenus
             } else {
-              cell.onclick = () => {
-                this.hide();
-                mi.action();
-              };
+                cell.onclick = () => {
+                    this.hide();
+                    mi.action!();
+                };
             }
         } else {
             cell.onclick = () => this.hide();
@@ -394,7 +397,7 @@ export class ContextMenu extends BaseMenu<MenuItem> implements IHtmlElement {
         if (mi.action != null && enabled) {
             cell.onclick = () => {
                 this.hide();
-                mi.action();
+                mi.action!();
             };
         } else {
             cell.onclick = () => this.hide();
@@ -424,7 +427,7 @@ export class SubMenu extends BaseMenu<MenuItem> implements IHtmlElement {
     public setAction(mi: MenuItem, enabled: boolean): void {
         const cell = this.getCell(mi);
         if (mi.action != null && enabled)
-            cell.onclick = (e: MouseEvent) => { e.stopPropagation(); this.hide(); mi.action(); };
+            cell.onclick = (e: MouseEvent) => { e.stopPropagation(); this.hide(); mi.action!(); };
         else
             cell.onclick = (e: MouseEvent) => { e.stopPropagation(); this.hide(); };
     }
@@ -459,7 +462,7 @@ export class TopMenu extends BaseMenu<TopMenuItem> {
     }
 
     public addItem(mi: TopMenuItem, enabled: boolean): HTMLTableDataCellElement {
-        const cell = this.tableBody.rows.item(0).insertCell();
+        const cell = this.tableBody.rows.item(0)!.insertCell();
         cell.id = makeId(mi.text);  // for testing
         cell.textContent = mi.text;
         cell.appendChild(mi.subMenu.getHTMLRepresentation());
@@ -495,7 +498,7 @@ export class TopMenu extends BaseMenu<TopMenuItem> {
      * Find the position of an item
      * @param text   Text string in the item.
      */
-    public getSubmenu(text: string): SubMenu {
+    public getSubmenu(text: string): SubMenu | null {
         for (const item of this.items)
             if (item.text === text)
                 return item.subMenu;

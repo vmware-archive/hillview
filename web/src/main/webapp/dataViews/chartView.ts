@@ -28,6 +28,7 @@ import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {AxisData} from "./axisData";
 import {Dialog} from "../ui/dialog";
 import {NextKReceiver, TableView} from "../modules";
+import { assert } from "../util";
 
 /**
  * A ChartView is a common base class for many views that
@@ -45,7 +46,7 @@ export abstract class ChartView<D> extends BigTableView {
     /**
      * Coordinates of mouse within canvas.
      */
-    protected selectionOrigin: Point;
+    protected selectionOrigin: Point | null;
     /**
      * Rectangle in canvas used to display the current selection.
      */
@@ -53,12 +54,12 @@ export abstract class ChartView<D> extends BigTableView {
     /**
      * Describes the data currently pointed by the mouse.
      */
-    protected pointDescription: TextOverlay;
+    protected pointDescription: TextOverlay | null;
     /**
      * The main surface on top of which the image is drawn.
      * There may exist other surfaces as well besides this one.
      */
-    protected surface: PlottingSurface;
+    protected surface: PlottingSurface | null;
     /**
      * Top-level menu.
      */
@@ -97,7 +98,7 @@ export abstract class ChartView<D> extends BigTableView {
 
         const order =  new RecordOrder(
             columns.map(c => { return { columnDescription: c, isAscending: true }}));
-        const rr = table.createNextKRequest(order, null, Resolution.tableRowsOnScreen);
+        const rr = table.createNextKRequest(order, null, Resolution.tableRowsOnScreen, null, null);
         rr.invoke(new NextKReceiver(newPage, table, rr, false, order, null));
     }
 
@@ -109,7 +110,7 @@ export abstract class ChartView<D> extends BigTableView {
             .on("drag", () => this.dragMove())
             .on("end", () => this.dragEnd());
 
-        const canvas = this.surface.getCanvas();
+        const canvas = this.surface!.getCanvas();
         canvas.call(drag)
             .on("mousemove", () => this.onMouseMove())
             .on("mouseenter", () => this.onMouseEnter())
@@ -149,7 +150,7 @@ export abstract class ChartView<D> extends BigTableView {
      * Converts a point coordinate in canvas to a point coordinate in the chart surface.
      */
     public canvasToChart(point: Point): Point {
-        return { x: point.x - this.surface.leftMargin, y: point.y - this.surface.topMargin };
+        return { x: point.x - this.surface!.leftMargin, y: point.y - this.surface!.topMargin };
     }
 
     protected abstract onMouseMove(): void;
@@ -162,7 +163,7 @@ export abstract class ChartView<D> extends BigTableView {
     protected dragStartRectangle(): void {
         this.dragging = true;
         this.moved = false;
-        const position = d3mouse(this.surface.getCanvas().node());
+        const position = d3mouse(this.surface!.getCanvas().node());
         this.selectionOrigin = {
             x: position[0],
             y: position[1] };
@@ -250,9 +251,9 @@ export abstract class ChartView<D> extends BigTableView {
             return false;
         }
         this.moved = true;
-        let ox = this.selectionOrigin.x;
-        let oy = this.selectionOrigin.y;
-        const position = d3mouse(this.surface.getCanvas().node());
+        let ox = this.selectionOrigin!.x;
+        let oy = this.selectionOrigin!.y;
+        const position = d3mouse(this.surface!.getCanvas().node());
         const x = position[0];
         const y = position[1];
         let width = x - ox;
@@ -308,16 +309,16 @@ export abstract class ChartView<D> extends BigTableView {
      */
     protected filterSelectionRectangle(xl: number, xr: number, yl: number, yr: number,
                                        xAxisData: AxisData, yAxisData: AxisData):
-        RangeFilterArrayDescription {
+        RangeFilterArrayDescription | null{
         if (xAxisData.axis == null ||
             yAxisData.axis == null) {
             return null;
         }
 
-        xl -= this.surface.leftMargin;
-        xr -= this.surface.leftMargin;
-        yl -= this.surface.topMargin;
-        yr -= this.surface.topMargin;
+        xl -= this.surface!.leftMargin;
+        xr -= this.surface!.leftMargin;
+        yl -= this.surface!.topMargin;
+        yr -= this.surface!.topMargin;
         const xRange = xAxisData.getFilter(xl, xr);
         const yRange = yAxisData.getFilter(yl, yr);
         return {

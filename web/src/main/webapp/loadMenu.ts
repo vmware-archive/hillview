@@ -26,7 +26,7 @@ import {ErrorDisplay} from "./ui/errReporter";
 import {FullPage} from "./ui/fullPage";
 import {MenuItem, SubMenu, TopMenu, TopMenuItem} from "./ui/menu";
 import {ViewKind} from "./ui/ui";
-import {Converters, ICancellable, loadFile, getUUID} from "./util";
+import {Converters, ICancellable, loadFile, getUUID, disableSuggestions} from "./util";
 import {HillviewToplevel} from "./toplevel";
 
 /**
@@ -68,6 +68,8 @@ export class LoadMenu extends RemoteObject implements IDataView {
         this.createMenus();
         if (!uiconfig.enableManagement)
             this.showManagement(false);
+        if (uiconfig.hideSuggestions)
+            disableSuggestions(false);
     }
 
     private createMenus(): void {
@@ -373,9 +375,9 @@ export class LoadMenu extends RemoteObject implements IDataView {
         if (title === undefined) title = json.views[0].title;
         this.page.reportError("Reconstructing " + json.views.length + " views");
         const dataset = new DatasetView(json.remoteObjectId, title, json, this.page);
-        const success = dataset.reconstruct(json);
-        if (!success)
-            this.page.reportError("Error reconstructing view");
+        const failures = dataset.reconstruct(json);
+        if (failures != 0)
+            this.page.reportError("Could not reconstruct some views");
     }
 
     public openingBookmark(bookmarkFile: string): void {

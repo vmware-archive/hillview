@@ -21,7 +21,7 @@ import {Resolution} from "./ui";
 import {SchemaClass} from "../schemaClass";
 import {LegendPlot} from "./legendPlot";
 import {HtmlPlottingSurface} from "./plottingSurface";
-import {ColorMap, desaturateOutsideRange} from "../util";
+import {assertNever, ColorMap, desaturateOutsideRange} from "../util";
 import {kindIsString} from "../javaBridge";
 import {interpolateCool as d3interpolateCool, interpolateWarm as d3interpolateWarm} from "d3-scale-chromatic";
 import {ColorMapKind} from "./heatmapLegendPlot";
@@ -125,6 +125,8 @@ export class HistogramLegendPlot extends LegendPlot<void> {
                 this.colorMap = (x: number) => `rgb(
                 ${Math.round(255 * (1 - x))},${Math.round(255 * (1 - x))},${Math.round(255 * (1 - x))})`;
                 break;
+            default:
+                assertNever(kind);
         }
     }
 

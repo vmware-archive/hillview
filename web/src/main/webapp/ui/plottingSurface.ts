@@ -18,7 +18,6 @@
 import {select as d3select} from "d3-selection";
 import {FullPage} from "./fullPage";
 import {D3SvgElement, IHtmlElement, Size} from "./ui";
-import {assert} from "../util";
 
 /**
  * An interface that can be used to specify various dimensions.
@@ -127,16 +126,14 @@ export abstract class PlottingSurface {
     }
 
     public getChart(): D3SvgElement {
-        console.assert(this.chartArea != null);
-        return this.chartArea;
+        return this.chartArea!;
     }
 
     /**
      * Get the canvas of the plotting area.  Must be called after create.
      */
     public getCanvas(): D3SvgElement {
-        console.assert(this.svgCanvas != null);
-        return this.svgCanvas;
+        return this.svgCanvas!;
     }
 
     /**
@@ -199,8 +196,7 @@ export class HtmlPlottingSurface extends PlottingSurface implements IHtmlElement
 
     constructor(parent: HTMLDivElement, public readonly page: FullPage, sb: SizeAndBorders) {
         super(page, sb);
-        assert(parent != null);
-        this.topLevel = parent;
+        this.topLevel = parent!;
         this.createObjects(d3select(this.topLevel));
     }
 

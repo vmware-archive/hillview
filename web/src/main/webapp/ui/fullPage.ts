@@ -16,7 +16,7 @@
  */
 
 import {DatasetView} from "../datasetView";
-import {makeMissing, makeSpan, openInNewTab, significantDigits,} from "../util";
+import {assertNever, makeMissing, makeSpan, openInNewTab, significantDigits,} from "../util";
 import {IDataView} from "./dataview";
 import {ErrorDisplay, ErrorReporter} from "./errReporter";
 import {TopMenu} from "./menu";
@@ -265,7 +265,7 @@ export class FullPage implements IHtmlElement {
         const dialog = new Dialog("Change " + SpecialChars.epsilon,
             "Change the privacy parameter for this view");
         dialog.addTextField("epsilon", SpecialChars.epsilon + "=", FieldKind.Double,
-            this.epsilon.toString(), "Epsilon value");
+            this.epsilon!.toString(), "Epsilon value");
         dialog.setAction(() => {
             const eps = dialog.getFieldValueAsNumber("epsilon");
             this.dataset.setEpsilon(this.epsilonColumns, eps);
@@ -295,6 +295,8 @@ export class FullPage implements IHtmlElement {
 
     protected dropped(e: DragEvent): void {
         e.preventDefault();
+        if (e.dataTransfer === null)
+            return;
         const payload = e.dataTransfer.getData("text");
         const parts = payload.split(":", 2);
         console.assert(parts.length === 2);
@@ -309,7 +311,7 @@ export class FullPage implements IHtmlElement {
      * @param type Type of payload carried in the drag event.
      */
     public setDragPayload(e: DragEvent, type: DragEventKind): void {
-        e.dataTransfer.setData("text", type + ":" + this.pageId.toString());
+        e.dataTransfer!.setData("text", type + ":" + this.pageId.toString());
     }
 
     /**
@@ -409,7 +411,7 @@ export class FullPage implements IHtmlElement {
         if (hdv != null) {
             this.displayHolder.appendChild(hdv.getHTMLRepresentation());
             this.setViewKind(hdv.viewKind);
-            switch (this.dataView.viewKind) {
+            switch (hdv.viewKind) {
                 case "Histogram":
                 case "2DHistogram":
                 case "Heatmap":
@@ -431,7 +433,10 @@ export class FullPage implements IHtmlElement {
                 case "Load":
                 case "SVD Spectrum":
                 case "LogFileView":
+                case "CorrelationHeatmaps":
                     break;
+                default:
+                    assertNever(hdv.viewKind);
             }
         }
     }
