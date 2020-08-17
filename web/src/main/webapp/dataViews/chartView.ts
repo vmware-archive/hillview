@@ -28,7 +28,6 @@ import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {AxisData} from "./axisData";
 import {Dialog} from "../ui/dialog";
 import {NextKReceiver, TableView} from "../modules";
-import { assert } from "../util";
 
 /**
  * A ChartView is a common base class for many views that

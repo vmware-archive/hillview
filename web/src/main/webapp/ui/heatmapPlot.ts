@@ -32,7 +32,7 @@ interface Dot {
 }
 
 export class HeatmapPlot
-    extends Plot<Triple<Groups<Groups<number>>, Groups<Groups<number>>, Groups<Groups<RowValue[]>>>> {
+    extends Plot<Triple<Groups<Groups<number>>, Groups<Groups<number>> | null, Groups<Groups<RowValue[]>> | null>> {
     protected pointWidth: number; // in pixels
     protected pointHeight: number; // in pixels
     protected max: number;  // maximum count
@@ -48,7 +48,7 @@ export class HeatmapPlot
 
     public constructor(surface: PlottingSurface,
                        protected colorMap: ColorMap,
-                       protected detailColorMap: ColorMap,
+                       protected detailColorMap: ColorMap | null,
                        protected detailIndex: number,
                        protected showAxes: boolean) {
         super(surface);
@@ -178,8 +178,8 @@ export class HeatmapPlot
         return this.distinct;
     }
 
-    public setData(heatmap: Triple<Groups<Groups<number>>, Groups<Groups<number>>, Groups<Groups<RowValue[]>>>,
-                   xData: AxisData, yData: AxisData, detailData: AxisData,
+    public setData(heatmap: Triple<Groups<Groups<number>>, Groups<Groups<number>> | null, Groups<Groups<RowValue[]>> | null>,
+                   xData: AxisData, yData: AxisData, detailData: AxisData | null,
                    schema: SchemaClass, confThreshold: number, isPrivate: boolean): void {
         this.data = heatmap;
         this.xAxisData = xData;
@@ -214,7 +214,7 @@ export class HeatmapPlot
                 if (!isPrivate) {
                     conf = true;
                 } else {
-                    const confidence = this.data.second.perBucket[x].perBucket[y];
+                    const confidence = this.data.second!.perBucket[x].perBucket[y];
                     conf = b >= (confThreshold * confidence);
                 }
                 if (count === 1 && this.data.third != null && detailData != null) { // could happen if we have only 2 cols.

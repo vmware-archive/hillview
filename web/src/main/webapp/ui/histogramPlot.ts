@@ -25,13 +25,13 @@ import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {D3Axis, D3Scale} from "./ui";
 import {symbol, symbolTriangle} from "d3-shape";
-import {Two, valueWithConfidence} from "../util";
+import {Pair, valueWithConfidence} from "../util";
 import {IBarPlot} from "./IBarPlot";
 
 /**
  * A HistogramPlot draws a bar chart on a PlottingSurface, including the axes.
  */
-export class HistogramPlot extends Plot<Two<Groups<number>>> implements IBarPlot {
+export class HistogramPlot extends Plot<Pair<Groups<number>, Groups<number> | null>> implements IBarPlot {
     // While the data has histogram type, nothing prevents the values in the histogram
     // from being non-integers, so this class can be used to draw more general bar-charts.
 
@@ -63,7 +63,7 @@ export class HistogramPlot extends Plot<Two<Groups<number>>> implements IBarPlot
      * @param isPrivate     True if we are plotting private data.
      * @param rowCount      Total number of rows in dataset.
      */
-    public setHistogram(bars: Two<Groups<number>>, samplingRate: number,
+    public setHistogram(bars: Pair<Groups<number>, Groups<number> | null>, samplingRate: number,
                         axisData: AxisData, maxYAxis: number | null, isPrivate: boolean,
                         rowCount: number): void {
         // TODO: display missing data graphically.
@@ -90,7 +90,7 @@ export class HistogramPlot extends Plot<Two<Groups<number>>> implements IBarPlot
         const displayMax = this.maxYAxis == null ? this.max : this.maxYAxis;
         const chartWidth = this.getChartWidth();
         const chartHeight = this.getChartHeight();
-        const confidence: number[] = this.isPrivate ? this.data.second.perBucket :
+        const confidence: number[] = this.isPrivate ? this.data.second!.perBucket :
             new Array(this.data.first.perBucket.length); // filled with zeros
         const zippedData = d3zip(counts, confidence);
         const bars = this.plottingSurface
@@ -190,7 +190,7 @@ export class HistogramPlot extends Plot<Two<Groups<number>>> implements IBarPlot
         if (bucket < 0)
             return valueWithConfidence(0, null);
         const value = this.data.first.perBucket[bucket];
-        const conf = this.isPrivate ? this.data.second.perBucket[bucket] : null;
+        const conf = this.isPrivate ? this.data.second!.perBucket[bucket] : null;
         return valueWithConfidence(value, conf);
     }
 }

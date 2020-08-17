@@ -715,9 +715,7 @@ export function makeId(text: string): string {
  * Convert a number to an html string by keeping only the most significant digits
  * and adding a suffix.
  */
-export function significantDigitsHtml(n: number | null): HtmlString | null {
-    if (n === null)
-        return null;
+export function significantDigitsHtml(n: number): HtmlString {
     let suffix = "";
     if (n === 0)
         return new HtmlString("0");

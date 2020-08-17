@@ -81,7 +81,7 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
             (h, r) => new AxisData(h.cd, r, h.bucketCount));
     }
 
-    public static reconstruct(ser: CorrelationHeatmapSerialization, page: FullPage): IDataView {
+    public static reconstruct(ser: CorrelationHeatmapSerialization, page: FullPage): IDataView | null {
         const args = this.validateSerialization(ser);
         if (args == null || ser.histoArgs == null || ser.ranges == null)
             return null;
@@ -117,7 +117,7 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
 
     protected dragStart(): void {
         this.dragStartRectangle();
-        const origPos = this.getMousePosition([this.selectionOrigin.x, this.selectionOrigin.y]);
+        const origPos = this.getMousePosition([this.selectionOrigin!.x, this.selectionOrigin!.y]);
         if (origPos == null)
             this.dragging = false;
     }
@@ -126,8 +126,10 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
         if (!super.dragMove())
             return false;
 
-        const origPos = this.getMousePosition([this.selectionOrigin.x, this.selectionOrigin.y]);
-        const position = d3mouse(this.surface.getCanvas().node());
+        const origPos = this.getMousePosition([this.selectionOrigin!.x, this.selectionOrigin!.y]);
+        if (origPos === null)
+            return false;
+        const position = d3mouse(this.surface!.getCanvas().node());
         const currentPos = this.getMousePosition(position);
         if (currentPos == null) {
             this.hideSelectionRectangle();
@@ -145,8 +147,8 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
     public dragEnd(): boolean {
         if (!super.dragEnd())
             return false;
-        const position = d3mouse(this.surface.getCanvas().node());
-        this.selectionCompleted(this.selectionOrigin.x, position[0], this.selectionOrigin.y, position[1]);
+        const position = d3mouse(this.surface!.getCanvas().node());
+        this.selectionCompleted(this.selectionOrigin!.x, position[0], this.selectionOrigin!.y, position[1]);
         return true;
     }
 
@@ -197,8 +199,8 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
      */
     protected getMousePosition(position: number[]): MousePosition | null {
         const charts = this.histoArgs.histos.length - 1;
-        const x = position[0] - this.surface.leftMargin;
-        const y = position[1] - this.surface.topMargin - this.headerHeight;
+        const x = position[0] - this.surface!.leftMargin;
+        const y = position[1] - this.surface!.topMargin - this.headerHeight;
         if (x < 0 || x > charts * this.chartSize)
             return null;
         if (y < 0 || y > charts * this.chartSize)
@@ -226,21 +228,21 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
     }
 
     protected onMouseMove(): void {
-        const position = d3mouse(this.surface.getCanvas().node());
+        const position = d3mouse(this.surface!.getCanvas().node());
         const pos = this.getMousePosition(position);
         if (pos == null) {
-            this.pointDescription.show(false);
+            this.pointDescription!.show(false);
             return;
         }
         const plot = this.hps[pos.chartIndex];
         const value = plot.getCount(pos.chartX, pos.chartY);
         const xs = this.xAxes[pos.xAxisIndex].invert(pos.chartX);
-        const xname = this.xAxes[pos.xAxisIndex].description.name;
-        const yname = this.yAxes[pos.yAxisIndex].description.name;
+        const xname = this.xAxes[pos.xAxisIndex].description!.name;
+        const yname = this.yAxes[pos.yAxisIndex].description!.name;
         const ys = this.yAxes[pos.yAxisIndex].invert(pos.chartY);
-        this.pointDescription.show(true);
-        const p = d3mouse(this.surface.getCanvas().node());
-        this.pointDescription.update([xname, yname, xs, ys, makeInterval(value)],
+        this.pointDescription!.show(true);
+        const p = d3mouse(this.surface!.getCanvas().node());
+        this.pointDescription!.update([xname, yname, xs, ys, makeInterval(value)],
             p[0], p[1]);
     }
 
@@ -268,6 +270,7 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
         const filter = h.map(g => g.map((c) => min <= c && c <= max ? c : 0));
         const pointCount = filter.reduce((n, b) => n + b.sum(), 0);
         const shiftPressed = d3event.sourceEvent.shiftKey;
+        assert(this.summary != null);
         this.summary.set("buckets selected", bucketCount);
         this.summary.set("points selected", pointCount);
         this.summary.display();
@@ -281,7 +284,7 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
             this.surface.destroy();
         if (this.legendSurface != null)
             this.legendSurface.destroy();
-        this.legendSurface = new HtmlPlottingSurface(this.legendDiv, this.page, {
+        this.legendSurface = new HtmlPlottingSurface(this.legendDiv!, this.page, {
             height: Resolution.legendSpaceHeight });
         if (keepColorMap)
             this.colorLegend.setSurface(this.legendSurface);
@@ -294,7 +297,7 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
         }
         this.hps = [];
         // noinspection JSSuspiciousNameCombination
-        this.surface = new HtmlPlottingSurface(this.chartDiv, this.page, {
+        this.surface = new HtmlPlottingSurface(this.chartDiv!, this.page, {
             height: PlottingSurface.getDefaultCanvasSize(this.page.getWidthInPixels()).width
         });
 
@@ -370,6 +373,7 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
         assert(this.histoArgs.histos.length * (this.histoArgs.histos.length - 1) / 2 === data.length);
         const charts = this.histoArgs.histos.length;
         this.setupMouse();
+        assert(this.surface != null);
         this.pointDescription = new TextOverlay(this.surface.getCanvas(),
             this.surface.getActualChartSize(),
             ["X", "Y", "x", "y", "count"], 40);

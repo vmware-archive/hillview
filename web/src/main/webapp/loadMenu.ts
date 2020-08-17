@@ -238,8 +238,12 @@ export class LoadMenu extends RemoteObject implements IDataView {
                 text: "Federated DB tables...",
                 action: () => {
                     const dialog = new DBDialog(true);
-                    dialog.setAction(() => this.init.loadFederatedDBTable(dialog.getConnection(),
-                        dialog.getCassandraConnection(), this.page));
+                    const connection = dialog.getCassandraConnection();
+                    if (connection == null) {
+                        this.page.reportError("Not a valid connection");
+                        return;
+                    }
+                    dialog.setAction(() => this.init.loadFederatedDBTable(dialog.getConnection(), connection, this.page));
                     dialog.show();
                 },
                 help: "A set of database tables residing in databases on each worker machine."
@@ -357,7 +361,7 @@ export class LoadMenu extends RemoteObject implements IDataView {
         dialog.setAction(() =>  {
             const files = dialog.getFieldValueAsFiles("File");
             const name = dialog.getFieldValue("Name");
-            if (files.length !== 1) {
+            if (files == null || files.length !== 1) {
                 this.page.reportError("Please select exactly one file to load");
                 return;
             }
@@ -372,9 +376,10 @@ export class LoadMenu extends RemoteObject implements IDataView {
             this.page.reportError("File could not be parsed");
             return;
         }
-        if (title === undefined) title = json.views[0].title;
+        if (title == null)
+            title = json.views[0].title;
         this.page.reportError("Reconstructing " + json.views.length + " views");
-        const dataset = new DatasetView(json.remoteObjectId, title, json, this.page);
+        const dataset = new DatasetView(json.remoteObjectId, title!, json, this.page);
         const failures = dataset.reconstruct(json);
         if (failures != 0)
             this.page.reportError("Could not reconstruct some views");
@@ -599,7 +604,7 @@ class OrcFileDialog extends Dialog {
 class DBDialog extends Dialog {
     constructor(isFederated: boolean) {
         super("Load DB tables", "Loads one table on each machine that is part of the service.");
-        var arrDB = ["mysql", "impala"];
+        const arrDB = ["mysql", "impala"];
         if (isFederated) arrDB.push("cassandra");
         const sel = this.addSelectField("databaseKind", "Database kind", arrDB, "mysql",
             "The kind of database.");
@@ -608,7 +613,7 @@ class DBDialog extends Dialog {
             "Machine name where database is located; each machine will open a connection to this host");
         host.required = true;
         if (isFederated) {
-            var dbDir = this.addTextField("dbDir", "DB Directory", FieldKind.String, null,
+            const dbDir = this.addTextField("dbDir", "DB Directory", FieldKind.String, null,
                 "Absolute path of dCassandra's installation directory");
             this.hideInputField("dbDir", dbDir);
         }
@@ -616,7 +621,7 @@ class DBDialog extends Dialog {
             "Network port to connect to database.");
         port.required = true;
         if (isFederated) {
-            var jmxPort = this.addTextField("jmxPort", "JMX Port", FieldKind.Integer, null,
+            const jmxPort = this.addTextField("jmxPort", "JMX Port", FieldKind.Integer, null,
                 "Cassandra's JMX port to connect to server-side tools.");
             this.hideInputField("jmxPort", jmxPort);
         }
@@ -660,7 +665,7 @@ class DBDialog extends Dialog {
     public getConnection(): JdbcConnectionInformation {
         return {
             host: this.getFieldValue("host"),
-            port: this.getFieldValueAsNumber("port"),
+            port: this.getFieldValueAsNumber("port") ?? 0,
             database: this.getFieldValue("database"),
             table: this.getFieldValue("table"),
             user: this.getFieldValue("user"),
@@ -670,40 +675,40 @@ class DBDialog extends Dialog {
         };
     }
 
-    public getCassandraConnection(): CassandraConnectionInfo {
+    public getCassandraConnection(): CassandraConnectionInfo | null {
         if (this.getFieldValue("databaseKind") != "cassandra")
             return null;
         else
             return {
                 host: this.getFieldValue("host"),
-                port: this.getFieldValueAsNumber("port"),
+                port: this.getFieldValueAsNumber("port") ?? 0,
                 database: this.getFieldValue("database"),
                 table: this.getFieldValue("table"),
                 user: this.getFieldValue("user"),
                 password: this.getFieldValue("password"),
                 databaseKind: this.getFieldValue("databaseKind"),
                 lazyLoading: true,
-                jmxPort: this.getFieldValueAsNumber("jmxPort"),
+                jmxPort: this.getFieldValueAsNumber("jmxPort") ?? 0,
                 cassandraRootDir: this.getFieldValue("dbDir"),
             };
     }
 
     public hideInputField(fieldName: string, field?: HTMLElement) {
-        if (field === undefined) field = document.getElementById(fieldName);
-        if (field != null) {
+        const f = field === undefined ? document.getElementById(fieldName) : field;
+        if (f != null) {
             this.setFieldValue(fieldName, "");
-            field.removeAttribute("required");
-            field.setAttribute("disabled", "");
-            field.parentElement.style.display = 'none';
+            f.removeAttribute("required");
+            f.setAttribute("disabled", "");
+            f.parentElement!.style.display = 'none';
         }
     }
 
     public showInputField(fieldName: string, field?: HTMLElement){
-        if (field === undefined) field = document.getElementById(fieldName);
-        if (field != null) {
-            field.removeAttribute("disabled");
-            field.setAttribute("required", "");
-            field.parentElement.style.display = 'block';
+        const f = field === undefined ? document.getElementById(fieldName) : field;
+        if (f != null) {
+            f.removeAttribute("disabled");
+            f.setAttribute("required", "");
+            f.parentElement!.style.display = 'block';
         }
     }
 }

@@ -118,7 +118,7 @@ export class FullPage implements IHtmlElement {
     // The functions are each registered for a prefix.
     protected dropHandler: Map<string, (s: string) => void>;
     protected epsilon: number | null;
-    protected epsilonColumns: string[];
+    protected epsilonColumns: string[] | null;
     protected miniMaxi: HTMLElement;
 
     /**
@@ -132,7 +132,7 @@ export class FullPage implements IHtmlElement {
     public constructor(public readonly pageId: number,
                        public readonly title: PageTitle,
                        public readonly sourcePageId: number | null,
-                       public readonly dataset: DatasetView) {
+                       public readonly dataset: DatasetView | null) {
         this.dataView = null;
         this.epsilon = null;
         this.console = new ErrorDisplay();
@@ -214,14 +214,14 @@ export class FullPage implements IHtmlElement {
             const moveUp = document.createElement("div");
             moveUp.innerHTML = SpecialChars.upArrow;
             moveUp.title = "Move window up.";
-            moveUp.onclick = () => this.dataset.shift(this, true);
+            moveUp.onclick = () => this.dataset!.shift(this, true);
             moveUp.style.cursor = "pointer";
             this.addCell(moveUp, true);
 
             const moveDown = document.createElement("div");
             moveDown.innerHTML = SpecialChars.downArrow;
             moveDown.title = "Move window down.";
-            moveDown.onclick = () => this.dataset.shift(this, false);
+            moveDown.onclick = () => this.dataset!.shift(this, false);
             moveDown.style.cursor = "pointer";
             this.addCell(moveDown, true);
         }
@@ -244,7 +244,7 @@ export class FullPage implements IHtmlElement {
             const close = document.createElement("span");
             close.className = "close";
             close.innerHTML = "&times;";
-            close.onclick = () => this.dataset.remove(this);
+            close.onclick = () => this.dataset!.remove(this);
             close.title = "Close this view.";
             this.addCell(close, true);
         }
@@ -268,12 +268,13 @@ export class FullPage implements IHtmlElement {
             this.epsilon!.toString(), "Epsilon value");
         dialog.setAction(() => {
             const eps = dialog.getFieldValueAsNumber("epsilon");
-            this.dataset.setEpsilon(this.epsilonColumns, eps);
+            if (eps != null)
+                this.dataset!.setEpsilon(this.epsilonColumns!, eps);
         });
         dialog.show();
     }
 
-    public setEpsilon(epsilon: number | null, columns: string[]): void {
+    public setEpsilon(epsilon: number | null, columns: string[] | null): void {
         this.epsilon = epsilon;
         this.epsilonColumns = columns;
         this.eBox.innerText =
@@ -325,7 +326,7 @@ export class FullPage implements IHtmlElement {
             // no point to combine with self
             return;
         const view = this.dataView as BigTableView;
-        if (view == null)
+        if (view == null || this.dataset == null)
             return;
         this.dataset.select(Number(pageId));
         view.combine(CombineOperators.Replace);
@@ -358,7 +359,7 @@ export class FullPage implements IHtmlElement {
         refLink.href = "#";
         refLink.textContent = pageId.toString();
         refLink.onclick = () => {
-            if (!this.dataset.scrollIntoView(pageId))
+            if (!this.dataset?.scrollIntoView(pageId))
                 this.reportError("Page " + pageId + " no longer exists");
             // return false to prevent the url from being followed.
             return false;

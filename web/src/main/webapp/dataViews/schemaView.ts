@@ -37,7 +37,7 @@ import {
     ICancellable,
     PartialResult,
     significantDigits,
-    Converters
+    Converters, assert
 } from "../util";
 import {TableView} from "../modules";
 import {TSViewBase} from "./tsViewBase";
@@ -52,7 +52,7 @@ import {HillviewToplevel} from "../toplevel";
 export class SchemaView extends TSViewBase {
     protected display: TabularDisplay;
     protected contextMenu: ContextMenu;
-    protected stats: Map<string, BasicColStats>;
+    protected stats: Map<string, BasicColStats> | null;
     protected nameDialog: Dialog;
     protected typeDialog: Dialog;
 
@@ -114,7 +114,7 @@ export class SchemaView extends TSViewBase {
         statDialog.setCacheTitle("SchemaStatDialog");
         statDialog.setAction(() => {
             const selE: boolean = statDialog.getBooleanValue("selectEmpty");
-            const stddev: number = statDialog.getFieldValueAsNumber("lowStder");
+            const stddev: number | null = statDialog.getFieldValueAsNumber("lowStder");
             if (selE == null || stddev == null) {
                 this.page.reportError("Illegal value");
                 return;
@@ -157,7 +157,7 @@ export class SchemaView extends TSViewBase {
         this.exportSchema();
     }
 
-    public static reconstruct(ser: IViewSerialization, page: FullPage): IDataView {
+    public static reconstruct(ser: IViewSerialization, page: FullPage): IDataView | null {
         const schema = new SchemaClass([]).deserialize(ser.schema);
         if (schema == null)
             return null;
@@ -192,7 +192,7 @@ export class SchemaView extends TSViewBase {
         this.displayRows();
         this.display.getHTMLRepresentation().setAttribute("overflow-x", "hidden");
         if (this.rowCount != null)
-            this.summaryDiv.textContent = formatNumber(this.rowCount) + " rows";
+            this.summaryDiv!.textContent = formatNumber(this.rowCount) + " rows";
         this.page.setDataView(this);
         this.display.setScrollPosition(scrollPos);
         this.page.reportTime(elapsedMs);
@@ -203,7 +203,7 @@ export class SchemaView extends TSViewBase {
             const cd = this.schema.get(i);
             const data = [
                 (i + 1).toString(),
-                this.schema.displayName(cd.name).displayName,
+                this.schema.displayName(cd.name)!.displayName,
                 cd.kind.toString()];
             if (this.stats != null) {
                 const cs = this.stats.get(cd.name);
@@ -212,7 +212,7 @@ export class SchemaView extends TSViewBase {
                         data.push("", "", "", "");
                     } else {
                         if (kindIsString(cd.kind)) {
-                            data.push(cs.minString, cs.maxString, "", "");
+                            data.push(cs.minString!, cs.maxString!, "", "");
                         } else {
                             let avg;
                             let stddev;
@@ -224,8 +224,8 @@ export class SchemaView extends TSViewBase {
                                 stddev = significantDigits(cs.moments[1]);
                             }
                             data.push(
-                                Converters.valueToString(cs.min, cd.kind, true),
-                                Converters.valueToString(cs.max, cd.kind, true),
+                                Converters.valueToString(cs.min!, cd.kind, true),
+                                Converters.valueToString(cs.max!, cd.kind, true),
                                 avg, stddev);
                         }
                     }
@@ -258,31 +258,31 @@ export class SchemaView extends TSViewBase {
             help: "Show the selected columns in a tabular view." }, true);
         this.contextMenu.addItem({
             text: "Histogram",
-            action: () => this.chart(this.schema.getDescriptions(this.getSelectedColNames()),
+            action: () => this.chart(this.schema.getCheckedDescriptions(this.getSelectedColNames()),
                 this.getSelectedColCount() == 1 ? "Histogram" : "2DHistogram"),
             help: "Plot the data in the selected columns as a histogram.  Applies to one or two columns only."
         }, selectedCount >= 1 && selectedCount <= 2);
         this.contextMenu.addItem({
             text: "Quartile vector",
-            action: () => this.chart(this.schema.getDescriptions(this.getSelectedColNames()), "QuartileVector"),
+            action: () => this.chart(this.schema.getCheckedDescriptions(this.getSelectedColNames()), "QuartileVector"),
             help: "Plot the data in the selected columns as vector of quartiles. " +
                 "Applies to two columns only.",
         }, selectedCount === 2);
         this.contextMenu.addItem({
             text: "Heatmap",
-            action: () => this.chart(this.schema.getDescriptions(this.getSelectedColNames()), "Heatmap"),
+            action: () => this.chart(this.schema.getCheckedDescriptions(this.getSelectedColNames()), "Heatmap"),
             help: "Plot the data in the selected columns as a heatmap or as a Trellis plot of heatmaps. " +
             "Applies to two columns only.",
         }, selectedCount === 2);
         this.contextMenu.addItem({
             text: "Trellis histograms",
-            action: () => this.chart(this.schema.getDescriptions(this.getSelectedColNames()), "TrellisHistogram"),
+            action: () => this.chart(this.schema.getCheckedDescriptions(this.getSelectedColNames()), "TrellisHistogram"),
             help: "Plot the data in the selected columns as a Trellis plot of histograms. " +
                 "Applies to two or three columns only.",
         }, selectedCount >= 2 && selectedCount <= 3);
         this.contextMenu.addItem({
             text: "Trellis heatmaps",
-            action: () => this.chart(this.schema.getDescriptions(this.getSelectedColNames()), "TrellisHeatmap"),
+            action: () => this.chart(this.schema.getCheckedDescriptions(this.getSelectedColNames()), "TrellisHeatmap"),
             help: "Plot the data in the selected columns as a Trellis plot of heatmaps. " +
                 "Applies to three columns only.",
         }, selectedCount === 3);
@@ -315,7 +315,7 @@ export class SchemaView extends TSViewBase {
         }, selectedCount === 1);
         this.contextMenu.addItem({
             text: "Convert...",
-            action: () => this.convert(this.schema.displayName(selectedColumn), null, 0, null),
+            action: () => this.convert(this.schema.displayName(selectedColumn)!, null, 0, null),
             help: "Convert the data in the selected column to a different data type.",
         }, selectedCount === 1);
         this.contextMenu.addItem({
@@ -332,12 +332,12 @@ export class SchemaView extends TSViewBase {
     }
 
     protected getBasicStats(cols: string[]): void {
-        for (const desc of this.schema.getDescriptions(cols))
+        for (const desc of this.schema.getCheckedDescriptions(cols))
             if (desc.kind == "Interval") {
                 this.page.reportError("Basic statistics not supported for interval column " +
                     desc.name +"; skipping.");
             }
-        cols = cols.filter(c => this.schema.find(c).kind != "Interval");
+        cols = cols.filter(c => this.schema.find(c)!.kind != "Interval");
         if (cols.length === 0)
             return;
         const rr = this.createBasicColStatsRequest(cols);
@@ -366,7 +366,7 @@ export class SchemaView extends TSViewBase {
 
     private nameAction(regExp: RegExp, action: string): void {
         for (let i = 0; i < this.schema.length; i++) {
-            if (this.schema.displayName(this.schema.get(i).name).displayName.match(regExp)) {
+            if (this.schema.displayName(this.schema.get(i).name)!.displayName.match(regExp)) {
                 if (action === "Add")
                     this.display.selectedRows.add(i);
                 else if (action === "Remove")
@@ -379,7 +379,7 @@ export class SchemaView extends TSViewBase {
     private statAction(allE: boolean, thresh: number): void {
         for (let i = 0; i < this.schema.length; i++) {
             const name = this.schema.get(i).name;
-            const stat = this.stats.get(name);
+            const stat = this.stats!.get(name);
             if (stat == null)
                 continue;
 
@@ -400,7 +400,7 @@ export class SchemaView extends TSViewBase {
     // noinspection JSUnusedLocalSymbols
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
-        return null;  // not used
+        assert(false);  // not used
     }
 
     public getSelectedColCount(): number {
@@ -414,8 +414,8 @@ export class SchemaView extends TSViewBase {
     }
 
     private selectedSummary(): void {
-        this.summary.set("selected", this.display.selectedRows.size());
-        this.summary.display();
+        this.summary!.set("selected", this.display.selectedRows.size());
+        this.summary!.display();
     }
 
     /**

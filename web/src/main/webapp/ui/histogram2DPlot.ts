@@ -37,7 +37,7 @@ interface Box {
      * Bucket index on the Y axis.  null if out of range.
      * Number of buckets for "missing" data.
      */
-    yIndex: number;
+    yIndex: number | null;
     /**
      * Count of items represented by the rectangle.
      */
@@ -117,13 +117,13 @@ export class Histogram2DPlot extends Histogram2DBase {
             .data(rects)
             .enter().append("g")
             .append("svg:rect")
-            .attr("x", (d: Box) => d.xIndex * this.barWidth)
+            .attr("x", (d: Box) => d.xIndex! * this.barWidth)
             .attr("y", (d: Box) => this.rectPosition(d, counts, scale))
             .attr("height", (d: Box) => this.rectHeight(d, counts, scale))
             .attr("width", this.barWidth)
-            .attr("fill", (d: Box) => this.color(d.yIndex, this.yPoints - 1))
+            .attr("fill", (d: Box) => this.color(d.yIndex!, this.yPoints - 1))
             .attr("stroke", "black")
-            .attr("stroke-width", (d: Box) => d.yIndex < 0 ? 1 : 0)
+            .attr("stroke-width", (d: Box) => d.yIndex! < 0 ? 1 : 0)
             // overflow signs if necessary
             .data(counts)
             .enter()
@@ -175,7 +175,7 @@ export class Histogram2DPlot extends Histogram2DBase {
 
     protected rectHeight(d: Box, counts: number[], scale: number): number {
         if (this.normalized) {
-            const c = counts[d.xIndex];
+            const c = counts[d.xIndex!];
             if (c <= 0)
                 return 0;
             return this.getChartHeight() * d.count / c;
@@ -186,7 +186,7 @@ export class Histogram2DPlot extends Histogram2DBase {
     protected rectPosition(d: Box, counts: number[], scale: number): number {
         const y = d.countBelow + d.count;
         if (this.normalized) {
-            const c = counts[d.xIndex];
+            const c = counts[d.xIndex!];
             if (c <= 0)
                 return 0;
             return this.getChartHeight() * (1 - y / c);
@@ -204,7 +204,7 @@ export class Histogram2DPlot extends Histogram2DBase {
         // Find out the rectangle where the mouse is
         const xIndex = Math.floor(x / this.getBarWidth());
         let perc: number = 0;
-        let yIndex: number = null;
+        let yIndex: number | null = null;
         let found = false;
         if (xIndex < 0 || xIndex >= this.xPoints)
             return null;

@@ -24,7 +24,7 @@ import Observer = Rx.Observer;
 import {ErrorReporter} from "./ui/errReporter";
 import {FullPage} from "./ui/fullPage";
 import {ProgressBar} from "./ui/progress";
-import {formatDate, ICancellable, PartialResult, RpcReply} from "./util";
+import {assert, formatDate, ICancellable, PartialResult, RpcReply} from "./util";
 
 /**
  * Path in server url for rpc web sockets.
@@ -77,14 +77,14 @@ export class RpcRequest<T> implements ICancellable<T> {
     public readonly requestId: number;
     public cancelled: boolean;
     public closed: boolean;  // i.e., not opened
-    public socket: WebSocket;
+    public socket: WebSocket | null;
     public completed: boolean;
     /**
      * Time when RPC was initiated.  It may be set explicitly
      * by users, and then it can be used to measured operations
      * that span multiple RPCs
      */
-    public rpcTime: Date;
+    public rpcTime: Date | null;
 
     public static requestCounter: number = 0;
 
@@ -110,7 +110,7 @@ export class RpcRequest<T> implements ICancellable<T> {
      * has started).
      */
     public startTime(): Date {
-        return this.rpcTime;
+        return this.rpcTime!;
     }
 
     public setStartTime(start: Date): void {
@@ -122,7 +122,7 @@ export class RpcRequest<T> implements ICancellable<T> {
      * the specified operation.  This is mostly useful for accounting the time
      * required for executing a chain of operations.
      */
-    public chain<S>(after: ICancellable<S>): void {
+    public chain<S>(after: ICancellable<S> | null): void {
         if (after != null)
             this.setStartTime(after.startTime());
     }
@@ -155,7 +155,7 @@ export class RpcRequest<T> implements ICancellable<T> {
         if (!this.closed) {
             console.log(formatDate(new Date()) + " cancelling " + this.toString());
             this.closed = true;
-            this.socket.close();
+            this.socket!.close();
             return true;
         }
         return false;
@@ -235,7 +235,7 @@ export class RpcRequest<T> implements ICancellable<T> {
             this.socket.onopen = () => {
                 this.closed = false;
                 const reqStr: Uint8Array = this.serialize();
-                this.socket.send(reqStr.buffer);
+                this.socket!.send(reqStr.buffer);
             };
             this.socket.onclose = (e: CloseEvent) => {
                 console.log("Socket closed");
@@ -306,7 +306,7 @@ export abstract class Receiver<T> implements Rx.Observer<PartialResult<T>> {
      *                                   next to the progress bar.
      */
     protected constructor(public page: FullPage,
-                          public operation: ICancellable<T>,
+                          public operation: ICancellable<T> | null,
                           public description: string) {
         this.progressBar = page.progressManager.newProgressBar(operation, description);
         this.reporter = page.getErrorReporter();
@@ -315,7 +315,7 @@ export abstract class Receiver<T> implements Rx.Observer<PartialResult<T>> {
     }
 
     toNotifier(): (notification: Rx.Notification<PartialResult<T>>) => void {
-        return null;
+        return () => {};
     }
 
     checked(): Rx.Observer<any> {
@@ -328,15 +328,15 @@ export abstract class Receiver<T> implements Rx.Observer<PartialResult<T>> {
 
     //noinspection JSUnusedLocalSymbols
     public makeSafe(disposable: Rx.IDisposable): Rx.Observer<PartialResult<T>> {
-        return null;
+        assert(false);
     }
 
     /**
      * This method is called when all replies have been received
-     * (successfully or unsuccesfully).
+     * (successfully or unsuccessfully).
      */
     public finished(): void {
-        // This causes the progress bar to disappear.
+        // This causes the progress bar t o disappear.
         this.done = true;
         this.progressBar.setFinished();
     }
@@ -384,6 +384,8 @@ export abstract class Receiver<T> implements Rx.Observer<PartialResult<T>> {
      * Note that the operation may have been 'chained' with another operation.
      */
     public elapsedMilliseconds(): number {
+        if (this.operation == null)
+            return 0;
         return d3timeMillisecond.count(this.operation.startTime(), new Date());
     }
 }
@@ -394,9 +396,9 @@ export abstract class Receiver<T> implements Rx.Observer<PartialResult<T>> {
  * (It does however handle progress.)
  */
 export abstract class OnCompleteReceiver<T> extends Receiver<T> {
-    private value: T = null;
+    private value: T | null = null;
     protected constructor(public page: FullPage,
-                          public operation: ICancellable<T>,
+                          public operation: ICancellable<T> | null,
                           public description: string) {
         super(page, operation, description);
     }

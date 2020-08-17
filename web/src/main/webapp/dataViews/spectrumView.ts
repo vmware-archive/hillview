@@ -32,7 +32,7 @@ import {FullPage, PageTitle} from "../ui/fullPage";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface} from "../ui/plottingSurface";
-import {ICancellable, significantDigits} from "../util";
+import {assert, ICancellable, significantDigits} from "../util";
 import {AxisData} from "./axisData";
 import {CorrelationMatrixReceiver, TableView} from "../modules";
 import {ChartView} from "../modules";
@@ -55,7 +55,7 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
         if (this.reusePage)
             this.newPage = this.page;
         else
-            this.newPage = this.page.dataset.newPage(
+            this.newPage = this.page.dataset!.newPage(
                 new PageTitle("Singular Value Spectrum", page.title.format), this.page);
     }
 
@@ -102,16 +102,16 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
         name.required = true;
         pcaDialog.setCacheTitle("PCADialog");
         pcaDialog.setAction(() => {
-            const numComponents: number = pcaDialog.getFieldValueAsInt("numComponents");
+            const numComponents: number | null = pcaDialog.getFieldValueAsInt("numComponents");
             const projectionName: string = pcaDialog.getFieldValue("projectionName");
-            if (numComponents < 1 || numComponents > this.colNames.length) {
+            if (numComponents == null || numComponents < 1 || numComponents > this.colNames.length) {
                 this.page.reportError("Number of components for PCA must be between 1 (incl.) " +
                     "and the number of selected columns, " + this.colNames.length + " (incl.). (" +
                     numComponents + " does not satisfy this.)");
                 return;
             }
             const rr = this.originator.createCorrelationMatrixRequest(this.colNames, this.rowCount, true);
-            const newestPage = this.newPage.dataset.newPage(new PageTitle("Table", "Spectrum view"), this.newPage);
+            const newestPage = this.newPage.dataset!.newPage(new PageTitle("Table", "Spectrum view"), this.newPage);
             const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newestPage);
             newestPage.setDataView(table);
             const order  = new RecordOrder([]);
@@ -144,7 +144,7 @@ export class SpectrumView extends ChartView<Groups<number>> {
     protected createNewSurfaces(): void {
         if (this.surface != null)
             this.surface.destroy();
-        this.surface = new HtmlPlottingSurface(this.chartDiv, this.page, {});
+        this.surface = new HtmlPlottingSurface(this.chartDiv!, this.page, {});
         this.plot = new HistogramPlot(this.surface);
     }
 
@@ -163,11 +163,11 @@ export class SpectrumView extends ChartView<Groups<number>> {
         this.title = title;
         this.data = h;
         this.plot.setHistogram({first: h, second: null }, 1,
-            axisData, null, this.page.dataset.isPrivate(), this.rowCount);
+            axisData, null, this.page.dataset!.isPrivate(), this.rowCount);
         this.plot.draw();
         this.standardSummary();
         //this.summary.set("Columns: " + this.colNames.join(""), 0);
-        this.summary.display();
+        this.summary!.display();
     }
 
     protected onMouseMove(): void {}
@@ -191,7 +191,7 @@ export class SpectrumView extends ChartView<Groups<number>> {
             this.rowCount, this.schema,  this.colNames, rr, true));
     }
 
-    public static reconstruct(ser: SpectrumSerialization, page: FullPage): IDataView {
+    public static reconstruct(ser: SpectrumSerialization, page: FullPage): IDataView | null {
         const schema = new SchemaClass([]).deserialize(ser.schema);
         const colNames: string[] = ser.colNames;
         if (colNames == null || schema == null)
@@ -202,7 +202,7 @@ export class SpectrumView extends ChartView<Groups<number>> {
     // noinspection JSUnusedLocalSymbols
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
-        return null;  // not used
+        assert(false);  // not used
     }
 
     // noinspection JSUnusedLocalSymbols

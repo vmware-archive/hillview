@@ -259,6 +259,8 @@ class PrunedLogFileReceiver extends BaseReceiver {
     public run(value: RemoteObjectId): void {
         super.run(value);
         const logWindow = window.open("log.html", "_blank");
+        if (logWindow == null)
+            return;
         const viewer = new LogFileView(this.remoteObject.remoteObjectId, this.schema, this.filename);
         logWindow.onload = () => {
             logWindow.document.title = this.filename;

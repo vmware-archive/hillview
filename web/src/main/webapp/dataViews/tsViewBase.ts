@@ -85,7 +85,12 @@ export abstract class TSViewBase extends BigTableView {
         dialog.setAction(
             () => {
                 const displayName = dialog.getColumnName("columnName");
-                const columnIndex = this.schema.columnIndex(this.schema.fromDisplayName(displayName));
+                const dispName = this.schema.fromDisplayName(displayName);
+                if (dispName == null) {
+                    this.page.reportError(`Column name ${displayName} not found.`);
+                    return;
+                }
+                const columnIndex = this.schema.columnIndex(dispName);
                 const kindStr = dialog.getFieldValue("newKind");
                 const kind: ContentsKind = asContentsKind(kindStr);
                 const keep = dialog.getBooleanValue("keep");
@@ -99,7 +104,7 @@ export abstract class TSViewBase extends BigTableView {
                 }
 
                 const args: ConvertColumnInfo = {
-                    colName: this.schema.findByDisplayName(displayName).name,
+                    colName: this.schema.findByDisplayName(displayName)!.name,
                     newColName: newColName,
                     newKind: kind,
                     columnIndex: columnIndex,
@@ -115,7 +120,7 @@ export abstract class TSViewBase extends BigTableView {
                     o.addColumn({columnDescription: cd, isAscending: true});
                 if (!keep) {
                     const initial = schema.length;
-                    schema = schema.filter((c) => !schema.displayName(c.name).equals(displayName));
+                    schema = schema.filter((c) => !schema.displayName(c.name)!.equals(displayName));
                     console.assert(schema.length < initial);
                     const ok = schema.changeDisplayName(new DisplayName(newColName), displayName.displayName);
                     console.assert(ok);
@@ -137,7 +142,7 @@ export abstract class TSViewBase extends BigTableView {
             return;
         }
         const colName = cols[0];
-        const displayName = this.schema.displayName(colName);
+        const displayName = this.schema.displayName(colName)!;
         const dialog = new Dialog("Rename column", "Choose a new name for column " + displayName);
         const name = dialog.addTextField("name", "New name",
             FieldKind.String, displayName.displayName, "New name to use for column");
@@ -271,11 +276,13 @@ export abstract class TSViewBase extends BigTableView {
                 const col0 = this.schema.fromDisplayName(c0);
                 const c1 = dia.getColumnName("columnName1");
                 const col1 = this.schema.fromDisplayName(c1);
+                if (col0 == null || col1 == null)
+                    return;
                 if (col0 === col1) {
                     this.page.reportError("The two columns must be distinct");
                     return;
                 }
-                const colDesc = this.schema.getDescriptions([col0, col1]);
+                const colDesc = this.schema.getCheckedDescriptions([col0, col1]);
                 this.chart(colDesc, viewKind);
             },
         );
@@ -301,6 +308,8 @@ export abstract class TSViewBase extends BigTableView {
                 const col0 = this.schema.fromDisplayName(c0);
                 const c1 = dia.getColumnName("columnName1");
                 const col1 = this.schema.fromDisplayName(c1);
+                if (col0 == null || col1 == null)
+                    return;
                 if (col0 === col1) {
                     this.page.reportError("The columns must be distinct");
                     return;
@@ -311,6 +320,8 @@ export abstract class TSViewBase extends BigTableView {
                 if (count === 3) {
                     const c2 = dia.getColumnName("columnName2");
                     col2 = this.schema.fromDisplayName(c2);
+                    if (col2 == null)
+                        return;
                     if (col0 === col2 || col1 === col2) {
                         this.page.reportError("The columns must be distinct");
                         return;
@@ -318,7 +329,7 @@ export abstract class TSViewBase extends BigTableView {
                     colNames.push(col2);
                 }
 
-                const columnDescriptions = this.schema.getDescriptions(colNames);
+                const columnDescriptions = this.schema.getCheckedDescriptions(colNames);
                 this.chart(columnDescriptions, chartKind);
             },
         );
@@ -332,7 +343,7 @@ export abstract class TSViewBase extends BigTableView {
         }
         const colName = this.getSelectedColNames()[0];
         const rr = this.createHLogLogRequest(colName);
-        const rec = new CountReceiver(this.getPage(), rr, this.schema.displayName(colName));
+        const rec = new CountReceiver(this.getPage(), rr, this.schema.displayName(colName)!);
         rr.invoke(rec);
     }
 
@@ -340,8 +351,8 @@ export abstract class TSViewBase extends BigTableView {
         const dia = new HistogramDialog(this.schema.allDisplayNames());
         dia.setAction(
             () => {
-                const col = this.schema.fromDisplayName(dia.getColumn());
-                const cds = this.schema.getDescriptions([col]);
+                const col = this.schema.fromDisplayName(dia.getColumn())!;
+                const cds = this.schema.getCheckedDescriptions([col]);
                 this.chart(cds, "Histogram");
             },
         );
@@ -393,12 +404,12 @@ export abstract class TSViewBase extends BigTableView {
     protected showFilterDialog(
         displayColName: DisplayName | null, order: RecordOrder | null, tableRowsDesired: number,
         aggregates: AggregateDescription[] | null): void {
-        const cd = this.schema.findByDisplayName(displayColName);
+        const cd = this.schema.findByDisplayName(displayColName)!;
         const ef = new FilterDialog(cd, this.schema);
         ef.setAction(() => {
             const rowFilter = ef.getFilter();
             const strFilter = rowFilter.stringFilterDescription;
-            const desc = this.schema.find(rowFilter.colName);
+            const desc = this.schema.find(rowFilter.colName)!;
             let o = null;
             if (order != null) {
                 o = order.clone();
@@ -465,7 +476,7 @@ export abstract class TSViewBase extends BigTableView {
         const isApprox: boolean = true;
         const columnsShown: IColumnDescription[] = [];
         this.getSelectedColNames().forEach((v) => {
-            const colDesc = this.schema.find(v);
+            const colDesc = this.schema.find(v)!;
             columnsShown.push(colDesc);
         });
         const rr = this.createHeavyHittersRequest(
@@ -532,7 +543,7 @@ class FilterDialog extends Dialog {
         const textQuery: string = this.getFieldValue("query");
         if (this.columnDescription == null) {
             const colName = this.getColumnName("column");
-            this.columnDescription = this.schema.find(this.schema.fromDisplayName(colName));
+            this.columnDescription = this.schema.find(this.schema.fromDisplayName(colName))!;
         }
         const asSubString = this.getBooleanValue("asSubString");
         const asRegEx = this.getBooleanValue("asRegEx");
@@ -594,8 +605,8 @@ class ComparisonFilterDialog extends Dialog {
 
     public getFilter(): ComparisonFilterDescription | null {
         const value: string = this.getFieldValue("value");
-        let doubleValue: number = null;
-        let endValue: number = null;
+        let doubleValue: number | null = null;
+        let endValue: number | null = null;
 
         let colSelected;
         if (this.displayName == null) {
@@ -605,6 +616,8 @@ class ComparisonFilterDialog extends Dialog {
         }
 
         const columnDescription = this.schema.findByDisplayName(colSelected);
+        if (columnDescription == null)
+            return null;
         if (columnDescription.kind === "Date") {
             const date = new Date(value);
             if (date == null) {
@@ -628,6 +641,10 @@ class ComparisonFilterDialog extends Dialog {
         } else if (columnDescription.kind == "Interval") {
             const re = /\[([^:]*):([^\]]*)]/;
             const m = value.match(re);
+            if (m == null) {
+                this.reporter.reportError("Could not parse '" + value + "' as an interval");
+                return null;
+            }
             doubleValue = parseFloat(m[1]);
             endValue = parseFloat(m[2]);
             if (doubleValue == null || endValue == null) {

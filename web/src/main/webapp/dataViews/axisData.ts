@@ -120,13 +120,13 @@ class BucketBoundaries {
     }
 
     public getMin(): BucketBoundary {
-        return this.left;
+        return this.left!;
     }
 
     public getMax(): BucketBoundary {
         if (this.right != null)
             return this.right;
-        return this.left;
+        return this.left!;
     }
 }
 
@@ -147,7 +147,7 @@ export class AxisDescription {
         if (this.majorLabels != null)
             result.selectAll("text")
                 .append("title")
-                .text((d: any, i: number) => this.majorLabels[i]);
+                .text((d: any, i: number) => this.majorLabels![i]);
         if (this.majorTickPeriod !== 1)
             result.selectAll("line")
                 .filter((d: any, i: number) => i % this.majorTickPeriod === 0)
@@ -170,7 +170,7 @@ export class AxisData {
 
     public constructor(public description: IColumnDescription | null, // may be null for e.g., the Y col in a histogram
                        // dataRange is the original range of the data
-                       public dataRange: BucketsInfo | null,
+                       public dataRange: BucketsInfo,
                        public bucketCount: number) {
         this.displayRange = dataRange;
         const kind = description == null ? null : description.kind;
@@ -202,7 +202,10 @@ export class AxisData {
     public getDisplayNameString(schema: SchemaClass): string | null {
         if (this.description == null)
             return null;
-        return schema.displayName(this.description.name).displayName;
+        const disp = schema.displayName(this.description.name);
+        if (disp === null)
+            return null;
+        return disp.displayName;
     }
 
     private static needsAdjustment(kind: ContentsKind): boolean {
@@ -214,16 +217,16 @@ export class AxisData {
         if (clamp) {
             if (index < 0)
                 index = 0;
-            if (index >= this.dataRange.stringQuantiles.length)
-                index = this.dataRange.stringQuantiles.length - 1;
+            if (index >= this.dataRange!.stringQuantiles!.length)
+                index = this.dataRange!.stringQuantiles!.length - 1;
         }
-        if (index >= 0 && index < this.dataRange.stringQuantiles.length)
-            return this.dataRange.stringQuantiles[index];
+        if (index >= 0 && index < this.dataRange!.stringQuantiles!.length)
+            return this.dataRange!.stringQuantiles![index];
         return "";
     }
 
     private bucketIndexToStringIndex(bucketNumber: number): number {
-        return Math.floor(bucketNumber * this.dataRange.stringQuantiles.length / this.bucketCount);
+        return Math.floor(bucketNumber * this.dataRange!.stringQuantiles!.length / this.bucketCount);
     }
 
     private bucketLeftString(bucketNumber: number, clamp: boolean): string {
@@ -238,15 +241,17 @@ export class AxisData {
      * @param labelRoom   Number of pixels available for labels (most useful for vertical axes)
      */
     public setResolution(pixels: number, axisKind: AxisKind, labelRoom: number): void {
+        assert(this.description != null);
         const bottom = axisKind !== AxisKind.Left;
         const axisCreator = bottom ? d3axisBottom : d3axisLeft;
+        assert(this.displayRange != null);
         let actualMin = this.displayRange.min;
         let actualMax = this.displayRange.max;
         let adjust = .5;
         if (axisKind === AxisKind.Legend && AxisData.needsAdjustment(this.description.kind)) {
             // These were adjusted, bring them back.
-            actualMin += .5;
-            actualMax -= .5;
+            actualMin! += .5;
+            actualMax! -= .5;
             adjust = 0;
         }
         // on vertical axis the direction is swapped
@@ -377,6 +382,7 @@ export class AxisData {
         assert(this.scale != null, "invert called before setting the resolution");
         const inv = this.scale.invert(v);
         let result: string;
+        assert(this.description != null);
         if (this.description.kind === "Integer")
             result = formatNumber(Math.round(inv as number));
         else if (kindIsString(this.description.kind))
@@ -394,26 +400,28 @@ export class AxisData {
     }
 
     public invertToNumber(v: number): number {
-        const inv = this.scale.invert(v);
+        assert(this.description != null);
+        const inv = this.scale!.invert(v);
         let result: number = 0;
         if (this.description.kind === "Integer" || kindIsString(this.description.kind)) {
             result = Math.round(inv as number);
         } else if (this.description.kind === "Double" || this.description.kind == "Interval") {
             result = inv as number;
         } else if (this.description.kind === "Date" || this.description.kind == "Time") {
-            result = Converters.doubleFromDate(inv as Date);
+            result = Converters.doubleFromDate(inv as Date)!;
         } else if (this.description.kind == "LocalDate") {
-            result = Converters.doubleFromLocalDate(inv as Date);
+            result = Converters.doubleFromLocalDate(inv as Date)!;
         }
         return result;
     }
 
-    public bucketBoundaries(bucket: number): BucketBoundaries {
+    public bucketBoundaries(bucket: number | null): BucketBoundaries {
         if (bucket === this.bucketCount)
             return new BucketBoundaries(new BucketBoundary("missing", "String", true), null);
         if (bucket === null || bucket < 0 || bucket > this.bucketCount)
             return new BucketBoundaries(null, null);
 
+        assert(this.description != null);
         const valueKind = this.description.kind;
         if (kindIsString(this.description.kind)) {
             const left = this.bucketLeftString(bucket, false);
@@ -475,7 +483,8 @@ export class AxisData {
             case "String":
             case "Json":
                 // handled above
-                return null;
+                assert(false);
+                break;
             default:
                 assertNever(valueKind);
         }
@@ -491,18 +500,19 @@ export class AxisData {
     }
 
     public bucketIndex(value: RowValue): number {
+        assert(this.description != null);
         if (kindIsString(this.description.kind)) {
-            const index = binarySearch(this.dataRange.stringQuantiles, value as string,
+            const index = binarySearch(this.dataRange!.stringQuantiles!, value as string,
                 (s1, s2) => s1.localeCompare(s2));
             return Math.abs(index);
         } else {
             const v = value as number;
-            if (value >= this.dataRange.max)
+            if (value >= this.dataRange!.max!)
                 return this.bucketCount - 1;
-            if (value <= this.dataRange.min)
+            if (value <= this.dataRange!.min!)
                 return 0;
-            return Math.floor(((v - this.dataRange.min) * (this.bucketCount - 1) /
-                (this.dataRange.max - this.dataRange.min)));
+            return Math.floor(((v - this.dataRange!.min!) * (this.bucketCount - 1) /
+                (this.dataRange!.max! - this.dataRange!.min!)));
         }
     }
 }

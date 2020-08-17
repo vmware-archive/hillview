@@ -62,12 +62,12 @@ export abstract class Plot<D> {
 
     public getXAxis(): AxisDescription {
         // default implementation
-        return this.xAxisData.axis;
+        return this.xAxisData.axis!;
     }
 
     public getYAxis(): AxisDescription {
         // default implementation
-        return this.yAxisData.axis;
+        return this.yAxisData.axis!;
     }
 
     /**

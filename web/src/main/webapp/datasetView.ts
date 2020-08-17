@@ -69,7 +69,7 @@ export interface HeavyHittersSerialization extends IViewSerialization {
 
 export interface TableSerialization extends IViewSerialization {
     order: RecordOrder;
-    firstRow: RowValue[];
+    firstRow: RowValue[] | null;
     tableRowsDesired: number;
 }
 
