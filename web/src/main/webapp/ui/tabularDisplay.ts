@@ -27,7 +27,7 @@ import {px, truncate} from "../util";
  */
 export class TabularDisplay implements IHtmlElement {
     public topLevel: HTMLElement;
-    public table: HTMLTableElement;
+    public table: HTMLTableElement | null;
     public tbody: HTMLTableSectionElement;
     public selectedRows: SelectionStateMachine;
     public rowCount: number;
@@ -73,7 +73,7 @@ export class TabularDisplay implements IHtmlElement {
      * Create columns with the specified names.
      */
     public setColumns(colNames: string[], toolTips: string[]): void {
-        const tHead = this.table.createTHead();
+        const tHead = this.table!.createTHead();
         const thr = tHead.appendChild(document.createElement("tr"));
         let index = 0;
         for (const c of colNames) {

@@ -37,7 +37,7 @@ export class HillviewToplevel implements IHtmlElement {
     private readonly tabs: HTMLElement[];
     private readonly content: HTMLDivElement;
     protected datasetCounter: number;
-    protected current: DatasetView;
+    protected current: DatasetView | null;
     public uiconfig: UIConfig;
 
     public static readonly instance = new HillviewToplevel();
@@ -127,7 +127,7 @@ export class HillviewToplevel implements IHtmlElement {
         const input = document.createElement("input");
         cell.textContent = "";
         cell.insertBefore(input, cell.children[0]);
-        input.value = oldName;
+        input.value = oldName!;
         input.type = "text";
         input.onmouseout = () => this.renamed(cell, input, tabName);
         input.onchange = () => this.renamed(cell, input, tabName);
@@ -191,6 +191,6 @@ export class HillviewToplevel implements IHtmlElement {
 
 export function createHillview(): void {
     const top = document.getElementById("top");
-    top.appendChild(HillviewToplevel.instance.getHTMLRepresentation());
+    top!.appendChild(HillviewToplevel.instance.getHTMLRepresentation());
     window.addEventListener("resize",  () => HillviewToplevel.instance.resize());
 }

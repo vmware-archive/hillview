@@ -27,12 +27,12 @@ import {mouse as d3mouse} from "d3-selection";
 export class Grid implements IHtmlElement {
     protected htmlTable: HTMLTableElement;
     protected tHead: HTMLTableSectionElement;
-    protected tBody: HTMLTableSectionElement;
+    protected tBody: HTMLTableSectionElement | null;
     protected topLevel: HTMLElement;
     protected rowCount: number;
     protected columnCount: number;
     protected thr: HTMLTableRowElement;
-    protected lastRow: HTMLTableRowElement;
+    protected lastRow: HTMLTableRowElement | null;
     protected currentColumn: number;
     protected currentRow: number;
     protected readonly minColumnWidth: number = 20;
@@ -169,18 +169,18 @@ export class Grid implements IHtmlElement {
 
     private dragStarted(node: HTMLElement): void {
         this.startPosition = d3mouse(this.topLevel)[0];
-        this.originalWidth = node.parentElement.offsetWidth;
+        this.originalWidth = node.parentElement!.offsetWidth;
         this.startTableWidth = this.htmlTable.offsetWidth;
     }
 
     public newRow(): void {
-        this.lastRow = this.tBody.insertRow();
+        this.lastRow = this.tBody!.insertRow();
         this.currentRow++;
         this.currentColumn = 0;
     }
 
     public newCell(cls: string): HTMLElement {
-        const cell = this.lastRow.insertCell();
+        const cell = this.lastRow!.insertCell();
         cell.classList.add(cls);
         const resizable = this.createResizable(this.resizable[this.currentColumn]);
         cell.appendChild(resizable);

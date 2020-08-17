@@ -49,7 +49,7 @@ export class Quartiles2DPlot extends Plot<Groups<SampleSet>> {
     public displayAxes: boolean;
     public isPrivate: boolean;
     protected schema: SchemaClass;
-    private yAxisRange: [number, number];
+    private yAxisRange: [number, number] | null;
 
     public constructor(protected plottingSurface: PlottingSurface) {
         super(plottingSurface);

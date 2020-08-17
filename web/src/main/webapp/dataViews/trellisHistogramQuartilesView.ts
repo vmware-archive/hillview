@@ -66,7 +66,6 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
         page: FullPage) {
         super(remoteObjectId, rowCount, schema, shape, page, "TrellisQuartiles");
         this.hps = [];
-        this.data = null;
 
         this.menu = new TopMenu( [this.exportMenu(),
             { text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
@@ -75,7 +74,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
                     help: "Redraw this view.",
                 }, { text: "table",
                     action: () => this.showTable(
-                        [this.xAxisData.description, this.qCol, this.groupByAxisData.description],
+                        [this.xAxisData.description!, this.qCol, this.groupByAxisData.description!],
                         this.defaultProvenance),
                     help: "Show the data underlying view using a table view.",
                 }, { text: "# buckets...",
@@ -155,7 +154,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
 
         const collector = new DataRangesReceiver(this,
             this.page, null, this.schema, [0, 0, 0],  // any number of buckets
-            [this.xAxisData.description, this.qCol, this.groupByAxisData.description],
+            [this.xAxisData.description!, this.qCol, this.groupByAxisData.description!],
             this.page.title, Converters.eventToString(pageId, eventKind), {
                 chartKind: "TrellisQuartiles", 
                 reusePage: true
@@ -169,11 +168,11 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
         if (mousePosition == null)
             return;
 
-        const plot = this.hps[mousePosition.plotIndex];
+        const plot = this.hps[mousePosition.plotIndex!];
         if (plot == null)
             return;
 
-        this.pointDescription.show(true);
+        this.pointDescription!.show(true);
         let xs = this.xAxisData.invert(mousePosition.x);
 
         // Use the plot scale, not the yData to invert.  That's the
@@ -187,13 +186,13 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
                 if (bucket < 0)
                     return;
                 bucketDesc = this.xAxisData.bucketDescription(bucket, 20);
-                const qv = this.data.perBucket[mousePosition.plotIndex].perBucket[bucket];
+                const qv = this.data.perBucket[mousePosition.plotIndex!].perBucket[bucket];
                 group = this.groupByAxisData.bucketDescription(mousePosition.plotIndex, 40);
                 [count, missing, min, q1, q2, q3, max] = describeQuartiles(qv);
             }
         }
-        const position = d3mouse(this.surface.getCanvas().node());
-        this.pointDescription.update([xs, group, bucketDesc, max, q3, q2, q1, min, count, missing],
+        const position = d3mouse(this.surface!.getCanvas().node());
+        this.pointDescription!.update([xs, group, bucketDesc, max, q3, q2, q1, min, count, missing],
             position[0], position[1]);
     }
 
@@ -355,16 +354,16 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
         // We draw the axes after drawing the data
         this.xAxisData.setResolution(this.shape.size.width, AxisKind.Bottom, PlottingSurface.bottomMargin);
         const yAxis = this.hps[0].getYAxis();
-        this.drawAxes(this.xAxisData.axis, yAxis);
+        this.drawAxes(this.xAxisData.axis!, yAxis);
         this.setupMouse();
         this.pointDescription = new TextOverlay(this.surface.getCanvas(),
-            this.surface.getActualChartSize(),
+            this.surface!.getActualChartSize(),
             [this.xAxisData.getDisplayNameString(this.schema),
                 this.groupByAxisData.getDisplayNameString(this.schema),
                 "bucket", "max", "q3", "median", "q1", "min", "count", "missing"], 40);
         this.pointDescription.show(false);
         this.standardSummary();
-        this.summary.display();
+        this.summary!.display();
     }
 
     protected dragMove(): boolean {

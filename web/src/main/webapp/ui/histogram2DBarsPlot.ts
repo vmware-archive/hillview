@@ -37,9 +37,9 @@ interface Box {
 }
 
 export interface BarInfo {
-    colorIndex: number;
+    colorIndex: number | null;
     count: number;
-    bucketIndex: number;
+    bucketIndex: number | null;
 }
 
 /**
@@ -47,8 +47,8 @@ export interface BarInfo {
  */
 export class Histogram2DBarsPlot extends Histogram2DBase {
     // The following are only set when drawing
-    protected xPoints: number;
-    protected yPoints: number;
+    protected xPoints: number | null;
+    protected yPoints: number | null;
     protected showMissing: boolean;
 
     public constructor(protected plottingSurface: PlottingSurface) {
@@ -163,9 +163,9 @@ export class Histogram2DBarsPlot extends Histogram2DBase {
 
     public getBarInfo(mouseX: number, dy: number): BarInfo {
         const bucketWidth = this.getChartWidth() / this.xPoints;
-        let bucketIndex = Math.floor(mouseX / bucketWidth);
+        let bucketIndex: number | null = Math.floor(mouseX / bucketWidth);
         const withinBucketOffset = mouseX - bucketIndex * bucketWidth;
-        let colorIndex = Math.floor(withinBucketOffset / this.barWidth);
+        let colorIndex: number | null = Math.floor(withinBucketOffset / this.barWidth);
         let count = null;
 
         if (colorIndex == this.yPoints) {

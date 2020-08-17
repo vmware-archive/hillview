@@ -30,7 +30,7 @@ export class ProgressBar implements IHtmlElement {
     private readonly bar: HTMLElement;
     private readonly topLevel: HTMLElement;
     private readonly estimate: HTMLElement;
-    private firstUpdate: Date;
+    private firstUpdate: Date | null;
     private firstPosition: number;
 
     /**
@@ -43,7 +43,7 @@ export class ProgressBar implements IHtmlElement {
      */
     constructor(private manager: ProgressManager,
                 public readonly description: string,
-                private readonly operation: IRawCancellable) {
+                private readonly operation: IRawCancellable | null) {
         if (description == null)
             throw new Error("Null label");
         if (manager == null)
@@ -164,7 +164,7 @@ export class ProgressManager implements IHtmlElement {
         return this.topLevel;
     }
 
-    public newProgressBar(operation: IRawCancellable, description: string): ProgressBar {
+    public newProgressBar(operation: IRawCancellable | null, description: string): ProgressBar {
         this.topLevel.classList.remove("idle");
         const p = new ProgressBar(this, description, operation);
         this.topLevel.appendChild(p.getHTMLRepresentation());

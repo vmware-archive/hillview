@@ -173,7 +173,7 @@ export class Dialog extends DialogBase {
     /**
      * Method to be invoked when dialog is closed with OK.
      */
-    public onConfirm: () => void;
+    public onConfirm: null | (() => void);
     /**
      * Stores the input elements and (optionally) their types.
      */
@@ -188,7 +188,7 @@ export class Dialog extends DialogBase {
      * Optional string which is used as an index in the dialogValueCache to
      * populate a dialog with its previous values.
      */
-    private dialogTitle: string;
+    private dialogCacheTitle: string | null;
 
     /**
      * This is a cache that can map a dialog title to a set of dialog values.
@@ -208,7 +208,7 @@ export class Dialog extends DialogBase {
         // in tab order in the whole DOM.  Probably the right solution is to handle the
         // tab keypress in an event handler.
         super(title, toolTip);
-        this.dialogTitle = null;
+        this.dialogCacheTitle = null;
         this.line = new Map<string, HTMLElement>();
         this.onConfirm = null;
         const nodrag = d3drag()
@@ -236,7 +236,7 @@ export class Dialog extends DialogBase {
      * available, it is used to populate the dialog.
      */
     public setCacheTitle(title: string | null): void {
-        this.dialogTitle = title;
+        this.dialogCacheTitle = title;
         if (title != null) {
             const values = Dialog.dialogValueCache.get(title);
             if (values != null)
@@ -262,17 +262,18 @@ export class Dialog extends DialogBase {
         if (ev.code === "Enter") {
             this.hide();
             this.cacheValues();
-            this.onConfirm();
+            if (this.onConfirm != null)
+                this.onConfirm();
         } else if (ev.code === "Escape") {
             this.hide();
         }
     }
 
     public cacheValues(): void {
-        if (this.dialogTitle == null)
+        if (this.dialogCacheTitle == null)
             return;
         const vals = this.getAllValues();
-        Dialog.dialogValueCache.set(this.dialogTitle, vals);
+        Dialog.dialogValueCache.set(this.dialogCacheTitle, vals);
     }
 
     /**
@@ -286,7 +287,7 @@ export class Dialog extends DialogBase {
                 if (this.topLevel.checkValidity()) {
                     this.hide();
                     this.cacheValues();
-                    this.onConfirm();
+                    this.onConfirm!();
                 }
             };
     }
@@ -355,7 +356,7 @@ export class Dialog extends DialogBase {
      * @return       The input element created for the user to type the text.
      */
     public addTextField(fieldName: string, labelText: string,
-                        type: FieldKind, value: string,
+                        type: FieldKind, value: string | null,
                         toolTip: string): HTMLInputElement {
         let t = "string";
         if (type === FieldKind.Integer)
@@ -407,7 +408,7 @@ export class Dialog extends DialogBase {
      * @returns           A reference to the HTML element holding the text.
      */
     public addText(textString: string): HTMLElement {
-        const fieldDiv = this.createRowContainer("message", textString, null);
+        const fieldDiv = this.createRowContainer("message", textString, "");
         return fieldDiv.children[0] as HTMLElement;
     }
 
@@ -447,9 +448,9 @@ export class Dialog extends DialogBase {
     }
 
     private addSelectInternal(fieldName: string, labelText: string,
-                              options: string[], value: string,
+                              options: string[], value: string | null,
                               toolTip: string, type: FieldKind): HTMLInputElement | HTMLSelectElement {
-        let result: HTMLInputElement | HTMLSelectElement = null;
+        let result: HTMLInputElement | HTMLSelectElement | null = null;
 
         // If we have lots of options use a sorted datalist, otherwise
         // use a select field.
@@ -513,7 +514,7 @@ export class Dialog extends DialogBase {
      * @return       A reference to the select html input field.
      */
     public addSelectField(fieldName: string, labelText: string,
-                          options: string[], value: string,
+                          options: string[], value: string | null,
                           toolTip: string): HTMLInputElement | HTMLSelectElement {
         return this.addSelectInternal(
             fieldName, labelText, options, value, toolTip, FieldKind.String);
@@ -546,7 +547,7 @@ export class Dialog extends DialogBase {
             v, toolTip, FieldKind.Object);
     }
 
-    public getFieldValueAsObject<T>(fieldName: string): T {
+    public getFieldValueAsObject<T>(fieldName: string): T | null {
         if (this.fields.get(fieldName).type !== FieldKind.Object) {
             console.assert(false, "Field is not an object");
             return null;
@@ -648,13 +649,14 @@ export class Dialog extends DialogBase {
      * @param {string} field  Field whose value is set.
      * @param {string} value  Value that is being set.
      */
-    public setFieldValue(field: string, value: string): void {
+    public setFieldValue(field: string, value: string | null): void {
         let f = this.fields.get(field);
         if (f.type === FieldKind.Boolean) {
             const hi = f.html as HTMLInputElement;
             hi.checked = (value === "true");
         } else {
-            f.html.value = value;
+            if (value != null)
+                f.html.value = value;
         }
     }
 
@@ -673,7 +675,7 @@ export class Dialog extends DialogBase {
      * The value associated with a field cast to an integer.
      * Returns either a number or null if the value cannot be parsed.
      */
-    public getFieldValueAsInt(field: string): number {
+    public getFieldValueAsInt(field: string): number | null {
         const s = this.getFieldValue(field);
         const result = parseInt(s, 10);
         if (isNaN(result))
@@ -685,7 +687,7 @@ export class Dialog extends DialogBase {
      * The value associated with a field cast to a double.
      * Returns either a number or null if the value cannot be parsed.
      */
-    public getFieldValueAsNumber(field: string): number {
+    public getFieldValueAsNumber(field: string): number | null {
         const s = this.getFieldValue(field);
         const result = parseFloat(s);
         if (isNaN(result))
@@ -696,7 +698,7 @@ export class Dialog extends DialogBase {
     /**
      * The value associated with a field representing a file selector.
      */
-    public getFieldValueAsFiles(field: string): FileList {
+    public getFieldValueAsFiles(field: string): FileList | null {
         const f = this.fields.get(field).html as HTMLInputElement;
         return f.files;
     }
@@ -747,10 +749,6 @@ export class NotifyDialog extends DialogBase {
 export class NotifyBookmarkDialog extends NotifyDialog {
     constructor(title: string, url: string | null, toolTip: string) {
         super(title, null, toolTip);
-
-        const nodrag = d3drag()
-            .on("start", () => this.dragEnd());
-
         const urlBox = makeInputBox(url) as HTMLInputElement;
         urlBox.style.width = "100%";
         urlBox.style.float = "left";
@@ -769,7 +767,7 @@ export class NotifyBookmarkDialog extends NotifyDialog {
         // replace the confirm button with copy button
         this.buttonsDiv.replaceChild(
           copyButton,
-          this.buttonsDiv.firstElementChild
+          this.buttonsDiv.firstElementChild!
         );
     }
 }

@@ -62,8 +62,8 @@ export abstract class TrellisChartView<D> extends ChartView<D> {
     /**
      * Selection endpoint in canvas.
      */
-    protected selectionEnd: Point;
-    protected surfaces: PlottingSurface[];
+    protected selectionEnd: Point | null;
+    protected surfaces: PlottingSurface[] | null;
     /**
      * Coordinates of each surface within the canvas.
      */
@@ -89,7 +89,7 @@ export abstract class TrellisChartView<D> extends ChartView<D> {
      */
     protected createAllSurfaces(
         onCreation: (surface: PlottingSurface) => void): void {
-        this.surface = new HtmlPlottingSurface(this.chartDiv, this.page, {});
+        this.surface = new HtmlPlottingSurface(this.chartDiv!, this.page, {});
 
         let created = 0;
         this.surfaces = [];
@@ -138,13 +138,14 @@ export abstract class TrellisChartView<D> extends ChartView<D> {
             mousePosition.x < 0 ||
             mousePosition.y < 0;
         if (oob) {
-            this.pointDescription.show(false);
+            this.pointDescription?.show(false);
             return null;
         }
         return mousePosition;
     }
 
     protected drawAxes(xAxis: AxisDescription, yAxis: AxisDescription): void {
+        assert(this.surface != null);
         for (let i = 0; i < this.shape.xWindows; i++) {
             const g = this.surface
                 .getCanvas()
@@ -169,7 +170,7 @@ export abstract class TrellisChartView<D> extends ChartView<D> {
         }
     }
 
-    public static deserializeShape(ser: TrellisShapeSerialization, page: FullPage): TrellisShape {
+    public static deserializeShape(ser: TrellisShapeSerialization, page: FullPage): TrellisShape | null {
         if (ser.xWindows == null || ser.yWindows == null || ser.windowCount == null)
             return null;
         const size = PlottingSurface.getDefaultCanvasSize(page.getWidthInPixels());
@@ -196,7 +197,7 @@ export abstract class TrellisChartView<D> extends ChartView<D> {
         dialog.show();
     }
 
-    protected abstract doChangeGroups(groupCount: number): void;
+    protected abstract doChangeGroups(groupCount: number | null): void;
 
     /**
      * Returns the current selection index if the current selection falls within a single plot.
@@ -208,12 +209,12 @@ export abstract class TrellisChartView<D> extends ChartView<D> {
 
         const origin = this.canvasToChart(this.selectionOrigin);
         const op = this.position(origin.x, origin.y);
-        if (op.plotIndex == null)
+        if (op === null || op.plotIndex == null)
             return null;
 
-        const position = d3mouse(this.surface.getChart().node());
+        const position = d3mouse(this.surface!.getChart().node());
         const ep = this.position(position[0], position[1]);
-        if (ep.plotIndex == null)
+        if (ep === null || ep.plotIndex == null)
             return null;
 
         if (op.plotIndex === ep.plotIndex)
@@ -227,6 +228,7 @@ export abstract class TrellisChartView<D> extends ChartView<D> {
     }
 
     protected selectSurfaces(start: number, end: number): void {
+        assert(this.surfaces != null);
         for (let index = 0; index < this.shape.windowCount; index++) {
             const selected = index >= start && index <= end;
             if (index < this.surfaces.length)
@@ -236,6 +238,8 @@ export abstract class TrellisChartView<D> extends ChartView<D> {
 
     private selectionWasLocal: boolean = false;
     protected dragMove(): boolean {
+        assert(this.surface != null);
+        assert(this.selectionOrigin != null);
         if (this.selectionIsLocal() != null) {
             if (!this.selectionWasLocal)
                 this.unselectAllSurfaces();
@@ -252,7 +256,7 @@ export abstract class TrellisChartView<D> extends ChartView<D> {
             const [y0, y1] = reorder(this.selectionOrigin.y, position[1]);
             const posUp = this.position(x0, y0);
             const posDown = this.position(x1, y1);
-            if (posUp.plotIndex == null || posDown.plotIndex == null)
+            if (posUp == null || posUp.plotIndex == null || posDown == null || posDown.plotIndex == null)
                 return true;
             this.selectSurfaces(posUp.plotIndex, posDown.plotIndex);
         }
@@ -266,7 +270,7 @@ export abstract class TrellisChartView<D> extends ChartView<D> {
     protected abstract selectionCompleted(): void;
 
     protected dragEnd(): boolean {
-        if (!super.dragEnd())
+        if (this.surface === null || !super.dragEnd())
             return false;
         const position = d3mouse(this.surface.getCanvas().node());
         this.selectionEnd = { x: position[0], y: position[1] };
@@ -280,7 +284,9 @@ export abstract class TrellisChartView<D> extends ChartView<D> {
      * After the selection is completed it returns the description of the filter to apply on
      * the groupBy axis.  Returns null if the selection is not well-defined.
      */
-    protected getGroupBySelectionFilter(): RangeFilterArrayDescription {
+    protected getGroupBySelectionFilter(): RangeFilterArrayDescription | null {
+        assert(this.selectionEnd != null);
+        assert(this.selectionOrigin != null);
         if (this.selectionIsLocal() != null)
             return null;
         const end = this.canvasToChart(this.selectionEnd);
@@ -288,7 +294,7 @@ export abstract class TrellisChartView<D> extends ChartView<D> {
         const [y0, y1] = reorder(this.selectionOrigin.y, end.y);
         const first = this.position(x0, y0);
         const last = this.position(x1, y1);
-        if (first.plotIndex == null || last.plotIndex == null)
+        if (first == null || first.plotIndex == null || last == null || last.plotIndex == null)
             return null;
 
         let includeMissing = false;
@@ -318,11 +324,11 @@ export abstract class TrellisChartView<D> extends ChartView<D> {
      * @param chartX  X coordinate within chart.
      * @param chartY  Y coordinate within chart.
      */
-    protected position(chartX: number, chartY: number): TrellisMousePosition {
+    protected position(chartX: number, chartY: number): TrellisMousePosition | null {
         // Find out which plot we are in.
         const xIndex = Math.floor(chartX / this.shape.size.width);
         const yIndex = Math.floor(chartY / (this.shape.size.height + this.shape.headerHeight));
-        let plotIndex = yIndex * this.shape.xWindows + xIndex;
+        let plotIndex: number | null = yIndex * this.shape.xWindows + xIndex;
         chartX -= xIndex * this.shape.size.width;
         chartY -= yIndex * (this.shape.size.height + this.shape.headerHeight) + this.shape.headerHeight;
 
@@ -339,8 +345,8 @@ export abstract class TrellisChartView<D> extends ChartView<D> {
     /**
      * Computes the mouse position in a Trellis plot.
      */
-    protected mousePosition(): TrellisMousePosition {
-        const position = d3mouse(this.surface.getChart().node());
+    protected mousePosition(): TrellisMousePosition | null {
+        const position = d3mouse(this.surface!.getChart().node());
         return this.position(position[0], position[1]);
     }
 }
@@ -362,7 +368,7 @@ export class GroupsDialog extends Dialog {
     /**
      * Returns null if the value is not acceptable.
      */
-    public getGroupCount(): number {
+    public getGroupCount(): number | null {
         const groups = this.getFieldValueAsInt("groups");
         if (groups == null)
             return groups;

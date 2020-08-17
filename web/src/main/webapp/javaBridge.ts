@@ -155,12 +155,12 @@ export type DataKinds = "csv" | "orc" | "parquet" | "json" | "hillviewlog" | "db
 export interface FileSetDescription {
     fileKind: DataKinds;
     fileNamePattern: string;
-    schemaFile: string;
+    schemaFile: string | null;
     headerRow?: boolean;
     cookie?: string;
     repeat: number;
-    name: string;  // not used on the Java side
-    logFormat: string;
+    name: string | null;  // not used on the Java side
+    logFormat: string | null;
     startTime: number | null;
     endTime: number | null;
 }
@@ -511,14 +511,14 @@ export interface ComparisonFilterDescription {
     /**
      * Value that is being tested if the column is a string column.
      */
-    stringValue: string;
+    stringValue: string | null;
     /**
      * Value that is being tested if the column is a numeric/date column.
      */
-    doubleValue: number;
+    doubleValue: number | null;
     /**
      * If the column is an interval the interval is given by doubleValue - intervalEnd.
      */
-    intervalEnd: number;
+    intervalEnd: number | null;
     comparison: Comparison;
 }

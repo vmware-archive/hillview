@@ -79,7 +79,7 @@ export class HistogramLegendPlot extends LegendPlot<void> {
             .attr("transform", `translate(${this.legendRect.lowerLeft().x},
                                           ${this.legendRect.lowerLeft().y})`)
             .attr("class", "x-axis");
-        this.axisData.axis.draw(g);
+        this.axisData.axis!.draw(g);
 
         if (this.missingLegend) {
             if (this.legendRect != null) {
@@ -111,7 +111,7 @@ export class HistogramLegendPlot extends LegendPlot<void> {
     }
 
     public setColorMapKind(kind: ColorMapKind): void {
-        if (kindIsString(this.axisData.description.kind))
+        if (kindIsString(this.axisData.description!.kind))
             // keep the existing one: categorical.
             return;
         switch (kind) {
@@ -160,7 +160,7 @@ export class HistogramLegendPlot extends LegendPlot<void> {
         this.axisData = axis;
         this.missingLegend = missingLegend;
         this.schema = schema;
-        if (kindIsString(axis.description.kind))
+        if (kindIsString(axis.description!.kind))
             this.colorMap = (d) => Plot.categoricalMap(Math.round(d * (this.axisData.bucketCount - 1)));
         else
             this.colorMap = Plot.defaultColorMap;

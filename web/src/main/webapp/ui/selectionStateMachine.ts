@@ -28,7 +28,7 @@ export class SelectionStateMachine {
      * The current set of Selected States.
      */
     protected selected: Set<number>;
-    protected curState: number;
+    protected curState: number | null;
     /**
      * A set of states that is excluded from being Selected.
      */
@@ -115,10 +115,12 @@ export class SelectionStateMachine {
         } else if (type === "Shift") { // Shift pressed, toggle states in the open interval
             // curState to val
             const current: boolean = this.has(val);
-            if (val > this.curState)
-                this.rangeChange(this.curState + 1, val, !current);
-            else if (val < this.curState)
-                this.rangeChange(val, this.curState - 1, !current);
+            if (this.curState != null) {
+                if (val > this.curState)
+                    this.rangeChange(this.curState + 1, val, !current);
+                else if (val < this.curState)
+                    this.rangeChange(val, this.curState - 1, !current);
+            }
             this.curState = val;
         }
     }

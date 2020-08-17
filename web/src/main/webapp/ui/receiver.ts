@@ -65,7 +65,7 @@ export abstract class ReceiverCommon<T> extends Receiver<T> {
     protected constructor(protected args: ReceiverCommonArgs,
                           operation: RpcRequest<T>, description: string) {
         super(args.options.reusePage ? args.originalPage :
-            args.originalPage.dataset.newPage(args.title, args.originalPage),
+            args.originalPage.dataset!.newPage(args.title, args.originalPage),
             operation, description)
     }
 }

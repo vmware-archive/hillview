@@ -278,7 +278,7 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
         bucketDialog.show();
     }
 
-    protected doChangeGroups(groupCount: number): void {
+    protected doChangeGroups(groupCount: number | null): void {
         if (groupCount == null) {
             this.page.reportError("Illegal group count");
             return;

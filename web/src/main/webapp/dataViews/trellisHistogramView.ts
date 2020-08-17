@@ -129,7 +129,7 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
             return;
         }
         if (groupCount === 1) {
-            const cds = [this.xAxisData.description];
+            const cds = [this.xAxisData.description!];
             const rr = this.createDataQuantilesRequest(cds, this.page, "Histogram");
             rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
                 [0], cds, null, "change groups",{
@@ -137,7 +137,7 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
                     chartKind: "Histogram", exact: this.samplingRate >= 1, pieChart: false
                 }));
         } else {
-            const cds = [this.xAxisData.description, this.groupByAxisData.description];
+            const cds = [this.xAxisData.description!, this.groupByAxisData.description!];
             const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisHistogram");
             rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
                 [0, groupCount], cds, null, "change groups", {
@@ -148,7 +148,7 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
     }
 
     protected exactHistogram(): void {
-        const cds = [this.xAxisData.description, this.groupByAxisData.description];
+        const cds = [this.xAxisData.description!, this.groupByAxisData.description!];
         const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [this.bucketCount, this.shape.windowCount], cds, null, "exact counts",{
@@ -172,8 +172,8 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
         const columns: DisplayName[] = [];
         for (let i = 0; i < this.schema.length; i++) {
             const col = this.schema.get(i);
-            if (col.name === this.xAxisData.description.name ||
-                col.name === this.groupByAxisData.description.name)
+            if (col.name === this.xAxisData.description!.name ||
+                col.name === this.groupByAxisData.description!.name)
                 continue;
             columns.push(this.schema.displayName(col.name));
         }
@@ -334,7 +334,7 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
             };
             plot.setHistogram({ first: coarsened[i], second: confidence }, this.samplingRate,
                 this.xAxisData,
-                max, this.page.dataset.isPrivate(), this.rowCount);
+                max, this.page.dataset!.isPrivate(), this.rowCount);
             plot.displayAxes = false;
             plot.draw();
             plot.border(1);
@@ -345,7 +345,7 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
         this.xAxisData.setResolution(this.shape.size.width, AxisKind.Bottom, PlottingSurface.bottomMargin);
         // This axis is only created when the surface is drawn
         const yAxis = this.hps[0].getYAxis();
-        this.drawAxes(this.xAxisData.axis, yAxis);
+        this.drawAxes(this.xAxisData.axis!, yAxis);
 
         this.setupMouse();
         this.pointDescription = new TextOverlay(this.surface.getCanvas(),
@@ -357,8 +357,8 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
             .append("circle")
             .attr("r", Resolution.mouseDotRadius)
             .attr("fill", "blue");
-        this.summary.set("rows", this.rowCount, this.isPrivate());
-        this.summary.display();
+        this.summary!.set("rows", this.rowCount, this.isPrivate());
+        this.summary!.display();
     }
 
     protected onMouseMove(): void {

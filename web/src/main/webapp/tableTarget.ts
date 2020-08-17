@@ -79,7 +79,7 @@ export interface CompletedWithTime {
 export interface OnNextK extends CompletedWithTime {
     updateView(nextKList: NextKList,
                revert: boolean,
-               order: RecordOrder,
+               order: RecordOrder | null,
                result: FindResult | null): void;
 }
 
@@ -101,7 +101,7 @@ export class TableTargetAPI extends RemoteObject {
     }
 
     public createFindRequest(
-        order: RecordOrder, topRow: RowValue[],
+        order: RecordOrder, topRow: RowValue[] | null,
         strFilter: StringFilterDescription, excludeTopRow: boolean, next: boolean):
         RpcRequest<FindResult> {
         return this.createStreamingRpcRequest<FindResult>("find", {
@@ -463,7 +463,7 @@ export class SummaryMessage {
             summary.appendSafeString(k + ": ");
             if (this.approx.has(k))
                 summary.appendSafeString(SpecialChars.approx);
-            summary.append(significantDigitsHtml(v)!);
+            summary.append(significantDigitsHtml(v));
         });
         summary.setInnerHtml(this.parent);
     }
@@ -510,7 +510,7 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
         public readonly viewKind: ViewKind) {
         super(remoteObjectId);
         this.setPage(page);
-        this.dataset = page.dataset;
+        this.dataset = page.dataset!;
         this.chartDiv = null;
         this.summaryDiv = null;
         this.legendDiv = null;
@@ -688,7 +688,7 @@ export abstract class BaseReceiver extends OnCompleteReceiver<RemoteObjectId> {
     protected constructor(public page: FullPage,
                           public operation: ICancellable<RemoteObjectId>,
                           public description: string,
-                          protected dataset: DatasetView) { // may be null for the first table
+                          protected dataset: DatasetView | null) { // may be null for the first table
         super(page, operation, description);
     }
 

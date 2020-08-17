@@ -32,7 +32,7 @@ export class FindBar implements IHtmlElement {
     protected foundCount: HTMLElement;
 
     constructor(onClick: (next: boolean, fromTop: boolean) => void,
-                onFilter: () => void) {
+                onFilter: (() => void) | null) {
         this.visible = false;
         this.topLevel = document.createElement("div");
         this.topLevel.style.margin = "2px";
@@ -79,7 +79,7 @@ export class FindBar implements IHtmlElement {
 
         const filterButton = this.topLevel.appendChild(document.createElement("button"));
         filterButton.innerText = "Keep only matching data";
-        filterButton.onclick = () => onFilter();
+        filterButton.onclick = () => onFilter != null ? onFilter() : {};
         this.addSpace(1);
         const close = document.createElement("span");
         close.className = "close";
@@ -123,7 +123,7 @@ export class FindBar implements IHtmlElement {
     /**
      * Highlight a text according to the current find options.
      */
-    public highlight(text: string, filter: StringFilterDescription): HTMLElement {
+    public highlight(text: string, filter: StringFilterDescription | null): HTMLElement {
         if (!this.visible || filter == null)
             return makeSpan(text, false);
 

@@ -254,4 +254,13 @@ export class SchemaClass implements Serializable<SchemaClass> {
         });
         return cds;
     }
+
+    public getCheckedDescriptions(columns: string[]): (IColumnDescription)[] {
+        const cds: IColumnDescription[] = [];
+        columns.forEach((v) => {
+            const colDesc = this.find(v);
+            cds.push(colDesc!);
+        });
+        return cds;
+    }
 }

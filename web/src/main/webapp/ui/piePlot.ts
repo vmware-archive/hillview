@@ -45,7 +45,7 @@ export class PiePlot extends Plot<Two<Groups<number>>> {
      */
     public samplingRate: number;
     public isPrivate: boolean;
-    public maxYAxis: number;
+    public maxYAxis: number | null;
 
     public constructor(protected plottingSurface: PlottingSurface) {
         super(plottingSurface);
@@ -71,7 +71,7 @@ export class PiePlot extends Plot<Two<Groups<number>>> {
     private color(index: number, count: number): string {
         if (index == count - 1)
             return "white";  // missing
-        if (kindIsString(this.xAxisData.description.kind))
+        if (kindIsString(this.xAxisData.description!.kind))
             return Plot.categoricalMap(index);
         return Plot.defaultColorMap(index / count);
     }
