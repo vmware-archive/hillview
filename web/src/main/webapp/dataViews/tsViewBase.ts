@@ -273,9 +273,11 @@ export abstract class TSViewBase extends BigTableView {
         dia.setAction(
             () => {
                 const c0 = dia.getColumnName("columnName0");
-                const col0 = this.schema.fromDisplayName(c0)!;
+                const col0 = this.schema.fromDisplayName(c0);
                 const c1 = dia.getColumnName("columnName1");
-                const col1 = this.schema.fromDisplayName(c1)!;
+                const col1 = this.schema.fromDisplayName(c1);
+                if (col0 == null || col1 == null)
+                    return;
                 if (col0 === col1) {
                     this.page.reportError("The two columns must be distinct");
                     return;
@@ -303,9 +305,11 @@ export abstract class TSViewBase extends BigTableView {
         dia.setAction(
             () => {
                 const c0 = dia.getColumnName("columnName0");
-                const col0 = this.schema.fromDisplayName(c0)!;
+                const col0 = this.schema.fromDisplayName(c0);
                 const c1 = dia.getColumnName("columnName1");
-                const col1 = this.schema.fromDisplayName(c1)!;
+                const col1 = this.schema.fromDisplayName(c1);
+                if (col0 == null || col1 == null)
+                    return;
                 if (col0 === col1) {
                     this.page.reportError("The columns must be distinct");
                     return;
@@ -315,7 +319,9 @@ export abstract class TSViewBase extends BigTableView {
 
                 if (count === 3) {
                     const c2 = dia.getColumnName("columnName2");
-                    col2 = this.schema.fromDisplayName(c2)!;
+                    col2 = this.schema.fromDisplayName(c2);
+                    if (col2 == null)
+                        return;
                     if (col0 === col2 || col1 === col2) {
                         this.page.reportError("The columns must be distinct");
                         return;

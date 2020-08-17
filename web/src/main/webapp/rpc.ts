@@ -333,10 +333,10 @@ export abstract class Receiver<T> implements Rx.Observer<PartialResult<T>> {
 
     /**
      * This method is called when all replies have been received
-     * (successfully or unsuccesxfully).
+     * (successfully or unsuccessfully).
      */
     public finished(): void {
-        // This causes the progress bar to disappear.
+        // This causes the progress bar t o disappear.
         this.done = true;
         this.progressBar.setFinished();
     }
