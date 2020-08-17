@@ -371,82 +371,88 @@ public class CassandraSSTableLoader extends TextFileLoader {
                         for (ColumnDefinition colDef : columnDefinitions) {
                             Cell cd = row.getCell(colDef);
                             col = columns.get(currentColumn);
+                            if (cd == null) {
+                                col.appendMissing();
+                                currentColumn++;
+                                continue;
+                            }
                             ByteBuffer byteBuff = cd.value();
                             // The column that has null value can be identified by its buffer capacity
                             if (byteBuff.capacity() == 0) {
-                                col.appendMissing(); 
-                            } else {
-                                Object value = arrSerializers[currentColumn].deserialize(byteBuff);
-                                switch ((CQL3Type.Native) arrColTypes[currentColumn]) {
-                                    case ASCII:
-                                    case BOOLEAN:
-                                    case INET:
-                                    case TEXT:
-                                    case TIMEUUID:
-                                    case UUID:
-                                    case VARCHAR:
-                                        col.append(value.toString());
-                                        break;
-                                    case BLOB:
-                                        col.append(arrSerializers[currentColumn].toCQLLiteral(byteBuff));
-                                        break;
-                                    case INT:
-                                        col.append((Integer) value);
-                                        break;
-                                    case SMALLINT:
-                                        col.append(((Short) value).intValue());
-                                        break;
-                                    case TINYINT:
-                                        col.append(((Byte) value).intValue());
-                                        break;
-                                    case VARINT:
-                                        col.append(((BigInteger)value).doubleValue());
-                                        break;
-                                    case BIGINT:
-                                        col.append(((Long)value).doubleValue());
-                                        break;
-                                    case DECIMAL:
-                                        col.append(bigDecimalToDouble((BigDecimal) value));
-                                        break;
-                                    case DOUBLE:
-                                        col.append((Double)value);
-                                        break;
-                                    case FLOAT:
-                                        col.append(((Float)value).doubleValue());
-                                        break;
-                                    case COUNTER:
-                                        col.append(CounterContext.instance().total(byteBuff));
-                                        break;
-                                    case TIME:
-                                        // Time is in nanoseconds; convert to duration
-                                        col.append((double)((Long)value / 1000000));
-                                        break;
-                                    case TIMESTAMP:
-                                        // This is the same as Converters.toDouble(((Date)value).toInstant())
-                                        col.append(((Date)value).getTime());
-                                        break;
-                                    case DATE:
-                                        // Same as Converters.toDouble(Converters.toDate(...))
-                                        long msTime = SimpleDateSerializer.dayToTimeInMillis((Integer)value);
-                                        col.append(msTime);
-                                        break;
-                                    case DURATION:
-                                        Duration duration = DurationSerializer.instance.deserialize(byteBuff);
-                                        if (duration.getMonths() == 0) {
-                                            int days = duration.getDays();
-                                            long nanos = duration.getNanoseconds();
-                                            long millis = (nanos + Duration.NANOS_PER_HOUR * 24 * days) / 1000000;
-                                            // This is the same as Converters.toDouble(Converters.toDuration(millis))
-                                            col.append(millis);
-                                        } else {
-                                            // java.time.Duration support day and time (but not month and year)
-                                            throw new RuntimeException(
-                                                    "Cassandra Durations with months are not supported");
-                                        }
-                                        break;
-                                    case EMPTY:
-                                        break;
-                                }
+                                col.appendMissing();
+                                currentColumn++;
+                                continue;
+                            }
+                            Object value = arrSerializers[currentColumn].deserialize(byteBuff);
+                            switch ((CQL3Type.Native) arrColTypes[currentColumn]) {
+                                case ASCII:
+                                case BOOLEAN:
+                                case INET:
+                                case TEXT:
+                                case TIMEUUID:
+                                case UUID:
+                                case VARCHAR:
+                                    col.append(value.toString());
+                                    break;
+                                case BLOB:
+                                    col.append(arrSerializers[currentColumn].toCQLLiteral(byteBuff));
+                                    break;
+                                case INT:
+                                    col.append((Integer) value);
+                                    break;
+                                case SMALLINT:
+                                    col.append(((Short) value).intValue());
+                                    break;
+                                case TINYINT:
+                                    col.append(((Byte) value).intValue());
+                                    break;
+                                case VARINT:
+                                    col.append(((BigInteger)value).doubleValue());
+                                    break;
+                                case BIGINT:
+                                    col.append(((Long)value).doubleValue());
+                                    break;
+                                case DECIMAL:
+                                    col.append(bigDecimalToDouble((BigDecimal) value));
+                                    break;
+                                case DOUBLE:
+                                    col.append((Double)value);
+                                    break;
+                                case FLOAT:
+                                    col.append(((Float)value).doubleValue());
+                                    break;
+                                case COUNTER:
+                                    col.append(CounterContext.instance().total(byteBuff));
+                                    break;
+                                case TIME:
+                                    // Time is in nanoseconds; convert to duration
+                                    col.append((double)((Long)value / 1000000));
+                                    break;
+                                case TIMESTAMP:
+                                    // This is the same as Converters.toDouble(((Date)value).toInstant())
+                                    col.append(((Date)value).getTime());
+                                    break;
+                                case DATE:
+                                    // Same as Converters.toDouble(Converters.toDate(...))
+                                    long msTime = SimpleDateSerializer.dayToTimeInMillis((Integer)value);
+                                    col.append(msTime);
+                                    break;
+                                case DURATION:
+                                    Duration duration = DurationSerializer.instance.deserialize(byteBuff);
+                                    if (duration.getMonths() == 0) {
+                                        int days = duration.getDays();
+                                        long nanos = duration.getNanoseconds();
+                                        long millis = (nanos + Duration.NANOS_PER_HOUR * 24 * days) / 1000000;
+                                        // This is the same as Converters.toDouble(Converters.toDuration(millis))
+                                        col.append(millis);
+                                    } else {
+                                        // java.time.Duration support day and time (but not month and year)
+                                        throw new RuntimeException(
+                                                "Cassandra Durations with months are not supported");
+                                    }
+                                    break;
+                                case EMPTY:
+                                    break;
                             }
                             currentColumn++;
                         }
