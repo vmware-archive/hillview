@@ -90,11 +90,14 @@ public final class DateTests extends BaseTest {
                 .atStartOfDay(ZoneOffset.UTC)
                 .toInstant();
         Assert.assertEquals(expected, instant);
+    }
 
-        parsing = new DateParsing("2010-12-27T10:50:44.000-08:00");
-        instant = parsing.parseDate("2010-12-27T10:50:44.000-08:00");
-        expected = LocalDateTime.of(2010, 12, 27, 10, 50, 44)
-                .atZone(ZoneOffset.systemDefault())
+    @Test
+    public void testTZ1() {
+        DateParsing parsing = new DateParsing("2010-12-27T10:50:44.000-08:00");
+        Instant instant = parsing.parseDate("2010-12-27T10:50:44.000-08:00");
+        Instant expected = LocalDateTime.of(2010, 12, 27, 10, 50, 44)
+                .atZone(ZoneOffset.ofHours(-8))
                 .toInstant();
         Assert.assertEquals(instant, expected);
     }
@@ -110,21 +113,6 @@ public final class DateTests extends BaseTest {
         ldt = parsing.parseLocalDate("2017-10-05T14:05:00.000");
         repr = Converters.toString(ldt);
         Assert.assertEquals("2017/10/05 14:05", repr);
-    }
-
-    //@Test
-    public void offsetTest() {
-        // This test seems to exhibit a bug in the JS interpreter
-        OutputStream stdout = new ByteArrayOutputStream();
-        Context context = Context.newBuilder("js").out(stdout).build();
-        String func = "function f() { print(new Date().getTimezoneOffset()); print(new Date(0).getTimezoneOffset()); }";
-        context.eval("js", func);
-        Value function = context.eval("js", "() => f()");
-        assert function.canExecute();
-        function.execute();
-        String[] debug = stdout.toString().split("\n");
-        Assert.assertEquals(2, debug.length);
-        Assert.assertEquals(debug[0], debug[1]);
     }
 
     @Test
