@@ -355,7 +355,7 @@ public class JdbcDatabase {
         return new Table(columns, null, null);
     }
 
-    private static ColumnDescription getDescription(ResultSetMetaData meta, int colIndex)
+    public static ColumnDescription getDescription(ResultSetMetaData meta, int colIndex)
             throws SQLException {
         colIndex = colIndex + 1;
         String name = meta.getColumnLabel(colIndex);
