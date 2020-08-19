@@ -52,7 +52,6 @@ public class HiveHDFSLoader extends TextFileLoader {
 
     private final List<HivePartition> arrPartitions;
     private final List<InetAddress> hdfsInetAddresses;
-    private final boolean lazyLoading;
 
     private final ResultSetMetaData metadataColumn;
     private final InetAddress localHDFSNode;
@@ -68,7 +67,6 @@ public class HiveHDFSLoader extends TextFileLoader {
         this.arrPartitions = arrPartitions;
         this.hdfsInetAddresses = hdfsInetAddresses;
         this.metadataColumn = metadataColumn;
-        this.lazyLoading = this.info.lazyLoading;
         
         try {
             this.localHDFSNode = HiveDatabase.discoverLocalHDFSInterface(this.hdfsInetAddresses);
@@ -213,5 +211,12 @@ public class HiveHDFSLoader extends TextFileLoader {
             ex.printStackTrace();
             throw new RuntimeException(ex);
         }
+    }
+
+    public String toString() {
+        StringBuilder result = new StringBuilder("Hive HDFS Loader : ");
+        result.append(System.lineSeparator()).append("  Reading local hdfs node : ").append(this.localHDFSNode);
+        result.append(System.lineSeparator()).append("  Partition's size to read  : ").append(this.arrPartitions.size());
+        return result.toString();
     }
 }
