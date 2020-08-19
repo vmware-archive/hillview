@@ -22,6 +22,7 @@ import {
     FileSizeSketchInfo,
     JdbcConnectionInformation,
     CassandraConnectionInfo,
+    HiveConnectionInfo,
     RemoteObjectId,
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject} from "./rpc";
@@ -48,7 +49,13 @@ export interface SSTableFilesLoaded {
     description: CassandraConnectionInfo;
 }
 
-export type DataLoaded = FilesLoaded | TablesLoaded | HillviewLogs | IDatasetSerialization | SSTableFilesLoaded;
+export interface HiveTableFilesLoaded {
+    kind: "HiveTable";
+    description: HiveConnectionInfo;
+}
+
+export type DataLoaded = FilesLoaded | TablesLoaded | HillviewLogs | IDatasetSerialization |
+    SSTableFilesLoaded | HiveTableFilesLoaded;
 
 export function getDescription(data: DataLoaded): PageTitle {
     switch (data.kind) {
@@ -65,7 +72,9 @@ export function getDescription(data: DataLoaded): PageTitle {
         case "Hillview logs":
             return new PageTitle("logs", "Hillview installation logs");
         case "SSTable":
-            return new PageTitle(data.description.database + "/" + data.description.table, "loaded from files");
+            return new PageTitle(data.description.database + "/" + data.description.table, "loaded from sstable files");
+        case "HiveTable":
+            return new PageTitle(data.description.database + "/" + data.description.table, "loaded from hdfs files");
     }
 }
 
@@ -197,6 +206,13 @@ export class InitialObject extends RemoteObject {
         rr.invoke(observer);
     }
 
+    public loadHiveHDFSFiles(conn: HiveConnectionInfo, loadMenuPage: FullPage): void {
+        const rr = this.createStreamingRpcRequest<RemoteObjectId>("findHiveHDFSFiles", conn);
+        const observer = new FilesReceiver(loadMenuPage, rr,
+            { kind: "HiveTable", description: conn });
+        rr.invoke(observer);
+    }
+
     public loadLogs(loadMenuPage: FullPage): void {
         // Use a guid to force the request to reload every time
         const rr = this.createStreamingRpcRequest<RemoteObjectId>("findLogs", getUUID());
@@ -227,6 +243,9 @@ export class InitialObject extends RemoteObject {
                 break;
             case "cassandra":
                 this.loadCassandraFiles(<CassandraConnectionInfo>conn, loadMenuPage);
+                break;
+            case "hive":
+                this.loadHiveHDFSFiles(<HiveConnectionInfo>conn, loadMenuPage);
                 break;
         }
     }

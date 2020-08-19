@@ -17,7 +17,10 @@
 
 import {DatasetView} from "./datasetView";
 import {InitialObject} from "./initialObject";
-import {FileSetDescription, JdbcConnectionInformation, CassandraConnectionInfo, Status, UIConfig} from "./javaBridge";
+import {
+    FileSetDescription, JdbcConnectionInformation, HiveConnectionInfo,
+    CassandraConnectionInfo, Status, UIConfig
+} from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject} from "./rpc";
 import {Test} from "./test";
 import {IDataView} from "./ui/dataview";
@@ -237,7 +240,8 @@ export class LoadView extends RemoteObject implements IDataView {
             {
                 text: "Federated DB tables...",
                 action: () => {
-                    const dialog = new DBDialog(true);
+                    const dialog = new FederatedDBDialog();
+                    dialog.generateFields();
                     dialog.setAction(() => this.init.loadFederatedDBTable(dialog.getDBConnection(), dialog.getDatabaseKind() , this.page));
                     dialog.show();
                 },
@@ -249,7 +253,8 @@ export class LoadView extends RemoteObject implements IDataView {
             loadMenuItems.push({
                 text: "Local DB table...",
                 action: () => {
-                    const dialog = new DBDialog(false);
+                    const dialog = new JDBCDialog();
+                    dialog.generateFields();
                     dialog.setAction(() => this.init.loadSimpleDBTable(dialog.getJdbcConnection(), this.page));
                     dialog.show();
                 },
@@ -592,107 +597,8 @@ class OrcFileDialog extends Dialog {
  * Dialog asking the user which DB table to load.
  */
 class DBDialog extends Dialog {
-    constructor(isFederated: boolean) {
+    constructor() {
         super("Load DB tables", "Loads one table on each machine that is part of the service.");
-        const arrDB = ["mysql", "impala"];
-        if (isFederated) arrDB.push("cassandra");
-        const sel = this.addSelectField("databaseKind", "Database kind", arrDB, "mysql",
-            "The kind of database.");
-        sel.onchange = () => this.dbChanged();
-        const host = this.addTextField("host", "Host", FieldKind.String, "localhost",
-            "Machine name where database is located; each machine will open a connection to this host");
-        host.required = true;
-        if (isFederated) {
-            const dbDir = this.addTextField("dbDir", "DB Directory", FieldKind.String, null,
-                "Absolute path of dCassandra's installation directory");
-            this.hideInputField("dbDir", dbDir);
-        }
-        const port = this.addTextField("port", "Port", FieldKind.Integer, "3306",
-            "Network port to connect to database.");
-        port.required = true;
-        if (isFederated) {
-            const jmxPort = this.addTextField("jmxPort", "JMX Port", FieldKind.Integer, null,
-                "Cassandra's JMX port to connect to server-side tools.");
-            this.hideInputField("jmxPort", jmxPort);
-        }
-        const database = this.addTextField("database", "Database", FieldKind.String, null,
-            "Name of database to load.");
-        database.required = true;
-        const table = this.addTextField("table", "Table", FieldKind.String, null,
-            "The name of the table to load.");
-        table.required = true;
-        this.addTextField("user", "User", FieldKind.String, null,
-            "(Optional) The name of the user opening the connection.");
-        this.addTextField("password", "Password", FieldKind.Password, null,
-            "(Optional) The password for the user opening the connection.");
-        // not caching the federated connection because the cache failed to show all Cassandra's fields
-        if (!isFederated)
-            this.setCacheTitle("DBDialog");
-    }
-
-    public dbChanged(): void {
-        const db = this.getFieldValue("databaseKind");
-        switch (db) {
-            case "mysql":
-                this.setFieldValue("port", "3306");
-                this.hideInputField("jmxPort");
-                this.hideInputField("dbDir");
-                break;
-            case "impala":
-                this.setFieldValue("port", "21050");
-                this.hideInputField("jmxPort");
-                this.hideInputField("dbDir");
-                break;
-            case "cassandra":
-                this.setFieldValue("port", "9042");
-                this.setFieldValue("jmxPort", "7199");
-                this.showInputField("jmxPort");
-                this.showInputField("dbDir");
-                break;
-        }
-    }
-
-    public getDatabaseKind(): String {
-        return this.getFieldValue("databaseKind");
-    }
-
-    public getDBConnection(): any {
-        const db = this.getFieldValue("databaseKind");
-        switch (db) {
-            case "mysql":
-            case "impala":
-                return this.getJdbcConnection();
-            case "cassandra":
-                return this.getCassandraConnection();
-        }
-    }
-
-    public getJdbcConnection(): JdbcConnectionInformation {
-        return {
-            host: this.getFieldValue("host"),
-            port: this.getFieldValueAsNumber("port") ?? 0,
-            database: this.getFieldValue("database"),
-            table: this.getFieldValue("table"),
-            user: this.getFieldValue("user"),
-            password: this.getFieldValue("password"),
-            databaseKind: this.getFieldValue("databaseKind"),
-            lazyLoading: true,
-        };
-    }
-
-    public getCassandraConnection(): CassandraConnectionInfo {
-        return {
-            host: this.getFieldValue("host"),
-            port: this.getFieldValueAsNumber("port") ?? 0,
-            database: this.getFieldValue("database"),
-            table: this.getFieldValue("table"),
-            user: this.getFieldValue("user"),
-            password: this.getFieldValue("password"),
-            databaseKind: this.getFieldValue("databaseKind"),
-            lazyLoading: true,
-            jmxPort: this.getFieldValueAsNumber("jmxPort") ?? 0,
-            cassandraRootDir: this.getFieldValue("dbDir"),
-        };
     }
 
     public hideInputField(fieldName: string, field?: HTMLElement) {
@@ -711,6 +617,255 @@ class DBDialog extends Dialog {
             f.removeAttribute("disabled");
             f.setAttribute("required", "");
             f.parentElement!.style.display = 'block';
+        }
+    }
+}
+
+class JDBCDialog extends DBDialog {
+    constructor() {
+        super();
+    }
+
+    public generateFields() {
+        const sel = this.addFieldDatabaseKind(["mysql", "impala"]);
+        sel.onchange = () => this.dbChanged();
+        const host = this.addFieldHost();
+        host.required = true;
+        const port = this.addFieldPort();
+        port.required = true;
+        const database = this.addFieldDatabase();
+        database.required = true;
+        const table = this.addFieldTable();
+        table.required = true;
+        this.addFieldUser();
+        this.addFieldPassword();
+        this.setCacheTitle("JDBCDialog");
+    }
+
+    public addFieldDatabaseKind(arrDB: string[]) {
+        return this.addSelectField("databaseKind", "Database kind", arrDB, "mysql",
+            "The kind of database.");
+    }
+
+    public addFieldHost() {
+        return this.addTextField("host", "Host", FieldKind.String, null,
+            "Machine name where database is located; each machine will open a connection to this host");
+    }
+
+    public addFieldPort() {
+        return this.addTextField("port", "Port", FieldKind.Integer, "3306",
+            "Network port to connect to database.");
+    }
+
+    public addFieldDatabase() {
+        return this.addTextField("database", "Database", FieldKind.String, null,
+            "Name of database to load.");
+    }
+
+    public addFieldTable() {
+        return this.addTextField("table", "Table", FieldKind.String, null,
+            "The name of the table to load.");
+    }
+
+    public addFieldUser() {
+        return this.addTextField("user", "User", FieldKind.String, null,
+            "(Optional) The name of the user opening the connection.");
+    }
+
+    public addFieldPassword() {
+        return this.addTextField("password", "Password", FieldKind.Password, null,
+            "(Optional) The password for the user opening the connection.");
+    }
+
+    public getJdbcConnection(): JdbcConnectionInformation {
+        return {
+            host: this.getFieldValue("host"),
+            port: this.getFieldValueAsNumber("port") ?? 0,
+            database: this.getFieldValue("database"),
+            table: this.getFieldValue("table"),
+            user: this.getFieldValue("user"),
+            password: this.getFieldValue("password"),
+            databaseKind: this.getFieldValue("databaseKind"),
+            lazyLoading: true,
+        };
+    }
+
+    public showFieldOfMysql() {
+        this.setFieldValue("port", "3306");
+    }
+
+    public showFieldOfImpala() {
+        this.setFieldValue("port", "21050");
+    }
+
+    public dbChanged(): void {
+        const db = this.getFieldValue("databaseKind");
+        switch (db) {
+            case "mysql":
+                this.showFieldOfMysql();
+                break;
+            case "impala":
+                this.showFieldOfImpala();
+                break;
+        }
+    }
+}
+
+class FederatedDBDialog extends JDBCDialog {
+    constructor() {
+        super();
+    }
+
+    public generateFields() {
+        const sel = this.addFieldDatabaseKind(["mysql", "impala", "cassandra", "hive"]);
+        sel.onchange = () => this.dbChanged();
+        const host = this.addFieldHost();
+        host.required = true;
+        const dbDir = this.addFieldDbDir();
+        this.hideInputField("dbDir", dbDir);
+        const port = this.addFieldPort();
+        port.required = true;
+        const jmxPort = this.addFieldJmxPort();
+        this.hideInputField("jmxPort", jmxPort);
+        const database = this.addFieldDatabase();
+        database.required = true;
+        const table = this.addFieldTable();
+        table.required = true;
+        this.addFieldUser();
+        this.addFieldPassword();
+        const hdfsNodes = this.addFieldHdfsNodes();
+        this.hideInputField("hdfsNodes", hdfsNodes);
+        const namenodePort = this.addFieldNamenodePort();
+        this.hideInputField("namenodePort", namenodePort);
+        const hadoopUsername = this.addFieldHadoopUsername();
+        this.hideInputField("hadoopUsername", hadoopUsername);
+        const dataDelimiter = this.addFieldDataDelimiter();
+        this.hideInputField("dataDelimiter", dataDelimiter);
+        // Not saving to cache because the extra fields won't be displayed correctly
+    }
+
+    public addFieldDbDir() {
+        return this.addTextField("dbDir", "DB Directory", FieldKind.String, null,
+            "Absolute path of dCassandra's installation directory");
+    }
+
+    public addFieldJmxPort() {
+        return this.addTextField("jmxPort", "JMX Port", FieldKind.Integer, null,
+            "Cassandra's JMX port to connect to server-side tools.");
+    }
+
+    public addFieldHdfsNodes() {
+        return this.addTextField("hdfsNodes", "HDFS Nodes", FieldKind.String, null,
+            "The hostname/IP addresses of hdfs nodes in the cluster, separated by comma.");
+    }
+
+    public addFieldNamenodePort() {
+        return this.addTextField("namenodePort", "NameNode Port", FieldKind.String, null,
+            "NameNode port to establish connection with local NameNode.");
+    }
+
+    public addFieldHadoopUsername() {
+        return this.addTextField("hadoopUsername", "Hadoop Username", FieldKind.String, null,
+            "Authorized username to read hdfs in the local node.");
+    }
+
+    public addFieldDataDelimiter() {
+        return this.addTextField("dataDelimiter", "Data Delimiter", FieldKind.String, null,
+            "A delimiter to parse the hdfs data, such as '/', '\\', '/t', ',', etc. " +
+            "Unicode symbol is writen on this format: uXXXX (where XXXX is the unicode number).");
+    }
+
+    public getDatabaseKind(): String {
+        return this.getFieldValue("databaseKind");
+    }
+
+    public getDBConnection(): any {
+        const db = this.getFieldValue("databaseKind");
+        switch (db) {
+            case "mysql":
+            case "impala":
+                return this.getJdbcConnection();
+            case "cassandra":
+                return this.getCassandraConnection();
+            case "hive":
+                return this.getHiveConnection();
+        }
+    }
+
+    public getCassandraConnection(): CassandraConnectionInfo {
+        return {
+            host: this.getFieldValue("host"),
+            port: this.getFieldValueAsNumber("port") ?? 0,
+            database: this.getFieldValue("database"),
+            table: this.getFieldValue("table"),
+            user: this.getFieldValue("user"),
+            password: this.getFieldValue("password"),
+            databaseKind: this.getFieldValue("databaseKind"),
+            lazyLoading: true,
+            jmxPort: this.getFieldValueAsNumber("jmxPort") ?? 0,
+            cassandraRootDir: this.getFieldValue("dbDir"),
+        };
+    }
+
+    public getHiveConnection(): HiveConnectionInfo {
+        return {
+            host: this.getFieldValue("host"),
+            port: this.getFieldValueAsNumber("port") ?? 0,
+            database: this.getFieldValue("database"),
+            table: this.getFieldValue("table"),
+            user: this.getFieldValue("user"),
+            password: this.getFieldValue("password"),
+            databaseKind: this.getFieldValue("databaseKind"),
+            hdfsNodes: this.getFieldValue("hdfsNodes"),
+            namenodePort: this.getFieldValue("namenodePort"),
+            hadoopUsername: this.getFieldValue("hadoopUsername"),
+            dataDelimiter: this.getFieldValue("dataDelimiter"),
+            lazyLoading: true,
+        };
+    }
+
+    public showFieldOfCassandra() {
+        this.showInputField("jmxPort");
+        this.showInputField("dbDir");
+        this.setFieldValue("port", "9042");
+        this.setFieldValue("jmxPort", "7199");
+    }
+
+    public showFieldOfHive() {
+        this.showInputField("hdfsNodes");
+        this.showInputField("namenodePort");
+        this.showInputField("hadoopUsername");
+        this.showInputField("dataDelimiter");
+        this.setFieldValue("port", "10000");
+        this.setFieldValue("namenodePort", "9000");
+        this.setFieldValue("dataDelimiter", "u0001");
+    }
+
+    public hideAllExtraFields() {
+        this.hideInputField("jmxPort");
+        this.hideInputField("dbDir");
+        this.hideInputField("hdfsNodes");
+        this.hideInputField("namenodePort");
+        this.hideInputField("hadoopUsername");
+        this.hideInputField("dataDelimiter");
+    }
+
+    public dbChanged(): void {
+        const db = this.getFieldValue("databaseKind");
+        this.hideAllExtraFields();
+        switch (db) {
+            case "mysql":
+                this.showFieldOfMysql();
+                break;
+            case "impala":
+                this.showFieldOfImpala();
+                break;
+            case "cassandra":
+                this.showFieldOfCassandra();
+                break;
+            case "hive":
+                this.showFieldOfHive();
+                break;
         }
     }
 }

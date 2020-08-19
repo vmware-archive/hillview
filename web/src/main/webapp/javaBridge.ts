@@ -156,7 +156,14 @@ export interface CassandraConnectionInfo extends JdbcConnectionInformation {
     cassandraRootDir: string;
 }
 
-export type DataKinds = "csv" | "orc" | "parquet" | "json" | "hillviewlog" | "db" | "genericlog" | "sstable";
+export interface HiveConnectionInfo extends JdbcConnectionInformation {
+    hdfsNodes: string;
+    namenodePort: string;
+    hadoopUsername: string;
+    dataDelimiter: string;
+}
+
+export type DataKinds = "csv" | "orc" | "parquet" | "json" | "hillviewlog" | "db" | "genericlog" | "sstable" | "hivetable";
 
 export interface FileSetDescription {
     fileKind: DataKinds;
