@@ -212,7 +212,7 @@ public class MysqlTest extends JdbcTest {
             return;
         }
         DataRange range = db.numericDataRange(
-                new ColumnDescription("hire_date", ContentsKind.Date), null);
+                new ColumnDescription("hire_date", ContentsKind.LocalDate), null);
         Assert.assertNotNull(range);
         LocalDateTime first = parseOneLocalDate("1985/01/01");
         LocalDateTime last = parseOneLocalDate("2000/01/28");

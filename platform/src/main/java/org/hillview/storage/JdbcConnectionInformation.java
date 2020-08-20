@@ -46,13 +46,12 @@ public class JdbcConnectionInformation implements Serializable {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder("Connection Information:\n");
-        sb.append("  databaseKind : " + this.databaseKind + "\n");
-        sb.append("  host : " + this.host + "\n");
-        sb.append("  port : " + this.port + "\n");
-        sb.append("  database : " + this.database + "\n");
-        sb.append("  table : " + this.table + "\n");
-        sb.append("  user : " + this.user + "\n");
-        return sb.toString();
+        return "Connection Information:\n" +
+                "  databaseKind : " + this.databaseKind + "\n" +
+                "  host : " + this.host + "\n" +
+                "  port : " + this.port + "\n" +
+                "  database : " + this.database + "\n" +
+                "  table : " + this.table + "\n" +
+                "  user : " + this.user + "\n";
     }
 }

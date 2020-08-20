@@ -320,6 +320,7 @@ public class OrcFileLoader extends TextFileLoader {
                 case MAP:
                 case STRUCT:
                 case UNION:
+                case TIMESTAMP_INSTANT: // TODO
                     throw new RuntimeException("Unsupported ORC column type " + simple);
             }
         }

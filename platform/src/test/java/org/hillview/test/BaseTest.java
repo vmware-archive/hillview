@@ -38,15 +38,7 @@ import java.util.logging.Level;
 public class BaseTest {
     private static boolean initialized = false;
     protected static final boolean toPrint = false;
-
-    /**
-     * Parses one string as a date.
-     * @param s  String to parse.
-     */
-    public static Instant parseOneDate(String s) {
-        DateParsing parser = new DateParsing(s);
-        return parser.parseDate(s);
-    }
+    protected static final String dataDir = "../data";
 
     public static LocalDateTime parseOneLocalDate(String s) {
         DateParsing parser = new DateParsing(s);

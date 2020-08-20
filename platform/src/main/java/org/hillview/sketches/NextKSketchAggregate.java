@@ -70,7 +70,7 @@ public class NextKSketchAggregate extends PostProcessedSketch<ITable, NextKList,
             for (AggregateDescription a : this.aggregates) {
                 // iterating over the requested aggregates
                 if (a.agkind != AggregateDescription.AggregateKind.Average) {
-                    int index = Utilities.indexOf(a, computed);
+                    int index = Utilities.indexOf(computed, a);
                     if (index < 0)
                         throw new HillviewException("Could not find aggregated column " + a);
                     IColumn col = list.aggregates.getColumn(cols.get(index));

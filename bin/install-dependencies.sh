@@ -48,7 +48,7 @@ esac
 
 ${SUDO} ${INSTALL} install wget maven ${NODEJS} ${NPM} ${LIBFORTRAN} unzip gzip
 echo "Installing typescript compiler"
-${SUDO} npm install -g typescript@3.9
+${SUDO} npm install -g typescript@3.9.7
 
 pushd ..
 if [ ! -d apache-tomcat-${TOMCATVERSION} ]; then
@@ -85,6 +85,7 @@ popd
 if [ ${USERDEPS} -eq 0 ]; then
     if [ ${INSTALL_CASSANDRA} -eq 1 ]; then
       ./${mydir}/install-cassandra.sh
+      sudo apt install mysql-server
     fi
 fi
 cd ${SAVEDIR}

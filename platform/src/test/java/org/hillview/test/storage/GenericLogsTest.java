@@ -112,7 +112,7 @@ public class GenericLogsTest extends BaseTest {
 
     @Test
     public void testSyslog() {
-        String path = "../data/sample_logs/syslog";
+        String path = dataDir + "/sample_logs/syslog";
         GrokLogs logs = new GrokLogs("%{SYSLOG}");
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
@@ -122,7 +122,7 @@ public class GenericLogsTest extends BaseTest {
 
         IColumn col = table.getLoadedColumn(LogFiles.directoryColumn);
         String s = col.getString(0);
-        Assert.assertEquals("../data/sample_logs/", s);
+        Assert.assertEquals(dataDir + "/sample_logs/", s);
 
         col = table.getLoadedColumn(LogFiles.filenameColumn);
         s = col.getString(0);
@@ -141,7 +141,7 @@ public class GenericLogsTest extends BaseTest {
 
     @Test
     public void testWrongpattern() {
-        String path = "../data/sample_logs/syslog";
+        String path = dataDir + "/sample_logs/syslog";
         GrokLogs logs = new GrokLogs("%{HADOOP}");  // correct one is SYSLOG
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
@@ -158,7 +158,7 @@ public class GenericLogsTest extends BaseTest {
 
     @Test
     public void testStartuplog() {
-        String path = "../data/sample_logs/startuplog";
+        String path = dataDir + "/sample_logs/startuplog";
         GrokLogs logs = new GrokLogs("%{HADOOP}");
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
@@ -170,7 +170,7 @@ public class GenericLogsTest extends BaseTest {
 
     @Test
     public void testSyslogTime() {
-        String path = "../data/sample_logs/syslog";
+        String path = dataDir + "/sample_logs/syslog";
         GrokLogs logs = new GrokLogs("%{SYSLOG}");
         TextFileLoader fileLoader = logs.getFileLoader(path, null, null);
         ITable table = fileLoader.load();
@@ -184,7 +184,7 @@ public class GenericLogsTest extends BaseTest {
     public void testSyslogTime1() {
         // This log has no years in the dates, so they will be parsed as the
         // current year...
-        String path = "../data/sample_logs/syslog";
+        String path = dataDir + "/sample_logs/syslog";
         GrokLogs logs = new GrokLogs("%{SYSLOG}");
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime start = LocalDateTime.of(now.getYear(), 10, 7, 6, 0, 0);
@@ -200,7 +200,7 @@ public class GenericLogsTest extends BaseTest {
 
     @Test
     public void testEmptyLog() {
-        String path = "../data/sample_logs/emptylog";
+        String path = dataDir + "/sample_logs/emptylog";
         GrokLogs logs = new GrokLogs("%{SYSLOG}");
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
@@ -210,7 +210,7 @@ public class GenericLogsTest extends BaseTest {
 
     @Test
     public void testYarnLog() {
-        String path = "../data/sample_logs/yarnlog";
+        String path = dataDir + "/sample_logs/yarnlog";
         GrokLogs logs = new GrokLogs("%{YARNLOG}");
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
@@ -222,7 +222,7 @@ public class GenericLogsTest extends BaseTest {
 
     @Test
     public void testRFC5424Log() {
-        String path = "../data/sample_logs/rfc5424log";
+        String path = dataDir + "/sample_logs/rfc5424log";
         GrokLogs logs = new GrokLogs("%{RFC5424}");
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
@@ -255,7 +255,7 @@ public class GenericLogsTest extends BaseTest {
 
     @Test
     public void testHBaseLog() {
-        String path = "../data/sample_logs/hbaselog";
+        String path = dataDir + "/sample_logs/hbaselog";
         GrokLogs logs = new GrokLogs("%{HBASELOG}");
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
@@ -267,7 +267,7 @@ public class GenericLogsTest extends BaseTest {
 
     @Test
     public void testDataNodeLog() {
-        String path = "../data/sample_logs/datanodelog";
+        String path = dataDir + "/sample_logs/datanodelog";
         GrokLogs logs = new GrokLogs("%{DATANODELOG}");
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
@@ -279,7 +279,7 @@ public class GenericLogsTest extends BaseTest {
 
     @Test
     public void testOozieLog() {
-        String path = "../data/sample_logs/oozielog";
+        String path = dataDir + "/sample_logs/oozielog";
         GrokLogs logs = new GrokLogs("%{OOZIELOG}");
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
@@ -291,7 +291,7 @@ public class GenericLogsTest extends BaseTest {
 
     @Test
     public void testZookeeperLog() {
-        String path = "../data/sample_logs/zookeeperlog";
+        String path = dataDir + "/sample_logs/zookeeperlog";
         GrokLogs logs = new GrokLogs("%{ZOOKEEPERLOG}");
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
@@ -303,7 +303,7 @@ public class GenericLogsTest extends BaseTest {
 
     @Test
     public void testHDFSNameNodeLog() {
-        String path = "../data/sample_logs/hdfsnamenodelog";
+        String path = dataDir + "/sample_logs/hdfsnamenodelog";
         GrokLogs logs = new GrokLogs("%{HDFSNAMENODELOG}");
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
@@ -315,7 +315,7 @@ public class GenericLogsTest extends BaseTest {
 
     @Test
     public void testHDFSDataNodeLog() {
-        String path = "../data/sample_logs/hdfsdatanodelog";
+        String path = dataDir + "/sample_logs/hdfsdatanodelog";
         GrokLogs logs = new GrokLogs("%{HDFSDATANODELOG}");
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
@@ -327,7 +327,7 @@ public class GenericLogsTest extends BaseTest {
 
     @Test
     public void testVSANLog() {
-        String path = "../data/sample_logs/vsantracelog";
+        String path = dataDir + "/sample_logs/vsantracelog";
         GrokLogs logs = new GrokLogs("%{VSANTRACE}");
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
@@ -343,7 +343,7 @@ public class GenericLogsTest extends BaseTest {
 
     @Test
     public void testBlockTrace() {
-        String path = "../data/sample_logs/blockTracelog";
+        String path = dataDir + "/sample_logs/blockTracelog";
         GrokLogs logs = new GrokLogs("%{BLOCKTRACE}");
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();

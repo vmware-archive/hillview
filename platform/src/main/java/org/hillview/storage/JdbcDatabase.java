@@ -248,7 +248,7 @@ public class JdbcDatabase {
         assert table.getNumOfRows() == 1;
         RowSnapshot row = new RowSnapshot(table, 0);
         DataRange range = new DataRange();
-        if (cd.kind == ContentsKind.Double || cd.kind == ContentsKind.Date) {
+        if (cd.kind == ContentsKind.Double || cd.kind == ContentsKind.Date || cd.kind == ContentsKind.LocalDate) {
             range.min = row.getDouble("min");
             range.max = row.getDouble("max");
         } else if (cd.kind == ContentsKind.Integer) {

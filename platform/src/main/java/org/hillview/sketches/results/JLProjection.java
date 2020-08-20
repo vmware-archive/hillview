@@ -17,9 +17,8 @@
 
 package org.hillview.sketches.results;
 
-import org.apache.commons.lang.ArrayUtils;
 import org.hillview.dataset.api.ISketchResult;
-import org.hillview.sketches.results.ICorrelation;
+import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 
@@ -140,14 +139,14 @@ public class JLProjection implements ICorrelation, ISketchResult {
 
     @Override
     public double getCorrelation(String s, String t) {
-        int sIndex = ArrayUtils.indexOf(this.colNames, s);
-        int tIndex = ArrayUtils.indexOf(this.colNames, t);
+        int sIndex = Utilities.indexOf(this.colNames, s);
+        int tIndex = Utilities.indexOf(this.colNames, t);
         return this.getCorrelationMatrix()[sIndex][tIndex];
     }
 
     @Override
     public double[] getCorrelationWith(String s) {
-        int sIndex = ArrayUtils.indexOf(this.colNames, s);
+        int sIndex = Utilities.indexOf(this.colNames, s);
         return this.getCorrelationMatrix()[sIndex];
     }
 }

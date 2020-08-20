@@ -44,6 +44,16 @@ public class Utilities {
         return data.subList(1, data.size());
     }
 
+    public static String getTimezoneOffset() {
+        TimeZone tz = TimeZone.getDefault();
+        int offsetInMillis = tz.getRawOffset();
+        String offset = String.format("%02d:%02d",
+                Math.abs(offsetInMillis / 3600000),
+                Math.abs((offsetInMillis / 60000) % 60));
+        offset = (offsetInMillis >= 0 ? "+" : "-") + offset;
+        return "GMT" + offset;
+    }
+
     @FunctionalInterface
     public
     interface TriFunction<A, B, C, R> {
@@ -379,7 +389,7 @@ public class Utilities {
         }
     }
 
-    public static <T> int indexOf(@Nullable T needle, T[] haystack) {
+    public static <T> int indexOf(T[] haystack, @Nullable T needle) {
         for (int i = 0; i < haystack.length; i++) {
             if (needle == null) {
                 if (haystack[i] == null)
@@ -389,6 +399,10 @@ public class Utilities {
             }
         }
         return -1;
+    }
+
+    public static <T> boolean contains(T[] haystack, @Nullable T needle) {
+        return indexOf(haystack, needle) >= 0;
     }
 
     public static <T> List<T> emptyList() {

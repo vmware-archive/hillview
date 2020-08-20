@@ -19,17 +19,19 @@ package org.hillview.storage;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.parquet.ParquetReadOptions;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.column.page.PageReadStore;
 import org.apache.parquet.example.data.Group;
 import org.apache.parquet.example.data.simple.NanoTime;
 import org.apache.parquet.example.data.simple.convert.GroupRecordConverter;
-import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import org.apache.parquet.hadoop.ParquetFileReader;
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.FileMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
+import org.apache.parquet.hadoop.util.HadoopInputFile;
 import org.apache.parquet.io.ColumnIOFactory;
+import org.apache.parquet.io.InputFile;
 import org.apache.parquet.io.MessageColumnIO;
 import org.apache.parquet.io.RecordReader;
 import org.apache.parquet.io.api.Binary;
@@ -63,8 +65,10 @@ public class ParquetFileLoader extends TextFileLoader {
         this.configuration.set("hadoop.security.authentication", "simple");
         this.configuration.set("hadoop.security.authorization", "false");
         try {
-            this.metadata = ParquetFileReader.readFooter(this.configuration, this.path,
-                    ParquetMetadataConverter.NO_FILTER);
+            ParquetReadOptions.Builder builder = new ParquetReadOptions.Builder();
+            InputFile file = HadoopInputFile.fromPath(path, this.configuration);
+            ParquetFileReader parquetFileReader = new ParquetFileReader(file, builder.build());
+            this.metadata = parquetFileReader.getFooter();
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
@@ -87,7 +91,7 @@ public class ParquetFileLoader extends TextFileLoader {
             Type fieldType = g.getType().getType(field);
             if (!fieldType.isPrimitive())
                 throw new RuntimeException("Non-primitive field not supported");
-            switch (cds.get(field).getType()) {
+            switch (cds.get(field).getPrimitiveType().getPrimitiveTypeName()) {
                 case INT64: {
                     long l = g.getLong(field, 0);
                     col.append((double) l);
@@ -138,7 +142,7 @@ public class ParquetFileLoader extends TextFileLoader {
                     break;
                 }
                 default:
-                    throw new RuntimeException("Unexpected column kind " + cds.get(field).getType());
+                    throw new RuntimeException("Unexpected column kind " + cds.get(field).getPrimitiveType().getPrimitiveTypeName());
             }
         }
     }
@@ -146,7 +150,7 @@ public class ParquetFileLoader extends TextFileLoader {
     private static ColumnDescription getColumnDescription(ColumnDescriptor cd) {
         String name = String.join("", cd.getPath());  // this should contain a single String
         ContentsKind kind;
-        switch (cd.getType()) {
+        switch (cd.getPrimitiveType().getPrimitiveTypeName()) {
             case INT64:
             case FLOAT:
             case DOUBLE:
@@ -164,7 +168,7 @@ public class ParquetFileLoader extends TextFileLoader {
                 kind = ContentsKind.LocalDate;
                 break;
             default:
-                throw new RuntimeException("Unexpected column kind " + cd.getType());
+                throw new RuntimeException("Unexpected column kind " + cd.getPrimitiveType());
         }
         return new ColumnDescription(name, kind);
     }
@@ -206,7 +210,9 @@ public class ParquetFileLoader extends TextFileLoader {
         try {
             MessageType schema = md.getFileMetaData().getSchema();
             List<IAppendableColumn> cols = createColumns(md);
-            ParquetFileReader r = ParquetFileReader.open(this.configuration, this.path);
+            ParquetReadOptions.Builder builder = new ParquetReadOptions.Builder();
+            InputFile file = HadoopInputFile.fromPath(path, this.configuration);
+            ParquetFileReader r = new ParquetFileReader(file, builder.build());
             MessageColumnIO columnIO = new ColumnIOFactory().getColumnIO(schema);
 
             PageReadStore pages;
