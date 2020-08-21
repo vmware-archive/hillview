@@ -26,6 +26,7 @@ import org.hillview.dataset.api.*;
 import org.hillview.dataset.remoting.HillviewServer;
 import org.hillview.management.*;
 import org.hillview.maps.FindCassandraFilesMap;
+import org.hillview.maps.FindHiveHDFSFilesMap;
 import org.hillview.maps.FindFilesMap;
 import org.hillview.maps.highorder.IdMap;
 import org.hillview.maps.LoadDatabaseTableMap;
@@ -155,6 +156,15 @@ public class InitialObjectTarget extends RpcTarget {
         this.runFlatMap(this.emptyDataset, finder,
                 // TODO: metadata file
                 (d, c) -> new FileDescriptionTarget(d, c, null), request, context);
+    }
+
+    @HillviewRpc
+    public void findHiveHDFSFiles(RpcRequest request, RpcRequestContext context) {
+        HiveConnectionInfo desc = request.parseArgs(HiveConnectionInfo.class);
+        HillviewLogger.instance.info("Finding Hive's hdfs files", "{0}", desc);
+        IMap<Empty, List<IFileReference>> finder = new FindHiveHDFSFilesMap(desc);
+        Converters.checkNull(this.emptyDataset);
+        this.runFlatMap(this.emptyDataset, finder, FileDescriptionTarget::new, request, context);
     }
 
     @HillviewRpc

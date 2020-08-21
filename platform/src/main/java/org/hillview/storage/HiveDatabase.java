@@ -49,20 +49,29 @@ public class HiveDatabase{
 
     private final HiveConnectionInfo info;
     private final Connection hiveConn;
-    private final Configuration hdfsConf;
-    public final List<InetAddress> hdfsInetAddresses;
+    private static Configuration hdfsConf;
+    private final List<InetAddress> hdfsInetAddresses;
     private final InetAddress localHDFSNode;
-    public final UserGroupInformation hadoopUGI;
-    public final Schema tableSchema;
-    public final List<HivePartition> arrPartitions;
+    private final UserGroupInformation hadoopUGI;
+    private final Schema tableSchema;
+    private final List<HivePartition> arrPartitions;
     private final DFSClient hadoopDfsClient;
 
-    public ResultSetMetaData metadataColumn;
-    public String discoveredDelimiter = "default: \\u0001";
-    public String hdfsPath = "";
-    public boolean isPartitionedTable = false;
+    private ResultSetMetaData metadataColumn;
+    private String discoveredDelimiter = "default: \\u0001";
+    private String hdfsPath = "";
+    private boolean isPartitionedTable = false;
+
+    private final String driverName = "org.apache.hive.jdbc.HiveDriver";
 
     public HiveDatabase(HiveConnectionInfo info) {
+        try {
+            Class.forName(driverName);
+        } catch (final ClassNotFoundException e) {
+            HillviewLogger.instance.error("Can't find Hive jdbc driver", "{0}", e.getStackTrace().toString());
+            throw new RuntimeException(e);
+        }
+
         this.info = info;
         try {
             this.hiveConn = DriverManager.getConnection("jdbc:hive2://" + this.info.host + ":" + this.info.port + 
@@ -70,16 +79,16 @@ public class HiveDatabase{
             this.discoverTableProperties();
             this.hdfsInetAddresses = this.convertToInetAddresses();
             this.localHDFSNode = HiveDatabase.discoverLocalHDFSInterface(this.hdfsInetAddresses);
-            this.hdfsConf = HiveDatabase.initHDFSConfig(this.localHDFSNode, this.info.hadoopUsername, this.info.namenodePort);
+            HiveDatabase.hdfsConf = HiveDatabase.initHDFSConfig(this.localHDFSNode, this.info.hadoopUsername, this.info.namenodePort);
             this.hadoopDfsClient = new DFSClient(
                     new InetSocketAddress(this.localHDFSNode.getHostAddress(), Integer.parseInt(this.info.namenodePort)),
-                    this.hdfsConf);
+                    HiveDatabase.hdfsConf);
             this.hadoopUGI = UserGroupInformation.createRemoteUser(this.info.hadoopUsername);
             this.tableSchema = this.discoverTableSchema();
             this.arrPartitions = this.discoverPartitions();
         } catch (Exception e) {
             HillviewLogger.instance.error("Failed initializing CassandraDatabase partitions", "{0}",
-                    this.info.toString());
+                    this.info.toString() + "\n" + this.toString());
             throw new RuntimeException(e);
         }
     }
@@ -133,6 +142,8 @@ public class HiveDatabase{
     public static Configuration initHDFSConfig(InetAddress localHDFSNode, String hadoopUsername, 
             String namenodePort) throws SQLException {
         Configuration hdfsConf = new Configuration(false);
+        hdfsConf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
+        hdfsConf.set("fs.file.impl", org.apache.hadoop.fs.LocalFileSystem.class.getName());
         hdfsConf.set("fs.defaultFS", "hdfs://" + localHDFSNode.getHostAddress() + ":" + namenodePort);
         hdfsConf.set("fs.default.name", hdfsConf.get("fs.defaultFS"));
         hdfsConf.set("hadoop.job.ugi", hadoopUsername);
@@ -161,10 +172,12 @@ public class HiveDatabase{
 
     public static class FileLocality {
         public final String fullPath;
+        public final long size;
         public final List<InetAddress> locality;
 
-        public FileLocality(String fullPath, List<InetAddress> locality) {
+        public FileLocality(String fullPath, long size, List<InetAddress> locality) {
             this.fullPath = fullPath;
+            this.size = size;
             this.locality = locality;
         }
 
@@ -240,14 +253,13 @@ public class HiveDatabase{
 
     private List<FileLocality> discoverAllFilesInPartition(String partitionPath)
             throws Exception {
-        Configuration conf = this.hdfsConf;
+        // Configuration conf = HiveDatabase.hdfsConf;
         DFSClient dfsClient = this.hadoopDfsClient;
         String nameNodePort = this.info.namenodePort;
-
         List<FileLocality> arrFileLocality = this.hadoopUGI.doAs(new PrivilegedExceptionAction<List<FileLocality>>() {
             @Override
             public List<FileLocality> run() throws Exception {
-                FileSystem fs = FileSystem.get(conf);
+                FileSystem fs = FileSystem.get(HiveDatabase.hdfsConf);
                 FileStatus[] status = fs.listStatus(new Path(partitionPath));
                 List<FileLocality> arrFileLocality = new ArrayList<>();
                 LocatedBlocks blocks = null;
@@ -260,7 +272,7 @@ public class HiveDatabase{
                     for (DatanodeInfo datanodeInfo : locations) {
                         arrIPAddr.add(InetAddress.getByName(datanodeInfo.getIpAddr()));
                     }
-                    arrFileLocality.add(new FileLocality(partitionItem, arrIPAddr));
+                    arrFileLocality.add(new FileLocality(partitionItem, blocks.getFileLength(), arrIPAddr));
                 }
                 fs.close();
                 return arrFileLocality;
@@ -298,6 +310,26 @@ public class HiveDatabase{
 
     public List<HivePartition> getTablePartitions() {
         return this.arrPartitions;
+    }
+
+    public UserGroupInformation getHadoopUGI() {
+        return this.hadoopUGI;
+    }
+
+    public Schema getTableSchema() {
+        return this.tableSchema;
+    }
+
+    public ResultSetMetaData getMetadataColumn() {
+        return this.metadataColumn;
+    }
+
+    public List<HivePartition> getArrPartitions() {
+        return this.arrPartitions;
+    }
+
+    public List<InetAddress> getHdfsInetAddresses(){
+        return this.hdfsInetAddresses;
     }
 
     public String toString() {

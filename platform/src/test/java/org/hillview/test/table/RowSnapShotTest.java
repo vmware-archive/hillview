@@ -31,6 +31,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 
 public class RowSnapShotTest extends BaseTest {
@@ -52,7 +53,7 @@ public class RowSnapShotTest extends BaseTest {
         rs = new RowSnapshot(tbl, 1);
         Instant i = Converters.toDate(rs.getDouble(name));
         Assert.assertNotNull(i);
-        Assert.assertEquals(i, now);
+        Assert.assertEquals(i, now.truncatedTo(ChronoUnit.MILLIS));
         o = rs.getObject(name);
         Assert.assertNotNull(o);
     }

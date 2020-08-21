@@ -19,6 +19,7 @@ public class HiveTest extends BaseTest {
         // conn.dataDelimiter = "/";
         // conn.dataDelimiter = "/t";
         // conn.table = "tb3";
+        // conn.table = "pokes";
         conn.table = "invites";
         // conn.table = "no_par";
         // conn.table = "test_delim";
@@ -63,8 +64,8 @@ public class HiveTest extends BaseTest {
             this.ignoringException("Failed connecting to Hive Database", e);
             return;
         }
-        HiveHDFSLoader hiveHDFSLoader = new HiveHDFSLoader(conn, db.hadoopUGI, db.tableSchema,
-                db.metadataColumn, db.arrPartitions, db.hdfsInetAddresses);
+        HiveHDFSLoader hiveHDFSLoader = new HiveHDFSLoader(conn, db.getHadoopUGI(), db.getTableSchema(),
+                db.getMetadataColumn(), db.getArrPartitions(), db.getHdfsInetAddresses());
         ITable table = hiveHDFSLoader.load();
         System.out.println("table " + table);
     }

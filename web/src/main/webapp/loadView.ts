@@ -772,7 +772,7 @@ class FederatedDBDialog extends JDBCDialog {
     public addFieldDataDelimiter() {
         return this.addTextField("dataDelimiter", "Data Delimiter", FieldKind.String, null,
             "A delimiter to parse the hdfs data, such as '/', '\\', '/t', ',', etc. " +
-            "Unicode symbol is writen on this format: uXXXX (where XXXX is the unicode number).");
+            "The default value is \\u0001.");
     }
 
     public getDatabaseKind(): String {
@@ -838,7 +838,12 @@ class FederatedDBDialog extends JDBCDialog {
         this.showInputField("dataDelimiter");
         this.setFieldValue("port", "10000");
         this.setFieldValue("namenodePort", "9000");
-        this.setFieldValue("dataDelimiter", "u0001");
+        this.setFieldValue("dataDelimiter", "\\u0001");
+        // TODO: Remove this lines below before final commit
+        this.setFieldValue("database", "default");
+        this.setFieldValue("table", "pokes");
+        this.setFieldValue("hdfsNodes", "localhost");
+        this.setFieldValue("hadoopUsername", "daniar");
     }
 
     public hideAllExtraFields() {
