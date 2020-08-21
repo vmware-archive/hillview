@@ -51,7 +51,7 @@ public class FindHiveHDFSFilesMap implements IMap<Empty, List<IFileReference>> {
         Schema tableSchema = db.getTableSchema();
         ResultSetMetaData metadataColumn = db.getMetadataColumn();
         List<HivePartition> arrPartitions = db.getArrPartitions();
-        List<InetAddress> hdfsInetAddresses = db.getHdfsInetAddresses();
+        List<String> hdfsInetAddresses = db.getHdfsInetAddresses();
 
         try {
             db.closeConnection();

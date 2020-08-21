@@ -50,8 +50,8 @@ public class HiveDatabase{
     private final HiveConnectionInfo info;
     private final Connection hiveConn;
     private static Configuration hdfsConf;
-    private final List<InetAddress> hdfsInetAddresses;
-    private final InetAddress localHDFSNode;
+    private final List<String> hdfsInetAddresses;
+    private final String localHDFSNode;
     private final UserGroupInformation hadoopUGI;
     private final Schema tableSchema;
     private final List<HivePartition> arrPartitions;
@@ -81,7 +81,7 @@ public class HiveDatabase{
             this.localHDFSNode = HiveDatabase.discoverLocalHDFSInterface(this.hdfsInetAddresses);
             HiveDatabase.hdfsConf = HiveDatabase.initHDFSConfig(this.localHDFSNode, this.info.hadoopUsername, this.info.namenodePort);
             this.hadoopDfsClient = new DFSClient(
-                    new InetSocketAddress(this.localHDFSNode.getHostAddress(), Integer.parseInt(this.info.namenodePort)),
+                    new InetSocketAddress(this.localHDFSNode, Integer.parseInt(this.info.namenodePort)),
                     HiveDatabase.hdfsConf);
             this.hadoopUGI = UserGroupInformation.createRemoteUser(this.info.hadoopUsername);
             this.tableSchema = this.discoverTableSchema();
@@ -118,33 +118,37 @@ public class HiveDatabase{
         }
     }
 
-    public static InetAddress discoverLocalHDFSInterface(List<InetAddress> hdfsInetAddresses) throws SocketException {
+    public static String discoverLocalHDFSInterface(List<String> hdfsInetAddresses) throws SocketException {
         Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces();
+        // TODO: clean up this after debugging
+        String netString = "";
         for (NetworkInterface netint : Collections.list(nets)) {
             Enumeration<InetAddress> inetAddresses = netint.getInetAddresses();
             for (InetAddress inetAddress : Collections.list(inetAddresses)) {
-                if (hdfsInetAddresses.contains(inetAddress))
-                    return inetAddress;
+                netString += ", "+ inetAddress.getHostName();
+                netString += " - " + inetAddress.getHostAddress();
+                if (hdfsInetAddresses.contains(inetAddress.getHostAddress()))
+                    return inetAddress.getHostAddress();
             }
         }
-        throw new RuntimeException("Can't find local HDFS interface from hdfsNodes");
+        throw new RuntimeException("Can't find local HDFS interface from hdfsNodes netString: [ " + netString + "] \n hdfsInetAddresses: " + hdfsInetAddresses.toString());
     }
 
-    private List<InetAddress> convertToInetAddresses() throws UnknownHostException {
+    private List<String> convertToInetAddresses() throws UnknownHostException {
         String[] nodes = this.info.hdfsNodes.replaceAll(" ", "").split(",");
-        List<InetAddress> inetAddresses = new ArrayList<>();
+        List<String> inetAddresses = new ArrayList<>();
         for (String node : nodes) {
-            inetAddresses.add(InetAddress.getByName(node));
+            inetAddresses.add(InetAddress.getByName(node).getHostAddress());
         }
         return inetAddresses;
     }
 
-    public static Configuration initHDFSConfig(InetAddress localHDFSNode, String hadoopUsername, 
+    public static Configuration initHDFSConfig(String localHDFSNode, String hadoopUsername, 
             String namenodePort) throws SQLException {
         Configuration hdfsConf = new Configuration(false);
         hdfsConf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
         hdfsConf.set("fs.file.impl", org.apache.hadoop.fs.LocalFileSystem.class.getName());
-        hdfsConf.set("fs.defaultFS", "hdfs://" + localHDFSNode.getHostAddress() + ":" + namenodePort);
+        hdfsConf.set("fs.defaultFS", "hdfs://" + localHDFSNode + ":" + namenodePort);
         hdfsConf.set("fs.default.name", hdfsConf.get("fs.defaultFS"));
         hdfsConf.set("hadoop.job.ugi", hadoopUsername);
         return hdfsConf;
@@ -328,7 +332,7 @@ public class HiveDatabase{
         return this.arrPartitions;
     }
 
-    public List<InetAddress> getHdfsInetAddresses(){
+    public List<String> getHdfsInetAddresses(){
         return this.hdfsInetAddresses;
     }
 

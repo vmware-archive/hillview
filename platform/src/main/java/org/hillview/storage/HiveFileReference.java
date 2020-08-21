@@ -35,11 +35,11 @@ public class HiveFileReference implements IFileReference {
     private final Schema tableSchema;
     private final ResultSetMetaData metadataColumn;
     private final List<HivePartition> arrPartitions;
-    private final List<InetAddress> hdfsInetAddresses;
+    private final List<String> hdfsInetAddresses;
     private final HiveHDFSLoader hiveLoader;
     
     public HiveFileReference(final HiveConnectionInfo conn, final UserGroupInformation hadoopUGI, Schema tableSchema,
-            ResultSetMetaData metadataColumn, List<HivePartition> arrPartitions, List<InetAddress> hdfsInetAddresses) {
+            ResultSetMetaData metadataColumn, List<HivePartition> arrPartitions, List<String> hdfsInetAddresses) {
         this.conn = conn;
         this.hadoopUGI = hadoopUGI;
         this.tableSchema = tableSchema;

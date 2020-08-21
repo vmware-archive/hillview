@@ -51,15 +51,15 @@ public class HiveHDFSLoader extends TextFileLoader {
     private final UserGroupInformation hadoopUGI;
 
     private final List<HivePartition> arrPartitions;
-    private final List<InetAddress> hdfsInetAddresses;
+    private final List<String> hdfsInetAddresses;
 
     private final ResultSetMetaData metadataColumn;
-    private final InetAddress localHDFSNode;
+    private final String localHDFSNode;
     private final Schema actualSchema;
 
     public HiveHDFSLoader(HiveConnectionInfo info, UserGroupInformation hadoopUGI, Schema tableSchema,
             ResultSetMetaData metadataColumn, List<HivePartition> arrPartitions,
-            List<InetAddress> hdfsInetAddresses) {
+            List<String> hdfsInetAddresses) {
         super(info.table);
         this.info = info;
         this.hadoopUGI = hadoopUGI;
