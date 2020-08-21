@@ -88,7 +88,7 @@ public class HiveDatabase{
             this.arrPartitions = this.discoverPartitions();
         } catch (Exception e) {
             HillviewLogger.instance.error("Failed initializing CassandraDatabase partitions", "{0}",
-                    this.info.toString() + "\n" + this.toString());
+                    this.info.toString());
             throw new RuntimeException(e);
         }
     }
