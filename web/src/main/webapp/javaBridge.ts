@@ -19,6 +19,8 @@
 // TypeScript and Java.  These must be changed carefully, and usually in both parts, or
 // subtle bugs may happen.  Most often these classes have the same name in Java and TypeScript.
 
+import {DirectGeometryObject, FeatureCollection, MultiPolygon} from "geojson";
+
 export type RemoteObjectId = string;
 
 export type Comparison = "==" | "!=" | "<" | ">" | "<=" | ">=";
@@ -53,6 +55,8 @@ export function asContentsKind(kind: string): ContentsKind {
             throw new TypeError(`String ${kind} is not a kind.`);
     }
 }
+
+export type SimpleFeatureCollection = FeatureCollection<DirectGeometryObject, any>;
 
 /**
  * This must match the data in LogFiles.java

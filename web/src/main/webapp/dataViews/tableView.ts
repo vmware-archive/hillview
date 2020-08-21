@@ -71,6 +71,8 @@ import {Grid} from "../ui/grid";
 import {LogFileReceiver} from "./logFileView";
 import {FindBar} from "../ui/findBar";
 import {HillviewToplevel} from "../toplevel";
+import {ReceiverCommonArgs} from "../ui/receiver";
+import {GeoReceiver} from "./geoView";
 
 /**
  * Displays a table in the browser.
@@ -637,7 +639,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             }, !this.isPrivate());
             const chartMenuIdx = this.contextMenu.addExpandableItem({
                 text: "Charts",
-                action: () => null,
+                action: () => null, // inserted here later
                 help: "Choose a chart to draw. ",
             });
             this.contextMenu.addItem({
@@ -721,6 +723,15 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                     " This is only applicable for some structured string or JSON columns."
             }, selectedCount === 1 && this.isKVColumn(this.getSelectedColNames()[0]) && !this.isPrivate());
             this.contextMenu.insertSubMenu( chartMenuIdx, {
+                    text: "Map",
+                    action: () =>
+                        this.geo(this.getSelectedColNames()),
+                    help:
+                        "Plot the data in the selected columns one a map. "
+                },
+                selectedCount <= 2 && !this.isPrivate()
+            );
+            this.contextMenu.insertSubMenu( chartMenuIdx, {
                 text: "Histogram",
                 action: () =>
                   this.chart(
@@ -779,6 +790,20 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             );
             this.contextMenu.show(e);
         };
+    }
+
+    protected geo(cols: string[]): void {
+        const rr = this.createGeoRequest(cols);
+        const args: ReceiverCommonArgs = {
+            title: new PageTitle("Map of " + cols[0], this.defaultProvenance),
+            remoteObject: this,
+            rowCount: this.rowCount,
+            schema: this.schema,
+            originalPage: this.page,
+            options: { chartKind: "Map", reusePage: false }
+        };
+        const rec = new GeoReceiver(args, rr);
+        rr.invoke(rec);
     }
 
     public createIntervalColumn(cols: string[]): void {

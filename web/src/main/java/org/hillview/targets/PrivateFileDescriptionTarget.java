@@ -11,17 +11,16 @@ import org.hillview.maps.LoadFilesMap;
 import org.hillview.sketches.FileSizeSketch;
 import org.hillview.storage.IFileReference;
 import org.hillview.table.api.ITable;
+import org.hillview.utils.Converters;
 
 public class PrivateFileDescriptionTarget extends FileDescriptionTarget {
     static final long serialVersionUID = 1;
 
     private final PrivacySchema metadata;
-    private final String schemaFilename;
 
     PrivateFileDescriptionTarget(IDataSet<IFileReference> files, HillviewComputation computation, String file) {
-        super(files, computation);
+        super(files, computation, file);
         this.metadata = PrivacySchema.loadFromFile(file);
-        this.schemaFilename = file;
     }
 
     @HillviewRpc
@@ -33,6 +32,7 @@ public class PrivateFileDescriptionTarget extends FileDescriptionTarget {
     @HillviewRpc
     public void loadTable(RpcRequest request, RpcRequestContext context) {
         IMap<IFileReference, ITable> loader = new LoadFilesMap();
-        this.runMap(this.files, loader, (d, c) -> new PrivateTableTarget(d, c, metadata, schemaFilename), request, context);
+        this.runMap(this.files, loader, (d, c) ->
+                new PrivateTableTarget(d, c, this.metadata, Converters.checkNull(this.metadataFile)), request, context);
     }
 }

@@ -359,7 +359,6 @@ export class QuartilesVectorReceiver extends Receiver<Groups<SampleSet>> {
         super(options.reusePage ? page : page.dataset.newPage(title, page), operation, "quartiles");
         this.view = new QuartilesHistogramView(
             this.remoteObject.remoteObjectId, rowCount, schema, quantilesCol, this.page);
-        this.page.setDataView(this.view);
         const axisData = new AxisData(histoArgs.cd, range, histoArgs.bucketCount);
         this.view.setAxis(axisData);
     }

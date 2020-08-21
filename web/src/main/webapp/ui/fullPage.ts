@@ -433,8 +433,9 @@ export class FullPage implements IHtmlElement {
                 case "Schema":
                 case "Load":
                 case "SVD Spectrum":
-                case "LogFileView":
+                case "LogFile":
                 case "CorrelationHeatmaps":
+                case "Map":
                     break;
                 default:
                     assertNever(hdv.viewKind);

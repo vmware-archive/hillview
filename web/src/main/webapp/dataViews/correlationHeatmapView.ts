@@ -441,7 +441,6 @@ export class CorrelationHeatmapReceiver extends ReceiverCommon<Groups<Groups<num
                 operation: RpcRequest<Groups<Groups<number>>[]>) {
         super(common, operation, "correlations")
         this.view = new CorrelationHeatmapView(this.args, histoArgs, ranges, this.page);
-        this.page.setDataView(this.view);
     }
 
     public onNext(value: PartialResult<Groups<Groups<number>>[]>): void {

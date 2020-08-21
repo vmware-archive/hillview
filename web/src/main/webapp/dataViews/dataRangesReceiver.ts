@@ -613,7 +613,8 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
             case "HeavyHitters":
             case "Schema":
             case "Load":
-            case "LogFileView":
+            case "LogFile":
+            case "Map":
                 throw new Error("Unexpected kind " + this.options.chartKind);
             default:
                 assertNever(this.options.chartKind);

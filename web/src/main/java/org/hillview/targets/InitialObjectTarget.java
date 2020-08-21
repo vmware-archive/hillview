@@ -118,6 +118,7 @@ public class InitialObjectTarget extends RpcTarget {
             // Bookmark link is broken. Failed to find bookmarked content
             throw new RuntimeException(e);
         }
+        Converters.checkNull(this.emptyDataset);
         PrecomputedSketch<Empty, JsonString> sk = new PrecomputedSketch<Empty, JsonString>(new JsonString(content));
         this.runCompleteSketch(this.emptyDataset, sk, request, context);
     }
@@ -151,7 +152,9 @@ public class InitialObjectTarget extends RpcTarget {
         HillviewLogger.instance.info("Finding SSTable files", "{0}", desc);
         IMap<Empty, List<IFileReference>> finder = new FindCassandraFilesMap(desc);
         Converters.checkNull(this.emptyDataset);
-        this.runFlatMap(this.emptyDataset, finder, FileDescriptionTarget::new, request, context);
+        this.runFlatMap(this.emptyDataset, finder,
+                // TODO: metadata file
+                (d, c) -> new FileDescriptionTarget(d, c, null), request, context);
     }
 
     @HillviewRpc
@@ -174,7 +177,8 @@ public class InitialObjectTarget extends RpcTarget {
             this.runFlatMap(this.emptyDataset, finder,
                     (d, c) -> new PrivateFileDescriptionTarget(d, c, privacyMetadataFile), request, context);
         } else {
-            this.runFlatMap(this.emptyDataset, finder, FileDescriptionTarget::new, request, context);
+            this.runFlatMap(this.emptyDataset, finder,
+                    (d, c) -> new FileDescriptionTarget(d, c, Utilities.getFolder(desc.fileNamePattern)), request, context);
         }
     }
 
@@ -189,7 +193,8 @@ public class InitialObjectTarget extends RpcTarget {
         IMap<Empty, List<IFileReference>> finder = new FindFilesMap(desc);
         HillviewLogger.instance.info("Finding log files");
         assert this.emptyDataset != null;
-        this.runFlatMap(this.emptyDataset, finder, FileDescriptionTarget::new, request, context);
+        this.runFlatMap(this.emptyDataset, finder,
+                (d, c) -> new FileDescriptionTarget(d, c, null), request, context);
     }
 
     @Override

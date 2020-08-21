@@ -453,8 +453,7 @@ export class HeatmapView extends
 
     public static reconstruct(ser: HeatmapSerialization, page: FullPage): IDataView | null {
         if (ser.columnDescription0 === null || ser.columnDescription1 === null ||
-            ser.samplingRate === null || ser.schema === null ||
-            ser.xBucketCount === null || ser.yBucketCount === null ||
+            ser.samplingRate === null || ser.xBucketCount === null || ser.yBucketCount === null ||
             ser.xRange === null || ser.yRange === null) {
             return null;
         }
@@ -637,7 +636,6 @@ export class HeatmapReceiver extends Receiver<Two<Groups<Groups<number>>>> {
             remoteTable.remoteObjectId, rowCount, schema, null,
             this.samplingRate, this.page);
         this.view.setAxes(axisData[0], axisData[1]);
-        this.page.setDataView(this.view);
     }
 
     public onNext(value: PartialResult<Two<Groups<Groups<number>>>>): void {
@@ -674,7 +672,6 @@ export class HeatmapWithDataReceiver extends Receiver<Pair<Groups<Groups<number>
             remoteTable.remoteObjectId, rowCount, schema, detailedColumns,
             this.samplingRate, this.page);
         this.view.setAxes(axisData[0], axisData[1]);
-        this.page.setDataView(this.view);
     }
 
     public onNext(value: PartialResult<Pair<Groups<Groups<number>>, Groups<Groups<RowValue[]>>>>): void {

@@ -71,7 +71,6 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
         const topMenu = new TopMenu([{ text: "View", help: "Change the way the data is displayed.", subMenu: menu}]);
         this.newPage.setMenu(topMenu);
         this.specView = new SpectrumView(this.remoteObjectId, this.rowCount, this.colNames, this.schema, this.newPage);
-        this.newPage.setDataView(this.specView);
 
         const ev: number [] = eVals.eigenValues;
         const histogram: Groups<number> = { perBucket: ev, perMissing: 0 };

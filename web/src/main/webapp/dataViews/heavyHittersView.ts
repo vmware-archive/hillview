@@ -71,7 +71,6 @@ export class HeavyHittersReceiver extends OnCompleteReceiver<TopList> {
             const hhv = new HeavyHittersView(
                 data.heavyHittersId, newPage, this.remoteTableObject, this.rowCount, this.schema,
                 this.isApprox, this.percent, this.columnsShown);
-            newPage.setDataView(hhv);
             hhv.updateView(data.top);
             hhv.page.scrollIntoView();
             hhv.updateCompleted(this.elapsedMilliseconds());
@@ -501,7 +500,6 @@ export class HeavyHittersReceiver2 extends OnCompleteReceiver<TopList> {
             newData.heavyHittersId, this.page, this.hhv.remoteTableObject,
             this.hhv.rowCount, this.hhv.schema, false,
             this.hhv.percent, this.hhv.columnsShown);
-        this.page.setDataView(newHhv);
         newHhv.updateView(newData.top);
         newHhv.updateCompleted(this.elapsedMilliseconds());
     }

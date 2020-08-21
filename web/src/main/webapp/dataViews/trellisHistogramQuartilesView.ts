@@ -443,7 +443,6 @@ export class TrellisHistogramQuartilesReceiver extends Receiver<Groups<Groups<Sa
         const xAxis = new AxisData(histoArgs[0].cd, range[0], histoArgs[0].bucketCount);
         const groupByAxis = new AxisData(histoArgs[1].cd, range[1], histoArgs[1].bucketCount);
         this.trellisView.setAxes(xAxis, groupByAxis);
-        this.page.setDataView(this.trellisView);
     }
 
     public onNext(value: PartialResult<Groups<Groups<SampleSet>>>): void {

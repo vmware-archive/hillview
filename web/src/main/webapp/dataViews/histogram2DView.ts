@@ -692,7 +692,6 @@ export class Histogram2DReceiver extends Receiver<Pair<Groups<Groups<number>>, G
         super(options.reusePage ? page : page.dataset.newPage(title, page), operation, "histogram");
         this.view = new Histogram2DView(
             this.remoteObject.remoteObjectId, rowCount, schema, samplingRate, this.page);
-        this.page.setDataView(this.view);
         this.view.setAxes(axes[0], axes[1], options.relative);
     }
 

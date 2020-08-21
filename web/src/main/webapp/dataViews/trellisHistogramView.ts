@@ -473,7 +473,6 @@ export class TrellisHistogramReceiver extends Receiver<Two<Groups<Groups<number>
             remoteTable.remoteObjectId, rowCount, schema,
             this.shape, this.samplingRate, this.page);
         this.trellisView.setAxes(axes[0], axes[1]);
-        this.page.setDataView(this.trellisView);
     }
 
     public onNext(value: PartialResult<Two<Groups<Groups<number>>>>): void {

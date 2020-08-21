@@ -476,7 +476,6 @@ export class TrellisHeatmapReceiver extends Receiver<Groups<Groups<Groups<number
             remoteTable.remoteObjectId, rowCount, schema,
             this.shape, this.samplingRate, this.page);
         this.trellisView.setAxes(axes[0], axes[1], axes[2]);
-        this.page.setDataView(this.trellisView);
     }
 
     public onNext(value: PartialResult<Groups<Groups<Groups<number>>>>): void {

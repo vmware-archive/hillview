@@ -95,6 +95,10 @@ export interface HeatmapSerialization extends BaseHeatmapSerialization {
     detailedColumns: SchemaClassSerialization;
 }
 
+export interface MapSerialization extends IViewSerialization {
+    // TODO
+}
+
 export interface QuantileVectorSerialization extends IViewSerialization {
     columnDescription0: IColumnDescription;
     columnDescription1: IColumnDescription;
@@ -476,7 +480,8 @@ export class DatasetView implements IHtmlElement {
             vs.rowCount == null ||
             vs.provenance == null ||
             vs.title == null ||
-            vs.viewKind == null)  // sourcePageId can be null
+            vs.viewKind == null ||
+            vs.schema == null)  // sourcePageId can be null
             return false;
         const page = this.reconstructPage(new PageTitle(vs.title, vs.provenance),
             vs.pageId, vs.sourcePageId);
@@ -524,7 +529,10 @@ export class DatasetView implements IHtmlElement {
             case "Load":
                  // These do not need to be reconstructed ever.
                 break;
-            case "LogFileView":
+            case "LogFile":
+                // TODO
+                break;
+            case "Map":
                 // TODO
                 break;
             default:
@@ -532,7 +540,7 @@ export class DatasetView implements IHtmlElement {
                 break;
         }
         if (view != null) {
-            page.setDataView(view);
+            //page.setDataView(view);
             view.refresh();
             return true;
         }

@@ -21,6 +21,7 @@ import com.google.gson.JsonObject;
 import org.hillview.*;
 import org.hillview.dataStructures.*;
 import org.hillview.dataset.api.*;
+import org.hillview.geo.PolygonSet;
 import org.hillview.maps.*;
 import org.hillview.sketches.*;
 import org.hillview.sketches.highorder.*;
@@ -36,6 +37,7 @@ import org.jblas.DoubleMatrix;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 import java.io.File;
@@ -62,10 +64,6 @@ public final class TableTarget extends TableRpcTarget {
     }
 
     static class NextKArgs {
-        /**
-         * If not null, start at first tuple which contains this string in one of the
-         * visible columns.
-         */
         RecordOrder order = new RecordOrder();
         @Nullable
         Object[] firstRow;
@@ -181,6 +179,14 @@ public final class TableTarget extends TableRpcTarget {
         // Rename map encoded as an array
         @Nullable
         String[] renameMap;
+    }
+
+    @HillviewRpc
+    public void getGeo(RpcRequest request, RpcRequestContext context) throws IOException {
+        // TODO
+        PolygonSet ps = new PolygonSet("data/geo/us_states/cb_2019_us_state_20m.shp", "STUPS");
+        PrecomputedSketch<ITable, JsonString> pk = new PrecomputedSketch<>(new JsonString(ps.toJSON()));
+        this.runCompleteSketch(this.table, pk, request, context);
     }
 
     @HillviewRpc

@@ -527,7 +527,6 @@ export class HistogramReceiver extends Receiver<Two<Two<Groups<number>>>>  {
         this.view = new HistogramView(
             remoteTableId, rowCount, schema, this.samplingRate, this.isPie, this.page);
         this.view.setAxis(xAxisData);
-        this.page.setDataView(this.view);
     }
 
     public onNext(value: PartialResult<Two<Two<Groups<number>>>>): void {
