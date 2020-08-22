@@ -16,7 +16,7 @@
  */
 
 import {NotifyDialog} from "./ui/dialog";
-import {assert, findElement} from "./util";
+import {assert, findElement, findElementAny} from "./util";
 
 interface TestOperation {
     /**
@@ -88,10 +88,6 @@ export class Test {
      */
     public static instance: Test = new Test();
 
-    public addInstruction(testOp: TestOperation): void {
-        this.testProgram.push(testOp);
-    }
-
     public addProgram(testOps: TestOperation[]): void {
         this.testProgram = this.testProgram.concat(testOps);
     }
@@ -133,7 +129,7 @@ export class Test {
     }
     
     private static existsElement(cssselector: string): boolean {
-        const result = findElement(cssselector, true) != null;
+        const result = findElementAny(cssselector) != null;
         console.log("Checking element existence: " + cssselector + "=" + result);
         return result;
     }

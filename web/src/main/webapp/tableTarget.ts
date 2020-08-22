@@ -255,8 +255,8 @@ export class TableTargetAPI extends RemoteObject {
         return this.createStreamingRpcRequest<TableSummary>("getSummary", null);
     }
 
-    public createGeoRequest(colNames: string[]): RpcRequest<SimpleFeatureCollection> {
-        return this.createStreamingRpcRequest<SimpleFeatureCollection>("getGeo", colNames);
+    public createGeoRequest(column: IColumnDescription): RpcRequest<SimpleFeatureCollection> {
+        return this.createStreamingRpcRequest<SimpleFeatureCollection>("getGeo", column);
     }
 
     public createHLogLogRequest(colName: string): RpcRequest<CountWithConfidence> {

@@ -160,7 +160,7 @@ export class HistogramLegendPlot extends LegendPlot<void> {
         this.axisData = axis;
         this.missingLegend = missingLegend;
         this.schema = schema;
-        if (kindIsString(axis.description!.kind))
+        if (kindIsString(axis.description.kind))
             this.colorMap = (d) => Plot.categoricalMap(Math.round(d * (this.axisData.bucketCount - 1)));
         else
             this.colorMap = Plot.defaultColorMap;

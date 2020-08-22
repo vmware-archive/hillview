@@ -166,9 +166,9 @@ export class AxisData {
     // The following are set only when the resolution is set.
     public scale: AnyScale | null;
     public axis: AxisDescription | null;
-    public displayRange: BucketsInfo | null; // the range used to draw the data; may be adjusted from this.dataRange
+    public displayRange: BucketsInfo; // the range used to draw the data; may be adjusted from this.dataRange
 
-    public constructor(public description: IColumnDescription | null, // may be null for e.g., the Y col in a histogram
+    public constructor(public description: IColumnDescription, // may be None for e.g., the Y col in a histogram
                        // dataRange is the original range of the data
                        public dataRange: BucketsInfo,
                        public bucketCount: number) {
@@ -245,8 +245,8 @@ export class AxisData {
         const bottom = axisKind !== AxisKind.Left;
         const axisCreator = bottom ? d3axisBottom : d3axisLeft;
         assert(this.displayRange != null);
-        let actualMin = this.displayRange.min;
-        let actualMax = this.displayRange.max;
+        let actualMin = this.displayRange.min!;
+        let actualMax = this.displayRange.max!;
         let adjust = .5;
         if (axisKind === AxisKind.Legend && AxisData.needsAdjustment(this.description.kind)) {
             // These were adjusted, bring them back.
@@ -272,7 +272,7 @@ export class AxisData {
                 const ticks: number[] = [];
                 const labels: string[] = [];
                 const fullLabels: string[] = [];
-                const tickCount = Math.ceil(this.displayRange.max - this.displayRange.min);
+                const tickCount = Math.ceil(this.displayRange.max! - this.displayRange.min!);
                 const minLabelSpace = 20;  // We reserve at least this many pixels
                 const maxLabelCount = pixels / minLabelSpace;
                 const labelPeriod = Math.ceil(tickCount / maxLabelCount);
@@ -295,7 +295,7 @@ export class AxisData {
                     ticks.push((i + adjust) * tickSpan);
                     let label = "";
                     if (i % labelPeriod === 0) {
-                        label = this.getString(this.displayRange.min + .5 + i, false);
+                        label = this.getString(this.displayRange!.min! + .5 + i, false);
                         if (label.length * fontWidth > tickSpan * labelPeriod)
                             rotate = true;
                         if (label.length > maxLabelWidthInChars) {
@@ -324,8 +324,8 @@ export class AxisData {
             }
             case "LocalDate":
             case "Time": {
-                const minDate: Date = Converters.localDateFromDouble(domain[0]);
-                const maxDate: Date = Converters.localDateFromDouble(domain[1]);
+                const minDate: Date = Converters.localDateFromDouble(domain[0]!)!;
+                const maxDate: Date = Converters.localDateFromDouble(domain[1]!)!;
                 this.scale = d3scaleTime()
                     .domain([minDate, maxDate])
                     .range([0, pixels]);
@@ -333,14 +333,15 @@ export class AxisData {
                 break;
             }
             case "Date": {
-                const minDate: Date = Converters.dateFromDouble(domain[0]);
-                const maxDate: Date = Converters.dateFromDouble(domain[1]);
+                const minDate: Date = Converters.dateFromDouble(domain[0]!)!;
+                const maxDate: Date = Converters.dateFromDouble(domain[1]!)!;
                 this.scale = d3scaleTime()
                     .domain([minDate, maxDate])
                     .range([0, pixels]);
                 this.axis = new AxisDescription(axisCreator(this.scale), 1, false, null);
                 break;
             }
+            case "None":
             case "Duration": {
                 // TODO
                 break;
@@ -427,15 +428,15 @@ export class AxisData {
             const left = this.bucketLeftString(bucket, false);
             const leftBoundary = new BucketBoundary(left, valueKind, true);
             if (bucket === this.bucketCount - 1) {
-                if (left == this.displayRange.maxBoundary)
+                if (left == this.displayRange!.maxBoundary)
                     return new BucketBoundaries(leftBoundary, null);
                 return new BucketBoundaries(leftBoundary,
-                    new BucketBoundary(this.displayRange.maxBoundary, valueKind, true));
+                    new BucketBoundary(this.displayRange!.maxBoundary!, valueKind, true));
             } else {
                 let right = this.bucketLeftString(bucket + 1, false);
                 if (left == right)
                     return new BucketBoundaries(leftBoundary, null);
-                if (this.displayRange.allStringsKnown) {
+                if (this.displayRange!.allStringsKnown) {
                     const leftStringIndex = this.bucketIndexToStringIndex(bucket);
                     const nextStringIndex = this.bucketIndexToStringIndex(bucket + 1);
                     if (nextStringIndex === leftStringIndex + 1)
@@ -454,10 +455,10 @@ export class AxisData {
             }
         }
 
-        const interval = (this.displayRange.max - this.displayRange.min) / this.bucketCount;
-        let start = this.displayRange.min + interval * bucket;
+        const interval = (this.displayRange!.max! - this.displayRange!.min!) / this.bucketCount;
+        let start = this.displayRange!.min! + interval * bucket;
         let end = start + interval;
-        const inclusive = end >= this.displayRange.max;
+        const inclusive = end >= this.displayRange!.max!;
         switch (valueKind) {
             case "Integer":
                 start = Math.ceil(start);
@@ -482,6 +483,7 @@ export class AxisData {
                  );
             case "String":
             case "Json":
+            case "None":
                 // handled above
                 assert(false);
                 break;
@@ -501,6 +503,8 @@ export class AxisData {
 
     public bucketIndex(value: RowValue): number {
         assert(this.description != null);
+        if (value == null)
+            return this.bucketCount;
         if (kindIsString(this.description.kind)) {
             const index = binarySearch(this.dataRange!.stringQuantiles!, value as string,
                 (s1, s2) => s1.localeCompare(s2));

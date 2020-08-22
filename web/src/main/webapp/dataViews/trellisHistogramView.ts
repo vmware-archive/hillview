@@ -25,7 +25,7 @@ import {FullPage, PageTitle} from "../ui/fullPage";
 import {BaseReceiver, TableTargetAPI} from "../modules";
 import {DisplayName, SchemaClass} from "../schemaClass";
 import {
-    add, assertNever,
+    add, assert, assertNever,
     Converters, histogram2DAsCsv,
     ICancellable, makeInterval,
     PartialResult,
@@ -175,7 +175,7 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
             if (col.name === this.xAxisData.description!.name ||
                 col.name === this.groupByAxisData.description!.name)
                 continue;
-            columns.push(this.schema.displayName(col.name));
+            columns.push(this.schema.displayName(col.name)!);
         }
         if (columns.length === 0) {
             this.page.reportError("No other acceptable columns found");
@@ -192,7 +192,7 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
     }
 
     protected showSecondColumn(colName: DisplayName): void {
-        const col = this.schema.findByDisplayName(colName);
+        const col = this.schema.findByDisplayName(colName)!;
         const cds = [this.xAxisData.description, col, this.groupByAxisData.description];
         const rr = this.createDataQuantilesRequest(cds, this.page, "Trellis2DHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
@@ -245,13 +245,15 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
         return ser;
     }
 
-    public static reconstruct(ser: TrellisHistogramSerialization, page: FullPage): IDataView {
+    public static reconstruct(ser: TrellisHistogramSerialization, page: FullPage): IDataView | null {
         if (ser.remoteObjectId == null || ser.rowCount == null || ser.xWindows == null ||
             ser.yWindows == null || ser.windowCount === null || ser.gRange === null ||
             ser.samplingRate == null || ser.schema == null || ser.range == null)
             return null;
         const schema = new SchemaClass([]).deserialize(ser.schema);
         const shape = TrellisChartView.deserializeShape(ser, page);
+        if (schema == null || shape == null)
+            return null;
         const view = new TrellisHistogramView(ser.remoteObjectId, ser.rowCount,
             schema, shape, ser.samplingRate, page);
         view.setAxes(new AxisData(ser.columnDescription, ser.range, ser.bucketCount),
@@ -328,9 +330,10 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
 
         for (let i = 0; i < coarsened.length; i++) {
             const plot = this.hps[i];
-            const confidence = {
-                perBucket: confidences != null ? confidences.perBucket[i].perBucket : null,
-                perMissing: confidences != null ? confidences.perBucket[i].perMissing : null
+            const confidence: Groups<number> | null =
+                confidences == null ? null : {
+                perBucket: confidences.perBucket[i].perBucket,
+                perMissing: confidences.perBucket[i].perMissing
             };
             plot.setHistogram({ first: coarsened[i], second: confidence }, this.samplingRate,
                 this.xAxisData,
@@ -347,11 +350,12 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
         const yAxis = this.hps[0].getYAxis();
         this.drawAxes(this.xAxisData.axis!, yAxis);
 
+        assert(this.surface != null);
         this.setupMouse();
         this.pointDescription = new TextOverlay(this.surface.getCanvas(),
             this.surface.getActualChartSize(),
-            [this.xAxisData.getDisplayNameString(this.schema),
-                this.groupByAxisData.getDisplayNameString(this.schema),
+            [this.xAxisData.getDisplayNameString(this.schema)!,
+                this.groupByAxisData.getDisplayNameString(this.schema)!,
                 "count", "cdf"], 40);
         this.cdfDot = this.surface.getChart()
             .append("circle")
@@ -363,10 +367,11 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
 
     protected onMouseMove(): void {
         const mousePosition = this.checkMouseBounds();
-        if (mousePosition == null)
+        if (mousePosition == null || mousePosition.plotIndex == null)
             return;
 
-        this.pointDescription.show(true);
+        assert(this.surface != null);
+        this.pointDescription!.show(true);
         const plot = this.hps[mousePosition.plotIndex];
         const xs = this.xAxisData.invert(mousePosition.x);
         const value = plot.get(mousePosition.x);
@@ -381,7 +386,7 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
         this.cdfDot.attr("cy", (1 - cdfPos) * cdfPlot.getChartHeight() + this.shape.headerHeight +
             mousePosition.plotYIndex * (this.shape.size.height + this.shape.headerHeight));
         const perc = percentString(cdfPos);
-        this.pointDescription.update([xs, group, makeInterval(value), perc], position[0], position[1]);
+        this.pointDescription!.update([xs, group, makeInterval(value), perc], position[0], position[1]);
     }
 
     public getAxisData(event: DragEventKind): AxisData | null {
@@ -425,12 +430,12 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
 
     protected selectionCompleted(): void {
         const local = this.selectionIsLocal();
-        let filter: RangeFilterArrayDescription;
+        let filter: RangeFilterArrayDescription | null;
         if (local != null) {
-            const origin = this.canvasToChart(this.selectionOrigin);
-            const left = this.position(origin.x, origin.y);
-            const end = this.canvasToChart(this.selectionEnd);
-            const right = this.position(end.x, end.y);
+            const origin = this.canvasToChart(this.selectionOrigin!);
+            const left = this.position(origin.x, origin.y)!;
+            const end = this.canvasToChart(this.selectionEnd!);
+            const right = this.position(end.x, end.y)!;
             filter = {
                 filters: [this.xAxisData.getFilter(left.x, right.x)],
                 complement: d3event.sourceEvent.ctrlKey,
@@ -468,7 +473,7 @@ export class TrellisHistogramReceiver extends Receiver<Two<Groups<Groups<number>
                 protected shape: TrellisShape,
                 operation: ICancellable<Two<Groups<Groups<number>>>>,
                 protected reusePage: boolean) {
-        super(reusePage ? page : page.dataset.newPage(title, page), operation, "histogram");
+        super(reusePage ? page : page.dataset!.newPage(title, page), operation, "histogram");
         this.trellisView = new TrellisHistogramView(
             remoteTable.remoteObjectId, rowCount, schema,
             this.shape, this.samplingRate, this.page);

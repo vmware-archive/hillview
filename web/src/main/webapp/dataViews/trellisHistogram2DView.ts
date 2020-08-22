@@ -24,13 +24,13 @@ import {FullPage, PageTitle} from "../ui/fullPage";
 import {BaseReceiver, TableTargetAPI} from "../modules";
 import {SchemaClass} from "../schemaClass";
 import {
-    add, assertNever,
+    add, assert, assertNever,
     Converters, GroupsClass, Heatmap,
     histogram3DAsCsv,
-    ICancellable,
+    ICancellable, optionToBoolean, Pair,
     PartialResult,
     percentString, reorder,
-    significantDigits, Two
+    significantDigits
 } from "../util";
 import {AxisData, AxisKind} from "./axisData";
 import {
@@ -75,7 +75,6 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
         page: FullPage) {
         super(remoteObjectId, rowCount, schema, shape, page, "Trellis2DHistogram");
         this.hps = [];
-        this.data = null;
         this.maxYAxis = null;
 
         this.menu = new TopMenu( [this.exportMenu(),
@@ -129,7 +128,7 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
         if (this.legendSurface != null)
             this.legendSurface.destroy();
         this.hps = [];
-        this.legendSurface = new HtmlPlottingSurface(this.legendDiv, this.page, {
+        this.legendSurface = new HtmlPlottingSurface(this.legendDiv!, this.page, {
             height: Resolution.legendSpaceHeight });
         if (keepColorMap)
             this.legendPlot.setSurface(this.legendSurface);
@@ -229,13 +228,14 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
 
     protected onMouseMove(): void {
         const mousePosition = this.checkMouseBounds();
-        if (mousePosition == null)
+        if (mousePosition == null || mousePosition.plotIndex == null)
             return;
 
         const plot = this.hps[mousePosition.plotIndex];
         if (plot == null)
             return;
 
+        assert(this.pointDescription != null);
         this.pointDescription.show(true);
         const xs = this.xAxisData.invert(mousePosition.x);
         const y = Math.round(plot.getYScale().invert(mousePosition.y));
@@ -248,7 +248,7 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
         const group = this.groupByAxisData.bucketDescription(mousePosition.plotIndex, 40);
 
         // The point description is a child of the canvas, so we use canvas coordinates
-        const position = d3mouse(this.surface.getCanvas().node());
+        const position = d3mouse(this.surface!.getCanvas().node());
         this.pointDescription.update(
             [xs, value.toString(), group, significantDigits(y), percentString(perc), count], position[0], position[1]);
         this.legendPlot.highlight(colorIndex);
@@ -364,13 +364,15 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
         return ser;
     }
 
-    public static reconstruct(ser: TrellisHistogram2DSerialization, page: FullPage): IDataView {
+    public static reconstruct(ser: TrellisHistogram2DSerialization, page: FullPage): IDataView | null {
         if (ser.remoteObjectId == null || ser.rowCount == null || ser.xWindows == null ||
             ser.yWindows == null || ser.windowCount === null || ser.yRange === null || ser.xRange === null ||
             ser.samplingRate == null || ser.schema == null || ser.relative == null)
             return null;
         const schema = new SchemaClass([]).deserialize(ser.schema);
         const shape = TrellisChartView.deserializeShape(ser, page);
+        if (schema == null || shape == null)
+            return null;
         const view = new TrellisHistogram2DView(ser.remoteObjectId, ser.rowCount,
             schema, shape, ser.samplingRate, page);
         view.setAxes(new AxisData(ser.columnDescription0, ser.xRange, ser.xBucketCount),
@@ -383,7 +385,7 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
     public updateView(data: Groups<Groups<Groups<number>>>, bucketCount: number[], maxYAxis: number | null, keepColorMap: boolean): void {
         this.createNewSurfaces(keepColorMap);
         this.data = data;
-        let max = maxYAxis;
+        let max = maxYAxis == null ? 0 : maxYAxis;
         if (maxYAxis == null) {
             for (let i = 0; i < data.perBucket.length; i++) {
                 const buckets = data.perBucket[i];
@@ -411,7 +413,7 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
 
         for (let i = 0; i < data.perBucket.length; i++) {
             const buckets = data.perBucket[i];
-            const heatmap: Two<Groups<Groups<number>>> = { first: buckets, second: null };
+            const heatmap: Pair<Groups<Groups<number>>, Groups<Groups<number>> | null> = { first: buckets, second: null };
             const plot = this.hps[i];
             plot.setData(heatmap, this.xAxisData, this.samplingRate, this.relative,
                 this.schema, this.legendPlot.colorMap, max, this.rowCount);
@@ -419,7 +421,7 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
         }
         if (this.shape.missingBucket) {
             const buckets = data.perMissing;
-            const heatmap: Two<Groups<Groups<number>>> = { first: buckets, second: null };
+            const heatmap: Pair<Groups<Groups<number>>, Groups<Groups<number>> | null> = { first: buckets, second: null };
             const plot = this.hps[data.perBucket.length];
             plot.setData(heatmap, this.xAxisData, this.samplingRate, this.relative,
                 this.schema, this.legendPlot.colorMap, max, this.rowCount);
@@ -429,19 +431,20 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
         // We draw the axes after drawing the data
         this.xAxisData.setResolution(this.shape.size.width, AxisKind.Bottom, PlottingSurface.bottomMargin);
         const yAxis = this.hps[0].getYAxis();
-        this.drawAxes(this.xAxisData.axis, yAxis);
+        this.drawAxes(this.xAxisData.axis!, yAxis);
         this.setupMouse();
+        assert(this.surface != null);
         this.pointDescription = new TextOverlay(this.surface.getCanvas(),
             this.surface.getActualChartSize(),
-            [this.xAxisData.getDisplayNameString(this.schema),
-                this.legendAxisData.getDisplayNameString(this.schema),
-                this.groupByAxisData.getDisplayNameString(this.schema),
+            [this.xAxisData.getDisplayNameString(this.schema)!,
+                this.legendAxisData.getDisplayNameString(this.schema)!,
+                this.groupByAxisData.getDisplayNameString(this.schema)!,
                 "y",
                 "percent",
                 "count" /* TODO:, "cdf" */], 40);
 
         this.standardSummary();
-        this.summary.display();
+        this.summary!.display();
     }
 
     protected dragMove(): boolean {
@@ -494,6 +497,7 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
             const heatmaps = new GroupsClass(this.data).map(g => Heatmap.create(g));
             const filter = heatmaps.map(g => g.bucketsInRange(min, max));
             const count = filter.reduce((c, g) => c + g.sum(), 0);
+            assert(this.summary != null);
             this.summary.set("colors selected", max - min);
             this.summary.set("points selected", count);
             this.summary.display();
@@ -508,10 +512,10 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
     protected selectionCompleted(): void {
         const local = this.selectionIsLocal();
         if (local != null) {
-            const origin = this.canvasToChart(this.selectionOrigin);
-            const left = this.position(origin.x, origin.y);
-            const end = this.canvasToChart(this.selectionEnd);
-            const right = this.position(end.x, end.y);
+            const origin = this.canvasToChart(this.selectionOrigin!);
+            const left = this.position(origin.x, origin.y)!;
+            const end = this.canvasToChart(this.selectionEnd!);
+            const right = this.position(end.x, end.y)!;
             const filter: RangeFilterArrayDescription = {
                 filters: [this.xAxisData.getFilter(left.x, right.x)],
                 complement: d3event.sourceEvent.ctrlKey,
@@ -519,7 +523,8 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
             this.filter(filter);
         } else {
             const filter = this.getGroupBySelectionFilter();
-            this.filter(filter);
+            if (filter != null)
+                this.filter(filter);
         }
     }
 }
@@ -540,11 +545,11 @@ export class TrellisHistogram2DReceiver extends Receiver<Groups<Groups<Groups<nu
                 protected shape: TrellisShape,
                 operation: ICancellable<Groups<Groups<Groups<number>>>>,
                 protected options: ChartOptions) {
-        super(options.reusePage ? page : page.dataset.newPage(title, page), operation, "histogram");
+        super(options.reusePage ? page : page.dataset!.newPage(title, page), operation, "histogram");
         this.trellisView = new TrellisHistogram2DView(
             remoteTable.remoteObjectId, rowCount, schema,
             this.shape, this.samplingRate, this.page);
-        this.trellisView.setAxes(axes[0], axes[1], axes[2], options.relative);
+        this.trellisView.setAxes(axes[0], axes[1], axes[2], optionToBoolean(options.relative));
     }
 
     public onNext(value: PartialResult<Groups<Groups<Groups<number>>>>): void {

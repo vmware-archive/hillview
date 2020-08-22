@@ -64,7 +64,7 @@ export function zip<T, S, R>(a: T[], b: S[], f: (ae: T, be: S) => R): R[] {
 
 export function histogramAsCsv(data: Groups<number>, schema: SchemaClass, axis: AxisData): string[] {
     const lines: string[] = [];
-    const displayName = schema.displayName(axis.description!.name);
+    const displayName = schema.displayName(axis.description.name);
     let line = JSON.stringify(displayName!.displayName) + ",count";
     lines.push(line);
     for (let x = 0; x < data.perBucket.length; x++) {
@@ -195,7 +195,7 @@ export function histogram3DAsCsv(
 export function quartileAsCsv(g: Groups<SampleSet>, schema: SchemaClass, axis: AxisData): string[] {
     const lines: string[] = [];
     let line = "";
-    const axisName = schema.displayName(axis.description!.name);
+    const axisName = schema.displayName(axis.description.name);
     for (let x = 0; x < axis.bucketCount; x++) {
         const bx = axis.bucketDescription(x, 0);
         const l = JSON.stringify( axisName + " " + bx);
@@ -459,7 +459,10 @@ export class Converters {
                 str = this.valueToString(filter.doubleValue, kind, true);
                 break;
             case "Interval":
-                str = this.valueToString([filter.doubleValue, filter.intervalEnd], kind, true);
+                str = this.valueToString([filter.doubleValue!, filter.intervalEnd!], kind, true);
+                break;
+            case "None":
+                str = null;
                 break;
             default:
                 assertNever(kind);
@@ -471,14 +474,15 @@ export class Converters {
 /**
  * Retrieves a node from the DOM starting from a CSS selector specification.
  * @param cssselector  Node specification as a CSS selector.
- * @param allowNull    If true allow null values to be found.  Default is false.
  * @returns The unique selected node.
  */
-export function findElement(cssselector: string, allowNull?: boolean): HTMLElement | null {
+export function findElementAny(cssselector: string): HTMLElement | null {
     const val = document.querySelector(cssselector);
-    if (allowNull == null || !allowNull)
-        assert(val != null);
     return val as HTMLElement;
+}
+
+export function findElement(cssselector: string): HTMLElement {
+    return findElementAny(cssselector)!;
 }
 
 /**
@@ -993,6 +997,12 @@ export function truncate(str: string, length: number): string {
     } else {
         return str;
     }
+}
+
+export function optionToBoolean(value: boolean | undefined): boolean {
+    if (value === undefined)
+        return false;
+    return value;
 }
 
 export function clamp(value: number, min: number, max: number): number {

@@ -395,7 +395,7 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
             }
         }
 
-        this.colorLegend.setData({first: 1, second: max });
+        this.colorLegend.setData(max);
         if (!keepColorMap)
             this.colorLegend.setColorMapKind(ColorMapKind.Grayscale);
         this.colorLegend.draw();
@@ -412,15 +412,16 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
                 .attr("transform", `translate(
                     ${this.surface.leftMargin + i * this.chartSize}, 
                     ${this.surface.topMargin + this.headerHeight + this.chartSize * (charts - 1)})`);
-            this.xAxes[i + 1].axis.draw(gx);
+            this.xAxes[i + 1].axis!.draw(gx);
             const gy = this.surface.getCanvas()
                 .append("g")
                 .attr("class", "y-axis")
                 .attr("transform", `translate(
                     ${this.surface.leftMargin},
                     ${this.surface.topMargin + this.headerHeight + i * this.chartSize})`);
-            this.yAxes[i].axis.draw(gy);
+            this.yAxes[i].axis!.draw(gy);
         }
+        assert(this.summary != null);
         this.summary.set("points", this.rowCount);
         this.summary.display();
     }

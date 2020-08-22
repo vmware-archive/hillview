@@ -24,6 +24,7 @@ import {FullPage} from "../ui/fullPage";
 import {D3SvgElement, ViewKind} from "../ui/ui";
 import {ChartView} from "../modules";
 import {AxisData} from "./axisData";
+import {assert} from "../util";
 
 /**
  * This is a base class that contains code common to various histogram renderings.
@@ -54,7 +55,7 @@ export abstract class HistogramViewBase<D> extends ChartView<D> {
      */
     protected dragStart(): void {
         super.dragStart();
-        const position = d3mouse(this.surface.getCanvas().node());
+        const position = d3mouse(this.surface!.getCanvas().node());
         this.selectionOrigin = {
             x: position[0],
             y: position[1] };
@@ -64,9 +65,10 @@ export abstract class HistogramViewBase<D> extends ChartView<D> {
      * The mouse moved in the canvas.
      */
     protected dragMove(): boolean {
-        if (!super.dragMove())
+        if (!super.dragMove() || this.selectionOrigin == null)
             return false;
         let ox = this.selectionOrigin.x;
+        assert(this.surface != null);
         const position = d3mouse(this.surface.getCanvas().node());
         const x = position[0];
         let width = x - ox;
@@ -100,7 +102,7 @@ export class BucketDialog extends Dialog {
         this.setCacheTitle("BucketDialog");
     }
 
-    public getBucketCount(): number {
+    public getBucketCount(): number | null {
         return this.getFieldValueAsInt("n_buckets");
     }
 }

@@ -300,13 +300,15 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
         return ser;
     }
 
-    public static reconstruct(ser: TrellisQuartilesSerialization, page: FullPage): IDataView {
+    public static reconstruct(ser: TrellisQuartilesSerialization, page: FullPage): IDataView | null {
         if (ser.remoteObjectId == null || ser.rowCount == null || ser.xWindows == null ||
             ser.yWindows == null || ser.windowCount === null ||
             ser.schema == null || ser.gRange === null || ser.xRange === null)
             return null;
         const schema = new SchemaClass([]).deserialize(ser.schema);
         const shape = TrellisChartView.deserializeShape(ser, page);
+        if (schema == null || shape == null)
+            return null;
         const view = new TrellisHistogramQuartilesView(ser.remoteObjectId, ser.rowCount,
             schema, ser.columnDescription1, shape, page);
         view.setAxes(new AxisData(ser.columnDescription0, ser.xRange, ser.xBucketCount),
@@ -331,11 +333,11 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
                         max = bucket.max;
                     } else {
                         min = Math.min(min, bucket.min);
-                        max = Math.max(max, bucket.max);
+                        max = Math.max(max!, bucket.max);
                     }
                 }
             }
-            yAxisRange = [min, max];
+            yAxisRange = [min!, max!];
         }
 
         for (let i = 0; i < data.perBucket.length; i++) {
@@ -356,10 +358,10 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
         const yAxis = this.hps[0].getYAxis();
         this.drawAxes(this.xAxisData.axis!, yAxis);
         this.setupMouse();
-        this.pointDescription = new TextOverlay(this.surface.getCanvas(),
+        this.pointDescription = new TextOverlay(this.surface!.getCanvas(),
             this.surface!.getActualChartSize(),
-            [this.xAxisData.getDisplayNameString(this.schema),
-                this.groupByAxisData.getDisplayNameString(this.schema),
+            [this.xAxisData.getDisplayNameString(this.schema)!,
+                this.groupByAxisData.getDisplayNameString(this.schema)!,
                 "bucket", "max", "q3", "median", "q1", "min", "count", "missing"], 40);
         this.pointDescription.show(false);
         this.standardSummary();
@@ -405,16 +407,17 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
     protected selectionCompleted(): void {
         const local = this.selectionIsLocal();
         if (local != null) {
-            const origin = this.canvasToChart(this.selectionOrigin);
-            const left = this.position(origin.x, origin.y);
-            const end = this.canvasToChart(this.selectionEnd);
-            const right = this.position(end.x, end.y);
+            const origin = this.canvasToChart(this.selectionOrigin!);
+            const left = this.position(origin.x, origin.y)!;
+            const end = this.canvasToChart(this.selectionEnd!);
+            const right = this.position(end.x, end.y)!;
             const filter = this.xAxisData.getFilter(left.x, right.x);
             const fa = { filters: [filter], complement: d3event.sourceEvent.ctrlKey };
             this.filter(fa);
         } else {
             const filter = this.getGroupBySelectionFilter();
-            this.filter(filter);
+            if (filter != null)
+                this.filter(filter);
         }
     }
 }
@@ -436,7 +439,7 @@ export class TrellisHistogramQuartilesReceiver extends Receiver<Groups<Groups<Sa
                 protected shape: TrellisShape,
                 operation: ICancellable<Groups<Groups<SampleSet>>>,
                 protected options: ChartOptions) {
-        super(options.reusePage ? page : page.dataset.newPage(title, page), operation, "quartiles");
+        super(options.reusePage ? page : page.dataset!.newPage(title, page), operation, "quartiles");
         this.trellisView = new TrellisHistogramQuartilesView(
             remoteTable.remoteObjectId, rowCount, schema, qCol,
             this.shape, this.page);

@@ -42,7 +42,7 @@ export class LoadView extends RemoteObject implements IDataView {
     private loadMenu: SubMenu;
     public readonly viewKind: ViewKind;
 
-    constructor(protected init: InitialObject, protected page: FullPage, protected bookmarkFile: string) {
+    constructor(protected init: InitialObject, protected page: FullPage, protected bookmarkFile: string | null) {
         super(init.remoteObjectId);
         this.viewKind = "Load";
         this.top = document.createElement("div");

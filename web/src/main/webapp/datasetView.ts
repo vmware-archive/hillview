@@ -92,7 +92,7 @@ export interface BaseHeatmapSerialization extends IViewSerialization {
 }
 
 export interface HeatmapSerialization extends BaseHeatmapSerialization {
-    detailedColumns: SchemaClassSerialization;
+    detailedColumns: SchemaClassSerialization | null;
 }
 
 export interface MapSerialization extends IViewSerialization {

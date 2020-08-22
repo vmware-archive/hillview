@@ -35,7 +35,7 @@ import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
 import {ChartOptions, DragEventKind, Resolution} from "../ui/ui";
 import {
-    add, assertNever,
+    add, assert, assertNever,
     Converters, Heatmap,
     histogram2DAsCsv,
     ICancellable,
@@ -43,7 +43,7 @@ import {
     PartialResult,
     percentString,
     reorder,
-    significantDigits, Two,
+    significantDigits,
 } from "../util";
 import {AxisData} from "./axisData";
 import {HistogramViewBase} from "./histogramViewBase";
@@ -122,7 +122,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
             help: "Change the way the data is displayed.",
             subMenu: this.viewMenu
         },
-            page.dataset.combineMenu(this, page.pageId),
+            page.dataset!.combineMenu(this, page.pageId),
         ]);
 
         this.relative = false;
@@ -130,7 +130,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
         this.page.setMenu(this.menu);
         if (this.samplingRate >= 1) {
             const submenu = this.menu.getSubmenu("View");
-            submenu.enable("exact", false);
+            submenu!.enable("exact", false);
         }
     }
 
@@ -158,6 +158,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
             this.legendSurface.destroy();
         if (this.surface != null)
             this.surface.destroy();
+        assert(this.chartDiv != null);
         this.legendSurface = new HtmlPlottingSurface(this.chartDiv, this.page,
             { height: Resolution.legendSpaceHeight });
         if (keepColorMap) {
@@ -192,7 +193,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
                     presentCount: this.rowCount - missing,
                     missingCount: missing
                 };
-                return new AxisData(null, range, this.yAxisData.bucketCount);
+                return new AxisData({ kind: "None", name: "" }, range, this.yAxisData.bucketCount);
             default:
                 assertNever(event);
         }
@@ -215,14 +216,15 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
         }
 
         const bucketCount = this.xPoints;
-        const canvas = this.surface.getCanvas();
+        const canvas = this.surface!.getCanvas();
 
         // Must setup legend before drawing the data to have the colormap
         const missingShown = this.histograms().perBucket.map(b => b.perMissing).reduce(add);
         this.legendPlot.setData(this.yAxisData, missingShown > 0, this.schema);
         this.legendPlot.draw();
 
-        const heatmap: Two<Groups<Groups<number>>> = {first: this.histograms(), second: null};
+        const heatmap: Pair<Groups<Groups<number>>, Groups<Groups<number>> | null> =
+            {first: this.histograms(), second: null};
         this.plot.setData(heatmap, this.xAxisData, this.samplingRate, this.relative,
             this.schema, this.legendPlot.colorMap, maxYAxis, this.rowCount);
         this.plot.draw();
@@ -243,13 +245,15 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
 
         let pointFields;
         if (this.stacked) {
-            pointFields = [this.xAxisData.getDisplayNameString(this.schema),
-                this.yAxisData.getDisplayNameString(this.schema),
+            pointFields = [this.xAxisData.getDisplayNameString(this.schema)!,
+                this.yAxisData.getDisplayNameString(this.schema)!,
                 "bucket", "y", "count", "%", "cdf"];
         } else {
-            pointFields = ["bucket", this.yAxisData.getDisplayNameString(this.schema), "y", "count"];
+            pointFields = ["bucket", this.yAxisData.getDisplayNameString(this.schema)!, "y", "count"];
         }
 
+        assert(this.surface != null);
+        assert(this.summary != null);
         this.pointDescription = new TextOverlay(this.surface.getChart(),
             this.surface.getActualChartSize(), pointFields, 40);
         this.pointDescription.show(false);
@@ -277,14 +281,14 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
         return result;
     }
 
-    public static reconstruct(ser: Histogram2DSerialization, page: FullPage): IDataView {
+    public static reconstruct(ser: Histogram2DSerialization, page: FullPage): IDataView | null {
         const samplingRate: number = ser.samplingRate;
         const relative: boolean = ser.relative;
         const cd0: IColumnDescription = ser.columnDescription0;
         const cd1: IColumnDescription = ser.columnDescription1;
         const xPoints: number = ser.xBucketCount;
         const yPoints: number = ser.yBucketCount;
-        const schema: SchemaClass = new SchemaClass([]).deserialize(ser.schema);
+        const schema = new SchemaClass([]).deserialize(ser.schema);
         if (cd0 === null || cd1 === null || samplingRate === null || schema === null ||
             xPoints === null || yPoints === null || ser.xRange === null || ser.yRange === null)
             return null;
@@ -315,7 +319,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
     }
 
     protected showTrellis(colName: DisplayName): void {
-        const groupBy = this.schema.findByDisplayName(colName);
+        const groupBy = this.schema.findByDisplayName(colName)!;
         const cds: IColumnDescription[] = [
             this.xAxisData.description,
             this.yAxisData.description,
@@ -407,7 +411,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
         }));
     }
 
-    public changeBuckets(xBuckets: number, yBuckets: number): void {
+    public changeBuckets(xBuckets: number | null, yBuckets: number | null): void {
         if (xBuckets == null || yBuckets == null)
             return;
         const cds = [this.xAxisData.description, this.yAxisData.description];
@@ -441,7 +445,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
             collector.finished();
         } else if (eventKind === "YAxis") {
             this.relative = false; // We cannot drag a relative Y axis.
-            this.updateView(this.data, sourceRange.max, true);
+            this.updateView(this.data, sourceRange.max!, true);
         }
     }
 
@@ -509,6 +513,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
      * Handles mouse movements in the canvas area only.
      */
     public onMouseMove(): void {
+        assert(this.surface != null);
         const position = d3mouse(this.surface.getChart().node());
         // note: this position is within the chart
         const mouseX = position[0];
@@ -560,14 +565,14 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
             pointInfo = [bucket, value, ys, count];
         }
 
-        this.pointDescription.update(pointInfo, mouseX, mouseY);
+        this.pointDescription!.update(pointInfo, mouseX, mouseY);
         this.legendPlot.highlight(colorIndex);
     }
 
     // Round x to align a bucket boundary.  x is a coordinate within the canvas.
     private bucketIndex(x: number): number {
         const bucketWidth = this.plot.getChartWidth() / this.xPoints;
-        const index = Math.floor((x - this.surface.leftMargin) / bucketWidth);
+        const index = Math.floor((x - this.surface!.leftMargin) / bucketWidth);
         if (index < 0)
             return 0;
         if (index >= this.xPoints)
@@ -578,17 +583,17 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
     // Returns bucket left margin in canvas.
     private bucketLeftMargin(index: number): number {
         const bucketWidth = this.plot.getChartWidth() / this.xPoints;
-        return index * bucketWidth + this.surface.leftMargin;
+        return index * bucketWidth + this.surface!.leftMargin;
     }
 
     protected dragMove(): boolean {
-        if (!super.dragMove())
+        if (!super.dragMove() || this.selectionOrigin == null)
             return false;
         if (this.stacked)
             return true;
 
         // Mark all buckets that are selected
-        const position = d3mouse(this.surface.getCanvas().node());
+        const position = d3mouse(this.surface!.getCanvas().node());
         const x = position[0];
         const start = this.bucketIndex(this.selectionOrigin.x);
         const end = this.bucketIndex(x);
@@ -603,9 +608,9 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
     }
 
     protected dragEnd(): boolean {
-        if (!super.dragEnd())
+        if (!super.dragEnd() || this.selectionOrigin == null)
             return false;
-        const position = d3mouse(this.surface.getCanvas().node());
+        const position = d3mouse(this.surface!.getCanvas().node());
         let x = position[0];
         if (this.stacked) {
             this.selectionCompleted(this.selectionOrigin.x, x, false);
@@ -628,6 +633,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
         const shiftPressed = d3event.sourceEvent.shiftKey;
         let selectedAxis: AxisData;
 
+        assert(this.surface != null);
         if (inLegend) {
             selectedAxis = this.yAxisData;
         } else {
@@ -647,6 +653,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
             const heatmap = Heatmap.create(this.data.first);
             const filter = heatmap.bucketsInRange(min, max);
             const count = filter.sum();
+            assert(this.summary != null);
             this.summary.set("colors selected", max - min);
             this.summary.set("points selected", count);
             this.summary.display();
@@ -689,10 +696,10 @@ export class Histogram2DReceiver extends Receiver<Pair<Groups<Groups<number>>, G
                 protected samplingRate: number,
                 operation: RpcRequest<Pair<Groups<Groups<number>>, Groups<number>>>,
                 protected options: ChartOptions) {
-        super(options.reusePage ? page : page.dataset.newPage(title, page), operation, "histogram");
+        super(options.reusePage ? page : page.dataset!.newPage(title, page), operation, "histogram");
         this.view = new Histogram2DView(
             this.remoteObject.remoteObjectId, rowCount, schema, samplingRate, this.page);
-        this.view.setAxes(axes[0], axes[1], options.relative);
+        this.view.setAxes(axes[0], axes[1], options.relative != null ? options.relative : false);
     }
 
     public onNext(value: PartialResult<Pair<Groups<Groups<number>>, Groups<number>>>): void {

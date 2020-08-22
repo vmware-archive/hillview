@@ -41,7 +41,7 @@ import {
     ICancellable, makeInterval,
     PartialResult,
     percentString,
-    significantDigits, Two, assertNever,
+    significantDigits, Two, assertNever, assert,
 } from "../util";
 import {AxisData} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
@@ -120,11 +120,11 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
         this.page.setMenu(this.menu);
         const submenu = this.menu.getSubmenu("View");
         if (this.samplingRate >= 1) {
-            submenu.enable("exact", false);
+            submenu!.enable("exact", false);
         }
         if (this.isPrivate()) {
             this.menu.enable("Combine", false);
-            submenu.enable("correlate...", false);
+            submenu!.enable("correlate...", false);
         }
     }
 
@@ -148,7 +148,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
                     presentCount: this.rowCount - this.histogram().first.perMissing,
                     missingCount: this.histogram().first.perMissing
                 };
-                return new AxisData(null, range, 0);
+                return new AxisData({ kind: "None", name: "" }, range, 0);
             default:
                 assertNever(event);
         }
@@ -186,14 +186,14 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
             collector.finished();
         } else if (eventKind === "YAxis") {
             // TODO
-            this.updateView(this.data, sourceRange.max);
+            this.updateView(this.data, sourceRange.max!);
         }
     }
 
     protected createNewSurfaces(): void {
         if (this.surface != null)
             this.surface.destroy();
-        this.surface = new HtmlPlottingSurface(this.chartDiv, this.page, {});
+        this.surface = new HtmlPlottingSurface(this.chartDiv!, this.page, {});
         if (this.pie) {
             this.plot = new PiePlot(this.surface);
             this.cdfPlot = new NoCDFPlot();
@@ -216,8 +216,8 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
         return result;
     }
 
-    public static reconstruct(ser: HistogramSerialization, page: FullPage): IDataView {
-        const args: CommonArgs = this.validateSerialization(ser);
+    public static reconstruct(ser: HistogramSerialization, page: FullPage): IDataView | null {
+        const args: CommonArgs | null = this.validateSerialization(ser);
         if (args == null ||
             ser.columnDescription == null || ser.samplingRate == null ||
             ser.bucketCount == null || ser.range == null)
@@ -235,7 +235,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
         // of buckets/labels in the axisData is not the same as in the histogram.
         this.xAxisData = xAxisData;
         const submenu = this.menu.getSubmenu("View");
-        submenu.enable("pie chart/histogram", kindIsString(this.xAxisData.description.kind) ||
+        submenu!.enable("pie chart/histogram", kindIsString(this.xAxisData.description.kind) ||
             this.xAxisData.description.kind === "Integer");
     }
 
@@ -263,7 +263,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
         this.bucketCount = counts.length;
         this.plot.setHistogram(
             this.histogram(), this.samplingRate, this.xAxisData, maxYAxis,
-            this.page.dataset.isPrivate(), this.rowCount);
+            this.page.dataset!.isPrivate(), this.rowCount);
         this.plot.draw();
 
         const discrete = kindIsString(this.xAxisData.description.kind) ||
@@ -272,6 +272,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
         this.cdfPlot.draw();
         this.setupMouse();
 
+        assert(this.surface != null);
         if (!this.pie)
             this.cdfDot =  this.surface.getChart()
                 .append("circle")
@@ -283,6 +284,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
         this.pointDescription = new TextOverlay(this.surface.getChart(),
             this.surface.getActualChartSize(), pointDesc, 40);
 
+        assert(this.summary != null);
         if (this.histogram().first.perMissing !== 0)
             this.summary.set("missing", this.histogram().first.perMissing, this.isPrivate());
         this.standardSummary();
@@ -303,7 +305,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
 
     protected showTrellis(colName: DisplayName): void {
         const groupBy = this.schema.findByDisplayName(colName);
-        const cds: IColumnDescription[] = [this.xAxisData.description, groupBy];
+        const cds: IColumnDescription[] = [this.xAxisData.description, groupBy!];
         const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [0, 0], cds, null, this.defaultProvenance, {
@@ -329,7 +331,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
             const col = this.schema.get(i);
             if (col.name === this.xAxisData.description.name)
                 continue;
-            columns.push(this.schema.displayName(col.name));
+            columns.push(this.schema.displayName(col.name)!);
         }
         if (columns.length === 0) {
             this.page.reportError("No other acceptable columns found");
@@ -351,7 +353,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
             if (col.name === this.xAxisData.description.name ||
                 !kindIsNumeric(col.kind))
                 continue;
-            columns.push(this.schema.displayName(col.name));
+            columns.push(this.schema.displayName(col.name)!);
         }
         if (columns.length === 0) {
             this.page.reportError("No other acceptable columns found");
@@ -375,7 +377,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
 
     private showSecondColumn(colName: DisplayName): void {
         const oc = this.schema.findByDisplayName(colName);
-        const cds: IColumnDescription[] = [this.xAxisData.description, oc];
+        const cds: IColumnDescription[] = [this.xAxisData.description, oc!];
         const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
             [this.histogram().first.perBucket.length, 0], cds, null, this.defaultProvenance,{
@@ -390,7 +392,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
         const oc = this.schema.findByDisplayName(colName);
         const qhr = new DataRangesReceiver(this, this.page, null,
             this.schema, [this.xAxisData.bucketCount],
-            [this.xAxisData.description, oc],
+            [this.xAxisData.description, oc!],
             null, this.defaultProvenance, {
                 reusePage: false, chartKind: "QuartileVector"
             });
@@ -398,7 +400,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
         qhr.onCompleted();
     }
 
-    public changeBuckets(bucketCount: number): void {
+    public changeBuckets(bucketCount: number | null): void {
         if (bucketCount == null)
             return;
         const rr = this.createDataQuantilesRequest([this.xAxisData.description],
@@ -446,7 +448,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
         } else {
             const hp = this.plot as HistogramPlot;
 
-            const position = d3mouse(this.surface.getChart().node());
+            const position = d3mouse(this.surface!.getChart().node());
             const mouseX = position[0];
             const mouseY = position[1];
 
@@ -463,17 +465,17 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
             const pointDesc = [xs, bucketDesc, ys, makeInterval(size)];
             const cdfPos = this.cdfPlot.getY(mouseX);
             this.cdfDot.attr("cx", mouseX);
-            this.cdfDot.attr("cy", (1 - cdfPos) * this.surface.getChartHeight());
+            this.cdfDot.attr("cy", (1 - cdfPos) * this.surface!.getChartHeight());
             const perc = percentString(cdfPos);
             pointDesc.push(perc);
-            this.pointDescription.update(pointDesc, mouseX, mouseY);
+            this.pointDescription!.update(pointDesc, mouseX, mouseY);
         }
     }
 
     public dragEnd(): boolean {
-        if (!super.dragEnd())
+        if (!super.dragEnd() || this.selectionOrigin == null)
             return false;
-        const position = d3mouse(this.surface.getCanvas().node());
+        const position = d3mouse(this.surface!.getCanvas().node());
         const x = position[0];
         this.selectionCompleted(this.selectionOrigin.x, x);
         return true;
@@ -489,8 +491,8 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
             return;
 
         // coordinates within chart
-        xl -= this.surface.leftMargin;
-        xr -= this.surface.leftMargin;
+        xl -= this.surface!.leftMargin;
+        xr -= this.surface!.leftMargin;
         const filter: RangeFilterArrayDescription = {
             filters: [this.xAxisData.getFilter(xl, xr)],
             complement: d3event.sourceEvent.ctrlKey,
@@ -522,7 +524,7 @@ export class HistogramReceiver extends Receiver<Two<Two<Groups<number>>>>  {
                 protected samplingRate: number,
                 protected isPie: boolean,
                 reusePage: boolean) {
-        super(reusePage ? sourcePage : sourcePage.dataset.newPage(title, sourcePage),
+        super(reusePage ? sourcePage : sourcePage.dataset!.newPage(title, sourcePage),
             operation, "histogram");
         this.view = new HistogramView(
             remoteTableId, rowCount, schema, this.samplingRate, this.isPie, this.page);

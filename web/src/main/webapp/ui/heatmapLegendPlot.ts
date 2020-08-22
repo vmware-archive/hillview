@@ -22,7 +22,7 @@ import {
 import {D3Axis, D3Scale, D3SvgElement, Resolution} from "./ui";
 import {ContextMenu} from "./menu";
 import {HtmlPlottingSurface, PlottingSurface} from "./plottingSurface";
-import {assert, assertNever, ColorMap, desaturateOutsideRange, Pair} from "../util";
+import {assert, assertNever, ColorMap, desaturateOutsideRange} from "../util";
 import {scaleLinear as d3scaleLinear, scaleLog as d3scaleLog} from "d3-scale";
 import {axisBottom as d3axisBottom} from "d3-axis";
 import {AxisDescription} from "../dataViews/axisData";
@@ -41,7 +41,7 @@ class HeatmapColormap {
     protected originalMap: ColorMap;
     public map: ColorMap;
 
-    constructor(public readonly min: number, public readonly max: number) {
+    constructor(public readonly max: number) {
         this.setMap(d3interpolateWarm);
     }
 
@@ -91,7 +91,7 @@ export enum ColorMapKind {
 /**
  * Displays a color map suitable for heatmaps.
  */
-export class HeatmapLegendPlot extends LegendPlot<Pair<number, number>> {
+export class HeatmapLegendPlot extends LegendPlot<number> {
     /* Static counter that increments to assign every ColorLegend object
        a unique ID for the gradient element. */
     private static nextUniqueId: number = 0;
@@ -114,12 +114,8 @@ export class HeatmapLegendPlot extends LegendPlot<Pair<number, number>> {
         this.createRectangle();
     }
 
-    public min(): number {
-        return this.data.first;
-    }
-
     public max(): number {
-        return this.data.second;
+        return this.data;
     }
 
     public setColorMapChangeEventListener(listener: (c: ColorMap) => void): void {
@@ -223,12 +219,12 @@ export class HeatmapLegendPlot extends LegendPlot<Pair<number, number>> {
             this.onColorMapChange(this.colorMap.map);
     }
 
-    public setData(data: Pair<number, number>): void {
-        this.data = data;
-        const base = (this.max() - this.min()) > 10000 ? 10 : 2;
+    public setData(max: number): void {
+        this.data = max;
+        console.assert(this.max() > 0);
+        const base = this.max() > 10000 ? 10 : 2;
         if (this.colorMap == null)
-            this.colorMap = new HeatmapColormap(this.min(), this.max());
-        assert(this.min() === this.colorMap.min);
+            this.colorMap = new HeatmapColormap(this.max());
         assert(this.max() === this.colorMap.max);
         if (this.colorMap.logScale == null)
             this.colorMap.setLogScale(this.max() > HeatmapColormap.logThreshold);
@@ -238,7 +234,7 @@ export class HeatmapLegendPlot extends LegendPlot<Pair<number, number>> {
         } else
             this.scale = d3scaleLinear();
         this.scale
-            .domain([this.min(), this.max()])
+            .domain([1, this.max()])
             .range([0, Resolution.legendBarWidth]);
         const ticks = Math.min(this.max(), 10);
         this.xAxis = d3axisBottom(this.scale).ticks(ticks);
@@ -265,12 +261,12 @@ export class HeatmapLegendPlot extends LegendPlot<Pair<number, number>> {
         }
 
         const canvas = this.plottingSurface.getCanvas();
-        if (!this.colorMap.logScale && this.max() - this.min() < 25) {
+        if (!this.colorMap.logScale && this.max() < 25) {
             // use discrete colors
-            const colorCount = this.max() - this.min() + 1;
+            const colorCount = this.max();
             const colorWidth = Resolution.legendBarWidth / colorCount;
             let rectX = this.x;
-            for (let i = this.min(); i <= this.max(); i++) {
+            for (let i = 1; i <= this.max(); i++) {
                 const color = this.getColor(i);
                 canvas.append("rect")
                     .attr("width", colorWidth)
