@@ -73,6 +73,9 @@ if [ ${USERDEPS} -eq 0 ]; then
     pushd ${mydir}/../data/ontime_private
     ./gen_metadata.py
     popd
+    pushd ${mydir}/../data/geo/us_states
+    ./download.py
+    popd
 fi
 
 pushd ${mydir}/../web/src/main/webapp

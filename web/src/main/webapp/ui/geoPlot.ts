@@ -18,32 +18,103 @@
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {ColorMap} from "../util";
-import {geoEquirectangular, geoPath} from "d3-geo";
-import {SimpleFeatureCollection} from "../javaBridge";
+import {
+    geoAlbersUsa,
+    geoAzimuthalEqualArea,
+    geoAzimuthalEquidistant,
+    geoConicEqualArea, geoConicEquidistant,
+    geoEqualEarth, geoEquirectangular,
+    geoGnomonic, geoMercator,
+    geoNaturalEarth1,
+    geoOrthographic,
+    geoPath,
+    GeoProjection,
+    geoStereographic, geoTransverseMercator
+} from "d3-geo";
+import {ColumnGeoRepresentation, SimpleFeatureCollection} from "../javaBridge";
+import {Feature, GeometryObject} from "geojson";
 
 export class GeoPlot extends Plot<SimpleFeatureCollection> {
+    protected aggregate: Map<String, number>;
+    protected columnRepr: ColumnGeoRepresentation
+
     public constructor(surface: PlottingSurface,
                        protected colorMap: ColorMap) {
         super(surface);
     }
 
-    public setData(data: SimpleFeatureCollection): void {
+    public setMap(data: SimpleFeatureCollection, columnRepr: ColumnGeoRepresentation): void {
         this.data = data;
+        this.columnRepr = columnRepr;
     }
 
+    public setData(aggregate: Map<String, number>): void {
+        this.aggregate = aggregate;
+    }
+
+    static getProjection(projection: string): GeoProjection {
+        switch (projection) {
+            case "geoAlbersUsa":
+                return geoAlbersUsa();
+            case "geoAzimuthalEqualArea":
+                return geoAzimuthalEqualArea();
+            case "geoAzimuthalEquidistant":
+                return geoAzimuthalEquidistant();
+            case "geoGnomonic":
+                return geoGnomonic();
+            case "geoStereographic":
+                return geoStereographic();
+            case "geoEqualEarth":
+                return geoEqualEarth();
+            case "geoConicEqualArea":
+                return geoConicEqualArea();
+            case "geoConicEquidistant":
+                return geoConicEquidistant();
+            case "geoEquirectangular":
+                return geoEquirectangular();
+            case "geoMercator":
+                return geoMercator();
+            case "geoTransverseMercator":
+                return geoTransverseMercator();
+            case "geoNaturalEarth1":
+                return geoNaturalEarth1();
+            case "geoOrthographic":
+            default:
+                return geoOrthographic();
+        }
+    }
+    
     draw(): void {
         const canvas = this.plottingSurface.getCanvas();
-        var projection = geoEquirectangular()
+        const projection = GeoPlot.getProjection(this.columnRepr.projection)
             .fitExtent([[0, 0], [this.getChartWidth(), this.getChartHeight()]], this.data);
 
-        var geoGenerator = geoPath().projection(projection);
-        var u = canvas
-            .selectAll('path')
-            .data(this.data.features);
-        u.enter()
+        const geoGenerator = geoPath().projection(projection);
+        canvas.selectAll('path')
+            .data(this.data.features)
+            .enter()
             .append('path')
             .attr('d', geoGenerator)
-            .attr("fill", "#ddd")
-            .attr("stroke", "#aaa");
+            .attr("fill", (d: Feature<GeometryObject>) => {
+                const prop = d.properties[this.columnRepr.property];
+                return this.color(prop);
+            })
+            .attr("stroke", "#aaa")
+            .append("title")
+            .attr("text", (d: Feature<GeometryObject>) => {
+                const prop = d.properties[this.columnRepr.property];
+                return prop + " " + this.count(prop);
+            });
+    }
+
+    protected color(property: string): string {
+        const count = this.count(property);
+        if (count == null)
+            return "#ddd";
+        return this.colorMap(count);
+    }
+
+    protected count(property: string): number | null {
+        return this.aggregate.get(property);
     }
 }

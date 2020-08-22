@@ -15,10 +15,17 @@
  * limitations under the License.
  */
 
-import {Groups, RemoteObjectId, SimpleFeatureCollection} from "../javaBridge";
+import {
+    Groups,
+    IColumnDescription,
+    NextKList,
+    RecordOrder,
+    RemoteObjectId,
+    SimpleFeatureCollection
+} from "../javaBridge";
 import {ChartView} from "./chartView";
 import {FullPage, PageTitle} from "../ui/fullPage";
-import {assert, ICancellable} from "../util";
+import {assert, Converters, ICancellable} from "../util";
 import {BaseReceiver} from "../tableTarget";
 import {DisplayName, SchemaClass} from "../schemaClass";
 import {CommonArgs, OnCompleteReceiverCommon, ReceiverCommonArgs} from "../ui/receiver";
@@ -26,13 +33,17 @@ import {SubMenu, TopMenu} from "../ui/menu";
 import {IDataView} from "../ui/dataview";
 import {IViewSerialization, MapSerialization} from "../datasetView";
 import {mouse as d3mouse} from "d3-selection";
-import {RpcRequest} from "../rpc";
+import {OnCompleteReceiver, RpcRequest} from "../rpc";
 import {GeoPlot} from "../ui/geoPlot";
 import {HtmlPlottingSurface} from "../ui/plottingSurface";
+import {Resolution} from "../ui/ui";
+import {HeatmapLegendPlot} from "../ui/heatmapLegendPlot";
 
 export class GeoView extends ChartView<Groups<number>> {
     protected readonly viewMenu: SubMenu;
     protected readonly plot: GeoPlot;
+    protected readonly legend: HeatmapLegendPlot;
+    protected keyColumn: IColumnDescription;
 
     constructor(args: CommonArgs, page: FullPage) {
         super(args.remoteObject.remoteObjectId, args.rowCount, args.schema, page, "Map");
@@ -51,9 +62,13 @@ export class GeoView extends ChartView<Groups<number>> {
         ]);
         this.page.setMenu(this.menu);
         this.createDiv("legend");
+        const legendSurface = new HtmlPlottingSurface(
+            this.legendDiv!, this.page, { height: Resolution.legendSpaceHeight });
+        // noinspection JSUnusedLocalSymbols
+        this.legend = new HeatmapLegendPlot(legendSurface, (xl, xr) => {});
         this.createDiv("chart");
-        const surface = new HtmlPlottingSurface(this.chartDiv, this.page, {});
-        this.plot = new GeoPlot(surface, null);
+        const surface = new HtmlPlottingSurface(this.chartDiv!, this.page, {});
+        this.plot = new GeoPlot(surface, this.legend.getColorMap());
         this.createDiv("summary");
     }
 
@@ -61,7 +76,9 @@ export class GeoView extends ChartView<Groups<number>> {
         const args = this.validateSerialization(ser);
         if (args == null)
             return null;
-        const schema: SchemaClass = new SchemaClass([]).deserialize(ser.schema);
+        const schema = new SchemaClass([]).deserialize(ser.schema);
+        if (schema == null)
+            return null;
         return new GeoView(args, page);
     }
 
@@ -107,9 +124,9 @@ export class GeoView extends ChartView<Groups<number>> {
     }
 
     protected dragEnd(): boolean {
-        if (!super.dragEnd())
+        if (!super.dragEnd() || this.selectionOrigin == null)
             return false;
-        const position = d3mouse(this.surface.getCanvas().node());
+        const position = d3mouse(this.surface!.getCanvas().node());
         const x = position[0];
         const y = position[1];
         this.selectionCompleted(this.selectionOrigin.x, x, this.selectionOrigin.y, y);
@@ -120,23 +137,58 @@ export class GeoView extends ChartView<Groups<number>> {
         // TODO
     }
 
-    public updateView(v: SimpleFeatureCollection): void {
-        this.plot.setData(v);
-        this.plot.draw();
+    public setMap(v: SimpleFeatureCollection, ketColumn: IColumnDescription): void {
+        this.keyColumn = ketColumn;
+        this.plot.setMap(v,
+            { columnName: ketColumn.name, projection: "geoAlbersUsa", property: "STUSPS", datasetFile: "" });
+        assert(this.summary != null);
         this.summary.set("Polygons", v.features.length);
         this.summary.display();
     }
+
+    public updateView(n: NextKList): void {
+        const map = new Map<String, number>();
+        let max = 0;
+        for (const r of n.rows) {
+            const count = r.count;
+            const value = Converters.valueToString(r.values[0], this.keyColumn.kind, false);
+            map.set(value, count);
+            if (count > max)
+                max = count;
+        }
+
+        this.plot.setData(map);
+        this.legend.setData(max);
+        this.legend.draw();
+        this.plot.draw();
+    }
 }
 
-export class GeoReceiver extends OnCompleteReceiverCommon<SimpleFeatureCollection> {
+export class GeoMapReceiver extends OnCompleteReceiverCommon<SimpleFeatureCollection> {
     protected geoView: GeoView;
 
-    constructor(args: ReceiverCommonArgs, request: RpcRequest<SimpleFeatureCollection>) {
+    constructor(args: ReceiverCommonArgs, protected keyColumn: IColumnDescription, request: RpcRequest<SimpleFeatureCollection>) {
         super(args, request, "map");
         this.geoView = new GeoView(args, this.page);
     }
 
     public run(v: SimpleFeatureCollection): void {
+        this.geoView.setMap(v, this.keyColumn);
+        const ro = new RecordOrder([{
+            columnDescription: this.keyColumn,
+            isAscending: true
+        }]);
+        const rr = this.args.remoteObject.createNextKRequest(ro, null, v.features.length, null, null);
+        rr.invoke(new GeoDataReceiver(this.geoView, rr));
+    }
+}
+
+export class GeoDataReceiver extends OnCompleteReceiver<NextKList> {
+    constructor(protected geoView: GeoView, request: RpcRequest<NextKList>) {
+        super(geoView.page, request, "map");
+    }
+
+    public run(v: NextKList): void {
         this.geoView.updateView(v);
     }
 }
