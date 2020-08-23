@@ -177,9 +177,9 @@ public class HiveDatabase{
     public static class FileLocality {
         public final String fullPath;
         public final long size;
-        public final List<InetAddress> locality;
+        public final List<String> locality;
 
-        public FileLocality(String fullPath, long size, List<InetAddress> locality) {
+        public FileLocality(String fullPath, long size, List<String> locality) {
             this.fullPath = fullPath;
             this.size = size;
             this.locality = locality;
@@ -267,14 +267,14 @@ public class HiveDatabase{
                 FileStatus[] status = fs.listStatus(new Path(partitionPath));
                 List<FileLocality> arrFileLocality = new ArrayList<>();
                 LocatedBlocks blocks = null;
-                List<InetAddress> arrIPAddr = new ArrayList<>();
+                List<String> arrIPAddr = new ArrayList<>();
                 for (int i = 0; i < status.length; i++) {
                     String partitionItem = status[i].getPath().toString().split(nameNodePort)[1];
                     // Will get the replica that stores the partitionItem
                     blocks = dfsClient.getNamenode().getBlockLocations(partitionItem, 0, Long.MAX_VALUE);
                     DatanodeInfo[] locations = blocks.get(0).getLocations();
                     for (DatanodeInfo datanodeInfo : locations) {
-                        arrIPAddr.add(InetAddress.getByName(datanodeInfo.getIpAddr()));
+                        arrIPAddr.add(InetAddress.getByName(datanodeInfo.getIpAddr()).getHostAddress());
                     }
                     arrFileLocality.add(new FileLocality(partitionItem, blocks.getFileLength(), arrIPAddr));
                 }

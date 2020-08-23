@@ -19,7 +19,6 @@ package org.hillview.storage;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.net.InetAddress;
 import java.security.PrivilegedExceptionAction;
 import java.sql.Types;
 import java.time.Instant;
@@ -103,7 +102,7 @@ public class HiveHDFSLoader extends TextFileLoader {
                         for (FileLocality file : hivePartition.files) {
                             // Only load the hdfs file if the local hdfs node is the 1st (main) replica
                             if (file.locality.get(0).equals(HiveHDFSLoader.this.localHDFSNode)) {
-                                Path hdfsFilePath = new Path("hdfs://localhost:9000" + file.fullPath);
+                                Path hdfsFilePath = new Path("hdfs://" + HiveHDFSLoader.this.localHDFSNode + ":9000" + file.fullPath);
                                 BufferedReader br = new BufferedReader(new InputStreamReader(fs.open(hdfsFilePath)));
                                 String line = br.readLine();
                                 while (line != null) {

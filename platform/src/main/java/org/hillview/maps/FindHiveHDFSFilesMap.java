@@ -38,23 +38,24 @@ import java.util.List;
 public class FindHiveHDFSFilesMap implements IMap<Empty, List<IFileReference>> {
     static final long serialVersionUID = 1;
     private final HiveConnectionInfo conn;
+    private final HiveDatabase db;
 
     public FindHiveHDFSFilesMap(HiveConnectionInfo conn) {
         this.conn = conn;
+        this.db = new HiveDatabase(this.conn);
     }
 
     @Override
     public List<IFileReference> apply(@Nullable Empty empty) {
         List<IFileReference> result = new ArrayList<IFileReference>();
-        HiveDatabase db = new HiveDatabase(this.conn);
-        UserGroupInformation hadoopUGI = db.getHadoopUGI();
-        Schema tableSchema = db.getTableSchema();
-        ResultSetMetaData metadataColumn = db.getMetadataColumn();
-        List<HivePartition> arrPartitions = db.getArrPartitions();
-        List<String> hdfsInetAddresses = db.getHdfsInetAddresses();
+        UserGroupInformation hadoopUGI = this.db.getHadoopUGI();
+        Schema tableSchema = this.db.getTableSchema();
+        ResultSetMetaData metadataColumn = this.db.getMetadataColumn();
+        List<HivePartition> arrPartitions = this.db.getArrPartitions();
+        List<String> hdfsInetAddresses = this.db.getHdfsInetAddresses();
 
         try {
-            db.closeConnection();
+            this.db.closeConnection();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
