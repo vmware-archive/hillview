@@ -1,5 +1,10 @@
 package org.hillview.test.storage;
 
+import java.io.InputStream;
+import java.net.URL;
+
+import org.apache.hadoop.fs.FsUrlStreamHandlerFactory;
+import org.apache.hadoop.io.IOUtils;
 import org.hillview.storage.HiveConnectionInfo;
 import org.hillview.storage.HiveDatabase;
 import org.hillview.storage.HiveHDFSLoader;
@@ -33,7 +38,26 @@ public class HiveTest extends BaseTest {
         return conn;
     }
 
+    static {
+        URL.setURLStreamHandlerFactory(new FsUrlStreamHandlerFactory());
+    }
+
+    public void readTest(String url) throws Exception {
+        InputStream in = null;
+        try {
+            in = new URL(url).openStream();
+            IOUtils.copyBytes(in, System.out, 4096, false);
+        } finally {
+            IOUtils.closeStream(in);
+        }
+    }
+
     @Test
+    public void readLocalHDFS() throws Exception {
+        readTest("hdfs://localhost:9000/user/hive/warehouse/invites/ds=2008-08-08/kv5.txt");
+    }
+
+    // @Test
     public void testHiveConnection() {
         HiveConnectionInfo conn;
         HiveDatabase db;
@@ -57,7 +81,7 @@ public class HiveTest extends BaseTest {
             conn = this.getConnectionInfo();
             db = new HiveDatabase(conn);
             db.closeConnection();
-            // System.out.println(db.toString());
+            System.out.println(db);
         } catch (Exception e) {
             // this will fail if local Hive and HDFS is not running, but we don't want to
             // fail the test.

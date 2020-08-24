@@ -29,7 +29,6 @@ import org.hillview.table.Schema;
 
 import javax.annotation.Nullable;
 
-import java.net.InetAddress;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -38,24 +37,24 @@ import java.util.List;
 public class FindHiveHDFSFilesMap implements IMap<Empty, List<IFileReference>> {
     static final long serialVersionUID = 1;
     private final HiveConnectionInfo conn;
-    private final HiveDatabase db;
 
     public FindHiveHDFSFilesMap(HiveConnectionInfo conn) {
         this.conn = conn;
-        this.db = new HiveDatabase(this.conn);
     }
 
     @Override
     public List<IFileReference> apply(@Nullable Empty empty) {
+        // TODO: Split the load, the root node should collect the info and the workers just load the data
         List<IFileReference> result = new ArrayList<IFileReference>();
-        UserGroupInformation hadoopUGI = this.db.getHadoopUGI();
-        Schema tableSchema = this.db.getTableSchema();
-        ResultSetMetaData metadataColumn = this.db.getMetadataColumn();
-        List<HivePartition> arrPartitions = this.db.getArrPartitions();
-        List<String> hdfsInetAddresses = this.db.getHdfsInetAddresses();
+        HiveDatabase db = new HiveDatabase(this.conn);
+        UserGroupInformation hadoopUGI = db.getHadoopUGI();
+        Schema tableSchema = db.getTableSchema();
+        ResultSetMetaData metadataColumn = db.getMetadataColumn();
+        List<HivePartition> arrPartitions = db.getArrPartitions();
+        List<String> hdfsInetAddresses = db.getHdfsInetAddresses();
 
         try {
-            this.db.closeConnection();
+            db.closeConnection();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

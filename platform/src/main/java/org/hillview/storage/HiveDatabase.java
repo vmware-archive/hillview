@@ -45,7 +45,7 @@ import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.utils.HillviewLogger;
 
-public class HiveDatabase{
+public class HiveDatabase {
 
     private final HiveConnectionInfo info;
     private final Connection hiveConn;
@@ -120,18 +120,14 @@ public class HiveDatabase{
 
     public static String discoverLocalHDFSInterface(List<String> hdfsInetAddresses) throws SocketException {
         Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces();
-        // TODO: clean up this after debugging
-        String netString = "";
         for (NetworkInterface netint : Collections.list(nets)) {
             Enumeration<InetAddress> inetAddresses = netint.getInetAddresses();
             for (InetAddress inetAddress : Collections.list(inetAddresses)) {
-                netString += ", "+ inetAddress.getHostName();
-                netString += " - " + inetAddress.getHostAddress();
                 if (hdfsInetAddresses.contains(inetAddress.getHostAddress()))
                     return inetAddress.getHostAddress();
             }
         }
-        throw new RuntimeException("Can't find local HDFS interface from hdfsNodes netString: [ " + netString + "] \n hdfsInetAddresses: " + hdfsInetAddresses.toString());
+        throw new RuntimeException("Can't find local HDFS interface from hdfsNodes");
     }
 
     private List<String> convertToInetAddresses() throws UnknownHostException {
