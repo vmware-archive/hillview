@@ -18,8 +18,8 @@
 package org.hillview.storage;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
-import java.security.PrivilegedExceptionAction;
 import java.sql.Types;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -31,7 +31,6 @@ import java.util.List;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.security.UserGroupInformation;
 import org.hillview.storage.HiveDatabase.FileLocality;
 import org.hillview.storage.HiveDatabase.HivePartition;
 import org.hillview.table.ColumnDescription;
@@ -47,7 +46,6 @@ public class HiveHDFSLoader extends TextFileLoader {
 
     private final Configuration hdfsConf;
     private final HiveConnectionInfo info;
-    private final UserGroupInformation hadoopUGI;
 
     private final List<HivePartition> arrPartitions;
     private final List<String> hdfsInetAddresses;
@@ -56,12 +54,11 @@ public class HiveHDFSLoader extends TextFileLoader {
     private final String localHDFSNode;
     private final Schema actualSchema;
 
-    public HiveHDFSLoader(HiveConnectionInfo info, UserGroupInformation hadoopUGI, Schema tableSchema,
+    public HiveHDFSLoader(HiveConnectionInfo info, Schema tableSchema,
             ResultSetMetaData metadataColumn, List<HivePartition> arrPartitions,
             List<String> hdfsInetAddresses) {
         super(info.table);
         this.info = info;
-        this.hadoopUGI = hadoopUGI;
         this.actualSchema = tableSchema;
         this.arrPartitions = arrPartitions;
         this.hdfsInetAddresses = hdfsInetAddresses;
@@ -85,71 +82,92 @@ public class HiveHDFSLoader extends TextFileLoader {
         return result;
     }
 
+    public ITable newLoad() {
+        Configuration conf = new Configuration();
+        conf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
+        conf.set("fs.file.impl", org.apache.hadoop.fs.LocalFileSystem.class.getName());
+        try {
+            FileSystem fs = FileSystem.get(conf);
+            // Hadoop DFS Path - Input file
+            Path inFile = new Path("hdfs://localhost:9000/user/hive/warehouse/invites/ds=2008-08-08/kv5.txt");
+            // Check if input is valid
+            if (!fs.exists(inFile)) {
+                System.out.println("Input file not found");
+                throw new IOException("Input file not found");
+            }
+            // open and read from file
+            BufferedReader br = new BufferedReader(new InputStreamReader(fs.open(inFile)));
+            String line = br.readLine();
+            while (line != null) {
+                System.out.println(line);
+                line = br.readLine();
+            }
+            br.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     public ITable load() {
         int columnSize = this.actualSchema.getColumnCount();
         List<IAppendableColumn> columns = this.createColumns();
 
         try {
-            ITable table = this.hadoopUGI.doAs(new PrivilegedExceptionAction<ITable>() {
-                @Override
-                public ITable run() throws Exception {
-                    FileSystem fs = FileSystem.get(HiveHDFSLoader.this.hdfsConf);
-                    boolean hasPartition = true;
-                    for (HivePartition hivePartition : HiveHDFSLoader.this.arrPartitions) {
-                        // When the table has no partition, the field will be empty
-                        if (hivePartition.field.isEmpty())
-                            hasPartition = false;
-                        for (FileLocality file : hivePartition.files) {
-                            // Only load the hdfs file if the local hdfs node is the 1st (main) replica
-                            if (file.locality.get(0).equals(HiveHDFSLoader.this.localHDFSNode)) {
-                                Path hdfsFilePath = new Path("hdfs://" + HiveHDFSLoader.this.localHDFSNode + ":9000" + file.fullPath);
-                                BufferedReader br = new BufferedReader(new InputStreamReader(fs.open(hdfsFilePath)));
-                                String line = br.readLine();
-                                while (line != null) {
-                                    String arrData[] = line.split(HiveHDFSLoader.this.info.dataDelimiter, -1);
-                                    int currColumnIdx = 0;
-                                    IAppendableColumn col;
-                                    // To account the partitioned field 
-                                    int partitionedFieldInserted = 0;
-                                    while (currColumnIdx < columnSize && currColumnIdx < arrData.length) {
-                                        col = columns.get(currColumnIdx);
-                                        String data;
-                                        if (hasPartition && hivePartition.colId == currColumnIdx) {
-                                            // When the table has a partitioned field, that field will not be writen 
-                                            // in the hdfs file, thus we need to input the value manually
-                                            data = hivePartition.value;
-                                            partitionedFieldInserted = 1;
-                                        } else {
-                                            data = arrData[currColumnIdx - partitionedFieldInserted];
-                                        }
-                                        // getColumnType() start the index from 1 instead of 0, thus we add + 1
-                                        HiveHDFSLoader.this.appendData(col, data, 
-                                                HiveHDFSLoader.this.metadataColumn.getColumnType(currColumnIdx + 1));
-                                        currColumnIdx++;
-                                    }
-
-                                    // This will handle the case where we have to add some value(s) near the end
-                                    while (currColumnIdx != columnSize) {
-                                        col = columns.get(currColumnIdx);
-                                        if (hasPartition && hivePartition.colId == currColumnIdx)
-                                            // will add the value of partitioned column
-                                            HiveHDFSLoader.this.appendData(col, hivePartition.value,
-                                                    HiveHDFSLoader.this.metadataColumn.getColumnType(currColumnIdx));
-                                        else
-                                            col.appendMissing();
-                                        currColumnIdx++;
-                                    }
-                                    line = br.readLine();
+            FileSystem fs = FileSystem.get(this.hdfsConf);
+            boolean hasPartition = true;
+            for (HivePartition hivePartition : HiveHDFSLoader.this.arrPartitions) {
+                // When the table has no partition, the field will be empty
+                if (hivePartition.field.isEmpty())
+                    hasPartition = false;
+                for (FileLocality file : hivePartition.files) {
+                    // Only load the hdfs file if the local hdfs node is the 1st (main) replica
+                    if (file.locality.get(0).equals(HiveHDFSLoader.this.localHDFSNode)) {
+                        Path hdfsFilePath = new Path("hdfs://" + HiveHDFSLoader.this.localHDFSNode + ":9000" + file.fullPath);
+                        BufferedReader br = new BufferedReader(new InputStreamReader(fs.open(hdfsFilePath)));
+                        String line = br.readLine();
+                        while (line != null) {
+                            String arrData[] = line.split(HiveHDFSLoader.this.info.dataDelimiter, -1);
+                            int currColumnIdx = 0;
+                            IAppendableColumn col;
+                            // To account the partitioned field 
+                            int partitionedFieldInserted = 0;
+                            while (currColumnIdx < columnSize && currColumnIdx < arrData.length) {
+                                col = columns.get(currColumnIdx);
+                                String data;
+                                if (hasPartition && hivePartition.colId == currColumnIdx) {
+                                    // When the table has a partitioned field, that field will not be writen 
+                                    // in the hdfs file, thus we need to input the value manually
+                                    data = hivePartition.value;
+                                    partitionedFieldInserted = 1;
+                                } else {
+                                    data = arrData[currColumnIdx - partitionedFieldInserted];
                                 }
-                                br.close();
+                                // getColumnType() start the index from 1 instead of 0, thus we add + 1
+                                HiveHDFSLoader.this.appendData(col, data, 
+                                        HiveHDFSLoader.this.metadataColumn.getColumnType(currColumnIdx + 1));
+                                currColumnIdx++;
                             }
+
+                            // This will handle the case where we have to add some value(s) near the end
+                            while (currColumnIdx != columnSize) {
+                                col = columns.get(currColumnIdx);
+                                if (hasPartition && hivePartition.colId == currColumnIdx)
+                                    // will add the value of partitioned column
+                                    HiveHDFSLoader.this.appendData(col, hivePartition.value,
+                                            HiveHDFSLoader.this.metadataColumn.getColumnType(currColumnIdx));
+                                else
+                                    col.appendMissing();
+                                currColumnIdx++;
+                            }
+                            line = br.readLine();
                         }
+                        br.close();
                     }
-                    fs.close();
-                    return new Table(columns, HiveHDFSLoader.this.info.table, null);
                 }
-            });
-            return table;
+            }
+            fs.close();
+            return new Table(columns, HiveHDFSLoader.this.info.table, null);
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -224,25 +242,15 @@ public class HiveHDFSLoader extends TextFileLoader {
     }
 
     public Long getFileSizeInBytes() {
-        try {
-            return this.hadoopUGI.doAs(new PrivilegedExceptionAction<Long>() {
-                @Override
-                public Long run() throws Exception {
-                    Long totalSize = 0L;
-                    for (HivePartition hivePartition : HiveHDFSLoader.this.arrPartitions) {
-                        for (FileLocality file : hivePartition.files) {
-                            // Only get the size if the local hdfs node is the 1st (main) replica
-                            if (file.locality.get(0).equals(HiveHDFSLoader.this.localHDFSNode))
-                                totalSize += file.size;
-                        }
-                    }
-                    return totalSize;
-                }
-            });
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
+        Long totalSize = 0L;
+        for (HivePartition hivePartition : HiveHDFSLoader.this.arrPartitions) {
+            for (FileLocality file : hivePartition.files) {
+                // Only get the size if the local hdfs node is the 1st (main) replica
+                if (file.locality.get(0).equals(HiveHDFSLoader.this.localHDFSNode))
+                    totalSize += file.size;
+            }
         }
+        return totalSize;
     }
 
     public String toString() {

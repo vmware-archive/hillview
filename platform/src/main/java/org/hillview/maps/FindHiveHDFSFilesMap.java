@@ -17,7 +17,6 @@
 
 package org.hillview.maps;
 
-import org.apache.hadoop.security.UserGroupInformation;
 import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IMap;
 import org.hillview.storage.HiveConnectionInfo;
@@ -47,7 +46,6 @@ public class FindHiveHDFSFilesMap implements IMap<Empty, List<IFileReference>> {
         // TODO: Split the load, the root node should collect the info and the workers just load the data
         List<IFileReference> result = new ArrayList<IFileReference>();
         HiveDatabase db = new HiveDatabase(this.conn);
-        UserGroupInformation hadoopUGI = db.getHadoopUGI();
         Schema tableSchema = db.getTableSchema();
         ResultSetMetaData metadataColumn = db.getMetadataColumn();
         List<HivePartition> arrPartitions = db.getArrPartitions();
@@ -59,7 +57,7 @@ public class FindHiveHDFSFilesMap implements IMap<Empty, List<IFileReference>> {
             throw new RuntimeException(e);
         }
         
-        result.add(new HiveFileReference(this.conn, hadoopUGI, tableSchema, metadataColumn, arrPartitions,
+        result.add(new HiveFileReference(this.conn, tableSchema, metadataColumn, arrPartitions,
                 hdfsInetAddresses));
         return result;
     }

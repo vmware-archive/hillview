@@ -22,7 +22,6 @@ import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.security.PrivilegedExceptionAction;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -40,7 +39,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.DFSClient;
 import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
 import org.apache.hadoop.hdfs.protocol.LocatedBlocks;
-import org.apache.hadoop.security.UserGroupInformation;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.utils.HillviewLogger;
@@ -52,7 +50,6 @@ public class HiveDatabase {
     private static Configuration hdfsConf;
     private final List<String> hdfsInetAddresses;
     private final String localHDFSNode;
-    private final UserGroupInformation hadoopUGI;
     private final Schema tableSchema;
     private final List<HivePartition> arrPartitions;
     private final DFSClient hadoopDfsClient;
@@ -83,7 +80,6 @@ public class HiveDatabase {
             this.hadoopDfsClient = new DFSClient(
                     new InetSocketAddress(this.localHDFSNode, Integer.parseInt(this.info.namenodePort)),
                     HiveDatabase.hdfsConf);
-            this.hadoopUGI = UserGroupInformation.createRemoteUser(this.info.hadoopUsername);
             this.tableSchema = this.discoverTableSchema();
             this.arrPartitions = this.discoverPartitions();
         } catch (Exception e) {
@@ -146,7 +142,6 @@ public class HiveDatabase {
         hdfsConf.set("fs.file.impl", org.apache.hadoop.fs.LocalFileSystem.class.getName());
         hdfsConf.set("fs.defaultFS", "hdfs://" + localHDFSNode + ":" + namenodePort);
         hdfsConf.set("fs.default.name", hdfsConf.get("fs.defaultFS"));
-        hdfsConf.set("hadoop.job.ugi", hadoopUsername);
         return hdfsConf;
     }
 
@@ -256,28 +251,22 @@ public class HiveDatabase {
         // Configuration conf = HiveDatabase.hdfsConf;
         DFSClient dfsClient = this.hadoopDfsClient;
         String nameNodePort = this.info.namenodePort;
-        List<FileLocality> arrFileLocality = this.hadoopUGI.doAs(new PrivilegedExceptionAction<List<FileLocality>>() {
-            @Override
-            public List<FileLocality> run() throws Exception {
-                FileSystem fs = FileSystem.get(HiveDatabase.hdfsConf);
-                FileStatus[] status = fs.listStatus(new Path(partitionPath));
-                List<FileLocality> arrFileLocality = new ArrayList<>();
-                LocatedBlocks blocks = null;
-                List<String> arrIPAddr = new ArrayList<>();
-                for (int i = 0; i < status.length; i++) {
-                    String partitionItem = status[i].getPath().toString().split(nameNodePort)[1];
-                    // Will get the replica that stores the partitionItem
-                    blocks = dfsClient.getNamenode().getBlockLocations(partitionItem, 0, Long.MAX_VALUE);
-                    DatanodeInfo[] locations = blocks.get(0).getLocations();
-                    for (DatanodeInfo datanodeInfo : locations) {
-                        arrIPAddr.add(InetAddress.getByName(datanodeInfo.getIpAddr()).getHostAddress());
-                    }
-                    arrFileLocality.add(new FileLocality(partitionItem, blocks.getFileLength(), arrIPAddr));
-                }
-                fs.close();
-                return arrFileLocality;
+        FileSystem fs = FileSystem.get(HiveDatabase.hdfsConf);
+        FileStatus[] status = fs.listStatus(new Path(partitionPath));
+        List<FileLocality> arrFileLocality = new ArrayList<>();
+        LocatedBlocks blocks = null;
+        List<String> arrIPAddr = new ArrayList<>();
+        for (int i = 0; i < status.length; i++) {
+            String partitionItem = status[i].getPath().toString().split(nameNodePort)[1];
+            // Will get the replica that stores the partitionItem
+            blocks = dfsClient.getNamenode().getBlockLocations(partitionItem, 0, Long.MAX_VALUE);
+            DatanodeInfo[] locations = blocks.get(0).getLocations();
+            for (DatanodeInfo datanodeInfo : locations) {
+                arrIPAddr.add(InetAddress.getByName(datanodeInfo.getIpAddr()).getHostAddress());
             }
-        });
+            arrFileLocality.add(new FileLocality(partitionItem, blocks.getFileLength(), arrIPAddr));
+        }
+        fs.close();
         return arrFileLocality;
     }
 
@@ -310,10 +299,6 @@ public class HiveDatabase {
 
     public List<HivePartition> getTablePartitions() {
         return this.arrPartitions;
-    }
-
-    public UserGroupInformation getHadoopUGI() {
-        return this.hadoopUGI;
     }
 
     public Schema getTableSchema() {

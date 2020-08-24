@@ -737,8 +737,6 @@ class FederatedDBDialog extends JDBCDialog {
         this.hideInputField("hdfsNodes", hdfsNodes);
         const namenodePort = this.addFieldNamenodePort();
         this.hideInputField("namenodePort", namenodePort);
-        const hadoopUsername = this.addFieldHadoopUsername();
-        this.hideInputField("hadoopUsername", hadoopUsername);
         const dataDelimiter = this.addFieldDataDelimiter();
         this.hideInputField("dataDelimiter", dataDelimiter);
         // Not saving to cache because the extra fields won't be displayed correctly
@@ -762,11 +760,6 @@ class FederatedDBDialog extends JDBCDialog {
     public addFieldNamenodePort() {
         return this.addTextField("namenodePort", "NameNode Port", FieldKind.String, null,
             "NameNode port to establish connection with local NameNode.");
-    }
-
-    public addFieldHadoopUsername() {
-        return this.addTextField("hadoopUsername", "Hadoop Username", FieldKind.String, null,
-            "Authorized username to read hdfs in the local node.");
     }
 
     public addFieldDataDelimiter() {
@@ -818,7 +811,6 @@ class FederatedDBDialog extends JDBCDialog {
             databaseKind: this.getFieldValue("databaseKind"),
             hdfsNodes: this.getFieldValue("hdfsNodes"),
             namenodePort: this.getFieldValue("namenodePort"),
-            hadoopUsername: this.getFieldValue("hadoopUsername"),
             dataDelimiter: this.getFieldValue("dataDelimiter"),
             lazyLoading: true,
         };
@@ -834,16 +826,14 @@ class FederatedDBDialog extends JDBCDialog {
     public showFieldOfHive() {
         this.showInputField("hdfsNodes");
         this.showInputField("namenodePort");
-        this.showInputField("hadoopUsername");
         this.showInputField("dataDelimiter");
         this.setFieldValue("port", "10000");
         this.setFieldValue("namenodePort", "9000");
         this.setFieldValue("dataDelimiter", "\\u0001");
         // TODO: Remove this lines below before final commit
         this.setFieldValue("database", "default");
-        this.setFieldValue("table", "pokes");
+        this.setFieldValue("table", "invites");
         this.setFieldValue("hdfsNodes", "localhost");
-        this.setFieldValue("hadoopUsername", "daniar");
     }
 
     public hideAllExtraFields() {
@@ -851,7 +841,6 @@ class FederatedDBDialog extends JDBCDialog {
         this.hideInputField("dbDir");
         this.hideInputField("hdfsNodes");
         this.hideInputField("namenodePort");
-        this.hideInputField("hadoopUsername");
         this.hideInputField("dataDelimiter");
     }
 

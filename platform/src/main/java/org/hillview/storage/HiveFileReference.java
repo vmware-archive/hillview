@@ -17,12 +17,9 @@
 
 package org.hillview.storage;
 
-import java.io.File;
-import java.net.InetAddress;
 import java.sql.ResultSetMetaData;
 import java.util.List;
 
-import org.apache.hadoop.security.UserGroupInformation;
 import org.hillview.storage.HiveDatabase.HivePartition;
 import org.hillview.table.Schema;
 import org.hillview.table.api.ITable;
@@ -31,22 +28,20 @@ import org.hillview.utils.Converters;
 public class HiveFileReference implements IFileReference {
 
     private final HiveConnectionInfo conn;
-    private final UserGroupInformation hadoopUGI;
     private final Schema tableSchema;
     private final ResultSetMetaData metadataColumn;
     private final List<HivePartition> arrPartitions;
     private final List<String> hdfsInetAddresses;
     private final HiveHDFSLoader hiveLoader;
     
-    public HiveFileReference(final HiveConnectionInfo conn, final UserGroupInformation hadoopUGI, Schema tableSchema,
-            ResultSetMetaData metadataColumn, List<HivePartition> arrPartitions, List<String> hdfsInetAddresses) {
+    public HiveFileReference(final HiveConnectionInfo conn, Schema tableSchema, ResultSetMetaData metadataColumn,
+                List<HivePartition> arrPartitions, List<String> hdfsInetAddresses) {
         this.conn = conn;
-        this.hadoopUGI = hadoopUGI;
         this.tableSchema = tableSchema;
         this.metadataColumn = metadataColumn;
         this.arrPartitions = arrPartitions;
         this.hdfsInetAddresses = hdfsInetAddresses;
-        hiveLoader = new HiveHDFSLoader(this.conn, this.hadoopUGI, this.tableSchema, this.metadataColumn,
+        hiveLoader = new HiveHDFSLoader(this.conn, this.tableSchema, this.metadataColumn,
                 this.arrPartitions, this.hdfsInetAddresses);
     }
 
