@@ -380,12 +380,18 @@
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
             <version>8.0.16</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.protobuf</groupId>
+                    <artifactId>protobuf-java</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- fast collections -->
         <dependency>
             <groupId>it.unimi.dsi</groupId>
             <artifactId>fastutil</artifactId>
-            <version>8.2.2</version>
+            <version>8.4.1</version>
         </dependency>
         <!-- Comma-separated value file I/O -->
         <dependency>
@@ -766,9 +772,12 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>1.4.1</version>
+                <version>3.0.0-M3</version>
                 <configuration>
-                    <rules><dependencyConvergence/></rules>
+                    <rules>
+                        <banDuplicatePomDependencyVersions/>
+                        <dependencyConverge/>
+                    </rules>
                 </configuration>
             </plugin>
         </plugins>

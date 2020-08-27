@@ -63,6 +63,10 @@
                                     <pattern>com.google.common</pattern>
                                     <shadedPattern>shaded.com.google.common</shadedPattern>
                                 </relocation>
+                                <relocation>
+                                    <pattern>it.unimi.dsi</pattern>
+                                    <shadedPattern>shaded.it.unimi.dsi</shadedPattern>
+                                </relocation>
                             </relocations>
                             <artifactSet>
                                 <includes>

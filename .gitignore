@@ -86,7 +86,7 @@ data/segmentation.readme
 data/synthetic/gaussian.csv
 data/synthetic/gaussian.schema
 data/synthetic/privacy_metadata.json
-data/metadata/differential-privacy/ontime/privacy_metadata.json
+data/metadata/differential-privacy/data/ontime_private/privacy_metadata.json
 data/geo/us_states/cb_*
 
 *.DS_Store

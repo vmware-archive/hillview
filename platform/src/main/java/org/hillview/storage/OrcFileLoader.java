@@ -46,7 +46,7 @@ import java.util.List;
  */
 public class OrcFileLoader extends TextFileLoader {
     private final boolean lazy;
-    private final Configuration conf = new Configuration();
+    private final Configuration conf;
     /**
      * Path of the Hillview Schema if specified.
      */
@@ -68,6 +68,10 @@ public class OrcFileLoader extends TextFileLoader {
         super(path);
         this.lazy = lazy;
         this.schemaPath = schemaPath;
+        this.conf = new Configuration();
+        // https://stackoverflow.com/questions/17265002/hadoop-no-filesystem-for-scheme-file
+        conf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
+        conf.set("fs.file.impl", org.apache.hadoop.fs.LocalFileSystem.class.getName());
     }
 
     private boolean[] project(List<String> columns) {
