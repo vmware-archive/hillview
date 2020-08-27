@@ -1,0 +1,33 @@
+{
+ "defaultEpsilons": { "0": 1, "1": 1, "2": 0.01 },
+ "defaultEpsilon": 0.001,
+ "epsilons": {},
+ "quantization": {
+    "quantization": {
+      "to_date": {
+        "globalMin": 478512000000,
+        "globalMax": 253370793600000,
+        "granularity": 86400000,
+        "type": "DoubleColumnQuantization"
+      },
+      "from_date": {
+        "globalMin": 473414400000,
+        "globalMax": 1028185200000,
+        "granularity": 86400000,
+        "type": "DoubleColumnQuantization"
+      },
+      "emp_no": {
+        "globalMin": 10000,
+        "globalMax": 500000,
+        "granularity": 1,
+        "type": "DoubleColumnQuantization"
+      },
+      "salary": {
+        "globalMin": 30000,
+        "globalMax": 140000,
+        "granularity": 100,
+        "type": "DoubleColumnQuantization"
+      }
+    }
+  }
+}
