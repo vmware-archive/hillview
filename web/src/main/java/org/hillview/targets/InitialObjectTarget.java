@@ -128,7 +128,9 @@ public class InitialObjectTarget extends RpcTarget {
         JdbcConnectionInformation conn = request.parseArgs(JdbcConnectionInformation.class);
         IMap<Empty, Empty> map = new IdMap<Empty>();
         Converters.checkNull(this.emptyDataset);
-        String dir = Paths.get(Converters.checkNull(conn.database), conn.table).toString();
+        String dir = Paths.get(Converters.checkNull(conn.databaseKind).toLowerCase(),
+                Converters.checkNull(conn.database),
+                conn.table).toString();
 
         String privacyMetadataFile = DPWrapper.privacyMetadataFile(dir);
         if (privacyMetadataFile != null) {

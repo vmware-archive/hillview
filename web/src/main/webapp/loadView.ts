@@ -604,7 +604,7 @@ class DBDialog extends Dialog {
         const sel = this.addSelectField("databaseKind", "Database kind", arrDB, "mysql",
             "The kind of database.");
         sel.onchange = () => this.dbChanged();
-        const host = this.addTextField("host", "Host", FieldKind.String, null,
+        const host = this.addTextField("host", "Host", FieldKind.String, "localhost",
             "Machine name where database is located; each machine will open a connection to this host");
         host.required = true;
         if (isFederated) {
