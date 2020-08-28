@@ -221,17 +221,18 @@ export class HeatmapLegendPlot extends LegendPlot<number> {
 
     public setData(max: number): void {
         this.data = max;
+        if (max < 1)
+            return;
         console.assert(this.max() > 0);
         const base = this.max() > 10000 ? 10 : 2;
-        if (this.colorMap == null)
-            this.colorMap = new HeatmapColormap(this.max());
+        this.colorMap = new HeatmapColormap(this.max());
         assert(this.max() === this.colorMap.max);
         if (this.colorMap.logScale == null)
             this.colorMap.setLogScale(this.max() > HeatmapColormap.logThreshold);
 
-        if (this.colorMap.logScale) {
+        if (this.colorMap.logScale)
             this.scale = d3scaleLog().base(base);
-        } else
+        else
             this.scale = d3scaleLinear();
         this.scale
             .domain([1, this.max()])

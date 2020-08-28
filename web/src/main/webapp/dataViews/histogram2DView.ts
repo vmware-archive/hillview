@@ -220,7 +220,8 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
 
         // Must setup legend before drawing the data to have the colormap
         const missingShown = this.histograms().perBucket.map(b => b.perMissing).reduce(add);
-        this.legendPlot.setData(this.yAxisData, missingShown > 0, this.schema);
+        if (!keepColorMap)
+            this.legendPlot.setData(this.yAxisData, missingShown > 0, this.schema);
         this.legendPlot.draw();
 
         const heatmap: Pair<Groups<Groups<number>>, Groups<Groups<number>> | null> =
@@ -479,7 +480,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
     }
 
     public resize(): void {
-        if (this == null)
+        if (this.data == null)
             return;
         this.updateView(this.data, this.plot.maxYAxis, true);
     }

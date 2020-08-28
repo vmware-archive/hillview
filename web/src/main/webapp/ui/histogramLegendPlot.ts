@@ -39,6 +39,7 @@ export class HistogramLegendPlot extends LegendPlot<void> {
     protected colorWidth: number;
     protected schema: SchemaClass;
     public    colorMap: ColorMap;
+    protected originalMap: ColorMap;
 
     public constructor(surface: HtmlPlottingSurface, onSelectionCompleted: (xl: number, xr: number) => void) {
         super(surface, onSelectionCompleted);
@@ -110,20 +111,25 @@ export class HistogramLegendPlot extends LegendPlot<void> {
         super.draw();
     }
 
+    protected setMap(map: ColorMap): void {
+        this.originalMap = map;
+        this.colorMap = map;
+    }
+
     public setColorMapKind(kind: ColorMapKind): void {
         if (kindIsString(this.axisData.description!.kind))
             // keep the existing one: categorical.
             return;
         switch (kind) {
             case ColorMapKind.Cool:
-                this.colorMap = d3interpolateCool;
+                this.setMap(d3interpolateCool);
                 break;
             case ColorMapKind.Warm:
-                this.colorMap = d3interpolateWarm;
+                this.setMap(d3interpolateWarm);
                 break;
             case ColorMapKind.Grayscale:
-                this.colorMap = (x: number) => `rgb(
-                ${Math.round(255 * (1 - x))},${Math.round(255 * (1 - x))},${Math.round(255 * (1 - x))})`;
+                this.setMap((x: number) => `rgb(
+                ${Math.round(255 * (1 - x))},${Math.round(255 * (1 - x))},${Math.round(255 * (1 - x))})`);
                 break;
             default:
                 assertNever(kind);
@@ -161,9 +167,9 @@ export class HistogramLegendPlot extends LegendPlot<void> {
         this.missingLegend = missingLegend;
         this.schema = schema;
         if (kindIsString(axis.description.kind))
-            this.colorMap = (d) => Plot.categoricalMap(Math.round(d * (this.axisData.bucketCount - 1)));
+            this.setMap((d) => Plot.categoricalMap(Math.round(d * (this.axisData.bucketCount - 1))));
         else
-            this.colorMap = Plot.defaultColorMap;
+            this.setMap(Plot.defaultColorMap);
     }
 
     /**
@@ -171,8 +177,7 @@ export class HistogramLegendPlot extends LegendPlot<void> {
      * two values in the range 0-1.
      */
     public emphasizeRange(x0: number, x1: number): void {
-        this.colorMap = desaturateOutsideRange(
-            Plot.defaultColorMap, x0, x1);
+        this.colorMap = desaturateOutsideRange(this.originalMap, x0, x1);
     }
 
     public setSurface(surface: HtmlPlottingSurface): void {
