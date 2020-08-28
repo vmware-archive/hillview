@@ -35,18 +35,11 @@ public class FileDescriptionTarget extends RpcTarget {
     static final long serialVersionUID = 1;
 
     protected final IDataSet<IFileReference> files;
-    /**
-     * Pathname to file that contains additional metadata.
-     * The file is stored on the root node.
-     */
-    @Nullable
-    protected final String metadataFile;
 
     FileDescriptionTarget(IDataSet<IFileReference> files, HillviewComputation computation,
-                          @Nullable String metadataFile) {
-        super(computation);
+                          @Nullable String metadataDirectory) {
+        super(computation, metadataDirectory);
         this.files = files;
-        this.metadataFile = metadataFile;
         this.registerObject();
     }
 
@@ -59,12 +52,12 @@ public class FileDescriptionTarget extends RpcTarget {
     @HillviewRpc
     public void loadTable(RpcRequest request, RpcRequestContext context) {
         IMap<IFileReference, ITable> loader = new LoadFilesMap();
-        this.runMap(this.files, loader, TableTarget::new, request, context);
+        this.runMap(this.files, loader, (d, c) -> new TableTarget(d, c, this.metadataDirectory), request, context);
     }
 
     @HillviewRpc
     public void prune(RpcRequest request, RpcRequestContext context) {
         this.runPrune(this.files, new FalseMap<IFileReference>(),
-                (d, c) -> new FileDescriptionTarget(d, c, this.metadataFile), request, context);
+                (d, c) -> new FileDescriptionTarget(d, c, this.metadataDirectory), request, context);
     }
 }

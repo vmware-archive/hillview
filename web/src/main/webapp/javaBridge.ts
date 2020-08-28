@@ -263,7 +263,6 @@ export interface BucketsInfo {
  */
 export interface ColumnGeoRepresentation {
     columnName: string; // e.g., OriginState
-    datasetFile: string; // relative to the geo directory; e.g., us_states/cb_2019_us_state_20m.shp
     property: string; // which property in the dataset is indexed by values in the column. e.g., STUSPS
     projection: string; // one of the supported data projections
     // Legal projection names are:
@@ -280,6 +279,15 @@ export interface ColumnGeoRepresentation {
     // geoMercator
     // geoTransverseMercator
     // geoNaturalEarth1
+}
+
+export interface GeoFileInformation extends ColumnGeoRepresentation {
+    geoFile: string; // e.g., data/geo/us_states/cb_2019_us_state_20m.shp
+    // Supported formats: shapeFile (shp)
+}
+
+export interface MapAndColumnRepresentation extends ColumnGeoRepresentation {
+    data: SimpleFeatureCollection;
 }
 
 export interface BasicColStats {

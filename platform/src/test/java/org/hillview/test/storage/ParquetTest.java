@@ -45,6 +45,10 @@ public class ParquetTest extends BaseTest {
         Assert.assertEquals("Table[18x4214]", table.toString());
         IColumn first = table.getLoadedColumn("java_version");
         Assert.assertEquals(first.getString(0), "1.8.0_91");
+        if (toPrint) {
+            System.out.println(table.getSchema().toString());
+            System.out.println(table.toLongString(100));
+        }
     }
 
     @Test

@@ -27,9 +27,12 @@ import org.hillview.dataset.api.PartialResult;
 import org.hillview.table.api.ITable;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Array;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
 
@@ -510,5 +513,10 @@ public class Utilities {
         for (int i = 0; i < data.length; i += k)
             copy[i / k] = data[i];
         return copy;
+    }
+
+    public static String textFileContents(String file) throws IOException {
+        List<String> str = Files.readAllLines(Paths.get(file));
+        return String.join("\n", str);
     }
 }

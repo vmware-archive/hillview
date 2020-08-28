@@ -48,13 +48,13 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
 
     PrivateSimpleDBTarget(JdbcConnectionInformation conn, HillviewComputation c,
                           PrivacySchema privacySchema, String schemaFilename) throws SQLException {
-        super(conn, c);
+        super(conn, c, schemaFilename);
         this.wrapper = new DPWrapper(privacySchema, schemaFilename);
         this.database.connect();
     }
 
     private PrivateSimpleDBTarget(PrivateSimpleDBTarget other, HillviewComputation computation) throws SQLException {
-        super(other.jdbc, computation);
+        super(other.jdbc, computation, other.metadataDirectory);
         this.wrapper = new DPWrapper(other.wrapper);
         this.database.connect();
     }

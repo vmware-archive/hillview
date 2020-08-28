@@ -81,7 +81,7 @@ final class CorrelationMatrixTarget extends RpcTarget {
 
 
     CorrelationMatrixTarget(final CorrMatrix cm, HillviewComputation computation) {
-        super(computation);
+        super(computation, null);
         this.corrMatrix = cm;
         this.registerObject();
     }

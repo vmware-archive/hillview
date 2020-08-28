@@ -33,6 +33,6 @@ public class PrivateFileDescriptionTarget extends FileDescriptionTarget {
     public void loadTable(RpcRequest request, RpcRequestContext context) {
         IMap<IFileReference, ITable> loader = new LoadFilesMap();
         this.runMap(this.files, loader, (d, c) ->
-                new PrivateTableTarget(d, c, this.metadata, Converters.checkNull(this.metadataFile)), request, context);
+                new PrivateTableTarget(d, c, this.metadata, Converters.checkNull(this.metadataDirectory)), request, context);
     }
 }

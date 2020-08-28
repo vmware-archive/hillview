@@ -17,11 +17,10 @@
 
 import {
     Groups,
-    IColumnDescription,
+    IColumnDescription, MapAndColumnRepresentation,
     NextKList,
     RecordOrder,
     RemoteObjectId,
-    SimpleFeatureCollection
 } from "../javaBridge";
 import {ChartView} from "./chartView";
 import {FullPage, PageTitle} from "../ui/fullPage";
@@ -137,12 +136,11 @@ export class GeoView extends ChartView<Groups<number>> {
         // TODO
     }
 
-    public setMap(v: SimpleFeatureCollection, ketColumn: IColumnDescription): void {
+    public setMap(v: MapAndColumnRepresentation, ketColumn: IColumnDescription): void {
         this.keyColumn = ketColumn;
-        this.plot.setMap(v,
-            { columnName: ketColumn.name, projection: "geoAlbersUsa", property: "STUSPS", datasetFile: "" });
+        this.plot.setMap(v);
         assert(this.summary != null);
-        this.summary.set("Polygons", v.features.length);
+        this.summary.set("Polygons", v.data.features.length);
         this.summary.display();
     }
 
@@ -164,21 +162,25 @@ export class GeoView extends ChartView<Groups<number>> {
     }
 }
 
-export class GeoMapReceiver extends OnCompleteReceiverCommon<SimpleFeatureCollection> {
+export class GeoMapReceiver extends OnCompleteReceiverCommon<MapAndColumnRepresentation> {
     protected geoView: GeoView;
 
-    constructor(args: ReceiverCommonArgs, protected keyColumn: IColumnDescription, request: RpcRequest<SimpleFeatureCollection>) {
+    constructor(args: ReceiverCommonArgs, protected keyColumn: IColumnDescription, request: RpcRequest<MapAndColumnRepresentation>) {
         super(args, request, "map");
         this.geoView = new GeoView(args, this.page);
     }
 
-    public run(v: SimpleFeatureCollection): void {
+    public run(v: MapAndColumnRepresentation): void {
         this.geoView.setMap(v, this.keyColumn);
         const ro = new RecordOrder([{
             columnDescription: this.keyColumn,
             isAscending: true
         }]);
-        const rr = this.args.remoteObject.createNextKRequest(ro, null, v.features.length, null, null);
+        // TODO: this is not correct, since the values in the column and the features
+        // in the dataset may not be exactly the same.  We use a 2x here, but
+        // the right thing is to use hyperLogLog to estimate the count.
+        const rr = this.args.remoteObject.createNextKRequest(
+            ro, null, 2 * v.data.features.length, null, null);
         rr.invoke(new GeoDataReceiver(this.geoView, rr));
     }
 }

@@ -66,8 +66,8 @@ public class SimpleDBTarget extends TableRpcTarget {
         }
     }
 
-    SimpleDBTarget(JdbcConnectionInformation jdbc, HillviewComputation computation) {
-        super(computation);
+    SimpleDBTarget(JdbcConnectionInformation jdbc, HillviewComputation computation, @Nullable String metadataDirectory) {
+        super(computation, metadataDirectory);
         this.jdbc = jdbc;
         this.schema = null;
         this.registerObject();
@@ -203,7 +203,7 @@ public class SimpleDBTarget extends TableRpcTarget {
             throw new HillviewException("Only filters on contiguous range are supported");
         IdMap<ITable> map = new IdMap<ITable>();
         this.runMap(this.table, map, (e, c1) -> {
-            SimpleDBTarget result = new SimpleDBTarget(this.jdbc, c1);
+            SimpleDBTarget result = new SimpleDBTarget(this.jdbc, c1, this.metadataDirectory);
             for (RangeFilterDescription f: filter.filters)
                 result.columnLimits.intersect(f);
             return result;

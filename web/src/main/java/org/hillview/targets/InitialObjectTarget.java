@@ -38,7 +38,6 @@ import javax.websocket.Session;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.Collections;
@@ -94,8 +93,7 @@ public class InitialObjectTarget extends RpcTarget {
     public void getUIConfig(RpcRequest request, RpcRequestContext context) {
         JsonString result;
         try {
-            List<String> str = Files.readAllLines(Paths.get("uiconfig.json"));
-            result = new JsonString(String.join("\n", str));
+            result = new JsonString(Utilities.textFileContents("uiconfig.json"));
             result.toJsonTree();  // force parsing of the JSON -- to catch syntax errors
         } catch (Exception e) {
             HillviewLogger.instance.warn("File uiconfig.json file could not be loaded",
@@ -144,7 +142,7 @@ public class InitialObjectTarget extends RpcTarget {
                         }
                     }, request, context);
         } else {
-            this.runMap(this.emptyDataset, map, (e, c) -> new SimpleDBTarget(conn, c), request, context);
+            this.runMap(this.emptyDataset, map, (e, c) -> new SimpleDBTarget(conn, c, dir), request, context);
         }
     }
 
@@ -164,7 +162,10 @@ public class InitialObjectTarget extends RpcTarget {
         JdbcConnectionInformation conn = request.parseArgs(JdbcConnectionInformation.class);
         LoadDatabaseTableMap mapper = new LoadDatabaseTableMap(conn);
         Converters.checkNull(this.emptyDataset);
-        this.runMap(this.emptyDataset, mapper, TableTarget::new, request, context);
+        String dir = Paths.get(Converters.checkNull(conn.databaseKind).toLowerCase(),
+                Converters.checkNull(conn.database),
+                conn.table).toString();
+        this.runMap(this.emptyDataset, mapper, (d, c) -> new TableTarget(d, c, dir), request, context);
     }
 
     @HillviewRpc
@@ -173,14 +174,15 @@ public class InitialObjectTarget extends RpcTarget {
         HillviewLogger.instance.info("Finding files", "{0}", desc);
         IMap<Empty, List<IFileReference>> finder = new FindFilesMap(desc);
         Converters.checkNull(this.emptyDataset);
+        String folder = Utilities.getFolder(desc.fileNamePattern);
 
-        String privacyMetadataFile = DPWrapper.privacyMetadataFile(Utilities.getFolder(desc.fileNamePattern));
+        String privacyMetadataFile = DPWrapper.privacyMetadataFile(folder);
         if (privacyMetadataFile != null) {
             this.runFlatMap(this.emptyDataset, finder,
                     (d, c) -> new PrivateFileDescriptionTarget(d, c, privacyMetadataFile), request, context);
         } else {
             this.runFlatMap(this.emptyDataset, finder,
-                    (d, c) -> new FileDescriptionTarget(d, c, Utilities.getFolder(desc.fileNamePattern)), request, context);
+                    (d, c) -> new FileDescriptionTarget(d, c, folder), request, context);
         }
     }
 

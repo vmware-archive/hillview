@@ -46,8 +46,8 @@ public abstract class TableRpcTarget extends RpcTarget {
     static final long serialVersionUID = 1;
     protected IDataSet<ITable> table;
 
-    protected TableRpcTarget(HillviewComputation computation) {
-        super(computation);
+    protected TableRpcTarget(HillviewComputation computation, @Nullable String metadataDirectory) {
+        super(computation, metadataDirectory);
         // We expect that this will be soon overwritten by a call
         // to setTable.
         this.table = new LocalDataSet<>(new SmallTable());

@@ -31,29 +31,27 @@ import {
     GeoProjection,
     geoStereographic, geoTransverseMercator
 } from "d3-geo";
-import {ColumnGeoRepresentation, SimpleFeatureCollection} from "../javaBridge";
+import {MapAndColumnRepresentation} from "../javaBridge";
 import {Feature, GeometryObject} from "geojson";
 
-export class GeoPlot extends Plot<SimpleFeatureCollection> {
+export class GeoPlot extends Plot<MapAndColumnRepresentation> {
     protected aggregate: Map<String, number>;
-    protected columnRepr: ColumnGeoRepresentation
 
     public constructor(surface: PlottingSurface,
                        protected colorMap: ColorMap) {
         super(surface);
     }
 
-    public setMap(data: SimpleFeatureCollection, columnRepr: ColumnGeoRepresentation): void {
+    public setMap(data: MapAndColumnRepresentation): void {
         this.data = data;
-        this.columnRepr = columnRepr;
     }
 
     public setData(aggregate: Map<String, number>): void {
         this.aggregate = aggregate;
     }
 
-    static getProjection(projection: string): GeoProjection {
-        switch (projection) {
+    getProjection(): GeoProjection {
+        switch (this.data.projection) {
             case "geoAlbersUsa":
                 return geoAlbersUsa();
             case "geoAzimuthalEqualArea":
@@ -86,23 +84,23 @@ export class GeoPlot extends Plot<SimpleFeatureCollection> {
     
     draw(): void {
         const canvas = this.plottingSurface.getCanvas();
-        const projection = GeoPlot.getProjection(this.columnRepr.projection)
-            .fitExtent([[0, 0], [this.getChartWidth(), this.getChartHeight()]], this.data);
+        const projection = this.getProjection()
+            .fitExtent([[0, 0], [this.getChartWidth(), this.getChartHeight()]], this.data.data);
 
         const geoGenerator = geoPath().projection(projection);
         canvas.selectAll('path')
-            .data(this.data.features)
+            .data(this.data.data.features)
             .enter()
             .append('path')
             .attr('d', geoGenerator)
             .attr("fill", (d: Feature<GeometryObject>) => {
-                const prop = d.properties[this.columnRepr.property];
+                const prop = d.properties[this.data.property];
                 return this.color(prop);
             })
             .attr("stroke", "#aaa")
             .append("title")
             .attr("text", (d: Feature<GeometryObject>) => {
-                const prop = d.properties[this.columnRepr.property];
+                const prop = d.properties[this.data.property];
                 return prop + " " + this.count(prop);
             });
     }

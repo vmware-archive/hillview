@@ -83,7 +83,7 @@ public class GeoAPITest extends BaseTest {
 
     private PolygonSet getStates() throws IOException {
         PolygonSet shp = new PolygonSet(
-                geoDir + "us_states/cb_2019_us_state_20m.shp", "STUSPS", "NAME");
+                geoDir + "us_states/cb_2019_us_state_20m.shp");
         Assert.assertNotNull(shp);
         return shp;
     }

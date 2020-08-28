@@ -35,21 +35,16 @@ import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 
 public class PolygonSet {
     protected final SimpleFeatureSource source;
-    protected final Set<String> columnNames;
     protected final Filter filter;
     protected final FilterFactory2 ffactory = CommonFactoryFinder.getFilterFactory2();
     protected final String geometryFeature;
     @Nullable
     protected final CoordinateReferenceSystem crs;
 
-    public PolygonSet(String shapeFileName, String... columnNames) throws IOException {
-        this.columnNames = new HashSet<String>(Arrays.asList(columnNames));
+    public PolygonSet(String shapeFileName) throws IOException {
         this.filter = Filter.INCLUDE;
         File file = new File(shapeFileName);
         FileDataStore store = FileDataStoreFinder.getDataStore(file);
@@ -61,15 +56,10 @@ public class PolygonSet {
     }
 
     private PolygonSet(PolygonSet source, Filter filter) {
-        this.columnNames = source.columnNames;
         this.filter = ffactory.and(source.filter, filter);
         this.source = source.source;
         this.geometryFeature = source.geometryFeature;
         this.crs = source.crs;
-    }
-
-    public Set<String> columnNames() {
-        return this.columnNames;
     }
 
     protected SimpleFeatureCollection getCollection(Filter filter) {
@@ -100,16 +90,11 @@ public class PolygonSet {
         }
     }
 
-    /**
-     * Bounding box of the geometric feature in the specified column.
-     */
     public ReferencedEnvelope boundingBox() {
         return this.getCollection(filter).getBounds();
     }
 
     public PolygonSet find(String columnName, String value) {
-        if (!this.columnNames.contains(columnName))
-            throw new RuntimeException("Key " + columnName + " not legal");
         FilterFactory2 ff = CommonFactoryFinder.getFilterFactory2();
         Filter filter = ff.equals(ff.property(columnName), ff.literal(value));
         return new PolygonSet(this, filter);
@@ -126,11 +111,10 @@ public class PolygonSet {
 
     public String toString() {
         StringBuilder result = new StringBuilder();
-        String mainCol = this.columnNames.iterator().next();
         try (SimpleFeatureIterator it = this.getCollection().features()) {
             while (it.hasNext()) {
                 SimpleFeature feature = it.next();
-                result.append(feature.getAttribute(mainCol)).append(System.lineSeparator());
+                result.append(feature.getAttribute("name")).append(System.lineSeparator());
             }
         }
         return result.toString();

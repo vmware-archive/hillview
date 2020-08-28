@@ -24,12 +24,14 @@ import {
     AggregateDescription,
     BasicColStats,
     BucketsInfo,
-    CombineOperators, CompareDatasetsInfo,
+    CombineOperators,
+    CompareDatasetsInfo,
     ComparisonFilterDescription,
     ContainsArgs,
     CountWithConfidence,
     EigenVal,
-    FindResult, Groups,
+    FindResult,
+    Groups,
     HeavyHittersFilterInfo,
     HistogramRequestInfo,
     IColumnDescription,
@@ -38,18 +40,24 @@ import {
     kindIsString,
     ExtractValueFromKeyMapInfo,
     NextKArgs,
-    NextKList, QuantilesMatrixInfo,
+    NextKList,
+    QuantilesMatrixInfo,
     QuantilesVectorInfo,
     RangeFilterArrayDescription,
     RecordOrder,
     RemoteObjectId,
-    RowFilterDescription, SampleSet,
+    RowFilterDescription,
+    SampleSet,
     Schema,
     StringColumnFilterDescription,
     StringColumnsFilterDescription,
     StringFilterDescription,
     TableSummary,
-    TopList, CreateIntervalColumnMapInfo, HeatmapRequestInfo, RowValue, SimpleFeatureCollection
+    TopList,
+    CreateIntervalColumnMapInfo,
+    HeatmapRequestInfo,
+    RowValue,
+    MapAndColumnRepresentation
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
 import {FullPage, PageTitle} from "./ui/fullPage";
@@ -255,8 +263,8 @@ export class TableTargetAPI extends RemoteObject {
         return this.createStreamingRpcRequest<TableSummary>("getSummary", null);
     }
 
-    public createGeoRequest(column: IColumnDescription): RpcRequest<SimpleFeatureCollection> {
-        return this.createStreamingRpcRequest<SimpleFeatureCollection>("getGeo", column);
+    public createGeoRequest(column: IColumnDescription): RpcRequest<MapAndColumnRepresentation> {
+        return this.createStreamingRpcRequest<MapAndColumnRepresentation>("getGeo", column);
     }
 
     public createHLogLogRequest(colName: string): RpcRequest<CountWithConfidence> {
