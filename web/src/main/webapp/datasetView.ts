@@ -96,6 +96,7 @@ export interface HeatmapSerialization extends BaseHeatmapSerialization {
 }
 
 export interface MapSerialization extends IViewSerialization {
+    keyColumn: string;
     // TODO
 }
 

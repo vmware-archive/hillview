@@ -279,8 +279,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
                 .attr("r", Resolution.mouseDotRadius)
                 .attr("fill", "blue");
 
-        const pointDesc = ["x", "bucket", "y", "count"];
-        pointDesc.push("cdf");
+        const pointDesc = ["x", "bucket", "y", "count", "cdf"];
         this.pointDescription = new TextOverlay(this.surface.getChart(),
             this.surface.getActualChartSize(), pointDesc, 40);
 

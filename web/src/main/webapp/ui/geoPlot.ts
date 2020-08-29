@@ -22,11 +22,11 @@ import {
     geoAlbersUsa,
     geoAzimuthalEqualArea,
     geoAzimuthalEquidistant,
-    geoConicEqualArea, geoConicEquidistant,
+    geoConicEqualArea, geoConicEquidistant, geoContains,
     geoEqualEarth, geoEquirectangular,
     geoGnomonic, geoMercator,
     geoNaturalEarth1,
-    geoOrthographic,
+    geoOrthographic, GeoPath,
     geoPath,
     GeoProjection,
     geoStereographic, geoTransverseMercator
@@ -34,8 +34,16 @@ import {
 import {MapAndColumnRepresentation} from "../javaBridge";
 import {Feature, GeometryObject} from "geojson";
 
+export class Box {
+    bounds: [[number, number], [number, number]];
+    property: string;
+    value: number | null;
+}
+
 export class GeoPlot extends Plot<MapAndColumnRepresentation> {
-    protected aggregate: Map<String, number>;
+    protected aggregate: Map<String, number> | null = null;
+    protected geoGenerator: GeoPath | null = null;
+    protected projection: GeoProjection | null = null;
 
     public constructor(surface: PlottingSurface,
                        protected colorMap: ColorMap) {
@@ -83,26 +91,41 @@ export class GeoPlot extends Plot<MapAndColumnRepresentation> {
     }
     
     draw(): void {
-        const canvas = this.plottingSurface.getCanvas();
-        const projection = this.getProjection()
+        const chart = this.plottingSurface.getChart();
+        this.projection = this.getProjection()
             .fitExtent([[0, 0], [this.getChartWidth(), this.getChartHeight()]], this.data.data);
-
-        const geoGenerator = geoPath().projection(projection);
-        canvas.selectAll('path')
+        this.geoGenerator = geoPath().projection(this.projection);
+        chart.selectAll('path')
             .data(this.data.data.features)
             .enter()
             .append('path')
-            .attr('d', geoGenerator)
+            .attr('d', this.geoGenerator)
             .attr("fill", (d: Feature<GeometryObject>) => {
                 const prop = d.properties[this.data.property];
                 return this.color(prop);
             })
-            .attr("stroke", "#aaa")
-            .append("title")
-            .attr("text", (d: Feature<GeometryObject>) => {
-                const prop = d.properties[this.data.property];
-                return prop + " " + this.count(prop);
-            });
+            .attr("stroke", "#aaa");
+    }
+
+    public get(x: number, y: number): Box | null {
+        if (this.projection == null)
+            return null;
+        let coords: [number, number] | null = this.projection.invert!([x, y]);
+        if (coords == null)
+            return null;
+        for (const f of this.data.data.features) {
+            if (geoContains(f, coords)) {
+                const bounds = this.geoGenerator!.bounds(f);
+                const prop = f.properties[this.data.property];
+                const value = this.count(prop);
+                return {
+                    bounds,
+                    property: prop,
+                    value
+                };
+            }
+        }
+        return null;
     }
 
     protected color(property: string): string {
@@ -113,6 +136,8 @@ export class GeoPlot extends Plot<MapAndColumnRepresentation> {
     }
 
     protected count(property: string): number | null {
+        if (this.aggregate == null)
+            return null;
         return this.aggregate.get(property);
     }
 }

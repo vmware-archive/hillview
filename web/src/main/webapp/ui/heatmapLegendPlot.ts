@@ -250,6 +250,8 @@ export class HeatmapLegendPlot extends LegendPlot<number> {
     }
 
     public draw(): void {
+        if (this.max() == null)
+            return;
         this.drawn = true;
         if (this.contextMenu == null)
             this.createContextMenu();
