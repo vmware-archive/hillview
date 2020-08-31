@@ -50,7 +50,9 @@ Hillview can run as a federated system of loosely interconnected
 components; the root node only sends small queries to the workers, and
 it receives small results from these.  The data on the workers is
 never sent over the network; the worker locally compute all views that
-are needed to produce the final result.
+are needed to produce the final result.  The root node can store
+optional metadata information.  This is described below in the
+[metadata](#metadata) section.
 
 ### Streaming interaction
 
@@ -66,7 +68,16 @@ accompanied by a progress bar, as in the following figure:
 Pressing the "stop" button next to a progress bar will cancel the
 currently-executing operation.
 
-### Data model
+## Data management
+
+Hillview tries to avoid data management as much as possible; Hillview is designed
+to ingest data from a variety of external sources, such as databases, distributed
+filesystems, raw files of various formats.  However, some amount of data management
+is unavoidable - at least Hillview must convert data to and from external representations
+to its own internal representation.  In this section we describe how Hillview
+manages data and interacts with other data storage systems.
+
+### Data model and supported data types
 
 The Hillview data model is a large table, with a relatively small
 number of columns (currently tens or hundreds) and many rows (millions
@@ -74,20 +85,172 @@ to billions).
 
 The data in each column is typed; Hillview supports the following data
 types:
-  * String (Unicode strings)
-  * JSON (strings that represent JSON values)
-  * Double (64-bit floating point)
-  * Integer (32-bit)
-  * Date: a date including time and timezone
-  * LocalDate: a date includ time, but without any timezone information
-  * Time: a time within a day
-  * Durations (differences between two times)
-  * Intervals: an interval contains two double values.
-    Operations on interval values are described in section (#interval-values).
+
+|Datatype|Example|Description|
+|:---|---:|:---|
+|None|missing|All values are "missing" (see below)|
+|`String`|California|Represents Unicode strings; although Hillview does not set a limit on the string length,
+        is does not handle very well very long strings|
+|JSON|{a:2,b:3}|Strings that represent legal JSON values|
+|`Double`|2.4352e2|64-bit IEEE floating point values|
+|`Integer`|100|32-bit signed integer values|
+|`Date`|2000/01/01 10:32:45.003 GMT|A date, including time and timezone.  The precision of times in dates
+      is limited to milliseconds|
+|`LocalDate`|2000/01/01 10:32:45.003|A date including time, but without any timezone information.
+           The precision of times in local dates is limited to milliseconds|
+|`Time`|10:32:45.003|A time within a day.
+                   The precision of times in local dates is limited to milliseconds|
+|`Duration`|2 days 05:20:00|Differences between two times|
+|`Interval`|[3,4]|An interval contains two double values.  See also section (#interval-values).|
 
 Hillview supports a special value "missing" which indicates that a
 value is not present.  This is similar to NULL values in databases.
 When sorting missing values are considered larger than any other value.
+
+### Data conversions
+
+This section describes how Hillview data is represented in various external
+representations.
+
+#### JavaScript conversions
+
+Hillview allows users to write data transformation and filtering functions in JavaScript.
+Here is how various Hillview datatypes are represented in JavaScript:
+
+|Datatype|JavaScript representation|
+|:---|---:|:---|
+|None|null|
+|`String`|A JavaScript string.|
+|`Json`|A JavaScript string that can be parsed into a JavaScript object.|
+|`Double`|A JavaScript number.|
+|`Integer`|A JavaScript number.|
+|`Date`|A JavaScript `Date` object.|
+|`LocalDate`|A JavaScript `Date` object adjusted for the local timezone offset.|
+|`Time`|A JavaScript `Date` object with a date component of "zero".|
+|`Duration`|A JavaScript number representing the number of milliseconds in the duration.|
+|`Interval`|An array with two JavaScript number values.|
+
+### Metadata
+
+This section describes various kinds of metadata manipulated by Hillview.
+The hillview root node stores the optional metadata in a directory called
+`metadata`.  The structure of this directory is as follows:
+
+|Directory|Contents|
+|`data/geo`|Geographic metadata common to all datasets (e.g., maps)|
+|`data/metadata`|Root directory for metadata; has one subdirectory for each dataset|
+|`data/metadata/differential-privacy`|Root directory for differentially-private metadata; has one
+                                    subdirectory for each dataset|
+|`data/metadata/geo`|Root directory for geographic metadata; has one subdirectory for each dataset|
+
+#### Mapping a dataset to a metadata directory
+
+Hillview uses some conventions in the structuring of directories on the root
+note in order to associate metadata information on the
+root node with data on the worker nodes.
+
+Let us consider a set of ORC files stored on the worker nodes in
+directory `dataset/example/*.orc`.  The following files are metadata files
+associated with this dataset on the root node:
+
+* `data/metadata/geo/dataset/example/geometa.json` - metadata describing
+   how the columns in this dataset are mapped to geographic features
+* `data/metadata/differential-privacy/dataset/example/privacy_metadata.json` -
+   metadata describing the differential privacy parameters a dataset
+   that only supports only private visualizations
+
+#### Data schema
+
+For some file formats that are not self-describing Hillview uses a
+`schema` file to specify the format of the data.  The following is an
+example of a schema specification in JSON for a table with 2 columns.
+The "schema" file can be stored either on the worker nodes, in the same place
+where the data resides, or on the root node.
+
+```JSON
+[{
+    "name": "DayOfWeek",
+    "kind": "Integer"
+}, {
+    "name": "FlightDate",
+    "kind": "LocalDate"
+}]
+```
+
+The schema is an array of JSON objects each describing a column.  A
+column description has two fields:
+
+* name: A string describing the column name.  All column names in a
+  schema must be unique.
+
+* kind: A string describing the type of data in the column,
+  corresponding to the types in the [data model](#data-model-and-supported-data-types).
+
+#### Differentially-private metadata
+
+TODO
+
+#### Geographic metadata
+
+The directory `data/geo` on the root node can contain various
+with geographic information data.  We currently support
+[shape files](https://en.wikipedia.org/wiki/Shapefile).
+The organization of these files on disk is not mandated by
+Hillview.
+
+##### Connecting dataset features to geographic metadata
+
+For each dataset that contains columns that can be mapped to a geographic feature
+a metadata file can describe the connection between the values in the
+data columns and a specific geographic feature.  This is an array of
+objects, one per column, stored in a file called `geometa.json`.
+
+```Json
+[{
+  "columnName": "OriginState",
+  "geoFile": "data/geo/us_states/cb_2019_us_state_20m.shp",
+  "property": "STUSPS",
+  "projection": "geoAlbersUsa"
+}, {
+  "columnName": "DestState",
+  "geoFile": "data/geo/us_states/cb_2019_us_state_20m.shp",
+  "property": "STUSPS",
+  "projection": "geoAlbersUsa"
+}]
+```
+
+Here is the interpretation of the four fields in each object:
+
+|Field|Interpretation|
+|columnName|The name of a column in this dataset|
+|geoFile|The path of a geographic information file
+         in the root node that stores geographic
+         information corresponding to values in this column.
+         We recommend these files to be stored under `data/geo`|
+|property|Property in the geographic information file that corresponds
+          to values in the dataset column.  For example, a geoFile
+          about US states may two properties: one with US postal codes, and
+          one with state names.  This column describes which property is
+          expected to be found in the data.|
+|projection|Map projection to use to convert the data to a map
+            on the screen.  Legal values are shown below.| 
+            
+This is a list of legal map projections supported.  For more on
+the meaning of these projections, see for example
+[D3 projections](https://d3-wiki.readthedocs.io/zh_CN/master/Geo-Projections/).
+* geoAzimuthalEqualArea
+* geoAzimuthalEquidistant
+* geoGnomonic
+* geoOrthographic
+* geoStereographic
+* geoEqualEarth
+* geoAlbersUsa
+* geoConicEqualArea
+* geoConicEquidistant
+* geoEquirectangular
+* geoMercator
+* geoTransverseMercator
+* geoNaturalEarth1
 
 ## Interacting with data
 
@@ -152,8 +315,8 @@ storage.
 * ORC files: allows the user to [read the data from a set of ORC
   files](#reading-orc-files).
 
-* DB tables: allows the user to [read data from a set of federated
-  databases using JDBC](#reading-data-from-sql-databases).
+* Federated DB tables: allows the user to [read data from a set of federated
+  or distributed databases](#reading-data-from-sql-databases).
 
 After the data loading is initiated the user will be presented with a
 view of the loaded table.  If the table has relatively few columns,
@@ -161,38 +324,10 @@ the user is shown directly a [Tabular view](#table-views).  Otherwise
 the user is shown a [Schema view](#schema-views), which can be
 used to select a smaller set of columns to browse.
 
-#### Specifying the data schema
+#### Loading logs
 
-For some file formats that are not self-describing Hillview uses a
-`schema` file to specify the format of the data.  The following is an
-example of a schema specification in JSON for a table with 2 columns.
-The "schema" file is stored on the worker nodes, in the same place
-where the data resides.
-
-```JSON
-[{
-    "name": "DayOfWeek",
-    "kind": "Integer"
-}, {
-    "name": "FlightDate",
-    "kind": "Date"
-}]
-```
-
-The schema is an array of JSON objects each describing a column.  A
-column description has two fields:
-
-* name: A string describing the column name.  All column names in a
-  schema must be unique.
-
-* kind: A string describing the type of data in the column,
-  corresponding to the types in the [data model](#data-model).  The
-  kind is one of: "String", "JSON", "Double", "Integer",
-  "Date", and "Interval".
-
-#### Specifying rules for parsing logs
-
-We rely on the grok library for this purpose. For more info visit https://github.com/thekrakken/java-grok/blob/master/README.md
+We use on the grok library for parsing distributed logs.
+For more info visit https://github.com/thekrakken/java-grok/blob/master/README.md
 
 Grok works by combining text patterns into something that matches your logs.
 
@@ -230,10 +365,6 @@ message   : CRON[25907]: (CRON) info (No MTA installed, discarding output)
 timestamp : Sep 17 06:55:14.123
 ```
 
-##### Regular Expressions
-
-Grok sits on top of regular expressions, so any regular expressions are valid in grok as well
-
 ##### Custom Patterns
 
 Hillview supports certain pre-defined log format patterns. You have an option to define custom log format patterns
@@ -254,7 +385,7 @@ is deployed*.
 * File name pattern: A shell expansion pattern that names the files to
   load.  Multiple files may be loaded on each machine.
 
-* Log format: The [log format](#specifying-rules-for-parsing-logs) of the logs.
+* Log format: The [log format](#loading-logs) of the logs.
 
 #### Reading saved dataset views
 
@@ -283,7 +414,7 @@ is deployed*.
 * File name pattern: A shell expansion pattern that names the files to
   load.  Multiple files may be loaded on each machine.
 
-* Schema file: An optional [schema file](#specifying-the-data-schema)
+* Schema file: An optional [schema file](#data-schema)
   in JSON format that describes the schema of the data.  In the
   absence of a schema file Hillview attempts to guess the type of data
   in each column.  The schema file must reside in same folder.
@@ -338,10 +469,50 @@ is an ORC struct with scalar types as fields.
 * File name pattern: A shell expansion pattern that names the files to
   load.  Multiple files may be loaded on each machine.
 
-* Schema file: An optional [schema file](#specifying-the-data-schema)
+* Schema file: An optional [schema file](#data-schema)
   in JSON format that describes the schema of the data.  The schema
   file must reside in same folder, and it must be compatible with the
   ORC schema.
+
+Here is how ORC types are converted to Hillview types.
+
+|ORC type|Hillview value|
+|`BOOLEAN`|`String` (false/true)|
+|`BYTE`|`Integer`|
+|`SHORT`|`Integer`|
+|`INT`|`Integer`|
+|`LONG`|`Double`|
+|`FLOAT`|`Double`|
+|`DOUBLE`|`Double`|
+|`STRING`|`String`|
+|`DATE`|`LocalDate`|
+|`TIMESTAMP`|`LocalDate`|
+|Other|Not yes supported|
+
+If the user supplies a schema
+file it will perform type conversions at loading time, as follows:
+
+|ORC type|Specified type|Hillview value|
+|`BOOLEAN`|`Integer`|Integer (0/1)|
+|`BYTE`|`String`,`Json`|number converted to string|
+|`BYTE`|`Double`|number converted to double|
+|`SHORT`|`String`,`Json`|number converted to string|
+|`SHORT`|`Double`|number converted to double|
+|`INT`|`String`,`Json`|number converted to string|
+|`INT`|`Double`|number converted to double|
+|`LONG`|`String`,`Json`|number converted to string|
+|`LONG`|`Integer`|number converted to integer; error on overflow|
+|`FLOAT`|`String`,`Json`|number converted to string|
+|`FLOAT`|`Integer`|number converted to integer; error on overflow|
+|`DOUBLE`|`String`,`Json`|number converted to string|
+|`DOUBLE`|`Integer`|number converted to integer; error on overflow|
+|`STRING`|`Json`|`String`|
+|`STRING`|`Integer`|Parse string to integer; error when parsing fails|
+|`STRING`|`Double`|Parse string to double; error when parsing fails|
+|`DATE`|`String`,`Json`|Date converted to Json|
+|`DATE`|`Date`|Convert to date assuming that the timezone is UTC|
+|`TIMESTAMP`|`String`,`Json`|`String` representation of the date|
+|`TIMESTAMP`|`Date`|Convert to date assuming that the timezone is UTC|
 
 #### Reading data from SQL databases
 
@@ -361,7 +532,7 @@ The following menu allows the user to specify the data to load.
 ![Specifying database connections](db-menu-mysql.png)
 
 * database kind: A drop-down menu indicating the kind of database to
-  load data from.  Currently we support 'mysql' and 'impala'.
+  load data from.  Currently we support 'mysql', 'impala', and 'cassandra'.
 
 * host: The network name of a machine hosting the database.  *TODO*
   this should be a pattern enabling each worker to specify a different
@@ -383,11 +554,11 @@ containing two values, "true" and "false".
 
 #### Reading data from Cassandra databases
 
-Hillview instance is required to be running on each Cassandra node.
-Thus, Hillview must be deployed in a cluster mode with all Cassandra
-nodes listed as the workers in the config.json. Moreover, Hillview
-must have access to Cassandra's directories because each Hillview
-workers will directly read local Cassandra's SSTables. 
+Hillview can read data from [Cassandra distributed databases](https://cassandra.apache.org/).
+For this purpose a Hillview worker should be deployed on each Cassandra node.
+Moreover, Hillview must have read access to Cassandra's SSTables.
+Hillview assumes that no writes are in progress while reading the
+data from storage.
 
 The following menu allows the user to specify the data to load.
 
@@ -430,10 +601,19 @@ Hillview service is deployed*.
 * File name pattern: A shell expansion pattern that names the files to
   load.  Multiple files may be loaded on each machine.
 
-Parquet Int96 data types are read as Datetime values.  Boolean values
-are read as strings containing two values, "true" and "false"; byte
-arrays are read as strings.  Hillview will reject Parquet files that
-contain nested types (e.g., arrays).
+The following table describes data conversion rules between Parquet data types
+and Hillview data types:
+
+|Parquet type|Hillview type|
+|INT64|`Double`|
+|FLOAT|`Double`|
+|DOUBLE|`Double`|
+|INT32|`Integer`|
+|BOOLEAN|`String` (true/false)|
+|BINARY|`String`|
+|FIXED_LEN_BYTE_ARRAY|`String`|
+|INT96|`LocalDate`|
+|other|Error - conversion fails|
 
 ### Navigating multiple datasets
 
@@ -458,12 +638,22 @@ Right-clicking a tab brings up a tab-specific menu:
 
 The tab menu offers the following options:
 
-* Save this tab to file.  The data can be loaded back from the
+* Bookmark this tab.  Choosing this option will create a unique URL
+for this dataset, which is displayed to the user:
+
+![Bookmark url](bookmark-url.png)
+
+This URL can be loaded later (or shared with other users) to display the
+exact same view that is currently displayed.  This view can be reconstructed
+as long as the server-side data does not change.
+
+* Save this tab to file.  This saves the data describing this view into a JSON
+file.  The data can be loaded back from the
 [load menu](#loading-data) as described in
 [Reading saved dataset views](#reading-saved-dataset-views).  The file
 can also be sent to other users, who will be able to open
-the exact same view (this requires the users to access the same
-service and the data to not change).
+the exact same view.  This functionality is similar to the above
+"bookmark", but does not keep any server-side data.
 
 * Reload original view: in case the first page of the view was accidentally
 closed, this option will reopen it.
@@ -778,7 +968,7 @@ column.
 
 Right-clicking on a column header pops up a menu that offers a set of
 operations on the currently selected columns, as shown in the
-following figure:
+following figure (some items, like "charts", are triggered by mousing over).
 
 ![Right-click menu for columns](column-right-click.png)
 
@@ -807,32 +997,45 @@ the current state of the display.
 * Sort descending: The selected columns will be moved to the front of
   the sort order in descending order.
 
-* Histogram: this option requires exactly one or two columns to be
-  selected.  If one column is selected, this operation will draw a
-  histogram of the data in the selected column.  See
-  [Uni dimensional histogram views](#uni-dimensional-histogram-views).
-  If two columns are selected this menu will draw a two-dimensional
-  histogram of the data in the selected columns.  For two-dimensional
-  histograms see [Two-dimensional
-  histograms](#two-dimensional-histogram-views).
+* Charts: various charts
 
-* Heatmap: this option requires exactly two columns to be selected.
-  This displays the data in these columns as a [Heatmap
-  view](#heatmap-views).
+    * Histogram: this option requires exactly one or two columns to be
+      selected.  If one column is selected, this operation will draw a
+      histogram of the data in the selected column.  See
+      [Uni dimensional histogram views](#uni-dimensional-histogram-views).
+      If two columns are selected this menu will draw a two-dimensional
+      histogram of the data in the selected columns.  For two-dimensional
+      histograms see [Two-dimensional
+      histograms](#two-dimensional-histogram-views).
 
-* Trellis histograms: this option requires exactly two or three
-  columns to be selected.  If two columns are selected, this operation
-  will draw a trellis plot of 1-dimensional histogram of the data in
-  the first selected column grouped by the second column.  See
-  [Trellis plots of 1D histograms](#trellis-plots-of-1d-histograms).
-  If two columns are selected this menu will draw a two-dimensional
-  histogram of the data in the selected columns.  For two-dimensional
-  histograms see [Two-dimensional
-  histograms](#two-dimensional-histogram-views).
+    * Quartiles: this option requires exactly two columns to be selected.
+      The first column is used to create histogram buckets, and for
+      each bucket the distribution of the data in the second column will be summarized
+      as a [vector of quartiles](#quartiles-view-for-histogram-buckets).
 
-* Trellis heatmaps: this options requires exactly 3 columns to be
-  selected.  This displays the data as a [Trellis plot
-  view](#trellis-plots-of-heatmaps).
+    * Heatmap: this option requires exactly two columns to be selected.
+      This displays the data in these columns as a [Heatmap
+      view](#heatmap-views).
+
+    * Trellis histograms: this option requires exactly two or three
+      columns to be selected.  If two columns are selected, this operation
+      will draw a trellis plot of 1-dimensional histogram of the data in
+      the first selected column grouped by the second column.  See
+      [Trellis plots of 1D histograms](#trellis-plots-of-1d-histograms).
+      If two columns are selected this menu will draw a two-dimensional
+      histogram of the data in the selected columns.  For two-dimensional
+      histograms see [Two-dimensional
+      histograms](#two-dimensional-histogram-views).
+
+    * Trellis heatmaps: this options requires exactly 3 columns to be
+      selected.  This displays the data as a [Trellis plot
+      view](#trellis-plots-of-heatmaps).
+
+    * Map: this option requires either one or two columns to be selected.
+      The first column is used as a geographic feature name.  The second
+      column must be an aggregate column; if no second column is selected
+      the "count" aggregate column is used.  This displays the data on a
+      [Geographic view](#geographic-views).
 
 * Rename...: this operation requires exactly one column to be selected.
   The user can type a new name for this column.  The new name will be
@@ -906,7 +1109,10 @@ the current state of the display.
   The conversion allows the user to change the type of data in a
   column.  For example, a numeric column can be converted to a string
   column.  After conversion a new column is appended to the table, containing the
-  converted data.
+  converted data.  Not all data conversions are allowed; for example,
+  dates cannot be converted to integers.  Some conversions can fail,
+  e.g., when converting a string to a number, if the string does not
+  represents a legal number the conversion will fail with an error message.
 
 * Create interval column...: Given two numeric columns it collapses them into
   a single column of intervals.  The user can choose whether the original columns
@@ -944,6 +1150,9 @@ function map(row) {
    return v[0];
 }
 ```
+
+See the section [JavaScript conversions](#javascript-conversions) about how data is
+Hillview exchanges data with JavaScript.
 
 * Extract value...: this option is only available when browsing data
   that originates from some log files, where the current column format
@@ -1124,6 +1333,7 @@ Hillview supports many types of charts; these are described in the following sec
 [![Trellis plots of heatmaps](hillview-heatmap-array-small.png)](#trellis-plots-of-heatmaps)
 [![Trellis plots of quartile vectors](trellis-quartiles-small.png)](#trellis-plots-of-quartile-vectors)
 [![Pairwise correlations](pairwise-correlations-small.png)](#correlation-heatmaps)
+[![Geographic views](geographic-views-small.png)](#geographic-views)
 
 ### Uni-dimensional histogram views
 
@@ -1290,7 +1500,7 @@ the data only to the selected region:
 
 A 2D histogram is a useful visual tool for estimating whether the
 values in two columns are independent of each other.  Neither of the
-two columns can be a String column.  A 2D histogram is a 1D histogram
+two columns can be a `String` column.  A 2D histogram is a 1D histogram
 where each bucket is further divided into sub-buckets according to the
 distribution in a second column.
 
@@ -1608,6 +1818,31 @@ columns.  The heatmaps can be used to detect columns that are strongly correlate
 ![Pairwise correlations](pairwise-correlations.png)
 
 Selection is done as in heatmaps, but selection is restricted to a single heatmap.
+
+### Geographic views
+
+Plotting geographic views require the presence of some geographic metadata
+on the Hillview root node, and also some dataset-specific metadata that ties
+a column to a specific geographic feature.  This is documented in the
+[Geographic metadata](#geographic-metadata) section.
+
+![Geographic views](geographic-views.png)
+
+A geographic view uses a color map to assign a color to each geographic feature.
+This image displays the count of rows that correspond to each state.  Note that:
+
+* rows with missing data are not displayed on the map
+* rows that have a value for the column that does not correspond to any
+  value found in the geographic database are not displayed.  For example,
+  when displaying data about "Yugoslavia" on a recent map, this information
+  would not be visible, since the map contains no such country.  It is the
+  responsibility of the data management administratory to use proper map
+  databases and link them with correct geographic metadata.
+
+Hillview geographic views are not zoomable.  Each view is supposed to display a relatively
+small number of polygons -- each polygon is expected to be larger than a few pixels.
+In consequence, columns that contain geographic features are assumed to have a small number
+of distinct values -- fewer than the number of pixels on the screen.
 
 ### Combining two views
 
