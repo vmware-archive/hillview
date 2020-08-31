@@ -165,7 +165,7 @@ public class OrcFileLoader extends TextFileLoader {
     private static void appendColumn(IAppendableColumn to, ColumnVector vec,
                                      TypeDescription.Category simple, int count) {
         // See for example
-        // https://github.com/apache/orc/blob/master/java/mapreduce/src/java/org/apache/orc/mapred/OrcMapredRecordReader.java
+        // D
         for (int iRow=0; iRow < count; iRow++) {
             int row = iRow;
             if (vec.isRepeating)
@@ -175,8 +175,30 @@ public class OrcFileLoader extends TextFileLoader {
                 continue;
             }
             switch (simple) {
-                case BOOLEAN:
+                case BOOLEAN: {
+                    LongColumnVector lcv = (LongColumnVector) vec;
+                    long l = lcv.vector[row];
+                    switch (to.getKind()) {
+                        case None:
+                        case Date:
+                        case Duration:
+                        case Interval:
+                        case Time:
+                        case LocalDate:
+                            throw new RuntimeException("Cannot convert long to " + to.getKind());
+                        case Json:
+                        case String:
+                            to.append(l != 0 ? "true" : "false");
+                            break;
+                        case Integer:
+                            to.append(l != 0 ? 1 : 0);
+                            break;
+                        case Double:
+                            to.append(l != 0 ? 1.0 : 0.0);
+                            break;
+                    }
                     break;
+                }
                 case BYTE:
                 case SHORT:
                 case INT:
@@ -196,10 +218,10 @@ public class OrcFileLoader extends TextFileLoader {
                             to.append(Long.toString(l));
                             break;
                         case Integer:
-                            to.append((int) l);
+                            to.append(Converters.toInt(l));
                             break;
                         case Double:
-                            to.append((double) l);
+                            to.append((double)l);
                             break;
                     }
                     break;
@@ -271,6 +293,7 @@ public class OrcFileLoader extends TextFileLoader {
                         case Integer:
                         case Duration:
                         case Time:
+                        case Double:
                         default:
                             throw new RuntimeException("Cannot convert ORC date to "
                                     + to.getKind());
@@ -278,7 +301,6 @@ public class OrcFileLoader extends TextFileLoader {
                         case String:
                             to.append(Converters.toString(value));
                             break;
-                        case Double:
                         case LocalDate:
                             to.append(Converters.toDouble(value));
                             break;
@@ -300,13 +322,13 @@ public class OrcFileLoader extends TextFileLoader {
                         case Duration:
                         case Time:
                         case Interval:
+                        case Double:
                             throw new RuntimeException("Cannot convert ORC timestamp to "
                                     + to.getKind());
                         case Json:
                         case String:
                             to.append(Converters.toString(ldt));
                             break;
-                        case Double:
                         case Date:
                             to.append(Converters.toDouble(Converters.toDate(ldt)));
                             break;

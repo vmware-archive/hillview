@@ -128,10 +128,8 @@ public class CreateColumnJSMap extends AppendColumnMap {
                             col.set(r, value.asInt());
                             break;
                         case Double:
-                            col.set(r, value.asDouble());
-                            break;
                         case Duration:
-                            // TODO
+                            col.set(r, value.asDouble());
                             break;
                         case Interval:
                             Value v0 = value.getArrayElement(0);

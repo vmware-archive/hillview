@@ -50,7 +50,7 @@ public class ParallelDataSet<T> extends BaseDataSet<T> {
      * If this is set to zero no aggregation is performed.
      * If this is set to a value too large then progress reporting to the user may be impacted.
      */
-    private int bundleInterval = 250;
+    private int bundleInterval = 300;
     /**
      * The bundleInterval specifies a time in milliseconds.
      */

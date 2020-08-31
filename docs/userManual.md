@@ -508,6 +508,9 @@ then they may contain newlines.  An empty field (contained between two
 consecutive commas, or between a comma and a newline) is translated to
 a 'missing' data value.
 
+When parsing dates Hillview assumes that all rows will be using the same date format,
+and it attempts to guess a suitable parsing format.
+
 #### 3.3.5. Reading JSON files
 
 Hillview can read data from JSON files. The following menu allows the

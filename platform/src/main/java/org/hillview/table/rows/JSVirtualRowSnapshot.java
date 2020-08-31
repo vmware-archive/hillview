@@ -55,7 +55,10 @@ public class JSVirtualRowSnapshot extends VirtualRowSnapshot {
             return this.engine.eval("js","new Date(" + dateEncoding + ")");
         } else if (kind == ContentsKind.LocalDate) {
             double dateEncoding = super.getDouble(k);
-            return this.engine.eval("js","new Date(" + dateEncoding + " + (new Date(0).getTimezoneOffset() * 60000))");
+            return this.engine.eval("js","new Date(" + dateEncoding + " " +
+                    "+ (new Date(" + dateEncoding + ").getTimezoneOffset() * 60000))");
+        } else if (kind == ContentsKind.Duration) {
+            return super.getDouble(k);
         } else if (kind == ContentsKind.Interval) {
             double start = super.getEndpoint(k, true);
             double end = super.getEndpoint(k, false);
