@@ -25,7 +25,7 @@ import {ChartView} from "./chartView";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {assert, Converters, Exporter, ICancellable, PartialResult, significantDigits} from "../util";
 import {BaseReceiver} from "../tableTarget";
-import {DisplayName, SchemaClass} from "../schemaClass";
+import {DisplayName} from "../schemaClass";
 import {CommonArgs, OnCompleteReceiverCommon, ReceiverCommonArgs} from "../ui/receiver";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {IDataView} from "../ui/dataview";
@@ -43,13 +43,12 @@ export class GeoView extends ChartView<NextKList> {
     protected readonly viewMenu: SubMenu;
     protected plot: GeoPlot | null = null;
     protected legend: HeatmapLegendPlot | null = null;
-    protected keyColumn: IColumnDescription;
     protected legendSurface: HtmlPlottingSurface | null = null;
     protected pointDescription: TextOverlay | null = null;
     protected mapData: MapAndColumnRepresentation | null = null;
     protected defaultProvenance: string = "Map view";
 
-    constructor(args: CommonArgs, page: FullPage) {
+    constructor(args: CommonArgs, protected readonly keyColumn: IColumnDescription, page: FullPage) {
         super(args.remoteObject.remoteObjectId, args.rowCount, args.schema, page, "Map");
         this.viewMenu = new SubMenu([
             {
@@ -72,12 +71,12 @@ export class GeoView extends ChartView<NextKList> {
 
     public static reconstruct(ser: MapSerialization, page: FullPage): IDataView | null {
         const args = this.validateSerialization(ser);
-        if (args == null)
+        if (args == null || ser.keyColumn == null)
             return null;
-        const schema = new SchemaClass([]).deserialize(ser.schema);
-        if (schema == null)
+        const cd = args.schema.find(ser.keyColumn);
+        if (cd == null)
             return null;
-        return new GeoView(args, page);
+        return new GeoView(args, cd, page);
     }
 
     public serialize(): IViewSerialization {
@@ -164,10 +163,9 @@ export class GeoView extends ChartView<NextKList> {
         // TODO
     }
 
-    public setMap(mapData: MapAndColumnRepresentation, keyColumn: IColumnDescription): void {
+    public setMap(mapData: MapAndColumnRepresentation): void {
         this.createNewSurfaces();
         this.mapData = mapData;
-        this.keyColumn = keyColumn;
         this.plot!.setMap(mapData);
     }
 
@@ -202,7 +200,7 @@ export class GeoView extends ChartView<NextKList> {
         this.data = n;
         if (n == null)
             return;
-        this.setMap(this.mapData!, this.keyColumn);
+        this.setMap(this.mapData!);
         const map = new Map<String, number>();
         let max = 0;
         for (const r of n.rows) {
@@ -221,13 +219,13 @@ export class GeoView extends ChartView<NextKList> {
 export class GeoMapReceiver extends OnCompleteReceiverCommon<MapAndColumnRepresentation> {
     protected geoView: GeoView;
 
-    constructor(args: ReceiverCommonArgs, protected keyColumn: IColumnDescription, request: RpcRequest<MapAndColumnRepresentation>) {
+    constructor(readonly args: ReceiverCommonArgs, readonly keyColumn: IColumnDescription, readonly request: RpcRequest<MapAndColumnRepresentation>) {
         super(args, request, "map");
-        this.geoView = new GeoView(args, this.page);
+        this.geoView = new GeoView(args, keyColumn, this.page);
     }
 
     public run(v: MapAndColumnRepresentation): void {
-        this.geoView.setMap(v, this.keyColumn);
+        this.geoView.setMap(v);
         this.geoView.draw();
         const ro = new RecordOrder([{
             columnDescription: this.keyColumn,
