@@ -36,8 +36,7 @@ import {TextOverlay} from "../ui/textOverlay";
 import {ChartOptions, DragEventKind, Resolution} from "../ui/ui";
 import {
     add, assert, assertNever,
-    Converters, Heatmap,
-    histogram2DAsCsv,
+    Converters, Exporter, Heatmap,
     ICancellable,
     Pair,
     PartialResult,
@@ -369,7 +368,8 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
     }
 
     public export(): void {
-        const lines: string[] = histogram2DAsCsv(this.histograms(), this.schema, [this.xAxisData, this.yAxisData]);
+        const lines: string[] =
+            Exporter.histogram2DAsCsv(this.histograms(), this.schema, [this.xAxisData, this.yAxisData]);
         const fileName = "histogram2d.csv";
         saveAs(fileName, lines.join("\n"));
     }

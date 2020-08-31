@@ -48,6 +48,7 @@ import {TrellisHistogramQuartilesView} from "./dataViews/trellisHistogramQuartil
 import {saveAs} from "./ui/dialog";
 import {showBookmarkURL} from "./ui/dialog";
 import {CorrelationHeatmapView} from "./dataViews/correlationHeatmapView";
+import {GeoView} from "./dataViews/geoView";
 
 export interface IViewSerialization {
     viewKind: ViewKind;
@@ -534,7 +535,7 @@ export class DatasetView implements IHtmlElement {
                 // TODO
                 break;
             case "Map":
-                // TODO
+                view = GeoView.reconstruct(vs as MapSerialization, page);
                 break;
             default:
                 assertNever(vs.viewKind);

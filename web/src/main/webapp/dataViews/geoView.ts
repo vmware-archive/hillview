@@ -16,7 +16,6 @@
  */
 
 import {
-    Groups,
     IColumnDescription, MapAndColumnRepresentation,
     NextKList,
     RecordOrder,
@@ -24,7 +23,7 @@ import {
 } from "../javaBridge";
 import {ChartView} from "./chartView";
 import {FullPage, PageTitle} from "../ui/fullPage";
-import {assert, Converters, ICancellable, PartialResult, significantDigits} from "../util";
+import {assert, Converters, Exporter, ICancellable, PartialResult, significantDigits} from "../util";
 import {BaseReceiver} from "../tableTarget";
 import {DisplayName, SchemaClass} from "../schemaClass";
 import {CommonArgs, OnCompleteReceiverCommon, ReceiverCommonArgs} from "../ui/receiver";
@@ -38,8 +37,9 @@ import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {Resolution} from "../ui/ui";
 import {HeatmapLegendPlot} from "../ui/heatmapLegendPlot";
 import {TextOverlay} from "../ui/textOverlay";
+import {saveAs} from "../ui/dialog";
 
-export class GeoView extends ChartView<Groups<number>> {
+export class GeoView extends ChartView<NextKList> {
     protected readonly viewMenu: SubMenu;
     protected plot: GeoPlot | null = null;
     protected legend: HeatmapLegendPlot | null = null;
@@ -47,6 +47,7 @@ export class GeoView extends ChartView<Groups<number>> {
     protected legendSurface: HtmlPlottingSurface | null = null;
     protected pointDescription: TextOverlay | null = null;
     protected mapData: MapAndColumnRepresentation | null = null;
+    protected defaultProvenance: string = "Map view";
 
     constructor(args: CommonArgs, page: FullPage) {
         super(args.remoteObject.remoteObjectId, args.rowCount, args.schema, page, "Map");
@@ -82,7 +83,6 @@ export class GeoView extends ChartView<Groups<number>> {
     public serialize(): IViewSerialization {
         // noinspection UnnecessaryLocalVariableJS
         const result: MapSerialization = {
-            // TODO
             ...super.serialize(),
             keyColumn: this.keyColumn.name
         };
@@ -90,7 +90,11 @@ export class GeoView extends ChartView<Groups<number>> {
     }
 
     protected export(): void {
-        // TODO
+        const order = new RecordOrder([
+            { columnDescription: this.keyColumn, isAscending: true}]);
+        const lines = Exporter.tableAsCsv(order, this.schema, null, this.data);
+        const fileName = "map.csv";
+        saveAs(fileName, lines.join("\n"));
     }
 
     protected getCombineRenderer(title: PageTitle): (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
@@ -114,11 +118,24 @@ export class GeoView extends ChartView<Groups<number>> {
     }
 
     refresh(): void {
-        // TODO
+        const rr = this.createGeoRequest(this.keyColumn);
+        const args: ReceiverCommonArgs = {
+            title: new PageTitle("Count of " + this.schema.displayName(this.keyColumn.name)!.displayName,
+                this.defaultProvenance),
+            remoteObject: this,
+            rowCount: this.rowCount,
+            schema: this.schema,
+            originalPage: this.page,
+            options: { chartKind: "Map", reusePage: false }
+        };
+        const rec = new GeoMapReceiver(args, this.keyColumn, rr);
+        rr.invoke(rec);
     }
 
     resize(): void {
-        // TODO
+        if (this.data == null)
+            return;
+        this.updateView(this.data);
     }
 
     protected showTrellis(colName: DisplayName): void {
@@ -182,6 +199,9 @@ export class GeoView extends ChartView<Groups<number>> {
     }
 
     public updateView(n: NextKList): void {
+        this.data = n;
+        if (n == null)
+            return;
         this.setMap(this.mapData!, this.keyColumn);
         const map = new Map<String, number>();
         let max = 0;

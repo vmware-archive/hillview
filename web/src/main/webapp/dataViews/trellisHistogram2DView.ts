@@ -25,8 +25,7 @@ import {BaseReceiver, TableTargetAPI} from "../modules";
 import {SchemaClass} from "../schemaClass";
 import {
     add, assert, assertNever,
-    Converters, GroupsClass, Heatmap,
-    histogram3DAsCsv,
+    Converters, Exporter, GroupsClass, Heatmap,
     ICancellable, optionToBoolean, Pair,
     PartialResult,
     percentString, reorder,
@@ -318,7 +317,7 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
     }
 
     protected export(): void {
-        const lines = histogram3DAsCsv(
+        const lines = Exporter.histogram3DAsCsv(
             this.data, this.schema, [this.xAxisData, this.legendAxisData, this.groupByAxisData]);
         const fileName = "trellis-histogram2d.csv";
         saveAs(fileName, lines.join("\n"));

@@ -37,9 +37,8 @@ import {Receiver, RpcRequest} from "../rpc";
 import {
     assert,
     assertNever,
-    Converters,
+    Converters, Exporter,
     GroupsClass, Heatmap,
-    histogram3DAsCsv,
     ICancellable,
     makeInterval,
     PartialResult,
@@ -146,7 +145,7 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
     }
 
     public export(): void {
-        const lines = histogram3DAsCsv(
+        const lines = Exporter.histogram3DAsCsv(
             this.data, this.schema, [this.xAxisData, this.yAxisData, this.groupByAxisData]);
         const fileName = "trellis-heatmap.csv";
         saveAs(fileName, lines.join("\n"));

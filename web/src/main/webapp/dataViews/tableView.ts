@@ -62,7 +62,7 @@ import {
     significantDigits,
     significantDigitsHtml,
     truncate,
-    all, percent, assertNever, assert
+    all, percent, assertNever, assert, Exporter
 } from "../util";
 import {SchemaView} from "../modules";
 import {SpectrumReceiver} from "./spectrumView";
@@ -71,8 +71,6 @@ import {Grid} from "../ui/grid";
 import {LogFileReceiver} from "./logFileView";
 import {FindBar} from "../ui/findBar";
 import {HillviewToplevel} from "../toplevel";
-import {ReceiverCommonArgs} from "../ui/receiver";
-import {GeoMapReceiver} from "./geoView";
 
 /**
  * Displays a table in the browser.
@@ -226,36 +224,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
     }
 
     public export(): void {
-        let lines = [];
-        let line = "count";
-        for (const o of this.order.sortOrientationList)
-            line += "," + JSON.stringify(this.schema.displayName(o.columnDescription.name)!.displayName);
-        if (this.aggregates != null)
-            for (const a of this.aggregates) {
-                // noinspection UnnecessaryLocalVariableJS
-                const dn = this.schema.displayName(a.cd.name)!.displayName;
-                line += "," + JSON.stringify(a.agkind + "(" + dn + "))");
-            }
-        lines.push(line);
-
-        for (let i = 0; i < this.nextKList.rows.length; i++) {
-            const row = this.nextKList.rows[i];
-            line = row.count.toString();
-            for (let j = 0; j < row.values.length; j++) {
-                const kind = this.order.sortOrientationList[j].columnDescription.kind;
-                let a = Converters.valueToString(row.values[j], kind, false);
-                if (kindIsString(kind))
-                    a = JSON.stringify(a);
-                line += "," + a;
-            }
-            if (this.nextKList.aggregates != null) {
-                const agg = this.nextKList.aggregates[i];
-                for (const v of agg) {
-                    line += "," + v;
-                }
-            }
-            lines.push(line);
-        }
+        const lines = Exporter.tableAsCsv(this.order, this.schema, this.aggregates, this.nextKList);
         const fileName = "table.csv";
         saveAs(fileName, lines.join("\n"));
     }
@@ -722,15 +691,6 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                     " This is only applicable for some structured string or JSON columns."
             }, selectedCount === 1 && this.isKVColumn(this.getSelectedColNames()[0]) && !this.isPrivate());
             this.contextMenu.insertSubMenu( chartMenuIdx, {
-                    text: "Map",
-                    action: () =>
-                        this.geo(this.schema.find(this.getSelectedColNames()[0])!),
-                    help:
-                        "Plot the data in the selected columns one a map. "
-                },
-                selectedCount === 1 && !this.isPrivate()
-            );
-            this.contextMenu.insertSubMenu( chartMenuIdx, {
                 text: "Histogram",
                 action: () =>
                   this.chart(
@@ -743,7 +703,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
               selectedCount >= 1 && selectedCount <= 2
             );
             this.contextMenu.insertSubMenu( chartMenuIdx, {
-                text: "Quartile vector",
+                text: "Quartiles",
                 action: () =>
                   this.chart(
                     this.schema.getCheckedDescriptions(this.getSelectedColNames()), "QuartileVector"),
@@ -787,23 +747,18 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
               },
               selectedCount === 3 && !this.isPrivate()
             );
+            this.contextMenu.insertSubMenu( chartMenuIdx, {
+                    text: "Map",
+                    action: () =>
+                        this.geo(this.schema.find(this.getSelectedColNames()[0])!),
+                    help:
+                        "Plot the data in the selected columns on a map. "
+                },
+                selectedCount === 1
+            );
+
             this.contextMenu.show(e);
         };
-    }
-
-    protected geo(column: IColumnDescription): void {
-        const rr = this.createGeoRequest(column);
-        const args: ReceiverCommonArgs = {
-            title: new PageTitle("Count of " + this.schema.displayName(column.name)!.displayName,
-                this.defaultProvenance),
-            remoteObject: this,
-            rowCount: this.rowCount,
-            schema: this.schema,
-            originalPage: this.page,
-            options: { chartKind: "Map", reusePage: false }
-        };
-        const rec = new GeoMapReceiver(args, column, rr);
-        rr.invoke(rec);
     }
 
     public createIntervalColumn(cols: string[]): void {

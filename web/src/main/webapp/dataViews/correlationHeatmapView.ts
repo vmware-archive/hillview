@@ -20,8 +20,7 @@ import {BaseReceiver, ChartView} from "../modules";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {
     assert,
-    Converters, Heatmap,
-    histogram2DAsCsv,
+    Converters, Exporter, Heatmap,
     ICancellable,
     makeInterval,
     PartialResult, reorder,
@@ -103,7 +102,7 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
         let xAxis = 1;
         let yAxis = 0;
         for (const h of this.data) {
-            const lines = histogram2DAsCsv(h, this.schema, [this.xAxes[xAxis], this.yAxes[yAxis]]);
+            const lines = Exporter.histogram2DAsCsv(h, this.schema, [this.xAxes[xAxis], this.yAxes[yAxis]]);
             result = result.concat(lines);
             xAxis++;
             if (xAxis == this.xAxes.length) {

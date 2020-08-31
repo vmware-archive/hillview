@@ -27,9 +27,9 @@ import {BaseReceiver, TableTargetAPI} from "../modules";
 import {SchemaClass} from "../schemaClass";
 import {
     allBuckets, assertNever,
-    Converters, describeQuartiles,
+    Converters, describeQuartiles, Exporter,
     ICancellable,
-    PartialResult, quartileAsCsv,
+    PartialResult,
 } from "../util";
 import {AxisData, AxisKind} from "./axisData";
 import {
@@ -258,7 +258,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
         let bucketNo = 0;
         for (const g of allBuckets(this.data)) {
             const desc = this.groupByAxisData.bucketDescription(bucketNo++, 0);
-            const l = quartileAsCsv(g, this.schema, this.xAxisData);
+            const l = Exporter.quartileAsCsv(g, this.schema, this.xAxisData);
             lines = lines.concat(l.map(line => axisName + " " + desc + "," + line));
         }
 

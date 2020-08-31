@@ -39,9 +39,8 @@ import {DragEventKind, Resolution} from "../ui/ui";
 import {
     assert, assertNever,
     Converters,
-    dataRange,
+    dataRange, Exporter,
     Heatmap,
-    histogram2DAsCsv,
     ICancellable,
     makeInterval,
     Pair,
@@ -504,7 +503,7 @@ export class HeatmapView extends
     }
 
     public export(): void {
-        const lines: string[] = histogram2DAsCsv(
+        const lines: string[] = Exporter.histogram2DAsCsv(
             this.data.first, this.schema, [this.xAxisData, this.yAxisData]);
         const fileName = "heatmap.csv";
         saveAs(fileName, lines.join("\n"));

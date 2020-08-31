@@ -36,12 +36,11 @@ import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
 import {DragEventKind, Resolution} from "../ui/ui";
 import {
-    histogramAsCsv,
     Converters,
     ICancellable, makeInterval,
     PartialResult,
     percentString,
-    significantDigits, Two, assertNever, assert,
+    significantDigits, Two, assertNever, assert, Exporter,
 } from "../util";
 import {AxisData} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
@@ -369,7 +368,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
     }
 
     public export(): void {
-        const lines: string[] = histogramAsCsv(this.histogram().first, this.schema, this.xAxisData);
+        const lines: string[] = Exporter.histogramAsCsv(this.histogram().first, this.schema, this.xAxisData);
         const fileName = "histogram.csv";
         saveAs(fileName, lines.join("\n"));
     }

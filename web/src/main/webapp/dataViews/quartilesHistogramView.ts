@@ -34,10 +34,9 @@ import {
     assert,
     assertNever,
     Converters,
-    describeQuartiles,
+    describeQuartiles, Exporter,
     ICancellable,
     PartialResult,
-    quartileAsCsv,
 
 } from "../util";
 import {AxisData, AxisKind} from "./axisData";
@@ -222,7 +221,7 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
     }
 
     public export(): void {
-        const lines: string[] = quartileAsCsv(this.data, this.schema, this.xAxisData);
+        const lines: string[] = Exporter.quartileAsCsv(this.data, this.schema, this.xAxisData);
         const fileName = "quantiles2d.csv";
         saveAs(fileName, lines.join("\n"));
     }
