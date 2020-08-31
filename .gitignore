@@ -90,6 +90,7 @@ data/metadata/differential-privacy/data/ontime_private/privacy_metadata.json
 data/geo/us_states/cb_*
 
 *.DS_Store
+hillview_root_key
 
 # Configuration for various clusters
 bin/config-*.json
