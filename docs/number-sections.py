@@ -51,12 +51,17 @@ class Headings:
 
         if depth > 0:
             sectionNumber = ""
+            spaces = ""
             for index in range(0, depth):
-                sectionNumber = sectionNumber + str(self.headingCounters[index]) + "."
+                if index > 0:
+                    sectionNumber += "."
+                sectionNumber = sectionNumber + str(self.headingCounters[index])
+                spaces += "  "
             heading = row[depth+1:len(row)]
             origRef = self.makeReference(heading)
             ref = self.makeReference(sectionNumber + heading)
-            self.toc.append("|" + sectionNumber + "|[" + heading.strip() + "]" + ref + "|\n")
+            # self.toc.append("|" + sectionNumber + "|[" + heading.strip() + "]" + ref + "|\n")
+            self.toc.append(spaces + "* " + sectionNumber + " [" + heading.strip() + "]" + ref + "\n")
             result = row[0:depth+2] + sectionNumber + row[depth+1:len(row)]
             self.referenceRewrite[origRef] = ref
 
@@ -98,8 +103,8 @@ def process(rows, headings, banner):
     if headings.toc:
         result.append("Updated on " + datetime.datetime.today().strftime("%Y %b %d") + ".\n\n")
         result.append("# Contents\n")
-        result.append("|Section|Reference|\n")
-        result.append("|---:|:---|\n")
+        #result.append("|Section|Reference|\n")
+        #result.append("|---:|:---|\n")
         result.extend(headings.toc)
     result.extend(outRows[index:])
     return result

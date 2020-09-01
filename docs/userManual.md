@@ -26,85 +26,83 @@ one row for an airline flight.  Columns in this dataset include: the date of the
 the origin and destination cities, the origin and destination states,
 the origin airport code, the distance flown, the departure and arrival delay.
 
-Updated on 2020 Aug 31.
+Updated on 2020 Sep 01.
 
 # Contents
-|Section|Reference|
-|---:|:---|
-|1.|[Basic concepts](#1-basic-concepts)|
-|1.1.|[System architecture](#11-system-architecture)|
-|1.2.|[Streaming interaction](#12-streaming-interaction)|
-|2.|[Data management](#2-data-management)|
-|2.1.|[Data model and supported data types](#21-data-model-and-supported-data-types)|
-|2.2.|[Data conversions](#22-data-conversions)|
-|2.2.1.|[JavaScript conversions](#221-javascript-conversions)|
-|2.3.|[Metadata](#23-metadata)|
-|2.3.1.|[Mapping a dataset to a metadata directory](#231-mapping-a-dataset-to-a-metadata-directory)|
-|2.3.2.|[Data schema](#232-data-schema)|
-|2.3.3.|[Differentially-private metadata](#233-differentially-private-metadata)|
-|2.3.4.|[Geographic metadata](#234-geographic-metadata)|
-|2.3.4.1.|[Connecting dataset features to geographic metadata](#2341-connecting-dataset-features-to-geographic-metadata)|
-|3.|[Interacting with data](#3-interacting-with-data)|
-|3.1.|[Error display](#31-error-display)|
-|3.2.|[Mouse-based selection](#32-mouse-based-selection)|
-|3.3.|[Loading data](#33-loading-data)|
-|3.3.1.|[Loading logs](#331-loading-logs)|
-|3.3.1.1.|[Example](#3311-example)|
-|3.3.1.2.|[Custom Patterns](#3312-custom-patterns)|
-|3.3.2.|[Reading generic logs](#332-reading-generic-logs)|
-|3.3.3.|[Reading saved dataset views](#333-reading-saved-dataset-views)|
-|3.3.4.|[Reading CSV files](#334-reading-csv-files)|
-|3.3.5.|[Reading JSON files](#335-reading-json-files)|
-|3.3.6.|[Reading ORC files](#336-reading-orc-files)|
-|3.3.7.|[Reading data from SQL databases](#337-reading-data-from-sql-databases)|
-|3.3.8.|[Reading data from Cassandra databases](#338-reading-data-from-cassandra-databases)|
-|3.3.9.|[Reading Parquet files](#339-reading-parquet-files)|
-|3.4.|[Navigating multiple datasets](#34-navigating-multiple-datasets)|
-|4.|[Data views](#4-data-views)|
-|4.1.|[The heading of a view](#41-the-heading-of-a-view)|
-|4.2.|[Schema views](#42-schema-views)|
-|4.2.1.|[Selecting columns](#421-selecting-columns)|
-|4.2.2.|[The schema view menu](#422-the-schema-view-menu)|
-|4.2.3.|[The chart menu](#423-the-chart-menu)|
-|4.2.4.|[Saving data](#424-saving-data)|
-|4.3.|[Table views](#43-table-views)|
-|4.3.1.|[Scrolling](#431-scrolling)|
-|4.3.2.|[Selecting columns](#432-selecting-columns)|
-|4.3.3.|[Operations on selected columns](#433-operations-on-selected-columns)|
-|4.3.4.|[Operations on a table cell](#434-operations-on-a-table-cell)|
-|4.3.5.|[Operations on a table row](#435-operations-on-a-table-row)|
-|4.3.6.|[Operations on tables](#436-operations-on-tables)|
-|4.3.7.|[The table view menu](#437-the-table-view-menu)|
-|4.3.8.|[The table filter menu](#438-the-table-filter-menu)|
-|4.4.|[Frequent elements views](#44-frequent-elements-views)|
-|4.4.1.|[View as a Table](#441-view-as-a-table)|
-|4.4.2.|[Modify](#442-modify)|
-|5.|[Charts](#5-charts)|
-|5.1.|[Uni-dimensional histogram views](#51-uni-dimensional-histogram-views)|
-|5.1.1.|[The histogram menu](#511-the-histogram-menu)|
-|5.1.2.|[The histogram view menu](#512-the-histogram-view-menu)|
-|5.1.3.|[Mouse selection in histogram views](#513-mouse-selection-in-histogram-views)|
-|5.1.4.|[String histograms](#514-string-histograms)|
-|5.2.|[Quartiles view for histogram buckets](#52-quartiles-view-for-histogram-buckets)|
-|5.3.|[Two-dimensional histogram views](#53-two-dimensional-histogram-views)|
-|5.3.1.|[Selection in 2D histograms](#531-selection-in-2d-histograms)|
-|5.4.|[Heatmap views](#54-heatmap-views)|
-|5.4.1.|[Selection from a heatmap](#541-selection-from-a-heatmap)|
-|5.5.|[Singular value spectrum views](#55-singular-value-spectrum-views)|
-|6.|[Trellis plots](#6-trellis-plots)|
-|6.1.|[Trellis plots of 1D histograms](#61-trellis-plots-of-1d-histograms)|
-|6.2.|[Trellis plots of 2D histograms](#62-trellis-plots-of-2d-histograms)|
-|6.2.1.|[Selection using the colormap](#621-selection-using-the-colormap)|
-|6.3.|[Trellis plots of heatmaps](#63-trellis-plots-of-heatmaps)|
-|6.4.|[Trellis plots of quartile vectors](#64-trellis-plots-of-quartile-vectors)|
-|6.5.|[Correlation heatmaps](#65-correlation-heatmaps)|
-|6.6.|[Geographic views](#66-geographic-views)|
-|6.7.|[Combining two views](#67-combining-two-views)|
-|6.8.|[Exporting data to a local CSV file](#68-exporting-data-to-a-local-csv-file)|
-|7.|[Interval values](#7-interval-values)|
-## 1. Basic concepts
+  * 1 [Basic concepts](#1-basic-concepts)
+    * 1.1 [System architecture](#11-system-architecture)
+    * 1.2 [Streaming interaction](#12-streaming-interaction)
+  * 2 [Data management](#2-data-management)
+    * 2.1 [Data model and supported data types](#21-data-model-and-supported-data-types)
+    * 2.2 [Interval values](#22-interval-values)
+    * 2.3 [Data conversions](#23-data-conversions)
+      * 2.3.1 [JavaScript conversions](#231-javascript-conversions)
+    * 2.4 [Metadata](#24-metadata)
+      * 2.4.1 [Mapping a dataset to a metadata directory](#241-mapping-a-dataset-to-a-metadata-directory)
+      * 2.4.2 [Data schema](#242-data-schema)
+      * 2.4.3 [Differentially-private metadata](#243-differentially-private-metadata)
+      * 2.4.4 [Geographic metadata](#244-geographic-metadata)
+        * 2.4.4.1 [Connecting dataset features to geographic metadata](#2441-connecting-dataset-features-to-geographic-metadata)
+  * 3 [Interacting with data](#3-interacting-with-data)
+    * 3.1 [Error display](#31-error-display)
+    * 3.2 [Mouse-based selection](#32-mouse-based-selection)
+    * 3.3 [Loading data](#33-loading-data)
+      * 3.3.1 [Loading logs](#331-loading-logs)
+        * 3.3.1.1 [Example](#3311-example)
+        * 3.3.1.2 [Custom Patterns](#3312-custom-patterns)
+      * 3.3.2 [Reading generic logs](#332-reading-generic-logs)
+      * 3.3.3 [Reading saved dataset views](#333-reading-saved-dataset-views)
+      * 3.3.4 [Reading CSV files](#334-reading-csv-files)
+      * 3.3.5 [Reading JSON files](#335-reading-json-files)
+      * 3.3.6 [Reading ORC files](#336-reading-orc-files)
+      * 3.3.7 [Reading data from SQL databases](#337-reading-data-from-sql-databases)
+      * 3.3.8 [Reading data from Cassandra databases](#338-reading-data-from-cassandra-databases)
+      * 3.3.9 [Reading Parquet files](#339-reading-parquet-files)
+    * 3.4 [Navigating multiple datasets](#34-navigating-multiple-datasets)
+  * 4 [Data views](#4-data-views)
+    * 4.1 [The heading of a view](#41-the-heading-of-a-view)
+    * 4.2 [Schema views](#42-schema-views)
+      * 4.2.1 [Selecting columns](#421-selecting-columns)
+      * 4.2.2 [The schema view menu](#422-the-schema-view-menu)
+      * 4.2.3 [The chart menu](#423-the-chart-menu)
+      * 4.2.4 [Saving data](#424-saving-data)
+    * 4.3 [Table views](#43-table-views)
+      * 4.3.1 [Scrolling](#431-scrolling)
+      * 4.3.2 [Selecting columns](#432-selecting-columns)
+      * 4.3.3 [Operations on selected columns](#433-operations-on-selected-columns)
+      * 4.3.4 [Operations on a table cell](#434-operations-on-a-table-cell)
+      * 4.3.5 [Operations on a table row](#435-operations-on-a-table-row)
+      * 4.3.6 [Operations on tables](#436-operations-on-tables)
+      * 4.3.7 [The table view menu](#437-the-table-view-menu)
+      * 4.3.8 [The table filter menu](#438-the-table-filter-menu)
+    * 4.4 [Frequent elements views](#44-frequent-elements-views)
+      * 4.4.1 [View as a Table](#441-view-as-a-table)
+      * 4.4.2 [Modify](#442-modify)
+  * 5 [Charts](#5-charts)
+    * 5.1 [Uni-dimensional histogram views](#51-uni-dimensional-histogram-views)
+      * 5.1.1 [The histogram menu](#511-the-histogram-menu)
+      * 5.1.2 [The histogram view menu](#512-the-histogram-view-menu)
+      * 5.1.3 [Mouse selection in histogram views](#513-mouse-selection-in-histogram-views)
+      * 5.1.4 [String histograms](#514-string-histograms)
+    * 5.2 [Quartiles view for histogram buckets](#52-quartiles-view-for-histogram-buckets)
+    * 5.3 [Two-dimensional histogram views](#53-two-dimensional-histogram-views)
+      * 5.3.1 [Selection in 2D histograms](#531-selection-in-2d-histograms)
+    * 5.4 [Heatmap views](#54-heatmap-views)
+      * 5.4.1 [Selection from a heatmap](#541-selection-from-a-heatmap)
+    * 5.5 [Singular value spectrum views](#55-singular-value-spectrum-views)
+  * 6 [Trellis plots](#6-trellis-plots)
+    * 6.1 [Trellis plots of 1D histograms](#61-trellis-plots-of-1d-histograms)
+    * 6.2 [Trellis plots of 2D histograms](#62-trellis-plots-of-2d-histograms)
+      * 6.2.1 [Selection using the colormap](#621-selection-using-the-colormap)
+    * 6.3 [Trellis plots of heatmaps](#63-trellis-plots-of-heatmaps)
+    * 6.4 [Trellis plots of quartile vectors](#64-trellis-plots-of-quartile-vectors)
+    * 6.5 [Correlation heatmaps](#65-correlation-heatmaps)
+    * 6.6 [Geographic views](#66-geographic-views)
+    * 6.7 [Combining two views](#67-combining-two-views)
+    * 6.8 [Exporting data to a local CSV file](#68-exporting-data-to-a-local-csv-file)
+## 1 Basic concepts
 
-### 1.1. System architecture
+### 1.1 System architecture
 
 Hillview's architecture is shown in the following figure:
 
@@ -129,9 +127,9 @@ it receives small results from these.  The data on the workers is
 never sent over the network; the worker locally compute all views that
 are needed to produce the final result.  The root node can store
 optional metadata information.  This is described below in the
-[metadata](#23-metadata) section.
+[metadata](#24-metadata) section.
 
-### 1.2. Streaming interaction
+### 1.2 Streaming interaction
 
 Users initiate operations in Hillview by performing operations within
 the browser.  As a result of an operation, the back-end computes the
@@ -145,7 +143,7 @@ accompanied by a progress bar, as in the following figure:
 Pressing the "stop" button next to a progress bar will cancel the
 currently-executing operation.
 
-## 2. Data management
+## 2 Data management
 
 Hillview tries to avoid data management as much as possible; Hillview is designed
 to ingest data from a variety of external sources, such as databases, distributed
@@ -154,7 +152,7 @@ is unavoidable - at least Hillview must convert data to and from external repres
 to its own internal representation.  In this section we describe how Hillview
 manages data and interacts with other data storage systems.
 
-### 2.1. Data model and supported data types
+### 2.1 Data model and supported data types
 
 The Hillview data model is a large table, with a relatively small
 number of columns (currently tens or hundreds) and many rows (millions
@@ -165,37 +163,62 @@ types:
 
 |Datatype|Example|Description|
 |:---|---:|:---|
-|None|missing|All values are "missing" (see below)|
-|`String`|California|Represents Unicode strings; although Hillview does not set a limit on the string length,
-        is does not handle very well very long strings|
-|JSON|{a:2,b:3}|Strings that represent legal JSON values|
-|`Double`|2.4352e2|64-bit IEEE floating point values|
-|`Integer`|100|32-bit signed integer values|
-|`Date`|2000/01/01 10:32:45.003 GMT|A date, including time and timezone.  The precision of times in dates
-      is limited to milliseconds|
-|`LocalDate`|2000/01/01 10:32:45.003|A date including time, but without any timezone information.
-           The precision of times in local dates is limited to milliseconds|
-|`Time`|10:32:45.003|A time within a day.
-                   The precision of times in local dates is limited to milliseconds|
-|`Duration`|2 days 05:20:00|Differences between two times|
-|`Interval`|[3,4]|An interval contains two double values.  See also section (#7-interval-values).|
+|`None`|missing|All values are "missing" (see below)|
+|`String`|`California`|Represents Unicode strings; although Hillview does not set a limit on the string length, is does not handle very well very long strings|
+|`Json`|`{a:2,b:3}`|Strings that represent legal JSON values|
+|`Double`|`2.4352e2`|64-bit IEEE floating point values|
+|`Integer`|`100`|32-bit signed integer values|
+|`Date`|`2000/01/01 10:32:45.003 GMT`|A date, including time and timezone.  The precision of times in dates is limited to milliseconds|
+|`LocalDate`|`2000/01/01 10:32:45.003`|A date including time, but without any timezone information. The precision of times in local dates is limited to milliseconds|
+|`Time`|`10:32:45.003`|A time within a day. The precision of times in local dates is limited to milliseconds|
+|`Duration`|`2 days 05:20:00`|Differences between two times|
+|`Interval`|`[3:4]`|An interval contains two double values.  See also [interval values](#22-interval-values).|
 
 Hillview supports a special value "missing" which indicates that a
 value is not present.  This is similar to NULL values in databases.
 When sorting missing values are considered larger than any other value.
 
-### 2.2. Data conversions
+### 2.2 Interval values
+
+Hillview supports columns whose value is an interval of two numeric values.
+These columns can be created by combining two existing numeric columns.
+The intervals are not "ordered": there is no requirement for the interval start
+to be smaller than the end.  If either interval endpoint is missing the whole interval
+value is missing.  The intervals are always closed, including both endpoints.
+
+There is currently no support for storing such columns or reading them from
+external sources.
+
+In a table these columns are displayed in the form [start : end], as shown in the following
+image.
+
+![Interval column](interval-column.png)
+
+Intervals are sorted lexicographically.  Intervals behave specially in
+histogram plots: an interval contributes to each bucket that it overlaps.
+For example, if we plot a histogram with 10 buckets of values between 0 and 9,
+the interval [2.5 : 3.5] will increment the counts in buckets [2,3) and [3,4).
+The interval [2 : 3] will increment the counts in buckets [2,3) and [3,4) as well, because
+the endpoint 3 overlaps with the bucket [3,4).  The "range" of a column of interval
+is from the minimum of all endpoints the the maximum of all endpoints.  Because
+intervals are not "ordered", the interval [3 : 2] will also increment the counts
+in buckets [2,3) and [3,4).
+
+In Javascript the intervals are exposed as arrays with two numeric values.
+
+
+### 2.3 Data conversions
 
 This section describes how Hillview data is represented in various external
 representations.
 
-#### 2.2.1. JavaScript conversions
+#### 2.3.1 JavaScript conversions
 
 Hillview allows users to write data transformation and filtering functions in JavaScript.
 Here is how various Hillview datatypes are represented in JavaScript:
 
 |Datatype|JavaScript representation|
-|:---|---:|:---|
+|:---|:---|
 |None|null|
 |`String`|A JavaScript string.|
 |`Json`|A JavaScript string that can be parsed into a JavaScript object.|
@@ -207,20 +230,20 @@ Here is how various Hillview datatypes are represented in JavaScript:
 |`Duration`|A JavaScript number representing the number of milliseconds in the duration.|
 |`Interval`|An array with two JavaScript number values.|
 
-### 2.3. Metadata
+### 2.4 Metadata
 
 This section describes various kinds of metadata manipulated by Hillview.
 The hillview root node stores the optional metadata in a directory called
 `metadata`.  The structure of this directory is as follows:
 
 |Directory|Contents|
+|---------|--------|
 |`data/geo`|Geographic metadata common to all datasets (e.g., maps)|
 |`data/metadata`|Root directory for metadata; has one subdirectory for each dataset|
-|`data/metadata/differential-privacy`|Root directory for differentially-private metadata; has one
-                                    subdirectory for each dataset|
+|`data/metadata/differential-privacy`|Root directory for differentially-private metadata; has one subdirectory for each dataset|
 |`data/metadata/geo`|Root directory for geographic metadata; has one subdirectory for each dataset|
 
-#### 2.3.1. Mapping a dataset to a metadata directory
+#### 2.4.1 Mapping a dataset to a metadata directory
 
 Hillview uses some conventions in the structuring of directories on the root
 note in order to associate metadata information on the
@@ -236,7 +259,7 @@ associated with this dataset on the root node:
    metadata describing the differential privacy parameters a dataset
    that only supports only private visualizations
 
-#### 2.3.2. Data schema
+#### 2.4.2 Data schema
 
 For some file formats that are not self-describing Hillview uses a
 `schema` file to specify the format of the data.  The following is an
@@ -263,11 +286,11 @@ column description has two fields:
 * kind: A string describing the type of data in the column,
   corresponding to the types in the [data model](#21-data-model-and-supported-data-types).
 
-#### 2.3.3. Differentially-private metadata
+#### 2.4.3 Differentially-private metadata
 
 TODO
 
-#### 2.3.4. Geographic metadata
+#### 2.4.4 Geographic metadata
 
 The directory `data/geo` on the root node can contain various
 with geographic information data.  We currently support
@@ -275,7 +298,7 @@ with geographic information data.  We currently support
 The organization of these files on disk is not mandated by
 Hillview.
 
-##### 2.3.4.1. Connecting dataset features to geographic metadata
+##### 2.4.4.1 Connecting dataset features to geographic metadata
 
 For each dataset that contains columns that can be mapped to a geographic feature
 a metadata file can describe the connection between the values in the
@@ -299,18 +322,11 @@ objects, one per column, stored in a file called `geometa.json`.
 Here is the interpretation of the four fields in each object:
 
 |Field|Interpretation|
+|-----|--------------|
 |columnName|The name of a column in this dataset|
-|geoFile|The path of a geographic information file
-         in the root node that stores geographic
-         information corresponding to values in this column.
-         We recommend these files to be stored under `data/geo`|
-|property|Property in the geographic information file that corresponds
-          to values in the dataset column.  For example, a geoFile
-          about US states may two properties: one with US postal codes, and
-          one with state names.  This column describes which property is
-          expected to be found in the data.|
-|projection|Map projection to use to convert the data to a map
-            on the screen.  Legal values are shown below.| 
+|geoFile|The path of a geographic information file in the root node that stores geographic information corresponding to values in this column. We recommend these files to be stored under `data/geo`|
+|property|Property in the geographic information file that corresponds to values in the dataset column.  For example, a geoFile about US states may two properties: one with US postal codes, and one with state names.  This column describes which property is expected to be found in the data.|
+|projection|Map projection to use to convert the data to a map on the screen.  Legal values are shown below.|
             
 This is a list of legal map projections supported.  For more on
 the meaning of these projections, see for example
@@ -329,12 +345,12 @@ the meaning of these projections, see for example
 * geoTransverseMercator
 * geoNaturalEarth1
 
-## 3. Interacting with data
+## 3 Interacting with data
 
 In this section we describe the various ways to present and interact
 with the data.
 
-### 3.1. Error display
+### 3.1 Error display
 
 Some operations can trigger errors.  For example, the attempt to load
 a non-existent file.  These errors usually manifest as Java exceptions
@@ -344,7 +360,7 @@ the usability of error messages.
 
 ![Error displayed by Hillview](exception.png)
 
-### 3.2. Mouse-based selection
+### 3.2 Mouse-based selection
 
 Several views allow the user to use the mouse to select data.
 Selections can be modified using the keyboard as follows:
@@ -359,7 +375,7 @@ Selections can be modified using the keyboard as follows:
   will toggle the selection of the current element, while leaving the
   selection status of other elements unchanged.
 
-### 3.3. Loading data
+### 3.3 Loading data
 
 Hillview supports reading data from multiple data-sources.
 
@@ -401,7 +417,7 @@ the user is shown directly a [Tabular view](#43-table-views).  Otherwise
 the user is shown a [Schema view](#42-schema-views), which can be
 used to select a smaller set of columns to browse.
 
-#### 3.3.1. Loading logs
+#### 3.3.1 Loading logs
 
 We use on the grok library for parsing distributed logs.
 For more info visit https://github.com/thekrakken/java-grok/blob/master/README.md
@@ -423,7 +439,7 @@ For the above example, your grok pattern would look something like this:
 ```
 For more patterns : https://github.com/thekrakken/java-grok/blob/master/src/main/resources/patterns/patterns
 
-##### 3.3.1.1. Example
+##### 3.3.1.1 Example
 
 Given this line from a syslog log:
 ```
@@ -442,13 +458,13 @@ message   : CRON[25907]: (CRON) info (No MTA installed, discarding output)
 timestamp : Sep 17 06:55:14.123
 ```
 
-##### 3.3.1.2. Custom Patterns
+##### 3.3.1.2 Custom Patterns
 
 Hillview supports certain pre-defined log format patterns. You have an option to define custom log format patterns
 to suit your needs and specify the same in the logFormat field in the UI (under Generic Logs). Given a log pattern
 and a set of files, what you will get in Hillview is a table with columns corresponding to the names that you gave to the patterns.
 
-#### 3.3.2. Reading generic logs
+#### 3.3.2 Reading generic logs
 
 Hillview can read data from log files with diffrent log formats. The
 following menu allows the users to specify the files to load.  *The
@@ -464,7 +480,7 @@ is deployed*.
 
 * Log format: The [log format](#331-loading-logs) of the logs.
 
-#### 3.3.3. Reading saved dataset views
+#### 3.3.3 Reading saved dataset views
 
 Hillview can reload all the data views associated with a datased.
 A collection of views can be saved to a file from the dataset tab menu,
@@ -477,7 +493,7 @@ The following menu allows the users to specify the files to load.
 
 * Tab label: A name to display for dataset.
 
-#### 3.3.4. Reading CSV files
+#### 3.3.4 Reading CSV files
 
 Hillview can read data from comma- or tab-separated files. The
 following menu allows the users to specify the files to load.  *The
@@ -491,7 +507,7 @@ is deployed*.
 * File name pattern: A shell expansion pattern that names the files to
   load.  Multiple files may be loaded on each machine.
 
-* Schema file: An optional [schema file](#232-data-schema)
+* Schema file: An optional [schema file](#242-data-schema)
   in JSON format that describes the schema of the data.  In the
   absence of a schema file Hillview attempts to guess the type of data
   in each column.  The schema file must reside in same folder.
@@ -511,7 +527,7 @@ a 'missing' data value.
 When parsing dates Hillview assumes that all rows will be using the same date format,
 and it attempts to guess a suitable parsing format.
 
-#### 3.3.5. Reading JSON files
+#### 3.3.5 Reading JSON files
 
 Hillview can read data from JSON files. The following menu allows the
 users to specify the files to load.  *The files must be resident on
@@ -534,7 +550,7 @@ The assumed format is as follows:
 All the JSON files must have the same schema.  JSON files may be
 compressed.
 
-#### 3.3.6. Reading ORC files
+#### 3.3.6 Reading ORC files
 
 Hillview can read data from [Apache ORC
 files](https://github.com/apache/orc), a columnar storage format.
@@ -549,7 +565,7 @@ is an ORC struct with scalar types as fields.
 * File name pattern: A shell expansion pattern that names the files to
   load.  Multiple files may be loaded on each machine.
 
-* Schema file: An optional [schema file](#232-data-schema)
+* Schema file: An optional [schema file](#242-data-schema)
   in JSON format that describes the schema of the data.  The schema
   file must reside in same folder, and it must be compatible with the
   ORC schema.
@@ -557,6 +573,7 @@ is an ORC struct with scalar types as fields.
 Here is how ORC types are converted to Hillview types.
 
 |ORC type|Hillview value|
+|--------|--------------|
 |`BOOLEAN`|`String` (false/true)|
 |`BYTE`|`Integer`|
 |`SHORT`|`Integer`|
@@ -573,6 +590,7 @@ If the user supplies a schema
 file it will perform type conversions at loading time, as follows:
 
 |ORC type|Specified type|Hillview value|
+|--------|--------------|--------------|
 |`BOOLEAN`|`Integer`|Integer (0/1)|
 |`BYTE`|`String`,`Json`|number converted to string|
 |`BYTE`|`Double`|number converted to double|
@@ -594,7 +612,7 @@ file it will perform type conversions at loading time, as follows:
 |`TIMESTAMP`|`String`,`Json`|`String` representation of the date|
 |`TIMESTAMP`|`Date`|Convert to date assuming that the timezone is UTC|
 
-#### 3.3.7. Reading data from SQL databases
+#### 3.3.7 Reading data from SQL databases
 
 The following menu allows the user to load data from a set of
 federated databases that are exposed as a JDBC service.  *Each worker
@@ -632,7 +650,7 @@ Numeric values are converted either to integers (if they fit into
 32-bits) or to doubles.  Boolean values are read as strings
 containing two values, "true" and "false".
 
-#### 3.3.8. Reading data from Cassandra databases
+#### 3.3.8 Reading data from Cassandra databases
 
 Hillview can read data from [Cassandra distributed databases](https://cassandra.apache.org/).
 For this purpose a Hillview worker should be deployed on each Cassandra node.
@@ -666,7 +684,7 @@ The following menu allows the user to specify the data to load.
 
 * password: Credentials of the user connecting to the database.
 
-#### 3.3.9. Reading Parquet files
+#### 3.3.9 Reading Parquet files
 
 Hillview can read data from [Apache Parquet
 files](http://parquet.apache.org), a columnar storage format.  The
@@ -695,7 +713,7 @@ and Hillview data types:
 |INT96|`LocalDate`|
 |other|Error - conversion fails|
 
-### 3.4. Navigating multiple datasets
+### 3.4 Navigating multiple datasets
 
 The Hillview user interface uses a tabbed web page to display multiple
 datasets; each dataset is opened in a separate tab.  Even if the same
@@ -745,7 +763,7 @@ closed, this option will reopen it.
   This option is only enabled for a data curator while visualizing a
   private dataset.
 
-## 4. Data views
+## 4 Data views
 
 As the user navigates the dataset new views are opened and displayed.
 This image shows a browser window containing multiple views of the
@@ -754,7 +772,7 @@ user needs to scroll up and down to see the views.
 
 ![User interface organization](ui-organization.png)
 
-### 4.1. The heading of a view
+### 4.1 The heading of a view
 
 Each view has a heading that describes it briefly, as shown in the
 following figure.  Each view has a unique number, shown before the
@@ -771,7 +789,7 @@ dragged between some views; dropping them will "move" the
 corresponding axis from the source view to the target view.  (G stands
 for the "group-by" axis in a Trellis plot view.)
 
-### 4.2. Schema views
+### 4.2 Schema views
 
 The data schema views allow users to browse the schema of the current
 table and select a set of columns from the dataset to focus on. This
@@ -803,7 +821,7 @@ menu with the following options:
 * Combine: allows users to [combine data in two
   views](#67-combining-two-views)
 
-#### 4.2.1. Selecting columns
+#### 4.2.1 Selecting columns
 
 There are two ways to modify the selection:
 1. By [using the mouse](#32-mouse-based-selection).
@@ -880,14 +898,14 @@ The following operations can be invoked through the context menu:
 
   ![Basic statistics](basic-statistics.png)
 
-#### 4.2.2. The schema view menu
+#### 4.2.2 The schema view menu
 
 ![Schema view menu](schema-view-menu.png)
 
 * Selected columns: this displays a [table view](#43-table-views) of the
 data restricted to the selected columns.
 
-#### 4.2.3. The chart menu
+#### 4.2.3 The chart menu
 
 The user can also directly draw a chart of the data in a selected set
 of columns using the chart menu:
@@ -920,7 +938,7 @@ of columns using the chart menu:
 * Trellis heatmaps...: presents a dialog allowing the user to select three columns to use
   to display a [Trellish plot of heatmaps](#63-trellis-plots-of-heatmaps).
 
-#### 4.2.4. Saving data
+#### 4.2.4 Saving data
 
 * This menu allows users to save the data in a different format as
   files on the worker machines.  It is only enabled for authorized users.
@@ -936,7 +954,7 @@ The user can specify a folder on the remote worker machines.  Each
 file in the current dataset will be saved as a new file in ORC format
 in the specified folder.
 
-### 4.3. Table views
+### 4.3 Table views
 
 The next figure shows a typical table view.
 
@@ -1008,7 +1026,7 @@ the whole dataset is covered by this.  You can see that, although the
 table only has 20 rows, it actually displays information for 212 thousand
 rows in the original dataset, or 24% of the data!
 
-#### 4.3.1. Scrolling
+#### 4.3.1 Scrolling
 
 Because each displayed row summarizes information from multiple rows,
 scrolling through a Hillview table is somewhat different from the
@@ -1036,12 +1054,12 @@ middle of the scroll-bar, this indicates that the user wants to know
 the rows around the *median* of the distribution.  Hillview will bring
 into view a set of rows that includes the requested quantile.
 
-#### 4.3.2. Selecting columns
+#### 4.3.2 Selecting columns
 
 The user can [select](#32-mouse-based-selection) one or more column using
 the mouse.  The figure above shows table with 3 selected columns.
 
-#### 4.3.3. Operations on selected columns
+#### 4.3.3 Operations on selected columns
 
 Double-clicking on a column header will show or hide the data in that
 column.
@@ -1077,7 +1095,7 @@ the current state of the display.
 * Sort descending: The selected columns will be moved to the front of
   the sort order in descending order.
 
-* Charts: various charts
+* Charts:
 
     * Histogram: this option requires exactly one or two columns to be
       selected.  If one column is selected, this operation will draw a
@@ -1231,7 +1249,7 @@ function map(row) {
 }
 ```
 
-See the section [JavaScript conversions](#221-javascript-conversions) about how data is
+See the section [JavaScript conversions](#231-javascript-conversions) about how data is
 Hillview exchanges data with JavaScript.
 
 * Extract value...: this option is only available when browsing data
@@ -1240,7 +1258,7 @@ Hillview exchanges data with JavaScript.
   specify a key and a destination column; the associated value will be
   extracted into the indicated column.
 
-#### 4.3.4. Operations on a table cell
+#### 4.3.4 Operations on a table cell
 
 The user can also right-click on a cell in a visible column to pop-up
 a menu allowing filtering based on values; the menu permits to
@@ -1248,7 +1266,7 @@ keep all rows based on a comparison with the specific table cell:
 
 ![Cell filtering context menu](filter-context-menu.png)
 
-#### 4.3.5. Operations on a table row
+#### 4.3.5 Operations on a table row
 
 Right-clicking on a table cell in a meta column opens a row-specific menu.
 
@@ -1258,7 +1276,7 @@ The row-level operations are similar to cell-level operations described in
 [Operations on a table cell](#434-operations-on-a-table-cell), but perform all
 comparisons at the row level, using just the visible columns.
 
-#### 4.3.6. Operations on tables
+#### 4.3.6 Operations on tables
 
 The table view has a menu that offers the following options:
 
@@ -1278,7 +1296,7 @@ The table view has a menu that offers the following options:
 
 * Combine: allows the user to [combine the data in two views](#67-combining-two-views).
 
-#### 4.3.7. The table view menu
+#### 4.3.7 The table view menu
 
 The view menu offers the following options.
 
@@ -1292,7 +1310,7 @@ The view menu offers the following options.
 
 * Change table size: this changes the number of rows displayed.
 
-#### 4.3.8. The table filter menu
+#### 4.3.8 The table filter menu
 
 The table filter menu allows the user to find specific values or
 filter the data according to specific criteria.
@@ -1346,7 +1364,7 @@ filter the data according to specific criteria.
 
 ![Comparison of flights from CA and FL](compare-ca-and-fl.png)
 
-### 4.4. Frequent elements views
+### 4.4 Frequent elements views
 
 A frequent elements view shows the most frequent values that appear in the
 dataset in a set of selected columns (above a certain user-specified
@@ -1363,7 +1381,7 @@ if the total over all these rows is itself above the threshold.
 
 There are two menu options offered from this view: [View as a table](#441-view-as-a-table) and [Modify](#442-modify).
 
-#### 4.4.1. View as a Table
+#### 4.4.1 View as a Table
 
 Clicking this button gives the user two options:
 ![View as a Table](heavy-hitters-tableMenu.png)
@@ -1376,7 +1394,7 @@ Clicking this button gives the user two options:
   view](#43-table-views), but where the table only contains the rows
   corresponding to the frequent values currently selected.
 
-#### 4.4.2. Modify
+#### 4.4.2 Modify
 Clicking this button gives the user two options:
 ![Modify](heavy-hitters-modifyMenu.png)
 * Get exact counts: runs a more expensive but more precise
@@ -1396,7 +1414,7 @@ only displays the 200 most frequent elements results, and alerts the user to the
 of further frequent elements. These can be viewed using the All frequent elements option from the
  [View as a table](#441-view-as-a-table) menu option.
 
-## 5. Charts
+## 5 Charts
 
 Hillview supports many types of charts; these are described in the following sections:
 
@@ -1415,7 +1433,7 @@ Hillview supports many types of charts; these are described in the following sec
 [![Pairwise correlations](pairwise-correlations-small.png)](#65-correlation-heatmaps)
 [![Geographic views](geographic-views-small.png)](#66-geographic-views)
 
-### 5.1. Uni-dimensional histogram views
+### 5.1 Uni-dimensional histogram views
 
 A uni-dimensional (1D) histogram is a succinct representation of the
 data in a column.  See [below](#514-string-histograms) for a
@@ -1468,7 +1486,7 @@ triangle on top:
 
 ![Truncated histogram](truncated-histogram.png)
 
-#### 5.1.1. The histogram menu
+#### 5.1.1 The histogram menu
 
 Histogram views have a menu that offers to the users several operations:
 
@@ -1481,7 +1499,7 @@ Histogram views have a menu that offers to the users several operations:
 * Combine: [combining the data](#67-combining-two-views) in the current view with
   another one.
 
-#### 5.1.2. The histogram view menu
+#### 5.1.2 The histogram view menu
 
 ![View menu](histogram-view-menu.png)
 
@@ -1517,7 +1535,7 @@ The "View" menu from a histogram display has the following functions:
   series of histograms](#61-trellis-plots-of-1d-histograms) with the data
   grouped on the values in the second column
 
-#### 5.1.3. Mouse selection in histogram views
+#### 5.1.3 Mouse selection in histogram views
 
 The mouse can be used to select a portion of the data in a histogram.
 The user can click-and-drag to select a subset of the data.  The
@@ -1531,7 +1549,7 @@ can be complemented by pressing the CONTROL at the time the selection
 is released (this will eliminate all the data that has been
 selected).
 
-#### 5.1.4. String histograms
+#### 5.1.4 String histograms
 
 When drawing a histogram of string data it is possible to have
 more values on the X axis than there are buckets.  In this case
@@ -1548,7 +1566,7 @@ The figure above shows a histogram where there are 294 distinct values
 but only 40 buckets.  One can see multiple ticks in each bucket.  Only
 some of the tick labels are displayed.
 
-### 5.2. Quartiles view for histogram buckets
+### 5.2 Quartiles view for histogram buckets
 
 ![Histogram quartiles view](histogram-quartiles-view.png)
 
@@ -1576,7 +1594,7 @@ the data only to the selected region:
 
 ![Selecting from a quartile view](quartiles-selection.png)
 
-### 5.3. Two-dimensional histogram views
+### 5.3 Two-dimensional histogram views
 
 A 2D histogram is a useful visual tool for estimating whether the
 values in two columns are independent of each other.  Neither of the
@@ -1679,7 +1697,7 @@ The "view" menu for a 2D histogram offers the following operations:
 
 For a description of the combine menu see [combining two views](#67-combining-two-views).
 
-#### 5.3.1. Selection in 2D histograms
+#### 5.3.1 Selection in 2D histograms
 
 In a 2D histogram users can select data in two ways:
 
@@ -1702,7 +1720,7 @@ In a 2D histogram users can select data in two ways:
 
 ![Highlighting ranges in a 2D histogram](histogram-2d-highlight.png)
 
-### 5.4. Heatmap views
+### 5.4 Heatmap views
 
 A heatmap view displays the data in two columns or more columns.
 The first two columns are mapped to the two
@@ -1789,13 +1807,13 @@ The heatmap view menu has the following operations:
 
 For a description of the combine menu see [combining two views](#67-combining-two-views).
 
-#### 5.4.1. Selection from a heatmap
+#### 5.4.1 Selection from a heatmap
 
 Users can select a rectangular area from a heatmap with the mouse.
 
 ![Selection from a heatmap](heatmap-selection.png)
 
-### 5.5. Singular value spectrum views
+### 5.5 Singular value spectrum views
 
 The view display the [singular-value
 decomposition](https://en.wikipedia.org/wiki/Singular-value_decomposition)
@@ -1809,7 +1827,7 @@ choose how many values to use in a principal component analysis
 (PCA), as described below.  In the picture above the first 3
 singular values explain most of the variance of the data.
 
-## 6. Trellis plots
+## 6 Trellis plots
 
 Hillview can display multiple histograms or heatmaps in a grid view
 called a Trellis plot.  Each plot corresponds to a contiguous range of
@@ -1829,7 +1847,7 @@ Selection in a Trellis plot can be done in several ways:
 
 ![Selection across multiple plots](trellis-complex-selection.png)
 
-### 6.1. Trellis plots of 1D histograms
+### 6.1 Trellis plots of 1D histograms
 
 Hillview can display multiple histograms in a grid, using a so-called
 Trellis plot view.
@@ -1848,7 +1866,7 @@ The following operations are available from the View menu of a Trellis histogram
 * correlate...: allows the user to specify a second column that is used for displaying a Trellis plot
   of 2D histograms
 
-### 6.2. Trellis plots of 2D histograms
+### 6.2 Trellis plots of 2D histograms
 
 ![A Trellis plot of 2D histograms](trellis-histogram2d-array.png)
 
@@ -1864,7 +1882,7 @@ of 2D histograms:
 * \#groups: allows the user to change the number of groups used for displaying the Trellis plot
 * relative/absolute: this is similar to the 2D histogram relative/absolute menu
 
-#### 6.2.1. Selection using the colormap
+#### 6.2.1 Selection using the colormap
 
 Selection using the colormap is similar to the selection for simple 2D histograms.
 The user can either select a range of data in the colormap to filter the data.
@@ -1874,7 +1892,7 @@ If the user keeps the shift key pressed while selecting in a colormap
 
 ![Highlighting ranges in a Trellis view of 2D histogram](trellis-histogram-2d-highlight.png)
 
-### 6.3. Trellis plots of heatmaps
+### 6.3 Trellis plots of heatmaps
 
 ![A Trellis plot of heatmap views](hillview-heatmap-array.png)
 
@@ -1882,7 +1900,7 @@ A Trellis plot is an array of heatmaps, grouped by a third column.
 Each heatmap displays data that corresponds to a range of values in
 the grouping column.
 
-### 6.4. Trellis plots of quartile vectors
+### 6.4 Trellis plots of quartile vectors
 
 ![A Trellis plot of quartile vectors](trellis-quartiles.png)
 
@@ -1890,7 +1908,7 @@ This is a Trellis plot is an array of quartile vector views, grouped by a third 
 Each plot displays data that corresponds to a range of values in
 the grouping column.
 
-### 6.5. Correlation heatmaps
+### 6.5 Correlation heatmaps
 
 Correlation heatmaps display a matrix of pairwise heatmaps between a set of numeric
 columns.  The heatmaps can be used to detect columns that are strongly correlated.
@@ -1899,12 +1917,12 @@ columns.  The heatmaps can be used to detect columns that are strongly correlate
 
 Selection is done as in heatmaps, but selection is restricted to a single heatmap.
 
-### 6.6. Geographic views
+### 6.6 Geographic views
 
 Plotting geographic views require the presence of some geographic metadata
 on the Hillview root node, and also some dataset-specific metadata that ties
 a column to a specific geographic feature.  This is documented in the
-[Geographic metadata](#234-geographic-metadata) section.
+[Geographic metadata](#244-geographic-metadata) section.
 
 ![Geographic views](geographic-views.png)
 
@@ -1924,7 +1942,7 @@ small number of polygons -- each polygon is expected to be larger than a few pix
 In consequence, columns that contain geographic features are assumed to have a small number
 of distinct values -- fewer than the number of pixels on the screen.
 
-### 6.7. Combining two views
+### 6.7 Combining two views
 
 Any view represents logically a subset of rows from an original table.
 Two different views can be combined by performing a set operation
@@ -1950,37 +1968,9 @@ The operations are as follows:
 * Replace: replaces the data in the current view with the data from
   the previously-selected one.
 
-### 6.8. Exporting data to a local CSV file
+### 6.8 Exporting data to a local CSV file
 
 The "export/AS CSV" menu for each chart will save the data in the chart in a
 local file (usually placed in the Downloads folder) in a CSV format.  Note that
 the data that is exported does not reflect the whole dataset, but only the data
 that is currently visible in the chart.
-
-## 7. Interval values
-
-Hillview supports columns whose value is an interval of two numeric values.
-These columns can be created by combining two existing numeric columns.
-The intervals are not "ordered": there is no requirement for the interval start
-to be smaller than the end.  If either interval endpoint is missing the whole interval
-value is missing.  The intervals are always closed, including both endpoints.
-
-There is currently no support for storing such columns or reading them from
-external sources.
-
-In a table these columns are displayed in the form [start : end], as shown in the following
-image.
-
-![Interval column](interval-column.png)
-
-Intervals are sorted lexicographically.  Intervals behave specially in
-histogram plots: an interval contributes to each bucket that it overlaps.
-For example, if we plot a histogram with 10 buckets of values between 0 and 9,
-the interval [2.5 : 3.5] will increment the counts in buckets [2,3) and [3,4).
-The interval [2 : 3] will increment the counts in buckets [2,3) and [3,4) as well, because
-the endpoint 3 overlaps with the bucket [3,4).  The "range" of a column of interval
-is from the minimum of all endpoints the the maximum of all endpoints.  Because
-intervals are not "ordered", the interval [3 : 2] will also increment the counts
-in buckets [2,3) and [3,4).
-
-In Javascript the intervals are exposed as arrays with two numeric values.
