@@ -659,7 +659,16 @@ Hillview can read data from [Cassandra distributed databases](https://cassandra.
 For this purpose a Hillview worker should be deployed on each Cassandra node.
 Moreover, Hillview must have read access to Cassandra's SSTables.
 Hillview assumes that no writes are in progress while reading the
-data from storage.
+data from storage and the data is already compacted. Moreover, we recommend that Cassandra uses `LeveledCompactionStrategy` with maximum SSTable size is 160 MB (recommended by Cassandra developer). In the other hand, having only 1 gigantic SSTable is not recommended. Small and multiple SSTables are great for Hillview's parallelism because the worker will read all those files in parallel. More about data compaction, you can change the configuration by runing this cqlsh query on each node:
+
+`USE <keyspace_name>;`<br>
+`ALTER TABLE <table_name> WITH compaction = {'class' : 'LeveledCompactionStrategy', 'sstable_size_in_mb' : 160 };`
+
+Then you need to initiate the compaction by using the nodetool:
+
+`bin/nodetool compact <keyspace_name>`
+
+That may take a few minutes up to hours depends on how big your data. You can check the compaction progress by reading the log file (` md_txn_compaction_*.log`) in the `data/<keyspace_name>`.  
 
 The following menu allows the user to specify the data to load.
 
