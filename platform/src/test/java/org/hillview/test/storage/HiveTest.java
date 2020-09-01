@@ -35,7 +35,6 @@ public class HiveTest extends BaseTest {
         conn.password = "";
         conn.hdfsNodes = "localhost";
         conn.namenodePort = "9000";
-        conn.hadoopUsername = "daniar";
         conn.lazyLoading = true;
         return conn;
     }

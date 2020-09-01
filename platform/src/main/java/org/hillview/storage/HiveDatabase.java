@@ -76,9 +76,9 @@ public class HiveDatabase {
             this.discoverTableProperties();
             this.hdfsInetAddresses = this.convertToInetAddresses();
             this.localHDFSNode = HiveDatabase.discoverLocalHDFSInterface(this.hdfsInetAddresses);
-            HiveDatabase.hdfsConf = HiveDatabase.initHDFSConfig(this.localHDFSNode, this.info.hadoopUsername, this.info.namenodePort);
+            HiveDatabase.hdfsConf = HiveDatabase.initHDFSConfig(this.localHDFSNode, this.info.namenodePort);
             this.hadoopDfsClient = new DFSClient(
-                    new InetSocketAddress(this.localHDFSNode, Integer.parseInt(this.info.namenodePort)),
+                    new InetSocketAddress("10.1.1.2", Integer.parseInt(this.info.namenodePort)),
                     HiveDatabase.hdfsConf);
             this.tableSchema = this.discoverTableSchema();
             this.arrPartitions = this.discoverPartitions();
@@ -135,12 +135,12 @@ public class HiveDatabase {
         return inetAddresses;
     }
 
-    public static Configuration initHDFSConfig(String localHDFSNode, String hadoopUsername, 
+    public static Configuration initHDFSConfig(String localHDFSNode, 
             String namenodePort) throws SQLException {
         Configuration hdfsConf = new Configuration(false);
         hdfsConf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
         hdfsConf.set("fs.file.impl", org.apache.hadoop.fs.LocalFileSystem.class.getName());
-        hdfsConf.set("fs.defaultFS", "hdfs://" + localHDFSNode + ":" + namenodePort);
+        hdfsConf.set("fs.defaultFS", "hdfs://" + "10.1.1.2" + ":" + namenodePort);
         hdfsConf.set("fs.default.name", hdfsConf.get("fs.defaultFS"));
         return hdfsConf;
     }

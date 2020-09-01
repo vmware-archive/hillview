@@ -28,8 +28,6 @@ public class HiveConnectionInfo extends JdbcConnectionInformation {
     public String hdfsNodes;
     /** For establishing connection to Hadoop namenode */
     public String namenodePort;
-    /** For creating remoteUser that have access to the HDFS file */
-    public String hadoopUsername;
     /** Delimiter used to parse the hdfs data */
     public String dataDelimiter;
 
@@ -38,7 +36,6 @@ public class HiveConnectionInfo extends JdbcConnectionInformation {
         StringBuilder sb = new StringBuilder(super.toString());
         sb.append("  hdfsNodes : " + this.hdfsNodes + "\n");
         sb.append("  namenodePort : " + this.namenodePort + "\n");
-        sb.append("  hadoopUsername : " + this.hadoopUsername + "\n");
         return sb.toString();
     }
 }
