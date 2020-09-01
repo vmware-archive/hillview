@@ -21,6 +21,7 @@ import com.google.gson.JsonObject;
 import org.hillview.*;
 import org.hillview.dataStructures.*;
 import org.hillview.dataset.api.*;
+import org.hillview.geo.PolygonSet;
 import org.hillview.maps.*;
 import org.hillview.sketches.*;
 import org.hillview.sketches.highorder.*;
@@ -36,6 +37,7 @@ import org.jblas.DoubleMatrix;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 import java.io.File;
@@ -49,8 +51,8 @@ import java.io.FileWriter;
 public final class TableTarget extends TableRpcTarget {
     static final long serialVersionUID = 1;
 
-    TableTarget(IDataSet<ITable> table, HillviewComputation computation) {
-        super(computation);
+    TableTarget(IDataSet<ITable> table, HillviewComputation computation, @Nullable String metadataDirectory) {
+        super(computation, metadataDirectory);
         this.setTable(table);
         this.registerObject();
     }
@@ -62,10 +64,6 @@ public final class TableTarget extends TableRpcTarget {
     }
 
     static class NextKArgs {
-        /**
-         * If not null, start at first tuple which contains this string in one of the
-         * visible columns.
-         */
         RecordOrder order = new RecordOrder();
         @Nullable
         Object[] firstRow;
@@ -116,7 +114,7 @@ public final class TableTarget extends TableRpcTarget {
 
     @HillviewRpc
     public void prune(RpcRequest request, RpcRequestContext context) {
-        this.runPrune(this.table, new EmptyTableMap(), TableTarget::new, request, context);
+        this.runPrune(this.table, new EmptyTableMap(), (d, c) -> new TableTarget(d, c, this.metadataDirectory), request, context);
     }
 
     @HillviewRpc
@@ -149,7 +147,7 @@ public final class TableTarget extends TableRpcTarget {
         ContainsArgs args = request.parseArgs(ContainsArgs.class);
         RowSnapshot row = TableTarget.asRowSnapshot(args.row, args.order, null);
         ContainsMap map = new ContainsMap(args.order.toSchema(), Converters.checkNull(row));
-        this.runMap(this.table, map, TableTarget::new, request, context);
+        this.runMap(this.table, map, (d, c) -> new TableTarget(d, c, this.metadataDirectory), request, context);
     }
 
     static class FindArgs {
@@ -181,6 +179,71 @@ public final class TableTarget extends TableRpcTarget {
         // Rename map encoded as an array
         @Nullable
         String[] renameMap;
+    }
+
+    /**
+     * Describes how a column in a table is mapped
+     * to a geographic dataset.
+     */
+    @SuppressWarnings("NotNullFieldNotInitialized")
+    static class GeoFileInformation {
+        String columnName; // e.g., OriginState
+        String property; // which property in the dataset is indexed by values in the column. e.g., STUSPS
+        String projection; // one of the supported data projections
+        // Legal projection names are:
+        // geoAzimuthalEqualArea
+        // geoAzimuthalEquidistant
+        // geoGnomonic
+        // geoOrthographic
+        // geoStereographic
+        // geoEqualEarth
+        // geoAlbersUsa
+        // geoConicEqualArea
+        // geoConicEquidistant
+        // geoEquirectangular
+        // geoMercator
+        // geoTransverseMercator
+        // geoNaturalEarth1
+        String geoFile; // e.g., geo/us_states/cb_2019_us_state_20m.shp
+        // Supported formats: shapeFile (shp)
+
+        public JsonString createJSON(PolygonSet ps) {
+            return new JsonString(
+                     "{" +
+                             "columnName:" + this.columnName + ",\n" +
+                             "property:" + this.property + ",\n" +
+                             "projection:" + this.projection + ",\n" +
+                             "data:" + ps.toJSON()
+                    + "}"
+            );
+        }
+    }
+
+    @Nullable
+    GeoFileInformation getGeoFileInformation(String columnName) throws IOException {
+        String fileName = "data/metadata/geo/" + this.metadataDirectory + "/geometa.json";
+        File file = new File(fileName);
+        if (!file.exists())
+            return null;
+        HillviewLogger.instance.info("Loading geo data", "file {0}", fileName);
+        String contents = Utilities.textFileContents(fileName);
+        GeoFileInformation[] data = IJson.gsonInstance.fromJson(contents, GeoFileInformation[].class);
+        for (GeoFileInformation g: data) {
+            if (g.columnName.equals(columnName))
+                return g;
+        }
+        return null;
+    }
+
+    @HillviewRpc
+    public void getGeo(RpcRequest request, RpcRequestContext context) throws IOException {
+        ColumnDescription desc = request.parseArgs(ColumnDescription.class);
+        @Nullable GeoFileInformation geoInfo = this.getGeoFileInformation(desc.name);
+        if (geoInfo == null)
+            throw new RuntimeException("No geographic data found for column " + desc.name);
+        PolygonSet ps = new PolygonSet(geoInfo.geoFile);
+        PrecomputedSketch<ITable, JsonString> pk = new PrecomputedSketch<>(geoInfo.createJSON(ps));
+        this.runCompleteSketch(this.table, pk, request, context);
     }
 
     @HillviewRpc
@@ -349,7 +412,7 @@ public final class TableTarget extends TableRpcTarget {
     private void runFilter(
             ITableFilterDescription filter, RpcRequest request, RpcRequestContext context) {
         FilterMap filterMap = new FilterMap(filter);
-        this.runMap(this.table, filterMap, TableTarget::new, request, context);
+        this.runMap(this.table, filterMap, (d, c) -> new TableTarget(d, c, this.metadataDirectory), request, context);
     }
 
     static class RowFilterDescription {
@@ -457,7 +520,7 @@ public final class TableTarget extends TableRpcTarget {
                 newColNames[i] = String.format("%s%d (%d%%)", info.projectionName, i, perc);
             }
             LinearProjectionMap lpm = new LinearProjectionMap(cm.columnNames, projectionMatrix, newColNames);
-            TableTarget.this.runMap(TableTarget.this.table, lpm, TableTarget::new, request, context);
+            TableTarget.this.runMap(TableTarget.this.table, lpm, (d, c) -> new TableTarget(d, c, this.metadataDirectory), request, context);
         });
     }
 
@@ -550,7 +613,7 @@ public final class TableTarget extends TableRpcTarget {
             }
             lowDimPoints.print();
             LAMPMap map = new LAMPMap(highDimPoints, lowDimPoints, info.colNames, info.newColNames);
-            TableTarget.this.runMap(TableTarget.this.table, map, TableTarget::new, request, context);
+            TableTarget.this.runMap(TableTarget.this.table, map, (d, c) -> new TableTarget(d, c, this.metadataDirectory), request, context);
         });
     }
 
@@ -672,14 +735,14 @@ public final class TableTarget extends TableRpcTarget {
     public void convertColumn(RpcRequest request, RpcRequestContext context) {
         ConvertColumnMap.Info info = request.parseArgs(ConvertColumnMap.Info.class);
         ConvertColumnMap map = new ConvertColumnMap(info);
-        this.runMap(this.table, map, TableTarget::new, request, context);
+        this.runMap(this.table, map, (d, c) -> new TableTarget(d, c, this.metadataDirectory), request, context);
     }
 
     @HillviewRpc
     public void createIntervalColumn(RpcRequest request, RpcRequestContext context) {
         CreateIntervalColumnMap.Info info = request.parseArgs(CreateIntervalColumnMap.Info.class);
         CreateIntervalColumnMap map = new CreateIntervalColumnMap(info);
-        this.runMap(this.table, map, TableTarget::new, request, context);
+        this.runMap(this.table, map, (d, c) -> new TableTarget(d, c, this.metadataDirectory), request, context);
     }
 
     @Override
@@ -699,7 +762,7 @@ public final class TableTarget extends TableRpcTarget {
         RpcObjectManager.instance.when(op.otherId, target -> {
             TableTarget otherTable = (TableTarget)target;
             TableTarget.this.runZip(
-                    TableTarget.this.table, otherTable.table, sm, TableTarget::new, request, context);
+                    TableTarget.this.table, otherTable.table, sm, (d, c) -> new TableTarget(d, c, this.metadataDirectory), request, context);
         });
     }
 
@@ -721,7 +784,7 @@ public final class TableTarget extends TableRpcTarget {
                 ids, l -> {
                     List<IDataSet<ITable>> other = Linq.map(l, e -> e.to(TableTarget.class).table);
                     TableTarget.this.runZipN(
-                            TableTarget.this.table, other, map, TableTarget::new, request, context);
+                            TableTarget.this.table, other, map, (d, c) -> new TableTarget(d, c, this.metadataDirectory), request, context);
                 });
     }
 
@@ -729,7 +792,7 @@ public final class TableTarget extends TableRpcTarget {
     public void jsCreateColumn(RpcRequest request, RpcRequestContext context) {
         CreateColumnJSMap.Info info = request.parseArgs(CreateColumnJSMap.Info.class);
         CreateColumnJSMap map = new CreateColumnJSMap(info);
-        this.runMap(this.table, map, TableTarget::new, request, context);
+        this.runMap(this.table, map, (d, c) -> new TableTarget(d, c, this.metadataDirectory), request, context);
     }
 
     @HillviewRpc
@@ -737,20 +800,20 @@ public final class TableTarget extends TableRpcTarget {
         JSFilterDescription.Info filter = request.parseArgs(JSFilterDescription.Info.class);
         JSFilterDescription desc = new JSFilterDescription(filter);
         FilterMap map = new FilterMap(desc);
-        this.runMap(this.table, map, TableTarget::new, request, context);
+        this.runMap(this.table, map, (d, c) -> new TableTarget(d, c, this.metadataDirectory), request, context);
     }
 
     @HillviewRpc
     public void kvCreateColumn(RpcRequest request, RpcRequestContext context) {
         ExtractValueFromKeyMap.Info info = request.parseArgs(ExtractValueFromKeyMap.Info.class);
         ExtractValueFromKeyMap map = new ExtractValueFromKeyMap(info);
-        this.runMap(this.table, map, TableTarget::new, request, context);
+        this.runMap(this.table, map, (d, c) -> new TableTarget(d, c, this.metadataDirectory), request, context);
     }
 
     @HillviewRpc
     public void project(RpcRequest request, RpcRequestContext context) {
         Schema proj = request.parseArgs(Schema.class);
         ProjectMap map = new ProjectMap(proj);
-        this.runMap(this.table, map, TableTarget::new, request, context);
+        this.runMap(this.table, map, (d, c) -> new TableTarget(d, c, this.metadataDirectory), request, context);
     }
 }

@@ -14,4 +14,6 @@ export JAVA_OPTS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=
 export JAVA_OPTS="$JAVA_OPTS$LOGGING"
 export CATALINA_PID="catalina.pid"
 cd ${mydir}/.. || exit 1
-./apache-tomcat-${TOMCATVERSION}/bin/catalina.sh run
+# Uncomment the following to debug class loader issues
+# DEBUG_CLASSLOADER="-verbose:class"
+CATALINA_OPTS=${DEBUG_CLASSLOADER} ./apache-tomcat-${TOMCATVERSION}/bin/catalina.sh run

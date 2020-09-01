@@ -24,12 +24,14 @@ import {
     AggregateDescription,
     BasicColStats,
     BucketsInfo,
-    CombineOperators, CompareDatasetsInfo,
+    CombineOperators,
+    CompareDatasetsInfo,
     ComparisonFilterDescription,
     ContainsArgs,
     CountWithConfidence,
     EigenVal,
-    FindResult, Groups,
+    FindResult,
+    Groups,
     HeavyHittersFilterInfo,
     HistogramRequestInfo,
     IColumnDescription,
@@ -38,18 +40,24 @@ import {
     kindIsString,
     ExtractValueFromKeyMapInfo,
     NextKArgs,
-    NextKList, QuantilesMatrixInfo,
+    NextKList,
+    QuantilesMatrixInfo,
     QuantilesVectorInfo,
     RangeFilterArrayDescription,
     RecordOrder,
     RemoteObjectId,
-    RowFilterDescription, SampleSet,
+    RowFilterDescription,
+    SampleSet,
     Schema,
     StringColumnFilterDescription,
     StringColumnsFilterDescription,
     StringFilterDescription,
     TableSummary,
-    TopList, CreateIntervalColumnMapInfo, HeatmapRequestInfo, RowValue
+    TopList,
+    CreateIntervalColumnMapInfo,
+    HeatmapRequestInfo,
+    RowValue,
+    MapAndColumnRepresentation
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
 import {FullPage, PageTitle} from "./ui/fullPage";
@@ -165,7 +173,8 @@ export class TableTargetAPI extends RemoteObject {
             case "Load":
             case "HeavyHitters":
             case "SVD Spectrum":
-            case "LogFileView":
+            case "LogFile":
+            case "Map":
                 // Shoudld not occur
                 assert(false);
                 return [];
@@ -252,6 +261,10 @@ export class TableTargetAPI extends RemoteObject {
 
     public createGetSummaryRequest(): RpcRequest<TableSummary> {
         return this.createStreamingRpcRequest<TableSummary>("getSummary", null);
+    }
+
+    public createGeoRequest(column: IColumnDescription): RpcRequest<MapAndColumnRepresentation> {
+        return this.createStreamingRpcRequest<MapAndColumnRepresentation>("getGeo", column);
     }
 
     public createHLogLogRequest(colName: string): RpcRequest<CountWithConfidence> {
@@ -600,8 +613,7 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
     }
 
     public setPage(page: FullPage): void {
-        if (page == null)
-            throw new Error(("null FullPage"));
+        assert(page != null);
         this.page = page;
         if (this.topLevel != null) {
             this.topLevel.ondragover = (e) => e.preventDefault();

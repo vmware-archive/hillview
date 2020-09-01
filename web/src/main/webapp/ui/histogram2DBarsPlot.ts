@@ -47,8 +47,8 @@ export interface BarInfo {
  */
 export class Histogram2DBarsPlot extends Histogram2DBase {
     // The following are only set when drawing
-    protected xPoints: number | null;
-    protected yPoints: number | null;
+    protected xPoints: number;
+    protected yPoints: number;
     protected showMissing: boolean;
 
     public constructor(protected plottingSurface: PlottingSurface) {
@@ -57,8 +57,6 @@ export class Histogram2DBarsPlot extends Histogram2DBase {
 
     public draw(): void {
         super.draw();
-        this.xPoints = null;
-        this.yPoints = null;
         this.showMissing = false;
         this.xPoints = this.data.first.perBucket.length;
         this.yPoints = this.data.first.perBucket[0].perBucket.length;
@@ -132,7 +130,7 @@ export class Histogram2DBarsPlot extends Histogram2DBase {
             .data(rects)
             .enter().append("g")
             .append("svg:rect")
-            .attr("x", (d: Box) => d.xCoordinate * this.barWidth)
+            .attr("x", (d: Box) => d.xCoordinate! * this.barWidth)
             .attr("y", (d: Box) => this.getChartHeight() - this.rectHeight(d, scale))
             .attr("height", (d: Box) => this.rectHeight(d, scale))
             .attr("width", this.barWidth - 1)
@@ -166,7 +164,7 @@ export class Histogram2DBarsPlot extends Histogram2DBase {
         let bucketIndex: number | null = Math.floor(mouseX / bucketWidth);
         const withinBucketOffset = mouseX - bucketIndex * bucketWidth;
         let colorIndex: number | null = Math.floor(withinBucketOffset / this.barWidth);
-        let count = null;
+        let count = 0;
 
         if (colorIndex == this.yPoints) {
             colorIndex = NoBucketIndex;
@@ -177,7 +175,7 @@ export class Histogram2DBarsPlot extends Histogram2DBase {
             if (this.showMissing && colorIndex == this.yPoints - 1)
                 count = bucket.perMissing;
             else
-                count = bucket.perBucket[colorIndex];
+                count = bucket.perBucket[colorIndex!];
         } else {
             bucketIndex = NoBucketIndex;
             colorIndex = NoBucketIndex;

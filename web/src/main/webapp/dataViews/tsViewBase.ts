@@ -48,6 +48,8 @@ import {HeavyHittersReceiver, HeavyHittersView} from "./heavyHittersView";
 import {DataRangesReceiver} from "./dataRangesReceiver";
 import {TableOperationCompleted} from "../modules";
 import {ErrorReporter} from "../ui/errReporter";
+import {ReceiverCommonArgs} from "../ui/receiver";
+import {GeoMapReceiver} from "./geoView";
 
 /**
  * A base class for TableView and SchemaView.
@@ -133,6 +135,21 @@ export abstract class TSViewBase extends BigTableView {
 
     protected exportSchema(): void {
         saveAs("schema.json", JSON.stringify(this.schema.schema));
+    }
+
+    protected geo(column: IColumnDescription): void {
+        const rr = this.createGeoRequest(column);
+        const args: ReceiverCommonArgs = {
+            title: new PageTitle("Count of " + this.schema.displayName(column.name)!.displayName,
+                this.defaultProvenance),
+            remoteObject: this,
+            rowCount: this.rowCount,
+            schema: this.schema,
+            originalPage: this.page,
+            options: { chartKind: "Map", reusePage: false }
+        };
+        const rec = new GeoMapReceiver(args, column, rr);
+        rr.invoke(rec);
     }
 
     public renameColumn(): void {
@@ -378,7 +395,7 @@ export abstract class TSViewBase extends BigTableView {
                     help: "Draw a histogram of the data in one column."},
                 { text: "2D Histogram...", action: () => this.two2ChartMenu("2DHistogram"),
                     help: "Draw a histogram of the data in two columns."},
-                { text: "Quartile vector plot...", action: () => this.two2ChartMenu("QuartileVector"),
+                { text: "Quartiles...", action: () => this.two2ChartMenu("QuartileVector"),
                     help: "Draw a vector of quartiles."},
                 { text: "Heatmap...", action: () => this.two2ChartMenu("Heatmap"),
                     help: "Draw a heatmap of the data in two columns."},

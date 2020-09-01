@@ -138,7 +138,7 @@ public class CsvFileTest extends BaseTest {
 
     @Test
     public void readUTF16FileTest() {
-        Path path = Paths.get("../data/", "utf16-data.csv");
+        Path path = Paths.get(dataDir + "/", "utf16-data.csv");
         CsvFileLoader.Config config = new CsvFileLoader.Config();
         config.allowFewerColumns = false;
         config.hasHeaderRow = true;

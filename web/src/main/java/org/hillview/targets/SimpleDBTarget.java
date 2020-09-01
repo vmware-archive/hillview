@@ -60,14 +60,14 @@ public class SimpleDBTarget extends TableRpcTarget {
 
     static {
         try {
-            DriverManager.registerDriver(new com.mysql.jdbc.Driver ());
+            DriverManager.registerDriver(new com.mysql.cj.jdbc.Driver ());
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
-    SimpleDBTarget(JdbcConnectionInformation jdbc, HillviewComputation computation) {
-        super(computation);
+    SimpleDBTarget(JdbcConnectionInformation jdbc, HillviewComputation computation, @Nullable String metadataDirectory) {
+        super(computation, metadataDirectory);
         this.jdbc = jdbc;
         this.schema = null;
         this.registerObject();
@@ -151,7 +151,9 @@ public class SimpleDBTarget extends TableRpcTarget {
             BucketsInfo range;
             if (quantilesArgs.cd.kind == ContentsKind.Integer ||
                     quantilesArgs.cd.kind == ContentsKind.Double ||
-                    quantilesArgs.cd.kind == ContentsKind.Date) {
+                    quantilesArgs.cd.kind == ContentsKind.Date ||
+                    quantilesArgs.cd.kind == ContentsKind.LocalDate ||
+                    quantilesArgs.cd.kind == ContentsKind.Time) {
                 range = this.database.numericDataRange(quantilesArgs.cd, this.columnLimits);
             } else {
                 range = this.database.stringBuckets(
@@ -173,9 +175,9 @@ public class SimpleDBTarget extends TableRpcTarget {
                 cd, info.getBuckets(0), this.columnLimits, null, this.rowCount);
         JsonGroups<Count> cdf = this.database.histogram(
                 cd, info.getBuckets(1), this.columnLimits, null, this.rowCount);
-        Pair<JsonGroups<Count>, JsonGroups<Count>> result = new Pair<>(
-                histo, cdf.prefixSum(Count::add, JsonGroups::new));
-        ISketch<ITable, Pair<JsonGroups<Count>, JsonGroups<Count>>> sk =
+        Two<Two<JsonGroups<Count>>> result = new Two<>(
+                new Two<>(histo), new Two<>(cdf.prefixSum(Count::add, JsonGroups::new)));
+        ISketch<ITable, Two<Two<JsonGroups<Count>>>> sk =
                 new PrecomputedSketch<>(result);
         this.runSketch(this.table, sk, request, context);
     }
@@ -201,7 +203,7 @@ public class SimpleDBTarget extends TableRpcTarget {
             throw new HillviewException("Only filters on contiguous range are supported");
         IdMap<ITable> map = new IdMap<ITable>();
         this.runMap(this.table, map, (e, c1) -> {
-            SimpleDBTarget result = new SimpleDBTarget(this.jdbc, c1);
+            SimpleDBTarget result = new SimpleDBTarget(this.jdbc, c1, this.metadataDirectory);
             for (RangeFilterDescription f: filter.filters)
                 result.columnLimits.intersect(f);
             return result;

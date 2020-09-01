@@ -62,7 +62,7 @@ export class HtmlString {
 export type ViewKind = "Table" | "Histogram" | "2DHistogram" |
     "Heatmap" | "QuartileVector" | "CorrelationHeatmaps" |
     "TrellisHistogram" | "Trellis2DHistogram" | "TrellisHeatmap" | "TrellisQuartiles" |
-    "HeavyHitters" | "Schema" | "Load" | "SVD Spectrum" | "LogFileView";
+    "HeavyHitters" | "Schema" | "Load" | "SVD Spectrum" | "LogFile" | "Map";
 
 // Using an interface for emulating named arguments
 // otherwise it's hard to remember the order of all these booleans.

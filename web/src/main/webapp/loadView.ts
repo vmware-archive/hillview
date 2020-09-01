@@ -34,7 +34,7 @@ import {HillviewToplevel} from "./toplevel";
  * This is not really an IDataView, but it is convenient to
  * reuse this interface for embedding into a page.
  */
-export class LoadMenu extends RemoteObject implements IDataView {
+export class LoadView extends RemoteObject implements IDataView {
     private readonly top: HTMLElement;
     private menu: TopMenu;
     private readonly console: ErrorDisplay;
@@ -42,7 +42,7 @@ export class LoadMenu extends RemoteObject implements IDataView {
     private loadMenu: SubMenu;
     public readonly viewKind: ViewKind;
 
-    constructor(protected init: InitialObject, protected page: FullPage, protected bookmarkFile: string) {
+    constructor(protected init: InitialObject, protected page: FullPage, protected bookmarkFile: string | null) {
         super(init.remoteObjectId);
         this.viewKind = "Load";
         this.top = document.createElement("div");
@@ -419,18 +419,13 @@ export class LoadMenu extends RemoteObject implements IDataView {
 
     public resize(): void {}
 
-    public setPage(page: FullPage): void {
-        this.page = page;
-        page.setDataView(this);
-    }
-
     public getPage(): FullPage {
         return this.page;
     }
 }
 
 class UIConfigReceiver extends OnCompleteReceiver<UIConfig> {
-    public constructor(protected loadMenu: LoadMenu, operation: ICancellable<UIConfig>) {
+    public constructor(protected loadMenu: LoadView, operation: ICancellable<UIConfig>) {
         super(loadMenu.getPage(), operation, "get UI config");
     }
 
@@ -609,7 +604,7 @@ class DBDialog extends Dialog {
         const sel = this.addSelectField("databaseKind", "Database kind", arrDB, "mysql",
             "The kind of database.");
         sel.onchange = () => this.dbChanged();
-        const host = this.addTextField("host", "Host", FieldKind.String, null,
+        const host = this.addTextField("host", "Host", FieldKind.String, "localhost",
             "Machine name where database is located; each machine will open a connection to this host");
         host.required = true;
         if (isFederated) {
@@ -767,11 +762,11 @@ class PingReceiver extends OnCompleteReceiver<string[]> {
 }
 
 class CreateBookmarkContentReceiver extends OnCompleteReceiver<object> {
-    loadMenu: LoadMenu;
+    loadMenu: LoadView;
     bookmarkID: string;
 
     public constructor(page: FullPage, operation: ICancellable<object>,
-            bookmarkID: string, loadMenu: LoadMenu) {
+            bookmarkID: string, loadMenu: LoadView) {
         super(page, operation, "open bookmark");
         this.bookmarkID = bookmarkID;
         this.loadMenu = loadMenu;

@@ -124,7 +124,7 @@ export class Grid implements IHtmlElement {
      * @param className     Class to add to list of classes for header.
      */
     public addHeader(width: number, colName: string,
-                     forgetWidth: boolean, className: string): HTMLElement {
+                     forgetWidth: boolean, className: string | null): HTMLElement {
         const td = document.createElement("td");
         td.classList.add("header");
         if (className != null)

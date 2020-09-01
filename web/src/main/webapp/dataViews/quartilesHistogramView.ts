@@ -31,12 +31,12 @@ import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
 import {ChartOptions, DragEventKind, Resolution} from "../ui/ui";
 import {
+    assert,
     assertNever,
     Converters,
-    describeQuartiles,
+    describeQuartiles, Exporter,
     ICancellable,
     PartialResult,
-    quartileAsCsv,
 
 } from "../util";
 import {AxisData, AxisKind} from "./axisData";
@@ -89,7 +89,7 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
                 },
                 help: "Group data by a third column.",
             }]) },
-            page.dataset.combineMenu(this, page.pageId),
+            page.dataset!.combineMenu(this, page.pageId),
         ]);
 
         this.page.setMenu(this.menu);
@@ -102,7 +102,7 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
     }
 
     protected showTrellis(colName: DisplayName): void {
-        const groupBy = this.schema.findByDisplayName(colName);
+        const groupBy = this.schema.findByDisplayName(colName)!;
         const cds: IColumnDescription[] = [
             this.xAxisData.description,
             this.qCol,
@@ -117,7 +117,7 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
     protected createNewSurfaces(): void {
         if (this.surface != null)
             this.surface.destroy();
-        this.surface = new HtmlPlottingSurface(this.chartDiv, this.page, {});
+        this.surface = new HtmlPlottingSurface(this.chartDiv!, this.page, {});
         this.plot = new Quartiles2DPlot(this.surface);
     }
 
@@ -146,12 +146,15 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
         this.setupMouse();
         this.yAxisData = new AxisData(this.qCol, this.plot.yDataRange(), 0);
         this.yAxisData.setResolution(this.plot.getChartHeight(), AxisKind.Left, 0);
+
+        assert(this.surface != null);
         this.pointDescription = new TextOverlay(this.surface.getChart(),
             this.surface.getActualChartSize(),
-            [this.xAxisData.getDisplayNameString(this.schema), "bucket",
+            [this.xAxisData.getDisplayNameString(this.schema)!, "bucket",
                 "max", "q3", "median", "q1", "min", "count", "missing"], 40);
         this.pointDescription.show(false);
         this.standardSummary();
+        assert(this.summary != null);
         this.summary.set("buckets", bucketCount);
         this.summary.display();
     }
@@ -168,11 +171,11 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
         return result;
     }
 
-    public static reconstruct(ser: QuantileVectorSerialization, page: FullPage): IDataView {
+    public static reconstruct(ser: QuantileVectorSerialization, page: FullPage): IDataView | null {
         const cd0: IColumnDescription = ser.columnDescription0;
         const cd1: IColumnDescription = ser.columnDescription1;
         const xPoints: number = ser.xBucketCount;
-        const schema: SchemaClass = new SchemaClass([]).deserialize(ser.schema);
+        const schema = new SchemaClass([]).deserialize(ser.schema);
         if (cd0 === null || cd1 === null || schema === null ||
             xPoints === null || ser.xRange === null)
             return null;
@@ -218,7 +221,7 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
     }
 
     public export(): void {
-        const lines: string[] = quartileAsCsv(this.data, this.schema, this.xAxisData);
+        const lines: string[] = Exporter.quartileAsCsv(this.data, this.schema, this.xAxisData);
         const fileName = "quantiles2d.csv";
         saveAs(fileName, lines.join("\n"));
     }
@@ -285,7 +288,7 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
      * Handles mouse movements in the canvas area only.
      */
     public onMouseMove(): void {
-        const position = d3mouse(this.surface.getChart().node());
+        const position = d3mouse(this.surface!.getChart().node());
         // note: this position is within the chart
         const mouseX = position[0];
         const mouseY = position[1];
@@ -306,7 +309,7 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
                 [count, missing, min, q1, q2, q3, max] = describeQuartiles(qv);
             }
         }
-        this.pointDescription.update([xs, bucketDesc, max, q3, q2, q1, min, count, missing], mouseX, mouseY);
+        this.pointDescription!.update([xs, bucketDesc, max, q3, q2, q1, min, count, missing], mouseX, mouseY);
     }
 
     protected dragMove(): boolean {
@@ -314,9 +317,9 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
     }
 
     protected dragEnd(): boolean {
-        if (!super.dragEnd())
+        if (!super.dragEnd() || this.selectionOrigin == null)
             return false;
-        const position = d3mouse(this.surface.getCanvas().node());
+        const position = d3mouse(this.surface!.getCanvas().node());
         const x = position[0];
         const y = position[1];
         this.selectionCompleted(this.selectionOrigin.x, x, this.selectionOrigin.y, y);
@@ -356,10 +359,9 @@ export class QuartilesVectorReceiver extends Receiver<Groups<SampleSet>> {
                 protected quantilesCol: IColumnDescription,
                 operation: RpcRequest<Groups<SampleSet>>,
                 protected options: ChartOptions) {
-        super(options.reusePage ? page : page.dataset.newPage(title, page), operation, "quartiles");
+        super(options.reusePage ? page : page.dataset!.newPage(title, page), operation, "quartiles");
         this.view = new QuartilesHistogramView(
             this.remoteObject.remoteObjectId, rowCount, schema, quantilesCol, this.page);
-        this.page.setDataView(this.view);
         const axisData = new AxisData(histoArgs.cd, range, histoArgs.bucketCount);
         this.view.setAxis(axisData);
     }

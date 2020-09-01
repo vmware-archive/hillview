@@ -20,6 +20,7 @@ package org.hillview.table;
 import org.hillview.dataset.api.IJson;
 import org.hillview.table.columns.ColumnQuantization;
 import org.hillview.utils.Converters;
+import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -128,8 +129,7 @@ public class PrivacySchema implements IJson {
 
     public static PrivacySchema loadFromFile(String metadataFname) {
         try {
-            byte[] encoded = Files.readAllBytes(Paths.get(metadataFname));
-            String contents = new String(encoded, StandardCharsets.US_ASCII);
+            String contents = Utilities.textFileContents(metadataFname);
             return loadFromString(contents);
         } catch (java.io.IOException e) {
             throw new RuntimeException(e);

@@ -46,7 +46,7 @@ import java.util.List;
  */
 public class OrcFileLoader extends TextFileLoader {
     private final boolean lazy;
-    private final Configuration conf = new Configuration();
+    private final Configuration conf;
     /**
      * Path of the Hillview Schema if specified.
      */
@@ -68,6 +68,10 @@ public class OrcFileLoader extends TextFileLoader {
         super(path);
         this.lazy = lazy;
         this.schemaPath = schemaPath;
+        this.conf = new Configuration();
+        // https://stackoverflow.com/questions/17265002/hadoop-no-filesystem-for-scheme-file
+        conf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
+        conf.set("fs.file.impl", org.apache.hadoop.fs.LocalFileSystem.class.getName());
     }
 
     private boolean[] project(List<String> columns) {
@@ -171,8 +175,30 @@ public class OrcFileLoader extends TextFileLoader {
                 continue;
             }
             switch (simple) {
-                case BOOLEAN:
+                case BOOLEAN: {
+                    LongColumnVector lcv = (LongColumnVector) vec;
+                    long l = lcv.vector[row];
+                    switch (to.getKind()) {
+                        case None:
+                        case Date:
+                        case Duration:
+                        case Interval:
+                        case Time:
+                        case LocalDate:
+                            throw new RuntimeException("Cannot convert long to " + to.getKind());
+                        case Json:
+                        case String:
+                            to.append(l != 0 ? "true" : "false");
+                            break;
+                        case Integer:
+                            to.append(l != 0 ? 1 : 0);
+                            break;
+                        case Double:
+                            to.append(l != 0 ? 1.0 : 0.0);
+                            break;
+                    }
                     break;
+                }
                 case BYTE:
                 case SHORT:
                 case INT:
@@ -192,10 +218,10 @@ public class OrcFileLoader extends TextFileLoader {
                             to.append(Long.toString(l));
                             break;
                         case Integer:
-                            to.append((int) l);
+                            to.append(Converters.toInt(l));
                             break;
                         case Double:
-                            to.append((double) l);
+                            to.append((double)l);
                             break;
                     }
                     break;
@@ -267,6 +293,7 @@ public class OrcFileLoader extends TextFileLoader {
                         case Integer:
                         case Duration:
                         case Time:
+                        case Double:
                         default:
                             throw new RuntimeException("Cannot convert ORC date to "
                                     + to.getKind());
@@ -274,7 +301,6 @@ public class OrcFileLoader extends TextFileLoader {
                         case String:
                             to.append(Converters.toString(value));
                             break;
-                        case Double:
                         case LocalDate:
                             to.append(Converters.toDouble(value));
                             break;
@@ -296,13 +322,13 @@ public class OrcFileLoader extends TextFileLoader {
                         case Duration:
                         case Time:
                         case Interval:
+                        case Double:
                             throw new RuntimeException("Cannot convert ORC timestamp to "
                                     + to.getKind());
                         case Json:
                         case String:
                             to.append(Converters.toString(ldt));
                             break;
-                        case Double:
                         case Date:
                             to.append(Converters.toDouble(Converters.toDate(ldt)));
                             break;
@@ -320,6 +346,7 @@ public class OrcFileLoader extends TextFileLoader {
                 case MAP:
                 case STRUCT:
                 case UNION:
+                case TIMESTAMP_INSTANT: // TODO
                     throw new RuntimeException("Unsupported ORC column type " + simple);
             }
         }

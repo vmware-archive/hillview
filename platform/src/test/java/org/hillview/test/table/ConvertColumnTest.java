@@ -17,7 +17,6 @@
 
 package org.hillview.test.table;
 
-import org.apache.commons.lang.ArrayUtils;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Table;
 import org.hillview.table.api.ContentsKind;
@@ -28,6 +27,7 @@ import org.hillview.table.columns.DoubleListColumn;
 import org.hillview.test.BaseTest;
 import org.hillview.utils.Converters;
 import org.hillview.utils.TestTables;
+import org.hillview.utils.Utilities;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -48,7 +48,7 @@ public class ConvertColumnTest extends BaseTest {
 
     void convert(IColumn col, ContentsKind[] failing, IMembershipSet set) {
         for (ContentsKind k: kinds) {
-            boolean shouldFail = ArrayUtils.contains(failing, k);
+            boolean shouldFail = Utilities.contains(failing, k);
             try {
                 IColumn result = col.convertKind(k, "x", set);
                 Assert.assertNotNull(result);

@@ -16,7 +16,7 @@
  */
 
 import {NotifyDialog} from "./ui/dialog";
-import {assert, findElement} from "./util";
+import {assert, findElement, findElementAny} from "./util";
 
 interface TestOperation {
     /**
@@ -88,10 +88,6 @@ export class Test {
      */
     public static instance: Test = new Test();
 
-    public addInstruction(testOp: TestOperation): void {
-        this.testProgram.push(testOp);
-    }
-
     public addProgram(testOps: TestOperation[]): void {
         this.testProgram = this.testProgram.concat(testOps);
     }
@@ -133,7 +129,7 @@ export class Test {
     }
     
     private static existsElement(cssselector: string): boolean {
-        const result = findElement(cssselector, true) != null;
+        const result = findElementAny(cssselector) != null;
         console.log("Checking element existence: " + cssselector + "=" + result);
         return result;
     }
@@ -151,12 +147,13 @@ export class Test {
             8: Trellis 2D histograms (DepTime, DepDelay) grouped by ActualElapsedTime
             9: Trellis Histograms of UniqueCarrier grouped by ActualElapsedTime
             10: Trellis heatmap plot
-            11: Quartiles vector plot
+            11: Quartiles plot
             12: Non-stacked bar charts plot
             13: Filtered table
             14: correlation heatmaps
-            15: Trellis plot of quartile vectors
+            15: Trellis plot of quartiles
             16: Histogram of interval column
+            17: Map view of OriginState
          */
         this.addProgram([{
             description: "Load all flights",
@@ -346,7 +343,7 @@ export class Test {
                 const arrTime = findElement("#hillviewPage1 thead td[data-colname=ArrTime] .truncated");
                 arrTime.dispatchEvent(controlClickEvent());
                 arrTime.dispatchEvent(contextMenuEvent());
-                const qv = findElement("#hillviewPage1 .dropdown #Quartile_vector");
+                const qv = findElement("#hillviewPage1 .dropdown #Quartiles");
                 qv.click();
             }
         }, {
@@ -434,9 +431,19 @@ export class Test {
                 (findElement(".dialog #columnName") as HTMLInputElement).value = "DepTime:ArrTime";
                 findElement(".dialog .confirm").click();
             },
-        },{
-            description: "Close some windows",
+        }, {
+            description: "Map of OriginState",
             cond: () => Test.existsElement("#hillviewPage16 .idle"),
+            cont: () => {
+                const other = findElement("#hillviewPage1 thead td[data-colname=OriginState] .truncated");
+                other.click();
+                other.dispatchEvent(contextMenuEvent());
+                const qv = findElement("#hillviewPage1 .dropdown #Map");
+                qv.click();
+            },
+        }, {
+            description: "Close some windows",
+            cond: () => Test.existsElement("#hillviewPage17 .idle"),
             cont: () => {
                 /*
                     for (let i = 2; i < 8; i++) {

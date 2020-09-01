@@ -287,6 +287,11 @@ export class SchemaView extends TSViewBase {
                 "Applies to three columns only.",
         }, selectedCount === 3);
         this.contextMenu.addItem({
+            text: "Map",
+            action: () => this.geo(this.schema.find(this.getSelectedColNames()[0])!),
+            help: "Plot the data in the selected columns on a map."
+        }, selectedCount === 1);
+        this.contextMenu.addItem({
             text: "Estimate distinct elements",
             action: () => this.hLogLog(),
             help: "Compute an estimate of the number of different values that appear in the selected column.",

@@ -62,7 +62,7 @@ import {
     significantDigits,
     significantDigitsHtml,
     truncate,
-    all, percent, assertNever, assert
+    all, percent, assertNever, assert, Exporter
 } from "../util";
 import {SchemaView} from "../modules";
 import {SpectrumReceiver} from "./spectrumView";
@@ -78,7 +78,7 @@ import {HillviewToplevel} from "../toplevel";
 export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
     // Data view part: received from remote site
     // Logical position of first row displayed
-    protected startPosition?: number;
+    protected startPosition: number;
     public    order: RecordOrder;
     // Logical number of data rows displayed; includes count of each data row
     protected dataRowsDisplayed: number;
@@ -224,36 +224,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
     }
 
     public export(): void {
-        let lines = [];
-        let line = "count";
-        for (const o of this.order.sortOrientationList)
-            line += "," + JSON.stringify(this.schema.displayName(o.columnDescription.name)!.displayName);
-        if (this.aggregates != null)
-            for (const a of this.aggregates) {
-                // noinspection UnnecessaryLocalVariableJS
-                const dn = this.schema.displayName(a.cd.name)!.displayName;
-                line += "," + JSON.stringify(a.agkind + "(" + dn + "))");
-            }
-        lines.push(line);
-
-        for (let i = 0; i < this.nextKList.rows.length; i++) {
-            const row = this.nextKList.rows[i];
-            line = row.count.toString();
-            for (let j = 0; j < row.values.length; j++) {
-                const kind = this.order.sortOrientationList[j].columnDescription.kind;
-                let a = Converters.valueToString(row.values[j], kind, false);
-                if (kindIsString(kind))
-                    a = JSON.stringify(a);
-                line += "," + a;
-            }
-            if (this.nextKList.aggregates != null) {
-                const agg = this.nextKList.aggregates[i];
-                for (const v of agg) {
-                    line += "," + v;
-                }
-            }
-            lines.push(line);
-        }
+        const lines = Exporter.tableAsCsv(this.order, this.schema, this.aggregates, this.nextKList);
         const fileName = "table.csv";
         saveAs(fileName, lines.join("\n"));
     }
@@ -477,8 +448,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                     firstRow.push(this.nextKList.rows[0].values[index]);
                 } else {
                     firstRow.push(null);
-                    // noinspection JSObjectNullOrUndefined
-                    minValues.push(cso.columnDescription.name);
+                    minValues!.push(cso.columnDescription.name);
                 }
             }
         }
@@ -637,7 +607,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             }, !this.isPrivate());
             const chartMenuIdx = this.contextMenu.addExpandableItem({
                 text: "Charts",
-                action: () => null,
+                action: () => null, // inserted here later
                 help: "Choose a chart to draw. ",
             });
             this.contextMenu.addItem({
@@ -733,7 +703,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
               selectedCount >= 1 && selectedCount <= 2
             );
             this.contextMenu.insertSubMenu( chartMenuIdx, {
-                text: "Quartile vector",
+                text: "Quartiles",
                 action: () =>
                   this.chart(
                     this.schema.getCheckedDescriptions(this.getSelectedColNames()), "QuartileVector"),
@@ -777,6 +747,16 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
               },
               selectedCount === 3 && !this.isPrivate()
             );
+            this.contextMenu.insertSubMenu( chartMenuIdx, {
+                    text: "Map",
+                    action: () =>
+                        this.geo(this.schema.find(this.getSelectedColNames()[0])!),
+                    help:
+                        "Plot the data in the selected columns on a map. "
+                },
+                selectedCount === 1
+            );
+
             this.contextMenu.show(e);
         };
     }
@@ -842,13 +822,16 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         dialog.setAction(() => {
             const page0 = dialog.getFieldValueAsObject<FullPage>("view0");
             const page1 = dialog.getFieldValueAsObject<FullPage>("view1");
-            if (page0 == null || page1 == null)
-                return;
+            if (page0 == null || page1 == null ||
+                page0.dataView == null || page1.dataView == null ||
+                page0.dataView.getRemoteObjectId() == null ||
+                page1.dataView.getRemoteObjectId() == null)
+            return;
 
             const newColumn = dialog.getFieldValue("column");
             const args: CompareDatasetsInfo = {
                 names: [page0.pageId.toString(), page1.pageId.toString()],
-                otherIds: [page0.dataView.getRemoteObjectId(), page1.dataView.getRemoteObjectId()],
+                otherIds: [page0.dataView.getRemoteObjectId()!, page1.dataView.getRemoteObjectId()!],
                 outputName: newColumn
             };
             const rr = this.createCompareDatasetsRequest(args);
@@ -902,8 +885,13 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             if (this.aggregates == null)
                 this.aggregates = [];
             for (const col of selected) {
+                const cd = this.schema.find(col);
+                if (cd == null) {
+                    this.page.reportError("Column not found " + col);
+                    return;
+                }
                 const agg: AggregateDescription = {
-                    cd: this.schema.find(col),
+                    cd: cd,
                     agkind: operation as AggregateKind
                 };
                 if (find(agg, this.aggregates, sameAggregate) > 0)
@@ -1056,7 +1044,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         cds.forEach((cd) => this.cellsPerColumn.set(cd.name, []));
         let tableRowCount = 0;
         // Add row data
-        let previousRow: RowData = null;
+        let previousRow: RowData | null = null;
         if (nextKList.rows != null) {
             tableRowCount = nextKList.rows.length;
             let index = 0;
@@ -1099,6 +1087,8 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
      */
     private isKVColumn(col: string): boolean {
         const cd = this.schema.find(col);
+        if (cd == null)
+            return false;
         return (cd.kind === "Json" ||
             // This is a heuristic; this is tied to RFC5424 logs right now
             (this.dataset.isLog() && col === "StructuredData"));
@@ -1117,7 +1107,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             this.order, this.tableRowsDesired, this.aggregates));
     }
 
-    public filterOnValue(cd: IColumnDescription, value: string | number | number[], comparison: Comparison): void {
+    public filterOnValue(cd: IColumnDescription, value: RowValue, comparison: Comparison): void {
         let stringValue = null;
         let doubleValue = null;
         let intervalEnd = null;
@@ -1138,6 +1128,9 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 const a = value as number[];
                 doubleValue = a[0];
                 intervalEnd = a[1];
+                break;
+            case "None":
+                stringValue = null;
                 break;
             default:
                 assertNever(cd.kind);
@@ -1164,7 +1157,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         const order = new RecordOrder(so);
         const rr = this.createProjectRequest(schema.schema);
         // Remove all aggregates that depend on these columns
-        let aggregates = [];
+        let aggregates: AggregateDescription[] | null = [];
         if (this.aggregates != null) {
             for (const a of this.aggregates) {
                 if (!selected.has(a.cd.name))
@@ -1220,7 +1213,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
     }
 
     private isNumericColumn(colName: string): boolean {
-        const kind = this.schema.find(colName).kind;
+        const kind = this.schema.find(colName)!.kind;
         return kind === "Double" || kind === "Integer";
     }
 
@@ -1247,7 +1240,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             this.page.reportError("Not valid for correlation:" + message);
             return;
         }
-        this.chart(this.schema.getDescriptions(colNames), "CorrelationHeatmaps");
+        this.chart(this.schema.getCheckedDescriptions(colNames), "CorrelationHeatmaps");
     }
 
     public pca(toSample: boolean): void {
@@ -1274,9 +1267,9 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         name.required = true;
         pcaDialog.setCacheTitle("PCADialog");
         pcaDialog.setAction(() => {
-            const numComponents: number = pcaDialog.getFieldValueAsInt("numComponents");
+            const numComponents: number | null = pcaDialog.getFieldValueAsInt("numComponents");
             const projectionName: string = pcaDialog.getFieldValue("projectionName");
-            if (numComponents < 1 || numComponents > colNames.length) {
+            if (numComponents == null || numComponents < 1 || numComponents > colNames.length) {
                 this.page.reportError("Number of components for PCA must be between 1 (incl.) " +
                     "and the number of selected columns, " + colNames.length + " (incl.). (" +
                     numComponents + " does not satisfy this.)");
@@ -1441,7 +1434,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         for (let i = 0; i < cds.length; i++) {
             const cd = cds[i];
             const dataIndex = this.order.find(cd.name);
-            let value: RowValue;
+            let value: RowValue = null;
             let borders: string;
 
             if (this.isVisible(cd.name)) {

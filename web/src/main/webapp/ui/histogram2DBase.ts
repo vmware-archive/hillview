@@ -21,12 +21,12 @@ import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {D3Axis, D3Scale} from "./ui";
 import {SchemaClass} from "../schemaClass";
-import {ColorMap, Two} from "../util";
+import {ColorMap, Pair} from "../util";
 
 /**
  * Draws a histogram with stacked bars.
  */
-export abstract class Histogram2DBase extends Plot<Two<Groups<Groups<number>>>> {
+export abstract class Histogram2DBase extends Plot<Pair<Groups<Groups<number>>, Groups<Groups<number>> | null>> {
     protected xAxisData: AxisData;
     protected samplingRate: number;
     protected normalized: boolean;
@@ -42,7 +42,7 @@ export abstract class Histogram2DBase extends Plot<Two<Groups<Groups<number>>>> 
         super(plottingSurface);
     }
 
-    public setData(heatmap: Two<Groups<Groups<number>>>,
+    public setData(heatmap: Pair<Groups<Groups<number>>, Groups<Groups<number>> | null>,
                    xAxisData: AxisData,
                    samplingRate: number,
                    normalized: boolean,

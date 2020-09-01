@@ -3,7 +3,7 @@
   "compilerOptions": {
     // Output format is a module in the commonjs format.
     "module": "commonjs",
-    // "strictNullChecks": true,  // not ready for primetime
+    "strictNullChecks": true,
     "sourceMap": true,
     "target": "es5",
     "noImplicitAny": true,
@@ -11,7 +11,7 @@
     "noImplicitReturns": true,
     "strictBindCallApply": true,
     "strictFunctionTypes": true,
-    "forceConsistentCasingInFileNames": true,
+    "forceConsistentCasingInFileNames": true
   },
   "files": [
     "hillview.ts",

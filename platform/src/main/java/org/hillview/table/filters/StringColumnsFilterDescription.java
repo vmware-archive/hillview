@@ -62,7 +62,7 @@ public class StringColumnsFilterDescription implements ITableFilterDescription {
         StringColumnsFilter(ITable table) {
             this.stringFilter = StringFilterFactory.getFilter(stringFilterDescription);
             Schema schema = table.getSchema().project(
-                    c -> Utilities.indexOf(c, StringColumnsFilterDescription.this.colNames) >= 0);
+                    c -> Utilities.indexOf(StringColumnsFilterDescription.this.colNames, c) >= 0);
             this.vrs = new VirtualRowSnapshot(
                     table, schema,
                     Utilities.arrayToMap(StringColumnsFilterDescription.this.renameMap));

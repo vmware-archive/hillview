@@ -1,0 +1,42 @@
+{
+ "defaultEpsilons": { "0": 1, "1": 1, "2": 0.01 },
+ "defaultEpsilon": 0.001,
+ "epsilons": {},
+ "quantization": {
+    "quantization": {
+      "hire_date": {
+        "globalMin": 473414400000,
+        "globalMax": 949046400000,
+        "granularity": 86400000,
+        "type": "DoubleColumnQuantization"
+      },
+      "birth_date": {
+        "globalMin": -565372800000,
+        "globalMax": -155059200000,
+        "granularity": 86400000,
+        "type": "DoubleColumnQuantization"
+      },
+      "emp_no": {
+        "globalMin": 10000,
+        "globalMax": 500000,
+        "granularity": 1,
+        "type": "DoubleColumnQuantization"
+      },
+      "first_name": {
+        "leftBoundaries": [ "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z" ],
+          "type": "StringColumnQuantization",
+          "globalMax": "Z"
+      },
+      "last_name": {
+        "leftBoundaries": [ "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z" ],
+          "type": "StringColumnQuantization",
+          "globalMax": "Z"
+      },
+        "gender": {
+            "leftBoundaries": [ "F", "M" ],
+            "type": "StringColumnQuantization",
+            "globalMax": "M"
+        }
+    }
+  }
+}

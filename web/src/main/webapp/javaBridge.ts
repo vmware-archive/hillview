@@ -19,16 +19,18 @@
 // TypeScript and Java.  These must be changed carefully, and usually in both parts, or
 // subtle bugs may happen.  Most often these classes have the same name in Java and TypeScript.
 
+import {DirectGeometryObject, FeatureCollection} from "geojson";
+
 export type RemoteObjectId = string;
 
 export type Comparison = "==" | "!=" | "<" | ">" | "<=" | ">=";
 
 export type ContentsKind = "Json" | "String" | "Integer" |
-    "Double" | "Date" | "Duration" | "Interval" | "Time" | "LocalDate" ;
+    "Double" | "Date" | "Duration" | "Interval" | "Time" | "LocalDate" | "None";
 /* We are not using an enum for ContentsKind because JSON deserialization does not
    return an enum from a string. */
 export const allContentsKind: ContentsKind[] =
-    ["Json", "String", "Integer", "Double", "Date", "Duration", "Interval", "Time", "LocalDate"];
+    ["Json", "String", "Integer", "Double", "Date", "Duration", "Interval", "Time", "LocalDate", "None"];
 export function asContentsKind(kind: string): ContentsKind {
     switch (kind) {
         case "Json":
@@ -49,10 +51,14 @@ export function asContentsKind(kind: string): ContentsKind {
             return "Interval";
         case "LocalDate":
             return "LocalDate";
+        case "None":
+            return "None";
         default:
             throw new TypeError(`String ${kind} is not a kind.`);
     }
 }
+
+export type SimpleFeatureCollection = FeatureCollection<DirectGeometryObject>;
 
 /**
  * This must match the data in LogFiles.java
@@ -124,7 +130,7 @@ export interface ConvertColumnInfo {
     columnIndex: number;
 }
 
-export type RowValue = number | string | number[];
+export type RowValue = number | string | number[] | null;
 
 /// Same as FindSketch.Result
 export interface FindResult {
@@ -251,6 +257,39 @@ export interface BucketsInfo {
     allStringsKnown?: boolean;
 }
 
+/**
+ * Describes how a column in a table is mapped
+ * to a geographic dataset.
+ */
+export interface ColumnGeoRepresentation {
+    columnName: string; // e.g., OriginState
+    property: string; // which property in the dataset is indexed by values in the column. e.g., STUSPS
+    projection: string; // one of the supported data projections
+    // Legal projection names are:
+    // geoAzimuthalEqualArea
+    // geoAzimuthalEquidistant
+    // geoGnomonic
+    // geoOrthographic
+    // geoStereographic
+    // geoEqualEarth
+    // geoAlbersUsa
+    // geoConicEqualArea
+    // geoConicEquidistant
+    // geoEquirectangular
+    // geoMercator
+    // geoTransverseMercator
+    // geoNaturalEarth1
+}
+
+export interface GeoFileInformation extends ColumnGeoRepresentation {
+    geoFile: string; // e.g., data/geo/us_states/cb_2019_us_state_20m.shp
+    // Supported formats: shapeFile (shp)
+}
+
+export interface MapAndColumnRepresentation extends ColumnGeoRepresentation {
+    data: SimpleFeatureCollection;
+}
+
 export interface BasicColStats {
     presentCount: number;
     missingCount: number;
@@ -264,10 +303,10 @@ export interface BasicColStats {
 }
 
 export interface RangeFilterDescription {
-    min: number;
-    max: number;
-    minString: string;
-    maxString: string;
+    min: number | null;
+    max: number | null;
+    minString: string | null;
+    maxString: string | null;
     cd: IColumnDescription;
     includeMissing: boolean;
 }

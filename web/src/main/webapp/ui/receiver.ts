@@ -22,7 +22,7 @@
 import {FullPage, PageTitle} from "./fullPage";
 import {TableTargetAPI} from "../modules";
 import {SchemaClass} from "../schemaClass";
-import {Receiver, RpcRequest} from "../rpc";
+import {OnCompleteReceiver, Receiver, RpcRequest} from "../rpc";
 import {ChartOptions} from "./ui";
 
 /**
@@ -62,6 +62,15 @@ export interface ReceiverCommonArgs extends CommonArgs {
 }
 
 export abstract class ReceiverCommon<T> extends Receiver<T> {
+    protected constructor(protected args: ReceiverCommonArgs,
+                          operation: RpcRequest<T>, description: string) {
+        super(args.options.reusePage ? args.originalPage :
+            args.originalPage.dataset!.newPage(args.title, args.originalPage),
+            operation, description)
+    }
+}
+
+export abstract class OnCompleteReceiverCommon<T> extends OnCompleteReceiver<T> {
     protected constructor(protected args: ReceiverCommonArgs,
                           operation: RpcRequest<T>, description: string) {
         super(args.options.reusePage ? args.originalPage :

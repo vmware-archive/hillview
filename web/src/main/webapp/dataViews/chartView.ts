@@ -87,6 +87,7 @@ export abstract class ChartView<D> extends BigTableView {
         this.page.registerDropHandler("XAxis", (p) => this.replaceAxis(p, "XAxis"));
         this.page.registerDropHandler("YAxis", (p) => this.replaceAxis(p, "YAxis"));
         this.page.registerDropHandler("GAxis", (p) => this.replaceAxis(p, "GAxis"));
+        this.page.setDataView(this);
     }
 
     protected showTable(columns: IColumnDescription[], provenance: string): void {

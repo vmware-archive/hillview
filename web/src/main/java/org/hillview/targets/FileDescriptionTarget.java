@@ -26,6 +26,8 @@ import org.hillview.sketches.FileSizeSketch;
 import org.hillview.storage.IFileReference;
 import org.hillview.table.api.ITable;
 
+import javax.annotation.Nullable;
+
 /**
  * This is an RpcTarget object which stores a file loader name in each leaf.
  */
@@ -34,8 +36,9 @@ public class FileDescriptionTarget extends RpcTarget {
 
     protected final IDataSet<IFileReference> files;
 
-    FileDescriptionTarget(IDataSet<IFileReference> files, HillviewComputation computation) {
-        super(computation);
+    FileDescriptionTarget(IDataSet<IFileReference> files, HillviewComputation computation,
+                          @Nullable String metadataDirectory) {
+        super(computation, metadataDirectory);
         this.files = files;
         this.registerObject();
     }
@@ -49,11 +52,12 @@ public class FileDescriptionTarget extends RpcTarget {
     @HillviewRpc
     public void loadTable(RpcRequest request, RpcRequestContext context) {
         IMap<IFileReference, ITable> loader = new LoadFilesMap();
-        this.runMap(this.files, loader, TableTarget::new, request, context);
+        this.runMap(this.files, loader, (d, c) -> new TableTarget(d, c, this.metadataDirectory), request, context);
     }
 
     @HillviewRpc
     public void prune(RpcRequest request, RpcRequestContext context) {
-        this.runPrune(this.files, new FalseMap<IFileReference>(), FileDescriptionTarget::new, request, context);
+        this.runPrune(this.files, new FalseMap<IFileReference>(),
+                (d, c) -> new FileDescriptionTarget(d, c, this.metadataDirectory), request, context);
     }
 }

@@ -39,8 +39,8 @@ import org.junit.Test;
 public class SSTableTest extends BaseTest {
     /* The directory where cassandra is installed (check bin/install-cassandra.sh) */
     private final String cassandraRootDir = System.getenv("HOME") + "/cassandra";
-    private final String ssTableDir = "../data/sstable/";
-    private final String ssTablePath = "../data/sstable/md-2-big-Data.db";
+    private final String ssTableDir = dataDir + "/sstable/";
+    private final String ssTablePath = dataDir + "/sstable/md-2-big-Data.db";
 
     public CassandraConnectionInfo getConnectionInfo() {
         CassandraConnectionInfo conn = new CassandraConnectionInfo();

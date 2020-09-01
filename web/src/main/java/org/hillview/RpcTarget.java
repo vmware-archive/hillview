@@ -56,6 +56,11 @@ public abstract class RpcTarget implements IJson, IRpcTarget {
      */
     @Nullable
     public final HillviewComputation computation;
+    /**
+     * Directory containing the metadata on the root node - if any.
+     */
+    @Nullable
+    protected final String metadataDirectory;
 
     @Override
     public IRpcTarget.Id getId() {
@@ -68,10 +73,12 @@ public abstract class RpcTarget implements IJson, IRpcTarget {
     protected RpcTarget() {
         this.objectId = RpcObjectManager.initialObjectId;
         this.computation = null;
+        this.metadataDirectory = null;
     }
 
-    protected RpcTarget(HillviewComputation computation) {
+    protected RpcTarget(HillviewComputation computation, @Nullable String metadataDirectory) {
         this.computation = computation;
+        this.metadataDirectory = metadataDirectory;
         this.objectId = computation.resultId;
         HillviewLogger.instance.info("Create RpcTarget", "{0}", computation.toString());
     }

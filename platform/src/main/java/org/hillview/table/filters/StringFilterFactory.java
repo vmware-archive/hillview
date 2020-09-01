@@ -18,7 +18,7 @@
 
 package org.hillview.table.filters;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.hillview.table.api.IStringFilter;
 
 import javax.annotation.Nullable;
@@ -40,7 +40,7 @@ public class StringFilterFactory {
     }
 
     static class MissingValuesFilter implements IStringFilter {
-        private StringFilterDescription stringFilterDescription;
+        private final StringFilterDescription stringFilterDescription;
 
         MissingValuesFilter(StringFilterDescription stringFilterDescription) {
             this.stringFilterDescription = stringFilterDescription;
@@ -52,7 +52,7 @@ public class StringFilterFactory {
     }
 
     static class RegExFilter implements IStringFilter {
-        private StringFilterDescription stringFilterDescription;
+        private final StringFilterDescription stringFilterDescription;
         private final Pattern regEx;
 
         RegExFilter(StringFilterDescription stringFilterDescription){
@@ -72,7 +72,7 @@ public class StringFilterFactory {
     }
 
     static class SubStringFilter implements IStringFilter {
-        private StringFilterDescription stringFilterDescription;
+        private final StringFilterDescription stringFilterDescription;
         private final String compareTo;
 
         SubStringFilter(StringFilterDescription stringFilterDescription) {
@@ -93,7 +93,7 @@ public class StringFilterFactory {
     }
 
     static class ExactCompFilter implements IStringFilter {
-        private StringFilterDescription stringFilterDescription;
+        private final StringFilterDescription stringFilterDescription;
         private final String compareTo;
 
         ExactCompFilter(StringFilterDescription stringFilterDescription) {

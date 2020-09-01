@@ -41,13 +41,13 @@ public final class ControlPointsTarget extends RpcTarget {
     private DoubleMatrix lowDimData;
 
     ControlPointsTarget(SmallTable table, String[] colNames, HillviewComputation computation) {
-        super(computation);
+        super(computation, null);
         this.highDimData = BlasConversions.toDoubleMatrix(table, Arrays.asList(colNames));
         this.registerObject();
     }
 
     ControlPointsTarget(Centroids<String> centroids, HillviewComputation computation) {
-        super(computation);
+        super(computation, null);
         HashMap<String, double[]> map = centroids.computeCentroids();
         Set<String> keys = map.keySet();
         int numCols = map.get(new ArrayList<String>(keys).get(0)).length;

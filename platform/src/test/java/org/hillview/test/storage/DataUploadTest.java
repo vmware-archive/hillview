@@ -39,7 +39,7 @@ public class DataUploadTest extends BaseTest {
     public void testChopCsv() throws Exception {
         Path dir = Files.createTempDirectory(".");
         DataUpload upload = new DataUpload();
-        String file = "../data/ontime/2016_1.csv";
+        String file = dataDir + "/ontime/2016_1.csv";
         int parts = upload.run("-f", file, "-l",
                 "200000", "-h", "-d", dir.toString());
         File d = dir.toFile();
@@ -61,7 +61,7 @@ public class DataUploadTest extends BaseTest {
     public void testChopCsvSkip() throws Exception {
         Path dir = Files.createTempDirectory(".");
         DataUpload upload = new DataUpload();
-        String file = "../data/ontime/2016_1.csv";
+        String file = dataDir + "/ontime/2016_1.csv";
         int parts = upload.run("-f", file, "-l",
                 "200000", "-h", "-d", dir.toString(), "--skip", "200000");
         File d = dir.toFile();
@@ -73,7 +73,7 @@ public class DataUploadTest extends BaseTest {
     public void testChopCsvToOrc() throws Exception {
         Path dir = Files.createTempDirectory(".");
         DataUpload upload = new DataUpload();
-        String file = "../data/ontime/2016_1.csv";
+        String file = dataDir + "/ontime/2016_1.csv";
         int parts = upload.run(
                 "-f", file, "-o",
                 "-l", "200000", "-h", "-d", dir.toString());
@@ -99,7 +99,7 @@ public class DataUploadTest extends BaseTest {
         Path dir = Files.createTempDirectory(".");
         DataUpload upload = new DataUpload();
         int parts = upload.run(
-                "-f", "../data/sample_logs/blockTracelog", "-p",
+                "-f", dataDir + "/sample_logs/blockTracelog", "-p",
                 "%{BLOCKTRACE}", "-l", "100", "-d", dir.toString());
         File d = dir.toFile();
         FileUtils.deleteDirectory(d);
@@ -111,7 +111,7 @@ public class DataUploadTest extends BaseTest {
         Path dir = Files.createTempDirectory(".");
         DataUpload upload = new DataUpload();
         int parts = upload.run(
-                "-f", "../data/sample_logs/blockTracelog", "-p",
+                "-f", dataDir + "/sample_logs/blockTracelog", "-p",
                 "%{BLOCKTRACE}", "-l", "100", "-d", dir.toString(), "--skip", "300");
         File d = dir.toFile();
         FileUtils.deleteDirectory(d);
@@ -122,7 +122,7 @@ public class DataUploadTest extends BaseTest {
     public void testChopLogToOrc() throws Exception {
         Path dir = Files.createTempDirectory(".");
         DataUpload upload = new DataUpload();
-        String file = "../data/sample_logs/blockTracelog";
+        String file = dataDir + "/sample_logs/blockTracelog";
         int parts = upload.run("-f", file, "-o",
                 "-p", "%{BLOCKTRACE}", "-l", "100", "-d", dir.toString());
         File d = dir.toFile();

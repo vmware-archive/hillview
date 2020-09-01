@@ -46,7 +46,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class OrcFileTest extends BaseTest {
-    private static final String orcFolder = "../data/orc/";
+    private static final String orcFolder = dataDir + "/orc/";
     private static final String orcOutFile = "test.orc";
 
     private void deleteOrcFile(String folder, String file) {

@@ -48,6 +48,7 @@ import {TrellisHistogramQuartilesView} from "./dataViews/trellisHistogramQuartil
 import {saveAs} from "./ui/dialog";
 import {showBookmarkURL} from "./ui/dialog";
 import {CorrelationHeatmapView} from "./dataViews/correlationHeatmapView";
+import {GeoView} from "./dataViews/geoView";
 
 export interface IViewSerialization {
     viewKind: ViewKind;
@@ -92,7 +93,12 @@ export interface BaseHeatmapSerialization extends IViewSerialization {
 }
 
 export interface HeatmapSerialization extends BaseHeatmapSerialization {
-    detailedColumns: SchemaClassSerialization;
+    detailedColumns: SchemaClassSerialization | null;
+}
+
+export interface MapSerialization extends IViewSerialization {
+    keyColumn: string;
+    // TODO
 }
 
 export interface QuantileVectorSerialization extends IViewSerialization {
@@ -476,7 +482,8 @@ export class DatasetView implements IHtmlElement {
             vs.rowCount == null ||
             vs.provenance == null ||
             vs.title == null ||
-            vs.viewKind == null)  // sourcePageId can be null
+            vs.viewKind == null ||
+            vs.schema == null)  // sourcePageId can be null
             return false;
         const page = this.reconstructPage(new PageTitle(vs.title, vs.provenance),
             vs.pageId, vs.sourcePageId);
@@ -524,15 +531,18 @@ export class DatasetView implements IHtmlElement {
             case "Load":
                  // These do not need to be reconstructed ever.
                 break;
-            case "LogFileView":
+            case "LogFile":
                 // TODO
+                break;
+            case "Map":
+                view = GeoView.reconstruct(vs as MapSerialization, page);
                 break;
             default:
                 assertNever(vs.viewKind);
                 break;
         }
         if (view != null) {
-            page.setDataView(view);
+            //page.setDataView(view);
             view.refresh();
             return true;
         }

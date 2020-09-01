@@ -29,6 +29,7 @@ import org.hillview.table.columns.StringColumnQuantization;
 import org.hillview.table.filters.RangeFilterDescription;
 import org.hillview.utils.Converters;
 import org.hillview.utils.Linq;
+import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.time.Instant;
@@ -37,6 +38,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
+import java.util.TimeZone;
 import java.util.function.Function;
 
 public class MySqlJdbcConnection extends JdbcConnection {
@@ -390,8 +392,11 @@ public class MySqlJdbcConnection extends JdbcConnection {
 
     @Override
     public String getURL() {
-        this.addParameter("useLegacyDatetimeCode", "true");
+        // This stuff is extremely annoying
+        this.addParameter("useLegacyDatetimeCode", "false");
         this.addParameter("useSSL", "false");
+        this.addParameter("useTimezone", "true");
+        this.addParameter("serverTimezone", Utilities.getTimezoneOffset());
         StringBuilder builder = new StringBuilder();
         this.addBaseUrl(builder);
         this.appendParametersToUrl(builder);

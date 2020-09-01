@@ -27,7 +27,7 @@ import org.junit.Test;
 
 public class ParquetTest extends BaseTest {
     // Not yet checked-in into the repository
-    private static final String path = "../data/parquet/" +
+    private static final String path = dataDir + "/parquet/" +
             "part-r-00000-9d5cd245-a2e4-4002-9d58-0efdfb0fb962.gz.parquet";
 
     @Test
@@ -45,6 +45,10 @@ public class ParquetTest extends BaseTest {
         Assert.assertEquals("Table[18x4214]", table.toString());
         IColumn first = table.getLoadedColumn("java_version");
         Assert.assertEquals(first.getString(0), "1.8.0_91");
+        if (toPrint) {
+            System.out.println(table.getSchema().toString());
+            System.out.println(table.toLongString(100));
+        }
     }
 
     @Test

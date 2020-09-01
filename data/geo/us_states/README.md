@@ -1,0 +1,1 @@
+Data downloaded from https://www.census.gov/geographies/mapping-files/time-series/geo/cartographic-boundary.html, in particular https://www2.census.gov/geo/tiger/GENZ2019/shp/cb_2019_us_state_20m.zip

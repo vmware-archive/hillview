@@ -25,6 +25,7 @@ import {interpolateRainbow as d3interpolateRainbow,
     schemeSet3 as d3set3
 } from "d3-scale-chromatic";
 import {significantDigits} from "../util";
+import {color, rgb} from "d3-color";
 
 /**
  * Abstract base class for all plots.
@@ -125,7 +126,7 @@ export abstract class Plot<D> {
     static tableau10 = ["#4e79a7", "#f28e2b", "#e15759", "#76b7b2", "#59a14f",
         "#edc948", "#b07aa1", "#ff9da7", "#9c755f", "#bab0ac"];
     static categoricalColor = d3dark2.concat(d3paired).concat(d3paired)
-        .concat(d3pastel1).concat(d3set3).concat(Plot.tableau10);
+        .concat(d3pastel1).concat(d3set3).concat(Plot.tableau10).map(d => rgb(d).toString());
 
     // a categorical color map for up to 50 values
     public static categoricalMap(d: number): string {

@@ -91,6 +91,8 @@ public class DPWrapper {
      */
     private static final String PRIVACY_METADATA_NAME = "privacy_metadata.json";
 
+    private static final String PRIVACY_METADATA_DIRECTORY = "data/metadata/differential-privacy/";
+
     /**
      * The filename at which to look for the generated secret key for this table.
      */
@@ -109,7 +111,7 @@ public class DPWrapper {
      */
     @Nullable
     public static String privacyMetadataFile(String folder) {
-        File metadataFile = new File(folder, PRIVACY_METADATA_NAME);
+        File metadataFile = new File(PRIVACY_METADATA_DIRECTORY + folder, PRIVACY_METADATA_NAME);
         if (metadataFile.getAbsoluteFile().exists())
             return metadataFile.toString();
         return null;

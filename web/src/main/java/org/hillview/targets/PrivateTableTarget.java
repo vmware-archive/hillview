@@ -19,6 +19,7 @@ import org.hillview.table.filters.RangeFilterDescription;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.*;
 
+import javax.annotation.Nullable;
 import java.util.function.BiFunction;
 
 public class PrivateTableTarget extends TableRpcTarget implements IPrivateDataset {
@@ -26,8 +27,8 @@ public class PrivateTableTarget extends TableRpcTarget implements IPrivateDatase
     public final DPWrapper wrapper;
 
     PrivateTableTarget(IDataSet<ITable> table, HillviewComputation computation,
-                       PrivacySchema privacySchema, String schemaFilename) {
-        super(computation);
+                       PrivacySchema privacySchema, @Nullable String schemaFilename) {
+        super(computation, schemaFilename);
         this.wrapper = new DPWrapper(privacySchema, schemaFilename);
         this.setTable(table);
         this.registerObject();
@@ -35,8 +36,8 @@ public class PrivateTableTarget extends TableRpcTarget implements IPrivateDatase
 
     private PrivateTableTarget(IDataSet<ITable> table,
                                HillviewComputation computation,
-                               DPWrapper wrapper) {
-        super(computation);
+                               DPWrapper wrapper, @Nullable String metadataDirectory) {
+        super(computation, metadataDirectory);
         this.table = table;
         this.wrapper = new DPWrapper(wrapper);
         this.registerObject();
@@ -113,7 +114,7 @@ public class PrivateTableTarget extends TableRpcTarget implements IPrivateDatase
             throw new HillviewException("Only filters on contiguous range are supported");
         FilterMap map = new FilterMap(filter, this.getPrivacySchema().quantization);
         BiFunction<IDataSet<ITable>, HillviewComputation, IRpcTarget> constructor = (e, c) -> {
-            PrivateTableTarget result = new PrivateTableTarget(e, c, this.wrapper);
+            PrivateTableTarget result = new PrivateTableTarget(e, c, this.wrapper, this.metadataDirectory);
             for (RangeFilterDescription f: filter.filters)
                 result.getWrapper().filter(f);
             return result;
@@ -186,7 +187,8 @@ public class PrivateTableTarget extends TableRpcTarget implements IPrivateDatase
     public void project(RpcRequest request, RpcRequestContext context) {
         Schema proj = request.parseArgs(Schema.class);
         ProjectMap map = new ProjectMap(proj);
-        this.runMap(this.table, map, (d, c) -> new PrivateTableTarget(d, c, this.wrapper), request, context);
+        this.runMap(this.table, map, (d, c) ->
+                new PrivateTableTarget(d, c, this.wrapper, this.metadataDirectory), request, context);
     }
 
     @Override

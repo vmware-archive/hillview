@@ -18,7 +18,7 @@
 import {bookmarkFileToLoad} from "./hillview";
 import {DatasetView} from "./datasetView";
 import {InitialObject} from "./initialObject";
-import {LoadMenu} from "./loadMenu";
+import {LoadView} from "./loadView";
 import {FullPage, PageTitle} from "./ui/fullPage";
 import {ContextMenu} from "./ui/menu";
 import {IHtmlElement, removeAllChildren} from "./ui/ui";
@@ -51,9 +51,9 @@ export class HillviewToplevel implements IHtmlElement {
             null, null);
 
         this.topLevel.appendChild(page.getHTMLRepresentation());
-        const menu = new LoadMenu(InitialObject.instance, page, bookmarkFileToLoad);
-        page.setDataView(menu);
-        page.getTitleElement().ondblclick = () => menu.toggleAdvanced();
+        const loadPage = new LoadView(InitialObject.instance, page, bookmarkFileToLoad);
+        page.setDataView(loadPage);
+        page.getTitleElement().ondblclick = () => loadPage.toggleAdvanced();
 
         const tabStrip = document.createElement("div");
         this.topLevel.appendChild(document.createElement("hr"));
