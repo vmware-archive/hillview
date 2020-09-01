@@ -165,7 +165,7 @@ public class OrcFileLoader extends TextFileLoader {
     private static void appendColumn(IAppendableColumn to, ColumnVector vec,
                                      TypeDescription.Category simple, int count) {
         // See for example
-        // D
+        // https://github.com/apache/orc/blob/master/java/mapreduce/src/java/org/apache/orc/mapred/OrcMapredRecordReader.java
         for (int iRow=0; iRow < count; iRow++) {
             int row = iRow;
             if (vec.isRepeating)
