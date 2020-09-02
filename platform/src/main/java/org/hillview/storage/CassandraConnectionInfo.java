@@ -25,6 +25,10 @@ public class CassandraConnectionInfo extends JdbcConnectionInformation {
 
     /** Port for establishing probe connection */
     public int jmxPort;
+
+    /** The target snapshot to load */
+    public String snapshotName;
+
     /**
      * Local Cassandra installation directory (can be found at
      * bin/install-cassandra.sh)
@@ -36,6 +40,7 @@ public class CassandraConnectionInfo extends JdbcConnectionInformation {
         StringBuilder sb = new StringBuilder(super.toString());
         sb.append("  jmxPort : " + this.jmxPort + "\n");
         sb.append("  cassandraRootDir : " + this.cassandraRootDir + "\n");
+        sb.append("  snapshotName : " + this.snapshotName + "\n");
         return sb.toString();
     }
 }

@@ -21,12 +21,15 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
+import javax.management.openmbean.TabularData;
 
 import com.datastax.driver.core.*;
 import com.datastax.driver.core.Cluster.Builder;
@@ -93,6 +96,7 @@ public class CassandraDatabase {
             this.nodeProbeFactory = new NodeProbeFactory();
             this.connectLocalProbe();
             this.connectCassCluster();
+            this.validateSnapshot();
             this.tokenRanges = this.discoverTokenRanges();
             this.localEndpoint = this.discoverLocalEndpoint();
         } catch (Exception e) {
@@ -186,6 +190,16 @@ public class CassandraDatabase {
         return this.localEndpoint;
     }
 
+    private void validateSnapshot() throws IOException {
+        Map<String, TabularData> snapshots = Converters.checkNull(this.probe).getSnapshotDetails();
+        for (Map.Entry<String, TabularData> entry : snapshots.entrySet()) {
+            if (entry.getKey().equals(this.info.snapshotName)) {
+                return;
+            }
+        }
+        throw new RuntimeException("Can't find target snapshot " + this.info.snapshotName);
+    }
+
     /**
      * Discover key-range (table partition) and endpoints (replica) which stores each
      * key-range. This key-range distribution is the same on every node in the
@@ -239,7 +253,11 @@ public class CassandraDatabase {
         return cassTables;
     }
 
-    public List<String> getSSTablePath() {
+    /**
+     * Find the directory that contain the active sstables, the snapshots should be
+     * on the same directory.
+     */
+    private List<String> getMainSSTablePath() throws IOException {
         List<String> result = new ArrayList<>();
         boolean isWindows = Utilities.runningOnWindows();
         Path ssTableUtilPath = Paths.get(CassandraDatabase.ssTableUtilDir);
@@ -256,21 +274,53 @@ public class CassandraDatabase {
         // built specifically to identify which version are the most updated.
         ProcessBuilder builder = new ProcessBuilder(sstableCommand, this.info.database, this.info.table);
         builder.directory(cassandraPath.toFile());
-        try {
-            Process p = builder.start();
-            // scan the output of executed commands
-            Scanner s = new Scanner(p.getInputStream());
-            while (s.hasNext()) {
-                String output = s.next();
-                if (output.endsWith(ssTableFileMarker)) {
-                    result.add(output);
-                }
+        Process p = builder.start();
+        // scan the output of executed commands
+        Scanner s = new Scanner(p.getInputStream());
+        while (s.hasNext()) {
+            String output = s.next();
+            if (output.endsWith(ssTableFileMarker)) {
+                result.add(output);
             }
-            s.close();
+        }
+        s.close();
+        Converters.checkNull(result);
+        return result;
+    }
+
+    private String getSnapshotDir(List<String> mainSSTables) {
+        String ssTablePath = mainSSTables.get(0);
+        // We are interested in the folder that contains the sstables
+        String parentDir = ssTablePath.substring(0, ssTablePath.lastIndexOf("/"));
+        // Make sure that all active SSTables are in the same dir
+        for (int i = 1; i < mainSSTables.size(); i++) {
+            ssTablePath = mainSSTables.get(i);
+            if (!parentDir.equals(ssTablePath.substring(0, ssTablePath.lastIndexOf("/"))))
+                throw new RuntimeException("Can't find valid snapshot directory");
+        }
+        return parentDir + "/snapshots/" + this.info.snapshotName;
+    }
+
+    private List<String> getSSTablesInSnapshot(String snapshotDir) throws IOException {
+        List<String> sstableFiles = new ArrayList<>();
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(snapshotDir))) {
+            for (Path path : stream) {
+                if (path.toString().endsWith(ssTableFileMarker))
+                    sstableFiles.add(path.toString());
+            }
+        }
+        Converters.checkNull(sstableFiles);
+        return sstableFiles;
+    }
+
+    public List<String> getSSTablePath() {
+        try {
+            List<String> mainSSTables = this.getMainSSTablePath();
+            String snapshotDir = this.getSnapshotDir(mainSSTables);
+            return this.getSSTablesInSnapshot(snapshotDir);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        return result;
     }
 
     public String toString() {

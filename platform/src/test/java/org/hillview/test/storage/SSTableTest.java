@@ -54,6 +54,7 @@ public class SSTableTest extends BaseTest {
         conn.user = "";
         conn.password = "";
         conn.lazyLoading = true;
+        conn.snapshotName = "myTestSnapshot";
         return conn;
     }
 
@@ -158,6 +159,22 @@ public class SSTableTest extends BaseTest {
         }
         List<CassTable> storedTable = db.getStoredTableInfo();
         Assert.assertTrue(storedTable.toString().contains("cassdb: [ test counter flights users]"));
+    }
+
+    @Test
+    public void testDiscoverSnapshot() {
+        CassandraConnectionInfo conn;
+        CassandraDatabase db;
+        try {
+            // Connecting to Cassandra node and get some data
+            conn = this.getConnectionInfo();
+            db = new CassandraDatabase(conn);
+        } catch (Exception e) {
+            // this will fail if local Cassandra is not running, but we don't want to fail the test.
+            this.ignoringException("Failed connecting to local cassandra", e);
+            return;
+        }
+        Assert.assertTrue(db.getSSTablePath().get(0).contains(conn.snapshotName));
     }
 
     /** Shows the interaction between CassandraDatabase.java and CassandraSSTableLoader.java */
