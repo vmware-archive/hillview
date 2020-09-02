@@ -26,7 +26,7 @@ one row for an airline flight.  Columns in this dataset include: the date of the
 the origin and destination cities, the origin and destination states,
 the origin airport code, the distance flown, the departure and arrival delay.
 
-Updated on 2020 Sep 01.
+Updated on 2020 Sep 02.
 
 # Contents
   * 1 [Basic concepts](#1-basic-concepts)
@@ -34,15 +34,16 @@ Updated on 2020 Sep 01.
     * 1.2 [Streaming interaction](#12-streaming-interaction)
   * 2 [Data management](#2-data-management)
     * 2.1 [Data model and supported data types](#21-data-model-and-supported-data-types)
-    * 2.2 [Interval values](#22-interval-values)
-    * 2.3 [Data conversions](#23-data-conversions)
-      * 2.3.1 [JavaScript conversions](#231-javascript-conversions)
-    * 2.4 [Metadata](#24-metadata)
-      * 2.4.1 [Mapping a dataset to a metadata directory](#241-mapping-a-dataset-to-a-metadata-directory)
-      * 2.4.2 [Data schema](#242-data-schema)
-      * 2.4.3 [Differentially-private metadata](#243-differentially-private-metadata)
-      * 2.4.4 [Geographic metadata](#244-geographic-metadata)
-        * 2.4.4.1 [Connecting dataset features to geographic metadata](#2441-connecting-dataset-features-to-geographic-metadata)
+    * 2.2 [Missing values](#22-missing-values)
+    * 2.3 [Interval values](#23-interval-values)
+    * 2.4 [Data conversions](#24-data-conversions)
+      * 2.4.1 [JavaScript conversions](#241-javascript-conversions)
+    * 2.5 [Metadata](#25-metadata)
+      * 2.5.1 [Mapping a dataset to a metadata directory](#251-mapping-a-dataset-to-a-metadata-directory)
+      * 2.5.2 [Data schema](#252-data-schema)
+      * 2.5.3 [Differentially-private metadata](#253-differentially-private-metadata)
+      * 2.5.4 [Geographic metadata](#254-geographic-metadata)
+        * 2.5.4.1 [Connecting dataset features to geographic metadata](#2541-connecting-dataset-features-to-geographic-metadata)
   * 3 [Interacting with data](#3-interacting-with-data)
     * 3.1 [Error display](#31-error-display)
     * 3.2 [Mouse-based selection](#32-mouse-based-selection)
@@ -127,7 +128,7 @@ it receives small results from these.  The data on the workers is
 never sent over the network; the worker locally compute all views that
 are needed to produce the final result.  The root node can store
 optional metadata information.  This is described below in the
-[metadata](#24-metadata) section.
+[metadata](#25-metadata) section.
 
 ### 1.2 Streaming interaction
 
@@ -163,22 +164,24 @@ types:
 
 |Datatype|Example|Description|
 |:---|---:|:---|
-|`None`|missing|All values are "missing" (see below)|
-|`String`|`California`|Represents Unicode strings; although Hillview does not set a limit on the string length, is does not handle very well very long strings|
-|`Json`|`{a:2,b:3}`|Strings that represent legal JSON values|
-|`Double`|`2.4352e2`|64-bit IEEE floating point values|
-|`Integer`|`100`|32-bit signed integer values|
-|`Date`|`2000/01/01 10:32:45.003 GMT`|A date, including time and timezone.  The precision of times in dates is limited to milliseconds|
-|`LocalDate`|`2000/01/01 10:32:45.003`|A date including time, but without any timezone information. The precision of times in local dates is limited to milliseconds|
+|`None`|missing|All values are _missing_; see [missing values](#22-missing-values)..|
+|`String`|`California`|Represents Unicode strings; although Hillview does not set a limit on the string length, is does not handle very well very long strings.|
+|`Json`|`{a:2,b:3}`|Strings that represent legal JSON values.|
+|`Double`|`2.4352e2`|64-bit IEEE floating point values.|
+|`Integer`|`100`|32-bit signed integer values.|
+|`Date`|`2000/01/01 10:32:45.003`|A date, including time and timezone.  The precision of times in dates is limited to milliseconds.  Timezone information not currently displayed.|
+|`LocalDate`|`2000/01/01 10:32:45.003`|A date including time, but without any timezone information. The precision of times in local dates is limited to milliseconds.|
 |`Time`|`10:32:45.003`|A time within a day. The precision of times in local dates is limited to milliseconds|
-|`Duration`|`2 days 05:20:00`|Differences between two times|
-|`Interval`|`[3:4]`|An interval contains two double values.  See also [interval values](#22-interval-values).|
+|`Duration`|`2 days 05:20:00`|Differences between two times.|
+|`Interval`|`[3:4]`|An interval contains two double values.  See also [interval values](#23-interval-values).|
+
+### 2.2 Missing values
 
 Hillview supports a special value "missing" which indicates that a
 value is not present.  This is similar to NULL values in databases.
 When sorting missing values are considered larger than any other value.
 
-### 2.2 Interval values
+### 2.3 Interval values
 
 Hillview supports columns whose value is an interval of two numeric values.
 These columns can be created by combining two existing numeric columns.
@@ -207,12 +210,12 @@ in buckets [2,3) and [3,4).
 In Javascript the intervals are exposed as arrays with two numeric values.
 
 
-### 2.3 Data conversions
+### 2.4 Data conversions
 
 This section describes how Hillview data is represented in various external
 representations.
 
-#### 2.3.1 JavaScript conversions
+#### 2.4.1 JavaScript conversions
 
 Hillview allows users to write data transformation and filtering functions in JavaScript.
 Here is how various Hillview datatypes are represented in JavaScript:
@@ -230,7 +233,7 @@ Here is how various Hillview datatypes are represented in JavaScript:
 |`Duration`|A JavaScript number representing the number of milliseconds in the duration.|
 |`Interval`|An array with two JavaScript number values.|
 
-### 2.4 Metadata
+### 2.5 Metadata
 
 This section describes various kinds of metadata manipulated by Hillview.
 The hillview root node stores the optional metadata in a directory called
@@ -243,7 +246,7 @@ The hillview root node stores the optional metadata in a directory called
 |`data/metadata/differential-privacy`|Root directory for differentially-private metadata; has one subdirectory for each dataset|
 |`data/metadata/geo`|Root directory for geographic metadata; has one subdirectory for each dataset|
 
-#### 2.4.1 Mapping a dataset to a metadata directory
+#### 2.5.1 Mapping a dataset to a metadata directory
 
 Hillview uses some conventions in the structuring of directories on the root
 note in order to associate metadata information on the
@@ -259,7 +262,7 @@ associated with this dataset on the root node:
    metadata describing the differential privacy parameters a dataset
    that only supports only private visualizations
 
-#### 2.4.2 Data schema
+#### 2.5.2 Data schema
 
 For some file formats that are not self-describing Hillview uses a
 `schema` file to specify the format of the data.  The following is an
@@ -286,11 +289,11 @@ column description has two fields:
 * kind: A string describing the type of data in the column,
   corresponding to the types in the [data model](#21-data-model-and-supported-data-types).
 
-#### 2.4.3 Differentially-private metadata
+#### 2.5.3 Differentially-private metadata
 
 TODO
 
-#### 2.4.4 Geographic metadata
+#### 2.5.4 Geographic metadata
 
 The directory `data/geo` on the root node can contain various
 with geographic information data.  We currently support
@@ -298,7 +301,7 @@ with geographic information data.  We currently support
 The organization of these files on disk is not mandated by
 Hillview.
 
-##### 2.4.4.1 Connecting dataset features to geographic metadata
+##### 2.5.4.1 Connecting dataset features to geographic metadata
 
 For each dataset that contains columns that can be mapped to a geographic feature
 a metadata file can describe the connection between the values in the
@@ -507,7 +510,7 @@ is deployed*.
 * File name pattern: A shell expansion pattern that names the files to
   load.  Multiple files may be loaded on each machine.
 
-* Schema file: An optional [schema file](#242-data-schema)
+* Schema file: An optional [schema file](#252-data-schema)
   in JSON format that describes the schema of the data.  In the
   absence of a schema file Hillview attempts to guess the type of data
   in each column.  The schema file must reside in same folder.
@@ -565,7 +568,7 @@ is an ORC struct with scalar types as fields.
 * File name pattern: A shell expansion pattern that names the files to
   load.  Multiple files may be loaded on each machine.
 
-* Schema file: An optional [schema file](#242-data-schema)
+* Schema file: An optional [schema file](#252-data-schema)
   in JSON format that describes the schema of the data.  The schema
   file must reside in same folder, and it must be compatible with the
   ORC schema.
@@ -1249,7 +1252,7 @@ function map(row) {
 }
 ```
 
-See the section [JavaScript conversions](#231-javascript-conversions) about how data is
+See the section [JavaScript conversions](#241-javascript-conversions) about how data is
 Hillview exchanges data with JavaScript.
 
 * Extract value...: this option is only available when browsing data
@@ -1922,7 +1925,7 @@ Selection is done as in heatmaps, but selection is restricted to a single heatma
 Plotting geographic views require the presence of some geographic metadata
 on the Hillview root node, and also some dataset-specific metadata that ties
 a column to a specific geographic feature.  This is documented in the
-[Geographic metadata](#244-geographic-metadata) section.
+[Geographic metadata](#254-geographic-metadata) section.
 
 ![Geographic views](geographic-views.png)
 

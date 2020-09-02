@@ -55,6 +55,9 @@ if [ -z ${NOREDEPLOY} ]; then
     echo "Installing software"
     ${mydir}/deploy.py ${CONFIG}
 fi
+# TODO: This should not be necessary, but empirically it is.
+echo "Stopping services"
+${mydir}/stop.py ${CONFIG}
 echo "Starting services"
 ${mydir}/start.py ${CONFIG}
 echo "Checking services"

@@ -110,7 +110,7 @@ public class SmallTable extends BaseTable implements IJsonSketchResult {
         for (String cn : schema.getColumnNames()) {
             ObjectArrayColumn col = new ObjectArrayColumn(schema.getDescription(cn), rows.size());
             for (int i = 0; i < rows.size(); i++)
-                col.set(i, rows.get(i).getObject(cn));
+                col.set(i, rows.get(i).get(cn));
             colList.add(col);
         }
         return colList;

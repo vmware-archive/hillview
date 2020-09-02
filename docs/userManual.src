@@ -88,16 +88,18 @@ types:
 
 |Datatype|Example|Description|
 |:---|---:|:---|
-|`None`|missing|All values are "missing" (see below)|
-|`String`|`California`|Represents Unicode strings; although Hillview does not set a limit on the string length, is does not handle very well very long strings|
-|`Json`|`{a:2,b:3}`|Strings that represent legal JSON values|
-|`Double`|`2.4352e2`|64-bit IEEE floating point values|
-|`Integer`|`100`|32-bit signed integer values|
-|`Date`|`2000/01/01 10:32:45.003 GMT`|A date, including time and timezone.  The precision of times in dates is limited to milliseconds|
-|`LocalDate`|`2000/01/01 10:32:45.003`|A date including time, but without any timezone information. The precision of times in local dates is limited to milliseconds|
+|`None`|missing|All values are _missing_; see [missing values](#missing-values)..|
+|`String`|`California`|Represents Unicode strings; although Hillview does not set a limit on the string length, is does not handle very well very long strings.|
+|`Json`|`{a:2,b:3}`|Strings that represent legal JSON values.|
+|`Double`|`2.4352e2`|64-bit IEEE floating point values.|
+|`Integer`|`100`|32-bit signed integer values.|
+|`Date`|`2000/01/01 10:32:45.003`|A date, including time and timezone.  The precision of times in dates is limited to milliseconds.  Timezone information not currently displayed.|
+|`LocalDate`|`2000/01/01 10:32:45.003`|A date including time, but without any timezone information. The precision of times in local dates is limited to milliseconds.|
 |`Time`|`10:32:45.003`|A time within a day. The precision of times in local dates is limited to milliseconds|
-|`Duration`|`2 days 05:20:00`|Differences between two times|
+|`Duration`|`2 days 05:20:00`|Differences between two times.|
 |`Interval`|`[3:4]`|An interval contains two double values.  See also [interval values](#interval-values).|
+
+### Missing values
 
 Hillview supports a special value "missing" which indicates that a
 value is not present.  This is similar to NULL values in databases.
