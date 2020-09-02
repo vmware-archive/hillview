@@ -133,7 +133,7 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
     }
 
     public hide(): void {
-        // this.outer.classList.add("hidden");
+        this.outer.classList.add("hidden");
     }
 
     public getCell(mi: MI): HTMLTableCellElement {
