@@ -177,7 +177,7 @@ export class Test {
             },
         }, {
             description: "Load all flights",
-            cond: () => true,
+            cond: () => Test.existsElement("#hillviewPage1 .idle"),
             cont: () => findElement("#hillviewPage0 .topMenu #Flights__15_columns__CSV_").click(),
         }, {
             description: "Show no columns",
