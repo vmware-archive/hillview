@@ -238,8 +238,7 @@ export class LoadView extends RemoteObject implements IDataView {
                 text: "Federated DB tables...",
                 action: () => {
                     const dialog = new DBDialog(true);
-                    dialog.setAction(() => this.init.loadFederatedDBTable(dialog.getJdbcConnection(),
-                        dialog.getCassandraConnection(), this.page));
+                    dialog.setAction(() => this.init.loadFederatedDBTable(dialog.getDBConnection(), dialog.getDatabaseKind() , this.page));
                     dialog.show();
                 },
                 help: "A set of database tables residing in databases on each worker machine."
@@ -653,6 +652,21 @@ class DBDialog extends Dialog {
         }
     }
 
+    public getDatabaseKind(): String {
+        return this.getFieldValue("databaseKind");
+    }
+
+    public getDBConnection(): any {
+        const db = this.getFieldValue("databaseKind");
+        switch (db) {
+            case "mysql":
+            case "impala":
+                return this.getJdbcConnection();
+            case "cassandra":
+                return this.getCassandraConnection();
+        }
+    }
+
     public getJdbcConnection(): JdbcConnectionInformation {
         return {
             host: this.getFieldValue("host"),
@@ -666,7 +680,7 @@ class DBDialog extends Dialog {
         };
     }
 
-    public getCassandraConnection(): CassandraConnectionInfo | null {
+    public getCassandraConnection(): CassandraConnectionInfo {
         return {
             host: this.getFieldValue("host"),
             port: this.getFieldValueAsNumber("port") ?? 0,
