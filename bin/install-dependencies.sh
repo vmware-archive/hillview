@@ -70,7 +70,7 @@ if [ ${USERDEPS} -eq 0 ]; then
     pushd ${mydir}/../data/ontime
     ./download.py
     popd
-    pushd ${mydir}/../data/ontime_private
+    pushd ${mydir}/../data/metadata/differential-privacy/data/ontime_private
     ./gen_metadata.py
     popd
     pushd ${mydir}/../data/geo/us_states
