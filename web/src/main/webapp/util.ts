@@ -329,7 +329,7 @@ export class Converters {
         if (value === null)
             return null;
         const offset = value.getTimezoneOffset();
-        return value.getTime() + offset * 60 * 1000;
+        return value.getTime() - offset * 60 * 1000;
     }
 
     /**
