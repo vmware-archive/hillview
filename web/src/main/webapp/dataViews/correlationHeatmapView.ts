@@ -394,9 +394,10 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
             }
         }
 
-        this.colorLegend.setData(max);
-        if (!keepColorMap)
+        if (!keepColorMap) {
+            this.colorLegend.setData(max);
             this.colorLegend.setColorMapKind(ColorMapKind.Grayscale);
+        }
         this.colorLegend.draw();
         for (const plot of this.hps) {
             plot.draw();

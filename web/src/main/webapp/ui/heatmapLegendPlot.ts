@@ -50,7 +50,7 @@ class HeatmapColormap {
     }
 
     public setMap(map: ColorMap): void {
-        console.log("Changing map to: " + map(0) + "-" + map(1));
+        // console.log("Changing map to: " + map(0) + "-" + map(1));
         this.originalMap = map;
         this.map = map;
     }

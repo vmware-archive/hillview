@@ -621,12 +621,6 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 help: "Find the values that occur most frequently in the selected columns.",
             }, !this.isPrivate());
             this.contextMenu.addItem({
-                text: "Correlation",
-                action: () => this.correlate(),
-                help: "Compute pairwise corellation between a set of numeric columns"
-            }, selectedCount > 1 &&
-                all(this.getSelectedColNames(), b => this.isNumericColumn(b)));
-            this.contextMenu.addItem({
                 text: "PCA...",
                 action: () => this.pca(true),
                 help: "Perform Principal Component Analysis on a set of numeric columns. " +
@@ -690,10 +684,9 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 help: "Extract a value associated with a specific key. " +
                     " This is only applicable for some structured string or JSON columns."
             }, selectedCount === 1 && this.isKVColumn(this.getSelectedColNames()[0]) && !this.isPrivate());
-            this.contextMenu.insertSubMenu( chartMenuIdx, {
+            this.contextMenu.insertSubMenu(chartMenuIdx, {
                 text: "Histogram",
-                action: () =>
-                  this.chart(
+                action: () => this.chart(
                     this.schema.getCheckedDescriptions(this.getSelectedColNames()),
                     this.getSelectedColCount() === 1 ? "Histogram" : "2DHistogram"),
                 help:
@@ -702,10 +695,9 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
               },
               selectedCount >= 1 && selectedCount <= 2
             );
-            this.contextMenu.insertSubMenu( chartMenuIdx, {
+            this.contextMenu.insertSubMenu(chartMenuIdx, {
                 text: "Quartiles",
-                action: () =>
-                  this.chart(
+                action: () => this.chart(
                     this.schema.getCheckedDescriptions(this.getSelectedColNames()), "QuartileVector"),
                 help:
                   "Plot the data in the selected columns as a vector of quartiles. " +
@@ -713,10 +705,9 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
               },
               selectedCount == 2
             );
-            this.contextMenu.insertSubMenu( chartMenuIdx, {
+            this.contextMenu.insertSubMenu(chartMenuIdx, {
                 text: "Heatmap",
-                action: () =>
-                  this.chart(
+                action: () => this.chart(
                     this.schema.getCheckedDescriptions(this.getSelectedColNames()), "Heatmap"),
                 help:
                   "Plot the data in the selected columns as a heatmap. " +
@@ -724,10 +715,9 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
               },
               selectedCount >= 2
             );
-            this.contextMenu.insertSubMenu( chartMenuIdx, {
+            this.contextMenu.insertSubMenu(chartMenuIdx, {
                 text: "Trellis histograms",
-                action: () =>
-                  this.chart(
+                action: () => this.chart(
                     this.schema.getCheckedDescriptions(this.getSelectedColNames()),
                     selectedCount > 2 ? "Trellis2DHistogram" : "TrellisHistogram"),
                 help:
@@ -736,10 +726,9 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
               },
               selectedCount >= 2 && selectedCount <= 3
             );
-            this.contextMenu.insertSubMenu( chartMenuIdx, {
+            this.contextMenu.insertSubMenu(chartMenuIdx, {
                 text: "Trellis heatmaps",
-                action: () =>
-                  this.chart(
+                action: () => this.chart(
                     this.schema.getCheckedDescriptions(this.getSelectedColNames()), "TrellisHeatmap"),
                 help:
                   "Plot the data in the selected columns as a Trellis plot of heatmaps. " +
@@ -747,12 +736,16 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
               },
               selectedCount === 3 && !this.isPrivate()
             );
-            this.contextMenu.insertSubMenu( chartMenuIdx, {
+            this.contextMenu.insertSubMenu(chartMenuIdx, {
+                text: "Correlation",
+                action: () => this.correlate(),
+                help: "Compute pairwise corellation between a set of numeric columns"
+            },
+                selectedCount > 1 && all(this.getSelectedColNames(), b => this.isNumericColumn(b)));
+            this.contextMenu.insertSubMenu(chartMenuIdx, {
                     text: "Map",
-                    action: () =>
-                        this.geo(this.schema.find(this.getSelectedColNames()[0])!),
-                    help:
-                        "Plot the data in the selected columns on a map. "
+                    action: () => this.geo(this.schema.find(this.getSelectedColNames()[0])!),
+                    help: "Plot the data in the selected columns on a map. "
                 },
                 selectedCount === 1
             );
