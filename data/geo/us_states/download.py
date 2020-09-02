@@ -35,6 +35,7 @@ def main():
     execute_command("wget -q " + site + file)
     execute_command("unzip -o " + file)
     os.unlink(file)
+    execute_command("chmod a-x *.xml")
 
 if __name__ == "__main__":
     main()
