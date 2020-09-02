@@ -30,7 +30,7 @@ import {event as d3event} from "d3-selection";
 import {LegendPlot} from "./legendPlot";
 
 /**
- * Represents a map from the range 0-1 to colors.
+ * Represents a map from the range 1-max to colors.
  */
 class HeatmapColormap {
     /**
@@ -50,12 +50,9 @@ class HeatmapColormap {
     }
 
     public setMap(map: ColorMap): void {
+        console.log("Changing map to: " + map(0) + "-" + map(1));
         this.originalMap = map;
         this.map = map;
-    }
-
-    public valueMap(x: number): string {
-        return this.map(x);
     }
 
     public apply(x: number): string {
@@ -213,23 +210,15 @@ export class HeatmapLegendPlot extends LegendPlot<number> {
 
     // Redraw the legend, and notify the listeners.
     private mapUpdated(): void {
+        this.computeAxis();
         this.draw();
         // Notify the onColorChange listener (redraw the elements with new colors)
         if (this.onColorMapChange != null)
             this.onColorMapChange(this.colorMap.map);
     }
 
-    public setData(max: number): void {
-        this.data = max;
-        if (max < 1)
-            return;
-        console.assert(this.max() > 0);
+    protected computeAxis(): void {
         const base = this.max() > 10000 ? 10 : 2;
-        this.colorMap = new HeatmapColormap(this.max());
-        assert(this.max() === this.colorMap.max);
-        if (this.colorMap.logScale == null)
-            this.colorMap.setLogScale(this.max() > HeatmapColormap.logThreshold);
-
         if (this.colorMap.logScale)
             this.scale = d3scaleLog().base(base);
         else
@@ -239,6 +228,18 @@ export class HeatmapLegendPlot extends LegendPlot<number> {
             .range([0, Resolution.legendBarWidth]);
         const ticks = Math.min(this.max(), 10);
         this.xAxis = d3axisBottom(this.scale).ticks(ticks);
+    }
+
+    public setData(max: number): void {
+        this.data = max;
+        if (max < 1)
+            return;
+        console.assert(this.max() > 0);
+        this.colorMap = new HeatmapColormap(this.max());
+        assert(this.max() === this.colorMap.max);
+        if (this.colorMap.logScale == null)
+            this.colorMap.setLogScale(this.max() > HeatmapColormap.logThreshold);
+        this.computeAxis();
     }
 
     public getXAxis(): AxisDescription {
@@ -291,7 +292,8 @@ export class HeatmapLegendPlot extends LegendPlot<number> {
             for (let i = 0; i <= 100; i += 4)
                 this.gradient.append("stop")
                     .attr("offset", i + "%")
-                    .attr("stop-color", this.colorMap.valueMap(i / 100))
+                    // Reach behind the back into the underlying map
+                    .attr("stop-color", this.colorMap.map(i / 100))
                     .attr("stop-opacity", 1);
         }
         this.svgRectangle = canvas.append("rect")
