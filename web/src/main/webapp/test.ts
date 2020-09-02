@@ -157,6 +157,7 @@ export class Test {
             15: Trellis plot of quartiles
             16: Histogram of interval column
             17: Map view of OriginState
+            18: Heavy hitters view of Origin
          */
         this.addProgram([{
             description: "Load rfc5424 logs",
@@ -461,8 +462,19 @@ export class Test {
                 qv.click();
             },
         }, {
-            description: "Close some windows",
+            description: "Heavy hitters view of Origin",
             cond: () => Test.existsElement("#hillviewPage17 .idle"),
+            cont: () => {
+                const other = findElement("#hillviewPage1 thead td[data-colname=Origin] .truncated");
+                other.click();
+                other.dispatchEvent(contextMenuEvent());
+                const qv = findElement("#hillviewPage1 .dropdown #Frequent_Elements___");
+                qv.click();
+                findElement(".dialog .confirm").click();
+            },
+        }, {
+            description: "Close some windows",
+            cond: () => Test.existsElement("#hillviewPage18 .idle"),
             cont: () => {
                 /*
                     for (let i = 2; i < 8; i++) {

@@ -45,68 +45,6 @@ import {
 import {TableOperationCompleted} from "../modules";
 
 /**
- * This method handles the outcome of the sketch for finding Heavy Hitters.
- */
-export class HeavyHittersReceiver extends OnCompleteReceiver<TopList> {
-    public constructor(page: FullPage,
-                       protected readonly remoteTableObject: TableTargetAPI,
-                       operation: ICancellable<TopList>,
-                       protected readonly rowCount: number,
-                       protected readonly schema: SchemaClass,
-                       protected readonly isApprox: boolean,
-                       protected readonly percent: number,
-                       protected readonly columnsShown: IColumnDescription[],
-                       protected readonly reusePage: boolean) {
-        super(page, operation, "Frequent Elements");
-    }
-
-    public run(data: TopList): void {
-        if (data.top.rows.length === 0) this.showEmptyDialog();
-        else {
-            const names = this.columnsShown.map((c) => this.schema.displayName(c.name)).join(", ");
-            let newPage = this.page;
-            if (!this.reusePage)
-                newPage = this.page.dataset!.newPage(
-                    new PageTitle(this.page.title.format,"Frequent Elements in " + names), this.page);
-            const hhv = new HeavyHittersView(
-                data.heavyHittersId, newPage, this.remoteTableObject, this.rowCount, this.schema,
-                this.isApprox, this.percent, this.columnsShown);
-            hhv.updateView(data.top);
-            hhv.page.scrollIntoView();
-            hhv.updateCompleted(this.elapsedMilliseconds());
-        }
-    }
-
-    private showEmptyDialog(): void {
-        const percentDialog = new Dialog("No Frequent Elements", "");
-        percentDialog.addText("No elements found with frequency above " + this.percent.toString() + "%.");
-        if (this.percent > HeavyHittersView.min) {
-            percentDialog.addText("Lower the threshold? Can take any value above " + HeavyHittersView.minString);
-            const perc = percentDialog.addTextField("newPercent", "Threshold (%)", FieldKind.Double,
-                HeavyHittersView.min.toString(),
-                "All values that appear in the dataset with a frequency above this value (as a percent) " +
-                "will be considered frequent elements.  Must be at least " + HeavyHittersView.minString);
-            perc.required = true;
-            percentDialog.setAction(() => {
-                const newPercent = percentDialog.getFieldValueAsNumber("newPercent");
-                if (newPercent != null) {
-                    const rr = this.remoteTableObject.createHeavyHittersRequest(
-                        this.columnsShown, newPercent,
-                        this.rowCount, HeavyHittersView.switchToMG);
-                    rr.invoke(new HeavyHittersReceiver(
-                        this.page, this.remoteTableObject, rr, this.rowCount, this.schema,
-                        true, newPercent, this.columnsShown, false));
-                }
-            });
-        } else
-            percentDialog.setAction(() => {});
-        percentDialog.setCacheTitle("noHeavyHittersDialog");
-        percentDialog.show();
-    }
-
-}
-
-/**
  * Class that renders a table containing the heavy hitters in sorted
  * order of counts. It also displays a menu that gives various option to
  * filter and view the results.
@@ -178,6 +116,7 @@ export class HeavyHittersView extends BigTableView {
         "the sorted order"]);
         this.table.setColumns(header, tips);
         this.topLevel.appendChild(this.table.getHTMLRepresentation());
+        this.page.setDataView(this);
     }
 
     public serialize(): IViewSerialization {
@@ -483,6 +422,68 @@ export class HeavyHittersView extends BigTableView {
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         assert(false);
     }
+}
+
+/**
+ * This method handles the outcome of the sketch for finding Heavy Hitters.
+ */
+export class HeavyHittersReceiver extends OnCompleteReceiver<TopList> {
+    public constructor(page: FullPage,
+                       protected readonly remoteTableObject: TableTargetAPI,
+                       operation: ICancellable<TopList>,
+                       protected readonly rowCount: number,
+                       protected readonly schema: SchemaClass,
+                       protected readonly isApprox: boolean,
+                       protected readonly percent: number,
+                       protected readonly columnsShown: IColumnDescription[],
+                       protected readonly reusePage: boolean) {
+        super(page, operation, "Frequent Elements");
+    }
+
+    public run(data: TopList): void {
+        if (data.top.rows.length === 0) this.showEmptyDialog();
+        else {
+            const names = this.columnsShown.map((c) => this.schema.displayName(c.name)).join(", ");
+            let newPage = this.page;
+            if (!this.reusePage)
+                newPage = this.page.dataset!.newPage(
+                    new PageTitle("Frequent Elements in " + names, this.page.title.format), this.page);
+            const hhv = new HeavyHittersView(
+                data.heavyHittersId, newPage, this.remoteTableObject, this.rowCount, this.schema,
+                this.isApprox, this.percent, this.columnsShown);
+            hhv.updateView(data.top);
+            hhv.page.scrollIntoView();
+            hhv.updateCompleted(this.elapsedMilliseconds());
+        }
+    }
+
+    private showEmptyDialog(): void {
+        const percentDialog = new Dialog("No Frequent Elements", "");
+        percentDialog.addText("No elements found with frequency above " + this.percent.toString() + "%.");
+        if (this.percent > HeavyHittersView.min) {
+            percentDialog.addText("Lower the threshold? Can take any value above " + HeavyHittersView.minString);
+            const perc = percentDialog.addTextField("newPercent", "Threshold (%)", FieldKind.Double,
+                HeavyHittersView.min.toString(),
+                "All values that appear in the dataset with a frequency above this value (as a percent) " +
+                "will be considered frequent elements.  Must be at least " + HeavyHittersView.minString);
+            perc.required = true;
+            percentDialog.setAction(() => {
+                const newPercent = percentDialog.getFieldValueAsNumber("newPercent");
+                if (newPercent != null) {
+                    const rr = this.remoteTableObject.createHeavyHittersRequest(
+                        this.columnsShown, newPercent,
+                        this.rowCount, HeavyHittersView.switchToMG);
+                    rr.invoke(new HeavyHittersReceiver(
+                        this.page, this.remoteTableObject, rr, this.rowCount, this.schema,
+                        true, newPercent, this.columnsShown, false));
+                }
+            });
+        } else
+            percentDialog.setAction(() => {});
+        percentDialog.setCacheTitle("noHeavyHittersDialog");
+        percentDialog.show();
+    }
+
 }
 
 /**
