@@ -218,7 +218,8 @@ export class InitialObject extends RemoteObject {
         rr.invoke(observer);
     }
 
-    public loadFederatedDBTable(conn: any, db: String, loadMenuPage: FullPage): void {
+    public loadFederatedDBTable(conn: JdbcConnectionInformation | CassandraConnectionInfo,
+            db: String, loadMenuPage: FullPage): void {
         switch (db) {
             case "mysql":
             case "impala":
