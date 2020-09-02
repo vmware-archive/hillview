@@ -25,6 +25,7 @@ import org.hillview.utils.Utilities;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 
 /**
  * Describes a set of files to load.  Not all fields are always used.
@@ -130,9 +131,13 @@ public class FileSetDescription implements IJson {
                     assert format != null;
                     GrokLogs genLog = new GrokLogs(format);
                     //noinspection ConstantConditions
-                    loader = genLog.getFileLoader(this.pathname,
-                            Converters.toLocalDate(FileSetDescription.this.startTime),
-                            Converters.toLocalDate(FileSetDescription.this.endTime));
+                    LocalDateTime start = null;
+                    LocalDateTime end = null;
+                    if (FileSetDescription.this.startTime != null)
+                        start = Converters.toLocalDate(FileSetDescription.this.startTime);
+                    if (FileSetDescription.this.endTime != null)
+                        end = Converters.toLocalDate(FileSetDescription.this.endTime);
+                    loader = genLog.getFileLoader(this.pathname, start, end);
                     break;
                 default:
                     throw new RuntimeException(

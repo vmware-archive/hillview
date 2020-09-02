@@ -137,6 +137,9 @@ export class Test {
     public createTestProgram(): void {
         /*
          This produces the following pages:
+         First tab:
+            syslog logs
+         Second tab: ontime small dataset
             1: a tabular view
             2: schema view
             3: table view with 3 columns
@@ -156,6 +159,22 @@ export class Test {
             17: Map view of OriginState
          */
         this.addProgram([{
+            description: "Load rfc5424 logs",
+            cond: () => true,
+            cont: () => {
+                findElement("#hillviewPage0 .topMenu #Generic_logs___").click();
+                let formField = findElement(".dialog #fileNamePattern");
+                (formField as HTMLInputElement).value = "data/sample_logs/rfc*";
+                formField = findElement(".dialog #logFormat");
+                (formField as HTMLInputElement).value = "%{RFC5424}";
+                formField = findElement(".dialog #startTime");
+                (formField as HTMLInputElement).value = "";
+                formField = findElement(".dialog #endTime");
+                (formField as HTMLInputElement).value = "";
+                const confirm = findElement(".dialog .confirm");
+                confirm.click();
+            },
+        }, {
             description: "Load all flights",
             cond: () => true,
             cont: () => findElement("#hillviewPage0 .topMenu #Flights__15_columns__CSV_").click(),
