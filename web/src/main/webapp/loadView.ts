@@ -729,6 +729,8 @@ class FederatedDBDialog extends JDBCDialog {
         this.hideInputField("jmxPort", jmxPort);
         const namenodeAddress = this.addFieldNamenodeAddress();
         this.hideInputField("namenodeAddress", namenodeAddress);
+        const namenodePort = this.addFieldNamenodePort();
+        this.hideInputField("namenodePort", namenodePort);
         const database = this.addFieldDatabase();
         database.required = true;
         const table = this.addFieldTable();
@@ -737,8 +739,6 @@ class FederatedDBDialog extends JDBCDialog {
         this.addFieldPassword();
         const hdfsNodes = this.addFieldHdfsNodes();
         this.hideInputField("hdfsNodes", hdfsNodes);
-        const namenodePort = this.addFieldNamenodePort();
-        this.hideInputField("namenodePort", namenodePort);
         const dataDelimiter = this.addFieldDataDelimiter();
         this.hideInputField("dataDelimiter", dataDelimiter);
         // Not saving to cache because the extra fields won't be displayed correctly
