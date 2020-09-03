@@ -455,6 +455,7 @@ export class ContextMenu extends BaseMenu<MenuItem> implements IHtmlElement {
             leftCell.classList.add("dummyMenu");
             this.leftSubMenuCells.push(leftCell);
         }
+        // on index 2 because the first 2 cells are leftSubMenu container and mainMenu container
         const cell = this.rows[subMenuPlacementIdx].insertCell(2);
         cell.id = makeId(mi.text);
 
