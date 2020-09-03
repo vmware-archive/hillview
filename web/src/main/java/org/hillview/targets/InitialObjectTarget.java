@@ -164,7 +164,9 @@ public class InitialObjectTarget extends RpcTarget {
         HillviewLogger.instance.info("Finding Hive's hdfs files", "{0}", desc);
         IMap<Empty, List<IFileReference>> finder = new FindHiveHDFSFilesMap(desc);
         Converters.checkNull(this.emptyDataset);
-        this.runFlatMap(this.emptyDataset, finder, FileDescriptionTarget::new, request, context);
+        this.runFlatMap(this.emptyDataset, finder,
+                // TODO: metadata file
+                (d, c) -> new FileDescriptionTarget(d, c, null), request, context);
     }
 
     @HillviewRpc
