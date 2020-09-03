@@ -659,10 +659,18 @@ Hillview can read data from [Cassandra distributed databases](https://cassandra.
 For this purpose a Hillview worker should be deployed on each Cassandra node.
 Moreover, Hillview must have read access to Cassandra's SSTables. 
 To avoid reading inconsistent data, Hillview will read from a snapshot.
+Snapshot can be taken from `nodetool` on each node. For example, 
+to create a snapshot of `cassdb` keyspace and `CassDB-Snapshot-1`
+as the snapshot name; you could run this command:<br>
+`cd $CASSANDRA_HOME/bin`<br>
+`./nodetool snapshot cassdb-snapshot-1 cassdb`
+
+Given that snapshot name, you must put `cassdb-snapshot-1 cassdb`
+into the Snapshot Name field shown in the image below.
 More about Cassandra's snapshot can be found [here]
 (https://docs.datastax.com/en/dse/5.1/dse-admin/datastax_enterprise/tools/nodetool/toolsSnapShot.html).
 
-We recommend that the snapshoted data is already compacted by 
+We recommend that the snapshot data is already compacted by 
 `LeveledCompactionStrategy` with maximum SSTable size is 160 MB 
 (recommended by Cassandra developer). Having small and multiple SSTables 
 are great for Hillview's parallelism because the worker will 
