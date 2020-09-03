@@ -12,7 +12,7 @@ source ${mydir}/lib.sh
 TARFILE=apache-cassandra-${CASSANDRA_VERSION}-bin.tar.gz
 if [ ! -d ${CASSANDRA_INSTALLATION_DIR} ]; then
     # Only download/extract when cassandra/ doesn't exist
-    [[ -f ${TARFILE} ]] || wget https://downloads.apache.org/cassandra/${CASSANDRA_VERSION}/${TARFILE}
+    [[ -f ${TARFILE} ]] || wget https://archive.apache.org/dist/cassandra/${CASSANDRA_VERSION}/${TARFILE}
     [[ -d ${CASSANDRA_INSTALLATION_DIR} ]] || {
         tar xzvf ${TARFILE}
         mv apache-cassandra-${CASSANDRA_VERSION} ${CASSANDRA_INSTALLATION_DIR}
