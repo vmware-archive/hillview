@@ -26,7 +26,7 @@ one row for an airline flight.  Columns in this dataset include: the date of the
 the origin and destination cities, the origin and destination states,
 the origin airport code, the distance flown, the departure and arrival delay.
 
-Updated on 2020 Sep 02.
+Updated on 2020 Sep 03.
 
 # Contents
   * 1 [Basic concepts](#1-basic-concepts)
@@ -657,18 +657,17 @@ containing two values, "true" and "false".
 
 Hillview can read data from [Cassandra distributed databases](https://cassandra.apache.org/).
 For this purpose a Hillview worker should be deployed on each Cassandra node.
-Moreover, Hillview must have read access to Cassandra's SSTables.
-Hillview assumes that no writes are in progress while reading the
-data from storage and the data is already compacted. Moreover, we recommend that Cassandra uses `LeveledCompactionStrategy` with maximum SSTable size is 160 MB (recommended by Cassandra developer). In the other hand, having only 1 gigantic SSTable is not recommended. Small and multiple SSTables are great for Hillview's parallelism because the worker will read all those files in parallel. More about data compaction, you can change the configuration by runing this cqlsh query on each node:
+Moreover, Hillview must have read access to Cassandra's SSTables. 
+To avoid reading inconsistent data, Hillview will read from a snapshot.
+More about Cassandra's snapshot can be found [here]
+(https://docs.datastax.com/en/dse/5.1/dse-admin/datastax_enterprise/tools/nodetool/toolsSnapShot.html).
 
-`USE <keyspace_name>;`<br>
-`ALTER TABLE <table_name> WITH compaction = {'class' : 'LeveledCompactionStrategy', 'sstable_size_in_mb' : 160 };`
-
-Then you need to initiate the compaction by using the nodetool:
-
-`bin/nodetool compact <keyspace_name>`
-
-That may take a few minutes up to hours depends on how big your data. You can check the compaction progress by reading the log file (` md_txn_compaction_*.log`) in the `data/<keyspace_name>`.  
+We recommend that the snapshoted data is already compacted by 
+`LeveledCompactionStrategy` with maximum SSTable size is 160 MB 
+(recommended by Cassandra developer). Having small and multiple SSTables 
+are great for Hillview's parallelism because the worker will 
+read all those files in parallel. More about Leveled Compaction Strategy can be found [here]
+(https://cassandra.apache.org/doc/latest/operating/compaction/lcs.html#lcs)
 
 The following menu allows the user to specify the data to load.
 
@@ -691,6 +690,8 @@ The following menu allows the user to specify the data to load.
 * database: The database/keyspace to load data from.
 
 * table: The table to load data from.
+
+* snapshot name: The target snapshot to load.
 
 * user: The name of the user connecting to the database.
 
