@@ -61,16 +61,28 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
     public outer: HTMLTableElement;
     public tableBody: HTMLTableSectionElement;
     public cells: HTMLTableDataCellElement[];
+    /** 
+     * All submenus are stored here, and normally will be displayed 
+     * on the right side of the main menu. If there is not enough space,
+     * the submenus attributes will be copied to leftSubMenuCells to be 
+     * displayed on the left side of main menu.
+    */
     public subMenuCells: SubMenuCells[];
+    // This will hold the submenu cells that are displayed on the left side
+    public leftSubMenuCells: HTMLTableDataCellElement[];
     public rows: HTMLTableRowElement[];
     public selectedIndex: number; // -1 if no item is selected
     public selectedParentMenu: number; // -1 if no item is selected
     public selectedSubMenu: number; // -1 if no item is selected
+    public subMenuOnLeftSide: Boolean;
+    public longestMainMenuText: number;
+    public longestSubMenuText: number;
 
     protected constructor() {
         this.items = [];
         this.cells = [];
         this.subMenuCells = [];
+        this.leftSubMenuCells = [];
         this.selectedParentMenu = -1;
         this.rows = [];
         this.selectedIndex = -1;
@@ -78,6 +90,9 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
         this.outer.classList.add("menu", "hidden");
         this.tableBody = this.outer.createTBody();
         this.outer.onkeydown = (e) => this.keyAction(e);
+        this.longestMainMenuText = 0;
+        this.longestSubMenuText = 0;
+        this.subMenuOnLeftSide = false;
     }
 
     protected addItems(mis: MI[]): void {
@@ -134,9 +149,24 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
         const index = this.find(parentMenu);
         this.selectedParentMenu = index;
         if (index < 0) throw new Error("Cannot find menu item " + parentMenu);
+        let i = index;
         this.subMenuCells[index].cells.forEach((cell) => {
-            cell.style.display = "table-cell";
-            cell.classList.add("menuShadow");
+            if (this.subMenuOnLeftSide) {
+                this.leftSubMenuCells[i].innerHTML = cell.innerHTML;
+                const leftSubMenu = this.leftSubMenuCells[i];
+                leftSubMenu.classList.value = cell.classList.value;
+                leftSubMenu.classList.remove("dummyMenu");
+                leftSubMenu.style.display = "table-cell";
+                leftSubMenu.style.width = "0px";
+                leftSubMenu.classList.add("menuShadow");
+                leftSubMenu.onclick = cell.onclick;
+                leftSubMenu.onmouseenter = cell.onmouseenter;
+                leftSubMenu.onmouseleave = cell.onmouseleave;
+            } else {
+                cell.style.display = "table-cell";
+                cell.classList.add("menuShadow");
+            }
+            i++;
         });
     }
 
@@ -144,6 +174,8 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
         const index = this.items.length;
         this.items.push(mi);
         const trow = this.tableBody.insertRow();
+
+        // Main menu will be in the middle column, submenu in the left and right
 
         const dummySubMenu = trow.insertCell(0);
         dummySubMenu.classList.add("dummyMenu");
@@ -158,6 +190,8 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
             cell.innerHTML = "<hr>";
         else
             cell.textContent = mi.text;
+        if (mi.text.length > this.longestMainMenuText)
+            this.longestMainMenuText = mi.text.length;
         cell.id = makeId(mi.text);
         cell.style.textAlign = "left";
         if (mi.help != null)
@@ -167,6 +201,14 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
         cell.onmouseenter = () => this.select(index);
         cell.onmouseleave = () => this.select(-1);
         this.enable(mi.text, enabled);
+
+        // inserting dummyMenu in the left of each row to contain 
+        // the submenu when displayed to the left
+        const leftSubMenu = trow.insertCell(0);
+        leftSubMenu.classList.add("dummyMenu");
+        leftSubMenu.onmouseenter = () => this.hide();
+        this.leftSubMenuCells.push(leftSubMenu);
+
         return cell;
     }
 
@@ -212,11 +254,23 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
     }
 
     public hideAllSubMenu(): void {
-        this.subMenuCells[this.selectedParentMenu].cells.forEach((cell) => {
-            cell.style.display = "none";
-            cell.classList.remove("selected");
-            cell.classList.remove("menuShadow");
-        });
+        if (this.subMenuOnLeftSide) {
+            for (let i = this.selectedParentMenu; i < this.leftSubMenuCells.length && 
+                !this.leftSubMenuCells[i].classList.contains("dummyMenu"); i++) {
+                this.leftSubMenuCells[i].textContent = "";
+                this.leftSubMenuCells[i].classList.remove("selected");
+                this.leftSubMenuCells[i].classList.remove("menuShadow");
+                this.leftSubMenuCells[i].classList.add("dummyMenu");
+                // to trigger closing the menu window when the cursor hover on the empty submenus
+                this.leftSubMenuCells[i].onmouseenter = () => this.hide();
+            }
+        } else {
+            this.subMenuCells[this.selectedParentMenu].cells.forEach((cell) => {
+                cell.style.display = "none";
+                cell.classList.remove("selected");
+                cell.classList.remove("menuShadow");
+            });
+        }
         this.markSelect(this.selectedParentMenu, false);
         this.selectedParentMenu = -1;
         this.selectedSubMenu = -1;
@@ -225,7 +279,12 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
     public markSelectSubMenu(index: number, selected: boolean): void {
         if (index >= 0 &&
             index < this.subMenuCells[this.selectedParentMenu].cells.length) {
-            const cell = this.subMenuCells[this.selectedParentMenu].cells[index];
+            let cell: HTMLTableDataCellElement;
+            if (this.subMenuOnLeftSide)
+                // this will highlit the subMenu on the leftside
+                cell = this.leftSubMenuCells[this.selectedParentMenu + index];
+            else
+                cell = this.subMenuCells[this.selectedParentMenu].cells[index];
             if (selected) {
                 cell.classList.add("selected");
                 this.outer.focus();
@@ -262,6 +321,7 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
         this.cells = [];
         this.rows = [];
         this.subMenuCells = [];
+        this.leftSubMenuCells = [];
         this.tableBody = this.outer.createTBody();
     }
 
@@ -283,6 +343,8 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
  * A context menu is displayed on right-click on some displayed element.
  */
 export class ContextMenu extends BaseMenu<MenuItem> implements IHtmlElement {
+    public subMenuOffsetWidth: number;
+
     /**
      * Create a context menu.
      * @param parent            HTML element where this is inserted.
@@ -318,7 +380,24 @@ export class ContextMenu extends BaseMenu<MenuItem> implements IHtmlElement {
             y = max.height - this.outer.offsetHeight - 5;
         if (y < 0)
             y = 0;
-        this.move(x, y);
+
+        // The width is approximated based on the display of mainMenu because
+        // we can't get the exact width of submenu unless it is displayed. 
+        // We add 5px for border and shadow
+        this.subMenuOffsetWidth = this.outer.offsetWidth / this.longestMainMenuText
+            * this.longestSubMenuText + 5;
+        this.subMenuOnLeftSide = this.outer.offsetWidth + x + this.subMenuOffsetWidth >= max.width;
+        if (this.subMenuOnLeftSide) {
+            this.leftSubMenuCells.forEach((cell) => {
+                // Set the width of all empty left cells to subMenuOffsetWidth.
+                // This empty left cells will become a container when displaying submenu on the left
+                cell.style.width = this.subMenuOffsetWidth + "px";
+            });
+            // In the beginning, the leftmost columns will display empty submenus as wide as subMenuOffsetWidth
+            this.move(x - this.subMenuOffsetWidth, y);
+        } else {
+            this.move(x, y);
+        }
         this.outer.tabIndex = 1;  // necessary for keyboard events?
         this.outer.focus();
     }
@@ -372,9 +451,17 @@ export class ContextMenu extends BaseMenu<MenuItem> implements IHtmlElement {
             this.rows.push(trow);
             const cell = trow.insertCell(0);
             cell.classList.add("dummyMenu");
+            const leftCell = trow.insertCell(0);
+            leftCell.classList.add("dummyMenu");
+            this.leftSubMenuCells.push(leftCell);
         }
-        const cell = this.rows[subMenuPlacementIdx].insertCell(1);
+        // on index 2 because the first 2 cells are leftSubMenu container and mainMenu container
+        const cell = this.rows[subMenuPlacementIdx].insertCell(2);
         cell.id = makeId(mi.text);
+
+        if (mi.text.length > this.longestSubMenuText)
+            this.longestSubMenuText = mi.text.length;
+
         cell.style.textAlign = "left";
         cell.style.display = "none";
         cell.classList.add("menuItem");
