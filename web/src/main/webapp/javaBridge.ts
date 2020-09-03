@@ -158,6 +158,7 @@ export interface CassandraConnectionInfo extends JdbcConnectionInformation {
 
 export interface HiveConnectionInfo extends JdbcConnectionInformation {
     hdfsNodes: string;
+    namenodeAddress: string;
     namenodePort: string;
     dataDelimiter: string;
 }

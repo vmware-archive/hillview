@@ -727,6 +727,8 @@ class FederatedDBDialog extends JDBCDialog {
         port.required = true;
         const jmxPort = this.addFieldJmxPort();
         this.hideInputField("jmxPort", jmxPort);
+        const namenodeAddress = this.addFieldNamenodeAddress();
+        this.hideInputField("namenodeAddress", namenodeAddress);
         const database = this.addFieldDatabase();
         database.required = true;
         const table = this.addFieldTable();
@@ -760,6 +762,11 @@ class FederatedDBDialog extends JDBCDialog {
     public addFieldNamenodePort() {
         return this.addTextField("namenodePort", "NameNode Port", FieldKind.String, null,
             "NameNode port to establish connection with local NameNode.");
+    }
+
+    public addFieldNamenodeAddress() {
+        return this.addTextField("namenodeAddress", "NameNode Address", FieldKind.String, null,
+            "The IP address of Hadoop NameNode.");
     }
 
     public addFieldDataDelimiter() {
@@ -810,6 +817,7 @@ class FederatedDBDialog extends JDBCDialog {
             password: this.getFieldValue("password"),
             databaseKind: this.getFieldValue("databaseKind"),
             hdfsNodes: this.getFieldValue("hdfsNodes"),
+            namenodeAddress: this.getFieldValue("namenodeAddress"),
             namenodePort: this.getFieldValue("namenodePort"),
             dataDelimiter: this.getFieldValue("dataDelimiter"),
             lazyLoading: true,
@@ -827,6 +835,7 @@ class FederatedDBDialog extends JDBCDialog {
         this.showInputField("hdfsNodes");
         this.showInputField("namenodePort");
         this.showInputField("dataDelimiter");
+        this.showInputField("namenodeAddress");
         this.setFieldValue("port", "10000");
         this.setFieldValue("namenodePort", "9000");
         this.setFieldValue("dataDelimiter", "\\u0001");
@@ -841,6 +850,7 @@ class FederatedDBDialog extends JDBCDialog {
         this.hideInputField("dbDir");
         this.hideInputField("hdfsNodes");
         this.hideInputField("namenodePort");
+        this.hideInputField("namenodeAddress");
         this.hideInputField("dataDelimiter");
     }
 
