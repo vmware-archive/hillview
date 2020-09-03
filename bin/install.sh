@@ -4,7 +4,7 @@
 
 mydir="$(dirname -- "$0")"
 if [[ ! -d "${mydir}" ]]; then mydir="${PWD}"; fi
-source "{$mydir}/lib.sh"
+source "${mydir}/lib.sh"
 
 SAVEDIR=${PWD}
 cd ${mydir} || exit 1

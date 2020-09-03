@@ -62,4 +62,3 @@ if [ ${INSTALL_CASSANDRA} -eq 1 ]; then
   ./${mydir}/install-cassandra.sh
   sudo apt install mysql-server
 fi
-{SAVEDIR}
