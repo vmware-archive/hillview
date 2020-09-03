@@ -74,9 +74,9 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
     public selectedIndex: number; // -1 if no item is selected
     public selectedParentMenu: number; // -1 if no item is selected
     public selectedSubMenu: number; // -1 if no item is selected
-    public longestSubMenuText: number;
-    public pixelPerChar: number;
     public subMenuOnLeftSide: Boolean;
+    public longestMainMenuText: number;
+    public longestSubMenuText: number;
 
     protected constructor() {
         this.items = [];
@@ -90,8 +90,8 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
         this.outer.classList.add("menu", "hidden");
         this.tableBody = this.outer.createTBody();
         this.outer.onkeydown = (e) => this.keyAction(e);
+        this.longestMainMenuText = 0;
         this.longestSubMenuText = 0;
-        this.pixelPerChar = 8;
         this.subMenuOnLeftSide = false;
     }
 
@@ -152,7 +152,6 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
         let i = index;
         this.subMenuCells[index].cells.forEach((cell) => {
             if (this.subMenuOnLeftSide) {
-                // this.leftSubMenuCells[i].textContent = cell.textContent;
                 this.leftSubMenuCells[i].innerHTML = cell.innerHTML;
                 const leftSubMenu = this.leftSubMenuCells[i];
                 leftSubMenu.classList.value = cell.classList.value;
@@ -191,6 +190,8 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
             cell.innerHTML = "<hr>";
         else
             cell.textContent = mi.text;
+        if (mi.text.length > this.longestMainMenuText)
+            this.longestMainMenuText = mi.text.length;
         cell.id = makeId(mi.text);
         cell.style.textAlign = "left";
         if (mi.help != null)
@@ -343,6 +344,7 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
  */
 export class ContextMenu extends BaseMenu<MenuItem> implements IHtmlElement {
     public subMenuOffsetWidth: number;
+
     /**
      * Create a context menu.
      * @param parent            HTML element where this is inserted.
@@ -379,7 +381,11 @@ export class ContextMenu extends BaseMenu<MenuItem> implements IHtmlElement {
         if (y < 0)
             y = 0;
 
-        this.subMenuOffsetWidth = this.longestSubMenuText * this.pixelPerChar;
+        // The width is approximated based on the display of mainMenu because
+        // we can't get the exact width of submenu unless it is displayed. 
+        // We add 5px for border and shadow
+        this.subMenuOffsetWidth = this.outer.offsetWidth / this.longestMainMenuText
+            * this.longestSubMenuText + 5;
         this.subMenuOnLeftSide = this.outer.offsetWidth + x + this.subMenuOffsetWidth >= max.width;
         if (this.subMenuOnLeftSide) {
             this.leftSubMenuCells.forEach((cell) => {
@@ -452,7 +458,6 @@ export class ContextMenu extends BaseMenu<MenuItem> implements IHtmlElement {
         const cell = this.rows[subMenuPlacementIdx].insertCell(2);
         cell.id = makeId(mi.text);
 
-        // save the longest subMenu text
         if (mi.text.length > this.longestSubMenuText)
             this.longestSubMenuText = mi.text.length;
 
