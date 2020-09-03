@@ -238,12 +238,7 @@ export class LoadView extends RemoteObject implements IDataView {
                 text: "Federated DB tables...",
                 action: () => {
                     const dialog = new DBDialog(true);
-                    const connection = dialog.getCassandraConnection();
-                    if (connection == null) {
-                        this.page.reportError("Not a valid connection");
-                        return;
-                    }
-                    dialog.setAction(() => this.init.loadFederatedDBTable(dialog.getConnection(), connection, this.page));
+                    dialog.setAction(() => this.init.loadFederatedDBTable(dialog.getDBConnection(), dialog.getDatabaseKind() , this.page));
                     dialog.show();
                 },
                 help: "A set of database tables residing in databases on each worker machine."
@@ -255,7 +250,7 @@ export class LoadView extends RemoteObject implements IDataView {
                 text: "Local DB table...",
                 action: () => {
                     const dialog = new DBDialog(false);
-                    dialog.setAction(() => this.init.loadSimpleDBTable(dialog.getConnection(), this.page));
+                    dialog.setAction(() => this.init.loadSimpleDBTable(dialog.getJdbcConnection(), this.page));
                     dialog.show();
                 },
                 help: "A database table in a single database."
@@ -657,7 +652,22 @@ class DBDialog extends Dialog {
         }
     }
 
-    public getConnection(): JdbcConnectionInformation {
+    public getDatabaseKind(): String {
+        return this.getFieldValue("databaseKind");
+    }
+
+    public getDBConnection(): any {
+        const db = this.getFieldValue("databaseKind");
+        switch (db) {
+            case "mysql":
+            case "impala":
+                return this.getJdbcConnection();
+            case "cassandra":
+                return this.getCassandraConnection();
+        }
+    }
+
+    public getJdbcConnection(): JdbcConnectionInformation {
         return {
             host: this.getFieldValue("host"),
             port: this.getFieldValueAsNumber("port") ?? 0,
@@ -670,22 +680,19 @@ class DBDialog extends Dialog {
         };
     }
 
-    public getCassandraConnection(): CassandraConnectionInfo | null {
-        if (this.getFieldValue("databaseKind") != "cassandra")
-            return null;
-        else
-            return {
-                host: this.getFieldValue("host"),
-                port: this.getFieldValueAsNumber("port") ?? 0,
-                database: this.getFieldValue("database"),
-                table: this.getFieldValue("table"),
-                user: this.getFieldValue("user"),
-                password: this.getFieldValue("password"),
-                databaseKind: this.getFieldValue("databaseKind"),
-                lazyLoading: true,
-                jmxPort: this.getFieldValueAsNumber("jmxPort") ?? 0,
-                cassandraRootDir: this.getFieldValue("dbDir"),
-            };
+    public getCassandraConnection(): CassandraConnectionInfo {
+        return {
+            host: this.getFieldValue("host"),
+            port: this.getFieldValueAsNumber("port") ?? 0,
+            database: this.getFieldValue("database"),
+            table: this.getFieldValue("table"),
+            user: this.getFieldValue("user"),
+            password: this.getFieldValue("password"),
+            databaseKind: this.getFieldValue("databaseKind"),
+            lazyLoading: true,
+            jmxPort: this.getFieldValueAsNumber("jmxPort") ?? 0,
+            cassandraRootDir: this.getFieldValue("dbDir"),
+        };
     }
 
     public hideInputField(fieldName: string, field?: HTMLElement) {

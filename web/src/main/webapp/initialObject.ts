@@ -218,11 +218,16 @@ export class InitialObject extends RemoteObject {
         rr.invoke(observer);
     }
 
-    public loadFederatedDBTable(jdbcConn: JdbcConnectionInformation, cassConn: CassandraConnectionInfo, loadMenuPage: FullPage): void {
-        if (jdbcConn.databaseKind == "cassandra") {
-            this.loadCassandraFiles(cassConn, loadMenuPage);
-        } else {
-            this.loadDBTable(jdbcConn, loadMenuPage);
+    public loadFederatedDBTable(conn: JdbcConnectionInformation | CassandraConnectionInfo,
+            db: String, loadMenuPage: FullPage): void {
+        switch (db) {
+            case "mysql":
+            case "impala":
+                this.loadDBTable(<JdbcConnectionInformation>conn, loadMenuPage);
+                break;
+            case "cassandra":
+                this.loadCassandraFiles(<CassandraConnectionInfo>conn, loadMenuPage);
+                break;
         }
     }
 }
