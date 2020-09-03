@@ -66,7 +66,7 @@ public class HiveHDFSLoader extends TextFileLoader {
         
         try {
             this.localHDFSNode = HiveDatabase.discoverLocalHDFSInterface(this.hdfsInetAddresses);
-            this.hdfsConf = HiveDatabase.initHDFSConfig(this.localHDFSNode, this.info.namenodePort);
+            this.hdfsConf = HiveDatabase.initHDFSConfig(this.info.namenodeAddress, this.info.namenodePort);
         } catch (Exception e) {
             HillviewLogger.instance.error("Failed initializing HiveHDFSLoader partitions", "{0}", this.toString());
             throw new RuntimeException(e);
@@ -123,7 +123,7 @@ public class HiveHDFSLoader extends TextFileLoader {
                 for (FileLocality file : hivePartition.files) {
                     // Only load the hdfs file if the local hdfs node is the 1st (main) replica
                     if (file.locality.get(0).equals(HiveHDFSLoader.this.localHDFSNode)) {
-                        Path hdfsFilePath = new Path("hdfs://" + "10.1.1.2" + ":9000" + file.fullPath);
+                        Path hdfsFilePath = new Path("hdfs://" + HiveHDFSLoader.this.info.namenodeAddress + ":9000" + file.fullPath);
                         BufferedReader br = new BufferedReader(new InputStreamReader(fs.open(hdfsFilePath)));
                         String line = br.readLine();
                         while (line != null) {

@@ -27,6 +27,7 @@ public class HiveConnectionInfo extends JdbcConnectionInformation {
     /** The hostname/IP addresses of hdfs nodes in the cluster, separated by comma */
     public String hdfsNodes;
     /** For establishing connection to Hadoop namenode */
+    public String namenodeAddress;
     public String namenodePort;
     /** Delimiter used to parse the hdfs data */
     public String dataDelimiter;
@@ -35,6 +36,7 @@ public class HiveConnectionInfo extends JdbcConnectionInformation {
     public String toString() {
         StringBuilder sb = new StringBuilder(super.toString());
         sb.append("  hdfsNodes : " + this.hdfsNodes + "\n");
+        sb.append("  namenodeAddress : " + this.namenodeAddress + "\n");
         sb.append("  namenodePort : " + this.namenodePort + "\n");
         return sb.toString();
     }

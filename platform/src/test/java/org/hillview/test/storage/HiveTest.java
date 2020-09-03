@@ -31,6 +31,8 @@ public class HiveTest extends BaseTest {
         // conn.table = "no_par";
         // conn.table = "test_delim";
         conn.databaseKind = "Hive";
+        conn.namenodeAddress = "localhost";
+        // conn.namenodeAddress = "10.1.1.2";
         conn.user = "";
         conn.password = "";
         conn.hdfsNodes = "localhost";
