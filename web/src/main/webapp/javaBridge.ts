@@ -154,6 +154,7 @@ export interface JdbcConnectionInformation {
 export interface CassandraConnectionInfo extends JdbcConnectionInformation {
     jmxPort: number;
     cassandraRootDir: string;
+    snapshotName: string;
 }
 
 export type DataKinds = "csv" | "orc" | "parquet" | "json" | "hillviewlog" | "db" | "genericlog" | "sstable";

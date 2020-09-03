@@ -613,7 +613,10 @@ class DBDialog extends Dialog {
         if (isFederated) {
             const jmxPort = this.addTextField("jmxPort", "JMX Port", FieldKind.Integer, null,
                 "Cassandra's JMX port to connect to server-side tools.");
+            const snapshotName = this.addTextField("snapshotName", "Snapshot Name", FieldKind.String, null,
+                "The target snapshot to load.");
             this.hideInputField("jmxPort", jmxPort);
+            this.hideInputField("snapshotName", snapshotName);
         }
         const database = this.addTextField("database", "Database", FieldKind.String, null,
             "Name of database to load.");
@@ -648,6 +651,7 @@ class DBDialog extends Dialog {
                 this.setFieldValue("jmxPort", "7199");
                 this.showInputField("jmxPort");
                 this.showInputField("dbDir");
+                this.showInputField("snapshotName");
                 break;
         }
     }
@@ -692,6 +696,7 @@ class DBDialog extends Dialog {
             lazyLoading: true,
             jmxPort: this.getFieldValueAsNumber("jmxPort") ?? 0,
             cassandraRootDir: this.getFieldValue("dbDir"),
+            snapshotName: this.getFieldValue("snapshotName"),
         };
     }
 
