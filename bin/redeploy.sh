@@ -6,7 +6,7 @@
 # starts the Hillview service on a remote cluster
 # checks the Hillview service on a remote cluster
 
-mydir="$(dirname "$0")"
+mydir="$(dirname -- "$0")"
 if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
 source ${mydir}/lib.sh
 

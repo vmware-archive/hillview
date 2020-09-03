@@ -1,9 +1,9 @@
 #!/bin/bash
-# This script will install Cassandra at $CASSANDRA_INSTALLATION_DIR and start it. 
+# This script will install Cassandra at $CASSANDRA_INSTALLATION_DIR and start it.
 
 set -ex
 
-mydir="$(dirname "$0")"
+mydir="$(dirname -- "$0")"
 if [[ ! -d "${mydir}" ]]; then mydir="${PWD}"; fi
 # shellcheck source=./lib.sh
 source ${mydir}/lib.sh
