@@ -605,10 +605,10 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 action: () => this.showColumns(-1, true),
                 help: "Sort the data first on this column, in decreasing order",
             }, !this.isPrivate());
-            const chartMenuIdx = this.contextMenu.addExpandableItem({
+            const foldoutMenu = this.contextMenu.addExpandableItem({
                 text: "Charts",
-                action: () => null, // inserted here later
-                help: "Choose a chart to draw. ",
+                action: () => null,
+                help: "Choose a chart to draw.",
             });
             this.contextMenu.addItem({
                 text: "Rename...",
@@ -684,7 +684,8 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 help: "Extract a value associated with a specific key. " +
                     " This is only applicable for some structured string or JSON columns."
             }, selectedCount === 1 && this.isKVColumn(this.getSelectedColNames()[0]) && !this.isPrivate());
-            this.contextMenu.insertSubMenu(chartMenuIdx, {
+
+            foldoutMenu.addItem({
                 text: "Histogram",
                 action: () => this.chart(
                     this.schema.getCheckedDescriptions(this.getSelectedColNames()),
@@ -695,7 +696,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
               },
               selectedCount >= 1 && selectedCount <= 2
             );
-            this.contextMenu.insertSubMenu(chartMenuIdx, {
+            foldoutMenu.addItem({
                 text: "Quartiles",
                 action: () => this.chart(
                     this.schema.getCheckedDescriptions(this.getSelectedColNames()), "QuartileVector"),
@@ -703,9 +704,9 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                   "Plot the data in the selected columns as a vector of quartiles. " +
                   "Applies to one or two columns only.",
               },
-              selectedCount == 2
+              selectedCount == 2 && this.isNumericColumn(this.getSelectedColNames()[1])
             );
-            this.contextMenu.insertSubMenu(chartMenuIdx, {
+            foldoutMenu.addItem({
                 text: "Heatmap",
                 action: () => this.chart(
                     this.schema.getCheckedDescriptions(this.getSelectedColNames()), "Heatmap"),
@@ -715,7 +716,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
               },
               selectedCount >= 2
             );
-            this.contextMenu.insertSubMenu(chartMenuIdx, {
+            foldoutMenu.addItem({
                 text: "Trellis histograms",
                 action: () => this.chart(
                     this.schema.getCheckedDescriptions(this.getSelectedColNames()),
@@ -726,7 +727,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
               },
               selectedCount >= 2 && selectedCount <= 3
             );
-            this.contextMenu.insertSubMenu(chartMenuIdx, {
+            foldoutMenu.addItem({
                 text: "Trellis heatmaps",
                 action: () => this.chart(
                     this.schema.getCheckedDescriptions(this.getSelectedColNames()), "TrellisHeatmap"),
@@ -736,13 +737,13 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
               },
               selectedCount === 3 && !this.isPrivate()
             );
-            this.contextMenu.insertSubMenu(chartMenuIdx, {
+            foldoutMenu.addItem({
                 text: "Correlation",
                 action: () => this.correlate(),
                 help: "Compute pairwise corellation between a set of numeric columns"
             },
                 selectedCount > 1 && all(this.getSelectedColNames(), b => this.isNumericColumn(b)));
-            this.contextMenu.insertSubMenu(chartMenuIdx, {
+            foldoutMenu.addItem({
                     text: "Map",
                     action: () => this.geo(this.schema.find(this.getSelectedColNames()[0])!),
                     help: "Plot the data in the selected columns on a map. "
@@ -750,7 +751,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 selectedCount === 1
             );
 
-            this.contextMenu.show(e);
+            this.contextMenu.showAtMouse(e);
         };
     }
 
@@ -1028,7 +1029,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                         },
                         help: "Remove aggregate from display.",
                     }, true);
-                    this.contextMenu.show(e);
+                    this.contextMenu.showAtMouse(e);
                 };
             }
         }
@@ -1389,7 +1390,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 action: () => this.moveRowToTop(row),
                 help: "Move this row to the top of the view.",
             }, true);
-            this.contextMenu.show(e);
+            this.contextMenu.showAtMouse(e);
         };
 
         let cell = this.grid.newCell("all");
@@ -1526,7 +1527,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                         }, true);
                     }
                     */
-                    this.contextMenu.show(e);
+                    this.contextMenu.showAtMouse(e);
                 };
             } else {
                 cell.classList.add("empty");
