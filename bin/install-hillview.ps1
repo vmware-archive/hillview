@@ -1,7 +1,7 @@
 # This Powershell script installs the software needed to run Hillview on Windows
 
 TOMCATVERSION="9.0.4"
-HILLVIEW_VERSION="0.8-alpha"
+HILLVIEW_VERSION="0.9-alpha"
 
 echo "Installing apache Tomcat web server"
 if ( -not ( Test-Path ".\apache-tomcat-$TOMCATVERSION" )) {
