@@ -33,6 +33,22 @@ ${SUDO} ${INSTALL} install wget maven ${NODEJS} ${NPM} ${LIBFORTRAN} unzip gzip 
 echo "Installing typescript compiler"
 ${SUDO} npm install -g typescript@3.9.7
 
+# Download apache if not there.
+pushd ..
+if [ ! -d apache-tomcat-${TOMCATVERSION} ]; then
+    echo "Installing apache Tomcat web server"
+    wget http://archive.apache.org/dist/tomcat/tomcat-9/v${TOMCATVERSION}/bin/apache-tomcat-${TOMCATVERSION}.tar.gz
+    tar xvfz apache-tomcat-${TOMCATVERSION}.tar.gz
+    cd apache-tomcat-${TOMCATVERSION}/webapps
+    rm -rf ROOT* examples docs manager host-manager
+    ln -s ../../web/target/web-1.0-SNAPSHOT.war ROOT.war
+    cd ../..
+    rm -rf apache-tomcat-${TOMCATVERSION}.tar.gz
+else
+    echo "Tomcat already installed"
+fi
+popd
+
 # Download some test data
 echo "Downloading test data"
 pushd ${mydir}/../data/ontime
@@ -44,7 +60,7 @@ pushd ${mydir}/../data/metadata/differential-privacy/data/ontime_private
 ./gen_metadata.py
 popd
 
-# Install geographic metadata
+#rr Install geographic metadata
 pushd ${mydir}/../data/geo/us_states
 ./download.py
 popd

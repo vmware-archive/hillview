@@ -2,9 +2,10 @@
 # Script which downloads and installs the Hillview release on the local machine
 # http://github.com/vmware/hillview
 
+HILLVIEW_VERSION="0.8-alpha"
+
 mydir="$(dirname -- "$0")"
 if [[ ! -d "${mydir}" ]]; then mydir="${PWD}"; fi
-source "${mydir}/lib.sh"
 
 SAVEDIR=${PWD}
 cd ${mydir} || exit 1
