@@ -337,7 +337,7 @@ export class HeavyHittersView extends BigTableView {
                 action: () => this.showSelected(false),
                 help: "Show a tabular view excluding the selected frequent elements." },
             selectedCount > 0);
-        this.contextMenu.show(e);
+        this.contextMenu.showAtMouse(e);
     }
 
     /**

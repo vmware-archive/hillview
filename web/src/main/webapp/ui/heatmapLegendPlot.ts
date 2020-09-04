@@ -197,7 +197,7 @@ export class HeatmapLegendPlot extends LegendPlot<number> {
         /* Only show context menu if it is enabled. */
         if (this.contextMenu != null) {
             event.preventDefault();
-            this.contextMenu.show(event);
+            this.contextMenu.showAtMouse(event);
         }
     }
 

@@ -100,7 +100,7 @@ export class HillviewToplevel implements IHtmlElement {
         cell.title = dataset.name + "\nRight-click opens a menu";
         cell.onclick = () => { if (this.select(tabName)) { this.rename(tabName); } };
         cell.className = "dataset-name";
-        cell.oncontextmenu = (e) => menu.show(e);
+        cell.oncontextmenu = (e) => menu.showAtMouse(e);
 
         const close = document.createElement("span");
         close.className = "close";

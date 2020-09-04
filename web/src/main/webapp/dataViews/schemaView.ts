@@ -333,7 +333,7 @@ export class SchemaView extends TSViewBase {
             action: () => this.getBasicStats(this.getSelectedColNames()),
             help: "Get basic statistics for the selected columns.",
         }, true);
-        this.contextMenu.show(e);
+        this.contextMenu.showAtMouse(e);
     }
 
     protected getBasicStats(cols: string[]): void {
