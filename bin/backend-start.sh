@@ -1,7 +1,7 @@
 #!/bin/bash
 # This script starts the Hillview back-end service on the local machine
 
-mydir="$(dirname "$0")"
+mydir="$(dirname -- "$0")"
 if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
 
 # If you want GRPC logging uncomment the following line

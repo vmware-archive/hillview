@@ -1,37 +1,14 @@
 #!/bin/bash
-# This program installs the software needed to build Hillview
+# This program installs the software needed to develop Hillview
 
 # Bail out at first error
 set -e
 set -x
 
-usage() {
-    echo "install-dependencies.sh [-h][-u]"
-    echo "Install dependencies needed by Hillview"
-    echo "-u: Install only dependencies needed to run Hillview (not to develop)"
-    echo "-h: help"
-    exit 1
-}
-
-# If this is 1 we only install dependencies needed for using Hillview,
-# but not for developing Hillview
-USERDEPS=0
-while getopts uh FLAG; do
-   case ${FLAG} in
-      u) USERDEPS=1  # no dependecies for developers
-        echo "User dependencies only"
-         ;;
-      h) usage
-         ;;
-      *) usage
-         ;;
-   esac
-done
-
 # Set to 0 if you don't want to install cassandra locally for tests
 INSTALL_CASSANDRA=1
 SAVEDIR=${PWD}
-mydir="$(dirname "$0")"
+mydir="$(dirname -- "$0")"
 if [[ ! -d "${mydir}" ]]; then mydir="${PWD}"; fi
 # shellcheck source=./lib.sh
 source ${mydir}/lib.sh
@@ -40,16 +17,23 @@ echo "Installing programs needed to build"
 
 case "${OSTYPE}" in
     linux*)
-    # Location where node.js version 11 resides.
         echo "Installing curl"
         ${SUDO} ${INSTALL} install curl -y
-        curl -sL https://deb.nodesource.com/setup_12.x | ${SUDO} -E bash -
+        if [ "$(cat /etc/*-release | grep -Ec 'ubuntu|debian')" -ne 0 ]; then
+            curl -sL https://deb.nodesource.com/setup_12.x | ${SUDO} -E bash -
+	elif [ "$(cat /etc/*-release | grep -c -e centos -e rhel )" -ne 0 ]; then
+            curl -sL https://rpm.nodesource.com/setup_12.x | ${SUDO} -E bash -
+	else
+	    echo "Unhandled operating system $OSTYPE"; exit 1;
+	fi
+        ;;
 esac
 
-${SUDO} ${INSTALL} install wget maven ${NODEJS} ${NPM} ${LIBFORTRAN} unzip gzip
+${SUDO} ${INSTALL} install wget maven ${NODEJS} ${NPM} ${LIBFORTRAN} unzip gzip python3
 echo "Installing typescript compiler"
 ${SUDO} npm install -g typescript@3.9.7
 
+# Download apache if not there.
 pushd ..
 if [ ! -d apache-tomcat-${TOMCATVERSION} ]; then
     echo "Installing apache Tomcat web server"
@@ -65,19 +49,23 @@ else
 fi
 popd
 
-if [ ${USERDEPS} -eq 0 ]; then
-    echo "Downloading test data"
-    pushd ${mydir}/../data/ontime
-    ./download.py
-    popd
-    pushd ${mydir}/../data/metadata/differential-privacy/data/ontime_private
-    ./gen_metadata.py
-    popd
-    pushd ${mydir}/../data/geo/us_states
-    ./download.py
-    popd
-fi
+# Download some test data
+echo "Downloading test data"
+pushd ${mydir}/../data/ontime
+./download.py
+popd
 
+# Generate differentially-private metadata
+pushd ${mydir}/../data/metadata/differential-privacy/data/ontime_private
+./gen_metadata.py
+popd
+
+#rr Install geographic metadata
+pushd ${mydir}/../data/geo/us_states
+./download.py
+popd
+
+# Install the Javascript dependencies
 pushd ${mydir}/../web/src/main/webapp
 echo "Installing Javascript packages"
 rm -f node_modules/typescript
@@ -85,10 +73,8 @@ npm install
 npm link typescript
 popd
 
-if [ ${USERDEPS} -eq 0 ]; then
-    if [ ${INSTALL_CASSANDRA} -eq 1 ]; then
-      ./${mydir}/install-cassandra.sh
-      sudo apt install mysql-server
-    fi
+# Install Cassandra and populate a test database
+if [ ${INSTALL_CASSANDRA} -eq 1 ]; then
+  ./${mydir}/install-cassandra.sh
+  sudo apt install mysql-server
 fi
-cd ${SAVEDIR}
