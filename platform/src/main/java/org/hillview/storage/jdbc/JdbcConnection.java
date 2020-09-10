@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2020 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,17 +15,20 @@
  * limitations under the License.
  */
 
-package org.hillview.storage;
+package org.hillview.storage.jdbc;
 
 import org.hillview.sketches.results.IHistogramBuckets;
+import org.hillview.storage.ColumnLimits;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.columns.ColumnQuantization;
 import org.hillview.table.columns.DoubleColumnQuantization;
+import org.hillview.utils.Converters;
 import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 
 /**
  * Base abstract class that handles various specifics of JDBC driver requirements.
@@ -40,7 +43,7 @@ abstract class JdbcConnection {
      */
     private final char urlOptionsBegin;
     public final JdbcConnectionInformation info;
-    private final HashMap<String, String> params = new HashMap<String, String>();
+    private final HashMap<String, String> params = new LinkedHashMap<String, String>();
 
     static JdbcConnection create(JdbcConnectionInformation conn) {
         if (Utilities.isNullOrEmpty(conn.databaseKind))
@@ -50,6 +53,8 @@ abstract class JdbcConnection {
                 return new MySqlJdbcConnection(conn);
             case "impala":
                 return new ImpalaJdbcConnection(conn);
+            case "greenplum":
+                return new GreenplumJdbcConnection(conn);
             default:
                 throw new RuntimeException("Unsupported JDBC database kind " + conn.databaseKind);
         }
@@ -65,7 +70,12 @@ abstract class JdbcConnection {
      * @param rowCount  Number of rows to read.
      * @return          A SQL query string that reads the specified number of rows.
      */
-    public abstract String getQueryToReadTable(int rowCount);
+    public String getQueryToReadTable(int rowCount) {
+        String result = "SELECT * FROM " + Converters.checkNull(this.info.table);
+        if (rowCount >= 0)
+            result += " LIMIT " + rowCount;
+        return result;
+    }
 
     String getQueryToReadSize(@Nullable ColumnLimits columnLimits) {
         throw new UnsupportedOperationException();
@@ -108,6 +118,11 @@ abstract class JdbcConnection {
 
     void addParameter(String param, String value) {
         this.params.put(param, value);
+    }
+
+    void addParameterIfNotNullOrEmpty(String param, @Nullable String value) {
+        if (!Utilities.isNullOrEmpty(value))
+            this.params.put(param, value);
     }
 
     JdbcConnection(char urlOptionsSeparator, char urlOptionsBegin,

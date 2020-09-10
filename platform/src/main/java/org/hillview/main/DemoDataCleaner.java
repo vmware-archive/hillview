@@ -17,6 +17,7 @@
 
 package org.hillview.main;
 
+import org.hillview.LazySchema;
 import org.hillview.storage.CsvFileLoader;
 import org.hillview.storage.CsvFileWriter;
 import org.hillview.storage.OrcFileWriter;
@@ -59,8 +60,8 @@ class DemoDataCleaner {
                     CsvFileLoader.Config config = new CsvFileLoader.Config();
                     config.allowFewerColumns = false;
                     config.hasHeaderRow = true;
-                    CsvFileLoader r = new CsvFileLoader(filename, config, dataFolder + "/On_Time.schema");
-
+                    CsvFileLoader r = new CsvFileLoader(filename, config,
+                            new LazySchema(dataFolder + "/On_Time.schema"));
                     System.out.println("Reading " + f);
                     ITable tbl = r.load();
                     assert tbl != null;

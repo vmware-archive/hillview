@@ -80,6 +80,15 @@
             <artifactId>platform</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
+        <!-- Optional Greenplum jdbc connector; this can be downloaded from
+        https://network.pivotal.io/products/pivotal-gpdb -->
+        <dependency>
+            <artifactId>greenplum-jdbc</artifactId>
+            <groupId>com.pivotal.jdbc.GreenplumDriver</groupId>
+            <version>5.1.4.000275</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../repository/PROGRESS_DATADIRECT_JDBC_DRIVER_PIVOTAL_GREENPLUM_5.1.4.000275.jar</systemPath>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

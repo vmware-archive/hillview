@@ -199,6 +199,8 @@ abstract class BaseMenu<MI extends BaseMenuItem> implements IHtmlElement {
  * A context menu is displayed on right-click on some displayed element.
  */
 export class ContextMenu extends BaseMenu<MenuItem> implements IHtmlElement {
+    protected foldOuts: FoldoutMenu[];
+
     /**
      * Create a context menu.
      * @param parent            HTML element where this is inserted.
@@ -206,6 +208,7 @@ export class ContextMenu extends BaseMenu<MenuItem> implements IHtmlElement {
      */
     constructor(public readonly parent: Element, mis?: MenuItem[]) {
         super();
+        this.foldOuts = [];
         if (mis != null)
             this.addItems(mis);
         this.outer.classList.add("dropdown");
@@ -222,6 +225,13 @@ export class ContextMenu extends BaseMenu<MenuItem> implements IHtmlElement {
         this.outer.classList.remove("hidden");
         this.outer.tabIndex = 1;  // necessary for keyboard events?
         this.outer.focus();
+    }
+
+    public clear(): void {
+        super.clear();
+        for (const f of this.foldOuts)
+            f.clear();
+        this.foldOuts = [];
     }
 
     /**
@@ -271,15 +281,13 @@ export class ContextMenu extends BaseMenu<MenuItem> implements IHtmlElement {
         }
     }
 
-    public addExpandableItem(mi: MenuItem): FoldoutMenu {
-        const index = this.cells.length;
-        const cell = this.addItem(mi, true);
-        const arrow = document.createElement("span");
-        arrow.textContent = "▸";
-        arrow.classList.add("menuArrow");
-        cell.appendChild(arrow);
+    public addExpandableItem(text: string, help: string): FoldoutMenu {
         const fo = new FoldoutMenu(this);
-        cell.onmouseenter = () => {
+        this.foldOuts.push(fo);
+        const show = () => {
+            // Function executed when displaying the foldout menu.
+            // It computes the coordinates on the screen where the menu should
+            // be displayed.
             const max = browserWindowSize();
             let x = this.outer.offsetLeft + this.outer.offsetWidth;
             let y = arrow.offsetTop + cell.offsetTop + this.outer.offsetTop - ContextMenu.borderSize;
@@ -292,7 +300,19 @@ export class ContextMenu extends BaseMenu<MenuItem> implements IHtmlElement {
                 y = max.height - fo.outer.offsetHeight;
             fo.showAt(x, y);
             this.select(index);
+        };
+        const item: MenuItem = {
+            text,
+            help,
+            action: show
         }
+        const index = this.cells.length;
+        const cell = this.addItem(item, true);
+        const arrow = document.createElement("span");
+        arrow.textContent = "▸";
+        arrow.classList.add("menuArrow");
+        cell.appendChild(arrow);
+        cell.onmouseenter = show;
         cell.onmouseleave = () => {
             fo.hide();
             this.select(-1);
@@ -304,18 +324,19 @@ export class ContextMenu extends BaseMenu<MenuItem> implements IHtmlElement {
 export class FoldoutMenu extends ContextMenu {
     constructor(protected parentMenu: ContextMenu) {
         super(parentMenu.parent);
+        this.outer.onmouseenter = () => this.show();
     }
 
     addItem(mi: MenuItem, enabled: boolean): HTMLTableDataCellElement {
-        const result = super.addItem({
+        return super.addItem({
             text: mi.text,
             help: mi.help,
-            action: () => { if (mi.action != null)
-                mi.action();
-            this.parentMenu.hide(); }
+            action: () => {
+                this.parentMenu.hide();
+                if (mi.action != null)
+                    mi.action();
+            }
         }, enabled);
-        this.outer.onmouseenter = () => this.show();
-        return result;
     }
 
     public show(): void {

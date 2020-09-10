@@ -32,7 +32,7 @@ import rx.exceptions.CompositeException;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
-import java.lang.reflect.Method;
+import java.beans.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -100,22 +100,6 @@ public abstract class RpcTarget implements IJson, IRpcTarget {
     }
 
     /**
-     * Use reflection to fina a method with a given name that has an @HillviewRpc annotation.
-     * All these methods should have the following signature:
-     * method(RpcRequest req, RpcRequestContext context).
-     */
-    @Nullable
-    private Method getMethod(String method) {
-        Class<?> type = this.getClass();
-        for (Method m : type.getDeclaredMethods()) {
-            if (m.getName().equals(method) &&
-                    m.isAnnotationPresent(HillviewRpc.class))
-                return m;
-        }
-        return null;
-    }
-
-    /**
      * Dispatches an RPC request for execution.
      * This will look up the method in the RpcRequest using reflection
      * and invoke it using Java reflection.
@@ -136,12 +120,9 @@ public abstract class RpcTarget implements IJson, IRpcTarget {
         TODO: check if computation has happened and just send result back.
         */
         try {
-            Method method = this.getMethod(request.method);
-            if (method == null)
-                throw new HillviewException(this.toString() + ": No such method " + request.method);
-            HillviewLogger.instance.info("Executing", "request={0}, context={1}",
-                    request.toString(), context.toString());
-            method.invoke(this, request, context);
+            Object[] args = { request, context };
+            Statement s = new Statement(this, request.method, args);
+            s.execute();
         } catch (Exception ex) {
             HillviewLogger.instance.error("Exception while invoking method", ex);
             RpcReply reply = request.createReply(ex);

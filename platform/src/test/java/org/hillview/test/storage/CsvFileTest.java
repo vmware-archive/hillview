@@ -20,6 +20,7 @@ package org.hillview.test.storage;
 import com.univocity.parsers.csv.CsvFormat;
 import com.univocity.parsers.csv.CsvWriter;
 import com.univocity.parsers.csv.CsvWriterSettings;
+import org.hillview.LazySchema;
 import org.hillview.storage.CsvFileLoader;
 import org.hillview.storage.CsvFileWriter;
 import org.hillview.table.ColumnDescription;
@@ -73,7 +74,7 @@ public class CsvFileTest extends BaseTest {
         CsvFileLoader.Config config = new CsvFileLoader.Config();
         config.allowFewerColumns = false;
         config.hasHeaderRow = header;
-        CsvFileLoader r = new CsvFileLoader(path.toString(), config, null);
+        CsvFileLoader r = new CsvFileLoader(path.toString(), config, new LazySchema());
         return r.load();
     }
 
@@ -84,7 +85,7 @@ public class CsvFileTest extends BaseTest {
         config.allowFewerColumns = false;
         config.hasHeaderRow = false;
         config.separator = '\t';
-        CsvFileLoader r = new CsvFileLoader(path.toString(), config, schemaPath.toString());
+        CsvFileLoader r = new CsvFileLoader(path.toString(), config, new LazySchema(schemaPath.toString()));
         ITable t = r.load();
         Assert.assertNotNull(t);
     }
@@ -120,7 +121,7 @@ public class CsvFileTest extends BaseTest {
         CsvFileLoader.Config config = new CsvFileLoader.Config();
         config.allowFewerColumns = false;
         config.hasHeaderRow = true;
-        CsvFileLoader r = new CsvFileLoader(path.toString(), config, schemaPath.toString());
+        CsvFileLoader r = new CsvFileLoader(path.toString(), config, new LazySchema(schemaPath.toString()));
         ITable t = r.load();
         Assert.assertNotNull(t);
     }
@@ -131,7 +132,7 @@ public class CsvFileTest extends BaseTest {
         CsvFileLoader.Config config = new CsvFileLoader.Config();
         config.allowFewerColumns = false;
         config.hasHeaderRow = true;
-        CsvFileLoader r = new CsvFileLoader(path.toString(), config, null);
+        CsvFileLoader r = new CsvFileLoader(path.toString(), config, new LazySchema());
         ITable t = r.load();
         Assert.assertNotNull(t);
     }
@@ -142,7 +143,7 @@ public class CsvFileTest extends BaseTest {
         CsvFileLoader.Config config = new CsvFileLoader.Config();
         config.allowFewerColumns = false;
         config.hasHeaderRow = true;
-        CsvFileLoader r = new CsvFileLoader(path.toString(), config, null);
+        CsvFileLoader r = new CsvFileLoader(path.toString(), config, new LazySchema());
         ITable t = r.load();
         Assert.assertNotNull(t);
         Assert.assertEquals("Table[3x5]", t.toString());
@@ -166,7 +167,7 @@ public class CsvFileTest extends BaseTest {
             CsvFileLoader.Config config = new CsvFileLoader.Config();
             config.allowFewerColumns = false;
             config.hasHeaderRow = true;
-            CsvFileLoader r = new CsvFileLoader(path, config, schemaPath.toString());
+            CsvFileLoader r = new CsvFileLoader(path, config, new LazySchema(schemaPath.toString()));
             ITable t = r.load();
             Assert.assertNotNull(t);
 

@@ -20,6 +20,7 @@ package org.hillview.main;
 import javax.annotation.Nullable;
 
 import org.apache.commons.io.FilenameUtils;
+import org.hillview.LazySchema;
 import org.hillview.management.ClusterConfig;
 import org.hillview.storage.*;
 import org.hillview.table.Schema;
@@ -196,7 +197,8 @@ public class DataUpload {
                 ldr.addFixedColumns = false;  // we don't need these
                 loader = ldr;
             } else {
-                loader = new CsvFileLoader(parameters.filename, parsConfig, parameters.inputSchemaName);
+                loader = new CsvFileLoader(parameters.filename, parsConfig,
+                        new LazySchema(parameters.inputSchemaName));
             }
             parts = this.chop(loader, config, parameters);
 

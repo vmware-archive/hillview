@@ -605,11 +605,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 action: () => this.showColumns(-1, true),
                 help: "Sort the data first on this column, in decreasing order",
             }, !this.isPrivate());
-            const foldoutMenu = this.contextMenu.addExpandableItem({
-                text: "Charts",
-                action: () => null,
-                help: "Choose a chart to draw.",
-            });
+            const foldoutMenu = this.contextMenu.addExpandableItem("Charts", "Choose a chart to draw.");
             this.contextMenu.addItem({
                 text: "Rename...",
                 action: () => this.renameColumn(),
@@ -698,8 +694,11 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             );
             foldoutMenu.addItem({
                 text: "Quartiles",
-                action: () => this.chart(
-                    this.schema.getCheckedDescriptions(this.getSelectedColNames()), "QuartileVector"),
+                action: () => {
+                    console.log("Computing quartiles");
+                    this.chart(
+                        this.schema.getCheckedDescriptions(this.getSelectedColNames()), "QuartileVector")
+                },
                 help:
                   "Plot the data in the selected columns as a vector of quartiles. " +
                   "Applies to one or two columns only.",

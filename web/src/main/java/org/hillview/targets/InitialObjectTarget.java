@@ -20,6 +20,7 @@ package org.hillview.targets;
 import org.apache.commons.io.FileUtils;
 import org.hillview.*;
 import org.hillview.sketches.PrecomputedSketch;
+import org.hillview.storage.jdbc.JdbcConnectionInformation;
 import org.hillview.table.PrivacySchema;
 import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.*;
@@ -166,6 +167,20 @@ public class InitialObjectTarget extends RpcTarget {
                 Converters.checkNull(conn.database),
                 conn.table).toString();
         this.runMap(this.emptyDataset, mapper, (d, c) -> new TableTarget(d, c, dir), request, context);
+    }
+
+    @HillviewRpc
+    public void loadGreenplumTable(RpcRequest request, RpcRequestContext context) {
+        // To load the data from greenplum we first use JDBC to connect to the
+        // Greenplum root node and retrieve the metadata for the table.  This
+        // path is similar to the simpleDB
+        JdbcConnectionInformation conn = request.parseArgs(JdbcConnectionInformation.class);
+        IMap<Empty, Empty> map = new IdMap<Empty>();
+        Converters.checkNull(this.emptyDataset);
+        String dir = Paths.get(Converters.checkNull(conn.databaseKind).toLowerCase(),
+                Converters.checkNull(conn.database),
+                conn.table).toString();
+        this.runMap(this.emptyDataset, map, (e, c) -> new GreenplumTarget(conn, c, dir), request, context);
     }
 
     @HillviewRpc

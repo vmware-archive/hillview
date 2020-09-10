@@ -27,7 +27,7 @@ import org.hillview.dataset.api.ISketch;
 import org.hillview.maps.highorder.IdMap;
 import org.hillview.sketches.PrecomputedSketch;
 import org.hillview.sketches.results.*;
-import org.hillview.storage.JdbcConnectionInformation;
+import org.hillview.storage.jdbc.JdbcConnectionInformation;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.PrivacySchema;
 import org.hillview.table.SmallTable;

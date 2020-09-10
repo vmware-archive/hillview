@@ -24,6 +24,7 @@ import org.apache.orc.OrcFile;
 import org.apache.orc.Reader;
 import org.apache.orc.RecordReader;
 import org.apache.orc.TypeDescription;
+import org.hillview.LazySchema;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.Table;
@@ -34,7 +35,6 @@ import org.hillview.utils.Linq;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -47,11 +47,7 @@ import java.util.List;
 public class OrcFileLoader extends TextFileLoader {
     private final boolean lazy;
     private final Configuration conf;
-    /**
-     * Path of the Hillview Schema if specified.
-     */
-    @Nullable
-    private final String schemaPath;
+    private final LazySchema lzschema;
     /**
      * Orc schema of the full file.
      */
@@ -64,10 +60,10 @@ public class OrcFileLoader extends TextFileLoader {
     @Nullable
     private Schema hillviewSchema = null;
 
-    public OrcFileLoader(String path, @Nullable String schemaPath, boolean lazy) {
+    public OrcFileLoader(String path, LazySchema lzschema, boolean lazy) {
         super(path);
         this.lazy = lazy;
-        this.schemaPath = schemaPath;
+        this.lzschema = lzschema;
         this.conf = new Configuration();
         // https://stackoverflow.com/questions/17265002/hadoop-no-filesystem-for-scheme-file
         conf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
@@ -394,8 +390,7 @@ public class OrcFileLoader extends TextFileLoader {
     @Override
     public ITable load() {
         try {
-            if (this.schemaPath != null)
-                this.hillviewSchema = Schema.readFromJsonFile(Paths.get(this.schemaPath));
+            this.hillviewSchema = this.lzschema.getSchema();
             Reader reader = OrcFile.createReader(new Path(this.filename),
                     OrcFile.readerOptions(conf));
             this.schema = reader.getSchema();

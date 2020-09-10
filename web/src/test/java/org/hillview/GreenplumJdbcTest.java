@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2020 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,35 +15,29 @@
  * limitations under the License.
  */
 
-package org.hillview.maps;
+package org.hillview;
 
-import org.hillview.dataset.api.Empty;
-import org.hillview.dataset.api.IMap;
 import org.hillview.storage.jdbc.JdbcConnectionInformation;
-import org.hillview.table.api.ITable;
 import org.hillview.storage.jdbc.JdbcDatabase;
+import org.junit.Assert;
+import org.junit.Test;
 
-import javax.annotation.Nullable;
 import java.sql.SQLException;
 
-public class LoadDatabaseTableMap implements IMap<Empty, ITable> {
-    static final long serialVersionUID = 1;
-    private final JdbcConnectionInformation conn;
-
-    public LoadDatabaseTableMap(JdbcConnectionInformation conn) {
-        this.conn = conn;
-    }
-
-    @Override
-    public ITable apply(@Nullable Empty data) {
+public class GreenplumJdbcTest {
+    //@Test
+    public void driverLoadTest() throws SQLException, ClassNotFoundException {
+        JdbcConnectionInformation conn = new JdbcConnectionInformation();
+        conn.databaseKind = "greenplum";
+        conn.host = "localhost";
+        conn.port = 5423;
+        conn.database = "some";
+        JdbcDatabase db = new JdbcDatabase(conn);
+        Assert.assertNotNull(db);
         try {
-            JdbcDatabase db = new JdbcDatabase(this.conn);
             db.connect();
-            ITable result = db.readTable();
-            db.disconnect();
-            return result;
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+        } catch (java.sql.SQLNonTransientConnectionException ex) {
+            // Ignore this error.
         }
     }
 }

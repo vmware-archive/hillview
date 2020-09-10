@@ -137,8 +137,6 @@ export class Test {
     public createTestProgram(): void {
         /*
          This produces the following pages:
-         First tab:
-            syslog logs
          Second tab: ontime small dataset
             1: a tabular view
             2: schema view
@@ -147,8 +145,8 @@ export class Test {
             5: Histogram of UniqueCarrier, shown as pie chart
             6: 2dHistogram of DepTime, Depdelay
             7: Table view, filtered flights
-            8: Trellis 2D histograms (DepTime, DepDelay) grouped by ActualElapsedTime
-            9: Trellis Histograms of UniqueCarrier grouped by ActualElapsedTime
+            8: Trellis 2D histograms (DepTime, DepDelay) grouped by DayOfWeek
+            9: Trellis Histograms of UniqueCarrier grouped by DayOfWeek
             10: Trellis heatmap plot
             11: Quartiles plot
             12: Non-stacked bar charts plot
@@ -176,9 +174,13 @@ export class Test {
                 confirm.click();
             },
         }, {
-            description: "Load all flights",
+            description: "Close this tab",
             cond: () => Test.existsElement("#hillviewPage1 .idle"),
             cont: () => findElement("#hillviewPage0 .topMenu #Flights__15_columns__CSV_").click(),
+        }, {
+            description: "Load all flights",
+            cond: () => Test.existsElement("#hillviewPage1 .idle"),
+            cont: () => findElement(".tab .close").click(),
         }, {
             description: "Show no columns",
             cond: () => Test.existsElement("#hillviewPage1 .idle"),
@@ -267,7 +269,7 @@ export class Test {
                 this.next(); // no rpc
             }
         }, {
-            description: "Display histogram from schema view",
+            description: "Display histogram",
             cond: () => true,
             cont: () => {
                 const col1 = findElement("#hillviewPage1 thead .col1");
@@ -356,27 +358,23 @@ export class Test {
             },
         }, {
             description: "Quartiles vector",
-            cond: () => Test.existsElement("#hillviewPage10 .idle"),
+            cond: () => Test.existsElement("#hillviewPage6 .idle"),
             cont: () => {
-                const dest = findElement("#hillviewPage1 thead td[data-colname=Dest] .truncated");
-                dest.click();
-                const arrTime = findElement("#hillviewPage1 thead td[data-colname=ArrTime] .truncated");
-                arrTime.dispatchEvent(controlClickEvent());
-                arrTime.dispatchEvent(contextMenuEvent());
-                const qv = findElement("#hillviewPage1 .dropdown #Quartiles");
-                qv.click();
+                findElement("#hillviewPage1 #Chart").click();
+                findElement("#Quartiles___").click();
+                (findElement(".dialog #columnName0") as HTMLInputElement).value = "Dest";
+                (findElement(".dialog #columnName1") as HTMLInputElement).value = "ArrTime";
+                findElement(".dialog .confirm").click();
             }
         }, {
             description: "Stacked bars 2D histogram",
             cond: () => Test.existsElement("#hillviewPage11 .idle"),
             cont: () => {
-                const carrier = findElement("#hillviewPage1 thead td[data-colname=UniqueCarrier] .truncated");
-                carrier.click();
-                const depDelay = findElement("#hillviewPage1 thead td[data-colname=DepDelay] .truncated");
-                depDelay.dispatchEvent(controlClickEvent());
-                depDelay.dispatchEvent(contextMenuEvent());
-                const qv = findElement("#hillviewPage1 .dropdown #Histogram");
-                qv.click();
+                findElement("#hillviewPage1 #Chart").click();
+                findElement("#I2D_Histogram___").click();
+                (findElement(".dialog #columnName0") as HTMLInputElement).value = "UniqueCarrier";
+                (findElement(".dialog #columnName1") as HTMLInputElement).value = "DepDelay";
+                findElement(".dialog .confirm").click();
             }
         }, {
             description: "Change buckets for 2D histogram",
@@ -414,7 +412,10 @@ export class Test {
                 const cellArr = findElement("#hillviewPage1 thead td[data-colname=ArrDelay] .truncated");
                 cellArr.dispatchEvent(mouseClickEvent(true, false));
                 cellArr.dispatchEvent(contextMenuEvent());
+                const chart = findElement("#hillviewPage1 .dropdown #Charts");
+                chart.click();
                 const qv = findElement("#hillviewPage1 .dropdown #Correlation");
+                console.log(qv + "," + qv.className + "," + qv.parentElement!.className);
                 qv.click();
             }
         }, {

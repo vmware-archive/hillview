@@ -16,18 +16,18 @@
  */
 
 import {DatasetView, IDatasetSerialization} from "./datasetView";
-import {SchemaReceiver} from "./modules";
+import {SchemaReceiver, TableTargetAPI} from "./modules";
 import {
     FileSetDescription,
     FileSizeSketchInfo,
     JdbcConnectionInformation,
     CassandraConnectionInfo,
-    RemoteObjectId,
+    RemoteObjectId, FederatedDatabase, TableSummary,
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject} from "./rpc";
 import {BaseReceiver} from "./tableTarget";
 import {FullPage, PageTitle} from "./ui/fullPage";
-import {ICancellable, significantDigits, getUUID} from "./util";
+import {ICancellable, significantDigits, getUUID, assertNever} from "./util";
 
 export interface FilesLoaded {
     kind: "Files";
@@ -144,7 +144,7 @@ class FilePruneReceiver extends OnCompleteReceiver<RemoteObjectId> {
  * Receives the ID for a remote table and initiates a request to get the
  * table schema.
  */
-export class RemoteTableReceiver extends BaseReceiver {
+class RemoteTableReceiver extends BaseReceiver {
     /**
      * Create a renderer for a new table.
      * @param loadMenuPage    Parent page initiating this request, always the page of the LoadMenu.
@@ -165,6 +165,79 @@ export class RemoteTableReceiver extends BaseReceiver {
         const dataset = new DatasetView(this.remoteObject.remoteObjectId, title.format, this.data, this.page);
         const newPage = dataset.newPage(title, null);
         rr.invoke(new SchemaReceiver(newPage, rr, this.remoteObject, dataset, null, null));
+    }
+}
+
+/**
+ * Receives the ID for a remote GreenplumTarget and initiates a request to get the
+ * table schema.
+ */
+class GreenplumTableReceiver extends BaseReceiver {
+    /**
+     * Create a renderer for a new table.
+     * @param loadMenuPage    Parent page initiating this request, always the page of the LoadMenu.
+     * @param data            Data that has been loaded.
+     * @param operation       Operation that will bring the results.
+     * @param progressInfo    Description of the files that are being loaded.
+     */
+    constructor(loadMenuPage: FullPage, operation: ICancellable<RemoteObjectId>,
+                protected data: DataLoaded, progressInfo: string) {
+        super(loadMenuPage, operation, progressInfo, null);
+    }
+
+    public run(value: RemoteObjectId): void {
+        super.run(value);
+        const rr = this.remoteObject.createGetSummaryRequest();
+        rr.chain(this.operation);
+        const title = getDescription(this.data);
+        const dataset = new DatasetView(this.remoteObject.remoteObjectId, title.format, this.data, this.page);
+        const newPage = dataset.newPage(title, null);
+        rr.invoke(new GreenplumSchemaReceiver(newPage, rr, this.remoteObject));
+    }
+}
+
+class GreenplumSchemaReceiver extends OnCompleteReceiver<TableSummary> {
+    constructor(page: FullPage, operation: ICancellable<TableSummary>,
+                protected remoteObject: TableTargetAPI) {
+        super(page, operation, "Get schema");
+    }
+
+    public run(ts: TableSummary): void {
+        if (ts.schema == null) {
+            this.page.reportError("No schema received; empty dataset?");
+            return;
+        }
+        // Ask Greenplum to dump the data; receive back the name of the temporary files
+        // where the tables are stored on the remote machines
+        const rr = this.remoteObject.createStreamingRpcRequest<string>("dumpTable", ts);
+        rr.invoke(new GreenplumLoader(this.page, ts, this.remoteObject, rr));
+    }
+}
+
+class GreenplumLoader extends OnCompleteReceiver<string> {
+    constructor(page: FullPage, protected summary: TableSummary,
+                protected remoteObject: TableTargetAPI,
+                operation: ICancellable<string>) {
+        super(page, operation, "Get table id");
+    }
+
+    public run(value: string): void {
+        const files: FileSetDescription = {
+            fileKind: "csv",
+            fileNamePattern: value,
+            schemaFile: null,
+            headerRow: false,
+            schema: this.summary.schema,
+            name: (this.page.dataset?.loaded as TablesLoaded).description.table,
+            repeat: 1,
+            logFormat: null,
+            startTime: null,
+            endTime: null
+        };
+        const rr = this.remoteObject.createStreamingRpcRequest<RemoteObjectId>("findFiles", files);
+        const observer = new FilesReceiver(this.page, rr,
+            { kind: "Files", description: files });
+        rr.invoke(observer);
     }
 }
 
@@ -199,35 +272,48 @@ export class InitialObject extends RemoteObject {
 
     public loadLogs(loadMenuPage: FullPage): void {
         // Use a guid to force the request to reload every time
-        const rr = this.createStreamingRpcRequest<RemoteObjectId>("findLogs", getUUID());
+        const rr = this.createStreamingRpcRequest<RemoteObjectId>("findLogs", getUUID());``
         const observer = new FilesReceiver(loadMenuPage, rr, { kind: "Hillview logs"} );
         rr.invoke(observer);
     }
 
-    public loadDBTable(conn: JdbcConnectionInformation, loadMenuPage: FullPage): void {
-        const rr = this.createStreamingRpcRequest<RemoteObjectId>("loadDBTable", conn);
+    protected loadTable(conn: JdbcConnectionInformation, loadMenuPage: FullPage, method: string): void {
+        const rr = this.createStreamingRpcRequest<RemoteObjectId>(method, conn);
         const observer = new RemoteTableReceiver(loadMenuPage, rr,
             { kind: "DB", description: conn }, "loading database table");
         rr.invoke(observer);
     }
 
     public loadSimpleDBTable(conn: JdbcConnectionInformation, loadMenuPage: FullPage): void {
-        const rr = this.createStreamingRpcRequest<RemoteObjectId>("loadSimpleDBTable", conn);
-        const observer = new RemoteTableReceiver(loadMenuPage, rr,
-            { kind: "DB", description: conn }, "loading database table");
+        this.loadTable(conn, loadMenuPage, "loadSimpleDBTable");
+    }
+
+    protected loadGreenplumTable(conn: JdbcConnectionInformation, loadMenuPage: FullPage, method: string): void {
+        const rr = this.createStreamingRpcRequest<RemoteObjectId>(method, conn);
+        const observer = new GreenplumTableReceiver(loadMenuPage, rr,
+            { kind: "DB", description: conn }, "loading Greenplum table");
         rr.invoke(observer);
     }
 
-    public loadFederatedDBTable(conn: JdbcConnectionInformation | CassandraConnectionInfo,
-            db: String, loadMenuPage: FullPage): void {
+    public loadFederatedDBTable(conn: JdbcConnectionInformation | CassandraConnectionInfo | null,
+            db: FederatedDatabase | null, loadMenuPage: FullPage): void {
+        if (db == null || conn == null) {
+            loadMenuPage.reportError("Unknown database kind");
+            return;
+        }
         switch (db) {
             case "mysql":
             case "impala":
-                this.loadDBTable(<JdbcConnectionInformation>conn, loadMenuPage);
+                this.loadTable(conn as JdbcConnectionInformation, loadMenuPage, "loadDBTable");
                 break;
             case "cassandra":
-                this.loadCassandraFiles(<CassandraConnectionInfo>conn, loadMenuPage);
+                this.loadCassandraFiles(conn as CassandraConnectionInfo, loadMenuPage);
                 break;
+            case "greenplum":
+                this.loadGreenplumTable(conn as JdbcConnectionInformation, loadMenuPage, "loadGreenplumTable");
+                break;
+            default:
+                assertNever(db);
         }
     }
 }

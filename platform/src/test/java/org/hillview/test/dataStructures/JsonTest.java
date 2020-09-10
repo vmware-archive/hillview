@@ -19,6 +19,7 @@ package org.hillview.test.dataStructures;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
+import org.hillview.LazySchema;
 import org.hillview.dataset.api.IJson;
 import org.hillview.sketches.results.Count;
 import org.hillview.sketches.results.NextKList;
@@ -114,7 +115,7 @@ public class JsonTest extends BaseTest {
     public void jsonReaderTest() {
         final String jsonFolder = "../data/ontime";
         final String jsonSample = "short.schema";
-        JsonFileLoader reader = new JsonFileLoader(jsonFolder + "/" + jsonSample, null);
+        JsonFileLoader reader = new JsonFileLoader(jsonFolder + "/" + jsonSample, new LazySchema());
         ITable table = reader.load();
         Assert.assertNotNull(table);
         Assert.assertEquals("Table[2x15]", table.toString());

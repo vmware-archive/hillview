@@ -17,7 +17,14 @@
 
 import {DatasetView} from "./datasetView";
 import {InitialObject} from "./initialObject";
-import {FileSetDescription, JdbcConnectionInformation, CassandraConnectionInfo, Status, UIConfig} from "./javaBridge";
+import {
+    FileSetDescription,
+    JdbcConnectionInformation,
+    CassandraConnectionInfo,
+    Status,
+    UIConfig,
+    FederatedDatabase
+} from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject} from "./rpc";
 import {Test} from "./test";
 import {IDataView} from "./ui/dataview";
@@ -26,7 +33,7 @@ import {ErrorDisplay} from "./ui/errReporter";
 import {FullPage} from "./ui/fullPage";
 import {MenuItem, SubMenu, TopMenu, TopMenuItem} from "./ui/menu";
 import {ViewKind} from "./ui/ui";
-import {Converters, ICancellable, loadFile, getUUID, disableSuggestions} from "./util";
+import {Converters, ICancellable, loadFile, getUUID, disableSuggestions, assertNever} from "./util";
 import {HillviewToplevel} from "./toplevel";
 
 /**
@@ -80,6 +87,7 @@ export class LoadView extends RemoteObject implements IDataView {
                     const files: FileSetDescription = {
                         fileNamePattern: "data/ontime/????_*.csv*",
                         schemaFile: "short.schema",
+                        schema: null,
                         headerRow: true,
                         repeat: 1,
                         name: "Flights (15 columns)",
@@ -97,6 +105,7 @@ export class LoadView extends RemoteObject implements IDataView {
                     const files: FileSetDescription = {
                         fileNamePattern: "data/ontime_small_orc/*.orc",
                         schemaFile: "schema",
+                        schema: null,
                         headerRow: true,
                         repeat: 1,
                         name: "Flights (15 columns, ORC)",
@@ -114,6 +123,7 @@ export class LoadView extends RemoteObject implements IDataView {
                     const files: FileSetDescription = {
                         fileNamePattern: "data/ontime_big_orc/*.orc",
                         schemaFile: "schema",
+                        schema: null,
                         headerRow: true,
                         repeat: 1,
                         name: "Flights (ORC)",
@@ -132,6 +142,7 @@ export class LoadView extends RemoteObject implements IDataView {
                     const files: FileSetDescription = {
                         fileNamePattern: "data/ontime_private/????_*.csv*",
                         schemaFile: "short.schema",
+                        schema: null,
                         headerRow: true,
                         repeat: 1,
                         name: "Flights (private)",
@@ -151,6 +162,7 @@ export class LoadView extends RemoteObject implements IDataView {
                     const files: FileSetDescription = {
                         fileNamePattern: "data/ontime_private/*.orc",
                         schemaFile: "schema",
+                        schema: null,
                         headerRow: true,
                         repeat: 1,
                         name: "Flights (private)",
@@ -238,7 +250,8 @@ export class LoadView extends RemoteObject implements IDataView {
                 text: "Federated DB tables...",
                 action: () => {
                     const dialog = new DBDialog(true);
-                    dialog.setAction(() => this.init.loadFederatedDBTable(dialog.getDBConnection(), dialog.getDatabaseKind() , this.page));
+                    dialog.setAction(() =>
+                        this.init.loadFederatedDBTable(dialog.getDBConnection(), dialog.getDbKind() , this.page));
                     dialog.show();
                 },
                 help: "A set of database tables residing in databases on each worker machine."
@@ -448,6 +461,7 @@ class CSVFileDialog extends Dialog {
     public getFiles(): FileSetDescription {
         return {
             schemaFile: this.getFieldValue("schemaFile"),
+            schema: null,
             fileNamePattern: this.getFieldValue("fileNamePattern"),
             headerRow: this.getBooleanValue("hasHeader"),
             repeat: 1,
@@ -485,6 +499,7 @@ class GenericLogDialog extends Dialog {
     public getFiles(): FileSetDescription {
         return {
             schemaFile: null,
+            schema: null,
             logFormat: this.getFieldValue("logFormat"),
             fileNamePattern: this.getFieldValue("fileNamePattern"),
             headerRow: false,
@@ -517,6 +532,7 @@ class JsonFileDialog extends Dialog {
     public getFiles(): FileSetDescription {
         return {
             schemaFile: this.getFieldValue("schemaFile"),
+            schema: null,
             fileNamePattern: this.getFieldValue("fileNamePattern"),
             headerRow: false,
             repeat: 1,
@@ -545,6 +561,7 @@ class ParquetFileDialog extends Dialog {
     public getFiles(): FileSetDescription {
         return {
             schemaFile: null,  // not used
+            schema: null,
             fileNamePattern: this.getFieldValue("fileNamePattern"),
             headerRow: false,  // not used
             repeat: 1,
@@ -576,6 +593,7 @@ class OrcFileDialog extends Dialog {
     public getFiles(): FileSetDescription {
         return {
             schemaFile: this.getFieldValue("schemaFile"),
+            schema: null,
             fileNamePattern: this.getFieldValue("fileNamePattern"),
             headerRow: false,  // not used
             repeat: 1,
@@ -594,9 +612,10 @@ class OrcFileDialog extends Dialog {
 class DBDialog extends Dialog {
     constructor(isFederated: boolean) {
         super("Load DB tables", "Loads one table on each machine that is part of the service.");
-        const arrDB = ["mysql", "impala"];
-        if (isFederated) arrDB.push("cassandra");
-        const sel = this.addSelectField("databaseKind", "Database kind", arrDB, "mysql",
+        const arrDB: FederatedDatabase[] = ["mysql", "impala"];
+        if (isFederated) arrDB.push("cassandra", "greenplum");
+        const sel = this.addSelectFieldAsObject(
+            "databaseKind", "Database kind", arrDB, (l) => l.toString(),
             "The kind of database.");
         sel.onchange = () => this.dbChanged();
         const host = this.addTextField("host", "Host", FieldKind.String, "localhost",
@@ -630,9 +649,15 @@ class DBDialog extends Dialog {
             this.setCacheTitle("DBDialog");
     }
 
+    public getDbKind(): FederatedDatabase | null {
+        return this.getFieldValueAsObject<FederatedDatabase>("databaseKind");
+    }
+
     public dbChanged(): void {
-        const db = this.getFieldValue("databaseKind");
+        const db = this.getDbKind();
         switch (db) {
+            case null:
+                break;
             case "mysql":
                 this.setFieldValue("port", "3306");
                 this.hideInputField("jmxPort");
@@ -649,21 +674,29 @@ class DBDialog extends Dialog {
                 this.showInputField("jmxPort");
                 this.showInputField("dbDir");
                 break;
+            case "greenplum":
+                this.setFieldValue("port", "5432");
+                this.hideInputField("jmxPort");
+                this.hideInputField("dbDir");
+                break;
+            default:
+                assertNever(db);
         }
     }
 
-    public getDatabaseKind(): String {
-        return this.getFieldValue("databaseKind");
-    }
-
-    public getDBConnection(): any {
-        const db = this.getFieldValue("databaseKind");
+    public getDBConnection(): JdbcConnectionInformation | CassandraConnectionInfo | null {
+        const db = this.getDbKind();
         switch (db) {
+            case null:
+                return null;
             case "mysql":
             case "impala":
+            case "greenplum":
                 return this.getJdbcConnection();
             case "cassandra":
                 return this.getCassandraConnection();
+            default:
+                assertNever(db);
         }
     }
 

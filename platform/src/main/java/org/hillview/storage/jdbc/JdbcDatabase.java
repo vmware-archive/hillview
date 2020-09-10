@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2020 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package org.hillview.storage;
+package org.hillview.storage.jdbc;
 
 import org.hillview.sketches.results.*;
+import org.hillview.storage.ColumnLimits;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.SmallTable;
@@ -338,11 +339,15 @@ public class JdbcDatabase {
         return this.getQueryResult(query);
     }
 
+    public Statement createStatement() throws SQLException {
+        return Converters.checkNull(this.connection).createStatement();
+    }
+
     private ResultSet getQueryResult(String query) {
         try {
             // System.out.println(query);
             HillviewLogger.instance.info("Executing SQL query", "{0}", query);
-            Statement st = Converters.checkNull(this.connection).createStatement();
+            Statement st = this.createStatement();
             return st.executeQuery(query);
         } catch (SQLException ex) {
             throw new RuntimeException(ex);

@@ -24,6 +24,7 @@ import org.apache.orc.OrcFile;
 import org.apache.orc.Reader;
 import org.apache.orc.RecordReader;
 import org.apache.orc.TypeDescription;
+import org.hillview.LazySchema;
 import org.hillview.storage.CsvFileLoader;
 import org.hillview.storage.OrcFileLoader;
 import org.hillview.storage.OrcFileWriter;
@@ -75,7 +76,7 @@ public class OrcFileTest extends BaseTest {
         OrcFileWriter ofw = new OrcFileWriter(orcFile);
         ofw.writeTable(t);
 
-        OrcFileLoader loader = new OrcFileLoader(orcFile, null, false);
+        OrcFileLoader loader = new OrcFileLoader(orcFile, new LazySchema(), false);
         ITable table = loader.load();
         Assert.assertNotNull(table);
         Assert.assertEquals(t.toLongString(20), table.toLongString(20));
@@ -86,7 +87,7 @@ public class OrcFileTest extends BaseTest {
     public void convertCsvFileTest() {
         String file = CsvFileTest.ontimeFolder + "/" + CsvFileTest.csvFile;
         CsvFileLoader.Config config = new CsvFileLoader.Config();
-        CsvFileLoader loader = new CsvFileLoader(file, config, null);
+        CsvFileLoader loader = new CsvFileLoader(file, config, new LazySchema());
         ITable table = loader.load();
         Assert.assertNotNull(table);
         String orcFile = "tmpX.orc";
@@ -115,7 +116,7 @@ public class OrcFileTest extends BaseTest {
         OrcFileWriter ofw = new OrcFileWriter(orcFile);
         ofw.writeTable(tbl);
 
-        OrcFileLoader loader = new OrcFileLoader(orcFile, null, false);
+        OrcFileLoader loader = new OrcFileLoader(orcFile, new LazySchema(), false);
         ITable table = loader.load();
         Assert.assertNotNull(table);
         Assert.assertEquals(tbl.toLongString(20), table.toLongString(20));
@@ -155,7 +156,7 @@ public class OrcFileTest extends BaseTest {
     @Test
     public void readOrcFileTest() {
         String orcFile = orcFolder + orcOutFile;
-        OrcFileLoader loader = new OrcFileLoader(orcFile, null, false);
+        OrcFileLoader loader = new OrcFileLoader(orcFile, new LazySchema(), false);
         ITable table = loader.load();
         Table ref = TestTables.testRepTable();
         Assert.assertNotNull(table);
@@ -170,7 +171,7 @@ public class OrcFileTest extends BaseTest {
         String tmpSchema = "tmpOrcSchema";
         schema.writeToJsonFile(Paths.get(tmpSchema));
 
-        OrcFileLoader loader = new OrcFileLoader(orcFile, tmpSchema, false);
+        OrcFileLoader loader = new OrcFileLoader(orcFile, new LazySchema(tmpSchema), false);
         ITable table = loader.load();
         Assert.assertNotNull(table);
         Assert.assertEquals(ref.toLongString(20), table.toLongString(20));
@@ -186,7 +187,7 @@ public class OrcFileTest extends BaseTest {
     @Test
     public void readOrcFileLazyTest() {
         String orcFile = orcFolder + orcOutFile;
-        OrcFileLoader loader = new OrcFileLoader(orcFile, null, true);
+        OrcFileLoader loader = new OrcFileLoader(orcFile, new LazySchema(), true);
         ITable table = loader.load();
         Table ref = TestTables.testRepTable();
         Assert.assertNotNull(table);
