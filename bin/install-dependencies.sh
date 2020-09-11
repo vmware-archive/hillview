@@ -32,6 +32,7 @@ esac
 ${SUDO} ${INSTALL} install wget maven ${NODEJS} ${NPM} ${LIBFORTRAN} unzip gzip python3
 echo "Installing typescript compiler"
 ${SUDO} npm install -g typescript@3.9.7
+pip install jproperties
 
 # Download apache if not there.
 pushd ..
@@ -75,6 +76,6 @@ popd
 
 # Install Cassandra and populate a test database
 if [ ${INSTALL_CASSANDRA} -eq 1 ]; then
-  ./${mydir}/install-cassandra.sh
-  sudo apt install mysql-server
+    ./${mydir}/install-cassandra.sh
+    sudo apt install mysql-server
 fi
