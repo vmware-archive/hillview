@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+# We attempted to make this program work with both python2 and python3
 
 """This script takes a cluster configuration and a file pattern.
 It downloads the files that match from all machines in the cluster."""

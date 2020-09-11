@@ -1,6 +1,7 @@
 """Common functions used by the Hillview deployment scripts"""
 
 # pylint: disable=invalid-name,too-few-public-methods, bare-except
+from __future__ import print_function
 import os.path
 import os
 import subprocess
@@ -8,7 +9,11 @@ import tempfile
 import json
 import getpass
 import logging
+import sys
 from argparse import ArgumentParser
+
+is3 = sys.version_info[0] == 3
+print("Python version is", 3 if is3 else 2)
 
 def get_logger(module_name):
     """ Returns the logger object """
@@ -37,8 +42,10 @@ class RemoteHost:
     """Abstraction for a remote host"""
     def __init__(self, user, host, parent, heapsize="200M"):
         """Create a remote host"""
-        assert isinstance(user, str)
-        assert isinstance(host, str)
+        global is3
+        if is3:
+            assert isinstance(user, str)
+            assert isinstance(host, str)
         assert parent is None or isinstance(parent, RemoteHost)
         self.host = host
         self.user = user

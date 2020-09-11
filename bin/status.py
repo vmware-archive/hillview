@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+# We attempted to make this program work with both python2 and python3
 
 """This program checks if the Hillview service is running on all machines
    specified in the configuration file."""

@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+# We attempted to make this program work with both python2 and python3
 
 """This script deletes a specific folder on all the machines in a Hillview cluster."""
 # pylint: disable=invalid-name
