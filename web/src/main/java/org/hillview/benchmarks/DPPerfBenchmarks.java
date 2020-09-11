@@ -161,7 +161,7 @@ public class DPPerfBenchmarks extends Benchmarks {
     }
 
     private IDataSet<ITable> loadTable(IDataSet<Empty> start, FileSetDescription desc) {
-        IMap<Empty, List<IFileReference>> finder = new FindFilesMap(desc);
+        IMap<Empty, List<IFileReference>> finder = new FindFilesMap<>(desc);
         IDataSet<IFileReference> found = start.blockingFlatMap(finder);
         IMap<IFileReference, ITable> loader = new LoadFilesMap();
         return found.blockingMap(loader);
@@ -253,15 +253,20 @@ public class DPPerfBenchmarks extends Benchmarks {
         Runnable r;
         if (conf.dataset == Dataset.DB) {
             r = () -> {
-                JsonGroups<JsonGroups<Count>> h = this.database.histogram2D(col0, col1,
-                    c0.buckets, c1.buckets, null, c0.quantization, c1.quantization);
-                if (conf.usePostProcessing) {
-                    ISketch<ITable, JsonGroups<JsonGroups<Count>>> pre =
-                            new PrecomputedSketch<ITable, JsonGroups<JsonGroups<Count>>>(h);  // not really used
-                    DPHeatmapSketch<JsonGroups<Count>, JsonGroups<JsonGroups<Count>>> postProcess =
-                            new DPHeatmapSketch<>(pre, ps.getColumnIndex(col0.name, col1.name),
-                            c0.decomposition, c1.decomposition, epsilon, this.flightsWrapper.laplace);
-                    postProcess.postProcess(h);
+                JsonGroups<JsonGroups<Count>> h = null;
+                try {
+                    h = this.database.histogram2D(col0, col1,
+                        c0.buckets, c1.buckets, null, c0.quantization, c1.quantization);
+                    if (conf.usePostProcessing) {
+                        ISketch<ITable, JsonGroups<JsonGroups<Count>>> pre =
+                                new PrecomputedSketch<ITable, JsonGroups<JsonGroups<Count>>>(h);  // not really used
+                        DPHeatmapSketch<JsonGroups<Count>, JsonGroups<JsonGroups<Count>>> postProcess =
+                                new DPHeatmapSketch<>(pre, ps.getColumnIndex(col0.name, col1.name),
+                                c0.decomposition, c1.decomposition, epsilon, this.flightsWrapper.laplace);
+                        postProcess.postProcess(h);
+                    }
+                } catch (SQLException throwables) {
+                    throwables.printStackTrace();
                 }
             };
         } else {
@@ -298,14 +303,19 @@ public class DPPerfBenchmarks extends Benchmarks {
 
         if (conf.dataset == Dataset.DB) {
             r = () -> {
-                JsonGroups<Count> histo = this.database.histogram(
-                        col, c.buckets, null, c.quantization, 0);
-                if (conf.usePostProcessing) {
-                    ISketch<ITable, JsonGroups<Count>> pre = new PrecomputedSketch<>(histo);  // not really used
-                    PostProcessedSketch<ITable, JsonGroups<Count>, Two<JsonGroups<Count>>> post =
-                            new DPHistogram<>(pre, ps.getColumnIndex(col.name),
-                                c.decomposition, epsilon, false, this.flightsWrapper.laplace);
-                    post.postProcess(histo);
+                JsonGroups<Count> histo = null;
+                try {
+                    histo = this.database.histogram(
+                            col, c.buckets, null, c.quantization, 0);
+                    if (conf.usePostProcessing) {
+                        ISketch<ITable, JsonGroups<Count>> pre = new PrecomputedSketch<>(histo);  // not really used
+                        PostProcessedSketch<ITable, JsonGroups<Count>, Two<JsonGroups<Count>>> post =
+                                new DPHistogram<>(pre, ps.getColumnIndex(col.name),
+                                    c.decomposition, epsilon, false, this.flightsWrapper.laplace);
+                        post.postProcess(histo);
+                    }
+                } catch (SQLException throwables) {
+                    throwables.printStackTrace();
                 }
             };
         } else {

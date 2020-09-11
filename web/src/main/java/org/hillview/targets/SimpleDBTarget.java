@@ -107,7 +107,7 @@ public class SimpleDBTarget extends TableRpcTarget {
         this.runSketch(this.table, sk, request, context);
     }
 
-    private void heavyHitters(RpcRequest request, RpcRequestContext context) {
+    private void heavyHitters(RpcRequest request, RpcRequestContext context) throws SQLException {
         HeavyHittersRequestInfo info = request.parseArgs(HeavyHittersRequestInfo.class);
         SmallTable tbl = this.database.topFreq(
                 info.columns, Converters.toInt(Math.ceil(info.amount * info.totalRows / 100)),
@@ -134,17 +134,17 @@ public class SimpleDBTarget extends TableRpcTarget {
     }
 
     @HillviewRpc
-    public void heavyHittersMG(RpcRequest request, RpcRequestContext context) {
+    public void heavyHittersMG(RpcRequest request, RpcRequestContext context) throws SQLException {
         this.heavyHitters(request, context);
     }
 
     @HillviewRpc
-    public void heavyHittersSampling(RpcRequest request, RpcRequestContext context) {
+    public void heavyHittersSampling(RpcRequest request, RpcRequestContext context) throws SQLException {
         this.heavyHitters(request, context);
     }
 
     @HillviewRpc
-    public void getDataQuantiles(RpcRequest request, RpcRequestContext context) {
+    public void getDataQuantiles(RpcRequest request, RpcRequestContext context) throws SQLException {
         QuantilesArgs[] info = request.parseArgs(QuantilesArgs[].class);
         JsonList<BucketsInfo> result = new JsonList<BucketsInfo>(info.length);
         for (QuantilesArgs quantilesArgs : info) {
@@ -166,7 +166,7 @@ public class SimpleDBTarget extends TableRpcTarget {
     }
 
     @HillviewRpc
-    public void histogramAndCDF(RpcRequest request, RpcRequestContext context) {
+    public void histogramAndCDF(RpcRequest request, RpcRequestContext context) throws SQLException {
         HistogramRequestInfo info = request.parseArgs(HistogramRequestInfo.class);
         assert info.size() == 2;
         ColumnDescription cd = info.histos[0].cd;  // both args should be on the same column
@@ -183,7 +183,7 @@ public class SimpleDBTarget extends TableRpcTarget {
     }
 
     @HillviewRpc
-    public void histogram2D(RpcRequest request, RpcRequestContext context) {
+    public void histogram2D(RpcRequest request, RpcRequestContext context) throws SQLException {
         HistogramRequestInfo info = request.parseArgs(HistogramRequestInfo.class);
         assert info.size() == 2;
         JsonGroups<JsonGroups<Count>> heatmap = this.database.histogram2D(

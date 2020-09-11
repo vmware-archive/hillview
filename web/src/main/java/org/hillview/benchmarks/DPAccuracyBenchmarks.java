@@ -78,7 +78,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
 
             Empty e = Empty.getInstance();
             LocalDataSet<Empty> local = new LocalDataSet<Empty>(e);
-            IMap<Empty, List<IFileReference>> finder = new FindFilesMap(fsd);
+            IMap<Empty, List<IFileReference>> finder = new FindFilesMap<>(fsd);
             IDataSet<IFileReference> found = local.blockingFlatMap(finder);
             IMap<IFileReference, ITable> loader = new LoadFilesMap();
             return found.blockingMap(loader);

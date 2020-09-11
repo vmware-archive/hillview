@@ -74,15 +74,17 @@ export function getDescription(data: DataLoaded): PageTitle {
  * Initiates an RPC to get the file size.
  */
 class FilesReceiver extends OnCompleteReceiver<RemoteObjectId> {
-    constructor(loadMenuPage: FullPage, operation: ICancellable<RemoteObjectId>, protected data: DataLoaded) {
-        super(loadMenuPage, operation, "Get file info");
+    constructor(sourcePage: FullPage, operation: ICancellable<RemoteObjectId>,
+                protected data: DataLoaded,
+                protected newDataset: boolean) {
+        super(sourcePage, operation, "Get file info");
     }
 
     public run(remoteObjId: RemoteObjectId): void {
         const fn = new RemoteObject(remoteObjId);
         const rr = fn.createStreamingRpcRequest<FileSizeSketchInfo>("getFileSize", null);
         rr.chain(this.operation);
-        const observer = new FileSizeReceiver(this.page, rr, this.data, fn);
+        const observer = new FileSizeReceiver(this.page, rr, this.data, fn, this.newDataset);
         rr.invoke(observer);
     }
 }
@@ -92,10 +94,11 @@ class FilesReceiver extends OnCompleteReceiver<RemoteObjectId> {
  * It initiates a loadTable RPC request to load data from these files as a table.
  */
 class FileSizeReceiver extends OnCompleteReceiver<FileSizeSketchInfo> {
-    constructor(loadMenuPage: FullPage, operation: ICancellable<FileSizeSketchInfo>,
+    constructor(sourcePage: FullPage, operation: ICancellable<FileSizeSketchInfo>,
                 protected data: DataLoaded,
-                protected remoteObj: RemoteObject) {
-        super(loadMenuPage, operation, "Load data");
+                protected remoteObj: RemoteObject,
+                protected newDataset: boolean) {
+        super(sourcePage, operation, "Load data");
     }
 
     public run(size: FileSizeSketchInfo): void {
@@ -109,7 +112,7 @@ class FileSizeReceiver extends OnCompleteReceiver<FileSizeSketchInfo> {
             // TODO: prune seems to be broken.
             const rr = this.remoteObj.createStreamingRpcRequest<RemoteObjectId>("prune", null);
             rr.chain(this.operation);
-            const observer = new FilePruneReceiver(this.page, rr, this.data, size);
+            const observer = new FilePruneReceiver(this.page, rr, this.data, size, this.newDataset);
             rr.invoke(observer);
         } else {
             const fileSize = "Loading " + size.fileCount + " file(s), total size " +
@@ -117,16 +120,17 @@ class FileSizeReceiver extends OnCompleteReceiver<FileSizeSketchInfo> {
             const fn = new RemoteObject(this.remoteObj.remoteObjectId);
             const rr = fn.createStreamingRpcRequest<RemoteObjectId>("loadTable", null);
             rr.chain(this.operation);
-            const observer = new RemoteTableReceiver(this.page, rr, this.data, fileSize);
+            const observer = new RemoteTableReceiver(this.page, rr, this.data, fileSize, this.newDataset);
             rr.invoke(observer);
         }
     }
 }
 
 class FilePruneReceiver extends OnCompleteReceiver<RemoteObjectId> {
-    constructor(loadMenuPage: FullPage, operation: ICancellable<RemoteObjectId>,
-                protected data: DataLoaded, protected readonly size: FileSizeSketchInfo) {
-        super(loadMenuPage, operation, "Load data");
+    constructor(sourcePage: FullPage, operation: ICancellable<RemoteObjectId>,
+                protected data: DataLoaded, protected readonly size: FileSizeSketchInfo,
+                protected newDataset: boolean) {
+        super(sourcePage, operation, "Load data");
     }
 
     public run(remoteObjId: RemoteObjectId): void {
@@ -135,7 +139,7 @@ class FilePruneReceiver extends OnCompleteReceiver<RemoteObjectId> {
         const fn = new RemoteObject(remoteObjId);
         const rr = fn.createStreamingRpcRequest<RemoteObjectId>("loadTable", null);
         rr.chain(this.operation);
-        const observer = new RemoteTableReceiver(this.page, rr, this.data, fileSize);
+        const observer = new RemoteTableReceiver(this.page, rr, this.data, fileSize, this.newDataset);
         rr.invoke(observer);
     }
 }
@@ -147,14 +151,15 @@ class FilePruneReceiver extends OnCompleteReceiver<RemoteObjectId> {
 class RemoteTableReceiver extends BaseReceiver {
     /**
      * Create a renderer for a new table.
-     * @param loadMenuPage    Parent page initiating this request, always the page of the LoadMenu.
+     * @param sourcePage      Parent page initiating this request.
      * @param data            Data that has been loaded.
      * @param operation       Operation that will bring the results.
-     * @param progressInfo    Description of the files that are being loaded.
+     * @param description     Description of the files that are being loaded.
+     * @param newDataset      If true this is a new dataset.
      */
-    constructor(loadMenuPage: FullPage, operation: ICancellable<RemoteObjectId>, protected data: DataLoaded,
-                progressInfo: string) {
-        super(loadMenuPage, operation, progressInfo, null);
+    constructor(sourcePage: FullPage, operation: ICancellable<RemoteObjectId>, protected data: DataLoaded,
+                description: string, protected newDataset: boolean) {
+        super(sourcePage, operation, description, null);
     }
 
     public run(value: RemoteObjectId): void {
@@ -162,9 +167,13 @@ class RemoteTableReceiver extends BaseReceiver {
         const rr = this.remoteObject.createGetSummaryRequest();
         rr.chain(this.operation);
         const title = getDescription(this.data);
-        const dataset = new DatasetView(this.remoteObject.remoteObjectId, title.format, this.data, this.page);
-        const newPage = dataset.newPage(title, null);
-        rr.invoke(new SchemaReceiver(newPage, rr, this.remoteObject, dataset, null, null));
+        if (this.newDataset) {
+            const dataset = new DatasetView(this.remoteObject.remoteObjectId, title.format, this.data, this.page);
+            const newPage = dataset.newPage(title, null);
+            rr.invoke(new SchemaReceiver(newPage, rr, this.remoteObject, dataset, null, null));
+        } else {
+            rr.invoke(new SchemaReceiver(this.page, rr, this.remoteObject, this.page.dataset!, null, null));
+        }
     }
 }
 
@@ -177,10 +186,13 @@ class GreenplumTableReceiver extends BaseReceiver {
      * Create a renderer for a new table.
      * @param loadMenuPage    Parent page initiating this request, always the page of the LoadMenu.
      * @param data            Data that has been loaded.
+     * @param initialObject   Handle to the initial object; used later to load the files
+     *                        obtained from dumping the table.
      * @param operation       Operation that will bring the results.
      * @param progressInfo    Description of the files that are being loaded.
      */
     constructor(loadMenuPage: FullPage, operation: ICancellable<RemoteObjectId>,
+                protected initialObject: InitialObject,
                 protected data: DataLoaded, progressInfo: string) {
         super(loadMenuPage, operation, progressInfo, null);
     }
@@ -192,12 +204,13 @@ class GreenplumTableReceiver extends BaseReceiver {
         const title = getDescription(this.data);
         const dataset = new DatasetView(this.remoteObject.remoteObjectId, title.format, this.data, this.page);
         const newPage = dataset.newPage(title, null);
-        rr.invoke(new GreenplumSchemaReceiver(newPage, rr, this.remoteObject));
+        rr.invoke(new GreenplumSchemaReceiver(newPage, rr, this.initialObject, this.remoteObject));
     }
 }
 
 class GreenplumSchemaReceiver extends OnCompleteReceiver<TableSummary> {
     constructor(page: FullPage, operation: ICancellable<TableSummary>,
+                protected initialObject: InitialObject,
                 protected remoteObject: TableTargetAPI) {
         super(page, operation, "Get schema");
     }
@@ -209,16 +222,16 @@ class GreenplumSchemaReceiver extends OnCompleteReceiver<TableSummary> {
         }
         // Ask Greenplum to dump the data; receive back the name of the temporary files
         // where the tables are stored on the remote machines
-        const rr = this.remoteObject.createStreamingRpcRequest<string>("dumpTable", ts);
-        rr.invoke(new GreenplumLoader(this.page, ts, this.remoteObject, rr));
+        const rr = this.remoteObject.createStreamingRpcRequest<string>("dumpTable", null);
+        rr.invoke(new GreenplumLoader(this.page, ts, this.initialObject, rr));
     }
 }
 
 class GreenplumLoader extends OnCompleteReceiver<string> {
     constructor(page: FullPage, protected summary: TableSummary,
-                protected remoteObject: TableTargetAPI,
+                protected remoteObject: InitialObject,
                 operation: ICancellable<string>) {
-        super(page, operation, "Get table id");
+        super(page, operation, "Find table fragments");
     }
 
     public run(value: string): void {
@@ -236,7 +249,7 @@ class GreenplumLoader extends OnCompleteReceiver<string> {
         };
         const rr = this.remoteObject.createStreamingRpcRequest<RemoteObjectId>("findFiles", files);
         const observer = new FilesReceiver(this.page, rr,
-            { kind: "Files", description: files });
+            { kind: "Files", description: files }, false);
         rr.invoke(observer);
     }
 }
@@ -259,28 +272,28 @@ export class InitialObject extends RemoteObject {
     public loadFiles(files: FileSetDescription, loadMenuPage: FullPage): void {
         const rr = this.createStreamingRpcRequest<RemoteObjectId>("findFiles", files);
         const observer = new FilesReceiver(loadMenuPage, rr,
-            { kind: "Files", description: files });
+            { kind: "Files", description: files }, true);
         rr.invoke(observer);
     }
 
     public loadCassandraFiles(conn: CassandraConnectionInfo, loadMenuPage: FullPage): void {
         const rr = this.createStreamingRpcRequest<RemoteObjectId>("findCassandraFiles", conn);
         const observer = new FilesReceiver(loadMenuPage, rr,
-            { kind: "SSTable", description: conn });
+            { kind: "SSTable", description: conn }, true);
         rr.invoke(observer);
     }
 
     public loadLogs(loadMenuPage: FullPage): void {
         // Use a guid to force the request to reload every time
         const rr = this.createStreamingRpcRequest<RemoteObjectId>("findLogs", getUUID());``
-        const observer = new FilesReceiver(loadMenuPage, rr, { kind: "Hillview logs"} );
+        const observer = new FilesReceiver(loadMenuPage, rr, { kind: "Hillview logs"}, true);
         rr.invoke(observer);
     }
 
     protected loadTable(conn: JdbcConnectionInformation, loadMenuPage: FullPage, method: string): void {
         const rr = this.createStreamingRpcRequest<RemoteObjectId>(method, conn);
         const observer = new RemoteTableReceiver(loadMenuPage, rr,
-            { kind: "DB", description: conn }, "loading database table");
+            { kind: "DB", description: conn }, "loading database table", true);
         rr.invoke(observer);
     }
 
@@ -290,7 +303,7 @@ export class InitialObject extends RemoteObject {
 
     protected loadGreenplumTable(conn: JdbcConnectionInformation, loadMenuPage: FullPage, method: string): void {
         const rr = this.createStreamingRpcRequest<RemoteObjectId>(method, conn);
-        const observer = new GreenplumTableReceiver(loadMenuPage, rr,
+        const observer = new GreenplumTableReceiver(loadMenuPage, rr, this,
             { kind: "DB", description: conn }, "loading Greenplum table");
         rr.invoke(observer);
     }

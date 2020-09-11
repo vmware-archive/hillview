@@ -207,8 +207,8 @@ public final class TableTarget extends TableRpcTarget {
         String geoFile; // e.g., geo/us_states/cb_2019_us_state_20m.shp
         // Supported formats: shapeFile (shp)
 
-        public JsonString createJSON(PolygonSet ps) {
-            return new JsonString(
+        public JsonInString createJSON(PolygonSet ps) {
+            return new JsonInString(
                      "{" +
                              "columnName:" + this.columnName + ",\n" +
                              "property:" + this.property + ",\n" +
@@ -242,7 +242,7 @@ public final class TableTarget extends TableRpcTarget {
         if (geoInfo == null)
             throw new RuntimeException("No geographic data found for column " + desc.name);
         PolygonSet ps = new PolygonSet(geoInfo.geoFile);
-        PrecomputedSketch<ITable, JsonString> pk = new PrecomputedSketch<>(geoInfo.createJSON(ps));
+        PrecomputedSketch<ITable, JsonInString> pk = new PrecomputedSketch<>(geoInfo.createJSON(ps));
         this.runCompleteSketch(this.table, pk, request, context);
     }
 
@@ -267,8 +267,8 @@ public final class TableTarget extends TableRpcTarget {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        JsonString bookmarkFile = new JsonString(guid + InitialObjectTarget.bookmarkExtension);
-        PrecomputedSketch<ITable, JsonString> empty = new PrecomputedSketch<ITable, JsonString>(bookmarkFile);
+        JsonInString bookmarkFile = new JsonInString(guid + InitialObjectTarget.bookmarkExtension);
+        PrecomputedSketch<ITable, JsonInString> empty = new PrecomputedSketch<ITable, JsonInString>(bookmarkFile);
         this.runCompleteSketch(this.table, empty, request, context);
     }
 
