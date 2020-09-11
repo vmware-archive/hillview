@@ -2,20 +2,12 @@
 
 We are deprecating Ansible for Hillview's management; the deployment
 is now done using just: ![Python scripts](../README.md#3-deploying-the-hillview-service-on-a-cluster).
-This folder contains some left-over ansible scripts for managing
-software installation on the cluster; they will be eventually
-deprecated.
+This folder contains a left-over ansible script for installing
+java on the cluster.
 
-* install-java.yaml: installs Java 8 on the machines specified in the
-  configuration file (see below)
+## Cluster configuration file
 
-* demo-data-cleaner.yaml: creates a flights dataset with only 15
-  columns from the full dataset on all machines in the cluster (the
-  full dataset must be already installed)
-
-### Cluster configuration file
-
-The cluster where the Hillview service is deployed is described by a
+The cluster where the Hillview service is deployed is described by a `hosts`
 file containing the list of machines where the service should be
 deployed.  Here is an example of such a file:
 
@@ -29,7 +21,7 @@ deployed.  Here is an example of such a file:
 ```
 
 The `web` group describes the front-end web server.
-
 The `backends` group lists all machines running the `hillview`
-service.  Individual machines heap sizes can be specified by setting
-the machine's `heap_size` variable.
+service.  The script is invoked using:
+
+`ansible-playbook -i hosts -u user install-java.yaml`

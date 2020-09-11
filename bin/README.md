@@ -18,6 +18,9 @@
   deploys it, and restarts the service
 * `upload-file.sh`: Given a csv file it will guess a schema for it and
   upload it to a remote cluster chopped into small pieces.
+* `dump-greenplum.sh`: This script is used to connect Hillview
+  with [Greenplum](https://greenplum.org/) distributed databases.
+  It should be installed on each Greenplum worker machine
 
 The following are templates that are used to generate actual shell scripts
 on a remoate cluster when Hillview is installed

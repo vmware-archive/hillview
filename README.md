@@ -1,8 +1,8 @@
 ![Hillview project logo](hillview-logo.png)
 
 Hillview: a big data spreadsheet.  Hillview is a cloud-based
-service for visualizing interactively large datasets.  
-The hillview user interface executes in a browser.  
+service for visualizing interactively large datasets.
+The hillview user interface executes in a browser.
 
 Contents:
 
@@ -115,7 +115,9 @@ Hillview uses `ssh` to deploy code on the cluster.  Prior to
 deployment you must setup `ssh` on the cluster to use password-less
 access to the cluster machines, as described here:
 https://www.ssh.com/ssh/copy-id.  You must also install Java on all
-machines in the cluster.
+machines in the cluster.  Each machine in the cluster must allow
+connections on the network ports described in the [configuration
+file](#service-configuration).
 
 *Please note that Hillview allows arbitrary access to files on the
 worker nodes from the client application running with the privileges
@@ -123,8 +125,8 @@ of the user specified in the configuration file.*
 
 ## 3.1 Service configuration
 
-The configuration of the Hillview service is described in a Json file 
-(enhanced with comments); two sample files are `bin/config.json`and 
+The configuration of the Hillview service is described in a Json file
+(enhanced with comments); two sample files are `bin/config.json`and
 `bin/config-local.json`.  The file `config-local.json` treats the local
 machine as a one-machine cluster.
 
@@ -228,7 +230,7 @@ They are described [here](bin/README.md).
 # 4. Developing Hillview
 
 We only provide development instructions for Linux or MacOS, but there is
-no reason Hillview could not be developed on Windows. 
+no reason Hillview could not be developed on Windows.
 
 ## 4.1. Software Dependencies
 
@@ -307,7 +309,7 @@ Subsequent builds can just run
 $ bin/rebuild.sh
 ```
 
-Hillview is currently split into two separate Maven projects.  One can 
+Hillview is currently split into two separate Maven projects.  One can
 also build the two projects separately, as follows:
 
 * platform: pure Java, includes the entire back-end.  This produces a
@@ -342,7 +344,7 @@ standard.
 Download and install Intellij IDEA: https://www.jetbrains.com/idea/.
 The web project typescript requires the (paid) Ultimate version of Intellij.
 
-First run maven to generate the Java code automatically generated for gRPC: 
+First run maven to generate the Java code automatically generated for gRPC:
 
 ```
 $ cd platform
@@ -355,7 +357,7 @@ add three modules: web/pom.xml, platform/pom.xml, and the root folder hillview i
 
 ## 4.5. Setup VS Code
 
-Download and install Visual Studio Code: https://code.visualstudio.com/download. 
+Download and install Visual Studio Code: https://code.visualstudio.com/download.
 Here is a step-by-step guide to add the necessary extensions, run Maven commands, and attach a debugger:
 
 1. Install these extensions and then restart the VS Code.
@@ -364,16 +366,16 @@ Here is a step-by-step guide to add the necessary extensions, run Maven commands
 	- `Language Support for Java(TM) by Red Hat
 redhat.java`: recognize projects with Maven or Gradle build in the directory hierarchy.
 	- `Maven for Java`: provides a project explorer and shortcuts to execute Maven commands.
-2. Select `Add workspace folder...` at the Welcome page, then choose `hillview/platform/` directory. The platform module should be displayed in the `Explorer` view. 
-3. Add `web` module to the workspace by clicking `File`->`Add Folder to Workspace...` and then choose `hillview/web/` directory. 
+2. Select `Add workspace folder...` at the Welcome page, then choose `hillview/platform/` directory. The platform module should be displayed in the `Explorer` view.
+3. Add `web` module to the workspace by clicking `File`->`Add Folder to Workspace...` and then choose `hillview/web/` directory.
 4. Save the workspace by clicking `File`->`Save Workspace As...` and store it in your personal folder outside `hillview/` root directory.
-5. Next, about executing Maven commands; in the `Explorer` view, click `MAVEN PROJECTS`. There are two Maven folders correspond to `web` and `platform` modules; 
+5. Next, about executing Maven commands; in the `Explorer` view, click `MAVEN PROJECTS`. There are two Maven folders correspond to `web` and `platform` modules;
    click those folders to expand and display the Maven pom files. The Maven commands will be displayed by right clicking the pom files.
 6. Finally, about attaching a debugger:
 	- Bring up the `Run` view, select the `Run` icon in the `Activity Bar` on the left side of VS Code.
-	- From the `Run` view, click `create a launch.json file`, you will see the `platform` and `web` modules listed. We will create two `launch.json` files, one for `platform` module and the other for `web` module. 
-	- When configuring the `launch.json` for `platform` module, you must select `Java` option. Otherwise, choose `Chrome (preview)` option when configuring the `web` module. Then, delete the auto generated `configurations` 
-	and specify the correct configuration to attach the debugger. The important fields are `url`, `hostname`, `port`, and `request`. More about this is here 
+	- From the `Run` view, click `create a launch.json file`, you will see the `platform` and `web` modules listed. We will create two `launch.json` files, one for `platform` module and the other for `web` module.
+	- When configuring the `launch.json` for `platform` module, you must select `Java` option. Otherwise, choose `Chrome (preview)` option when configuring the `web` module. Then, delete the auto generated `configurations`
+	and specify the correct configuration to attach the debugger. The important fields are `url`, `hostname`, `port`, and `request`. More about this is here
 	[VS Code Debugging#launch-configuration](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations) and [VS Code#Java-Debugging](https://code.visualstudio.com/docs/java/java-debugging#_attach).
 
 ## 4.6 Debugging
@@ -381,7 +383,7 @@ redhat.java`: recognize projects with Maven or Gradle build in the directory hie
 Debugging on a single machine can done as follows:
 - you can start the back-end service under the debugger,
   by starting the HillviewBackend binary with command-line arguments 127.0.0.1:3569
-- you can start the front-end service by attaching 
+- you can start the front-end service by attaching
   to the Java process created by Java Tomcat.  The frontend-start.sh
   script has a line that sets up the environment variables to enable this.
 
@@ -426,6 +428,6 @@ Here is a step-by-step guide to submitting contributions:
   `@Nullable` annotation (from javax.annotation) for all pointers which
   can be null.  Use `Converters.checkNull` to cast a @Nullable pointer to a
   non-null pointer.
-  
+
 * Some code executes on multiple machines or in multiple threads.  In particular,
   all classes that derive from `IMap` or `ISketch` should be immutable.
