@@ -247,7 +247,8 @@ class GreenplumLoader extends OnCompleteReceiver<string> {
             repeat: 1,
             logFormat: null,
             startTime: null,
-            endTime: null
+            endTime: null,
+            deleteAfterLoading: true
         };
         const rr = this.remoteObject.createStreamingRpcRequest<RemoteObjectId>("findFiles", files);
         const observer = new FilesReceiver(this.page, rr,

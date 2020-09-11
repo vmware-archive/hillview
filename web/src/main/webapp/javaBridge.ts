@@ -172,6 +172,7 @@ export interface FileSetDescription {
     logFormat: string | null;
     startTime: number | null;
     endTime: number | null;
+    deleteAfterLoading: boolean;
 }
 
 export interface CountWithConfidence {

@@ -94,7 +94,8 @@ export class LoadView extends RemoteObject implements IDataView {
                         fileKind: "csv",
                         logFormat: null,
                         startTime: null,
-                        endTime: null
+                        endTime: null,
+                        deleteAfterLoading: false
                     };
                     this.init.loadFiles(files, this.page);
                 },
@@ -112,7 +113,8 @@ export class LoadView extends RemoteObject implements IDataView {
                         fileKind: "orc",
                         logFormat: null,
                         startTime: null,
-                        endTime: null
+                        endTime: null,
+                        deleteAfterLoading: false
                     };
                     this.init.loadFiles(files, this.page);
                 },
@@ -130,7 +132,8 @@ export class LoadView extends RemoteObject implements IDataView {
                         fileKind: "orc",
                         logFormat: null,
                         startTime: null,
-                        endTime: null
+                        endTime: null,
+                        deleteAfterLoading: false
                     };
                     this.init.loadFiles(files, this.page);
                 },
@@ -149,7 +152,8 @@ export class LoadView extends RemoteObject implements IDataView {
                         fileKind: "csv",
                         logFormat: null,
                         startTime: null,
-                        endTime: null
+                        endTime: null,
+                        deleteAfterLoading: false
                     };
                     this.init.loadFiles(files, this.page);
                 },
@@ -169,7 +173,8 @@ export class LoadView extends RemoteObject implements IDataView {
                         fileKind: "orc",
                         logFormat: null,
                         startTime: null,
-                        endTime: null
+                        endTime: null,
+                        deleteAfterLoading: false
                     };
                     this.init.loadFiles(files, this.page);
                 },
@@ -469,7 +474,8 @@ class CSVFileDialog extends Dialog {
             fileKind: "csv",
             logFormat: null,
             startTime: null,
-            endTime: null
+            endTime: null,
+            deleteAfterLoading: false
         };
     }
 }
@@ -508,7 +514,8 @@ class GenericLogDialog extends Dialog {
             cookie: getUUID(),
             fileKind: "genericlog",
             startTime: Converters.doubleFromDate(this.getDateTimeValue("startTime")),
-            endTime: Converters.doubleFromDate(this.getDateTimeValue("endTime"))
+            endTime: Converters.doubleFromDate(this.getDateTimeValue("endTime")),
+            deleteAfterLoading: false
         };
     }
 }
@@ -540,7 +547,8 @@ class JsonFileDialog extends Dialog {
             fileKind: "json",
             logFormat: null,
             startTime: null,
-            endTime: null
+            endTime: null,
+            deleteAfterLoading: false
         };
     }
 }
@@ -569,7 +577,8 @@ class ParquetFileDialog extends Dialog {
             fileKind: "parquet",
             logFormat: null,
             startTime: null,
-            endTime: null
+            endTime: null,
+            deleteAfterLoading: false
         };
     }
 }
@@ -601,7 +610,8 @@ class OrcFileDialog extends Dialog {
             fileKind: "orc",
             logFormat: null,
             startTime: null,
-            endTime: null
+            endTime: null,
+            deleteAfterLoading: false
         };
     }
 }

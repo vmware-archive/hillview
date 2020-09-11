@@ -22,6 +22,7 @@ import org.hillview.dataset.api.IJson;
 import org.hillview.table.Schema;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
+import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
@@ -78,6 +79,11 @@ public class FileSetDescription implements IJson {
     public Double startTime;
     @Nullable
     public Double endTime;
+    /**
+     * If true the file is deleted after loading the data.  This is
+     * useful for temporary files.
+     */
+    public boolean deleteAfterLoading;
 
     @SuppressWarnings("unused")
     public String getBasename() {
@@ -151,7 +157,16 @@ public class FileSetDescription implements IJson {
                     throw new RuntimeException(
                             "Unexpected file kind " + FileSetDescription.this.fileKind);
             }
-            return Converters.checkNull(loader.load());
+            ITable result = Converters.checkNull(loader.load());
+            if (FileSetDescription.this.deleteAfterLoading) {
+                File file = new File(this.pathname);
+                boolean success = file.delete();
+                if (!success)
+                    HillviewLogger.instance.error("Error deleting file", "{0}", this.pathname);
+                else
+                    HillviewLogger.instance.info("Deleted file", "{0}", this.pathname);
+            }
+            return result;
         }
 
         public long getSizeInBytes() {
