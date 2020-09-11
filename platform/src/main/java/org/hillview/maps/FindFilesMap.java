@@ -18,7 +18,6 @@
 package org.hillview.maps;
 
 import org.apache.commons.io.filefilter.WildcardFileFilter;
-import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IMap;
 import org.hillview.storage.FileSetDescription;
 import org.hillview.storage.IFileReference;
@@ -40,8 +39,9 @@ import java.util.List;
 /**
  * Scans a folder and finds files matching a pattern. Creates a list of file
  * loaders that can be invoked to load the actual file data as tables.
+ * T is not used for anything.
  */
-public class FindFilesMap implements IMap<Empty, List<IFileReference>> {
+public class FindFilesMap<T> implements IMap<T, List<IFileReference>> {
     static final long serialVersionUID = 1;
     private final FileSetDescription description;
 
@@ -53,11 +53,10 @@ public class FindFilesMap implements IMap<Empty, List<IFileReference>> {
      * Returns a list of IFileReference objects, one for each of the files that
      * match the specification.
      *
-     * @param empty:
-     *            unused.
+     * @param unused: not used
      */
     @Override
-    public List<IFileReference> apply(@Nullable Empty empty) {
+    public List<IFileReference> apply(@Nullable T unused) {
         String[] paths = this.description.fileNamePattern.trim().split("\\s*,\\s*");
         HillviewLogger.instance.info("Find files", "pattern: {0}", this.description.fileNamePattern);
         List<File> files = new ArrayList<File>();

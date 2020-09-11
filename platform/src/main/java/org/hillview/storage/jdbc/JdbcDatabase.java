@@ -151,7 +151,7 @@ public class JdbcDatabase {
      *                last column has the count of each row.
      */
     public SmallTable topFreq(Schema schema, int maxRows,
-                              @Nullable ColumnLimits columnLimits) {
+                              @Nullable ColumnLimits columnLimits) throws SQLException {
         assert this.conn.info.table != null;
         String query = this.conn.getQueryToComputeFreqValues(schema, maxRows, columnLimits);
         ResultSet rs = this.getQueryResult(query);
@@ -171,7 +171,7 @@ public class JdbcDatabase {
             ColumnDescription cd, IHistogramBuckets buckets,
             @Nullable ColumnLimits columnLimits,
             @Nullable ColumnQuantization quantization,
-            int rowCount) {
+            int rowCount) throws SQLException {
         String query = this.conn.getQueryForHistogram(cd, columnLimits, buckets, quantization);
         ResultSet rs = this.getQueryResult(query);
         List<IAppendableColumn> cols = JdbcDatabase.convertResultSet(rs);
@@ -202,7 +202,7 @@ public class JdbcDatabase {
                 IHistogramBuckets buckets0, IHistogramBuckets buckets1,
                 @Nullable ColumnLimits columnLimits,
                 @Nullable ColumnQuantization quantization0,
-                @Nullable ColumnQuantization quantization1) {
+                @Nullable ColumnQuantization quantization1) throws SQLException {
         // TODO: this does not currently compute nulls
         String query = this.conn.getQueryForHeatmap(cd0, cd1,
                 columnLimits,
@@ -241,7 +241,7 @@ public class JdbcDatabase {
      * @param limits  Limits on the data to read.
      */
     @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
-    public DataRange numericDataRange(ColumnDescription cd, @Nullable ColumnLimits limits) {
+    public DataRange numericDataRange(ColumnDescription cd, @Nullable ColumnLimits limits) throws SQLException {
         String query = this.conn.getQueryForNumericRange(cd, null, limits);
         ResultSet rs = this.getQueryResult(query);
         List<IAppendableColumn> cols = JdbcDatabase.convertResultSet(rs);
@@ -262,7 +262,7 @@ public class JdbcDatabase {
     }
 
     public StringQuantiles stringBuckets(ColumnDescription cd, int stringsToSample,
-                                         @Nullable ColumnLimits columnLimits) {
+                                         @Nullable ColumnLimits columnLimits) throws SQLException {
         @Nullable String max = null;
         JsonList<String> boundaries = new JsonList<String>();
         long presentCount, missingCount;
@@ -293,6 +293,7 @@ public class JdbcDatabase {
             List<IAppendableColumn> cols = JdbcDatabase.convertResultSet(rs);
             SmallTable table = new SmallTable(cols);
             assert table.getNumOfRows() == 1;
+            @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
             RowSnapshot row = new RowSnapshot(table, 0);
             presentCount = Converters.toLong(row.getDouble("nonnulls"));
             missingCount = Converters.toLong(row.getDouble("total")) - presentCount;
@@ -333,28 +334,25 @@ public class JdbcDatabase {
      * Get the data in the JDBC database table.
      * @param rowCount  Maximum number of rows.  If negative, bring all rows.
      */
-    private ResultSet getDataInTable(int rowCount) {
+    private ResultSet getDataInTable(int rowCount) throws SQLException {
         assert this.conn.info.table != null;
         String query = this.conn.getQueryToReadTable(rowCount);
         return this.getQueryResult(query);
     }
 
-    public Statement createStatement() throws SQLException {
-        return Converters.checkNull(this.connection).createStatement();
+    public void executeUpdate(String query) throws SQLException {
+        Statement statement = Converters.checkNull(this.connection).createStatement();
+        HillviewLogger.instance.info("Executing SQL update query", "{0}", query);
+        statement.executeUpdate(query);
     }
 
-    private ResultSet getQueryResult(String query) {
-        try {
-            // System.out.println(query);
-            HillviewLogger.instance.info("Executing SQL query", "{0}", query);
-            Statement st = this.createStatement();
-            return st.executeQuery(query);
-        } catch (SQLException ex) {
-            throw new RuntimeException(ex);
-        }
+    private ResultSet getQueryResult(String query) throws SQLException {
+        HillviewLogger.instance.info("Executing SQL query", "{0}", query);
+        Statement st = Converters.checkNull(this.connection).createStatement();
+        return st.executeQuery(query);
     }
 
-    public ITable getQueryData(String query) {
+    public ITable getQueryData(String query) throws SQLException {
         ResultSet rs = this.getQueryResult(query);
         List<IAppendableColumn> columns = JdbcDatabase.convertResultSet(rs);
         return new Table(columns, null, null);
