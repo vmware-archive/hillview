@@ -553,6 +553,35 @@ file it will perform type conversions at loading time, as follows:
 |`TIMESTAMP`|`String`,`Json`|`String` representation of the date|
 |`TIMESTAMP`|`Date`|Convert to date assuming that the timezone is UTC|
 
+#### Reading Parquet files
+
+Hillview can read data from [Apache Parquet
+files](http://parquet.apache.org), a columnar storage format.  The
+[Impala](https://impala.apache.org/) database uses Parquet to store
+data.  *The files must be resident on the worker machines where the
+Hillview service is deployed*.
+
+![Specifying Parquet files](parquet-menu.png)
+
+* Folder: Folder containing the files to load.
+
+* File name pattern: A shell expansion pattern that names the files to
+  load.  Multiple files may be loaded on each machine.
+
+The following table describes data conversion rules between Parquet data types
+and Hillview data types:
+
+|Parquet type|Hillview type|
+|INT64|`Double`|
+|FLOAT|`Double`|
+|DOUBLE|`Double`|
+|INT32|`Integer`|
+|BOOLEAN|`String` (true/false)|
+|BINARY|`String`|
+|FIXED_LEN_BYTE_ARRAY|`String`|
+|INT96|`LocalDate`|
+|other|Error - conversion fails|
+
 #### Reading data from SQL databases
 
 The following menu allows the user to load data from a
@@ -588,7 +617,7 @@ The following diagram illustrates how Hillview interact with Greenplum.
 * The hillview root node can run anywhere (including the same machine as the Master Host),
   but it needs to be able to open
   a JDBC connection to the Greenplum Master Host.  The Master Host must be specified
-  as `host` in the connection dialog shown in (#reading-data-from-sql-databases).
+  as `host` in the connection dialog shown in [the section above](#reading-data-from-sql-databases).
   The default network port for Greenplum is `5432`.
 
 * Each hillview worker must be deployed on the same machine which contains a
@@ -676,35 +705,6 @@ The following menu allows the user to specify the data to load.
 * user: The name of the user connecting to the database.
 
 * password: Credentials of the user connecting to the database.
-
-#### Reading Parquet files
-
-Hillview can read data from [Apache Parquet
-files](http://parquet.apache.org), a columnar storage format.  The
-[Impala](https://impala.apache.org/) database uses Parquet to store
-data.  *The files must be resident on the worker machines where the
-Hillview service is deployed*.
-
-![Specifying Parquet files](parquet-menu.png)
-
-* Folder: Folder containing the files to load.
-
-* File name pattern: A shell expansion pattern that names the files to
-  load.  Multiple files may be loaded on each machine.
-
-The following table describes data conversion rules between Parquet data types
-and Hillview data types:
-
-|Parquet type|Hillview type|
-|INT64|`Double`|
-|FLOAT|`Double`|
-|DOUBLE|`Double`|
-|INT32|`Integer`|
-|BOOLEAN|`String` (true/false)|
-|BINARY|`String`|
-|FIXED_LEN_BYTE_ARRAY|`String`|
-|INT96|`LocalDate`|
-|other|Error - conversion fails|
 
 ### Navigating multiple datasets
 
@@ -1485,7 +1485,7 @@ Histogram views have a menu that offers to the users several operations:
 
 ![Histogram menu](histogram-menu.png)
 
-* Export: see (#exporting-data-to-a-local-csv-file).
+* Export: see [exporting data](#exporting-data-to-a-local-csv-file).
 
 * View: [changing parameters](#the-histogram-view-menu) of the current view.
 
@@ -1786,8 +1786,7 @@ The heatmap view menu has the following operations:
 * Quartiles vector: Draw the data in the heatmap as a [histogram of quartiles](#quartiles-view-for-histogram-buckets).
   This is only possible if the Y axis is a numeric column.
 
-* group by: Groups data by a third column creating a [Trellis plot]
-  (#trellis-plots-of-heatmaps).
+* group by: Groups data by a third column creating a [Trellis plot](#trellis-plots-of-heatmaps).
 
 * Confidence threshold...: this option is only available if the data displayed
   uses differential privacy.  This is a factor that is multiplied with the confidence

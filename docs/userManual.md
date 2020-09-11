@@ -57,11 +57,11 @@ Updated on 2020 Sep 11.
       * 3.3.4 [Reading CSV files](#334-reading-csv-files)
       * 3.3.5 [Reading JSON files](#335-reading-json-files)
       * 3.3.6 [Reading ORC files](#336-reading-orc-files)
-      * 3.3.7 [Reading data from SQL databases](#337-reading-data-from-sql-databases)
-        * 3.3.7.1 [Reading data from Greenplum databases](#3371-reading-data-from-greenplum-databases)
-        * 3.3.7.2 [Reading from a federated set of MySQL databases](#3372-reading-from-a-federated-set-of-mysql-databases)
-        * 3.3.7.3 [Reading data from Cassandra databases](#3373-reading-data-from-cassandra-databases)
-      * 3.3.8 [Reading Parquet files](#338-reading-parquet-files)
+      * 3.3.7 [Reading Parquet files](#337-reading-parquet-files)
+      * 3.3.8 [Reading data from SQL databases](#338-reading-data-from-sql-databases)
+        * 3.3.8.1 [Reading data from Greenplum databases](#3381-reading-data-from-greenplum-databases)
+        * 3.3.8.2 [Reading from a federated set of MySQL databases](#3382-reading-from-a-federated-set-of-mysql-databases)
+        * 3.3.8.3 [Reading data from Cassandra databases](#3383-reading-data-from-cassandra-databases)
     * 3.4 [Navigating multiple datasets](#34-navigating-multiple-datasets)
   * 4 [Data views](#4-data-views)
     * 4.1 [The heading of a view](#41-the-heading-of-a-view)
@@ -423,13 +423,13 @@ storage.
   files](#335-reading-json-files).
 
 * Parquet files: allows the user to [read the data from a set of
-  Parquet files](#338-reading-parquet-files).
+  Parquet files](#337-reading-parquet-files).
 
 * ORC files: allows the user to [read the data from a set of ORC
   files](#336-reading-orc-files).
 
 * Federated DB tables: allows the user to [read data from a set of federated
-  or distributed databases](#337-reading-data-from-sql-databases).
+  or distributed databases](#338-reading-data-from-sql-databases).
 
 After the data loading is initiated the user will be presented with a
 view of the loaded table.  If the table has relatively few columns,
@@ -632,7 +632,36 @@ file it will perform type conversions at loading time, as follows:
 |`TIMESTAMP`|`String`,`Json`|`String` representation of the date|
 |`TIMESTAMP`|`Date`|Convert to date assuming that the timezone is UTC|
 
-#### 3.3.7 Reading data from SQL databases
+#### 3.3.7 Reading Parquet files
+
+Hillview can read data from [Apache Parquet
+files](http://parquet.apache.org), a columnar storage format.  The
+[Impala](https://impala.apache.org/) database uses Parquet to store
+data.  *The files must be resident on the worker machines where the
+Hillview service is deployed*.
+
+![Specifying Parquet files](parquet-menu.png)
+
+* Folder: Folder containing the files to load.
+
+* File name pattern: A shell expansion pattern that names the files to
+  load.  Multiple files may be loaded on each machine.
+
+The following table describes data conversion rules between Parquet data types
+and Hillview data types:
+
+|Parquet type|Hillview type|
+|INT64|`Double`|
+|FLOAT|`Double`|
+|DOUBLE|`Double`|
+|INT32|`Integer`|
+|BOOLEAN|`String` (true/false)|
+|BINARY|`String`|
+|FIXED_LEN_BYTE_ARRAY|`String`|
+|INT96|`LocalDate`|
+|other|Error - conversion fails|
+
+#### 3.3.8 Reading data from SQL databases
 
 The following menu allows the user to load data from a
 parallel database or a federated set of databases that expose some JDBC services.
@@ -657,7 +686,7 @@ The following menu allows the user to specify the data to load.
 
 * password: Credentials of the user connecting to the database.
 
-##### 3.3.7.1 Reading data from Greenplum databases
+##### 3.3.8.1 Reading data from Greenplum databases
 
 Hillview can read data from a [Greenplum massively parallel database](https://greenplum.org/).
 The following diagram illustrates how Hillview interact with Greenplum.
@@ -667,7 +696,7 @@ The following diagram illustrates how Hillview interact with Greenplum.
 * The hillview root node can run anywhere (including the same machine as the Master Host),
   but it needs to be able to open
   a JDBC connection to the Greenplum Master Host.  The Master Host must be specified
-  as `host` in the connection dialog shown in (#337-reading-data-from-sql-databases).
+  as `host` in the connection dialog shown in [the section above](#338-reading-data-from-sql-databases).
   The default network port for Greenplum is `5432`.
 
 * Each hillview worker must be deployed on the same machine which contains a
@@ -688,7 +717,7 @@ The following diagram illustrates how Hillview interact with Greenplum.
 The interaction between Hillview and Greenplum proceeds as follows:
 
 1. The user initiates a connection to a Greenplum database by filling the
-   form shown in [the section above](#337-reading-data-from-sql-databases).
+   form shown in [the section above](#338-reading-data-from-sql-databases).
 
 2. The Hillview root node initiates a JDBC connection to the Greenplum
    Master host.  Using this connection the Hillview root node obtains
@@ -703,7 +732,7 @@ The interaction between Hillview and Greenplum proceeds as follows:
 
 5. From this point on Hillview no longer needs to interact with Greenplum.
 
-##### 3.3.7.2 Reading from a federated set of MySQL databases
+##### 3.3.8.2 Reading from a federated set of MySQL databases
 
 The image below shows a system where Hillview reads directly from a set of
 independent MySQL databases (this can be easily extended
@@ -717,10 +746,10 @@ shards tables across databases such that different shards of a table
 are stored with the same table name across different databases.
 Hillview allows the user to visualize the union of all table fragments.
 The JDBC connection parameters introduced by the user in the dialog
-shown in [the section above](#337-reading-data-from-sql-databases) describe
+shown in [the section above](#338-reading-data-from-sql-databases) describe
 simultaneoulsy all connections from the workers.
 
-##### 3.3.7.3 Reading data from Cassandra databases
+##### 3.3.8.3 Reading data from Cassandra databases
 
 Hillview can read data from [Cassandra distributed databases](https://cassandra.apache.org/).
 For this purpose a Hillview worker should be deployed on each Cassandra node.
@@ -755,35 +784,6 @@ The following menu allows the user to specify the data to load.
 * user: The name of the user connecting to the database.
 
 * password: Credentials of the user connecting to the database.
-
-#### 3.3.8 Reading Parquet files
-
-Hillview can read data from [Apache Parquet
-files](http://parquet.apache.org), a columnar storage format.  The
-[Impala](https://impala.apache.org/) database uses Parquet to store
-data.  *The files must be resident on the worker machines where the
-Hillview service is deployed*.
-
-![Specifying Parquet files](parquet-menu.png)
-
-* Folder: Folder containing the files to load.
-
-* File name pattern: A shell expansion pattern that names the files to
-  load.  Multiple files may be loaded on each machine.
-
-The following table describes data conversion rules between Parquet data types
-and Hillview data types:
-
-|Parquet type|Hillview type|
-|INT64|`Double`|
-|FLOAT|`Double`|
-|DOUBLE|`Double`|
-|INT32|`Integer`|
-|BOOLEAN|`String` (true/false)|
-|BINARY|`String`|
-|FIXED_LEN_BYTE_ARRAY|`String`|
-|INT96|`LocalDate`|
-|other|Error - conversion fails|
 
 ### 3.4 Navigating multiple datasets
 
@@ -1564,7 +1564,7 @@ Histogram views have a menu that offers to the users several operations:
 
 ![Histogram menu](histogram-menu.png)
 
-* Export: see (#68-exporting-data-to-a-local-csv-file).
+* Export: see [exporting data](#68-exporting-data-to-a-local-csv-file).
 
 * View: [changing parameters](#512-the-histogram-view-menu) of the current view.
 
@@ -1865,8 +1865,7 @@ The heatmap view menu has the following operations:
 * Quartiles vector: Draw the data in the heatmap as a [histogram of quartiles](#52-quartiles-view-for-histogram-buckets).
   This is only possible if the Y axis is a numeric column.
 
-* group by: Groups data by a third column creating a [Trellis plot]
-  (#63-trellis-plots-of-heatmaps).
+* group by: Groups data by a third column creating a [Trellis plot](#63-trellis-plots-of-heatmaps).
 
 * Confidence threshold...: this option is only available if the data displayed
   uses differential privacy.  This is a factor that is multiplied with the confidence
