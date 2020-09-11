@@ -19,13 +19,13 @@ package org.hillview.test.storage;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.hillview.LazySchema;
 import org.hillview.main.DataUpload;
 import org.hillview.storage.OrcFileLoader;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;
-import org.hillview.utils.Converters;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -78,7 +78,7 @@ public class DataUploadTest extends BaseTest {
                 "-f", file, "-o",
                 "-l", "200000", "-h", "-d", dir.toString());
 
-        OrcFileLoader loader = new OrcFileLoader(dir.toString() + "/2016_10.orc", null, false);
+        OrcFileLoader loader = new OrcFileLoader(dir.toString() + "/2016_10.orc", new LazySchema(), false);
         ITable table = loader.load();
         Assert.assertNotNull(table);
         IColumn date = table.getLoadedColumn("FlightDate");

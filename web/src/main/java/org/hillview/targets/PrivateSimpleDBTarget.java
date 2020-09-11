@@ -27,7 +27,7 @@ import org.hillview.dataset.api.ISketch;
 import org.hillview.maps.highorder.IdMap;
 import org.hillview.sketches.PrecomputedSketch;
 import org.hillview.sketches.results.*;
-import org.hillview.storage.JdbcConnectionInformation;
+import org.hillview.storage.jdbc.JdbcConnectionInformation;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.PrivacySchema;
 import org.hillview.table.SmallTable;
@@ -67,8 +67,8 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
     public void changePrivacy(RpcRequest request, RpcRequestContext context) {
         this.wrapper.setPrivacySchema(request.parseArgs(PrivacySchema.class));
         HillviewLogger.instance.info("Updated privacy schema");
-        PrecomputedSketch<ITable, JsonString> empty =
-                new PrecomputedSketch<ITable, JsonString>(new JsonString("{}"));
+        PrecomputedSketch<ITable, JsonInString> empty =
+                new PrecomputedSketch<ITable, JsonInString>(new JsonInString("{}"));
         this.runCompleteSketch(this.table, empty, request, context);
     }
 
@@ -92,7 +92,7 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
     }
 
     @HillviewRpc
-    public void histogramAndCDF(RpcRequest request, RpcRequestContext context) {
+    public void histogramAndCDF(RpcRequest request, RpcRequestContext context) throws SQLException {
         HistogramRequestInfo info = request.parseArgs(HistogramRequestInfo.class);
         assert info.size() == 2;
 
@@ -149,7 +149,7 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
     }
 
     @HillviewRpc
-    public void histogram2D(RpcRequest request, RpcRequestContext context) {
+    public void histogram2D(RpcRequest request, RpcRequestContext context) throws SQLException {
         HistogramRequestInfo info = request.parseArgs(HistogramRequestInfo.class);
         assert info.size() == 2;
         JsonGroups<JsonGroups<Count>> heatmap = this.database.histogram2D(

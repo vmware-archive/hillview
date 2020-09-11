@@ -26,7 +26,7 @@ one row for an airline flight.  Columns in this dataset include: the date of the
 the origin and destination cities, the origin and destination states,
 the origin airport code, the distance flown, the departure and arrival delay.
 
-Updated on 2020 Sep 02.
+Updated on 2020 Sep 11.
 
 # Contents
   * 1 [Basic concepts](#1-basic-concepts)
@@ -38,6 +38,7 @@ Updated on 2020 Sep 02.
     * 2.3 [Interval values](#23-interval-values)
     * 2.4 [Data conversions](#24-data-conversions)
       * 2.4.1 [JavaScript conversions](#241-javascript-conversions)
+      * 2.4.2 [JDBC conversions](#242-jdbc-conversions)
     * 2.5 [Metadata](#25-metadata)
       * 2.5.1 [Mapping a dataset to a metadata directory](#251-mapping-a-dataset-to-a-metadata-directory)
       * 2.5.2 [Data schema](#252-data-schema)
@@ -57,8 +58,10 @@ Updated on 2020 Sep 02.
       * 3.3.5 [Reading JSON files](#335-reading-json-files)
       * 3.3.6 [Reading ORC files](#336-reading-orc-files)
       * 3.3.7 [Reading data from SQL databases](#337-reading-data-from-sql-databases)
-      * 3.3.8 [Reading data from Cassandra databases](#338-reading-data-from-cassandra-databases)
-      * 3.3.9 [Reading Parquet files](#339-reading-parquet-files)
+        * 3.3.7.1 [Reading data from Greenplum databases](#3371-reading-data-from-greenplum-databases)
+        * 3.3.7.2 [Reading from a federated set of MySQL databases](#3372-reading-from-a-federated-set-of-mysql-databases)
+        * 3.3.7.3 [Reading data from Cassandra databases](#3373-reading-data-from-cassandra-databases)
+      * 3.3.8 [Reading Parquet files](#338-reading-parquet-files)
     * 3.4 [Navigating multiple datasets](#34-navigating-multiple-datasets)
   * 4 [Data views](#4-data-views)
     * 4.1 [The heading of a view](#41-the-heading-of-a-view)
@@ -209,7 +212,6 @@ in buckets [2,3) and [3,4).
 
 In Javascript the intervals are exposed as arrays with two numeric values.
 
-
 ### 2.4 Data conversions
 
 This section describes how Hillview data is represented in various external
@@ -232,6 +234,21 @@ Here is how various Hillview datatypes are represented in JavaScript:
 |`Time`|A JavaScript `Date` object with a date component of "zero".|
 |`Duration`|A JavaScript number representing the number of milliseconds in the duration.|
 |`Interval`|An array with two JavaScript number values.|
+
+#### 2.4.2 JDBC conversions
+
+When reading data from a JDBC source Hillview applies the following conversions:
+
+|JDBC datatypes|Hillview representation|
+|-------------|-----------------------|
+|`TINYINT`,`SMALLINT`,`INTEGER`|`Integer`|
+|`BOOLEAN`,`BIT`|`String` (false,true)|
+|`BIGINT`,`FLOAT`,`REAL`,`DOUBLE`,`DECIMAL`,`NUMERIC`|`Double`|
+|`CHAR`,`VARCHAR`,`LOGVARCHAR`,`NVARCHAR`,`LONGNVARCHAR`,`SQLXML`|`String`|
+|`DATE`,`TIME`,`TIMESTAMP`|`Localdate`|
+|`TIME_WITH_TIMEZONE`,`TIMESTAMP_WITH_TIMEZONE`|`Date`|
+|`NULL`|`None`|
+|Other|Error: not supported|
 
 ### 2.5 Metadata
 
@@ -406,7 +423,7 @@ storage.
   files](#335-reading-json-files).
 
 * Parquet files: allows the user to [read the data from a set of
-  Parquet files](#339-reading-parquet-files).
+  Parquet files](#338-reading-parquet-files).
 
 * ORC files: allows the user to [read the data from a set of ORC
   files](#336-reading-orc-files).
@@ -617,27 +634,18 @@ file it will perform type conversions at loading time, as follows:
 
 #### 3.3.7 Reading data from SQL databases
 
-The following menu allows the user to load data from a set of
-federated databases that are exposed as a JDBC service.  *Each worker
-machine in the cluster will attempt to connect to the database
-independently.* This works best when a separate database server is
-deployed on each local Hillview machine hosting a worker.
-
-Currently there is no way to load data from a single external database
-when Hillview is deployed as a cloud service; however, data can be
-loaded from a database when Hillview is deployed as a service running
-on the local user machine.
-
+The following menu allows the user to load data from a
+parallel database or a federated set of databases that expose some JDBC services.
 The following menu allows the user to specify the data to load.
 
 ![Specifying database connections](db-menu-mysql.png)
 
 * database kind: A drop-down menu indicating the kind of database to
-  load data from.  Currently we support 'mysql', 'impala', and 'cassandra'.
+  load data from.  Currently we support 'mysql',
+  'greenplum', and 'cassandra'.  Each of these is discussed in a separate
+  section below.
 
-* host: The network name of a machine hosting the database.  *TODO*
-  this should be a pattern enabling each worker to specify a different
-  machine.
+* host: The network name of a machine hosting the database.
 
 * port: The network port where the database service is listening.
 
@@ -649,17 +657,78 @@ The following menu allows the user to specify the data to load.
 
 * password: Credentials of the user connecting to the database.
 
-Numeric values are converted either to integers (if they fit into
-32-bits) or to doubles.  Boolean values are read as strings
-containing two values, "true" and "false".
+##### 3.3.7.1 Reading data from Greenplum databases
 
-#### 3.3.8 Reading data from Cassandra databases
+Hillview can read data from a [Greenplum massively parallel database](https://greenplum.org/).
+The following diagram illustrates how Hillview interact with Greenplum.
+
+![Hillview-Greenplum integration](greenplum-integration.png)
+
+* The hillview root node can run anywhere (including the same machine as the Master Host),
+  but it needs to be able to open
+  a JDBC connection to the Greenplum Master Host.  The Master Host must be specified
+  as `host` in the connection dialog shown in (#337-reading-data-from-sql-databases).
+  The default network port for Greenplum is `5432`.
+
+* Each hillview worker must be deployed on the same machine which contains a
+  Greenplum segment host, to ensure high bandwidth access to the data.
+  The Hillview [configuration file](../README.md#31-service-configuration)
+  should have one worker for each segment host.  Hillview aggregators are
+  optional.  This requires Java to be installed on all segment machines.
+
+* The Hillview workers network port must be allowed by the network firewall.
+
+* The Hillview workers must be able to read and delete files written by the
+  Greenplum segment hosts.
+
+* We provide a script `../bin/deploy-greenplum.py` to aid in the deployment
+  of Hillview next to a Greenplum database.  The script is invoked with a
+  Hillview cluster configuration file as an argument.
+
+The interaction between Hillview and Greenplum proceeds as follows:
+
+1. The user initiates a connection to a Greenplum database by filling the
+   form shown in (#337-reading-data-from-sql-databases).
+
+2. The Hillview root node initiates a JDBC connection to the Greenplum
+   Master host.  Using this connection the Hillview root node obtains
+   the schema of the data.
+
+3. The Hillview root node instructs Greenplum to dump the data in the
+   table in parallel on all segment hosts (using Greenplum
+   [EXTERNAL WEB TABLES](https://gpdb.docs.pivotal.io/6-10/ref_guide/sql_commands/CREATE_EXTERNAL_TABLE.html)).
+
+4. The Hillview root node instructs all hillview workers to read the
+   dumped data, passing along the schema previously obtained.
+
+5. From this point on Hillview no longer needs to interact with Greenplum.
+
+##### 3.3.7.2 Reading from a federated set of MySQL databases
+
+The image below shows a system where Hillview reads directly from a set of
+independent MySQL databases (this can be easily extended
+to any database that supports JDBC).
+
+![Hillview reading from a federated MySQL set of databases](federated-mysql.png)
+
+In this model an independent Hillview worked is deployed on each machine
+hosting a database.  The main assumption is that the data management system
+shards tables across databases such that different shards of a table
+are stored with the same table name across different databases.
+Hillview allows the user to visualize the union of all table fragments.
+The JDBC connection parameters introduced by the user in the dialog
+shown in [the section above](#337-reading-data-from-sql-databases) describe
+simultaneoulsy all connections from the workers.
+
+##### 3.3.7.3 Reading data from Cassandra databases
 
 Hillview can read data from [Cassandra distributed databases](https://cassandra.apache.org/).
 For this purpose a Hillview worker should be deployed on each Cassandra node.
 Moreover, Hillview must have read access to Cassandra's SSTables.
 Hillview assumes that no writes are in progress while reading the
 data from storage.
+
+![Hillview reading from a Cassandra database](hillview-cassandra.png)
 
 The following menu allows the user to specify the data to load.
 
@@ -687,7 +756,7 @@ The following menu allows the user to specify the data to load.
 
 * password: Credentials of the user connecting to the database.
 
-#### 3.3.9 Reading Parquet files
+#### 3.3.8 Reading Parquet files
 
 Hillview can read data from [Apache Parquet
 files](http://parquet.apache.org), a columnar storage format.  The

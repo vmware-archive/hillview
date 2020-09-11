@@ -58,6 +58,8 @@ export function asContentsKind(kind: string): ContentsKind {
     }
 }
 
+export type FederatedDatabase = "mysql" | "impala" | "cassandra" | "greenplum";
+
 export type SimpleFeatureCollection = FeatureCollection<DirectGeometryObject>;
 
 /**
@@ -162,6 +164,7 @@ export interface FileSetDescription {
     fileKind: DataKinds;
     fileNamePattern: string;
     schemaFile: string | null;
+    schema: Schema | null;
     headerRow?: boolean;
     cookie?: string;
     repeat: number;
@@ -169,6 +172,7 @@ export interface FileSetDescription {
     logFormat: string | null;
     startTime: number | null;
     endTime: number | null;
+    deleteAfterLoading: boolean;
 }
 
 export interface CountWithConfidence {

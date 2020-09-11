@@ -57,7 +57,7 @@ public class BatchLogAnalysis {
         /* Load data through file desc */
         Empty e = Empty.getInstance();
         LocalDataSet<Empty> local = new LocalDataSet<Empty>(e);
-        IMap<Empty, List<IFileReference>> finder = new FindFilesMap(desc);
+        IMap<Empty, List<IFileReference>> finder = new FindFilesMap<>(desc);
         IDataSet<IFileReference> found = local.blockingFlatMap(finder);
         IMap<IFileReference, ITable> loader = new LoadFilesMap();
         IDataSet<ITable> table = found.blockingMap(loader);

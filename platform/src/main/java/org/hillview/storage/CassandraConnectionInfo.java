@@ -17,6 +17,8 @@
 
 package org.hillview.storage;
 
+import org.hillview.storage.jdbc.JdbcConnectionInformation;
+
 /**
  * This information is required to open a Cassandra database connection.
  */

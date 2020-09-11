@@ -31,6 +31,7 @@ hillview.redo
 *.log.lck
 *.log.lck.*
 *.pid
+*.pyc
 out
 apache-tomcat-*
 web/classes
@@ -70,6 +71,7 @@ web/src/main/webapp/dist
 hs_err_pid*
 
 tmp
+repository/*.jar
 
 # data which is too big to put into git
 data/ontime/On_Time_On_Time*

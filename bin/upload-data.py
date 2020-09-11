@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+# We attempted to make this program work with both python2 and python3
 
 """This script takes a set of files and a cluster configuration describing a set of machines.
    It uploads the files to the given machines in round-robin fashion.
@@ -78,7 +79,7 @@ def main():
     if args.files:
         copy_files(config, folder, args.files, copyOptions)
     else:
-        logger.error("No files to upload to the machines provided in a Hillview configuration")
+        logger.info("No files to upload to the machines provided in a Hillview configuration")
     logger.info("Done.")
 
 if __name__ == "__main__":

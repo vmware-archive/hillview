@@ -1,5 +1,0 @@
----
-- hosts: backends
-  tasks:
-   - name: Cleanup demo data
-     shell: cd hillview; java -jar data-cleaner-jar-with-dependencies.jar

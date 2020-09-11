@@ -17,7 +17,7 @@
 
 package org.hillview.test.storage;
 
-import org.hillview.storage.JdbcConnectionInformation;
+import org.hillview.storage.jdbc.JdbcConnectionInformation;
 import org.junit.Test;
 
 import java.sql.SQLException;

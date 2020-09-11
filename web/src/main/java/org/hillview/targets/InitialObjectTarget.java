@@ -20,6 +20,7 @@ package org.hillview.targets;
 import org.apache.commons.io.FileUtils;
 import org.hillview.*;
 import org.hillview.sketches.PrecomputedSketch;
+import org.hillview.storage.jdbc.JdbcConnectionInformation;
 import org.hillview.table.PrivacySchema;
 import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.*;
@@ -91,17 +92,17 @@ public class InitialObjectTarget extends RpcTarget {
 
     @HillviewRpc
     public void getUIConfig(RpcRequest request, RpcRequestContext context) {
-        JsonString result;
+        JsonInString result;
         try {
-            result = new JsonString(Utilities.textFileContents("uiconfig.json"));
+            result = new JsonInString(Utilities.textFileContents("uiconfig.json"));
             result.toJsonTree();  // force parsing of the JSON -- to catch syntax errors
         } catch (Exception e) {
             HillviewLogger.instance.warn("File uiconfig.json file could not be loaded",
                     "{0}", e.getMessage());
-            result = new JsonString("{}");
+            result = new JsonInString("{}");
         }
         Converters.checkNull(this.emptyDataset);
-        PrecomputedSketch<Empty, JsonString> sk = new PrecomputedSketch<Empty, JsonString>(result);
+        PrecomputedSketch<Empty, JsonInString> sk = new PrecomputedSketch<Empty, JsonInString>(result);
         this.runCompleteSketch(this.emptyDataset, sk, request, context);
     }
 
@@ -117,7 +118,7 @@ public class InitialObjectTarget extends RpcTarget {
             throw new RuntimeException(e);
         }
         Converters.checkNull(this.emptyDataset);
-        PrecomputedSketch<Empty, JsonString> sk = new PrecomputedSketch<Empty, JsonString>(new JsonString(content));
+        PrecomputedSketch<Empty, JsonInString> sk = new PrecomputedSketch<Empty, JsonInString>(new JsonInString(content));
         this.runCompleteSketch(this.emptyDataset, sk, request, context);
     }
 
@@ -169,10 +170,24 @@ public class InitialObjectTarget extends RpcTarget {
     }
 
     @HillviewRpc
+    public void loadGreenplumTable(RpcRequest request, RpcRequestContext context) {
+        // To load the data from greenplum we first use JDBC to connect to the
+        // Greenplum root node and retrieve the metadata for the table.  This
+        // path is similar to the simpleDB
+        JdbcConnectionInformation conn = request.parseArgs(JdbcConnectionInformation.class);
+        IMap<Empty, Empty> map = new IdMap<Empty>();
+        Converters.checkNull(this.emptyDataset);
+        String dir = Paths.get(Converters.checkNull(conn.databaseKind).toLowerCase(),
+                Converters.checkNull(conn.database),
+                conn.table).toString();
+        this.runMap(this.emptyDataset, map, (e, c) -> new GreenplumTarget(conn, c, dir), request, context);
+    }
+
+    @HillviewRpc
     public void findFiles(RpcRequest request, RpcRequestContext context) {
         FileSetDescription desc = request.parseArgs(FileSetDescription.class);
         HillviewLogger.instance.info("Finding files", "{0}", desc);
-        IMap<Empty, List<IFileReference>> finder = new FindFilesMap(desc);
+        IMap<Empty, List<IFileReference>> finder = new FindFilesMap<>(desc);
         Converters.checkNull(this.emptyDataset);
         String folder = Utilities.getFolder(desc.fileNamePattern);
 
@@ -194,7 +209,7 @@ public class InitialObjectTarget extends RpcTarget {
         desc.fileKind = "hillviewlog";
         desc.fileNamePattern = "./hillview*.log";
         desc.repeat = 1;
-        IMap<Empty, List<IFileReference>> finder = new FindFilesMap(desc);
+        IMap<Empty, List<IFileReference>> finder = new FindFilesMap<>(desc);
         HillviewLogger.instance.info("Finding log files");
         assert this.emptyDataset != null;
         this.runFlatMap(this.emptyDataset, finder,

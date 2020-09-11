@@ -20,6 +20,7 @@ package org.hillview.storage;
 import com.univocity.parsers.csv.CsvFormat;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
+import org.hillview.LazySchema;
 import org.hillview.table.api.*;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
@@ -27,11 +28,9 @@ import org.hillview.table.Table;
 import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.table.rows.GuessSchema;
 import org.hillview.utils.HillviewLogger;
-import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.io.*;
-import java.nio.file.Paths;
 
 /**
  * Knows how to read a CSV file (comma-separated file).
@@ -56,16 +55,15 @@ public class CsvFileLoader extends TextFileLoader {
     private final Config configuration;
     @Nullable
     private Schema actualSchema;
-    @Nullable
-    private final String schemaPath;
+    private final LazySchema schema;
     private boolean guessSchema;
 
-    public CsvFileLoader(String path, Config configuration, @Nullable String schemaPath) {
+    public CsvFileLoader(String path, Config configuration, LazySchema schema) {
         super(path);
         this.configuration = configuration;
-        this.schemaPath = schemaPath;
+        this.schema = schema;
         this.allowFewerColumns = configuration.allowFewerColumns;
-        this.guessSchema = Utilities.isNullOrEmpty(schemaPath);
+        this.guessSchema = this.schema.isNull();
     }
 
     @Nullable
@@ -77,9 +75,7 @@ public class CsvFileLoader extends TextFileLoader {
 
     @Override
     public void prepareLoading() {
-        if (!Utilities.isNullOrEmpty(this.schemaPath))
-            this.actualSchema = Schema.readFromJsonFile(Paths.get(this.schemaPath));
-
+        this.actualSchema = this.schema.getSchema();
         this.file = this.getFileReader();
         CsvParserSettings settings = new CsvParserSettings();
         CsvFormat format = new CsvFormat();

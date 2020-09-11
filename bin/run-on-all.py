@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+# We attempted to make this program work with both python2 and python3
 # -*-python-*-
 
 """This script runs a command on all worker hosts of a Hillview cluster."""

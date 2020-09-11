@@ -20,6 +20,7 @@ package org.hillview.utils;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonParser;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.hillview.dataset.api.IJsonSketchResult;
 
 import javax.annotation.Nullable;
@@ -27,14 +28,18 @@ import javax.annotation.Nullable;
 /**
  * A string whose value is a JSON object.
  */
-public class JsonString implements IJsonSketchResult {
+public class JsonInString implements IJsonSketchResult {
     static final long serialVersionUID = 1;
 
     @Nullable
     private final String value;
 
-    public JsonString(@Nullable String value) {
+    public JsonInString(@Nullable String value) {
         this.value = value;
+    }
+
+    public static JsonInString makeJsonString(String value) {
+        return new JsonInString("\"" + StringEscapeUtils.escapeJavaScript(value) + "\"");
     }
 
     @Override

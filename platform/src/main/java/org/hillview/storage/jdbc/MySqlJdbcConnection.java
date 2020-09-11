@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 VMware Inc. All Rights Reserved.
+ * Copyright (c) 2020 VMware Inc. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 
-package org.hillview.storage;
+package org.hillview.storage.jdbc;
 
 import org.hillview.sketches.results.DoubleHistogramBuckets;
 import org.hillview.sketches.results.IHistogramBuckets;
 import org.hillview.sketches.results.StringHistogramBuckets;
+import org.hillview.storage.ColumnLimits;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.api.ContentsKind;
@@ -38,7 +39,6 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
-import java.util.TimeZone;
 import java.util.function.Function;
 
 public class MySqlJdbcConnection extends JdbcConnection {
@@ -380,14 +380,6 @@ public class MySqlJdbcConnection extends JdbcConnection {
                     bucket + " as bucket from " + quantize +
                     bounds + ") tmph group by bucket";
         }
-    }
-
-    @Override
-    public String getQueryToReadTable(int rowCount) {
-        String result = "SELECT * FROM " + Converters.checkNull(this.info.table);
-        if (rowCount >= 0)
-            result += " LIMIT " + rowCount;
-        return result;
     }
 
     @Override

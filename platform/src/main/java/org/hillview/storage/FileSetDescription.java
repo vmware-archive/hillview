@@ -17,9 +17,12 @@
 
 package org.hillview.storage;
 
+import org.hillview.LazySchema;
 import org.hillview.dataset.api.IJson;
+import org.hillview.table.Schema;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
+import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
@@ -50,6 +53,11 @@ public class FileSetDescription implements IJson {
     @Nullable
     public String schemaFile;
     /**
+     * Schema given explicitly.
+     */
+    @Nullable
+    public Schema schema;
+    /**
      * If true the files are expected to have a header row.
      */
     public boolean headerRow = true;
@@ -71,17 +79,23 @@ public class FileSetDescription implements IJson {
     public Double startTime;
     @Nullable
     public Double endTime;
+    /**
+     * If true the file is deleted after loading the data.  This is
+     * useful for temporary files.
+     */
+    public boolean deleteAfterLoading;
 
     @SuppressWarnings("unused")
     public String getBasename() {
         return Utilities.getFolder(this.fileNamePattern);
     }
 
-    @Nullable
-    private String getSchemaPath() {
+   public LazySchema getSchema() {
+        if (this.schema != null)
+            return new LazySchema(this.schema);
         if (Utilities.isNullOrEmpty(this.schemaFile))
-            return null;
-        return Paths.get(Utilities.getFolder(this.fileNamePattern), this.schemaFile).toString();
+            return new LazySchema((String)null);
+        return new LazySchema(Paths.get(Utilities.getFolder(this.fileNamePattern), this.schemaFile).toString());
     }
 
     @Nullable
@@ -109,11 +123,11 @@ public class FileSetDescription implements IJson {
                     config.allowFewerColumns = true;
                     config.hasHeaderRow = FileSetDescription.this.headerRow;
                     loader = new CsvFileLoader(
-                            this.pathname, config, FileSetDescription.this.getSchemaPath());
+                            this.pathname, config, FileSetDescription.this.getSchema());
                     break;
                 case "orc":
                     loader = new OrcFileLoader(
-                            this.pathname, FileSetDescription.this.getSchemaPath(), true);
+                            this.pathname, FileSetDescription.this.getSchema(), true);
                     break;
                 case "parquet":
                     loader = new ParquetFileLoader(
@@ -121,7 +135,7 @@ public class FileSetDescription implements IJson {
                     break;
                 case "json":
                     loader = new JsonFileLoader(
-                            this.pathname, FileSetDescription.this.getSchemaPath());
+                            this.pathname, FileSetDescription.this.getSchema());
                     break;
                 case "hillviewlog":
                     loader = new HillviewLogs.LogFileLoader(this.pathname);
@@ -143,7 +157,16 @@ public class FileSetDescription implements IJson {
                     throw new RuntimeException(
                             "Unexpected file kind " + FileSetDescription.this.fileKind);
             }
-            return Converters.checkNull(loader.load());
+            ITable result = Converters.checkNull(loader.load());
+            if (FileSetDescription.this.deleteAfterLoading) {
+                File file = new File(this.pathname);
+                boolean success = file.delete();
+                if (!success)
+                    HillviewLogger.instance.error("Error deleting file", "{0}", this.pathname);
+                else
+                    HillviewLogger.instance.info("Deleted file", "{0}", this.pathname);
+            }
+            return result;
         }
 
         public long getSizeInBytes() {

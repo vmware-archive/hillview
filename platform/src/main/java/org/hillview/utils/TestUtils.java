@@ -17,6 +17,7 @@
 
 package org.hillview.utils;
 
+import org.hillview.LazySchema;
 import org.hillview.storage.CsvFileLoader;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.ITable;
@@ -41,7 +42,7 @@ public class TestUtils {
         CsvFileLoader.Config config = new CsvFileLoader.Config();
         config.allowFewerColumns = false;
         config.hasHeaderRow = true;
-        CsvFileLoader r = new CsvFileLoader(path.toString(), config, schemaPath.toString());
+        CsvFileLoader r = new CsvFileLoader(path.toString(), config, new LazySchema(schemaPath.toString()));
         return Converters.checkNull(r.load());
     }
 

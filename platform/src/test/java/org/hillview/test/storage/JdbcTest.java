@@ -17,8 +17,8 @@
 
 package org.hillview.test.storage;
 
-import org.hillview.storage.JdbcConnectionInformation;
-import org.hillview.storage.JdbcDatabase;
+import org.hillview.storage.jdbc.JdbcConnectionInformation;
+import org.hillview.storage.jdbc.JdbcDatabase;
 import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;
 import org.junit.Assert;

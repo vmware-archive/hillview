@@ -23,6 +23,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonReader;
+import org.hillview.LazySchema;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.Table;
@@ -30,7 +31,6 @@ import org.hillview.table.api.*;
 
 import javax.annotation.Nullable;
 import java.io.*;
-import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -45,21 +45,17 @@ import java.util.*;
  * TODO: add support for streaming reads
  */
 public class JsonFileLoader extends TextFileLoader {
-    @Nullable
-    private final String schemaPath;
+    private final LazySchema lazySchema;
 
-    public JsonFileLoader(String filename, @Nullable String schemaPath) {
+    public JsonFileLoader(String filename, LazySchema lazySchema) {
         super(filename);
-        this.schemaPath = schemaPath;
+        this.lazySchema = lazySchema;
         this.currentRow = 0;
         this.currentColumn = -1;
     }
 
     public ITable load() {
-        Schema schema = null;
-        if (this.schemaPath != null)
-            schema = Schema.readFromJsonFile(Paths.get(this.schemaPath));
-
+        Schema schema = this.lazySchema.getSchema();
         Reader file = this.getFileReader();
         JsonReader jReader = new JsonReader(file);
         JsonElement elem = Streams.parse(jReader);

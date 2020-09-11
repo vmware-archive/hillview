@@ -38,7 +38,7 @@ import java.util.function.Predicate;
  * A schema is an ordering of the columns, plus a map from a column name to a column description.
  * Column names are case-sensitive.
  */
-public final class Schema implements IJson {
+public class Schema implements IJson {
     static final long serialVersionUID = 1;
     private final LinkedHashMap<String, ColumnDescription> columns;
 

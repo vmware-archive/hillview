@@ -19,9 +19,9 @@ package org.hillview.maps;
 
 import org.hillview.dataset.api.Empty;
 import org.hillview.dataset.api.IMap;
-import org.hillview.storage.JdbcConnectionInformation;
+import org.hillview.storage.jdbc.JdbcConnectionInformation;
 import org.hillview.table.api.ITable;
-import org.hillview.storage.JdbcDatabase;
+import org.hillview.storage.jdbc.JdbcDatabase;
 
 import javax.annotation.Nullable;
 import java.sql.SQLException;
