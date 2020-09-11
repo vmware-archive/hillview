@@ -688,7 +688,7 @@ The following diagram illustrates how Hillview interact with Greenplum.
 The interaction between Hillview and Greenplum proceeds as follows:
 
 1. The user initiates a connection to a Greenplum database by filling the
-   form shown in (#337-reading-data-from-sql-databases).
+   form shown in [the section above](#337-reading-data-from-sql-databases).
 
 2. The Hillview root node initiates a JDBC connection to the Greenplum
    Master host.  Using this connection the Hillview root node obtains
