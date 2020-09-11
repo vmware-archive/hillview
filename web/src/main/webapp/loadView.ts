@@ -611,9 +611,11 @@ class OrcFileDialog extends Dialog {
  */
 class DBDialog extends Dialog {
     constructor(isFederated: boolean) {
-        super("Load DB tables", "Loads one table on each machine that is part of the service.");
-        const arrDB: FederatedDatabase[] = ["mysql", "impala"];
+        super("Load DB tables", "Loads data from a parallel or federated database.");
+        const arrDB: FederatedDatabase[] = ["mysql"];
         if (isFederated) arrDB.push("cassandra", "greenplum");
+        else arrDB.push("impala");
+
         const sel = this.addSelectFieldAsObject(
             "databaseKind", "Database kind", arrDB, (l) => l.toString(),
             "The kind of database.");

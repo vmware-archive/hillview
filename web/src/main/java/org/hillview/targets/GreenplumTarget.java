@@ -17,23 +17,16 @@
 
 package org.hillview.targets;
 
-import org.hillview.HillviewComputation;
-import org.hillview.HillviewRpc;
-import org.hillview.RpcRequest;
-import org.hillview.RpcRequestContext;
+import org.hillview.*;
 import org.hillview.sketches.PrecomputedSketch;
 import org.hillview.storage.jdbc.JdbcConnectionInformation;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.JsonInString;
 
 import java.sql.SQLException;
-import java.util.UUID;
 
 @SuppressWarnings("SqlNoDataSourceInspection")
 public class GreenplumTarget extends SimpleDBTarget {
-    // TODO: move this into a properties file.
-    static final String dumpDirectory = "/tmp";
-    static final String dumpScriptName = "/home/gpadmin/hillview/dump-greenplum.sh";
     static final String filePrefix = "file";  // Should match the prefix in the dump script
 
     /*
@@ -42,7 +35,7 @@ public class GreenplumTarget extends SimpleDBTarget {
 DIR=$1
 PREFIX="file"
 mkdir -p ${DIR} || exit 1
-echo "$(</dev/stdin)" >/${DIR}/${PREFIX}${GP_SEGMENT_ID}
+echo "$(</dev/stdin)" >${DIR}/${PREFIX}${GP_SEGMENT_ID}
      */
 
     public GreenplumTarget(JdbcConnectionInformation conn, HillviewComputation c, String dir) {
@@ -51,12 +44,17 @@ echo "$(</dev/stdin)" >/${DIR}/${PREFIX}${GP_SEGMENT_ID}
 
     @HillviewRpc
     public void dumpTable(RpcRequest request, RpcRequestContext context) throws SQLException {
-        String tmpTableName = "T" + UUID.randomUUID().toString().replace("-", "");
+        String tmpTableName = request.parseArgs(String.class);
+        String dumpScriptName = RpcObjectManager.instance.properties.getProperty(
+                "greenplumDumpScript", "/home/gpadmin/hillview/dump-greenplum.sh");
+        String dumpDirectory = RpcObjectManager.instance.properties.getProperty(
+                "greenplumDumpDirectory", "/tmp");
+
         // This creates a virtual table that will write its partitions
         // in files named like ${dumpDirectory}/${tmpTableName}/${filePrefix}Number
         String tableName = this.jdbc.table;
         String query = "CREATE WRITABLE EXTERNAL WEB TABLE " +
-                tmpTableName + "(LIKE " + tableName + ") EXECUTE '" +
+                tmpTableName + " (LIKE " + tableName + ") EXECUTE '" +
                 dumpScriptName + " " + dumpDirectory + "/" + tmpTableName + "' FORMAT 'CSV'";
 
         this.database.executeUpdate(query);

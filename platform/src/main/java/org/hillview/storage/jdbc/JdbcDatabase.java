@@ -398,10 +398,12 @@ public class JdbcDatabase {
             case Types.TIMESTAMP_WITH_TIMEZONE:
                 kind = ContentsKind.Date;
                 break;
+            case Types.NULL:
+                kind = ContentsKind.None;
+                break;
             case Types.BINARY:
             case Types.VARBINARY:
             case Types.LONGVARBINARY:
-            case Types.NULL:
             case Types.OTHER:
             case Types.JAVA_OBJECT:
             case Types.DISTINCT:
@@ -489,10 +491,12 @@ public class JdbcDatabase {
                         col.append(Converters.toDouble(instant));
                     }
                     break;
+                case Types.NULL:
+                    col.appendMissing();
+                    break;
                 case Types.BINARY:
                 case Types.VARBINARY:
                 case Types.LONGVARBINARY:
-                case Types.NULL:
                 case Types.OTHER:
                 case Types.JAVA_OBJECT:
                 case Types.DISTINCT:

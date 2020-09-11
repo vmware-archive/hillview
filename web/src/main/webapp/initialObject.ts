@@ -221,8 +221,10 @@ class GreenplumSchemaReceiver extends OnCompleteReceiver<TableSummary> {
             return;
         }
         // Ask Greenplum to dump the data; receive back the name of the temporary files
-        // where the tables are stored on the remote machines
-        const rr = this.remoteObject.createStreamingRpcRequest<string>("dumpTable", null);
+        // where the tables are stored on the remote machines.
+        // This is the name of the temporary table used.
+        const tableName = "T" + getUUID().replace(/-/g, '');
+        const rr = this.remoteObject.createStreamingRpcRequest<string>("dumpTable", tableName);
         rr.invoke(new GreenplumLoader(this.page, ts, this.initialObject, rr));
     }
 }
