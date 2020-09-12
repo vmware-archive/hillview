@@ -20,7 +20,7 @@ package org.hillview.test.storage;
 import com.univocity.parsers.csv.CsvFormat;
 import com.univocity.parsers.csv.CsvWriter;
 import com.univocity.parsers.csv.CsvWriterSettings;
-import org.hillview.LazySchema;
+import org.hillview.table.LazySchema;
 import org.hillview.storage.CsvFileLoader;
 import org.hillview.storage.CsvFileWriter;
 import org.hillview.table.ColumnDescription;

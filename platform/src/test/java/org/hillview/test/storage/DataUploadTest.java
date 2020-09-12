@@ -19,7 +19,7 @@ package org.hillview.test.storage;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.hillview.LazySchema;
+import org.hillview.table.LazySchema;
 import org.hillview.main.DataUpload;
 import org.hillview.storage.OrcFileLoader;
 import org.hillview.table.api.ContentsKind;
@@ -63,7 +63,7 @@ public class DataUploadTest extends BaseTest {
         DataUpload upload = new DataUpload();
         String file = dataDir + "/ontime/2016_1.csv";
         int parts = upload.run("-f", file, "-l",
-                "200000", "-h", "-d", dir.toString(), "--skip", "200000");
+                "200000", "-o", "csv", "-h", "-d", dir.toString(), "--skip", "200000");
         File d = dir.toFile();
         FileUtils.deleteDirectory(d);
         Assert.assertEquals(2, parts);
@@ -75,7 +75,7 @@ public class DataUploadTest extends BaseTest {
         DataUpload upload = new DataUpload();
         String file = dataDir + "/ontime/2016_1.csv";
         int parts = upload.run(
-                "-f", file, "-o",
+                "-f", file, "-o", "orc",
                 "-l", "200000", "-h", "-d", dir.toString());
 
         OrcFileLoader loader = new OrcFileLoader(dir.toString() + "/2016_10.orc", new LazySchema(), false);
@@ -100,7 +100,7 @@ public class DataUploadTest extends BaseTest {
         DataUpload upload = new DataUpload();
         int parts = upload.run(
                 "-f", dataDir + "/sample_logs/blockTracelog", "-p",
-                "%{BLOCKTRACE}", "-l", "100", "-d", dir.toString());
+                "%{BLOCKTRACE}", "-o", "csv", "-l", "100", "-d", dir.toString());
         File d = dir.toFile();
         FileUtils.deleteDirectory(d);
         Assert.assertEquals(2, parts);
@@ -112,7 +112,7 @@ public class DataUploadTest extends BaseTest {
         DataUpload upload = new DataUpload();
         int parts = upload.run(
                 "-f", dataDir + "/sample_logs/blockTracelog", "-p",
-                "%{BLOCKTRACE}", "-l", "100", "-d", dir.toString(), "--skip", "300");
+                "%{BLOCKTRACE}", "-o", "csv", "-l", "100", "-d", dir.toString(), "--skip", "300");
         File d = dir.toFile();
         FileUtils.deleteDirectory(d);
         Assert.assertEquals(1, parts);
@@ -123,7 +123,7 @@ public class DataUploadTest extends BaseTest {
         Path dir = Files.createTempDirectory(".");
         DataUpload upload = new DataUpload();
         String file = dataDir + "/sample_logs/blockTracelog";
-        int parts = upload.run("-f", file, "-o",
+        int parts = upload.run("-f", file, "-o", "orc",
                 "-p", "%{BLOCKTRACE}", "-l", "100", "-d", dir.toString());
         File d = dir.toFile();
         FileUtils.deleteDirectory(d);

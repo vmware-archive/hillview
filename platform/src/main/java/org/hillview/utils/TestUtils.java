@@ -17,7 +17,7 @@
 
 package org.hillview.utils;
 
-import org.hillview.LazySchema;
+import org.hillview.table.LazySchema;
 import org.hillview.storage.CsvFileLoader;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.ITable;

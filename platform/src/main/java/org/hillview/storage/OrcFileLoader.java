@@ -24,7 +24,7 @@ import org.apache.orc.OrcFile;
 import org.apache.orc.Reader;
 import org.apache.orc.RecordReader;
 import org.apache.orc.TypeDescription;
-import org.hillview.LazySchema;
+import org.hillview.table.LazySchema;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.Table;
@@ -252,6 +252,11 @@ public class OrcFileLoader extends TextFileLoader {
                     String str = new String(bcv.vector[row], bcv.start[row], bcv.length[row]);
                     switch (to.getKind()) {
                         case None:
+                            if (str.isEmpty()) {
+                                to.appendMissing();
+                                break;
+                            }
+                            // Fall through
                         case Date:
                         case Duration:
                         case Time:

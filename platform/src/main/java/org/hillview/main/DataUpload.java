@@ -20,7 +20,7 @@ package org.hillview.main;
 import javax.annotation.Nullable;
 
 import org.apache.commons.io.FilenameUtils;
-import org.hillview.LazySchema;
+import org.hillview.table.LazySchema;
 import org.hillview.management.ClusterConfig;
 import org.hillview.storage.*;
 import org.hillview.table.Schema;
@@ -42,6 +42,12 @@ import java.nio.file.Paths;
  * format or in orc format. A schema file is also placed in each server.
  */
 public class DataUpload {
+    enum OutputFormat {
+        Csv,
+        Orc,
+        None // only output schema
+    }
+
     private static class Params {
         final int defaultChunkSize = 100000; // number of lines in default file chunk
         final String defaultSchemaName = "schema";
@@ -52,9 +58,9 @@ public class DataUpload {
         @Nullable
         String cluster = null; // the path to the cluster config json file
         boolean hasHeader; // true if file has a header row (only used for csv inputs)
-        boolean saveOrc; // true if saving as orc, otherwise save as csv;
         int chunkSize = defaultChunkSize; // the number of lines in each shard.
         boolean allowFewerColumns;
+        OutputFormat outputFormat = OutputFormat.None;
         @Nullable
         String grokPattern; // when parsing a log file this is the pattern expected
         int skipLines;  // number of lines to skip from the beginning
@@ -83,7 +89,8 @@ public class DataUpload {
         Option o_linenumber = new Option("l", "lines", true, "number of rows in each chunk");
         o_linenumber.setRequired(false);
         options.addOption(o_linenumber);
-        Option o_format = new Option("o", "orc", false, "save file as orc");
+        Option o_format = new Option("o", "output", true, "output format: one of 'csv', 'orc', 'none'." +
+                "For 'none' only the schema is output");
         o_format.setRequired(false);
         options.addOption(o_format);
         Option o_schema = new Option("s", "schema", true, "input schema file");
@@ -101,13 +108,6 @@ public class DataUpload {
         Option o_skip = new Option("w", "skip", true, "number of lines to skip before starting parsing");
         o_skip.setRequired(false);
         options.addOption(o_skip);
-        /*
-         * todo: support the -D directory option for a list of files.
-        Option o_directory = new Option("D", "Directory", true,
-                "path to directory with the files to send (not supported yet)");
-        o_directory.setRequired(false);
-        options.addOption(o_directory);
-         */
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = null;
@@ -119,30 +119,13 @@ public class DataUpload {
         catch (ParseException pe) {
             System.out.println("can't parse due to " + pe);
             usage(options);
-            System.exit(1);
+            throw pe;
         }
         Params parameters = new Params();
         try{
-            /*
-            if (cmd.hasOption('f') == cmd.hasOption('D'))
-                throw new RuntimeException("need either file or directory");
-             */
             if (cmd.hasOption('f')) {
                 parameters.filename = cmd.getOptionValue('f');
-                // parameters.fileList.add(cmd.getOptionValue('f'));
             }
-            /*
-            else {
-                parameters.directory = cmd.getOptionValue('D');
-                File folder = new File(cmd.getOptionValue('D'));
-                File[] lFiles = folder.listFiles();
-                if (lFiles == null)
-                    throw new RuntimeException("No files found");
-                for (File lFile : lFiles)
-                    if (lFile.isFile())
-                        parameters.fileList.add(parameters.directory + lFile.getName());
-                }
-             */
         } catch (RuntimeException e) {
             error(e);
         }
@@ -154,10 +137,25 @@ public class DataUpload {
                 parameters.chunkSize = Integer.parseInt(cmd.getOptionValue('l'));
             } catch (NumberFormatException e) {
                 usage(options);
-                System.out.println("Can't parse number due to " + e.getMessage());
+                System.err.println("Can't parse number due to " + e.getMessage());
+                throw e;
             }
         }
-        parameters.saveOrc = cmd.hasOption('o');
+        if (cmd.hasOption('o')) {
+            String of = cmd.getOptionValue('o');
+            switch (of.toLowerCase()) {
+                case "orc":
+                    parameters.outputFormat = OutputFormat.Orc;
+                    break;
+                case "csv":
+                    parameters.outputFormat = OutputFormat.Csv;
+                    break;
+                default:
+                    usage(options);
+                    System.err.println("Illegal output format: " + of);
+                    throw new RuntimeException("Unknown output format");
+            }
+        }
         if (cmd.hasOption('s'))
             parameters.inputSchemaName = cmd.getOptionValue('s');
         parameters.hasHeader = cmd.hasOption('h');
@@ -167,7 +165,8 @@ public class DataUpload {
                 parameters.skipLines = Integer.parseInt(cmd.getOptionValue("skip"));
             } catch (NumberFormatException e) {
                 usage(options);
-                System.out.println("Can't parse number due to " + e.getMessage());
+                System.err.println("Can't parse number due to " + e.getMessage());
+                throw e;
             }
         }
         return parameters;
@@ -264,25 +263,27 @@ public class DataUpload {
             tableSchema = table.getSchema();
             while (true) {
                 chunkName = getFileName(parameters.filename).concat(Integer.toString(chunk));
-                if (parameters.saveOrc)
+                if (parameters.outputFormat == OutputFormat.Orc)
                     chunkName = chunkName.concat(".orc");
-                else
+                else if (parameters.outputFormat == OutputFormat.Csv)
                     chunkName = chunkName.concat(".csv");
                 if (Files.exists(Paths.get(chunkName)))
                     chunk++;
                 else
                     break;
             }
-            writeTable(table, chunkName, parameters.saveOrc);
-            if (clusterConfig != null) {
-                assert clusterConfig.workers != null;
-                String host = clusterConfig.workers[currentHost];
-                sendFile(chunkName, Converters.checkNull(clusterConfig.user),
-                        host, parameters.destinationFolder, chunkName);
-                currentHost = (currentHost + 1) % clusterConfig.workers.length;
-                Files.deleteIfExists(Paths.get(chunkName));
-            } else {
-                Files.move(Paths.get(chunkName), Paths.get(parameters.destinationFolder, chunkName));
+            writeTable(table, chunkName, parameters.outputFormat);
+            if (parameters.outputFormat != OutputFormat.None) {
+                if (clusterConfig != null) {
+                    assert clusterConfig.workers != null;
+                    String host = clusterConfig.workers[currentHost];
+                    sendFile(chunkName, Converters.checkNull(clusterConfig.user),
+                            host, parameters.destinationFolder, chunkName);
+                    currentHost = (currentHost + 1) % clusterConfig.workers.length;
+                    Files.deleteIfExists(Paths.get(chunkName));
+                } else {
+                    Files.move(Paths.get(chunkName), Paths.get(parameters.destinationFolder, chunkName));
+                }
             }
             chunk++;
             if (table.getNumOfRows() == 0)
@@ -332,14 +333,22 @@ public class DataUpload {
 
     /** Writes the table in ORC or CSV format
      */
-    private void writeTable(ITable table, String filename, boolean orc) {
-        HillviewLogger.instance.info("Writing chunk in: " + filename);
-        if (orc) {
-            OrcFileWriter writer = new OrcFileWriter(filename);
-            writer.writeTable(table);
-        } else {
-            CsvFileWriter writer = new CsvFileWriter(filename);
-            writer.writeTable(table);
+    private void writeTable(ITable table, String filename, OutputFormat format) {
+        switch (format) {
+            case Csv: {
+                HillviewLogger.instance.info("Writing chunk in: " + filename);
+                CsvFileWriter writer = new CsvFileWriter(filename);
+                writer.writeTable(table);
+                break;
+            }
+            case Orc: {
+                HillviewLogger.instance.info("Writing chunk in: " + filename);
+                OrcFileWriter writer = new OrcFileWriter(filename);
+                writer.writeTable(table);
+                break;
+            }
+            case None:
+                break;
         }
     }
 

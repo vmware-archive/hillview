@@ -23,6 +23,7 @@ import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.ContentsKind;
 import org.hillview.table.api.IStringColumn;
 import org.hillview.utils.DateParsing;
+import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -210,10 +211,11 @@ public class GuessSchema {
     }
 
     private CanParse canParse(@Nullable String value, final ContentsKind with) {
-        if (value == null)
+        if (Utilities.isNullOrEmpty(value))
             return CanParse.AsNull;
         switch (with) {
             case None:
+                return CanParse.No;
             case Interval:
                 return CanParse.No;
             case String:

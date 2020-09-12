@@ -20,11 +20,12 @@ package org.hillview.storage;
 import com.univocity.parsers.csv.CsvFormat;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
-import org.hillview.LazySchema;
+import org.hillview.table.LazySchema;
 import org.hillview.table.api.*;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.Table;
+import org.hillview.table.columns.EmptyColumn;
 import org.hillview.table.membership.FullMembershipSet;
 import org.hillview.table.rows.GuessSchema;
 import org.hillview.utils.HillviewLogger;
@@ -173,11 +174,17 @@ public class CsvFileLoader extends TextFileLoader {
             if (this.guessSchema) {
                 GuessSchema gs = new GuessSchema();
                 GuessSchema.SchemaInfo info = gs.guess((IStringColumn)s);
-                if (info.kind != ContentsKind.String &&
-                        info.kind != ContentsKind.None)  // all elements are null
-                    sealed[ci] = s.convertKind(info.kind, c.getName(), ms);
-                else
-                    sealed[ci] = s;
+                switch (info.kind) {
+                    case String:
+                        sealed[ci] = s;
+                        break;
+                    case None:
+                        sealed[ci] = new EmptyColumn(c.getName(), c.sizeInRows());
+                        break;
+                    default:
+                        sealed[ci] = s.convertKind(info.kind, c.getName(), ms);
+                        break;
+                }
             } else {
                 sealed[ci] = s;
             }
@@ -185,8 +192,10 @@ public class CsvFileLoader extends TextFileLoader {
         }
 
         ITable result = new Table(sealed, this.filename, null);
-        this.guessSchema = false;
-        this.actualSchema = result.getSchema();
+        if (!skip) {
+            this.guessSchema = false;
+            this.actualSchema = result.getSchema();
+        }
         return result;
     }
 

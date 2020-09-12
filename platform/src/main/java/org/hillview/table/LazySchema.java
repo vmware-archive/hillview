@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.hillview;
+package org.hillview.table;
 
 import org.hillview.table.Schema;
 import org.hillview.utils.Converters;

@@ -19,7 +19,7 @@ package org.hillview.test.dataStructures;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
-import org.hillview.LazySchema;
+import org.hillview.table.LazySchema;
 import org.hillview.dataset.api.IJson;
 import org.hillview.sketches.results.Count;
 import org.hillview.sketches.results.NextKList;

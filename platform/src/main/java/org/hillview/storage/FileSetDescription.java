@@ -17,7 +17,7 @@
 
 package org.hillview.storage;
 
-import org.hillview.LazySchema;
+import org.hillview.table.LazySchema;
 import org.hillview.dataset.api.IJson;
 import org.hillview.table.Schema;
 import org.hillview.table.api.ITable;

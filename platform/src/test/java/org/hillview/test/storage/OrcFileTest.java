@@ -24,7 +24,7 @@ import org.apache.orc.OrcFile;
 import org.apache.orc.Reader;
 import org.apache.orc.RecordReader;
 import org.apache.orc.TypeDescription;
-import org.hillview.LazySchema;
+import org.hillview.table.LazySchema;
 import org.hillview.storage.CsvFileLoader;
 import org.hillview.storage.OrcFileLoader;
 import org.hillview.storage.OrcFileWriter;

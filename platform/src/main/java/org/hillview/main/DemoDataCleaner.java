@@ -17,7 +17,7 @@
 
 package org.hillview.main;
 
-import org.hillview.LazySchema;
+import org.hillview.table.LazySchema;
 import org.hillview.storage.CsvFileLoader;
 import org.hillview.storage.CsvFileWriter;
 import org.hillview.storage.OrcFileWriter;
