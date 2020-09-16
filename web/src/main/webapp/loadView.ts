@@ -89,13 +89,8 @@ export class LoadView extends RemoteObject implements IDataView {
                         schemaFile: "short.schema",
                         schema: null,
                         headerRow: true,
-                        repeat: 1,
                         name: "Flights (15 columns)",
                         fileKind: "csv",
-                        logFormat: null,
-                        startTime: null,
-                        endTime: null,
-                        deleteAfterLoading: false
                     };
                     this.init.loadFiles(files, this.page);
                 },
@@ -107,14 +102,8 @@ export class LoadView extends RemoteObject implements IDataView {
                         fileNamePattern: "data/ontime_small_orc/*.orc",
                         schemaFile: "schema",
                         schema: null,
-                        headerRow: true,
-                        repeat: 1,
                         name: "Flights (15 columns, ORC)",
                         fileKind: "orc",
-                        logFormat: null,
-                        startTime: null,
-                        endTime: null,
-                        deleteAfterLoading: false
                     };
                     this.init.loadFiles(files, this.page);
                 },
@@ -126,14 +115,8 @@ export class LoadView extends RemoteObject implements IDataView {
                         fileNamePattern: "data/ontime_big_orc/*.orc",
                         schemaFile: "schema",
                         schema: null,
-                        headerRow: true,
-                        repeat: 1,
                         name: "Flights (ORC)",
                         fileKind: "orc",
-                        logFormat: null,
-                        startTime: null,
-                        endTime: null,
-                        deleteAfterLoading: false
                     };
                     this.init.loadFiles(files, this.page);
                 },
@@ -147,13 +130,8 @@ export class LoadView extends RemoteObject implements IDataView {
                         schemaFile: "short.schema",
                         schema: null,
                         headerRow: true,
-                        repeat: 1,
                         name: "Flights (private)",
                         fileKind: "csv",
-                        logFormat: null,
-                        startTime: null,
-                        endTime: null,
-                        deleteAfterLoading: false
                     };
                     this.init.loadFiles(files, this.page);
                 },
@@ -167,14 +145,8 @@ export class LoadView extends RemoteObject implements IDataView {
                         fileNamePattern: "data/ontime_private/*.orc",
                         schemaFile: "schema",
                         schema: null,
-                        headerRow: true,
-                        repeat: 1,
                         name: "Flights (private)",
                         fileKind: "orc",
-                        logFormat: null,
-                        startTime: null,
-                        endTime: null,
-                        deleteAfterLoading: false
                     };
                     this.init.loadFiles(files, this.page);
                 },
@@ -469,13 +441,7 @@ class CSVFileDialog extends Dialog {
             schema: null,
             fileNamePattern: this.getFieldValue("fileNamePattern"),
             headerRow: this.getBooleanValue("hasHeader"),
-            repeat: 1,
-            name: null,
             fileKind: "csv",
-            logFormat: null,
-            startTime: null,
-            endTime: null,
-            deleteAfterLoading: false
         };
     }
 }
@@ -508,14 +474,10 @@ class GenericLogDialog extends Dialog {
             schema: null,
             logFormat: this.getFieldValue("logFormat"),
             fileNamePattern: this.getFieldValue("fileNamePattern"),
-            headerRow: false,
-            repeat: 1,
-            name: null,
             cookie: getUUID(),
             fileKind: "genericlog",
             startTime: Converters.doubleFromDate(this.getDateTimeValue("startTime")),
             endTime: Converters.doubleFromDate(this.getDateTimeValue("endTime")),
-            deleteAfterLoading: false
         };
     }
 }
@@ -541,14 +503,7 @@ class JsonFileDialog extends Dialog {
             schemaFile: this.getFieldValue("schemaFile"),
             schema: null,
             fileNamePattern: this.getFieldValue("fileNamePattern"),
-            headerRow: false,
-            repeat: 1,
-            name: null,
             fileKind: "json",
-            logFormat: null,
-            startTime: null,
-            endTime: null,
-            deleteAfterLoading: false
         };
     }
 }
@@ -571,14 +526,7 @@ class ParquetFileDialog extends Dialog {
             schemaFile: null,  // not used
             schema: null,
             fileNamePattern: this.getFieldValue("fileNamePattern"),
-            headerRow: false,  // not used
-            repeat: 1,
-            name: null,
             fileKind: "parquet",
-            logFormat: null,
-            startTime: null,
-            endTime: null,
-            deleteAfterLoading: false
         };
     }
 }
@@ -604,14 +552,7 @@ class OrcFileDialog extends Dialog {
             schemaFile: this.getFieldValue("schemaFile"),
             schema: null,
             fileNamePattern: this.getFieldValue("fileNamePattern"),
-            headerRow: false,  // not used
-            repeat: 1,
-            name: null,
             fileKind: "orc",
-            logFormat: null,
-            startTime: null,
-            endTime: null,
-            deleteAfterLoading: false
         };
     }
 }
@@ -622,9 +563,10 @@ class OrcFileDialog extends Dialog {
 class DBDialog extends Dialog {
     constructor(isFederated: boolean) {
         super("Load DB tables", "Loads data from a parallel or federated database.");
-        const arrDB: FederatedDatabase[] = ["mysql"];
-        if (isFederated) arrDB.push("cassandra", "greenplum");
+        const arrDB: FederatedDatabase[] = [];
+        if (isFederated) arrDB.push("greenplum", "cassandra");
         else arrDB.push("impala");
+        arrDB.push("mysql");
 
         const sel = this.addSelectFieldAsObject(
             "databaseKind", "Database kind", arrDB, (l) => l.toString(),
@@ -638,7 +580,7 @@ class DBDialog extends Dialog {
                 "Absolute path of dCassandra's installation directory");
             this.hideInputField("dbDir", dbDir);
         }
-        const port = this.addTextField("port", "Port", FieldKind.Integer, "3306",
+        const port = this.addTextField("port", "Port", FieldKind.Integer, null,
             "Network port to connect to database.");
         port.required = true;
         if (isFederated) {
@@ -659,6 +601,7 @@ class DBDialog extends Dialog {
         // not caching the federated connection because the cache failed to show all Cassandra's fields
         if (!isFederated)
             this.setCacheTitle("DBDialog");
+        this.dbChanged();
     }
 
     public getDbKind(): FederatedDatabase | null {

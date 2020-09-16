@@ -193,7 +193,7 @@ class GreenplumTableReceiver extends BaseReceiver {
      */
     constructor(loadMenuPage: FullPage, operation: ICancellable<RemoteObjectId>,
                 protected initialObject: InitialObject,
-                protected data: DataLoaded, progressInfo: string) {
+                protected data: TablesLoaded, progressInfo: string) {
         super(loadMenuPage, operation, progressInfo, null);
     }
 
@@ -204,14 +204,16 @@ class GreenplumTableReceiver extends BaseReceiver {
         const title = getDescription(this.data);
         const dataset = new DatasetView(this.remoteObject.remoteObjectId, title.format, this.data, this.page);
         const newPage = dataset.newPage(title, null);
-        rr.invoke(new GreenplumSchemaReceiver(newPage, rr, this.initialObject, this.remoteObject));
+        rr.invoke(new GreenplumSchemaReceiver(
+            newPage, rr, this.initialObject, this.remoteObject, this.data.description));
     }
 }
 
 class GreenplumSchemaReceiver extends OnCompleteReceiver<TableSummary> {
     constructor(page: FullPage, operation: ICancellable<TableSummary>,
                 protected initialObject: InitialObject,
-                protected remoteObject: TableTargetAPI) {
+                protected remoteObject: TableTargetAPI,
+                protected jdbc: JdbcConnectionInformation) {
         super(page, operation, "Get schema");
     }
 
@@ -224,33 +226,36 @@ class GreenplumSchemaReceiver extends OnCompleteReceiver<TableSummary> {
         // where the tables are stored on the remote machines.
         // This is the name of the temporary table used.
         const tableName = "T" + getUUID().replace(/-/g, '');
-        const rr = this.remoteObject.createStreamingRpcRequest<string>("dumpTable", tableName);
-        rr.invoke(new GreenplumLoader(this.page, ts, this.initialObject, rr));
+        const rr = this.remoteObject.createStreamingRpcRequest<string>("initializeTable", tableName);
+        rr.invoke(new GreenplumLoader(this.page, ts, this.initialObject, this.jdbc, rr));
     }
 }
 
 class GreenplumLoader extends OnCompleteReceiver<string> {
     constructor(page: FullPage, protected summary: TableSummary,
                 protected remoteObject: InitialObject,
+                protected jdbc: JdbcConnectionInformation,
                 operation: ICancellable<string>) {
-        super(page, operation, "Find table fragments");
+        super(page, operation, "Load table data");
     }
 
     public run(value: string): void {
         const files: FileSetDescription = {
-            fileKind: "csv",
+            fileKind: "lazycsv",
             fileNamePattern: value,
             schemaFile: null,
             headerRow: false,
             schema: this.summary.schema,
             name: (this.page.dataset?.loaded as TablesLoaded).description.table,
-            repeat: 1,
-            logFormat: null,
-            startTime: null,
-            endTime: null,
-            deleteAfterLoading: true
+            deleteAfterLoading: true,
+            rowCount: this.summary.rowCount
         };
-        const rr = this.remoteObject.createStreamingRpcRequest<RemoteObjectId>("findFiles", files);
+        const rr = this.remoteObject.createStreamingRpcRequest<RemoteObjectId>(
+            "findGreenplumFiles", {
+                files: files,
+                schema: this.summary.schema,
+                jdbc: this.jdbc
+            });
         const observer = new FilesReceiver(this.page, rr,
             { kind: "Files", description: files }, false);
         rr.invoke(observer);

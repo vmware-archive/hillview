@@ -75,6 +75,7 @@ repository/*.jar
 
 # data which is too big to put into git
 data/ontime/On_Time_On_Time*
+data/ontime_big/*.gz
 data/ontime/2016_*.csv
 data/ontime/*.orc
 data/ontime_orc/*

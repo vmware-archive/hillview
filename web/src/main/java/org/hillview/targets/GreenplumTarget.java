@@ -18,51 +18,125 @@
 package org.hillview.targets;
 
 import org.hillview.*;
-import org.hillview.sketches.PrecomputedSketch;
-import org.hillview.storage.jdbc.JdbcConnectionInformation;
+import org.hillview.dataset.api.ControlMessage;
+import org.hillview.dataset.api.IDataSet;
+import org.hillview.sketches.LoadCsvColumnsSketch;
+import org.hillview.storage.jdbc.JdbcDatabase;
+import org.hillview.table.ColumnDescription;
+import org.hillview.table.Schema;
 import org.hillview.table.api.ITable;
-import org.hillview.utils.JsonInString;
+import org.hillview.utils.Converters;
 
+import javax.annotation.Nullable;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 
-@SuppressWarnings("SqlNoDataSourceInspection")
-public class GreenplumTarget extends SimpleDBTarget {
-    static final String filePrefix = "file";  // Should match the prefix in the dump script
+/**
+ * This class interfaces with a Greenplum database.  It is very much like a TableTarget, except
+ * that for each operation is checks to see first whether the columns that will be operated on
+ * have been loaded, and if not loads them explicitly.
+ */
+public class GreenplumTarget extends TableTarget {
+    JdbcDatabase database;
 
-    /*
-        This is the expected contents of the dump-greenplum.sh script:
-#!/bin/sh
-DIR=$1
-PREFIX="file"
-mkdir -p ${DIR} || exit 1
-echo "$(</dev/stdin)" >${DIR}/${PREFIX}${GP_SEGMENT_ID}
+    protected HashSet<String> columnsLoaded;
+    protected String tmpTableName;
+    protected final Schema schema;
+
+    public GreenplumTarget(IDataSet<ITable> table, HillviewComputation c,
+                           @Nullable String metadataDir,
+                           String tmpTableName, JdbcDatabase db, Schema schema) {
+        super(table, c, metadataDir);
+        this.database = db;
+        this.schema = schema;
+        this.columnsLoaded = new HashSet<String>();
+        this.tmpTableName = tmpTableName;
+        this.columnsLoaded.add(this.schema.getColumnNames().get(0));
+        try {
+            this.database.connect();
+        } catch (SQLException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    /**
+     * Given a list of columns, find the ones which have not been loaded yet.
+     * @param columns  Columns to check.
+     * @return         A set of columns that need to be loaded.
      */
+    protected List<String> columnsToLoad(Iterable<String> columns) {
+        List<String> result = new ArrayList<>();
+        for (String c: columns) {
+            if (!this.columnsLoaded.contains(c))
+                result.add(c);
+        }
+        return result;
+    }
 
-    public GreenplumTarget(JdbcConnectionInformation conn, HillviewComputation c, String dir) {
-        super(conn, c, dir);
+    public static void writeColumns(Iterable<String> columns, JdbcDatabase database,
+                                    Schema schema,
+                                    String tmpTableName) throws SQLException {
+        String tableName = database.connInfo.table;
+        StringBuilder cols = new StringBuilder();
+        boolean first = true;
+        for (String c: columns) {
+            if (!first)
+                cols.append(", ");
+            first = false;
+            ColumnDescription desc = schema.getDescription(c);
+            String type = JdbcDatabase.sqlType(desc.kind);
+            cols.append(c).append(" ").append(type);
+        }
+        // Create an external table that will be written into
+        String query = "CREATE WRITABLE EXTERNAL WEB TABLE " +
+                tmpTableName + " (" + cols.toString() + ") EXECUTE '" +
+                Configuration.instance.getGreenplumDumpScript() + " " +
+                Configuration.instance.getGreenplumDumpDirectory() + "/" + tmpTableName +
+                "' FORMAT 'CSV'";
+        database.executeUpdate(query);
+        // This triggers the dumping of the data on the workers
+        query = "INSERT INTO " + tmpTableName + " SELECT " + String.join(", ", columns) + " FROM " + tableName;
+        database.executeUpdate(query);
+        // Cleanup: remove temporary table and view
+        query = "DROP EXTERNAL TABLE " + tmpTableName;
+        database.executeUpdate(query);
+    }
+
+    protected void writeColumns(Iterable<String> columns) throws SQLException {
+        writeColumns(columns, this.database, this.schema, this.tmpTableName);
+    }
+
+    protected void loadWrittenColumns(List<String> columns) {
+        // Ask remote workers to parse their local files
+        HashSet<String> set = new HashSet<>(columns);
+        Schema toLoad = this.schema.project(set::contains);
+        LoadCsvColumnsSketch sketch = new LoadCsvColumnsSketch(toLoad);
+        ControlMessage.StatusList sl = this.table.blockingSketch(sketch);
+        for (ControlMessage.Status s: Converters.checkNull(sl))
+            if (s.isError())
+                throw new RuntimeException(s.exception);
+        this.columnsLoaded.addAll(columns);
+    }
+
+    synchronized protected void ensureColumns(Iterable<String> columns) {
+        try {
+            List<String> cols = this.columnsToLoad(columns);
+            if (cols.isEmpty())
+                return;
+            this.writeColumns(cols);
+            this.loadWrittenColumns(cols);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @HillviewRpc
-    public void dumpTable(RpcRequest request, RpcRequestContext context) throws SQLException {
-        String tmpTableName = request.parseArgs(String.class);
-        String dumpScriptName = RpcObjectManager.instance.properties.getProperty(
-                "greenplumDumpScript", "/home/gpadmin/hillview/dump-greenplum.sh");
-        String dumpDirectory = RpcObjectManager.instance.properties.getProperty(
-                "greenplumDumpDirectory", "/tmp");
-
-        // This creates a virtual table that will write its partitions
-        // in files named like ${dumpDirectory}/${tmpTableName}/${filePrefix}Number
-        String tableName = this.jdbc.table;
-        String query = "CREATE WRITABLE EXTERNAL WEB TABLE " +
-                tmpTableName + " (LIKE " + tableName + ") EXECUTE '" +
-                dumpScriptName + " " + dumpDirectory + "/" + tmpTableName + "' FORMAT 'CSV'";
-
-        this.database.executeUpdate(query);
-        query = "INSERT INTO " + tmpTableName + " SELECT * FROM " + tableName;
-        this.database.executeUpdate(query);
-
-        PrecomputedSketch<ITable, JsonInString> sk = new PrecomputedSketch<ITable, JsonInString>(
-                JsonInString.makeJsonString(dumpDirectory + "/" + tmpTableName + "/" + filePrefix + "*"));
-        this.runCompleteSketch(this.table, sk, request, context);
+    public void getNextK(RpcRequest request, RpcRequestContext context) {
+        NextKArgs nextKArgs = request.parseArgs(NextKArgs.class);
+        Schema schema = nextKArgs.order.toSchema();
+        this.ensureColumns(schema.getColumnNames());
+        super.getNextK(request, context);
     }
 }

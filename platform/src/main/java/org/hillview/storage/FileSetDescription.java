@@ -68,6 +68,7 @@ public class FileSetDescription implements IJson {
     public String cookie = null;
     /**
      * Used for testing: allows reading the same data multiple times.
+     * 0 is the same as 1.
      */
     public int repeat = 1;
     /**
@@ -118,24 +119,30 @@ public class FileSetDescription implements IJson {
         public ITable load() {
             TextFileLoader loader;
             switch (FileSetDescription.this.fileKind) {
-                case "csv":
+                case "lazycsv": {
+                    CsvFileLoader.Config config = new CsvFileLoader.Config();
+                    config.allowFewerColumns = true;
+                    config.hasHeaderRow = FileSetDescription.this.headerRow;
+                    loader = new LazyCsvFileLoader(
+                            this.pathname, config, FileSetDescription.this.getSchema());
+                    break;
+                }
+                case "csv": {
                     CsvFileLoader.Config config = new CsvFileLoader.Config();
                     config.allowFewerColumns = true;
                     config.hasHeaderRow = FileSetDescription.this.headerRow;
                     loader = new CsvFileLoader(
                             this.pathname, config, FileSetDescription.this.getSchema());
                     break;
+                }
                 case "orc":
-                    loader = new OrcFileLoader(
-                            this.pathname, FileSetDescription.this.getSchema(), true);
+                    loader = new OrcFileLoader(this.pathname, FileSetDescription.this.getSchema(), true);
                     break;
                 case "parquet":
-                    loader = new ParquetFileLoader(
-                            this.pathname, true);
+                    loader = new ParquetFileLoader(this.pathname, true);
                     break;
                 case "json":
-                    loader = new JsonFileLoader(
-                            this.pathname, FileSetDescription.this.getSchema());
+                    loader = new JsonFileLoader(this.pathname, FileSetDescription.this.getSchema());
                     break;
                 case "hillviewlog":
                     loader = new HillviewLogs.LogFileLoader(this.pathname);

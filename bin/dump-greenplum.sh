@@ -25,4 +25,4 @@
 DIR=$1
 PREFIX="file"
 mkdir -p ${DIR} || exit 1
-echo "$(</dev/stdin)" >${DIR}/${PREFIX}${GP_SEGMENT_ID}
+cat </dev/stdin >${DIR}/${PREFIX}${GP_SEGMENT_ID}

@@ -25,12 +25,8 @@ import rx.Subscription;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Properties;
 import java.util.function.Consumer;
 
 /**
@@ -45,12 +41,6 @@ import java.util.function.Consumer;
  */
 public final class RpcObjectManager {
     /**
-     * This file contains the global properties that control hillview.
-     * This file is read by the root node.
-     */
-    static final String propertiesFile = "hillview.properties";
-
-    /**
      * Well-known id of the initial object.
      */
     static final RpcTarget.Id initialObjectId = RpcTarget.Id.initialId();
@@ -60,9 +50,6 @@ public final class RpcObjectManager {
     // These need to be able to find the ObjectManager - they do it through
     // the unique global instance.
     public static final RpcObjectManager instance;
-
-    // Global application properties
-    public final Properties properties;
 
     // Map the session to the targetId object that is replying to the request, if any.
     private final HashMap<Session, RpcTarget> sessionRequest =
@@ -76,14 +63,6 @@ public final class RpcObjectManager {
     // Private constructor
     private RpcObjectManager() {
         this.objectLog = new RedoLog();
-        this.properties = new Properties();
-        try (FileInputStream prop = new FileInputStream(propertiesFile)) {
-            this.properties.load(prop);
-        } catch (FileNotFoundException ex) {
-            HillviewLogger.instance.info("No properties file found", "{0}", propertiesFile);
-        } catch (IOException ex) {
-            HillviewLogger.instance.error("Error while loading properties from file", ex);
-        }
     }
 
     synchronized void addSession(Session session, @Nullable RpcTarget target) {

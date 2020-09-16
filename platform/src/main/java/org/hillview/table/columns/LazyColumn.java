@@ -114,8 +114,12 @@ public class LazyColumn extends BaseColumn {
         List<? extends IColumn> loaded = this.loader.loadColumns(toLoad);
         if (loaded.size() != 1)
             throw new RuntimeException("Expected 1 column to be loaded, not " + loaded.size());
-        this.data = loaded.get(0);
+        this.setData(loaded.get(0));
         assert this.data != null;
         return this.data;
+    }
+
+    synchronized public void setData(IColumn data) {
+        this.data = data;
     }
 }

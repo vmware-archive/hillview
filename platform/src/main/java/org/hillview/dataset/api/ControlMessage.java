@@ -45,17 +45,16 @@ public class ControlMessage implements Serializable {
         /**
          * Host where control message executed.
          */
-        final String hostname;
+        public final String hostname;
         /**
          * Some report about the execution status.
          */
-        final String result;
+        public final String result;
         /**
          * Exception caused if any.
          */
         @Nullable
-        final
-        Throwable exception;
+        public final Throwable exception;
 
         public Status(String result) {
             this.hostname = Utilities.getHostName();
@@ -67,6 +66,10 @@ public class ControlMessage implements Serializable {
             this.hostname = Utilities.getHostName();
             this.result = result;
             this.exception = ex;
+        }
+
+        public boolean isError() {
+            return this.exception != null;
         }
 
         @Override
