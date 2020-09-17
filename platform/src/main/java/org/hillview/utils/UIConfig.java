@@ -21,8 +21,12 @@ import org.hillview.dataset.api.IJsonSketchResult;
 
 /**
  * Parameters controlling the UI display of Hillview.
+ * These are read from hillview.properties with the same names.
+ * Same as the TypeScript class with the same name.
  */
 public class UIConfig implements IJsonSketchResult {
+    static final long serialVersionUID = 1;
+
     public UIConfig() {}
 
     public boolean enableSaveAs;
@@ -31,4 +35,5 @@ public class UIConfig implements IJsonSketchResult {
     public boolean enableManagement;
     public boolean privateIsCsv;
     public boolean hideSuggestions;
+    public boolean hideDemoMenu;
 }

@@ -101,22 +101,17 @@ public class InitialObjectTarget extends RpcTarget {
         config.enableManagement = Configuration.instance.getBooleanProperty("enableManagement");
         config.privateIsCsv = Configuration.instance.getBooleanProperty("privateIsCsv");
         config.hideSuggestions = Configuration.instance.getBooleanProperty("hideSuggestions");
+        config.hideDemoMenu = Configuration.instance.getBooleanProperty("hideDemoMenu");
         Converters.checkNull(this.emptyDataset);
         PrecomputedSketch<Empty, UIConfig> sk = new PrecomputedSketch<Empty, UIConfig>(config);
         this.runCompleteSketch(this.emptyDataset, sk, request, context);
     }
 
     @HillviewRpc
-    public void openingBookmark(RpcRequest request, RpcRequestContext context) {
+    public void openingBookmark(RpcRequest request, RpcRequestContext context) throws IOException {
         String bookmarkFile = request.parseArgs(String.class);
-        String content;
-        try {
-            File file = new File(InitialObjectTarget.bookmarkDirectory, bookmarkFile);
-            content = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
-        } catch (Exception e) {
-            // Bookmark link is broken. Failed to find bookmarked content
-            throw new RuntimeException(e);
-        }
+        File file = new File(InitialObjectTarget.bookmarkDirectory, bookmarkFile);
+        String content = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
         Converters.checkNull(this.emptyDataset);
         PrecomputedSketch<Empty, JsonInString> sk = new PrecomputedSketch<Empty, JsonInString>(new JsonInString(content));
         this.runCompleteSketch(this.emptyDataset, sk, request, context);
@@ -147,6 +142,7 @@ public class InitialObjectTarget extends RpcTarget {
         }
     }
 
+    @SuppressWarnings("NotNullFieldNotInitialized")
     static class GreenplumInfo {
         FileSetDescription files;
         Schema schema;

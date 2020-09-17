@@ -246,14 +246,14 @@ export class LoadView extends RemoteObject implements IDataView {
                 help: "A database table in a single database."
             });
         this.loadMenu = new SubMenu(loadMenuItems);
-        const items: TopMenuItem[] = [
-            { text: "Test datasets", help: "Hardwired datasets for testing Hillview.",
+        const items: TopMenuItem[] = [];
+        if (!HillviewToplevel.instance.uiconfig.hideDemoMenu)
+            items.push({ text: "Demo datasets", help: "Hardwired datasets for testing Hillview.",
                 subMenu: this.testDatasetsMenu,
-            }, {
+            });
+        items.push({
                 text: "Load", help: "Load data from the worker machines.",
-                subMenu: this.loadMenu },
-        ];
-
+                subMenu: this.loadMenu });
         if (HillviewToplevel.instance.uiconfig.showTestMenu) {
             items.push({
                 text: "Test", help: "Run UI tests", subMenu: new SubMenu([

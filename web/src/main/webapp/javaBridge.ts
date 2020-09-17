@@ -92,6 +92,7 @@ export interface UIConfig {
     enableManagement?: boolean;  // management menu enabled
     privateIsCsv?: boolean;    // the private dataset is in csv form
     hideSuggestions?: boolean; // do not display the suggestions
+    hideDemoMenu?: boolean; // do not show the "demo" menu
 }
 
 export interface ColumnQuantization {
@@ -173,7 +174,6 @@ export interface FileSetDescription {
     startTime?: number | null; // in the same units used by the timestamp column
     endTime?: number | null;
     deleteAfterLoading?: boolean;
-    rowCount?: number;
 }
 
 export interface CountWithConfidence {

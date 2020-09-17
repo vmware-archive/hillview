@@ -44,8 +44,29 @@ public class GreenplumStubTarget extends SimpleDBTarget {
     public void initializeTable(RpcRequest request, RpcRequestContext context) throws SQLException {
         String tmpTableName = request.parseArgs(String.class);
         Converters.checkNull(this.schema);
+        /*
+        In this scheme, which does not seem to work, we only dump the first column now,
+        and we load the other ones later, when needed.
+
         List<String> col = Utilities.list(this.schema.getColumnNames().get(0));
         GreenplumTarget.writeColumns(col, this.database, this.schema, tmpTableName);
+         */
+
+        // Create an external table that will be written into
+        String tableName = this.jdbc.table;
+        String query = "CREATE WRITABLE EXTERNAL WEB TABLE " +
+                tmpTableName + " (LIKE " + tableName + ") EXECUTE '" +
+                Configuration.instance.getGreenplumDumpScript() + " " +
+                Configuration.instance.getGreenplumDumpDirectory() + "/" + tmpTableName +
+                "' FORMAT 'CSV'";
+        database.executeUpdate(query);
+        // This triggers the dumping of the data on the workers
+        query = "INSERT INTO " + tmpTableName + " SELECT * FROM " + tableName;
+        database.executeUpdate(query);
+        // Cleanup: remove temporary table and view
+        query = "DROP EXTERNAL TABLE " + tmpTableName;
+        database.executeUpdate(query);
+
         PrecomputedSketch<ITable, JsonInString> sk = new PrecomputedSketch<>(
                 JsonInString.makeJsonString(
                         Configuration.instance.getGreenplumDumpDirectory() + "/" + tmpTableName + "/" + filePrefix + "*"));

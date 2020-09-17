@@ -25,4 +25,5 @@
 DIR=$1
 PREFIX="file"
 mkdir -p ${DIR} || exit 1
-cat </dev/stdin >${DIR}/${PREFIX}${GP_SEGMENT_ID}
+#cat </dev/stdin >${DIR}/${PREFIX}${GP_SEGMENT_ID}
+split -l 500000 -a 3 - ${DIR}/${PREFIX}${GP_SEGMENT_ID} </dev/stdin

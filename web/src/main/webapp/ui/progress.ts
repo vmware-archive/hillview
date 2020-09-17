@@ -119,7 +119,7 @@ export class ProgressBar implements IHtmlElement {
             const progress = end - this.firstPosition;
             if (progress > 0 && elapsed > 2000) {
                 const estimated = elapsed / progress - elapsed;
-                this.estimate.textContent = "Remaining time: " + readableTime(estimated);
+                this.estimate.textContent = "Est. remaining time: " + readableTime(estimated);
             }
         }
         this.end = end;
