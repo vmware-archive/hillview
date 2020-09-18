@@ -43,8 +43,10 @@ public class JdbcDatabase {
     private final JdbcConnection conn;
     @Nullable
     private Connection connection;
+    public final JdbcConnectionInformation connInfo;
 
     public JdbcDatabase(final JdbcConnectionInformation connInfo) {
+        this.connInfo = connInfo;
         this.conn = JdbcConnection.create(connInfo);
         this.connection = null;
     }
@@ -195,6 +197,50 @@ public class JdbcDatabase {
         }
         long nulls = rowCount - nonNulls;
         return JsonGroups.fromArray(data, nulls);
+    }
+
+    static class ColumnInfo {
+        public final String name;
+        public final String sqlType;
+
+        ColumnInfo(String name, String sqlType) {
+            this.name = name;
+            this.sqlType = sqlType;
+        }
+
+        public String toString() {
+            return this.name + " " + this.sqlType;
+        }
+    }
+
+    public static String sqlType(ContentsKind kind) {
+        String type = null;
+        switch (kind) {
+            case None:
+                type = "varchar(1)";
+                break;
+            case Json:
+            case String:
+                type = "varchar";
+                break;
+            case LocalDate:
+            case Date:
+                type = "timestamp";
+                break;
+            case Integer:
+                type = "int";
+                break;
+            case Double:
+                type = "double precision";
+                break;
+            case Time:
+                type = "time";
+                break;
+            case Interval:
+            case Duration:
+                throw new RuntimeException("Unsupported SQL type");
+        }
+        return type;
     }
 
     public JsonGroups<JsonGroups<Count>>

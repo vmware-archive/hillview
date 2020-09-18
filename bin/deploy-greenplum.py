@@ -23,6 +23,7 @@
 from argparse import ArgumentParser
 from jproperties import Properties
 import os
+import tempfile
 from hillviewCommon import ClusterConfiguration, get_config, get_logger, execute_command
 
 def main():
@@ -34,8 +35,8 @@ def main():
     execute_command("./package-binaries.sh")
     web = config.get_webserver()
     web.copy_file_to_remote("../hillview-bin.zip", ".", "")
-    web.copy_file_to_remote("config-greenplum.json", ".", "")
     web.run_remote_shell_command("unzip -o hillview-bin.zip")
+    web.copy_file_to_remote("config-greenplum.json", "bin", "")
     web.run_remote_shell_command("cd bin; ./upload-data.py -d . -s dump-greenplum.sh config-greenplum.json")
     web.run_remote_shell_command("cd bin; ./redeploy.sh -s config-greenplum.json")
     web.copy_file_to_remote("../repository/PROGRESS_DATADIRECT_JDBC_DRIVER_PIVOTAL_GREENPLUM_5.1.4.000275.jar",
@@ -45,10 +46,12 @@ def main():
         p = Properties()
         p.load(f, "utf-8")
         p["greenplumDumpScript"] = config.service_folder + "/dump-greenplum.sh"
-    with open("hillview.properties", "wb") as f:
-        p.store(f, encoding="utf-8")
-    web.copy_file_to_remote("hillview.properties", config.service_folder, "")
-    os.remove("hillview.properties")
+        p["hideDemoMenu"] = "true"
+    tmp = tempfile.NamedTemporaryFile(mode="w", delete=False)
+    p.store(tmp, encoding="utf-8")
+    tmp.close()
+    web.copy_file_to_remote(tmp.name, config.service_folder + "/hillview.properties", "")
+    os.remove(tmp.name)
 
 if __name__ == "__main__":
     main()

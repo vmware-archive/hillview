@@ -128,7 +128,6 @@ public abstract class RpcTarget implements IJson, IRpcTarget {
             RpcReply reply = request.createReply(ex);
             if (context.session != null)
                 RpcServer.sendReply(reply, context.session);
-            throw new RuntimeException(ex);
         }
     }
 

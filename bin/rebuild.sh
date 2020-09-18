@@ -44,8 +44,8 @@ if [ "x${TOOLSARGS}" != "x" ]; then
 fi
 export MAVEN_OPTS="-Xmx2048M"
 pushd ${mydir}/../platform
-mvn ${TOOLSARGS} ${TESTARGS} install
+mvn ${TOOLSARGS} ${TESTARGS} clean install
 popd
 pushd ${mydir}/../web
-mvn ${TESTARGS} package
+mvn ${TESTARGS} clean package
 popd

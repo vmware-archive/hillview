@@ -48,7 +48,7 @@ import java.io.FileWriter;
  * Almost all operations are triggered from this object.
  */
 @SuppressWarnings("CanBeFinal")
-public final class TableTarget extends TableRpcTarget {
+public class TableTarget extends TableRpcTarget {
     static final long serialVersionUID = 1;
 
     TableTarget(IDataSet<ITable> table, HillviewComputation computation, @Nullable String metadataDirectory) {
@@ -222,6 +222,7 @@ public final class TableTarget extends TableRpcTarget {
     @Nullable
     GeoFileInformation getGeoFileInformation(String columnName) throws IOException {
         String fileName = "data/metadata/geo/" + this.metadataDirectory + "/geometa.json";
+        HillviewLogger.instance.info("Looking for geo data", "file {0}", fileName);
         File file = new File(fileName);
         if (!file.exists())
             return null;

@@ -92,6 +92,7 @@ export interface UIConfig {
     enableManagement?: boolean;  // management menu enabled
     privateIsCsv?: boolean;    // the private dataset is in csv form
     hideSuggestions?: boolean; // do not display the suggestions
+    hideDemoMenu?: boolean; // do not show the "demo" menu
 }
 
 export interface ColumnQuantization {
@@ -158,7 +159,7 @@ export interface CassandraConnectionInfo extends JdbcConnectionInformation {
     cassandraRootDir: string;
 }
 
-export type DataKinds = "csv" | "orc" | "parquet" | "json" | "hillviewlog" | "db" | "genericlog" | "sstable";
+export type DataKinds = "csv" | "orc" | "parquet" | "json" | "hillviewlog" | "db" | "genericlog" | "sstable" | "lazycsv";
 
 export interface FileSetDescription {
     fileKind: DataKinds;
@@ -167,12 +168,12 @@ export interface FileSetDescription {
     schema: Schema | null;
     headerRow?: boolean;
     cookie?: string;
-    repeat: number;
-    name: string | null;  // not used on the Java side
-    logFormat: string | null;
-    startTime: number | null;
-    endTime: number | null;
-    deleteAfterLoading: boolean;
+    repeat?: number;
+    name?: string;
+    logFormat?: string;
+    startTime?: number | null; // in the same units used by the timestamp column
+    endTime?: number | null;
+    deleteAfterLoading?: boolean;
 }
 
 export interface CountWithConfidence {

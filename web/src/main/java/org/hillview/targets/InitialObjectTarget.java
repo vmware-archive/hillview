@@ -21,6 +21,7 @@ import org.apache.commons.io.FileUtils;
 import org.hillview.*;
 import org.hillview.sketches.PrecomputedSketch;
 import org.hillview.storage.jdbc.JdbcConnectionInformation;
+import org.hillview.storage.jdbc.JdbcDatabase;
 import org.hillview.table.PrivacySchema;
 import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.*;
@@ -31,6 +32,7 @@ import org.hillview.maps.FindFilesMap;
 import org.hillview.maps.highorder.IdMap;
 import org.hillview.maps.LoadDatabaseTableMap;
 import org.hillview.storage.*;
+import org.hillview.table.Schema;
 import org.hillview.utils.*;
 
 import javax.annotation.Nullable;
@@ -92,31 +94,24 @@ public class InitialObjectTarget extends RpcTarget {
 
     @HillviewRpc
     public void getUIConfig(RpcRequest request, RpcRequestContext context) {
-        JsonInString result;
-        try {
-            result = new JsonInString(Utilities.textFileContents("uiconfig.json"));
-            result.toJsonTree();  // force parsing of the JSON -- to catch syntax errors
-        } catch (Exception e) {
-            HillviewLogger.instance.warn("File uiconfig.json file could not be loaded",
-                    "{0}", e.getMessage());
-            result = new JsonInString("{}");
-        }
+        UIConfig config = new UIConfig();
+        config.enableSaveAs = Configuration.instance.getBooleanProperty("enableSaveAs");
+        config.localDbMenu = Configuration.instance.getBooleanProperty("localDbMenu");
+        config.showTestMenu = Configuration.instance.getBooleanProperty("showTestMenu");
+        config.enableManagement = Configuration.instance.getBooleanProperty("enableManagement");
+        config.privateIsCsv = Configuration.instance.getBooleanProperty("privateIsCsv");
+        config.hideSuggestions = Configuration.instance.getBooleanProperty("hideSuggestions");
+        config.hideDemoMenu = Configuration.instance.getBooleanProperty("hideDemoMenu");
         Converters.checkNull(this.emptyDataset);
-        PrecomputedSketch<Empty, JsonInString> sk = new PrecomputedSketch<Empty, JsonInString>(result);
+        PrecomputedSketch<Empty, UIConfig> sk = new PrecomputedSketch<Empty, UIConfig>(config);
         this.runCompleteSketch(this.emptyDataset, sk, request, context);
     }
 
     @HillviewRpc
-    public void openingBookmark(RpcRequest request, RpcRequestContext context) {
+    public void openingBookmark(RpcRequest request, RpcRequestContext context) throws IOException {
         String bookmarkFile = request.parseArgs(String.class);
-        String content;
-        try {
-            File file = new File(InitialObjectTarget.bookmarkDirectory, bookmarkFile);
-            content = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
-        } catch (Exception e) {
-            // Bookmark link is broken. Failed to find bookmarked content
-            throw new RuntimeException(e);
-        }
+        File file = new File(InitialObjectTarget.bookmarkDirectory, bookmarkFile);
+        String content = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
         Converters.checkNull(this.emptyDataset);
         PrecomputedSketch<Empty, JsonInString> sk = new PrecomputedSketch<Empty, JsonInString>(new JsonInString(content));
         this.runCompleteSketch(this.emptyDataset, sk, request, context);
@@ -145,6 +140,28 @@ public class InitialObjectTarget extends RpcTarget {
         } else {
             this.runMap(this.emptyDataset, map, (e, c) -> new SimpleDBTarget(conn, c, dir), request, context);
         }
+    }
+
+    @SuppressWarnings("NotNullFieldNotInitialized")
+    static class GreenplumInfo {
+        FileSetDescription files;
+        Schema schema;
+        JdbcConnectionInformation jdbc;
+    }
+
+    @HillviewRpc
+    public void findGreenplumFiles(RpcRequest request, RpcRequestContext context) {
+        GreenplumInfo desc = request.parseArgs(GreenplumInfo.class);
+        HillviewLogger.instance.info("Finding files", "{0}", desc);
+        IMap<Empty, List<IFileReference>> finder = new FindFilesMap<>(desc.files);
+        String folder = Utilities.getFolder(desc.files.fileNamePattern);
+        Converters.checkNull(desc.schema);
+        Converters.checkNull(this.emptyDataset);
+        JdbcDatabase database = new JdbcDatabase(desc.jdbc);
+        String tmpTableName = Utilities.getBasename(folder);
+        this.runFlatMap(this.emptyDataset, finder,
+                (d, c) -> new GreenplumFileDescriptionTarget(
+                        d, c, folder, tmpTableName, database, desc.schema), request, context);
     }
 
     @HillviewRpc
@@ -180,7 +197,7 @@ public class InitialObjectTarget extends RpcTarget {
         String dir = Paths.get(Converters.checkNull(conn.databaseKind).toLowerCase(),
                 Converters.checkNull(conn.database),
                 conn.table).toString();
-        this.runMap(this.emptyDataset, map, (e, c) -> new GreenplumTarget(conn, c, dir), request, context);
+        this.runMap(this.emptyDataset, map, (e, c) -> new GreenplumStubTarget(conn, c, dir), request, context);
     }
 
     @HillviewRpc
@@ -189,7 +206,13 @@ public class InitialObjectTarget extends RpcTarget {
         HillviewLogger.instance.info("Finding files", "{0}", desc);
         IMap<Empty, List<IFileReference>> finder = new FindFilesMap<>(desc);
         Converters.checkNull(this.emptyDataset);
-        String folder = Utilities.getFolder(desc.fileNamePattern);
+        String folder;
+        if (desc.fileKind.equals("lazycsv"))
+            // These files are generated from a database, use the database/table name,
+            // which is now in the 'name' field of the FileSetDescription
+            folder = desc.name;
+        else
+            folder = Utilities.getFolder(desc.fileNamePattern);
 
         String privacyMetadataFile = DPWrapper.privacyMetadataFile(folder);
         if (privacyMetadataFile != null) {

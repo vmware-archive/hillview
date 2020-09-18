@@ -110,7 +110,7 @@ public class DataUpload {
         options.addOption(o_skip);
 
         CommandLineParser parser = new DefaultParser();
-        CommandLine cmd = null;
+        CommandLine cmd;
         try {
             cmd = parser.parse(options, args);
             if (cmd == null)
