@@ -8,4 +8,14 @@
   "geoFile": "data/geo/us_states/cb_2019_us_state_20m.shp",
   "property": "STUSPS",
   "projection": "geoAlbersUsa"
+}, {
+  "columnName": "Origin",
+  "geoFile": "data/geo/airports/airprtx020.shp",
+  "property": "LOCID",
+  "projection": "geoAlbersUsa"
+}, {
+  "columnName": "Dest",
+  "geoFile": "data/geo/airports/airprtx020.shp",
+  "property": "LOCID",
+  "projection": "geoAlbersUsa"
 }]

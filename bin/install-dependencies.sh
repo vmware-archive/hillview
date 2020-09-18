@@ -61,8 +61,11 @@ pushd ${mydir}/../data/metadata/differential-privacy/data/ontime_private
 ./gen_metadata.py
 popd
 
-#rr Install geographic metadata
+# Install geographic metadata
 pushd ${mydir}/../data/geo/us_states
+./download.py
+popd
+pushd ${mydir}/../data/geo/airports
 ./download.py
 popd
 
