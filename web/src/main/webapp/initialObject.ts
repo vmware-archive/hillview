@@ -260,13 +260,14 @@ class GreenplumLoader extends OnCompleteReceiver<string> {
                 jdbc: this.jdbc
             });
          */
+        const loaded = this.page.dataset?.loaded as TablesLoaded;
         const files: FileSetDescription = {
-            fileKind: "csv",
+            fileKind: "lazycsv",
             fileNamePattern: value,
             schemaFile: null,
             headerRow: false,
             schema: this.summary.schema,
-            name: (this.page.dataset?.loaded as TablesLoaded).description.table,
+            name: loaded.description.database + "/" + loaded.description.table,
             deleteAfterLoading: true,
         };
         const rr = this.remoteObject.createStreamingRpcRequest<RemoteObjectId>(

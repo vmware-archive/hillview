@@ -222,6 +222,7 @@ public class TableTarget extends TableRpcTarget {
     @Nullable
     GeoFileInformation getGeoFileInformation(String columnName) throws IOException {
         String fileName = "data/metadata/geo/" + this.metadataDirectory + "/geometa.json";
+        HillviewLogger.instance.info("Looking for geo data", "file {0}", fileName);
         File file = new File(fileName);
         if (!file.exists())
             return null;

@@ -251,4 +251,9 @@ export class GeoDataReceiver extends Receiver<NextKList> {
             return;
         this.geoView.updateView(v.data);
     }
+
+    public onCompleted(): void {
+        super.onCompleted();
+        this.geoView.updateCompleted(this.elapsedMilliseconds());
+    }
 }

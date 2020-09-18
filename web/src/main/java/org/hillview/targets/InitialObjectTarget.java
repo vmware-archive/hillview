@@ -206,7 +206,13 @@ public class InitialObjectTarget extends RpcTarget {
         HillviewLogger.instance.info("Finding files", "{0}", desc);
         IMap<Empty, List<IFileReference>> finder = new FindFilesMap<>(desc);
         Converters.checkNull(this.emptyDataset);
-        String folder = Utilities.getFolder(desc.fileNamePattern);
+        String folder;
+        if (desc.fileKind.equals("lazycsv"))
+            // These files are generated from a database, use the database/table name,
+            // which is now in the 'name' field of the FileSetDescription
+            folder = desc.name;
+        else
+            folder = Utilities.getFolder(desc.fileNamePattern);
 
         String privacyMetadataFile = DPWrapper.privacyMetadataFile(folder);
         if (privacyMetadataFile != null) {

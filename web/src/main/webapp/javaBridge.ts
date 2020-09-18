@@ -169,7 +169,7 @@ export interface FileSetDescription {
     headerRow?: boolean;
     cookie?: string;
     repeat?: number;
-    name?: string;  // not used on the Java side
+    name?: string;
     logFormat?: string;
     startTime?: number | null; // in the same units used by the timestamp column
     endTime?: number | null;

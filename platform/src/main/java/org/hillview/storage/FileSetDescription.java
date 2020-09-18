@@ -85,6 +85,11 @@ public class FileSetDescription implements IJson {
      * useful for temporary files.
      */
     public boolean deleteAfterLoading;
+    /**
+     * Actual name of the dataset.
+     */
+    @Nullable
+    public String name;
 
     @SuppressWarnings("unused")
     public String getBasename() {
@@ -119,7 +124,11 @@ public class FileSetDescription implements IJson {
         public ITable load() {
             TextFileLoader loader;
             switch (FileSetDescription.this.fileKind) {
-                case "lazycsv": {
+                case "lazycsv":
+                    /* {
+                    For now treated as equivalent to CSV.  This is used for the
+                    csv files dumped by the greenplum database.
+
                     CsvFileLoader.Config config = new CsvFileLoader.Config();
                     config.allowFewerColumns = true;
                     config.hasHeaderRow = FileSetDescription.this.headerRow;
@@ -127,6 +136,7 @@ public class FileSetDescription implements IJson {
                             this.pathname, config, FileSetDescription.this.getSchema());
                     break;
                 }
+                     */
                 case "csv": {
                     CsvFileLoader.Config config = new CsvFileLoader.Config();
                     config.allowFewerColumns = true;
