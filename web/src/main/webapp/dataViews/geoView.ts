@@ -16,6 +16,7 @@
  */
 
 import {
+    FilterListDescription,
     IColumnDescription, MapAndColumnRepresentation,
     NextKList,
     RecordOrder,
@@ -24,8 +25,8 @@ import {
 import {ChartView} from "./chartView";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {assert, Converters, Exporter, ICancellable, PartialResult, significantDigits} from "../util";
-import {BaseReceiver} from "../tableTarget";
-import {DisplayName} from "../schemaClass";
+import {BaseReceiver, TableTargetAPI} from "../tableTarget";
+import {DisplayName, SchemaClass} from "../schemaClass";
 import {CommonArgs, OnCompleteReceiverCommon, ReceiverCommonArgs} from "../ui/receiver";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {IDataView} from "../ui/dataview";
@@ -34,7 +35,7 @@ import {mouse as d3mouse} from "d3-selection";
 import {Receiver, RpcRequest} from "../rpc";
 import {GeoPlot} from "../ui/geoPlot";
 import {HtmlPlottingSurface} from "../ui/plottingSurface";
-import {Resolution} from "../ui/ui";
+import {Resolution, SpecialChars} from "../ui/ui";
 import {HeatmapLegendPlot} from "../ui/heatmapLegendPlot";
 import {TextOverlay} from "../ui/textOverlay";
 import {saveAs} from "../ui/dialog";
@@ -47,16 +48,22 @@ export class GeoView extends ChartView<NextKList> {
     protected pointDescription: TextOverlay | null = null;
     protected mapData: MapAndColumnRepresentation | null = null;
     protected defaultProvenance: string = "Map view";
+    protected navigation: HTMLDivElement;
+    protected scale: number = 1;  // magnification of map
+    protected xShift: number = 0; // translation of map
+    protected yShift: number = 0;
 
     constructor(args: CommonArgs, protected readonly keyColumn: IColumnDescription, page: FullPage) {
         super(args.remoteObject.remoteObjectId, args.rowCount, args.schema, page, "Map");
-        this.viewMenu = new SubMenu([
-            {
+        const zoomIncrement = 1.3;
+        this.viewMenu = new SubMenu([{
                 text: "refresh",
-                action: () => {
-                    this.refresh();
-                },
+                action: () => this.refresh(),
                 help: "Redraw this view.",
+            }, {
+                text: "table",
+                action: () => this.showTable([this.keyColumn], this.defaultProvenance),
+                help: "Show the data underlying this map using a table view.",
             }]);
         this.menu = new TopMenu([
             this.exportMenu(),
@@ -65,8 +72,32 @@ export class GeoView extends ChartView<NextKList> {
         ]);
         this.page.setMenu(this.menu);
         this.createDiv("legend");
+        const n = this.makeToplevelDiv("navigationBar");
+        n.style.textAlign = "center";
+        this.navigation = document.createElement("div");
+        n.append(this.navigation);
         this.createDiv("chart");
         this.createDiv("summary");
+
+        this.createNavigation(
+            "o", "Center map",
+            () => { this.scale = 1; this.xShift = 0; this.yShift = 0; this.resize(); });
+        this.createNavigation("+", "Zoom in", () => this.zoom(zoomIncrement));
+        const shiftAmount = 50;
+        this.createNavigation(SpecialChars.enDash, "Zoom out", () => this.zoom(1 / zoomIncrement));
+        this.createNavigation(SpecialChars.leftArrowHtml, "Move left", () => this.translate(shiftAmount, 0));
+        this.createNavigation(SpecialChars.downArrowHtml, "Move down", () => this.translate(0, shiftAmount));
+        this.createNavigation(SpecialChars.rightArrowHtml, "Move right", () => this.translate(-shiftAmount, 0));
+        this.createNavigation(SpecialChars.upArrowHtml, "Move up", () => this.translate(0, -shiftAmount));
+    }
+
+    protected createNavigation(html: string, title: string, method: () => void): void {
+        const button = document.createElement("button");
+        button.innerHTML = html;
+        button.onclick = method;
+        button.title = title;
+        button.className = "navigation";
+        this.navigation.appendChild(button);
     }
 
     public static reconstruct(ser: MapSerialization, page: FullPage): IDataView | null {
@@ -86,6 +117,12 @@ export class GeoView extends ChartView<NextKList> {
             keyColumn: this.keyColumn.name
         };
         return result;
+    }
+
+    public translate(left: number, up: number): void {
+        this.xShift -= left;
+        this.yShift += up;
+        this.resize();
     }
 
     protected export(): void {
@@ -127,14 +164,14 @@ export class GeoView extends ChartView<NextKList> {
             originalPage: this.page,
             options: { chartKind: "Map", reusePage: false }
         };
-        const rec = new GeoMapReceiver(args, this.keyColumn, rr);
+        const rec = new GeoMapReceiver(args, this.keyColumn, rr, this);
         rr.invoke(rec);
     }
 
     resize(): void {
         if (this.data == null)
             return;
-        this.updateView(this.data);
+        this.updateView(this.data, true);
     }
 
     protected showTrellis(colName: DisplayName): void {
@@ -160,16 +197,28 @@ export class GeoView extends ChartView<NextKList> {
     }
 
     private selectionCompleted(xl: number, xr: number, yl: number, yr: number): void {
-        // TODO
+        if (this.plot == null)
+            return;
+        const keep = this.plot.within(xl, xr, yl, yr);
+        if (keep.length == 0) {
+            this.page.reportError("No objects overlap selection");
+            return;
+        }
+        const filter: FilterListDescription = {
+            column: this.keyColumn.name,
+            keep
+        }
+        const rr = this.createFilterListRequest(filter);
+        rr.invoke(new FilterMapReceiver(this.page, this.keyColumn, this.schema, rr));
     }
 
-    public setMap(mapData: MapAndColumnRepresentation): void {
-        this.createNewSurfaces();
+    public setMap(mapData: MapAndColumnRepresentation, keepColorMap: boolean): void {
+        this.createNewSurfaces(keepColorMap);
         this.mapData = mapData;
         this.plot!.setMap(mapData);
     }
 
-    protected createNewSurfaces(): void {
+    protected createNewSurfaces(keepColorMap: boolean): void {
         if (this.surface != null)
             this.surface.destroy();
         if (this.legendSurface != null)
@@ -177,13 +226,35 @@ export class GeoView extends ChartView<NextKList> {
         this.legendSurface = new HtmlPlottingSurface(
             this.legendDiv!, this.page, { height: Resolution.legendSpaceHeight });
         // noinspection JSUnusedLocalSymbols
-        this.legend = new HeatmapLegendPlot(this.legendSurface, (xl, xr) => {});
+        if (!keepColorMap) {
+            this.legend = new HeatmapLegendPlot(this.legendSurface,
+                (xl, xr) => this.legendSelectionCompleted(xl, xr));
+            this.legend!.setColorMapChangeEventListener(() => this.updateView(this.data, true));
+        } else {
+            this.legend!.moved();
+            this.legend!.setSurface(this.legendSurface);
+        }
         this.surface = new HtmlPlottingSurface(this.chartDiv!, this.page, {});
-        this.plot = new GeoPlot(this.surface, this.legend.getColorMap());
+        this.plot = new GeoPlot(this.surface, this.legend!.getColorMap());
         this.setupMouse();
     }
 
+    protected zoom(scale: number): void {
+        this.scale *= scale;
+        const scaleLimit = 50;
+        if (this.scale > scaleLimit)
+            this.scale = scaleLimit;
+        if (this.scale < 1/scaleLimit)
+            this.scale = 1/scaleLimit;
+        this.resize();
+    }
+
+    protected legendSelectionCompleted(xl: number, xr: number): void {
+        this.legend!.emphasizeRange(xl, xr);
+    }
+
     public draw(): void {
+        this.plot!.setOrientation(this.scale, this.xShift, this.yShift);
         this.legend!.draw();
         this.plot!.draw();
         // Create point description last so it is shown on top
@@ -196,11 +267,12 @@ export class GeoView extends ChartView<NextKList> {
         this.summary.display();
     }
 
-    public updateView(n: NextKList): void {
+    public updateView(n: NextKList, keepColorMap: boolean): void {
         this.data = n;
         if (n == null)
             return;
-        this.setMap(this.mapData!);
+        // Creates new surfaces.
+        this.setMap(this.mapData!, keepColorMap);
         const map = new Map<String, number>();
         let max = 0;
         for (const r of n.rows) {
@@ -210,8 +282,10 @@ export class GeoView extends ChartView<NextKList> {
             if (count > max)
                 max = count;
         }
-        this.legend!.setData(max);
+        if (!keepColorMap)
+            this.legend!.setData(max);
         this.plot!.setData(map);
+        this.summary!.set("Objects", n.rows.length);
         this.draw();
     }
 }
@@ -219,13 +293,17 @@ export class GeoView extends ChartView<NextKList> {
 export class GeoMapReceiver extends OnCompleteReceiverCommon<MapAndColumnRepresentation> {
     protected geoView: GeoView;
 
-    constructor(readonly args: ReceiverCommonArgs, readonly keyColumn: IColumnDescription, readonly request: RpcRequest<MapAndColumnRepresentation>) {
+    constructor(readonly args: ReceiverCommonArgs, readonly keyColumn: IColumnDescription,
+                readonly request: RpcRequest<MapAndColumnRepresentation>, view: GeoView | null) {
         super(args, request, "map");
-        this.geoView = new GeoView(args, keyColumn, this.page);
+        if (view == null)
+            this.geoView = new GeoView(args, keyColumn, this.page);
+        else
+            this.geoView = view;
     }
 
     public run(v: MapAndColumnRepresentation): void {
-        this.geoView.setMap(v);
+        this.geoView.setMap(v, false);
         this.geoView.draw();
         const ro = new RecordOrder([{
             columnDescription: this.keyColumn,
@@ -249,11 +327,36 @@ export class GeoDataReceiver extends Receiver<NextKList> {
         super.onNext(v);
         if (v == null || v.data == null)
             return;
-        this.geoView.updateView(v.data);
+        this.geoView.updateView(v.data, false);
     }
 
     public onCompleted(): void {
         super.onCompleted();
         this.geoView.updateCompleted(this.elapsedMilliseconds());
+    }
+}
+
+export class FilterMapReceiver extends BaseReceiver {
+    constructor(page: FullPage,
+                protected keyColumn: IColumnDescription,
+                protected schema: SchemaClass,
+                operation: ICancellable<RemoteObjectId>) {
+        super(page, operation, "Filter", page.dataset);
+    }
+
+    public run(value: RemoteObjectId): void {
+        super.run(value); // This sets this.remoteObject.
+        const remoteObject = new TableTargetAPI(value);
+        const rr = remoteObject.createGeoRequest(this.keyColumn);
+        const args: ReceiverCommonArgs = {
+            title: this.page.title,
+            remoteObject: remoteObject,
+            rowCount: 0,  // TODO: Do we need this?
+            schema: this.schema,
+            originalPage: this.page,
+            options: { chartKind: "Map", reusePage: false }
+        };
+        const rec = new GeoMapReceiver(args, this.keyColumn, rr, null);
+        rr.invoke(rec);
     }
 }

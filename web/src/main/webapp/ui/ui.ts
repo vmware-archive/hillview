@@ -24,6 +24,7 @@
  * The list of rendering kinds supported by Hillview.
  */
 import {ScaleLinear as D3ScaleLinear, ScaleTime as D3ScaleTime} from "d3-scale";
+import {reorder} from "../util";
 
 /**
  * HTML strings are strings that represent an HTML fragment.
@@ -104,7 +105,10 @@ export class SpecialChars {
     public static ellipsis = "…";
     public static downArrowHtml = "&dArr;";
     public static upArrowHtml = "&uArr;";
+    public static leftArrowHtml = "&lArr;";
+    public static rightArrowHtml = "&rArr;";
     public static epsilon = "\u03B5";
+    public static enDash = "&ndash;";
 }
 
 /**
@@ -157,6 +161,11 @@ export class Rectangle {
         // noinspection RedundantIfStatementJS
         if (point.y < this.origin.y || point.y > this.origin.y + this.size.height) return false;
         return true;
+    }
+    public static fromCorners(corners: [[number, number], [number, number]]): Rectangle {
+        const [x0, x1] = reorder(corners[0][0], corners[1][0]);
+        const [y0, y1] = reorder(corners[0][1], corners[1][1]);
+        return new Rectangle({x: x0, y: y0}, { width: x1 - x0, height: y1 - y0 });
     }
 }
 

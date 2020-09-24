@@ -148,7 +148,7 @@ export abstract class TSViewBase extends BigTableView {
             originalPage: this.page,
             options: { chartKind: "Map", reusePage: false }
         };
-        const rec = new GeoMapReceiver(args, column, rr);
+        const rec = new GeoMapReceiver(args, column, rr, null);
         rr.invoke(rec);
     }
 

@@ -286,11 +286,6 @@ export interface ColumnGeoRepresentation {
     // geoNaturalEarth1
 }
 
-export interface GeoFileInformation extends ColumnGeoRepresentation {
-    geoFile: string; // e.g., data/geo/us_states/cb_2019_us_state_20m.shp
-    // Supported formats: shapeFile (shp)
-}
-
 export interface MapAndColumnRepresentation extends ColumnGeoRepresentation {
     data: SimpleFeatureCollection;
 }
@@ -392,6 +387,11 @@ export interface QuantilesMatrixInfo extends QuantilesVectorInfo {
 export interface HeavyHittersFilterInfo {
     hittersId: string;
     schema: Schema;
+}
+
+export interface FilterListDescription {
+    column: string;
+    keep: string[];
 }
 
 export interface TopList {

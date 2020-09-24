@@ -24,6 +24,7 @@ import org.hillview.dataset.api.*;
 import org.hillview.dataset.monoids.PRDataSetMonoid;
 import org.hillview.dataset.monoids.PartialResultMonoid;
 import org.hillview.sketches.highorder.PostProcessedSketch;
+import org.hillview.targets.InitialObjectTarget;
 import org.hillview.utils.*;
 import rx.Observable;
 import rx.Observer;
@@ -33,8 +34,11 @@ import rx.exceptions.CompositeException;
 import javax.annotation.Nullable;
 import javax.websocket.Session;
 import java.beans.Statement;
+import java.io.File;
+import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -397,6 +401,24 @@ public abstract class RpcTarget implements IJson, IRpcTarget {
         return IJson.gsonInstance.toJsonTree(this.objectId.toString());
     }
 
+    public <R extends IJson> void
+    returnResult(@Nullable R result, RpcRequest request, RpcRequestContext context) {
+        Session session = context.getSessionIfOpen();
+        if (session == null)
+            return;
+
+        JsonObject json = new JsonObject();
+        json.addProperty("done", 1.0);
+        if (result == null)
+            json.add("data", null);
+        else
+            json.add("data", result.toJsonTree());
+        RpcReply reply = request.createReply(json);
+        RpcServer.sendReply(reply, Converters.checkNull(context.session));
+        RpcServer.requestCompleted(request, Converters.checkNull(context.session));
+        request.syncCloseSession(context.session);
+    }
+
     private <T, R extends ISketchResult, S extends IJson> void
     runObservedSketch(IDataSet<T> data, PostProcessedSketch<T, R, S> sketch, ResultObserver<R> observer,
                       RpcRequestContext context) {
@@ -582,5 +604,22 @@ public abstract class RpcTarget implements IJson, IRpcTarget {
                 .unsubscribeOn(ExecutorUtils.getUnsubscribeScheduler())
                 .subscribe(robs);
         this.saveSubscription(context, sub);
+    }
+
+    @HillviewRpc
+    public void createBookmark(RpcRequest request, RpcRequestContext context) {
+        String content = request.parseArgs(String.class);
+        String guid = UUID.randomUUID().toString();
+        try {
+            File file = new File(InitialObjectTarget.bookmarkDirectory,
+                    guid + InitialObjectTarget.bookmarkExtension);
+            FileWriter writer = new FileWriter(file);
+            writer.write(content);
+            writer.close();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        JsonInString bookmarkFile = new JsonInString(guid + InitialObjectTarget.bookmarkExtension);
+        this.returnResult(bookmarkFile, request, context);
     }
 }

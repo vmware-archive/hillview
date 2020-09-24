@@ -134,6 +134,19 @@ table {
     background: lightcyan;
 }
 
+.navigation {
+    width: 25px;
+    height: 20px;
+    padding: 0;
+    margin: 0;
+    vertical-align: top;
+    display: inline-block;
+}
+
+.navigationBar {
+    margin: auto;
+}
+
 td.all {
     border: 1px solid black;
 }
