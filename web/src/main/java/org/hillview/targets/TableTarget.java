@@ -39,9 +39,7 @@ import javax.annotation.Nullable;
 import javax.websocket.Session;
 import java.io.IOException;
 import java.util.List;
-import java.util.UUID;
 import java.io.File;
-import java.io.FileWriter;
 
 /**
  * This is the most important RpcTarget, representing a remote table.
@@ -243,8 +241,8 @@ public class TableTarget extends TableRpcTarget {
         if (geoInfo == null)
             throw new RuntimeException("No geographic data found for column " + desc.name);
         PolygonSet ps = new PolygonSet(geoInfo.geoFile);
-        PrecomputedSketch<ITable, JsonInString> pk = new PrecomputedSketch<>(geoInfo.createJSON(ps));
-        this.runCompleteSketch(this.table, pk, request, context);
+        JsonInString result = geoInfo.createJSON(ps);
+        this.returnResult(result, request, context);
     }
 
     @HillviewRpc
@@ -253,24 +251,6 @@ public class TableTarget extends TableRpcTarget {
         SaveAsOrcSketch sk = new SaveAsOrcSketch(
                 args.folder, args.schema, Utilities.arrayToMap(args.renameMap), true);
         this.runCompleteSketch(this.table, sk, request, context);
-    }
-
-    @HillviewRpc
-    public void createBookmark(RpcRequest request, RpcRequestContext context) {
-        String content = request.parseArgs(String.class);
-        String guid = UUID.randomUUID().toString();
-        try {
-            File file = new File(InitialObjectTarget.bookmarkDirectory,
-                guid + InitialObjectTarget.bookmarkExtension);
-            FileWriter writer = new FileWriter(file);
-            writer.write(content);
-            writer.close();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        JsonInString bookmarkFile = new JsonInString(guid + InitialObjectTarget.bookmarkExtension);
-        PrecomputedSketch<ITable, JsonInString> empty = new PrecomputedSketch<ITable, JsonInString>(bookmarkFile);
-        this.runCompleteSketch(this.table, empty, request, context);
     }
 
     static class QuantilesVectorInfo extends HistogramInfo {
@@ -801,6 +781,13 @@ public class TableTarget extends TableRpcTarget {
         JSFilterDescription.Info filter = request.parseArgs(JSFilterDescription.Info.class);
         JSFilterDescription desc = new JSFilterDescription(filter);
         FilterMap map = new FilterMap(desc);
+        this.runMap(this.table, map, (d, c) -> new TableTarget(d, c, this.metadataDirectory), request, context);
+    }
+
+    @HillviewRpc
+    public void filterList(RpcRequest request, RpcRequestContext context) {
+        FilterListDescription filter = request.parseArgs(FilterListDescription.class);
+        FilterMap map = new FilterMap(filter);
         this.runMap(this.table, map, (d, c) -> new TableTarget(d, c, this.metadataDirectory), request, context);
     }
 

@@ -57,7 +57,7 @@ import {
     CreateIntervalColumnMapInfo,
     HeatmapRequestInfo,
     RowValue,
-    MapAndColumnRepresentation
+    MapAndColumnRepresentation, FilterListDescription
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
 import {FullPage, PageTitle} from "./ui/fullPage";
@@ -396,6 +396,11 @@ RpcRequest<RemoteObjectId> {
     public createFilterRequest(f: RangeFilterArrayDescription):
         RpcRequest<RemoteObjectId> {
         return this.createStreamingRpcRequest<RemoteObjectId>("filterRanges", f);
+    }
+
+    public createFilterListRequest(f: FilterListDescription):
+        RpcRequest<RemoteObjectId> {
+        return this.createStreamingRpcRequest<RemoteObjectId>("filterList", f);
     }
 
     public createHistogram2DAndCDFRequest(info: HistogramRequestInfo):

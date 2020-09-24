@@ -20,10 +20,8 @@ package org.hillview.targets;
 import org.hillview.*;
 import org.hillview.utils.*;
 import org.hillview.dataStructures.QuantilesArgs;
-import org.hillview.dataset.api.ISketch;
 import org.hillview.security.PersistedKeyLoader;
 import org.hillview.security.SecureLaplace;
-import org.hillview.sketches.PrecomputedSketch;
 import org.hillview.sketches.results.BucketsInfo;
 import org.hillview.sketches.results.DataRange;
 import org.hillview.sketches.results.StringQuantiles;
@@ -33,7 +31,6 @@ import org.hillview.dataset.api.IJson;
 import org.hillview.sketches.results.TableSummary;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
-import org.hillview.table.api.ITable;
 import org.hillview.table.columns.ColumnQuantization;
 import org.hillview.table.columns.StringColumnQuantization;
 import org.hillview.table.filters.RangeFilterDescription;
@@ -252,10 +249,7 @@ public class DPWrapper {
                           IPrivateDataset target) {
         QuantilesArgs[] args = request.parseArgs(QuantilesArgs[].class);
         JsonList<BucketsInfo> bi = Linq.mapToList(args, this::getRange);
-        ISketch<ITable, JsonList<BucketsInfo>> sk =
-                new PrecomputedSketch<ITable, JsonList<BucketsInfo>>(
-                        new JsonList<BucketsInfo>(bi));
-        target.runCompleteSketch(target.getDataset(), sk, request, context);
+        target.returnResult(new JsonList<BucketsInfo>(bi), request, context);
     }
 
     int getColumnIndex(String... colNames) {

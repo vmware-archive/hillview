@@ -24,6 +24,7 @@ import org.hillview.dataset.api.*;
 import org.hillview.utils.ICast;
 import org.hillview.utils.Pair;
 
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.BiFunction;
@@ -87,6 +88,16 @@ public interface IRpcTarget extends ICast {
     <T, R extends ISketchResult, S extends IJson> void
     runSketch(IDataSet<T> data, PostProcessedSketch<T, R, S> sketch,
               RpcRequest request, RpcRequestContext context);
+
+    /**
+     * Return this result directly to the caller.
+     * @param result  Result to return.
+     * @param request Web socket request.
+     * @param context Context for the computation
+     * @param <R>     Type of the result.
+     */
+    <R extends IJson> void
+    returnResult(@Nullable R result, RpcRequest request, RpcRequestContext context);
 
     /**
      * Runs a sketch and sends the data received directly to the client.

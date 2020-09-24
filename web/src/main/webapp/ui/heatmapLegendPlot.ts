@@ -231,9 +231,9 @@ export class HeatmapLegendPlot extends LegendPlot<number> {
     }
 
     public setData(max: number): void {
-        this.data = max;
         if (max < 1)
-            return;
+            max = 1;
+        this.data = max;
         console.assert(this.max() > 0);
         this.colorMap = new HeatmapColormap(this.max());
         assert(this.max() === this.colorMap.max);

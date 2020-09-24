@@ -1,11 +1,1 @@
-[{
-  "columnName": "OriginState",
-  "geoFile": "data/geo/us_states/cb_2019_us_state_20m.shp",
-  "property": "STUSPS",
-  "projection": "geoAlbersUsa"
-}, {
-  "columnName": "DestState",
-  "geoFile": "data/geo/us_states/cb_2019_us_state_20m.shp",
-  "property": "STUSPS",
-  "projection": "geoAlbersUsa"
-}]
+../ontime/geometa.json

@@ -21,8 +21,6 @@ import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import org.hillview.*;
 import org.hillview.dataStructures.*;
 import org.hillview.dataset.LocalDataSet;
-import org.hillview.sketches.PrecomputedSketch;
-import org.hillview.dataset.api.ISketch;
 import org.hillview.table.filters.RangeFilterArrayDescription;
 import org.hillview.maps.highorder.IdMap;
 import org.hillview.sketches.results.*;
@@ -95,7 +93,7 @@ public class SimpleDBTarget extends TableRpcTarget {
     @HillviewRpc
     public void getSummary(RpcRequest request, RpcRequestContext context) {
         TableSummary summary = new TableSummary(this.schema, this.rowCount);
-        this.runSketch(this.table, new PrecomputedSketch<ITable, TableSummary>(summary), request, context);
+        this.returnResult(summary, request, context);
     }
 
     @HillviewRpc
@@ -103,8 +101,7 @@ public class SimpleDBTarget extends TableRpcTarget {
         DistinctCountRequestInfo col = request.parseArgs(DistinctCountRequestInfo.class);
         int result = this.database.distinctCount(col.columnName, this.columnLimits);
         CountWithConfidence dc = new CountWithConfidence(result);
-        ISketch<ITable, CountWithConfidence> sk = new PrecomputedSketch<ITable, CountWithConfidence>(dc);
-        this.runSketch(this.table, sk, request, context);
+        this.returnResult(dc, request, context);
     }
 
     private void heavyHitters(RpcRequest request, RpcRequestContext context) throws SQLException {
@@ -129,8 +126,7 @@ public class SimpleDBTarget extends TableRpcTarget {
             computation = new HillviewComputation(null, request);
         HeavyHittersTarget hht = new HeavyHittersTarget(fkList, computation);
         TopList result = new TopList(fkList.sortTopK(info.columns), hht.getId().toString());
-        ISketch<ITable, TopList> sk = new PrecomputedSketch<ITable, TopList>(result);
-        this.runSketch(this.table, sk, request, context);
+        this.returnResult(result, request, context);
     }
 
     @HillviewRpc
@@ -161,8 +157,7 @@ public class SimpleDBTarget extends TableRpcTarget {
             }
             result.add(range);
         }
-        ISketch<ITable, JsonList<BucketsInfo>> sk = new PrecomputedSketch<>(result);
-        this.runSketch(this.table, sk, request, context);
+        this.returnResult(result, request, context);
     }
 
     @HillviewRpc
@@ -177,9 +172,7 @@ public class SimpleDBTarget extends TableRpcTarget {
                 cd, info.getBuckets(1), this.columnLimits, null, this.rowCount);
         Two<Two<JsonGroups<Count>>> result = new Two<>(
                 new Two<>(histo), new Two<>(cdf.prefixSum(Count::add, JsonGroups::new)));
-        ISketch<ITable, Two<Two<JsonGroups<Count>>>> sk =
-                new PrecomputedSketch<>(result);
-        this.runSketch(this.table, sk, request, context);
+        this.returnResult(result, request, context);
     }
 
     @HillviewRpc
@@ -191,9 +184,7 @@ public class SimpleDBTarget extends TableRpcTarget {
                 info.getBuckets(0), info.getBuckets(1),
                 this.columnLimits,
                 null, null);
-        ISketch<ITable, JsonGroups<JsonGroups<Count>>> sk =
-                new PrecomputedSketch<ITable, JsonGroups<JsonGroups<Count>>>(heatmap);
-        this.runSketch(this.table, sk, request, context);
+        this.returnResult(heatmap, request, context);
     }
 
     @HillviewRpc

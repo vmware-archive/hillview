@@ -73,38 +73,31 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
                         this.refresh();
                     },
                     help: "Redraw this view.",
-                },
-                {
+                }, {
                     text: "table",
                     action: () => this.showTable([this.xAxisData.description], this.defaultProvenance),
                     help: "Show the data underlying this histogram using a table view.",
-                },
-                {
+                }, {
                     text: "pie chart/histogram",
                     action: () => this.togglePie(),
                     help: "Draw the data as a pie chart or as a histogram.",
-                },
-                {
+                }, {
                     text: "exact",
                     action: () => this.exactHistogram(),
                     help: "Draw this histogram without making any approximations.",
-                },
-                {
+                }, {
                     text: "# buckets...",
                     action: () => this.chooseBuckets(),
                     help: "Change the number of buckets used to draw this histogram. ",
-                },
-                {
+                }, {
                     text: "correlate...",
                     action: () => this.chooseSecondColumn(),
                     help: "Draw a 2-dimensional histogram using this data and another column.",
-                },
-                {
+                }, {
                     text: "quartiles...",
                     action: () => this.chooseQuartilesColumn(),
                     help: "Draw quartiles of a numeric column for each bucket of this histogram.",
-                },
-                {
+                }, {
                     text: "group by...",
                     action: () => {
                         this.trellis();

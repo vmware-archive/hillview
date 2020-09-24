@@ -19,7 +19,6 @@ package org.hillview.targets;
 
 import org.apache.commons.io.FileUtils;
 import org.hillview.*;
-import org.hillview.sketches.PrecomputedSketch;
 import org.hillview.storage.jdbc.JdbcConnectionInformation;
 import org.hillview.storage.jdbc.JdbcDatabase;
 import org.hillview.table.PrivacySchema;
@@ -103,8 +102,7 @@ public class InitialObjectTarget extends RpcTarget {
         config.hideSuggestions = Configuration.instance.getBooleanProperty("hideSuggestions");
         config.hideDemoMenu = Configuration.instance.getBooleanProperty("hideDemoMenu");
         Converters.checkNull(this.emptyDataset);
-        PrecomputedSketch<Empty, UIConfig> sk = new PrecomputedSketch<Empty, UIConfig>(config);
-        this.runCompleteSketch(this.emptyDataset, sk, request, context);
+        this.returnResult(config, request, context);
     }
 
     @HillviewRpc
@@ -113,8 +111,7 @@ public class InitialObjectTarget extends RpcTarget {
         File file = new File(InitialObjectTarget.bookmarkDirectory, bookmarkFile);
         String content = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
         Converters.checkNull(this.emptyDataset);
-        PrecomputedSketch<Empty, JsonInString> sk = new PrecomputedSketch<Empty, JsonInString>(new JsonInString(content));
-        this.runCompleteSketch(this.emptyDataset, sk, request, context);
+        this.returnResult(new JsonInString(content), request, context);
     }
 
     @HillviewRpc
@@ -214,7 +211,7 @@ public class InitialObjectTarget extends RpcTarget {
         else
             folder = Utilities.getFolder(desc.fileNamePattern);
 
-        String privacyMetadataFile = DPWrapper.privacyMetadataFile(folder);
+        String privacyMetadataFile = DPWrapper.privacyMetadataFile(Converters.checkNull(folder));
         if (privacyMetadataFile != null) {
             this.runFlatMap(this.emptyDataset, finder,
                     (d, c) -> new PrivateFileDescriptionTarget(d, c, privacyMetadataFile), request, context);

@@ -51,18 +51,14 @@ public class PrivateTableTarget extends TableRpcTarget implements IPrivateDatase
     public void changePrivacy(RpcRequest request, RpcRequestContext context) {
         this.wrapper.setPrivacySchema(request.parseArgs(PrivacySchema.class));
         HillviewLogger.instance.info("Updated privacy schema");
-        PrecomputedSketch<ITable, JsonInString> empty =
-                new PrecomputedSketch<ITable, JsonInString>(new JsonInString("{}"));
-        this.runCompleteSketch(this.table, empty, request, context);
+        this.returnResult(new JsonInString("{}"), request, context);
     }
 
     @HillviewRpc
     public void savePrivacy(RpcRequest request, RpcRequestContext context) {
         this.wrapper.savePrivacySchema();
         HillviewLogger.instance.info("Saved privacy schema");
-        PrecomputedSketch<ITable, JsonInString> empty =
-                new PrecomputedSketch<ITable, JsonInString>(new JsonInString("{}"));
-        this.runCompleteSketch(this.table, empty, request, context);
+        this.returnResult(new JsonInString("{}"), request, context);
     }
 
     @HillviewRpc
