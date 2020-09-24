@@ -51,10 +51,6 @@ public class JSFilterDescription implements ITableFilterDescription {
 
     private final Info info;
 
-    /**
-     * Make a filter that accepts rows that compares in the specific way with the
-     * given row.
-     */
     public JSFilterDescription(Info info) {
         this.info = info;
     }
