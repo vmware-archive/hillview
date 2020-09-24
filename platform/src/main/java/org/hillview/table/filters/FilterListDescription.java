@@ -26,7 +26,7 @@ import org.hillview.utils.Utilities;
 import java.util.HashSet;
 
 /**
- * A filter that uses JavaScript to filter data.
+ * A filter that keeps all values from a list of strings.
  */
 public class FilterListDescription implements ITableFilterDescription {
     static final long serialVersionUID = 1;

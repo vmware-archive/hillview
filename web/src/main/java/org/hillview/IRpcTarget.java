@@ -99,13 +99,13 @@ public interface IRpcTarget extends ICast {
     <R extends IJson> void
     returnResult(@Nullable R result, RpcRequest request, RpcRequestContext context);
 
-        /**
-         * Runs a sketch and sends the data received directly to the client.
-         * @param data    Dataset to run the sketch on.
-         * @param sketch  Sketch to run.
-         * @param request Web socket request, where replies are sent.
-         * @param context Context for the computation.
-         */
+    /**
+     * Runs a sketch and sends the data received directly to the client.
+     * @param data    Dataset to run the sketch on.
+     * @param sketch  Sketch to run.
+     * @param request Web socket request, where replies are sent.
+     * @param context Context for the computation.
+     */
     default <T, R extends IJsonSketchResult> void
     runSketch(IDataSet<T> data, ISketch<T, R> sketch,
               RpcRequest request, RpcRequestContext context) {
