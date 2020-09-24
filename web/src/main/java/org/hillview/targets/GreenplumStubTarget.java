@@ -18,15 +18,11 @@
 package org.hillview.targets;
 
 import org.hillview.*;
-import org.hillview.sketches.PrecomputedSketch;
 import org.hillview.storage.jdbc.JdbcConnectionInformation;
-import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 import org.hillview.utils.JsonInString;
-import org.hillview.utils.Utilities;
 
 import java.sql.SQLException;
-import java.util.List;
 
 /**
  * This target is the first interface to a Greenplum database.
@@ -66,11 +62,9 @@ public class GreenplumStubTarget extends SimpleDBTarget {
         // Cleanup: remove temporary table and view
         query = "DROP EXTERNAL TABLE " + tmpTableName;
         database.executeUpdate(query);
-
-        PrecomputedSketch<ITable, JsonInString> sk = new PrecomputedSketch<>(
-                JsonInString.makeJsonString(
-                        Configuration.instance.getGreenplumDumpDirectory() + "/" + tmpTableName + "/" + filePrefix + "*"));
-        this.runCompleteSketch(this.table, sk, request, context);
         this.database.disconnect();
+        this.returnResult(JsonInString.makeJsonString(
+                Configuration.instance.getGreenplumDumpDirectory() + "/" + tmpTableName + "/" + filePrefix + "*"),
+            request, context);
     }
 }
