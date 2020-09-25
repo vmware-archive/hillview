@@ -29,7 +29,7 @@ import {
     RecordOrder,
     RemoteObjectId,
     StringFilterDescription,
-    StringColumnFilterDescription, AggregateDescription, CountWithConfidence
+    StringColumnFilterDescription, AggregateDescription, CountWithConfidence, DataKinds
 } from "../javaBridge";
 import {OnCompleteReceiver} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
@@ -175,29 +175,30 @@ export abstract class TSViewBase extends BigTableView {
         this.resize();
     }
 
-    public saveAsOrc(schema: SchemaClass): void {
-        const dialog = new Dialog("Save as ORC files",
-            "Describe the set of ORC files where data will be saved.");
+    public saveAs(schema: SchemaClass, fileKind: DataKinds): void {
+        const dialog = new Dialog("Save as " + fileKind + " files",
+            "Describe the set of files where data will be saved.");
         const folder = dialog.addTextField("folderName", "Folder", FieldKind.String, "/",
-            "All ORC files will be written to this folder on each of the remote machines.");
+            "All files will be written to this folder on each of the remote machines.");
         folder.required = true;
         dialog.setCacheTitle("saveAsDialog");
 
         class SaveReceiver extends OnCompleteReceiver<boolean> {
             constructor(page: FullPage, operation: ICancellable<boolean>) {
-                super(page, operation, "Save as ORC files");
+                super(page, operation, "Save data to files");
             }
 
             public run(value: boolean): void {
                 if (value)
-                    this.page.reportError("Save succeeded.");
+                    this.page.reportError("Save successful.");
             }
         }
 
         dialog.setAction(() => {
             const folderName = dialog.getFieldValue("folderName");
-            const rr = this.createStreamingRpcRequest<boolean>("saveAsOrc", {
-                folderName,
+            const rr = this.createStreamingRpcRequest<boolean>("saveAs", {
+                folder: folderName,
+                fileKind: fileKind,
                 schema: schema.schema,
                 renameMap: schema.getRenameVector(),
             });
@@ -380,8 +381,16 @@ export abstract class TSViewBase extends BigTableView {
             text: "Save as", help: "Save the data to persistent storage.", subMenu: new SubMenu([
                 {
                     text: "Save as ORC files...",
-                    action: () => this.saveAsOrc(this.getSchema()),
-                    help: "Save the data to a set of ORC files on the remote machines.",
+                    action: () => this.saveAs(this.getSchema(), "orc"),
+                    help: "Save the data to a set of ORC files on the worker machines.",
+                }, {
+                    text: "Save as CSV files...",
+                    action: () => this.saveAs(this.getSchema(), "csv"),
+                    help: "Save the data to a set of CSV files on the worker machines.",
+                }, {
+                    text: "Save as DB table...",
+                    action: () => this.saveAs(this.getSchema(), "db"),
+                    help: "Save the data to a table in the original database.",
                 },
             ]),
         };

@@ -27,7 +27,7 @@ import java.sql.SQLException;
 /**
  * This target is the first interface to a Greenplum database.
  * It inherits some operations from SimpleDBTarget, in particular,
- * getSummary.
+ * getMetadata.
  */
 public class GreenplumStubTarget extends SimpleDBTarget {
     static final String filePrefix = "file";  // Should match the prefix in the dump script

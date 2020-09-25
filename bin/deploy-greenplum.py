@@ -47,6 +47,7 @@ def main():
         p.load(f, "utf-8")
         p["greenplumDumpScript"] = config.service_folder + "/dump-greenplum.sh"
         p["hideDemoMenu"] = "true"
+        p["enableSaveAs"] = "true"
     tmp = tempfile.NamedTemporaryFile(mode="w", delete=False)
     p.store(tmp, encoding="utf-8")
     tmp.close()

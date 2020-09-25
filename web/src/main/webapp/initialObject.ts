@@ -107,6 +107,7 @@ class FileSizeReceiver extends OnCompleteReceiver<FileSizeSketchInfo> {
             return;
         }
 
+        /*
         if (false) {
             // Prune the dataset; may increase efficiency
             // TODO: prune seems to be broken.
@@ -114,7 +115,8 @@ class FileSizeReceiver extends OnCompleteReceiver<FileSizeSketchInfo> {
             rr.chain(this.operation);
             const observer = new FilePruneReceiver(this.page, rr, this.data, size, this.newDataset);
             rr.invoke(observer);
-        } else {
+        } else */
+        {
             const fileSize = "Loading " + size.fileCount + " file(s), total size " +
                 significantDigits(size.totalSize) + " bytes";
             const fn = new RemoteObject(this.remoteObj.remoteObjectId);
