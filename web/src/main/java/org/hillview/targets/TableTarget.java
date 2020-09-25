@@ -39,7 +39,6 @@ import javax.annotation.Nullable;
 import javax.websocket.Session;
 import java.io.IOException;
 import java.util.List;
-import java.io.File;
 
 /**
  * This is the most important RpcTarget, representing a remote table.
@@ -53,12 +52,6 @@ public class TableTarget extends TableRpcTarget {
         super(computation, metadataDirectory);
         this.setTable(table);
         this.registerObject();
-    }
-
-    @HillviewRpc
-    public void getSummary(RpcRequest request, RpcRequestContext context) {
-        SummarySketch ss = new SummarySketch();
-        this.runSketch(this.table, ss, request, context);
     }
 
     static class NextKArgs {
@@ -170,6 +163,17 @@ public class TableTarget extends TableRpcTarget {
         this.runCompleteSketch(this.table, sk, request, context);
     }
 
+    @HillviewRpc
+    public void getGeo(RpcRequest request, RpcRequestContext context) throws IOException {
+        ColumnDescription desc = request.parseArgs(ColumnDescription.class);
+        @Nullable GeoFileInformation geoInfo = this.getGeoColumnInformation(desc.name);
+        if (geoInfo == null)
+            throw new RuntimeException("No geographic data found for column " + desc.name);
+        PolygonSet ps = new PolygonSet(geoInfo.geoFile);
+        JsonInString result = geoInfo.createJSON(ps);
+        this.returnResult(result, request, context);
+    }
+
     static class SaveAsArgs {
         String folder = "";
         @Nullable
@@ -177,72 +181,6 @@ public class TableTarget extends TableRpcTarget {
         // Rename map encoded as an array
         @Nullable
         String[] renameMap;
-    }
-
-    /**
-     * Describes how a column in a table is mapped
-     * to a geographic dataset.
-     */
-    @SuppressWarnings("NotNullFieldNotInitialized")
-    static class GeoFileInformation {
-        String columnName; // e.g., OriginState
-        String property; // which property in the dataset is indexed by values in the column. e.g., STUSPS
-        String projection; // one of the supported data projections
-        // Legal projection names are:
-        // geoAzimuthalEqualArea
-        // geoAzimuthalEquidistant
-        // geoGnomonic
-        // geoOrthographic
-        // geoStereographic
-        // geoEqualEarth
-        // geoAlbersUsa
-        // geoConicEqualArea
-        // geoConicEquidistant
-        // geoEquirectangular
-        // geoMercator
-        // geoTransverseMercator
-        // geoNaturalEarth1
-        String geoFile; // e.g., geo/us_states/cb_2019_us_state_20m.shp
-        // Supported formats: shapeFile (shp)
-
-        public JsonInString createJSON(PolygonSet ps) {
-            return new JsonInString(
-                     "{" +
-                             "columnName:" + this.columnName + ",\n" +
-                             "property:" + this.property + ",\n" +
-                             "projection:" + this.projection + ",\n" +
-                             "data:" + ps.toJSON()
-                    + "}"
-            );
-        }
-    }
-
-    @Nullable
-    GeoFileInformation getGeoFileInformation(String columnName) throws IOException {
-        String fileName = "data/metadata/geo/" + this.metadataDirectory + "/geometa.json";
-        HillviewLogger.instance.info("Looking for geo data", "file {0}", fileName);
-        File file = new File(fileName);
-        if (!file.exists())
-            return null;
-        HillviewLogger.instance.info("Loading geo data", "file {0}", fileName);
-        String contents = Utilities.textFileContents(fileName);
-        GeoFileInformation[] data = IJson.gsonInstance.fromJson(contents, GeoFileInformation[].class);
-        for (GeoFileInformation g: data) {
-            if (g.columnName.equals(columnName))
-                return g;
-        }
-        return null;
-    }
-
-    @HillviewRpc
-    public void getGeo(RpcRequest request, RpcRequestContext context) throws IOException {
-        ColumnDescription desc = request.parseArgs(ColumnDescription.class);
-        @Nullable GeoFileInformation geoInfo = this.getGeoFileInformation(desc.name);
-        if (geoInfo == null)
-            throw new RuntimeException("No geographic data found for column " + desc.name);
-        PolygonSet ps = new PolygonSet(geoInfo.geoFile);
-        JsonInString result = geoInfo.createJSON(ps);
-        this.returnResult(result, request, context);
     }
 
     @HillviewRpc

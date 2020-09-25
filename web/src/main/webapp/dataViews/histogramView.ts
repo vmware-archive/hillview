@@ -24,7 +24,7 @@ import {
     RemoteObjectId, RangeFilterArrayDescription,
 } from "../javaBridge";
 import {Receiver} from "../rpc";
-import {DisplayName, SchemaClass} from "../schemaClass";
+import {DisplayName} from "../schemaClass";
 import {CDFPlot, NoCDFPlot} from "../ui/cdfPlot";
 import {IDataView} from "../ui/dataview";
 import {Dialog, saveAs} from "../ui/dialog";
@@ -46,7 +46,7 @@ import {AxisData} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
 import {NewTargetReceiver, DataRangesReceiver} from "./dataRangesReceiver";
 import {BaseReceiver} from "../modules";
-import {CommonArgs} from "../ui/receiver";
+import {CommonArgs, TableMeta} from "../ui/receiver";
 
 /**
  * A HistogramView is responsible for showing a one-dimensional histogram on the screen.
@@ -58,12 +58,11 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
 
     constructor(
         remoteObjectId: RemoteObjectId,
-        rowCount: number,
-        schema: SchemaClass,
+        meta: TableMeta,
         protected samplingRate: number,
         protected pie: boolean,
         page: FullPage) {
-        super(remoteObjectId, rowCount, schema, page, "Histogram");
+        super(remoteObjectId, meta, page, "Histogram");
 
         this.menu = new TopMenu([this.exportMenu(), {
             text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
@@ -137,7 +136,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
                     min: 0,
                     max: this.plot.maxYAxis != null ?
                         this.plot.maxYAxis : Math.max(...this.histogram().first.perBucket),
-                    presentCount: this.rowCount - this.histogram().first.perMissing,
+                    presentCount: this.meta.rowCount - this.histogram().first.perMissing,
                     missingCount: this.histogram().first.perMissing
                 };
                 return new AxisData({ kind: "None", name: "" }, range, 0);
@@ -167,15 +166,15 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
             return;
 
         if (eventKind === "XAxis") {
-            const collector = new DataRangesReceiver(this,
-                this.page, null, this.schema, [0],  // any number of buckets
+            const receiver = new DataRangesReceiver(this,
+                this.page, null, this.meta, [0],  // any number of buckets
                 [this.xAxisData.description], this.page.title,
                 Converters.eventToString(pageId, eventKind), {
                     chartKind: "Histogram", exact: this.samplingRate >= 1,
                     relative: false, reusePage: true, pieChart: this.pie
                 });
-            collector.run([sourceRange]);
-            collector.finished();
+            receiver.run([sourceRange]);
+            receiver.finished();
         } else if (eventKind === "YAxis") {
             // TODO
             this.updateView(this.data, sourceRange.max!);
@@ -216,7 +215,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
             return null;
 
         const hv = new HistogramView(
-            ser.remoteObjectId, ser.rowCount, args.schema, ser.samplingRate, ser.isPie, page);
+            ser.remoteObjectId, args, ser.samplingRate, ser.isPie, page);
         hv.setAxis(new AxisData(ser.columnDescription, ser.range, ser.bucketCount));
         hv.bucketCount = ser.bucketCount;
         return hv;
@@ -255,7 +254,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
         this.bucketCount = counts.length;
         this.plot.setHistogram(
             this.histogram(), this.samplingRate, this.xAxisData, maxYAxis,
-            this.page.dataset!.isPrivate(), this.rowCount);
+            this.page.dataset!.isPrivate(), this.meta.rowCount);
         this.plot.draw();
 
         const discrete = kindIsString(this.xAxisData.description.kind) ||
@@ -290,15 +289,15 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
     }
 
     public trellis(): void {
-        const columns: DisplayName[] = this.schema.displayNamesExcluding([this.xAxisData.description.name]);
+        const columns: DisplayName[] = this.getSchema().displayNamesExcluding([this.xAxisData.description.name]);
         this.chooseTrellis(columns);
     }
 
     protected showTrellis(colName: DisplayName): void {
-        const groupBy = this.schema.findByDisplayName(colName);
+        const groupBy = this.getSchema().findByDisplayName(colName);
         const cds: IColumnDescription[] = [this.xAxisData.description, groupBy!];
         const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisHistogram");
-        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.meta,
             [0, 0], cds, null, this.defaultProvenance, {
             reusePage: false, relative: false, pieChart: false,
             chartKind: "TrellisHistogram", exact: false
@@ -308,7 +307,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
     protected getCombineRenderer(title: PageTitle):
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
-            return new NewTargetReceiver(title, [this.xAxisData.description], this.schema,
+            return new NewTargetReceiver(title, [this.xAxisData.description], this.meta,
                 [0], page, operation, this.dataset, {
                 exact: this.samplingRate >= 1, reusePage: false, pieChart: this.pie,
                 relative: false, chartKind: "Histogram"
@@ -318,11 +317,11 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
 
     public chooseSecondColumn(): void {
         const columns: DisplayName[] = [];
-        for (let i = 0; i < this.schema.length; i++) {
-            const col = this.schema.get(i);
+        for (let i = 0; i < this.getSchema().length; i++) {
+            const col = this.getSchema().get(i);
             if (col.name === this.xAxisData.description.name)
                 continue;
-            columns.push(this.schema.displayName(col.name)!);
+            columns.push(this.getSchema().displayName(col.name)!);
         }
         if (columns.length === 0) {
             this.page.reportError("No other acceptable columns found");
@@ -339,12 +338,12 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
 
     public chooseQuartilesColumn(): void {
         const columns: DisplayName[] = [];
-        for (let i = 0; i < this.schema.length; i++) {
-            const col = this.schema.get(i);
+        for (let i = 0; i < this.getSchema().length; i++) {
+            const col = this.getSchema().get(i);
             if (col.name === this.xAxisData.description.name ||
                 !kindIsNumeric(col.kind))
                 continue;
-            columns.push(this.schema.displayName(col.name)!);
+            columns.push(this.getSchema().displayName(col.name)!);
         }
         if (columns.length === 0) {
             this.page.reportError("No other acceptable columns found");
@@ -361,16 +360,16 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
     }
 
     public export(): void {
-        const lines: string[] = Exporter.histogramAsCsv(this.histogram().first, this.schema, this.xAxisData);
+        const lines: string[] = Exporter.histogramAsCsv(this.histogram().first, this.getSchema(), this.xAxisData);
         const fileName = "histogram.csv";
         saveAs(fileName, lines.join("\n"));
     }
 
     private showSecondColumn(colName: DisplayName): void {
-        const oc = this.schema.findByDisplayName(colName);
+        const oc = this.getSchema().findByDisplayName(colName);
         const cds: IColumnDescription[] = [this.xAxisData.description, oc!];
         const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
-        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.meta,
             [this.histogram().first.perBucket.length, 0], cds, null, this.defaultProvenance,{
             reusePage: false,
             relative: false,
@@ -380,9 +379,9 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
     }
 
     private showQuartiles(colName: DisplayName): void {
-        const oc = this.schema.findByDisplayName(colName);
+        const oc = this.getSchema().findByDisplayName(colName);
         const qhr = new DataRangesReceiver(this, this.page, null,
-            this.schema, [this.xAxisData.bucketCount],
+            this.meta, [this.xAxisData.bucketCount],
             [this.xAxisData.description, oc!],
             null, this.defaultProvenance, {
                 reusePage: false, chartKind: "QuartileVector"
@@ -398,7 +397,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
             this.page, "Histogram");
         const exact = this.isPrivate() || this.samplingRate >= 1;
         rr.invoke(new DataRangesReceiver(
-            this, this.page, rr, this.schema, [bucketCount], [this.xAxisData.description], null,
+            this, this.page, rr, this.meta, [bucketCount], [this.xAxisData.description], null,
             "changed buckes", { chartKind: "Histogram", relative: false, exact: exact, reusePage: true, pieChart: this.pie }));
     }
 
@@ -416,14 +415,14 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
 
     public refresh(): void {
         const ranges = [this.xAxisData.dataRange];
-        const collector = new DataRangesReceiver(this,
-            this.page, null, this.schema, [this.xAxisData.bucketCount],
+        const receiver = new DataRangesReceiver(this,
+            this.page, null, this.meta, [this.xAxisData.bucketCount],
             [this.xAxisData.description], this.page.title, null,{
                 chartKind: "Histogram", exact: this.samplingRate >= 1,
                 relative: false, reusePage: true, pieChart: this.pie
             });
-        collector.run(ranges);
-        collector.finished();
+        receiver.run(ranges);
+        receiver.finished();
     }
 
     public exactHistogram(): void {
@@ -491,7 +490,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
         const rr = this.createFilterRequest(filter);
         const title = new PageTitle(this.page.title.format,
             Converters.filterArrayDescription(filter));
-        const renderer = new NewTargetReceiver(title, [this.xAxisData.description], this.schema,
+        const renderer = new NewTargetReceiver(title, [this.xAxisData.description], this.meta,
             [0], this.page, rr, this.dataset, {
             exact: this.samplingRate >= 1,
             reusePage: false,
@@ -508,8 +507,7 @@ export class HistogramReceiver extends Receiver<Two<Two<Groups<number>>>>  {
     constructor(protected title: PageTitle,
                 sourcePage: FullPage,
                 remoteTableId: string,
-                protected rowCount: number,
-                protected schema: SchemaClass,
+                protected meta: TableMeta,
                 protected xAxisData: AxisData,
                 operation: ICancellable<Two<Two<Groups<number>>>>,
                 protected samplingRate: number,
@@ -518,7 +516,7 @@ export class HistogramReceiver extends Receiver<Two<Two<Groups<number>>>>  {
         super(reusePage ? sourcePage : sourcePage.dataset!.newPage(title, sourcePage),
             operation, "histogram");
         this.view = new HistogramView(
-            remoteTableId, rowCount, schema, this.samplingRate, this.isPie, this.page);
+            remoteTableId, meta, this.samplingRate, this.isPie, this.page);
         this.view.setAxis(xAxisData);
     }
 

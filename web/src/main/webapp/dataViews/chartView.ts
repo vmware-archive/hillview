@@ -17,7 +17,7 @@
 
 import {BigTableView} from "../modules";
 import {BucketsInfo, IColumnDescription, RangeFilterArrayDescription, RecordOrder, RemoteObjectId} from "../javaBridge";
-import {DisplayName, SchemaClass} from "../schemaClass";
+import {DisplayName} from "../schemaClass";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {D3SvgElement, DragEventKind, Point, Resolution, ViewKind} from "../ui/ui";
 import {TextOverlay} from "../ui/textOverlay";
@@ -28,6 +28,7 @@ import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {AxisData} from "./axisData";
 import {Dialog} from "../ui/dialog";
 import {NextKReceiver, TableView} from "../modules";
+import {TableMeta} from "../ui/receiver";
 
 /**
  * A ChartView is a common base class for many views that
@@ -69,12 +70,10 @@ export abstract class ChartView<D> extends BigTableView {
     protected data: D;
 
     protected constructor(remoteObjectId: RemoteObjectId,
-                          rowCount: number,
-                          schema: SchemaClass,
+                          meta: TableMeta,
                           page: FullPage,
                           viewKind: ViewKind) {
-        super(remoteObjectId, rowCount, schema, page, viewKind);
-        this.topLevel = document.createElement("div");
+        super(remoteObjectId, meta, page, viewKind);
         this.topLevel.className = "chart-page";
 
         this.dragging = false;
@@ -92,9 +91,8 @@ export abstract class ChartView<D> extends BigTableView {
 
     protected showTable(columns: IColumnDescription[], provenance: string): void {
         const newPage = this.dataset.newPage(new PageTitle("Table", provenance), this.page);
-        const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newPage);
+        const table = new TableView(this.remoteObjectId, this.meta, newPage);
         newPage.setDataView(table);
-        table.schema = this.schema;
 
         const order =  new RecordOrder(
             columns.map(c => { return { columnDescription: c, isAscending: true }}));

@@ -42,9 +42,10 @@ import {
 import {AxisData, AxisKind} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
 import {DataRangesReceiver, NewTargetReceiver} from "./dataRangesReceiver";
-import {DisplayName, SchemaClass} from "../schemaClass";
+import {DisplayName} from "../schemaClass";
 import {Quartiles2DPlot} from "../ui/quartiles2DPlot";
 import {saveAs} from "../ui/dialog";
+import {TableMeta} from "../ui/receiver";
 
 /**
  * This class is responsible for rendering a vector of quartiles.
@@ -55,9 +56,9 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
     protected yAxisData: AxisData;
     private readonly defaultProvenance = "From quartile histogram";
 
-    constructor(remoteObjectId: RemoteObjectId, rowCount: number,
-                schema: SchemaClass, protected qCol: IColumnDescription, page: FullPage) {
-        super(remoteObjectId, rowCount, schema, page, "QuartileVector");
+    constructor(remoteObjectId: RemoteObjectId, meta: TableMeta,
+                protected qCol: IColumnDescription, page: FullPage) {
+        super(remoteObjectId, meta, page, "QuartileVector");
 
         this.menu = new TopMenu( [this.exportMenu(), {
             text: "View",
@@ -96,19 +97,19 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
     }
 
     public trellis(): void {
-        const columns: DisplayName[] = this.schema.displayNamesExcluding(
+        const columns: DisplayName[] = this.getSchema().displayNamesExcluding(
             [this.xAxisData.description.name, this.qCol.name]);
         this.chooseTrellis(columns);
     }
 
     protected showTrellis(colName: DisplayName): void {
-        const groupBy = this.schema.findByDisplayName(colName)!;
+        const groupBy = this.getSchema().findByDisplayName(colName)!;
         const cds: IColumnDescription[] = [
             this.xAxisData.description,
             this.qCol,
             groupBy];
         const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisQuartiles");
-        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.meta,
             [0, 0, 0], cds, null, this.defaultProvenance,{
                 reusePage: false, chartKind: "TrellisQuartiles",
             }));
@@ -141,7 +142,7 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
         this.data = qv;
 
         const bucketCount = this.xAxisData.bucketCount;
-        this.plot.setData(qv, this.schema, this.rowCount, this.xAxisData, false, null);
+        this.plot.setData(qv, this.getSchema(), this.meta.rowCount, this.xAxisData, false, null);
         this.plot.draw();
         this.setupMouse();
         this.yAxisData = new AxisData(this.qCol, this.plot.yDataRange(), 0);
@@ -150,7 +151,7 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
         assert(this.surface != null);
         this.pointDescription = new TextOverlay(this.surface.getChart(),
             this.surface.getActualChartSize(),
-            [this.xAxisData.getDisplayNameString(this.schema)!, "bucket",
+            [this.xAxisData.getDisplayNameString(this.getSchema())!, "bucket",
                 "max", "q3", "median", "q1", "min", "count", "missing"], 40);
         this.pointDescription.show(false);
         this.standardSummary();
@@ -175,12 +176,12 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
         const cd0: IColumnDescription = ser.columnDescription0;
         const cd1: IColumnDescription = ser.columnDescription1;
         const xPoints: number = ser.xBucketCount;
-        const schema = new SchemaClass([]).deserialize(ser.schema);
-        if (cd0 === null || cd1 === null || schema === null ||
+        const args = this.validateSerialization(ser);
+        if (cd0 === null || cd1 === null || args === null ||
             xPoints === null || ser.xRange === null)
             return null;
 
-        const hv = new QuartilesHistogramView(ser.remoteObjectId, ser.rowCount, schema, cd1, page);
+        const hv = new QuartilesHistogramView(ser.remoteObjectId, args, cd1, page);
         hv.setAxis(new AxisData(cd0, ser.xRange, ser.xBucketCount));
         return hv;
     }
@@ -192,7 +193,7 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
     public doHeatmap(): void {
         const cds = [this.xAxisData.description, this.qCol];
         const rr = this.createDataQuantilesRequest(cds, this.page, "Heatmap");
-        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.meta,
             [0, 0], cds, null, this.defaultProvenance,{
             reusePage: false,
             chartKind: "Heatmap",
@@ -203,7 +204,7 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
     public doHistogram(): void {
         const cds = [this.xAxisData.description];
         const rr = this.createDataQuantilesRequest(cds, this.page, "Histogram");
-        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.meta,
             [this.xAxisData.bucketCount], cds, null, this.defaultProvenance, {
                 reusePage: false,
                 chartKind: "Histogram"
@@ -213,7 +214,7 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
     public do2DHistogram(): void {
         const cds = [this.xAxisData.description, this.qCol];
         const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
-        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.meta,
             [this.xAxisData.bucketCount, 0], cds, null, this.defaultProvenance, {
                 reusePage: false,
                 chartKind: "2DHistogram"
@@ -221,7 +222,7 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
     }
 
     public export(): void {
-        const lines: string[] = Exporter.quartileAsCsv(this.data, this.schema, this.xAxisData);
+        const lines: string[] = Exporter.quartileAsCsv(this.data, this.getSchema(), this.xAxisData);
         const fileName = "quantiles2d.csv";
         saveAs(fileName, lines.join("\n"));
     }
@@ -230,7 +231,7 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
             return new NewTargetReceiver(title, [this.xAxisData.description, this.qCol],
-                this.schema, [0, 0], page, operation, this.dataset, {
+                this.meta, [0, 0], page, operation, this.dataset, {
                 exact: true, chartKind: "QuartileVector",
                 reusePage: false
             });
@@ -248,7 +249,7 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
                 return;
             const cds = [this.xAxisData.description, this.qCol];
             const rr = this.createDataQuantilesRequest(cds, this.page, "QuartileVector");
-            rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
+            rr.invoke(new DataRangesReceiver(this, this.page, rr, this.meta,
                 [bucketCount], cds, null, "changed buckets",{
                     reusePage: true, chartKind: "QuartileVector"
                 }));
@@ -265,15 +266,15 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
     public refresh(): void {
         const cds = [this.xAxisData.description, this.qCol];
         const ranges = [this.xAxisData.dataRange];
-        const collector = new DataRangesReceiver(this,
-            this.page, null, this.schema,
+        const receiver = new DataRangesReceiver(this,
+            this.page, null, this.meta,
             [this.xAxisData.bucketCount],
             cds, this.page.title, null,{
                 chartKind: "QuartileVector", exact: true,
                 reusePage: true
             });
-        collector.run(ranges);
-        collector.finished();
+        receiver.run(ranges);
+        receiver.finished();
     }
 
     public onMouseEnter(): void {
@@ -338,7 +339,7 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
         const renderer = new NewTargetReceiver(
             new PageTitle(this.page.title.format,
                 Converters.filterArrayDescription(f)),
-            [this.xAxisData.description, this.qCol], this.schema,
+            [this.xAxisData.description, this.qCol], this.meta,
             [0], this.page, rr, this.dataset, {
             chartKind: "QuartileVector", reusePage: false,
         });
@@ -352,8 +353,7 @@ export class QuartilesVectorReceiver extends Receiver<Groups<SampleSet>> {
     constructor(title: PageTitle,
                 page: FullPage,
                 protected remoteObject: TableTargetAPI,
-                protected rowCount: number,
-                protected schema: SchemaClass,
+                protected meta: TableMeta,
                 protected histoArgs: HistogramInfo,
                 protected range: BucketsInfo,
                 protected quantilesCol: IColumnDescription,
@@ -361,7 +361,7 @@ export class QuartilesVectorReceiver extends Receiver<Groups<SampleSet>> {
                 protected options: ChartOptions) {
         super(options.reusePage ? page : page.dataset!.newPage(title, page), operation, "quartiles");
         this.view = new QuartilesHistogramView(
-            this.remoteObject.remoteObjectId, rowCount, schema, quantilesCol, this.page);
+            this.remoteObject.remoteObjectId, meta, quantilesCol, this.page);
         const axisData = new AxisData(histoArgs.cd, range, histoArgs.bucketCount);
         this.view.setAxis(axisData);
     }

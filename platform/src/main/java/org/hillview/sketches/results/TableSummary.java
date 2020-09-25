@@ -71,7 +71,7 @@ public class TableSummary implements IJsonSketchResult {
 
     @Override
     public String toString() {
-        return "" + "Rows: " + this.rowCount +
+        return "Rows: " + this.rowCount +
                 ", schema: " + (this.schema != null ? this.schema.toString() : "null");
     }
 }

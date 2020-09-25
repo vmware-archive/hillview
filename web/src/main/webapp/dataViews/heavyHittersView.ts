@@ -43,6 +43,7 @@ import {
     Converters, assert
 } from "../util";
 import {TableOperationCompleted} from "../modules";
+import {TableMeta} from "../ui/receiver";
 
 /**
  * Class that renders a table containing the heavy hitters in sorted
@@ -65,12 +66,11 @@ export class HeavyHittersView extends BigTableView {
     constructor(public heavyHittersId: RemoteObjectId,
                 public page: FullPage,
                 public remoteTableObject: TableTargetAPI,
-                rowCount: number,
-                schema: SchemaClass,
+                meta: TableMeta,
                 private isApprox: boolean,
                 public percent: number,
                 public readonly columnsShown: IColumnDescription[]) {
-        super(heavyHittersId, rowCount, schema, page, "HeavyHitters");
+        super(heavyHittersId, meta, page, "HeavyHitters");
         this.topLevel = document.createElement("div");
         this.contextMenu = new ContextMenu(this.topLevel);
         this.table = new TabularDisplay();
@@ -108,7 +108,7 @@ export class HeavyHittersView extends BigTableView {
         let header: string[] = ["Rank"];
         let tips: string[] = ["Position in decreasing order of frequency."];
         this.columnsShown.forEach((c) => {
-            header.push(this.schema.displayName(c.name)!.displayName);
+            header.push(this.getSchema().displayName(c.name)!.displayName);
             tips.push("Column name");
         });
         header = header.concat(["Count", "% (Above " + this.percent.toString() + ")", "Fraction"]);
@@ -135,7 +135,7 @@ export class HeavyHittersView extends BigTableView {
         const lines: string[] = [];
         let line = "";
         for (const c of this.columnsShown)
-            line += JSON.stringify(this.schema.displayName(c.name)!.displayName) + ",";
+            line += JSON.stringify(this.getSchema().displayName(c.name)!.displayName) + ",";
         line += "Count,%";
         lines.push(line);
 
@@ -207,15 +207,16 @@ export class HeavyHittersView extends BigTableView {
             columnsShown == null)
             return null;
         const remoteTable = new TableTargetAPI(remoteTableId);
-        return new HeavyHittersView(ser.remoteObjectId, page, remoteTable, ser.rowCount, schema,
+        return new HeavyHittersView(ser.remoteObjectId, page, remoteTable,
+            { rowCount: ser.rowCount, schema, geoMetadata: ser.geoMetadata },
             isApprox, percent, columnsShown);
     }
 
     public refresh(): void {
         const rr = this.remoteTableObject.createHeavyHittersRequest(
-            this.columnsShown, this.percent, this.rowCount, HeavyHittersView.switchToMG);
+            this.columnsShown, this.percent, this.meta.rowCount, HeavyHittersView.switchToMG);
         rr.invoke(new HeavyHittersReceiver(
-            this.getPage(), this, rr, this.rowCount, this.schema,
+            this.getPage(), this, rr, this.meta,
             this.isApprox, this.percent, this.columnsShown, true));
     }
 
@@ -246,7 +247,7 @@ export class HeavyHittersView extends BigTableView {
             const rr = this.remoteTableObject.createFilterHeavyRequest(
                 this.heavyHittersId, this.columnsShown, includeSet);
             rr.invoke(new TableOperationCompleted(
-                newPage, rr, this.rowCount, this.schema,
+                newPage, rr, this.meta,
                 this.createOrder(), Resolution.tableRowsOnScreen, null));
         }
     }
@@ -259,7 +260,7 @@ export class HeavyHittersView extends BigTableView {
         const rr = this.remoteTableObject.createFilterListHeavy(
             this.heavyHittersId, this.columnsShown, includeSet, this.getSelectedRows());
         rr.invoke(new TableOperationCompleted(
-            newPage, rr, this.rowCount, this.schema, this.createOrder(),
+            newPage, rr, this.meta, this.createOrder(),
             Resolution.tableRowsOnScreen, null));
     }
 
@@ -393,9 +394,9 @@ export class HeavyHittersView extends BigTableView {
     private runWithThreshold(newPercent: number): void {
         const rr = this.remoteTableObject.createHeavyHittersRequest(
             this.columnsShown, newPercent,
-            this.rowCount, HeavyHittersView.switchToMG);
+            this.meta.rowCount, HeavyHittersView.switchToMG);
         rr.invoke(new HeavyHittersReceiver(
-            this.getPage(), this.remoteTableObject, rr, this.rowCount, this.schema,
+            this.getPage(), this.remoteTableObject, rr, this.meta,
             true, newPercent, this.columnsShown, false));
     }
 
@@ -431,8 +432,7 @@ export class HeavyHittersReceiver extends OnCompleteReceiver<TopList> {
     public constructor(page: FullPage,
                        protected readonly remoteTableObject: TableTargetAPI,
                        operation: ICancellable<TopList>,
-                       protected readonly rowCount: number,
-                       protected readonly schema: SchemaClass,
+                       protected readonly meta: TableMeta,
                        protected readonly isApprox: boolean,
                        protected readonly percent: number,
                        protected readonly columnsShown: IColumnDescription[],
@@ -443,13 +443,13 @@ export class HeavyHittersReceiver extends OnCompleteReceiver<TopList> {
     public run(data: TopList): void {
         if (data.top.rows.length === 0) this.showEmptyDialog();
         else {
-            const names = this.columnsShown.map((c) => this.schema.displayName(c.name)).join(", ");
+            const names = this.columnsShown.map((c) => this.meta.schema.displayName(c.name)).join(", ");
             let newPage = this.page;
             if (!this.reusePage)
                 newPage = this.page.dataset!.newPage(
                     new PageTitle("Frequent Elements in " + names, this.page.title.format), this.page);
             const hhv = new HeavyHittersView(
-                data.heavyHittersId, newPage, this.remoteTableObject, this.rowCount, this.schema,
+                data.heavyHittersId, newPage, this.remoteTableObject, this.meta,
                 this.isApprox, this.percent, this.columnsShown);
             hhv.updateView(data.top);
             hhv.page.scrollIntoView();
@@ -472,9 +472,9 @@ export class HeavyHittersReceiver extends OnCompleteReceiver<TopList> {
                 if (newPercent != null) {
                     const rr = this.remoteTableObject.createHeavyHittersRequest(
                         this.columnsShown, newPercent,
-                        this.rowCount, HeavyHittersView.switchToMG);
+                        this.meta.rowCount, HeavyHittersView.switchToMG);
                     rr.invoke(new HeavyHittersReceiver(
-                        this.page, this.remoteTableObject, rr, this.rowCount, this.schema,
+                        this.page, this.remoteTableObject, rr, this.meta,
                         true, newPercent, this.columnsShown, false));
                 }
             });
@@ -498,7 +498,7 @@ export class HeavyHittersReceiver2 extends OnCompleteReceiver<TopList> {
     public run(newData: TopList): void {
         const newHhv = new HeavyHittersView(
             newData.heavyHittersId, this.page, this.hhv.remoteTableObject,
-            this.hhv.rowCount, this.hhv.schema, false,
+            this.hhv.meta, false,
             this.hhv.percent, this.hhv.columnsShown);
         newHhv.updateView(newData.top);
         newHhv.updateCompleted(this.elapsedMilliseconds());
@@ -524,7 +524,7 @@ export class HeavyHittersReceiver3 extends OnCompleteReceiver<TopList> {
         const rr = this.hhv.remoteTableObject.createFilterHeavyRequest(
             exactList.heavyHittersId, this.hhv.columnsShown, this.includeSet);
         rr.invoke(new TableOperationCompleted(
-            newPage, rr, this.hhv.rowCount, this.hhv.schema, this.hhv.createOrder(),
+            newPage, rr, this.hhv.meta, this.hhv.createOrder(),
             Resolution.tableRowsOnScreen, null));
     }
 }

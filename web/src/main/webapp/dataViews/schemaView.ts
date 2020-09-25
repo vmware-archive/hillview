@@ -23,7 +23,6 @@ import {
     NextKList,
     RecordOrder,
     RemoteObjectId,
-    Schema,
 } from "../javaBridge";
 import {SchemaClass} from "../schemaClass";
 import {IDataView} from "../ui/dataview";
@@ -44,6 +43,7 @@ import {TSViewBase} from "./tsViewBase";
 import {BaseReceiver} from "../modules";
 import {Receiver, RpcRequest} from "../rpc";
 import {HillviewToplevel} from "../toplevel";
+import {TableMeta} from "../ui/receiver";
 
 /**
  * This class is used to browse through the columns of a table schema
@@ -57,13 +57,11 @@ export class SchemaView extends TSViewBase {
     protected typeDialog: Dialog;
 
     constructor(remoteObjectId: RemoteObjectId,
-                page: FullPage,
-                rowCount: number,
-                schema: SchemaClass) {
-        super(remoteObjectId, rowCount, schema, page, "Schema");
+                meta: TableMeta,
+                page: FullPage) {
+        super(remoteObjectId, meta, page, "Schema");
         this.stats = null;
         this.defaultProvenance = "Schema view";
-        this.topLevel = document.createElement("div");
         this.contextMenu = new ContextMenu(this.topLevel);
         const viewMenu = new SubMenu([{
             text: "Selected columns",
@@ -161,7 +159,9 @@ export class SchemaView extends TSViewBase {
         const schema = new SchemaClass([]).deserialize(ser.schema);
         if (schema == null)
             return null;
-        return new SchemaView(ser.remoteObjectId, page, ser.rowCount, schema);
+        return new SchemaView(ser.remoteObjectId, {
+            rowCount: ser.rowCount, schema, geoMetadata: ser.geoMetadata
+        }, page);
     }
 
     public refresh(): void {
@@ -191,19 +191,19 @@ export class SchemaView extends TSViewBase {
         });
         this.displayRows();
         this.display.getHTMLRepresentation().setAttribute("overflow-x", "hidden");
-        if (this.rowCount != null)
-            this.summaryDiv!.textContent = formatNumber(this.rowCount) + " rows";
+        if (this.meta.rowCount != null)
+            this.summaryDiv!.textContent = formatNumber(this.meta.rowCount) + " rows";
         this.page.setDataView(this);
         this.display.setScrollPosition(scrollPos);
         this.page.reportTime(elapsedMs);
     }
 
     private displayRows(): void {
-        for (let i = 0; i < this.schema.length; i++) {
-            const cd = this.schema.get(i);
+        for (let i = 0; i < this.meta.schema.length; i++) {
+            const cd = this.meta.schema.get(i);
             const data = [
                 (i + 1).toString(),
-                this.schema.displayName(cd.name)!.displayName,
+                this.meta.schema.displayName(cd.name)!.displayName,
                 cd.kind.toString()];
             if (this.stats != null) {
                 const cs = this.stats.get(cd.name);
@@ -258,37 +258,37 @@ export class SchemaView extends TSViewBase {
             help: "Show the selected columns in a tabular view." }, true);
         this.contextMenu.addItem({
             text: "Histogram",
-            action: () => this.chart(this.schema.getCheckedDescriptions(this.getSelectedColNames()),
+            action: () => this.chart(this.meta.schema.getCheckedDescriptions(this.getSelectedColNames()),
                 this.getSelectedColCount() == 1 ? "Histogram" : "2DHistogram"),
             help: "Plot the data in the selected columns as a histogram.  Applies to one or two columns only."
         }, selectedCount >= 1 && selectedCount <= 2);
         this.contextMenu.addItem({
             text: "Quartile vector",
-            action: () => this.chart(this.schema.getCheckedDescriptions(this.getSelectedColNames()), "QuartileVector"),
+            action: () => this.chart(this.meta.schema.getCheckedDescriptions(this.getSelectedColNames()), "QuartileVector"),
             help: "Plot the data in the selected columns as vector of quartiles. " +
                 "Applies to two columns only.",
         }, selectedCount === 2);
         this.contextMenu.addItem({
             text: "Heatmap",
-            action: () => this.chart(this.schema.getCheckedDescriptions(this.getSelectedColNames()), "Heatmap"),
+            action: () => this.chart(this.meta.schema.getCheckedDescriptions(this.getSelectedColNames()), "Heatmap"),
             help: "Plot the data in the selected columns as a heatmap or as a Trellis plot of heatmaps. " +
             "Applies to two columns only.",
         }, selectedCount === 2);
         this.contextMenu.addItem({
             text: "Trellis histograms",
-            action: () => this.chart(this.schema.getCheckedDescriptions(this.getSelectedColNames()), "TrellisHistogram"),
+            action: () => this.chart(this.meta.schema.getCheckedDescriptions(this.getSelectedColNames()), "TrellisHistogram"),
             help: "Plot the data in the selected columns as a Trellis plot of histograms. " +
                 "Applies to two or three columns only.",
         }, selectedCount >= 2 && selectedCount <= 3);
         this.contextMenu.addItem({
             text: "Trellis heatmaps",
-            action: () => this.chart(this.schema.getCheckedDescriptions(this.getSelectedColNames()), "TrellisHeatmap"),
+            action: () => this.chart(this.meta.schema.getCheckedDescriptions(this.getSelectedColNames()), "TrellisHeatmap"),
             help: "Plot the data in the selected columns as a Trellis plot of heatmaps. " +
                 "Applies to three columns only.",
         }, selectedCount === 3);
         this.contextMenu.addItem({
             text: "Map",
-            action: () => this.geo(this.schema.find(this.getSelectedColNames()[0])!),
+            action: () => this.geo(this.meta.schema.find(this.getSelectedColNames()[0])!),
             help: "Plot the data in the selected columns on a map."
         }, selectedCount === 1);
         this.contextMenu.addItem({
@@ -299,13 +299,13 @@ export class SchemaView extends TSViewBase {
         this.contextMenu.addItem({
             text: "Filter...",
             action: () => this.showFilterDialog(
-                this.schema.displayName(selectedColumn), null, 0, null),
+                this.meta.schema.displayName(selectedColumn), null, 0, null),
             help : "Eliminate data that matches/does not match a specific value.",
         }, selectedCount === 1);
         this.contextMenu.addItem({
             text: "Compare...",
             action: () => this.showCompareDialog(
-                this.schema.displayName(selectedColumn), null, 0, null),
+                this.meta.schema.displayName(selectedColumn), null, 0, null),
             help : "Eliminate data that matches/does not match a specific value.",
         }, selectedCount === 1);
         this.contextMenu.addItem({
@@ -320,7 +320,7 @@ export class SchemaView extends TSViewBase {
         }, selectedCount === 1);
         this.contextMenu.addItem({
             text: "Convert...",
-            action: () => this.convert(this.schema.displayName(selectedColumn)!, null, 0, null),
+            action: () => this.convert(this.meta.schema.displayName(selectedColumn)!, null, 0, null),
             help: "Convert the data in the selected column to a different data type.",
         }, selectedCount === 1);
         this.contextMenu.addItem({
@@ -337,12 +337,12 @@ export class SchemaView extends TSViewBase {
     }
 
     protected getBasicStats(cols: string[]): void {
-        for (const desc of this.schema.getCheckedDescriptions(cols))
+        for (const desc of this.meta.schema.getCheckedDescriptions(cols))
             if (desc.kind == "Interval") {
                 this.page.reportError("Basic statistics not supported for interval column " +
                     desc.name +"; skipping.");
             }
-        cols = cols.filter(c => this.schema.find(c)!.kind != "Interval");
+        cols = cols.filter(c => this.meta.schema.find(c)!.kind != "Interval");
         if (cols.length === 0)
             return;
         const rr = this.createBasicColStatsRequest(cols);
@@ -365,13 +365,13 @@ export class SchemaView extends TSViewBase {
 
     private dropColumns(): void {
         const selected = cloneToSet(this.getSelectedColNames());
-        this.schema = this.schema.filter((c) => !selected.has(c.name));
+        this.meta.schema = this.meta.schema.filter((c) => !selected.has(c.name));
         this.show(0);
     }
 
     private nameAction(regExp: RegExp, action: string): void {
-        for (let i = 0; i < this.schema.length; i++) {
-            if (this.schema.displayName(this.schema.get(i).name)!.displayName.match(regExp)) {
+        for (let i = 0; i < this.meta.schema.length; i++) {
+            if (this.meta.schema.displayName(this.meta.schema.get(i).name)!.displayName.match(regExp)) {
                 if (action === "Add")
                     this.display.selectedRows.add(i);
                 else if (action === "Remove")
@@ -382,15 +382,15 @@ export class SchemaView extends TSViewBase {
 
     // Action triggered by the statistics selection menu.
     private statAction(allE: boolean, thresh: number): void {
-        for (let i = 0; i < this.schema.length; i++) {
-            const name = this.schema.get(i).name;
+        for (let i = 0; i < this.meta.schema.length; i++) {
+            const name = this.meta.schema.get(i).name;
             const stat = this.stats!.get(name);
             if (stat == null)
                 continue;
 
             if (allE && stat.presentCount === 0)
                 this.display.selectedRows.add(i);
-            const kind = this.schema.get(i).kind;
+            const kind = this.meta.schema.get(i).kind;
             if (kind === "Date" || kind === "Time" || kind === "LocalDate") {
                 if (stat.moments[0] === 0.0)
                     this.display.selectedRows.add(i);
@@ -414,7 +414,7 @@ export class SchemaView extends TSViewBase {
 
     public getSelectedColNames(): string[] {
         const colNames: string[] = [];
-        this.display.selectedRows.getStates().forEach((i) => colNames.push(this.schema.get(i).name));
+        this.display.selectedRows.getStates().forEach((i) => colNames.push(this.meta.schema.get(i).name));
         return colNames;
     }
 
@@ -429,8 +429,8 @@ export class SchemaView extends TSViewBase {
      * This method updates the set of selected columns by adding/removing all columns of selectedType.
      */
     private typeAction(selectedType: string, action: string): void {
-        for (let i = 0; i < this.schema.length; i++) {
-            const kind = this.schema.get(i).kind;
+        for (let i = 0; i < this.meta.schema.length; i++) {
+            const kind = this.meta.schema.get(i).kind;
             if (kind === selectedType) {
                 if (action === "Add")
                     this.display.selectedRows.add(i);
@@ -446,11 +446,12 @@ export class SchemaView extends TSViewBase {
     private showTable(): void {
         const newPage = this.dataset.newPage(new PageTitle("Selected columns", "Schema view"), this.page);
         const selected = this.display.getSelectedRows();
-        const newSchema = this.schema.filter((c) => selected.has(this.schema.columnIndex(c.name)));
-        const tv = new TableView(this.remoteObjectId, this.rowCount, newSchema, newPage);
+        const newSchema = this.meta.schema.filter((c) => selected.has(this.meta.schema.columnIndex(c.name)));
+        const tv = new TableView(this.remoteObjectId,
+            {rowCount: this.meta.rowCount, schema: newSchema, geoMetadata: this.meta.geoMetadata }, newPage);
         newPage.setDataView(tv);
         const nkl: NextKList = {
-            rowsScanned: this.rowCount,
+            rowsScanned: this.meta.rowCount,
             startPosition: 0,
             rows: [],
             aggregates: null

@@ -17,7 +17,6 @@
 
 import {mouse as d3mouse} from "d3-selection";
 import {RemoteObjectId} from "../javaBridge";
-import {SchemaClass} from "../schemaClass";
 import {ICDFPlot} from "../ui/cdfPlot";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {FullPage} from "../ui/fullPage";
@@ -25,6 +24,7 @@ import {D3SvgElement, ViewKind} from "../ui/ui";
 import {ChartView} from "../modules";
 import {AxisData} from "./axisData";
 import {assert} from "../util";
+import {TableMeta} from "../ui/receiver";
 
 /**
  * This is a base class that contains code common to various histogram renderings.
@@ -37,10 +37,9 @@ export abstract class HistogramViewBase<D> extends ChartView<D> {
 
     protected constructor(
         remoteObjectId: RemoteObjectId,
-        rowCount: number,
-        schema: SchemaClass,
+        meta: TableMeta,
         page: FullPage, viewKind: ViewKind) {
-        super(remoteObjectId, rowCount, schema, page, viewKind);
+        super(remoteObjectId, meta, page, viewKind);
         this.createDiv("chart");
         this.cdfDot = null;
         // this.scrollBar = new ScrollBar(this, true);

@@ -62,10 +62,12 @@ public class PrivateTableTarget extends TableRpcTarget implements IPrivateDatase
     }
 
     @HillviewRpc
-    public void getSummary(RpcRequest request, RpcRequestContext context) {
+    public void getMetadata(RpcRequest request, RpcRequestContext context) {
+        GeoFileInformation[] info = this.getGeoFileInformation();
         SummarySketch ss = new SummarySketch();
-        PostProcessedSketch<ITable, TableSummary, DPWrapper.PrivacySummary> post =
-                ss.andThen(PrivateTableTarget.this.wrapper::addPrivateMetadata);
+        PostProcessedSketch<ITable, TableSummary, DPWrapper.TableMetadata> post = ss.andThen(
+                s -> new TableMetadata(s, info)).andThen(
+                        PrivateTableTarget.this.wrapper::addPrivateMetadata);
         this.runCompleteSketch(this.table, post, request, context);
     }
 
