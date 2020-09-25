@@ -17,7 +17,7 @@
 
 import {AxisData, AxisDescription} from "./axisData";
 import {RangeFilterArrayDescription, RemoteObjectId} from "../javaBridge";
-import {DisplayName, SchemaClass} from "../schemaClass";
+import {DisplayName} from "../schemaClass";
 import {FullPage} from "../ui/fullPage";
 import {Point, Resolution, ViewKind} from "../ui/ui";
 import {ChartView} from "../modules";
@@ -27,6 +27,7 @@ import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {TrellisShapeSerialization} from "../datasetView";
 import {assert, reorder} from "../util";
 import {Dialog, FieldKind} from "../ui/dialog";
+import {TableMeta} from "../ui/receiver";
 
 /**
  * Point position within a Trellis plot.
@@ -70,12 +71,11 @@ export abstract class TrellisChartView<D> extends ChartView<D> {
     protected coordinates: Point[];
 
     protected constructor(remoteObjectId: RemoteObjectId,
-                          rowCount: number,
-                          schema: SchemaClass,
+                          meta: TableMeta,
                           protected shape: TrellisShape,
                           page: FullPage,
                           viewKind: ViewKind) {
-        super(remoteObjectId, rowCount, schema, page, viewKind);
+        super(remoteObjectId, meta, page, viewKind);
         this.selectionEnd = null;
         this.surfaces = null;
     }

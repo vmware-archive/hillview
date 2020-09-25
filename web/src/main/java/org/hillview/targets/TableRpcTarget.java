@@ -17,14 +17,20 @@
 
 package org.hillview.targets;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import org.hillview.*;
+import org.hillview.dataStructures.ColumnGeoRepresentation;
 import org.hillview.dataStructures.IntervalDecomposition;
 import org.hillview.dataStructures.NumericIntervalDecomposition;
 import org.hillview.dataStructures.StringIntervalDecomposition;
 import org.hillview.dataset.LocalDataSet;
 import org.hillview.dataset.api.IDataSet;
+import org.hillview.dataset.api.IJson;
 import org.hillview.dataset.api.TableSketch;
 import org.hillview.sketches.HistogramSketch;
+import org.hillview.sketches.SummarySketch;
+import org.hillview.sketches.highorder.PostProcessedSketch;
 import org.hillview.sketches.results.*;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.QuantizationSchema;
@@ -34,8 +40,11 @@ import org.hillview.table.columns.ColumnQuantization;
 import org.hillview.table.columns.DoubleColumnQuantization;
 import org.hillview.table.columns.StringColumnQuantization;
 import org.hillview.utils.Converters;
+import org.hillview.utils.HillviewLogger;
+import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
+import java.io.File;
 
 /**
  * An RPC target that represents an ITable.
@@ -45,6 +54,8 @@ import javax.annotation.Nullable;
 public abstract class TableRpcTarget extends RpcTarget {
     static final long serialVersionUID = 1;
     protected IDataSet<ITable> table;
+    @Nullable
+    protected GeoFileInformation[] geoInformation = null;
 
     protected TableRpcTarget(HillviewComputation computation, @Nullable String metadataDirectory) {
         super(computation, metadataDirectory);
@@ -153,5 +164,70 @@ public abstract class TableRpcTarget extends RpcTarget {
         public int size() {
             return this.histos.length;
         }
+    }
+
+    @SuppressWarnings("NotNullFieldNotInitialized")
+    static class GeoFileInformation extends ColumnGeoRepresentation {
+        String geoFile; // e.g., geo/us_states/cb_2019_us_state_20m.shp
+        // Supported formats: shapeFile (shp)
+    }
+
+    synchronized GeoFileInformation[] getGeoFileInformation() {
+        if (this.geoInformation != null)
+            return this.geoInformation;
+
+        String fileName = "data/metadata/geo/" + this.metadataDirectory + "/geometa.json";
+        HillviewLogger.instance.info("Looking for geo data", "file {0}", fileName);
+        File file = new File(fileName);
+        this.geoInformation = new GeoFileInformation[0];
+        try {
+            if (file.exists()) {
+                HillviewLogger.instance.info("Loading geo data", "file {0}", fileName);
+                String contents = Utilities.textFileContents(fileName);
+                this.geoInformation = IJson.gsonInstance.fromJson(contents, GeoFileInformation[].class);
+            }
+        } catch (Exception ex) {
+            HillviewLogger.instance.error("Error while reading geographic information", ex);
+        }
+        return this.geoInformation;
+    }
+
+    @Nullable
+    protected GeoFileInformation getGeoColumnInformation(String columnName) {
+        GeoFileInformation[] data = this.getGeoFileInformation();
+        for (GeoFileInformation g: data) {
+            if (g.columnName.equals(columnName))
+                return g;
+        }
+        return null;
+    }
+
+    static class TableMetadata extends TableSummary implements IJson {
+        protected final ColumnGeoRepresentation[] geoMetadata;
+
+        TableMetadata(TableSummary summary, ColumnGeoRepresentation[] geoMetadata) {
+            super(summary.schema, summary.rowCount);
+            this.geoMetadata = geoMetadata;
+        }
+
+        TableMetadata(TableMetadata other) {
+            this(other, other.geoMetadata);
+        }
+
+        @Override
+        public JsonElement toJsonTree() {
+            JsonObject result = (JsonObject)super.toJsonTree();
+            result.add("geoMetadata", IJson.gsonInstance.toJsonTree(this.geoMetadata));
+            return result;
+        }
+    }
+
+    @HillviewRpc
+    public void getMetadata(RpcRequest request, RpcRequestContext context) {
+        GeoFileInformation[] info = this.getGeoFileInformation();
+        SummarySketch ss = new SummarySketch();
+        PostProcessedSketch<ITable, TableSummary, TableMetadata> ps =
+                ss.andThen(s -> new TableMetadata(s, info));
+        this.runSketch(this.table, ps, request, context);
     }
 }

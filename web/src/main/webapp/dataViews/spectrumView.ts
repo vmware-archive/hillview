@@ -24,7 +24,7 @@ import {
     RemoteObjectId, Groups
 } from "../javaBridge";
 import {OnCompleteReceiver} from "../rpc";
-import {DisplayName, SchemaClass} from "../schemaClass";
+import {DisplayName} from "../schemaClass";
 import {BaseReceiver, TableTargetAPI} from "../modules";
 import {IDataView} from "../ui/dataview";
 import {Dialog, FieldKind} from "../ui/dialog";
@@ -36,6 +36,7 @@ import {assert, ICancellable, significantDigits} from "../util";
 import {AxisData} from "./axisData";
 import {CorrelationMatrixReceiver, TableView} from "../modules";
 import {ChartView} from "../modules";
+import {TableMeta} from "../ui/receiver";
 
 /**
  * Receives the result of a PCA computation and plots the singular values
@@ -46,8 +47,7 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
     public constructor(page: FullPage,
                        protected originator: TableTargetAPI,
                        protected remoteObjectId: RemoteObjectId,
-                       protected rowCount: number,
-                       protected schema: SchemaClass,
+                       protected meta: TableMeta,
                        protected colNames: string[],
                        operation: ICancellable<EigenVal>,
                        protected reusePage: boolean) {
@@ -70,7 +70,7 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
             true);
         const topMenu = new TopMenu([{ text: "View", help: "Change the way the data is displayed.", subMenu: menu}]);
         this.newPage.setMenu(topMenu);
-        this.specView = new SpectrumView(this.remoteObjectId, this.rowCount, this.colNames, this.schema, this.newPage);
+        this.specView = new SpectrumView(this.remoteObjectId, this.meta, this.colNames, this.newPage);
 
         const ev: number [] = eVals.eigenValues;
         const histogram: Groups<number> = { perBucket: ev, perMissing: 0 };
@@ -109,9 +109,9 @@ export class SpectrumReceiver extends OnCompleteReceiver<EigenVal> {
                     numComponents + " does not satisfy this.)");
                 return;
             }
-            const rr = this.originator.createCorrelationMatrixRequest(this.colNames, this.rowCount, true);
+            const rr = this.originator.createCorrelationMatrixRequest(this.colNames, this.meta.rowCount, true);
             const newestPage = this.newPage.dataset!.newPage(new PageTitle("Table", "Spectrum view"), this.newPage);
-            const table = new TableView(this.remoteObjectId, this.rowCount, this.schema, newestPage);
+            const table = new TableView(this.remoteObjectId, this.meta, newestPage);
             newestPage.setDataView(table);
             const order  = new RecordOrder([]);
             rr.invoke(new CorrelationMatrixReceiver(newestPage, table, rr, order, numComponents, projectionName));
@@ -128,10 +128,9 @@ export class SpectrumView extends ChartView<Groups<number>> {
     protected title: string;
     protected plot: HistogramPlot;
 
-    constructor(remoteObjectId: RemoteObjectId, rowCount: number,
-                protected colNames: string[],
-                schema: SchemaClass, page: FullPage) {
-        super(remoteObjectId, rowCount, schema, page, "SVD Spectrum");
+    constructor(remoteObjectId: RemoteObjectId, meta: TableMeta,
+                protected colNames: string[], page: FullPage) {
+        super(remoteObjectId, meta, page, "SVD Spectrum");
 
         this.createDiv("chart");
         this.createDiv("summary");
@@ -162,7 +161,7 @@ export class SpectrumView extends ChartView<Groups<number>> {
         this.title = title;
         this.data = h;
         this.plot.setHistogram({first: h, second: null }, 1,
-            axisData, null, this.page.dataset!.isPrivate(), this.rowCount);
+            axisData, null, this.page.dataset!.isPrivate(), this.meta.rowCount);
         this.plot.draw();
         this.standardSummary();
         //this.summary.set("Columns: " + this.colNames.join(""), 0);
@@ -185,17 +184,17 @@ export class SpectrumView extends ChartView<Groups<number>> {
     }
 
     public refresh(): void {
-        const rr = this.createSpectrumRequest(this.colNames, this.rowCount, true);
+        const rr = this.createSpectrumRequest(this.colNames, this.meta.rowCount, true);
         rr.invoke(new SpectrumReceiver(this.page, this, this.remoteObjectId,
-            this.rowCount, this.schema,  this.colNames, rr, true));
+            this.meta,  this.colNames, rr, true));
     }
 
     public static reconstruct(ser: SpectrumSerialization, page: FullPage): IDataView | null {
-        const schema = new SchemaClass([]).deserialize(ser.schema);
         const colNames: string[] = ser.colNames;
-        if (colNames == null || schema == null)
+        const args = this.validateSerialization(ser);
+        if (colNames == null || args == null)
             return null;
-        return new SpectrumView(ser.remoteObjectId, ser.rowCount, colNames, schema, page);
+        return new SpectrumView(ser.remoteObjectId, args, colNames, page);
     }
 
     // noinspection JSUnusedLocalSymbols

@@ -71,11 +71,13 @@ public class PrivateSimpleDBTarget extends SimpleDBTarget implements IPrivateDat
     }
 
     @HillviewRpc
-    public void getSummary(RpcRequest request, RpcRequestContext context) {
+    public void getMetadata(RpcRequest request, RpcRequestContext context) {
+        GeoFileInformation[] info = this.getGeoFileInformation();
         TableSummary summary = new TableSummary(this.schema, this.rowCount);
-        PostProcessedSketch<ITable, TableSummary, DPWrapper.PrivacySummary> post =
+        PostProcessedSketch<ITable, TableSummary, DPWrapper.TableMetadata> post =
             new PrecomputedSketch<ITable, TableSummary>(summary).andThen(
-                    PrivateSimpleDBTarget.this.wrapper::addPrivateMetadata);
+                    s -> new TableMetadata(s, info)).andThen(
+                            PrivateSimpleDBTarget.this.wrapper::addPrivateMetadata);
         this.runCompleteSketch(this.table, post, request, context);
     }
 

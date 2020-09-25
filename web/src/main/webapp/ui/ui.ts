@@ -76,6 +76,7 @@ export interface HistogramOptions {
 export interface ChartOptions extends HistogramOptions {
     chartKind: ViewKind;
     relative?: boolean;  // draw a relative 2D histogram
+    stacked?: boolean;   // stacked bars in 2D histograms
 }
 
 /**

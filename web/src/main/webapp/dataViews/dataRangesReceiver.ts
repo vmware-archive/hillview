@@ -41,7 +41,7 @@ import {DatasetView} from "../datasetView";
 import {QuartilesVectorReceiver} from "./quartilesHistogramView";
 import {TrellisHistogramQuartilesReceiver} from "./trellisHistogramQuartilesView";
 import {CorrelationHeatmapReceiver} from "./correlationHeatmapView";
-import {ReceiverCommonArgs} from "../ui/receiver";
+import {TableMeta, ReceiverCommonArgs} from "../ui/receiver";
 
 /**
  * Describes the shape of trellis display.
@@ -183,7 +183,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
         protected originator: TableTargetAPI,
         page: FullPage,
         operation: ICancellable<BucketsInfo[]> | null,
-        protected schema: SchemaClass,
+        protected readonly meta: TableMeta,
         protected bucketCounts: number[], // if 0 we get to choose
         protected cds: IColumnDescription[],
         protected title: PageTitle | null, // If null we generate a title
@@ -281,9 +281,14 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
             originalPage: this.page,
             remoteObject: this.originator,
             rowCount: this.rowCount,
-            schema: this.schema,
+            schema: this.meta.schema,
+            geoMetadata: this.meta.geoMetadata,
             options: this.options
         };
+    }
+
+    protected getMeta(): TableMeta {
+        return this.commonArgs();
     }
 
     public run(ranges: (BucketsInfo | null)[]): void {
@@ -363,8 +368,8 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 }
                 if (this.title == null)
                     this.title = new PageTitle(
-                        "Quartiles of " + this.schema.displayName(this.cds[1].name)!.toString() +
-                        " bucketed by " + this.schema.displayName(this.cds[0].name)!.toString(), this.provenance!);
+                        "Quartiles of " + this.meta.schema.displayName(this.cds[1].name)!.toString() +
+                        " bucketed by " + this.meta.schema.displayName(this.cds[0].name)!.toString(), this.provenance!);
 
                 const histoArg = DataRangesReceiver.computeHistogramArgs(
                     this.cds[0], ranges[0], maxXBucketCount,
@@ -377,9 +382,8 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 };
                 //const common = this.commonArgs();
                 const rr = this.originator.createQuantilesVectorRequest(args);
-                rr.invoke(new QuartilesVectorReceiver(this.title, this.page, this.originator, this.rowCount,
-                    this.schema, histoArg, ranges[0], this.cds[1], rr,
-                    this.options));
+                rr.invoke(new QuartilesVectorReceiver(this.title, this.page, this.originator,
+                    this.getMeta(), histoArg, ranges[0], this.cds[1], rr, this.options));
                 break;
             }
             case "Histogram": {
@@ -409,9 +413,9 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 const axisData = new AxisData(this.cds[0], ranges[0], histoArg.bucketCount);
                 if (this.title == null)
                     this.title = new PageTitle(
-                        "Histogram of " + this.schema.displayName(this.cds[0].name)!.toString(), this.provenance!);
+                        "Histogram of " + this.meta.schema.displayName(this.cds[0].name)!.toString(), this.provenance!);
                 const renderer = new HistogramReceiver(this.title, this.page,
-                    this.originator.remoteObjectId, this.rowCount, this.schema, axisData, rr, cdfArg.samplingRate,
+                    this.originator.remoteObjectId, this.getMeta(), axisData, rr, cdfArg.samplingRate,
                     this.options.pieChart != null ? this.options.pieChart : false, this.options.reusePage); // TODO sampling rate?
                 rr.invoke(renderer);
                 break;
@@ -433,10 +437,10 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 const groupByAxis = new AxisData(this.cds[1], ranges[1]!, wArg.bucketCount);
                 if (this.title == null)
                     this.title = new PageTitle(
-                        "Histograms of " + this.schema.displayName(this.cds[0].name)!.toString() +
-                        " grouped by " + this.schema.displayName(this.cds[1].name)!.toString(), this.provenance!);
+                        "Histograms of " + this.meta.schema.displayName(this.cds[0].name)!.toString() +
+                        " grouped by " + this.meta.schema.displayName(this.cds[1].name)!.toString(), this.provenance!);
                 const renderer = new TrellisHistogramReceiver(this.title, this.page,
-                    this.originator, this.rowCount, this.schema,
+                    this.originator, this.getMeta(),
                     [xAxisData, groupByAxis], this.bucketCounts[0],
                     xArg.samplingRate, trellisShape!, rr, this.options.reusePage);
                 rr.chain(this.operation);
@@ -464,9 +468,9 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
 
                 if (this.title == null)
                     this.title = new PageTitle(
-                        "Trellis quartiles of " + this.schema.displayName(this.cds[1].name)!.toString() +
-                        " bucketed by " + this.schema.displayName(this.cds[0].name)!.toString() +
-                        " grouped by " + this.schema.displayName(this.cds[2].name)!.toString(), this.provenance!);
+                        "Trellis quartiles of " + this.meta.schema.displayName(this.cds[1].name)!.toString() +
+                        " bucketed by " + this.meta.schema.displayName(this.cds[0].name)!.toString() +
+                        " grouped by " + this.meta.schema.displayName(this.cds[2].name)!.toString(), this.provenance!);
 
                 const histoArg0 = DataRangesReceiver.computeHistogramArgs(
                     this.cds[0], ranges[0], maxXBucketCount,
@@ -483,7 +487,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 };
                 const rr = this.originator.createQuantilesMatrixRequest(args);
                 rr.invoke(new TrellisHistogramQuartilesReceiver(this.title, this.page, this.originator,
-                    this.rowCount, this.schema, [histoArg0, histoArg2], [ranges[0], ranges[2]!],
+                    this.getMeta(), [histoArg0, histoArg2], [ranges[0], ranges[2]!],
                     this.cds[1], trellisShape!, rr,
                     this.options));
                 break;
@@ -516,17 +520,17 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 if (this.title == null)
                     this.title = new PageTitle(
                         this.options.chartKind.toString().replace("Trellis", "") +
-                                 " (" + this.schema.displayName(this.cds[0].name)!.displayName +
-                                 ", " + this.schema.displayName(this.cds[1].name)!.displayName +
-                                 ") grouped by " + this.schema.displayName(this.cds[2].name)!.displayName, this.provenance!);
+                                 " (" + this.meta.schema.displayName(this.cds[0].name)!.displayName +
+                                 ", " + this.meta.schema.displayName(this.cds[1].name)!.displayName +
+                                 ") grouped by " + this.meta.schema.displayName(this.cds[2].name)!.displayName, this.provenance!);
                 let renderer;
                 if (this.options.chartKind === "Trellis2DHistogram")
                     renderer = new TrellisHistogram2DReceiver(this.title, this.page,
-                        this.originator, this.rowCount, this.schema,
+                        this.originator, this.getMeta(),
                         [xAxis, yAxis, groupByAxis], 1.0, trellisShape!, rr, this.options);
                 else
                     renderer = new TrellisHeatmapReceiver(this.title, this.page,
-                        this.originator, this.rowCount, this.schema,
+                        this.originator, this.getMeta(),
                         [xAxis, yAxis, groupByAxis], 1.0, trellisShape!, rr, this.options.reusePage);
                 rr.chain(this.operation);
                 rr.invoke(renderer);
@@ -548,12 +552,12 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 const yAxis = new AxisData(this.cds[1], ranges[1]!, yArg.bucketCount);
                 if (this.title == null)
                     this.title = new PageTitle(
-                        "Heatmap (" + this.schema.displayName(this.cds[0].name)!.displayName + ", " +
-                        this.schema.displayName(this.cds[1].name)!.displayName + ")", this.provenance!);
+                        "Heatmap (" + this.meta.schema.displayName(this.cds[0].name)!.displayName + ", " +
+                        this.meta.schema.displayName(this.cds[1].name)!.displayName + ")", this.provenance!);
                 if (this.isPrivate()) {
                     const rr = this.originator.createHistogram2DRequest(args);
                     const renderer = new HeatmapReceiver(this.title, this.page,
-                        this.originator, this.rowCount, this.schema,
+                        this.originator, this.getMeta(),
                         [xAxis, yAxis], 1.0, rr, this.options.reusePage);
                     rr.chain(this.operation);
                     rr.invoke(renderer);
@@ -565,7 +569,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                     }
                     const rr = this.originator.createHeatmapRequest(heatmapRequest);
                     const renderer = new HeatmapWithDataReceiver(this.title, this.page,
-                        this.originator, this.rowCount, this.schema, new SchemaClass(this.cds),
+                        this.originator, this.getMeta(), new SchemaClass(this.cds),
                         [xAxis, yAxis], 1.0, rr, this.options.reusePage);
                     rr.chain(this.operation);
                     rr.invoke(renderer);
@@ -600,12 +604,10 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 const yData = new AxisData(this.cds[1], ranges[1]!, yarg.bucketCount);
                 if (this.title == null)
                     this.title = new PageTitle(
-                        "2DHistogram (" + this.schema.displayName(this.cds[0].name)!.displayName + ", " +
-                    this.schema.displayName(this.cds[1].name)!.displayName + ")", this.provenance!);
+                        "2DHistogram (" + this.meta.schema.displayName(this.cds[0].name)!.displayName + ", " +
+                    this.meta.schema.displayName(this.cds[1].name)!.displayName + ")", this.provenance!);
                 const renderer = new Histogram2DReceiver(this.title, this.page,
-                    this.originator, this.rowCount, this.schema,
-                    [xAxis, yData], cdfArg.samplingRate, rr,
-                    this.options);
+                    this.originator, this.getMeta(),[xAxis, yData], cdfArg.samplingRate, rr, this.options);
                 rr.chain(this.operation);
                 rr.invoke(renderer);
                 break;
@@ -631,7 +633,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
 export class NewTargetReceiver extends BaseReceiver {
     constructor(protected title: PageTitle,
                 protected cds: IColumnDescription[],
-                protected schema: SchemaClass,
+                protected meta: TableMeta,
                 protected bucketCounts: number[],
                 page: FullPage,
                 operation: ICancellable<RemoteObjectId>,
@@ -645,7 +647,7 @@ export class NewTargetReceiver extends BaseReceiver {
         // cds could be longer than buckets -- e.g., for heatmaps.
         const cols = this.cds.slice(0, this.bucketCounts.length);
         const rr = this.remoteObject.createDataQuantilesRequest(cols, this.page, this.options.chartKind);
-        rr.invoke(new DataRangesReceiver(this.remoteObject, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this.remoteObject, this.page, rr, this.meta,
                   this.bucketCounts, this.cds, this.title, null, this.options));
     }
 }

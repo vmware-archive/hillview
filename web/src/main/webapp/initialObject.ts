@@ -22,7 +22,7 @@ import {
     FileSizeSketchInfo,
     JdbcConnectionInformation,
     CassandraConnectionInfo,
-    RemoteObjectId, FederatedDatabase, TableSummary,
+    RemoteObjectId, FederatedDatabase, TableMetadata,
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject} from "./rpc";
 import {BaseReceiver} from "./tableTarget";
@@ -164,7 +164,7 @@ class RemoteTableReceiver extends BaseReceiver {
 
     public run(value: RemoteObjectId): void {
         super.run(value);
-        const rr = this.remoteObject.createGetSummaryRequest();
+        const rr = this.remoteObject.createGetMetadataRequest();
         rr.chain(this.operation);
         const title = getDescription(this.data);
         if (this.newDataset) {
@@ -198,7 +198,7 @@ class GreenplumTableReceiver extends BaseReceiver {
 
     public run(value: RemoteObjectId): void {
         super.run(value);
-        const rr = this.remoteObject.createGetSummaryRequest();
+        const rr = this.remoteObject.createGetMetadataRequest();
         rr.chain(this.operation);
         const title = getDescription(this.data);
         const dataset = new DatasetView(this.remoteObject.remoteObjectId, title.format, this.data, this.page);
@@ -208,15 +208,15 @@ class GreenplumTableReceiver extends BaseReceiver {
     }
 }
 
-class GreenplumSchemaReceiver extends OnCompleteReceiver<TableSummary> {
-    constructor(page: FullPage, operation: ICancellable<TableSummary>,
+class GreenplumSchemaReceiver extends OnCompleteReceiver<TableMetadata> {
+    constructor(page: FullPage, operation: ICancellable<TableMetadata>,
                 protected initialObject: InitialObject,
                 protected remoteObject: TableTargetAPI,
                 protected jdbc: JdbcConnectionInformation) {
         super(page, operation, "Reading table metadata");
     }
 
-    public run(ts: TableSummary): void {
+    public run(ts: TableMetadata): void {
         if (ts.schema == null) {
             this.page.reportError("No schema received; empty dataset?");
             return;
@@ -232,7 +232,7 @@ class GreenplumSchemaReceiver extends OnCompleteReceiver<TableSummary> {
 }
 
 class GreenplumLoader extends OnCompleteReceiver<string> {
-    constructor(page: FullPage, protected summary: TableSummary,
+    constructor(page: FullPage, protected summary: TableMetadata,
                 protected remoteObject: InitialObject,
                 protected jdbc: JdbcConnectionInformation,
                 operation: ICancellable<string>) {

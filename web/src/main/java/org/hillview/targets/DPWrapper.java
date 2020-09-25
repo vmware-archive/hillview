@@ -17,6 +17,8 @@
 
 package org.hillview.targets;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import org.hillview.*;
 import org.hillview.utils.*;
 import org.hillview.dataStructures.QuantilesArgs;
@@ -28,9 +30,7 @@ import org.hillview.sketches.results.StringQuantiles;
 import org.hillview.storage.ColumnLimits;
 import org.hillview.table.PrivacySchema;
 import org.hillview.dataset.api.IJson;
-import org.hillview.sketches.results.TableSummary;
 import org.hillview.table.ColumnDescription;
-import org.hillview.table.Schema;
 import org.hillview.table.columns.ColumnQuantization;
 import org.hillview.table.columns.StringColumnQuantization;
 import org.hillview.table.filters.RangeFilterDescription;
@@ -140,27 +140,35 @@ public class DPWrapper {
         }
     }
 
-    @SuppressWarnings({"nullable", "NotNullFieldNotInitialized"})
-    public static class PrivacySummary implements IJson {
+    public static class TableMetadata extends TableTarget.TableMetadata {
         static final long serialVersionUID = 1;
+        public final long rowCountConfidence;
+        public final PrivacySchema privacyMetadata;
 
-        @Nullable
-        public Schema schema;
-        public long rowCount;
-        public long rowCountConfidence;
-        public PrivacySchema metadata;
+        public TableMetadata(TableTarget.TableMetadata meta,
+                             PrivacySchema ps, long rowCountConfidence) {
+            super(meta);
+            this.privacyMetadata = ps;
+            this.rowCountConfidence = rowCountConfidence;
+        }
+
+        @Override
+        public JsonElement toJsonTree() {
+            JsonObject result = (JsonObject)super.toJsonTree();
+            result.addProperty("rowCountConfidence", this.rowCountConfidence);
+            result.add("privacyMetadata", IJson.gsonInstance.toJsonTree(this.privacyMetadata));
+            return result;
+        }
     }
 
-    PrivacySummary addPrivateMetadata(TableSummary summary) {
-        PrivacySummary pSumm = new PrivacySummary();
-        pSumm.schema = summary.schema;
-        pSumm.metadata = this.container.privacySchema;
+    TableMetadata addPrivateMetadata(TableTarget.TableMetadata metadata) {
         double epsilon = this.getPrivacySchema().epsilon();
         Noise noise = DPWrapper.computeCountNoise(TABLE_COLUMN_INDEX, SpecialBucket.TotalCount, epsilon, this.laplace);
-        pSumm.rowCount = summary.rowCount + Converters.toLong(noise.getNoise());
-        pSumm.rowCountConfidence = Converters.toLong(PrivacyUtils.laplaceCI(
+        long rowCount = metadata.rowCount + Converters.toLong(noise.getNoise());
+        @SuppressWarnings("ConstantConditions")
+        long rowCountConfidence = Converters.toLong(PrivacyUtils.laplaceCI(
                 1, 1.0/epsilon, PrivacyUtils.DEFAULT_ALPHA).second);
-        return pSumm;
+        return new TableMetadata(metadata, this.container.privacySchema, rowCountConfidence);
     }
 
     /**

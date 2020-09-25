@@ -91,9 +91,10 @@ public class SimpleDBTarget extends TableRpcTarget {
     }
 
     @HillviewRpc
-    public void getSummary(RpcRequest request, RpcRequestContext context) {
+    public void getMetadata(RpcRequest request, RpcRequestContext context) {
+        GeoFileInformation[] info = this.getGeoFileInformation();
         TableSummary summary = new TableSummary(this.schema, this.rowCount);
-        this.returnResult(summary, request, context);
+        this.returnResult(new TableMetadata(summary, info), request, context);
     }
 
     @HillviewRpc

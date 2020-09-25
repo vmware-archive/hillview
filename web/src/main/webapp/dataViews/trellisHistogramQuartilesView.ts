@@ -24,7 +24,6 @@ import {
 } from "../javaBridge";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {BaseReceiver, TableTargetAPI} from "../modules";
-import {SchemaClass} from "../schemaClass";
 import {
     allBuckets, assertNever,
     Converters, describeQuartiles, Exporter,
@@ -51,6 +50,7 @@ import {PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
 import {BucketDialog} from "./histogramViewBase";
 import {saveAs} from "../ui/dialog";
+import {TableMeta} from "../ui/receiver";
 
 export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Groups<SampleSet>>> {
     protected hps: Quartiles2DPlot[];
@@ -59,12 +59,11 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
 
     public constructor(
         remoteObjectId: RemoteObjectId,
-        rowCount: number,
-        schema: SchemaClass,
+        meta: TableMeta,
         protected qCol: IColumnDescription,
         protected shape: TrellisShape,
         page: FullPage) {
-        super(remoteObjectId, rowCount, schema, shape, page, "TrellisQuartiles");
+        super(remoteObjectId, meta, shape, page, "TrellisQuartiles");
         this.hps = [];
 
         this.menu = new TopMenu( [this.exportMenu(),
@@ -152,15 +151,15 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
             return;
         }
 
-        const collector = new DataRangesReceiver(this,
-            this.page, null, this.schema, [0, 0, 0],  // any number of buckets
+        const receiver = new DataRangesReceiver(this,
+            this.page, null, this.meta, [0, 0, 0],  // any number of buckets
             [this.xAxisData.description!, this.qCol, this.groupByAxisData.description!],
             this.page.title, Converters.eventToString(pageId, eventKind), {
                 chartKind: "TrellisQuartiles", 
                 reusePage: true
             });
-        collector.run(ranges);
-        collector.finished();
+        receiver.run(ranges);
+        receiver.finished();
     }
 
     protected onMouseMove(): void {
@@ -205,7 +204,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
                 return;
             const cds = [this.xAxisData.description, this.qCol, this.groupByAxisData.description];
             const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisQuartiles");
-            rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
+            rr.invoke(new DataRangesReceiver(this, this.page, rr, this.meta,
                 [bucketCount, 0, this.groupByAxisData.bucketCount],
                 cds, null, "changed buckets",{
                     reusePage: true, chartKind: "TrellisQuartiles"
@@ -223,7 +222,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
             const cds = [this.xAxisData.description,
                 this.qCol];
             const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
-            rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
+            rr.invoke(new DataRangesReceiver(this, this.page, rr, this.meta,
                 [0, 0],
                 cds, null, "change groups",{
                     reusePage: true, chartKind: "QuartileVector"
@@ -232,7 +231,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
             const cds = [this.xAxisData.description,
                 this.qCol, this.groupByAxisData.description];
             const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisQuartiles");
-            rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
+            rr.invoke(new DataRangesReceiver(this, this.page, rr, this.meta,
                 [0, 0, groupCount],
                 cds, null, "change groups",{
                     reusePage: true, 
@@ -245,7 +244,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
         const cds = [this.xAxisData.description,
             this.qCol, this.groupByAxisData.description];
         const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisHeatmap");
-        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.meta,
             [0, 0, this.shape.windowCount],
             cds, null, this.defaultProvenance,{
                 reusePage: false, chartKind: "TrellisHeatmap", exact: true
@@ -254,11 +253,11 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
 
     protected export(): void {
         let lines: string[] = [];
-        const axisName = this.schema.displayName(this.groupByAxisData.description.name);
+        const axisName = this.getSchema().displayName(this.groupByAxisData.description.name);
         let bucketNo = 0;
         for (const g of allBuckets(this.data)) {
             const desc = this.groupByAxisData.bucketDescription(bucketNo++, 0);
-            const l = Exporter.quartileAsCsv(g, this.schema, this.xAxisData);
+            const l = Exporter.quartileAsCsv(g, this.getSchema(), this.xAxisData);
             lines = lines.concat(l.map(line => axisName + " " + desc + "," + line));
         }
 
@@ -275,14 +274,14 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
     public refresh(): void {
         const cds = [this.xAxisData.description, this.qCol, this.groupByAxisData.description];
         const ranges = [this.xAxisData.dataRange, null, this.groupByAxisData.dataRange];
-        const collector = new DataRangesReceiver(this,
-            this.page, null, this.schema,
+        const receiver = new DataRangesReceiver(this,
+            this.page, null, this.meta,
             [this.xAxisData.bucketCount, 0, this.groupByAxisData.bucketCount],
             cds, this.page.title, null,{
                 chartKind: "TrellisQuartiles", reusePage: true
             });
-        collector.run(ranges);
-        collector.finished();
+        receiver.run(ranges);
+        receiver.finished();
     }
 
     public serialize(): IViewSerialization {
@@ -305,12 +304,11 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
             ser.yWindows == null || ser.windowCount === null ||
             ser.schema == null || ser.gRange === null || ser.xRange === null)
             return null;
-        const schema = new SchemaClass([]).deserialize(ser.schema);
+        const args = this.validateSerialization(ser);
         const shape = TrellisChartView.deserializeShape(ser, page);
-        if (schema == null || shape == null)
+        if (args == null || shape == null)
             return null;
-        const view = new TrellisHistogramQuartilesView(ser.remoteObjectId, ser.rowCount,
-            schema, ser.columnDescription1, shape, page);
+        const view = new TrellisHistogramQuartilesView(ser.remoteObjectId, args, ser.columnDescription1, shape, page);
         view.setAxes(new AxisData(ser.columnDescription0, ser.xRange, ser.xBucketCount),
             new AxisData(ser.groupByColumn, ser.gRange, ser.windowCount));
         return view;
@@ -343,13 +341,13 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
         for (let i = 0; i < data.perBucket.length; i++) {
             const buckets = data.perBucket[i];
             const plot = this.hps[i];
-            plot.setData(buckets, this.schema, this.rowCount, this.xAxisData, this.isPrivate(), yAxisRange);
+            plot.setData(buckets, this.getSchema(), this.meta.rowCount, this.xAxisData, this.isPrivate(), yAxisRange);
             plot.draw();
         }
         if (this.shape.missingBucket) {
             const buckets = data.perMissing;
             const plot = this.hps[data.perBucket.length];
-            plot.setData(buckets, this.schema, this.rowCount, this.xAxisData, this.isPrivate(), yAxisRange);
+            plot.setData(buckets, this.getSchema(), this.meta.rowCount, this.xAxisData, this.isPrivate(), yAxisRange);
             plot.draw();
         }
 
@@ -360,8 +358,8 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
         this.setupMouse();
         this.pointDescription = new TextOverlay(this.surface!.getCanvas(),
             this.surface!.getActualChartSize(),
-            [this.xAxisData.getDisplayNameString(this.schema)!,
-                this.groupByAxisData.getDisplayNameString(this.schema)!,
+            [this.xAxisData.getDisplayNameString(this.getSchema())!,
+                this.groupByAxisData.getDisplayNameString(this.getSchema())!,
                 "bucket", "max", "q3", "median", "q1", "min", "count", "missing"], 40);
         this.pointDescription.show(false);
         this.standardSummary();
@@ -385,7 +383,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
             return new NewTargetReceiver(title, [this.xAxisData.description, this.qCol,
-                this.groupByAxisData.description], this.schema, [0, 0, 0], page, operation, this.dataset, {
+                this.groupByAxisData.description], this.meta, [0, 0, 0], page, operation, this.dataset, {
                 chartKind: "TrellisQuartiles", reusePage: false,
             });
         };
@@ -397,7 +395,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
         const rr = this.createFilterRequest(filter);
         const title = new PageTitle(this.page.title.format, Converters.filterArrayDescription(filter));
         const renderer = new NewTargetReceiver(title, [this.xAxisData.description, this.qCol,
-            this.groupByAxisData.description], this.schema, [0, 0, 0], this.page, rr, this.dataset, {
+            this.groupByAxisData.description], this.meta, [0, 0, 0], this.page, rr, this.dataset, {
             chartKind: "TrellisQuartiles",
             reusePage: false,
         });
@@ -431,8 +429,7 @@ export class TrellisHistogramQuartilesReceiver extends Receiver<Groups<Groups<Sa
     constructor(title: PageTitle,
                 page: FullPage,
                 remoteTable: TableTargetAPI,
-                protected rowCount: number,
-                protected schema: SchemaClass,
+                protected meta: TableMeta,
                 protected histoArgs: HistogramInfo[],
                 protected range: BucketsInfo[],
                 protected qCol: IColumnDescription,
@@ -441,8 +438,7 @@ export class TrellisHistogramQuartilesReceiver extends Receiver<Groups<Groups<Sa
                 protected options: ChartOptions) {
         super(options.reusePage ? page : page.dataset!.newPage(title, page), operation, "quartiles");
         this.trellisView = new TrellisHistogramQuartilesView(
-            remoteTable.remoteObjectId, rowCount, schema, qCol,
-            this.shape, this.page);
+            remoteTable.remoteObjectId, meta, qCol, this.shape, this.page);
         const xAxis = new AxisData(histoArgs[0].cd, range[0], histoArgs[0].bucketCount);
         const groupByAxis = new AxisData(histoArgs[1].cd, range[1], histoArgs[1].bucketCount);
         this.trellisView.setAxes(xAxis, groupByAxis);

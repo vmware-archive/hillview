@@ -122,8 +122,14 @@ export class JsonString {
 export interface TableSummary {
     schema: Schema;
     rowCount: number;
+}
+
+// This is an overlay of two TableMetadata classes from Java,
+// one in TableRpcTarget and one in DPWrapper, which extends the other one.
+export interface TableMetadata extends TableSummary {
+    geoMetadata: ColumnGeoRepresentation[];
+    privacyMetadata: PrivacySchema | null;     // only present for private data
     rowCountConfidence: number | null;  // only present for private data
-    metadata: PrivacySchema | null;     // only present for private data
 }
 
 export interface ConvertColumnInfo {

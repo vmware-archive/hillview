@@ -24,7 +24,7 @@ import {SpectrumView} from "./dataViews/spectrumView";
 import {SchemaReceiver, TableView} from "./modules";
 import {DataLoaded, getDescription} from "./initialObject";
 import {
-    BucketsInfo,
+    BucketsInfo, ColumnGeoRepresentation,
     CombineOperators, HistogramRequestInfo,
     IColumnDescription, JsonString, PrivacySchema,
     RecordOrder,
@@ -59,6 +59,7 @@ export interface IViewSerialization {
     remoteObjectId: RemoteObjectId;
     rowCount: number;
     schema: SchemaClassSerialization;
+    geoMetadata: ColumnGeoRepresentation[];
 }
 
 export interface HeavyHittersSerialization extends IViewSerialization {
@@ -110,6 +111,7 @@ export interface QuantileVectorSerialization extends IViewSerialization {
 
 export interface Histogram2DSerialization extends BaseHeatmapSerialization {
     relative: boolean;
+    stacked: boolean;
 }
 
 export interface SpectrumSerialization extends IViewSerialization {
@@ -587,7 +589,7 @@ export class DatasetView implements IHtmlElement {
      * Displays again the original data.
      */
     public redisplay(): void {
-        const rr = this.remoteObject.createGetSummaryRequest();
+        const rr = this.remoteObject.createGetMetadataRequest();
         const title = getDescription(this.loaded);
         const newPage = this.newPage(title, null);
         rr.invoke(new SchemaReceiver(newPage, rr, this.remoteObject, this, null, null));

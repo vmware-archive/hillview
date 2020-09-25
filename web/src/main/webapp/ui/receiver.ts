@@ -24,19 +24,11 @@ import {TableTargetAPI} from "../modules";
 import {SchemaClass} from "../schemaClass";
 import {OnCompleteReceiver, Receiver, RpcRequest} from "../rpc";
 import {ChartOptions} from "./ui";
+import {ColumnGeoRepresentation} from "../javaBridge";
 
-/**
- * Most views use all these arguments.
- */
-export interface CommonArgs {
-    /**
-     * Title for the produced page.
-     */
-    title: PageTitle,
-    /**
-     * The initiator of the request.
-     */
-    remoteObject: TableTargetAPI,
+// This structure is like TableMetadata, but
+// it contains a SchemaClass instead of a Schema inside.
+export interface TableMeta {
     /**
      * Number of rows in source dataset.
      */
@@ -45,6 +37,24 @@ export interface CommonArgs {
      * Schema of the originator.
      */
     schema: SchemaClass,
+    /**
+     * Geographic metadata for columns.
+     */
+    geoMetadata: ColumnGeoRepresentation[],
+}
+
+/**
+ * Most views use all these arguments.
+ */
+export interface CommonArgs extends TableMeta {
+    /**
+     * Title for the produced page.
+     */
+    title: PageTitle,
+    /**
+     * The initiator of the request.
+     */
+    remoteObject: TableTargetAPI,
 }
 
 /**

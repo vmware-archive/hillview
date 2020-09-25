@@ -59,7 +59,7 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
 
     constructor(args: CommonArgs, protected histoArgs: HistogramRequestInfo,
                 protected ranges: BucketsInfo[], page: FullPage) {
-        super(args.remoteObject.remoteObjectId, args.rowCount, args.schema, page, "CorrelationHeatmaps")
+        super(args.remoteObject.remoteObjectId, args, page, "CorrelationHeatmaps")
         this.menu = new TopMenu([this.exportMenu(),
             { text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
                     { text: "refresh",
@@ -102,7 +102,7 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
         let xAxis = 1;
         let yAxis = 0;
         for (const h of this.data) {
-            const lines = Exporter.histogram2DAsCsv(h, this.schema, [this.xAxes[xAxis], this.yAxes[yAxis]]);
+            const lines = Exporter.histogram2DAsCsv(h, this.getSchema(), [this.xAxes[xAxis], this.yAxes[yAxis]]);
             result = result.concat(lines);
             xAxis++;
             if (xAxis == this.xAxes.length) {
@@ -173,7 +173,7 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
         const renderer = new NewTargetReceiver(new PageTitle(this.page.title.format,
             Converters.filterArrayDescription(filter)),
             this.histoArgs.histos.map(h => h.cd),
-            this.schema, this.histoArgs.histos.map(_ => 0), this.page, rr, this.dataset, {
+            this.meta, this.histoArgs.histos.map(_ => 0), this.page, rr, this.dataset, {
                 chartKind: "CorrelationHeatmaps", reusePage: false,
             });
         rr.invoke(renderer);
@@ -182,11 +182,11 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
     protected getCombineRenderer(title: PageTitle): (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         const cds = this.histoArgs.histos.map(b => b.cd);
         const zeros = cds.map(_ => 0);
-        const schema = this.schema;
         const dataset = this.dataset;
+        const meta = this.meta;
         return function (page: FullPage, operation: ICancellable<RemoteObjectId>) {
             return new NewTargetReceiver(title, cds,
-                schema, zeros, page, operation, dataset, {
+                meta, zeros, page, operation, dataset, {
                     chartKind: "CorrelationHeatmaps", reusePage: false,
                 });
         };
@@ -246,13 +246,13 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
     }
 
     refresh(): void {
-        const collector = new DataRangesReceiver(this,
-            this.page, null, this.schema, this.histoArgs.histos.map(b => b.bucketCount),
+        const receiver = new DataRangesReceiver(this,
+            this.page, null, this.meta, this.histoArgs.histos.map(b => b.bucketCount),
             this.histoArgs.histos.map(b => b.cd), this.page.title, null,{
                 chartKind: "CorrelationHeatmaps", reusePage: true
             });
-        collector.run(this.ranges);
-        collector.finished();
+        receiver.run(this.ranges);
+        receiver.finished();
     }
 
     resize(): void {
@@ -388,7 +388,7 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
             for (let x = y + 1; x < charts; x++) {
                 this.hps[index].setData({ first: data[index], second: null, third: null },
                     this.xAxes[x],  this.yAxes[y], null,
-                    this.schema, 0, this.isPrivate());
+                    this.getSchema(), 0, this.isPrivate());
                 max = Math.max(max, this.hps[index].getMaxCount());
                 index++;
             }
@@ -422,7 +422,7 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
             this.yAxes[i].axis!.draw(gy);
         }
         assert(this.summary != null);
-        this.summary.set("points", this.rowCount);
+        this.summary.set("points", this.meta.rowCount);
         this.summary.display();
     }
 }

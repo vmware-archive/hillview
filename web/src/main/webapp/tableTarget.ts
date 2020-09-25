@@ -52,12 +52,11 @@ import {
     StringColumnFilterDescription,
     StringColumnsFilterDescription,
     StringFilterDescription,
-    TableSummary,
     TopList,
     CreateIntervalColumnMapInfo,
     HeatmapRequestInfo,
     RowValue,
-    MapAndColumnRepresentation, FilterListDescription
+    MapAndColumnRepresentation, FilterListDescription, TableMetadata
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
 import {FullPage, PageTitle} from "./ui/fullPage";
@@ -74,7 +73,7 @@ import {
 import {IDataView} from "./ui/dataview";
 import {SchemaClass} from "./schemaClass";
 import {PlottingSurface} from "./ui/plottingSurface";
-import {CommonArgs} from "./ui/receiver";
+import {CommonArgs, TableMeta} from "./ui/receiver";
 import {SubMenu, TopMenuItem} from "./ui/menu";
 
 /**
@@ -259,8 +258,8 @@ export class TableTargetAPI extends RemoteObject {
         return this.createStreamingRpcRequest<NextKList>("getNextK", nextKArgs);
     }
 
-    public createGetSummaryRequest(): RpcRequest<TableSummary> {
-        return this.createStreamingRpcRequest<TableSummary>("getSummary", null);
+    public createGetMetadataRequest(): RpcRequest<TableMetadata> {
+        return this.createStreamingRpcRequest<TableMetadata>("getMetadata", null);
     }
 
     public createGeoRequest(column: IColumnDescription): RpcRequest<MapAndColumnRepresentation> {
@@ -507,27 +506,25 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
     public readonly dataset: DatasetView;
     protected chartDiv: HTMLDivElement | null;
     protected summaryDiv: HTMLDivElement | null;
-    // This may not exist.
     protected legendDiv: HTMLDivElement | null;
     protected summary: SummaryMessage | null;
 
     /**
      * Create a view for a big table.
      * @param remoteObjectId   Id of remote table on the web server.
-     * @param schema           Schema of the current view (usually a subset of the schema of the
-     *                         big table).
-     * @param rowCount         Total number of rows in the big table.
+     * @param meta             Table metadata.
      * @param page             Page where the view is displayed.
      * @param viewKind         Kind of view displayed.
      */
     protected constructor(
         remoteObjectId: RemoteObjectId,
-        public rowCount: number,
-        public schema: SchemaClass,
+        public meta: TableMeta,
         public page: FullPage,
         public readonly viewKind: ViewKind) {
         super(remoteObjectId);
+        this.topLevel = document.createElement("div");
         this.setPage(page);
+        page.setDataView(this);
         this.dataset = page.dataset!;
         this.chartDiv = null;
         this.summaryDiv = null;
@@ -540,6 +537,10 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
         this.topLevel.appendChild(div);
         div.className = cls;
         return div;
+    }
+
+    public getSchema(): SchemaClass {
+        return this.meta.schema;
     }
 
     protected createDiv(b: CommonPlots): void {
@@ -588,13 +589,14 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
             title: this.page.title.format,
             provenance: this.page.title.provenance,
             remoteObjectId: this.remoteObjectId,
-            rowCount: this.rowCount,
-            schema: this.schema.serialize(),
+            rowCount: this.meta.rowCount,
+            schema: this.meta.schema.serialize(),
+            geoMetadata: this.meta.geoMetadata
         };
     }
 
     protected standardSummary(): void {
-        this.summary!.set("row count", this.rowCount, this.isPrivate());
+        this.summary!.set("row count", this.meta.rowCount, this.isPrivate());
     }
 
     /**
@@ -604,7 +606,7 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
     public static validateSerialization(ser: IViewSerialization): CommonArgs | null {
         if (ser.schema == null || ser.rowCount == null || ser.remoteObjectId == null ||
             ser.provenance == null || ser.title == null || ser.viewKind == null ||
-            ser.pageId == null)
+            ser.pageId == null || ser.geoMetadata == null)
             return null;
         const schema = new SchemaClass([]).deserialize(ser.schema);
         if (schema == null)
@@ -613,7 +615,8 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
             title: new PageTitle(ser.title, ser.provenance),
             remoteObject: new TableTargetAPI(ser.remoteObjectId),
             rowCount: ser.rowCount,
-            schema: schema
+            schema: schema,
+            geoMetadata: ser.geoMetadata
         };
     }
 

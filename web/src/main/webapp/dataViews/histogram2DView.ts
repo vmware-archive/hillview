@@ -23,7 +23,7 @@ import {
     RemoteObjectId, kindIsNumeric, Groups, RangeFilterArrayDescription,
 } from "../javaBridge";
 import {Receiver, RpcRequest} from "../rpc";
-import {DisplayName, SchemaClass} from "../schemaClass";
+import {DisplayName} from "../schemaClass";
 import {BaseReceiver, TableTargetAPI} from "../modules";
 import {CDFPlot} from "../ui/cdfPlot";
 import {IDataView} from "../ui/dataview";
@@ -37,7 +37,7 @@ import {ChartOptions, DragEventKind, Resolution} from "../ui/ui";
 import {
     add, assert, assertNever,
     Converters, Exporter, Heatmap,
-    ICancellable,
+    ICancellable, optionToBoolean,
     Pair,
     PartialResult,
     percentString,
@@ -50,6 +50,7 @@ import {NewTargetReceiver, DataRangesReceiver} from "./dataRangesReceiver";
 import {Histogram2DBarsPlot} from "../ui/histogram2DBarsPlot";
 import {Histogram2DBase} from "../ui/histogram2DBase";
 import {Dialog, FieldKind, saveAs} from "../ui/dialog";
+import {TableMeta} from "../ui/receiver";
 
 /**
  * This class is responsible for rendering a 2D histogram.
@@ -67,9 +68,8 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
     protected viewMenu: SubMenu;
     protected readonly defaultProvenance = "From 2D histogram";
 
-    constructor(remoteObjectId: RemoteObjectId, rowCount: number,
-                schema: SchemaClass, protected samplingRate: number, page: FullPage) {
-        super(remoteObjectId, rowCount, schema, page, "2DHistogram");
+    constructor(remoteObjectId: RemoteObjectId, meta: TableMeta, protected samplingRate: number, page: FullPage) {
+        super(remoteObjectId, meta, page, "2DHistogram");
 
         this.viewMenu = new SubMenu([{
             text: "refresh",
@@ -143,7 +143,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
 
     private showQuartiles(): void {
        const qhr = new DataRangesReceiver(this, this.page, null,
-            this.schema, [this.xPoints],
+            this.meta, [this.xPoints],
             [this.xAxisData.description, this.yAxisData.description],
             null, this.defaultProvenance, {
                reusePage: false, chartKind: "QuartileVector"
@@ -189,7 +189,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
                 const range = {
                     min: 0,
                     max: this.plot.maxYAxis != null ? this.plot.maxYAxis : this.plot.max,
-                    presentCount: this.rowCount - missing,
+                    presentCount: this.meta.rowCount - missing,
                     missingCount: missing
                 };
                 return new AxisData({ kind: "None", name: "" }, range, this.yAxisData.bucketCount);
@@ -220,13 +220,13 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
         // Must setup legend before drawing the data to have the colormap
         const missingShown = this.histograms().perBucket.map(b => b.perMissing).reduce(add);
         if (!keepColorMap)
-            this.legendPlot.setData(this.yAxisData, missingShown > 0, this.schema);
+            this.legendPlot.setData(this.yAxisData, missingShown > 0, this.getSchema());
         this.legendPlot.draw();
 
         const heatmap: Pair<Groups<Groups<number>>, Groups<Groups<number>> | null> =
             {first: this.histograms(), second: null};
         this.plot.setData(heatmap, this.xAxisData, this.samplingRate, this.relative,
-            this.schema, this.legendPlot.colorMap, maxYAxis, this.rowCount);
+            this.meta.schema, this.legendPlot.colorMap, maxYAxis, this.meta.rowCount);
         this.plot.draw();
         const discrete = kindIsString(this.xAxisData.description.kind) ||
             this.xAxisData.description.kind === "Integer";
@@ -245,11 +245,11 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
 
         let pointFields;
         if (this.stacked) {
-            pointFields = [this.xAxisData.getDisplayNameString(this.schema)!,
-                this.yAxisData.getDisplayNameString(this.schema)!,
+            pointFields = [this.xAxisData.getDisplayNameString(this.getSchema())!,
+                this.yAxisData.getDisplayNameString(this.getSchema())!,
                 "bucket", "y", "count", "%", "cdf"];
         } else {
-            pointFields = ["bucket", this.yAxisData.getDisplayNameString(this.schema)!, "y", "count"];
+            pointFields = ["bucket", this.yAxisData.getDisplayNameString(this.getSchema())!, "y", "count"];
         }
 
         assert(this.surface != null);
@@ -271,6 +271,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
             ...super.serialize(),
             samplingRate: this.samplingRate,
             relative: this.relative,
+            stacked: this.stacked,
             columnDescription0: this.xAxisData.description,
             columnDescription1: this.yAxisData.description,
             xBucketCount: this.xPoints,
@@ -283,26 +284,26 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
 
     public static reconstruct(ser: Histogram2DSerialization, page: FullPage): IDataView | null {
         const samplingRate: number = ser.samplingRate;
-        const relative: boolean = ser.relative;
         const cd0: IColumnDescription = ser.columnDescription0;
         const cd1: IColumnDescription = ser.columnDescription1;
         const xPoints: number = ser.xBucketCount;
         const yPoints: number = ser.yBucketCount;
-        const schema = new SchemaClass([]).deserialize(ser.schema);
-        if (cd0 === null || cd1 === null || samplingRate === null || schema === null ||
-            xPoints === null || yPoints === null || ser.xRange === null || ser.yRange === null)
+        const args = this.validateSerialization(ser);
+        if (args == null || cd0 == null || cd1 == null || samplingRate == null ||
+            xPoints == null || yPoints == null || ser.xRange == null || ser.yRange == null || ser.stacked == null)
             return null;
 
-        const hv = new Histogram2DView(ser.remoteObjectId, ser.rowCount, schema, samplingRate, page);
+        const hv = new Histogram2DView(ser.remoteObjectId, args, samplingRate, page);
         hv.setAxes(new AxisData(cd0, ser.xRange, ser.xBucketCount),
-            new AxisData(cd1, ser.yRange, ser.yBucketCount), relative);
+            new AxisData(cd1, ser.yRange, ser.yBucketCount), ser.relative, ser.stacked);
         hv.xPoints = xPoints;
         hv.yPoints = yPoints;
         return hv;
     }
 
-    public setAxes(xAxisData: AxisData, yAxisData: AxisData, relative: boolean): void {
+    public setAxes(xAxisData: AxisData, yAxisData: AxisData, relative: boolean, stacked: boolean): void {
         this.relative = relative;
+        this.stacked = stacked;
         this.xAxisData = xAxisData;
         this.yAxisData = yAxisData;
         this.viewMenu.enable("quartiles", kindIsNumeric(this.yAxisData.description.kind));
@@ -313,19 +314,19 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
     }
 
     public trellis(): void {
-        const columns: DisplayName[] = this.schema.displayNamesExcluding(
+        const columns: DisplayName[] = this.getSchema().displayNamesExcluding(
             [this.xAxisData.description.name, this.yAxisData.description.name]);
         this.chooseTrellis(columns);
     }
 
     protected showTrellis(colName: DisplayName): void {
-        const groupBy = this.schema.findByDisplayName(colName)!;
+        const groupBy = this.getSchema().findByDisplayName(colName)!;
         const cds: IColumnDescription[] = [
             this.xAxisData.description,
             this.yAxisData.description,
             groupBy];
         const rr = this.createDataQuantilesRequest(cds, this.page, "Trellis2DHistogram");
-        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.meta,
             [0, 0, 0], cds, null, this.defaultProvenance,{
             reusePage: false, relative: this.relative,
             chartKind: "Trellis2DHistogram", exact: this.samplingRate >= 1.0
@@ -359,7 +360,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
     public doHeatmap(): void {
         const cds = [this.xAxisData.description, this.yAxisData.description];
         const rr = this.createDataQuantilesRequest(cds, this.page, "Heatmap");
-        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.meta,
             [0, 0], cds, null, this.defaultProvenance, {
             reusePage: false,
             chartKind: "Heatmap",
@@ -369,7 +370,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
 
     public export(): void {
         const lines: string[] =
-            Exporter.histogram2DAsCsv(this.histograms(), this.schema, [this.xAxisData, this.yAxisData]);
+            Exporter.histogram2DAsCsv(this.histograms(), this.getSchema(), [this.xAxisData, this.yAxisData]);
         const fileName = "histogram2d.csv";
         saveAs(fileName, lines.join("\n"));
     }
@@ -378,7 +379,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
         (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
         return (page: FullPage, operation: ICancellable<RemoteObjectId>) => {
             return new NewTargetReceiver(title, [this.xAxisData.description, this.yAxisData.description],
-                this.schema, [0, 0], page, operation, this.dataset, {
+                this.meta, [0, 0], page, operation, this.dataset, {
                 exact: this.samplingRate >= 1, chartKind: "2DHistogram",
                 relative: this.relative, reusePage: false
             });
@@ -390,7 +391,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
             return;
         const cds = [this.yAxisData.description, this.xAxisData.description];
         const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
-        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.meta,
             [0, 0], cds, null, "swapped axes", {
             reusePage: true, relative: this.relative,
             chartKind: "2DHistogram", exact: this.samplingRate >= 1.0
@@ -402,7 +403,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
             return;
         const cds = [this.xAxisData.description, this.yAxisData.description];
         const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
-        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.meta,
             [this.xPoints, this.yPoints], cds, this.page.title,
             "requested exact computation", {
             reusePage: true,
@@ -417,7 +418,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
             return;
         const cds = [this.xAxisData.description, this.yAxisData.description];
         const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
-        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.schema,
+        rr.invoke(new DataRangesReceiver(this, this.page, rr, this.meta,
             [xBuckets, yBuckets], cds, null, "changed buckets", {
             reusePage: true,
             relative: this.relative,
@@ -435,15 +436,15 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
             return;
 
         if (eventKind === "XAxis") {
-            const collector = new DataRangesReceiver(this,
-                this.page, null, this.schema, [0, 0],  // any number of buckets
+            const receiver = new DataRangesReceiver(this,
+                this.page, null, this.meta, [0, 0],  // any number of buckets
                 [this.xAxisData.description, this.yAxisData.description], this.page.title,
                     Converters.eventToString(pageId, eventKind), {
                     chartKind: "2DHistogram", exact: this.samplingRate >= 1,
                     relative: this.relative, reusePage: true,
                 });
-            collector.run([sourceRange, this.yAxisData.dataRange]);
-            collector.finished();
+            receiver.run([sourceRange, this.yAxisData.dataRange]);
+            receiver.finished();
         } else if (eventKind === "YAxis") {
             this.relative = false; // We cannot drag a relative Y axis.
             this.updateView(this.data, sourceRange.max!, true);
@@ -488,14 +489,14 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
     public refresh(): void {
         const cds = [this.xAxisData.description, this.yAxisData.description];
         const ranges = [this.xAxisData.dataRange, this.yAxisData.dataRange];
-        const collector = new DataRangesReceiver(this,
-            this.page, null, this.schema, [this.xAxisData.bucketCount, this.yAxisData.bucketCount],
+        const receiver = new DataRangesReceiver(this,
+            this.page, null, this.meta, [this.xAxisData.bucketCount, this.yAxisData.bucketCount],
             cds, this.page.title, null,{
                 chartKind: "2DHistogram", exact: this.samplingRate >= 1,
-                relative: this.relative, reusePage: true
+                relative: this.relative, reusePage: true, stacked: this.stacked
             });
-        collector.run(ranges);
-        collector.finished();
+        receiver.run(ranges);
+        receiver.finished();
     }
 
     public onMouseEnter(): void {
@@ -670,12 +671,13 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
         const rr = this.createFilterRequest(fa);
         const renderer = new NewTargetReceiver(
             new PageTitle(this.page.title.format, Converters.filterArrayDescription(fa)),
-            [this.xAxisData.description, this.yAxisData.description], this.schema,
+            [this.xAxisData.description, this.yAxisData.description], this.meta,
             [inLegend ? this.xPoints : 0, this.yPoints], this.page, rr, this.dataset, {
             exact: this.samplingRate >= 1.0,
             chartKind: "2DHistogram",
             reusePage: false,
-            relative: this.relative
+            relative: this.relative,
+            stacked: this.stacked
         });
         rr.invoke(renderer);
     }
@@ -691,16 +693,15 @@ export class Histogram2DReceiver extends Receiver<Pair<Groups<Groups<number>>, G
     constructor(title: PageTitle,
                 page: FullPage,
                 protected remoteObject: TableTargetAPI,
-                protected rowCount: number,
-                protected schema: SchemaClass,
+                protected meta: TableMeta,
                 protected axes: AxisData[],
                 protected samplingRate: number,
                 operation: RpcRequest<Pair<Groups<Groups<number>>, Groups<number>>>,
                 protected options: ChartOptions) {
         super(options.reusePage ? page : page.dataset!.newPage(title, page), operation, "histogram");
         this.view = new Histogram2DView(
-            this.remoteObject.remoteObjectId, rowCount, schema, samplingRate, this.page);
-        this.view.setAxes(axes[0], axes[1], options.relative != null ? options.relative : false);
+            this.remoteObject.remoteObjectId, meta, samplingRate, this.page);
+        this.view.setAxes(axes[0], axes[1], optionToBoolean(options.relative), optionToBoolean(options.stacked));
     }
 
     public onNext(value: PartialResult<Pair<Groups<Groups<number>>, Groups<number>>>): void {

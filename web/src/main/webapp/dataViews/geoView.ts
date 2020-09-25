@@ -26,8 +26,8 @@ import {ChartView} from "./chartView";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {assert, Converters, Exporter, ICancellable, PartialResult, significantDigits} from "../util";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
-import {DisplayName, SchemaClass} from "../schemaClass";
-import {CommonArgs, OnCompleteReceiverCommon, ReceiverCommonArgs} from "../ui/receiver";
+import {DisplayName} from "../schemaClass";
+import {CommonArgs, TableMeta, OnCompleteReceiverCommon, ReceiverCommonArgs} from "../ui/receiver";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {IDataView} from "../ui/dataview";
 import {IViewSerialization, MapSerialization} from "../datasetView";
@@ -54,7 +54,7 @@ export class GeoView extends ChartView<NextKList> {
     protected yShift: number = 0;
 
     constructor(args: CommonArgs, protected readonly keyColumn: IColumnDescription, page: FullPage) {
-        super(args.remoteObject.remoteObjectId, args.rowCount, args.schema, page, "Map");
+        super(args.remoteObject.remoteObjectId, args, page, "Map");
         const zoomIncrement = 1.3;
         this.viewMenu = new SubMenu([{
                 text: "refresh",
@@ -128,7 +128,7 @@ export class GeoView extends ChartView<NextKList> {
     protected export(): void {
         const order = new RecordOrder([
             { columnDescription: this.keyColumn, isAscending: true}]);
-        const lines = Exporter.tableAsCsv(order, this.schema, null, this.data);
+        const lines = Exporter.tableAsCsv(order, this.meta.schema, null, this.data);
         const fileName = "map.csv";
         saveAs(fileName, lines.join("\n"));
     }
@@ -156,13 +156,12 @@ export class GeoView extends ChartView<NextKList> {
     refresh(): void {
         const rr = this.createGeoRequest(this.keyColumn);
         const args: ReceiverCommonArgs = {
-            title: new PageTitle("Count of " + this.schema.displayName(this.keyColumn.name)!.displayName,
+            title: new PageTitle("Count of " + this.meta.schema.displayName(this.keyColumn.name)!.displayName,
                 this.defaultProvenance),
             remoteObject: this,
-            rowCount: this.rowCount,
-            schema: this.schema,
             originalPage: this.page,
-            options: { chartKind: "Map", reusePage: false }
+            options: { chartKind: "Map", reusePage: false },
+            ...this.meta,
         };
         const rec = new GeoMapReceiver(args, this.keyColumn, rr, this);
         rr.invoke(rec);
@@ -209,7 +208,7 @@ export class GeoView extends ChartView<NextKList> {
             keep
         }
         const rr = this.createFilterListRequest(filter);
-        rr.invoke(new FilterMapReceiver(this.page, this.keyColumn, this.schema, rr));
+        rr.invoke(new FilterMapReceiver(this.page, this.keyColumn, this.meta, rr));
     }
 
     public setMap(mapData: MapAndColumnRepresentation, keepColorMap: boolean): void {
@@ -339,7 +338,7 @@ export class GeoDataReceiver extends Receiver<NextKList> {
 export class FilterMapReceiver extends BaseReceiver {
     constructor(page: FullPage,
                 protected keyColumn: IColumnDescription,
-                protected schema: SchemaClass,
+                protected meta: TableMeta,
                 operation: ICancellable<RemoteObjectId>) {
         super(page, operation, "Filter", page.dataset);
     }
@@ -351,8 +350,7 @@ export class FilterMapReceiver extends BaseReceiver {
         const args: ReceiverCommonArgs = {
             title: this.page.title,
             remoteObject: remoteObject,
-            rowCount: 0,  // TODO: Do we need this?
-            schema: this.schema,
+            ...this.meta,
             originalPage: this.page,
             options: { chartKind: "Map", reusePage: false }
         };
