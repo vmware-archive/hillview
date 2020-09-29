@@ -57,7 +57,7 @@ def main():
                         "  (if relative it is with respect to config.service_folder)")
     parser.add_argument("-L", "--symlinks", help="Follow symlinks instead of ignoring them",
                         action="store_true")
-    parser.add_argument("--common", "-s", help="File that is loaded to all machines")
+    parser.add_argument("--common", "-s", help="File that is loaded to all machines", action="append")
     parser.add_argument("files", help="Files to copy", nargs=REMAINDER)
     args = parser.parse_args()
     config = get_config(parser, args)
@@ -74,8 +74,8 @@ def main():
         folder = os.path.join(config.service_folder, folder)
         message = "Folder is relative, using " + folder
         logger.info(message)
-    if args.common is not None:
-        copy_everywhere(config, args.common, folder, copyOptions)
+    for c in args.common:
+        copy_everywhere(config, c, folder, copyOptions)
     if args.files:
         copy_files(config, folder, args.files, copyOptions)
     else:

@@ -16,14 +16,25 @@
 # limitations under the License.
 #
 # This script is used when connecting to a Greenplum database
-# to dump data in an external web table.  See
+# to load data from an external web table.  See
 # https://gpdb.docs.pivotal.io/6-10/admin_guide/load/topics/g-defining-a-command-based-writable-external-web-table.html
 # and https://gpdb.docs.pivotal.io/6-10/ref_guide/sql_commands/CREATE_EXTERNAL_TABLE.html
-# The script receives data at stdin
 
-# Single argument is the directory where the data is to be dumped
+# Single argument is the directory where the data to load is located
+# This script is invoked by each segment in a segment host
 DIR=$1
-PREFIX="file"
-mkdir -p ${DIR} || exit 1
-#cat </dev/stdin >${DIR}/${PREFIX}${GP_SEGMENT_ID}
-split -l 500000 -a 3 - ${DIR}/${PREFIX}${GP_SEGMENT_ID} </dev/stdin
+REGEX=".*file([0-9]+).*"
+for file in ${DIR}/*.db; do
+   if [[ ${file} =~ ${REGEX} ]]; then
+      NUMBER=${BASH_REMATCH[1]}
+      # Only allocate some files to each segment
+      SEGMENT=$(( ${NUMBER} % ${GP_SEGMENT_COUNT} ))
+      if [[ "${GP_SEGMENT_ID}" == "${SEGMENT}" ]]; then
+          cat ${file}
+          rm ${file}
+      fi
+   else
+       echo "Unexpected file name"
+       exit 1
+   fi
+done

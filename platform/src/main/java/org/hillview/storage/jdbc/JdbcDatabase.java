@@ -52,6 +52,7 @@ public class JdbcDatabase {
     }
 
     public void connect() throws SQLException {
+        this.disconnect();
         String url = this.conn.getURL();
         HillviewLogger.instance.info("Database server url", "{0}", url);
         if (Utilities.isNullOrEmpty(this.conn.info.password)) {
@@ -115,6 +116,22 @@ public class JdbcDatabase {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static String schemaToSQL(@Nullable Iterable<String> columns, Schema schema) {
+        StringBuilder cols = new StringBuilder();
+        boolean first = true;
+        if (columns == null)
+            columns = schema.getColumnNames();
+        for (String c: columns) {
+            if (!first)
+                cols.append(", ");
+            first = false;
+            ColumnDescription desc = schema.getDescription(c);
+            String type = JdbcDatabase.sqlType(desc.kind);
+            cols.append(c).append(" ").append(type);
+        }
+        return cols.toString();
     }
 
     public Schema getSchema() {

@@ -83,6 +83,13 @@ export class GenericLogs {
     ];
 }
 
+export interface SaveAsArgs {
+    fileKind: DataKinds;
+    folder: string;
+    schema: Schema | null;
+    renameMap: string[] | null;
+}
+
 // Describes the configuration of the UI for a specific installation of Hillview
 // The default values should all be 'false'
 export interface UIConfig {
@@ -119,6 +126,8 @@ export class JsonString {
     public toJSON(): string { return this.value; }
 }
 
+export interface Empty {}
+
 export interface TableSummary {
     schema: Schema;
     rowCount: number;
@@ -147,6 +156,12 @@ export interface FindResult {
     at: number;
     after: number;
     firstMatchingRow: RowValue[];
+}
+
+export interface LoadedTable {
+    schema: Schema;
+    tempTableName: string;
+    table: string;
 }
 
 export interface JdbcConnectionInformation {

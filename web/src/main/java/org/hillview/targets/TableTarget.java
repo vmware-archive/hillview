@@ -38,6 +38,7 @@ import org.jblas.DoubleMatrix;
 import javax.annotation.Nullable;
 import javax.websocket.Session;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.List;
 
 /**
@@ -187,6 +188,10 @@ public class TableTarget extends TableRpcTarget {
     @HillviewRpc
     public void saveAs(RpcRequest request, RpcRequestContext context) {
         SaveAsArgs args = request.parseArgs(SaveAsArgs.class);
+        if (args.fileKind.equals("db")) {
+            // TODO: currently this is hardwired for greenplum
+            args.folder = Paths.get(Configuration.instance.getGreenplumDumpDirectory(), args.folder).toString();
+        }
         SaveAsFileSketch sk = new SaveAsFileSketch(
                 args.fileKind, args.folder, args.schema,
                 Utilities.arrayToMap(args.renameMap), true);

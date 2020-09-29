@@ -17,8 +17,8 @@
 
 package org.hillview.sketches;
 
-import org.hillview.dataset.api.TableSketch;
 import org.hillview.dataset.api.Empty;
+import org.hillview.dataset.api.TableSketch;
 import org.hillview.storage.CsvFileWriter;
 import org.hillview.storage.ITableWriter;
 import org.hillview.storage.OrcFileWriter;
@@ -41,7 +41,6 @@ import java.util.HashMap;
  * This sketch saves a table into a set of files in the specified folder.
  * TODO: Today the save can succeed on some machines, and fail on others.
  * There is no cleanup if that happens.
- * This does not return anything really.
  * If the saving fails this will trigger an exception.
  */
 public class SaveAsFileSketch implements TableSketch<Empty> {
@@ -103,6 +102,9 @@ public class SaveAsFileSketch implements TableSketch<Empty> {
                 case "orc":
                     writer = new OrcFileWriter(path);
                     break;
+                case "db":
+                    writer = new CsvFileWriter(path).setWriteHeaderRow(false);
+                    break;
                 case "csv":
                     writer = new CsvFileWriter(path);
                     break;
@@ -123,7 +125,7 @@ public class SaveAsFileSketch implements TableSketch<Empty> {
                 // many times.
                 Files.move(schemaPath, finalSchemaPath, StandardCopyOption.ATOMIC_MOVE);
             }
-            return Empty.getInstance();
+            return this.zero();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

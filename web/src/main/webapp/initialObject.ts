@@ -223,11 +223,16 @@ class GreenplumSchemaReceiver extends OnCompleteReceiver<TableMetadata> {
             this.page.reportError("No schema received; empty dataset?");
             return;
         }
+        if (ts.rowCount == 0) {
+            this.page.reportError("Table has 0 rows");
+            return;
+        }
+
         // Ask Greenplum to dump the data; receive back the name of the temporary files
         // where the tables are stored on the remote machines.
         // This is the name of the temporary table used.
         const tableName = "T" + getUUID().replace(/-/g, '');
-        const rr = this.remoteObject.createStreamingRpcRequest<string>("initializeTable", tableName);
+        const rr = this.remoteObject.createStreamingRpcRequest<string>("dumpGreenplumTable", tableName);
         rr.chain(this.operation);
         rr.invoke(new GreenplumLoader(this.page, ts, this.initialObject, this.jdbc, rr));
     }
@@ -339,6 +344,10 @@ export class InitialObject extends RemoteObject {
             db: FederatedDatabase | null, loadMenuPage: FullPage): void {
         if (db == null || conn == null) {
             loadMenuPage.reportError("Unknown database kind");
+            return;
+        }
+        if (conn.table == "" || conn.database == "") {
+            loadMenuPage.reportError("You need to specify a database and a table");
             return;
         }
         switch (db) {

@@ -86,7 +86,7 @@ public class OrcFileWriter implements ITableWriter {
             // https://stackoverflow.com/questions/17265002/hadoop-no-filesystem-for-scheme-file
             conf.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
             conf.set("fs.file.impl", org.apache.hadoop.fs.LocalFileSystem.class.getName());
-            
+
             TypeDescription schema = getSchema(table.getSchema());
             Writer writer = OrcFile.createWriter(new Path(this.path),
                     OrcFile.writerOptions(conf).setSchema(schema));

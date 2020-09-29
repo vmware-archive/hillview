@@ -60,6 +60,12 @@ public class Configuration {
                 "greenplumDumpScript", "/home/gpadmin/hillview/dump-greenplum.sh");
     }
 
+    public String getGreenplumLoadScript() {
+        return this.getProperty(
+                // The load-greenplum.sh script will enumerate the data in the specified directory
+                "greenplumLoadScript", "/home/gpadmin/hillview/load-greenplum.sh");
+    }
+
     public String getGreenplumDumpDirectory() {
         return this.getProperty("greenplumDumpDirectory", "/tmp");
     }
