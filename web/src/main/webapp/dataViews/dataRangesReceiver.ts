@@ -577,13 +577,17 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 break;
             }
             case "2DHistogram": {
+                const stacked = optionToBoolean(this.options.stacked);
                 let maxXBucketCount = this.bucketCounts[0];
                 if (maxXBucketCount === 0) {
                     maxXBucketCount = Math.floor(chartSize.width / Resolution.minBarWidth);
                 }
                 let maxYBucketCount = this.bucketCounts[1];
                 if (maxYBucketCount === 0) {
-                    maxYBucketCount = Resolution.max2DBucketCount;
+                    if (stacked)
+                        maxYBucketCount = Resolution.max2DBucketCount;
+                    else
+                        maxYBucketCount = Math.floor(chartSize.width / maxXBucketCount / 2);
                 }
 
                 // The first two represent the resolution for the 2D histogram

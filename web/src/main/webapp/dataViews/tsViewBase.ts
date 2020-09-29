@@ -264,7 +264,7 @@ export abstract class TSViewBase extends BigTableView {
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.meta,
             buckets, cds, null, this.defaultProvenance, {
             reusePage: false, relative: false,
-            chartKind: chartKind, exact: exact
+            chartKind: chartKind, exact: exact, stacked: true
         }));
     }
 
