@@ -262,6 +262,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
         this.summary.set("colors", this.yPoints);
         if (this.samplingRate < 1.0)
             this.summary.set("sampling rate", this.samplingRate);
+        this.addTimeSummary();
         this.summary.display();
     }
 
@@ -381,7 +382,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
             return new NewTargetReceiver(title, [this.xAxisData.description, this.yAxisData.description],
                 this.meta, [0, 0], page, operation, this.dataset, {
                 exact: this.samplingRate >= 1, chartKind: "2DHistogram",
-                relative: this.relative, reusePage: false
+                relative: this.relative, reusePage: false, stacked: this.stacked
             });
         };
     }
@@ -394,7 +395,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.meta,
             [0, 0], cds, null, "swapped axes", {
             reusePage: true, relative: this.relative,
-            chartKind: "2DHistogram", exact: this.samplingRate >= 1.0
+            chartKind: "2DHistogram", exact: this.samplingRate >= 1.0, stacked: this.stacked
         }));
     }
 
@@ -409,7 +410,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
             reusePage: true,
             relative: this.relative,
             chartKind: "2DHistogram",
-            exact: true
+            exact: true, stacked: this.stacked
         }));
     }
 
@@ -423,7 +424,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
             reusePage: true,
             relative: this.relative,
             chartKind: "2DHistogram",
-            exact: true
+            exact: true, stacked: this.stacked
         }));
     }
 
@@ -441,7 +442,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
                 [this.xAxisData.description, this.yAxisData.description], this.page.title,
                     Converters.eventToString(pageId, eventKind), {
                     chartKind: "2DHistogram", exact: this.samplingRate >= 1,
-                    relative: this.relative, reusePage: true,
+                    relative: this.relative, reusePage: true, stacked: this.stacked
                 });
             receiver.run([sourceRange, this.yAxisData.dataRange]);
             receiver.finished();
@@ -524,7 +525,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
         const xs = this.xAxisData.invert(position[0]);
         // Use the plot scale, not the yData to invert.  That's the
         // one which is used to draw the axis.
-        const y = Math.round(this.plot.getYScale().invert(mouseY));
+        const y = this.plot.getYScale().invert(mouseY);
         let ys = significantDigits(y);
         if (this.relative)
             ys += "%";

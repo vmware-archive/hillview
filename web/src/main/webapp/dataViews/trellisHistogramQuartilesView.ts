@@ -221,7 +221,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
         if (groupCount === 1) {
             const cds = [this.xAxisData.description,
                 this.qCol];
-            const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
+            const rr = this.createDataQuantilesRequest(cds, this.page, "QuartileVector");
             rr.invoke(new DataRangesReceiver(this, this.page, rr, this.meta,
                 [0, 0],
                 cds, null, "change groups",{

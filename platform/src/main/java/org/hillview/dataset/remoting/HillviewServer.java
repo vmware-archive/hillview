@@ -65,6 +65,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
             ExecutorUtils.newNamedThreadPool("server", NUM_THREADS, Thread.MAX_PRIORITY);
     private static final int EXPIRE_TIME_IN_HOURS = 2;
     private boolean MEMOIZE = true;
+    private static final boolean logSubscription = false;  // if true we log subscription operations
 
     // Using PollSelectorProvider() to avoid epoll CPU utilization problems.
     // See: https://github.com/netty/netty/issues/327
@@ -158,7 +159,8 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
      */
     synchronized private boolean saveSubscription(
             UUID id, Subscription subscription, String reason) {
-        HillviewLogger.instance.info("Saving subscription", "{0}:{1}", reason, id);
+        if (logSubscription)
+            HillviewLogger.instance.info("Saving subscription", "{0}:{1}", reason, id);
         Boolean unsub = this.toUnsubscribe.getIfPresent(id);
         this.operationToObservable.put(id, subscription);
         if (unsub == null) {
@@ -174,7 +176,8 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
 
     @Nullable
     synchronized private Subscription removeSubscription(UUID id, String reason) {
-        HillviewLogger.instance.info("Removing subscription", "{0}:{1}", reason, id);
+        if (logSubscription)
+            HillviewLogger.instance.info("Removing subscription", "{0}:{1}", reason, id);
         Boolean b = this.toUnsubscribe.getIfPresent(id);
         if (b != null)
             this.toUnsubscribe.invalidate(id);
@@ -440,7 +443,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
 
                 @Override
                 public void onNext(final PartialResult<?> pr) {
-                    HillviewLogger.instance.info("Partial sketch result");
+                    HillviewLogger.instance.info("Partial sketch result", "{0]", pr);
                     queue = queue.thenRunAsync(() -> {
                         try {
                             if (memoize && this.sketchResultAccumulator != null)
@@ -618,14 +621,16 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
         try {
             final byte[] bytes = command.getSerializedOp().toByteArray();
             final UnsubscribeOperation unsubscribeOp = SerializationUtils.deserialize(bytes);
-            HillviewLogger.instance.info("Unsubscribing", "{0}", unsubscribeOp.id);
+            if (logSubscription)
+                HillviewLogger.instance.info("Unsubscribing", "{0}", unsubscribeOp.id);
             @Nullable
             final Subscription subscription = this.removeSubscription(unsubscribeOp.id,
                     "unsubscribe request");
             if (subscription != null) {
                 subscription.unsubscribe();
             } else {
-                HillviewLogger.instance.info("Could not find subscription", "{0}", unsubscribeOp.id);
+                if (logSubscription)
+                    HillviewLogger.instance.info("Could not find subscription", "{0}", unsubscribeOp.id);
                 this.toUnsubscribe.put(unsubscribeOp.id, true);
             }
         } catch (final Exception e) {

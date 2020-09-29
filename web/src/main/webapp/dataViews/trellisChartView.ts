@@ -99,18 +99,21 @@ export abstract class TrellisChartView<D> extends ChartView<D> {
                 const xCorner = this.surface.leftMargin + x * this.shape.size.width;
                 const shortTitle = this.groupByAxisData.bucketDescription(created, this.shape.size.width / 10);
                 const title = this.groupByAxisData.bucketDescription(created, 0);
+                const plotIndex = created;
                 const canvas = this.surface.getCanvas();
                 const yCorner = y * (this.shape.size.height + this.shape.headerHeight)
                     + this.shape.headerHeight + this.surface.topMargin;
-                canvas.append("text")
-                    .text(shortTitle)
+                const fo = canvas.append("foreignObject")
+                    .attr("x", xCorner)
+                    .attr("y", yCorner - this.shape.headerHeight)
+                    .attr("width", this.shape.size.width)
+                    .attr("height", this.shape.headerHeight);
+                fo.append('xhtml:div')
                     .attr("class", "trellisTitle")
-                    .attr("x", xCorner + this.shape.size.width / 2)
-                    .attr("y", yCorner - (this.shape.headerHeight / 2))
-                    .attr("text-anchor", "middle")
-                    .attr("dominant-baseline", "middle")
-                    .append("title")
-                    .text(title);
+                    .attr("title", this.groupByAxisData.description.name + " is + " + title + "\nClick to select.")
+                    .append("button")
+                    .text(shortTitle)
+                    .on("click", () => this.selectOne(plotIndex));
                 const surface = this.surface.createChildSurface(xCorner, yCorner, {
                     width: this.shape.size.width,
                     height: this.shape.size.height,
@@ -129,6 +132,24 @@ export abstract class TrellisChartView<D> extends ChartView<D> {
                     return;
             }
         }
+    }
+
+    protected selectOne(plotIndex: number): void {
+        const boundaries = this.groupByAxisData.bucketBoundaries(plotIndex);
+        const min = boundaries.getMin();
+        const max = boundaries.getMax();
+        const filters: RangeFilterArrayDescription = {
+            filters: [{
+                min: min.getNumber(),
+                max: max.getNumber(),
+                minString: min.getString(),
+                maxString: max.getString(),
+                cd: this.groupByAxisData.description,
+                includeMissing: plotIndex === this.shape.windowCount - 1
+            }],
+            complement: false,
+        };
+        this.filter(filters);
     }
 
     protected checkMouseBounds(): TrellisMousePosition | null {
@@ -268,6 +289,7 @@ export abstract class TrellisChartView<D> extends ChartView<D> {
     }
 
     protected abstract selectionCompleted(): void;
+    protected abstract filter(filter: RangeFilterArrayDescription): void;
 
     protected dragEnd(): boolean {
         if (this.surface === null || !super.dragEnd())

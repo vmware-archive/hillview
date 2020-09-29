@@ -427,6 +427,17 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
         };
     }
 
+    protected filter(filter: RangeFilterArrayDescription) {
+        const rr = this.createFilterRequest(filter);
+        const title = new PageTitle(this.page.title.format, Converters.filterArrayDescription(filter));
+        const renderer = new NewTargetReceiver(title, [this.xAxisData.description, this.groupByAxisData.description],
+            this.meta, [0, 0], this.page, rr, this.dataset, {
+                chartKind: "TrellisHistogram", relative: false,
+                reusePage: false, exact: this.samplingRate >= 1
+            });
+        rr.invoke(renderer);
+    }
+
     protected selectionCompleted(): void {
         const local = this.selectionIsLocal();
         let filter: RangeFilterArrayDescription | null;
@@ -444,14 +455,7 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
         }
         if (filter == null)
             return;
-        const rr = this.createFilterRequest(filter);
-        const title = new PageTitle(this.page.title.format, Converters.filterArrayDescription(filter));
-        const renderer = new NewTargetReceiver(title, [this.xAxisData.description, this.groupByAxisData.description],
-            this.meta, [0, 0], this.page, rr, this.dataset, {
-            chartKind: "TrellisHistogram", relative: false,
-            reusePage: false, exact: this.samplingRate >= 1
-        });
-        rr.invoke(renderer);
+        this.filter(filter);
     }
 }
 

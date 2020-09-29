@@ -32,7 +32,7 @@ import {
     TrellisShape,
     TrellisLayoutComputation
 } from "./dataRangesReceiver";
-import {Receiver, RpcRequest} from "../rpc";
+import {Receiver} from "../rpc";
 import {
     assert,
     assertNever,
@@ -415,10 +415,20 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
         };
     }
 
+    protected filter(filter: RangeFilterArrayDescription): void {
+        const rr = this.createFilterRequest(filter);
+        const title = new PageTitle(this.page.title.format, Converters.filterArrayDescription(filter));
+        const renderer = new NewTargetReceiver(title,
+            [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description],
+            this.meta, [0, 0, 0], this.page, rr, this.dataset, {
+                chartKind: "TrellisHeatmap", relative: false, reusePage: false,
+                exact: this.samplingRate >= 1
+            });
+        rr.invoke(renderer);
+    }
+
     protected selectionCompleted(): void {
         const local = this.selectionIsLocal();
-        let title: PageTitle;
-        let rr: RpcRequest<RemoteObjectId>;
         if (local != null) {
             const origin = this.canvasToChart(this.selectionOrigin!);
             const left = this.position(origin.x, origin.y);
@@ -432,29 +442,14 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
                 filters: [xRange, yRange],
                 complement: d3event.sourceEvent.ctrlKey
             }
-            rr = this.createFilterRequest(f);
-            title = new PageTitle(this.page.title.format,
-                Converters.filterDescription(xRange) + " and " + Converters.filterDescription(yRange));
-            const renderer = new NewTargetReceiver(title,
-                [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description],
-                this.meta, [0, 0, 0], this.page, rr, this.dataset, {
-                chartKind: "TrellisHeatmap", relative: false, reusePage: false,
-                exact: this.samplingRate >= 1
-            });
-            rr.invoke(renderer);
+            //title = new PageTitle(this.page.title.format,
+            //    Converters.filterDescription(xRange) + " and " + Converters.filterDescription(yRange));
+            this.filter(f);
         } else {
             const filter = this.getGroupBySelectionFilter();
             if (filter == null)
                 return;
-            rr = this.createFilterRequest(filter);
-            title = new PageTitle(this.page.title.format, Converters.filterArrayDescription(filter));
-            const renderer = new NewTargetReceiver(title,
-                [this.xAxisData.description, this.yAxisData.description, this.groupByAxisData.description],
-                this.meta, [0, 0, 0], this.page, rr, this.dataset, {
-                chartKind: "TrellisHeatmap", relative: false, reusePage: false,
-                exact: this.samplingRate >= 1
-            });
-            rr.invoke(renderer);
+            this.filter(filter);
         }
     }
 }

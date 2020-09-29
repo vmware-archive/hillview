@@ -57,4 +57,8 @@ public class ConcurrentSketch<T, R1 extends ISketchResult, R2 extends ISketchRes
         R2 second = this.second.create(data);
         return new Pair<R1, R2>(first, second);
     }
+
+    public String toString() {
+        return "ConcurrentSketch: [" + this.first.toString() + " and " + this.second.toString() + "]";
+    }
 }

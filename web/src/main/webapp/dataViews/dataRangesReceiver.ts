@@ -248,6 +248,8 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 if (cdfCount > range.max! - range.min!)
                     cdfCount = range.max! - range.min! + 1;
                 adjust = .5;
+            } else if (range.max! - range.min! <= 0) {
+                cdfCount = 1;
             }
 
             let samplingRate = 1.0;
@@ -327,6 +329,30 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                     windows = maxWindows;
             }
             trellisShape = this.trellisLayout(windows, ranges[groupByIndex]!.missingCount > 0);
+            if (windows === 1) {
+                // If we have a single window left do not use a Trellis display
+                switch (this.options.chartKind) {
+                    case "TrellisHeatmap":
+                        this.options.chartKind = "Heatmap";
+                        break;
+                    case "TrellisHistogram":
+                        this.options.chartKind = "Histogram";
+                        break;
+                    case "Trellis2DHistogram":
+                        this.options.chartKind = "2DHistogram";
+                        break;
+                    case "TrellisQuartiles":
+                        this.options.chartKind = "QuartileVector";
+                        break;
+                    default:
+                        assert(false);
+                }
+                if (this.title != null) {
+                    this.title = new PageTitle(
+                        this.title.format.replace(/\s+grouped.*/, ""),
+                        this.title.provenance);
+                }
+            }
         }
 
         switch (this.options.chartKind) {

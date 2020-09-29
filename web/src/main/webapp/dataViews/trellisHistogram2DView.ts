@@ -27,7 +27,7 @@ import {
     Converters, Exporter, GroupsClass, Heatmap,
     ICancellable, optionToBoolean, Pair,
     PartialResult,
-    percentString, reorder,
+    percentString, reorder, roughTimeSpan,
     significantDigits
 } from "../util";
 import {AxisData, AxisKind} from "./axisData";
@@ -289,7 +289,7 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
                 [0, 0],
                 cds, null, "change groups",{
                     reusePage: true, relative: this.relative,
-                    chartKind: "2DHistogram", exact: this.samplingRate >= 1
+                    chartKind: "2DHistogram", exact: this.samplingRate >= 1, stacked: true
                 }));
         } else {
             const cds = [this.xAxisData.description,
@@ -441,6 +441,11 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
                 "count" /* TODO:, "cdf" */], 40);
 
         this.standardSummary();
+        if (this.xAxisData.description.kind == "LocalDate" ||
+            this.xAxisData.description.kind == "Date") {
+            const span = roughTimeSpan(this.xAxisData.dataRange.min!, this.xAxisData.dataRange.max!);
+            this.summary!.set("Time range in " + span[1], span[0]);
+        }
         this.summary!.display();
     }
 
@@ -469,8 +474,6 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
     }
 
     protected filter(filter: RangeFilterArrayDescription): void {
-        if (filter == null)
-            return;
         const rr = this.createFilterRequest(filter);
         const title = new PageTitle(this.page.title.format, Converters.filterDescription(filter.filters[0]));
         const renderer = new NewTargetReceiver(title, [this.xAxisData.description, this.legendAxisData.description,
@@ -508,21 +511,22 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
 
     protected selectionCompleted(): void {
         const local = this.selectionIsLocal();
+        let filter: RangeFilterArrayDescription | null;
         if (local != null) {
             const origin = this.canvasToChart(this.selectionOrigin!);
             const left = this.position(origin.x, origin.y)!;
             const end = this.canvasToChart(this.selectionEnd!);
             const right = this.position(end.x, end.y)!;
-            const filter: RangeFilterArrayDescription = {
+            filter = {
                 filters: [this.xAxisData.getFilter(left.x, right.x)],
                 complement: d3event.sourceEvent.ctrlKey,
             };
-            this.filter(filter);
         } else {
-            const filter = this.getGroupBySelectionFilter();
-            if (filter != null)
-                this.filter(filter);
+            filter = this.getGroupBySelectionFilter();
+            if (filter == null)
+                return;
         }
+        this.filter(filter);
     }
 }
 

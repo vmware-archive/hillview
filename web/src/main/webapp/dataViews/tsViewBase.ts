@@ -77,6 +77,14 @@ export abstract class TSViewBase extends BigTableView {
      */
     public abstract getSelectedColCount(): number;
 
+    protected hasGeo(colName: string): boolean {
+        for (const geoInfo of this.meta.geoMetadata) {
+            if (geoInfo.columnName == colName)
+                return true;
+        }
+        return false;
+    }
+
     /**
      * Convert the data in a column to a different column kind.
      */
@@ -126,7 +134,8 @@ export abstract class TSViewBase extends BigTableView {
                     const ok = schema.changeDisplayName(new DisplayName(newColName), displayName.displayName);
                     console.assert(ok);
                 }
-                rr.invoke(new TableOperationCompleted(this.page, rr, this.meta,
+                const meta: TableMeta = { schema: schema, rowCount: this.meta.rowCount, geoMetadata: this.meta.geoMetadata };
+                rr.invoke(new TableOperationCompleted(this.page, rr, meta,
                     o, rowsDesired, aggregates));
             });
         dialog.show();
