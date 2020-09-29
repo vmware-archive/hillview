@@ -37,7 +37,7 @@ def main():
     web.copy_file_to_remote("../hillview-bin.zip", ".", "")
     web.run_remote_shell_command("unzip -o hillview-bin.zip")
     web.copy_file_to_remote("config-greenplum.json", "bin", "")
-    web.run_remote_shell_command("cd bin; ./upload-data.py -d . -s dump-greenplum.sh config-greenplum.json")
+    web.run_remote_shell_command("cd bin; ./upload-data.py -d . -s dump-greenplum.sh -s load-greenplum.sh config-greenplum.json")
     web.run_remote_shell_command("cd bin; ./redeploy.sh -s config-greenplum.json")
     web.copy_file_to_remote("../repository/PROGRESS_DATADIRECT_JDBC_DRIVER_PIVOTAL_GREENPLUM_5.1.4.000275.jar",
                              config.service_folder + "/" + config.tomcat + "/lib", "")
@@ -46,7 +46,9 @@ def main():
         p = Properties()
         p.load(f, "utf-8")
         p["greenplumDumpScript"] = config.service_folder + "/dump-greenplum.sh"
+        p["greenplumLoadScript"] = config.service_folder + "/load-greenplum.sh"
         p["hideDemoMenu"] = "true"
+        p["enableSaveAs"] = "true"
     tmp = tempfile.NamedTemporaryFile(mode="w", delete=False)
     p.store(tmp, encoding="utf-8")
     tmp.close()

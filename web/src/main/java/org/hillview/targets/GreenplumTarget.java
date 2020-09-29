@@ -22,7 +22,6 @@ import org.hillview.dataset.api.ControlMessage;
 import org.hillview.dataset.api.IDataSet;
 import org.hillview.sketches.LoadCsvColumnsSketch;
 import org.hillview.storage.jdbc.JdbcDatabase;
-import org.hillview.table.ColumnDescription;
 import org.hillview.table.Schema;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
@@ -79,19 +78,10 @@ public class GreenplumTarget extends TableTarget {
                                     Schema schema,
                                     String tmpTableName) throws SQLException {
         String tableName = database.connInfo.table;
-        StringBuilder cols = new StringBuilder();
-        boolean first = true;
-        for (String c: columns) {
-            if (!first)
-                cols.append(", ");
-            first = false;
-            ColumnDescription desc = schema.getDescription(c);
-            String type = JdbcDatabase.sqlType(desc.kind);
-            cols.append(c).append(" ").append(type);
-        }
+        String cols = JdbcDatabase.schemaToSQL(columns, schema);
         // Create an external table that will be written into
         String query = "CREATE WRITABLE EXTERNAL WEB TABLE " +
-                tmpTableName + " (" + cols.toString() + ") EXECUTE '" +
+                tmpTableName + " (" + cols + ") EXECUTE '" +
                 Configuration.instance.getGreenplumDumpScript() + " " +
                 Configuration.instance.getGreenplumDumpDirectory() + "/" + tmpTableName +
                 "' FORMAT 'CSV'";
@@ -99,7 +89,7 @@ public class GreenplumTarget extends TableTarget {
         // This triggers the dumping of the data on the workers
         query = "INSERT INTO " + tmpTableName + " SELECT " + String.join(", ", columns) + " FROM " + tableName;
         database.executeUpdate(query);
-        // Cleanup: remove temporary table and view
+        // Cleanup: remove temporary table
         query = "DROP EXTERNAL TABLE " + tmpTableName;
         database.executeUpdate(query);
     }

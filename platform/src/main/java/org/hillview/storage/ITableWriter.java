@@ -19,7 +19,7 @@ package org.hillview.storage;
 
 import org.hillview.table.api.ITable;
 
-interface ITableWriter {
+public interface ITableWriter {
     /**
      * Write the data in the specified table to a storage medium.
      */

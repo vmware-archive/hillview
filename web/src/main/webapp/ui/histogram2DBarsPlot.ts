@@ -22,7 +22,7 @@ import {AxisDescription, NoBucketIndex} from "../dataViews/axisData";
 import {PlottingSurface} from "./plottingSurface";
 import {D3Scale} from "./ui";
 import {Histogram2DBase} from "./histogram2DBase";
-import {add} from "../util";
+import {add, assert} from "../util";
 
 /**
  * Represents an SVG rectangle drawn on the screen.
@@ -124,6 +124,7 @@ export class Histogram2DBarsPlot extends Histogram2DBase {
         const bucketCount = this.xPoints * (this.yPoints + 1); // + 1 for a space between groups
         this.barWidth = this.getChartWidth() / bucketCount;
         const scale = displayMax <= 0 ? 1 : this.getChartHeight() / displayMax;
+        assert(this.barWidth > 1);
 
         this.plottingSurface.getChart()
             .selectAll("g")

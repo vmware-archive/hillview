@@ -29,7 +29,7 @@ public class PrivateTableTarget extends TableRpcTarget implements IPrivateDatase
     PrivateTableTarget(IDataSet<ITable> table, HillviewComputation computation,
                        PrivacySchema privacySchema, @Nullable String schemaFilename) {
         super(computation, schemaFilename);
-        this.wrapper = new DPWrapper(privacySchema, schemaFilename);
+        this.wrapper = new DPWrapper(privacySchema, Converters.checkNull(schemaFilename));
         this.setTable(table);
         this.registerObject();
     }

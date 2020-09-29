@@ -85,6 +85,15 @@ export class RpcRequest<T> implements ICancellable<T> {
      * that span multiple RPCs
      */
     public rpcTime: Date | null;
+    // Remove some lines from exception messages
+    static readonly prefixesToCut = ["rx.", "io.grpc", "sun.reflect",
+        "org.apache.(tomcat|coyote)", "java.lang.Thread.run",
+        "java.util.concurrent.ThreadPoolExecutor", "java.lang.reflect.", "java.beans."];
+    static readonly rePiece = RpcRequest.prefixesToCut
+        .map(s => s.replace(".", "\\."))
+        .map(s => "(" + s + ")")
+        .join("|");
+    static readonly simplifyRe = new RegExp("^\\s+at (" + RpcRequest.rePiece + ")");
 
     public static requestCounter: number = 0;
 
@@ -171,9 +180,7 @@ export class RpcRequest<T> implements ICancellable<T> {
         }
 
         lines = lines
-            .filter((v) => !v.match(
-                // tslint:disable-next-line:max-line-length
-                /^\s+at ((rx\.)|(io\.grpc)|(sun\.reflect)|(org\.apache\.(tomcat|coyote))|(java\.lang\.Thread\.run)|(java\.util\.concurrent\.ThreadPoolExecutor))/))
+            .filter((v) => !this.simplifyRe.test(v))
             .map((v) => v.replace("io.grpc.StatusRuntimeException: INTERNAL: ", ""));
         return lines.join("\n");
     }

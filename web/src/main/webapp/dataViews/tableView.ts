@@ -218,6 +218,11 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             chart.enable("Trellis 2D histograms...", false);
             chart.enable("Trellis heatmaps...", false);
         }
+        if (this.dataset.loaded.kind != "DB") {
+            const saveAsMenu = menu.getSubmenu("Save as");
+            if (saveAsMenu != null)
+                saveAsMenu.enable("Save as DB table...", false);
+        }
 
         this.createDiv("summary");
     }
@@ -283,7 +288,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         return tableView;
     }
 
-    private static compareFilters(a: StringFilterDescription, b: StringFilterDescription): boolean {
+    private static compareFilters(a: StringFilterDescription | null, b: StringFilterDescription | null): boolean {
         if ((a == null) || (b == null))
             return ((a == null) && (b == null));
         else
@@ -305,7 +310,6 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         }
         let excludeTopRow: boolean;
 
-        assert(this.strFilter != null);
         const newFilter = this.findBar.getFilter();
         if (TableView.compareFilters(this.strFilter, newFilter)) {
             excludeTopRow = true; // next search
@@ -315,7 +319,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         }
         if (!next)
             excludeTopRow = true;
-        if (this.strFilter.compareValue === "") {
+        if (this.strFilter == null || this.strFilter.compareValue === "") {
             this.page.reportError("No current search string.");
             return;
         }

@@ -18,7 +18,10 @@
 package org.hillview.targets;
 
 import org.hillview.*;
+import org.hillview.dataset.api.Empty;
 import org.hillview.storage.jdbc.JdbcConnectionInformation;
+import org.hillview.storage.jdbc.JdbcDatabase;
+import org.hillview.table.Schema;
 import org.hillview.utils.Converters;
 import org.hillview.utils.JsonInString;
 
@@ -27,7 +30,7 @@ import java.sql.SQLException;
 /**
  * This target is the first interface to a Greenplum database.
  * It inherits some operations from SimpleDBTarget, in particular,
- * getSummary.
+ * getMetadata.
  */
 public class GreenplumStubTarget extends SimpleDBTarget {
     static final String filePrefix = "file";  // Should match the prefix in the dump script
@@ -37,7 +40,8 @@ public class GreenplumStubTarget extends SimpleDBTarget {
     }
 
     @HillviewRpc
-    public void initializeTable(RpcRequest request, RpcRequestContext context) throws SQLException {
+    public void dumpGreenplumTable(RpcRequest request, RpcRequestContext context) throws SQLException {
+        // Connection is opened by constructor.
         String tmpTableName = request.parseArgs(String.class);
         Converters.checkNull(this.schema);
         /*
@@ -55,16 +59,50 @@ public class GreenplumStubTarget extends SimpleDBTarget {
                 Configuration.instance.getGreenplumDumpScript() + " " +
                 Configuration.instance.getGreenplumDumpDirectory() + "/" + tmpTableName +
                 "' FORMAT 'CSV'";
-        database.executeUpdate(query);
+        this.database.executeUpdate(query);
         // This triggers the dumping of the data on the workers
         query = "INSERT INTO " + tmpTableName + " SELECT * FROM " + tableName;
-        database.executeUpdate(query);
-        // Cleanup: remove temporary table and view
+        this.database.executeUpdate(query);
+        // Cleanup: remove temporary table
         query = "DROP EXTERNAL TABLE " + tmpTableName;
-        database.executeUpdate(query);
+        this.database.executeUpdate(query);
         this.database.disconnect();
         this.returnResult(JsonInString.makeJsonString(
                 Configuration.instance.getGreenplumDumpDirectory() + "/" + tmpTableName + "/" + filePrefix + "*"),
             request, context);
+    }
+
+
+    @SuppressWarnings("NotNullFieldNotInitialized")
+    static class LoadedTable {
+        Schema schema;
+        String tempTableName;
+        String table;
+    }
+
+    @HillviewRpc
+    public void loadGreenplumTable(RpcRequest request, RpcRequestContext context) throws SQLException {
+        this.database.connect();
+        LoadedTable desc = request.parseArgs(LoadedTable.class);
+        String cols = JdbcDatabase.schemaToSQL(null, desc.schema);
+        String query = "CREATE TABLE " +
+                desc.table + " (" + cols + ")";
+        this.database.executeUpdate(query);
+
+        query = "CREATE EXTERNAL WEB TABLE " +
+                desc.tempTableName + " (LIKE " + desc.table + ") EXECUTE '" +
+                Configuration.instance.getGreenplumLoadScript() + " " +
+                Configuration.instance.getGreenplumDumpDirectory() + "/" + desc.tempTableName +
+                "' FORMAT 'CSV'";
+        this.database.executeUpdate(query);
+
+        query = "INSERT INTO " + desc.table + " SELECT * FROM " + desc.tempTableName;
+        this.database.executeUpdate(query);
+
+        // Cleanup: remove temporary table
+        query = "DROP EXTERNAL TABLE " + desc.tempTableName;
+        this.database.executeUpdate(query);
+        this.database.disconnect();
+        this.returnResult(Empty.getInstance(), request, context);
     }
 }

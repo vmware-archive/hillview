@@ -35,11 +35,11 @@ public class CsvFileWriter implements ITableWriter {
 
     public CsvFileWriter(String fileName) { this.fileName = fileName; }
 
-    public void setCompress(boolean compress) { this.compress = compress; }
+    public CsvFileWriter setCompress(boolean compress) { this.compress = compress; return this; }
 
-    public void setSeparator(char separator) { this.separator = separator; }
+    public CsvFileWriter setSeparator(char separator) { this.separator = separator; return this; }
 
-    public void setWriteHeaderRow(boolean write) { this.writeHeaderRow = write; }
+    public CsvFileWriter setWriteHeaderRow(boolean write) { this.writeHeaderRow = write; return this; }
 
     public void writeTable(ITable table) {
         try {

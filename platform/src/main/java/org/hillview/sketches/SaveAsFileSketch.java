@@ -17,12 +17,15 @@
 
 package org.hillview.sketches;
 
-import org.hillview.dataset.api.TableSketch;
 import org.hillview.dataset.api.Empty;
+import org.hillview.dataset.api.TableSketch;
+import org.hillview.storage.CsvFileWriter;
+import org.hillview.storage.ITableWriter;
 import org.hillview.storage.OrcFileWriter;
 import org.hillview.table.Schema;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
+import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
@@ -35,15 +38,15 @@ import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 
 /**
- * This sketch saves a table into a set of Orc files in the specified folder.
+ * This sketch saves a table into a set of files in the specified folder.
  * TODO: Today the save can succeed on some machines, and fail on others.
  * There is no cleanup if that happens.
- * This does not return anything really.
  * If the saving fails this will trigger an exception.
  */
-public class SaveAsOrcSketch implements TableSketch<Empty> {
+public class SaveAsFileSketch implements TableSketch<Empty> {
     static final long serialVersionUID = 1;
-    
+
+    private final String kind;
     private final String folder;
     @Nullable
     private final Schema schema;
@@ -57,10 +60,13 @@ public class SaveAsOrcSketch implements TableSketch<Empty> {
     @Nullable
     private final HashMap<String, String> renameMap;
 
-    public SaveAsOrcSketch(final String folder,
-                           @Nullable final Schema schema,
-                           @Nullable final HashMap<String, String> renameMap,
-                           boolean createSchema) {
+    public SaveAsFileSketch(
+            final String kind,
+            final String folder,
+            @Nullable final Schema schema,
+            @Nullable final HashMap<String, String> renameMap,
+            boolean createSchema) {
+        this.kind = kind;
         this.folder = folder;
         this.createSchema = createSchema;
         this.schema = schema;
@@ -89,8 +95,22 @@ public class SaveAsOrcSketch implements TableSketch<Empty> {
             if (tableFile == null)
                 throw new RuntimeException("I don't know how to generate file names for the data");
             String baseName = Utilities.getBasename(tableFile);
-            String path = Paths.get(this.folder, baseName + ".orc").toString();
-            OrcFileWriter writer = new OrcFileWriter(path);
+            String path = Paths.get(this.folder, baseName + "." + kind).toString();
+            HillviewLogger.instance.info("Writing data to files", "{0}", path);
+            ITableWriter writer;
+            switch (kind) {
+                case "orc":
+                    writer = new OrcFileWriter(path);
+                    break;
+                case "db":
+                    writer = new CsvFileWriter(path).setWriteHeaderRow(false);
+                    break;
+                case "csv":
+                    writer = new CsvFileWriter(path);
+                    break;
+                default:
+                    throw new RuntimeException("Unknown file kind: " + kind);
+            }
             writer.writeTable(data);
 
             if (this.createSchema) {
@@ -105,7 +125,7 @@ public class SaveAsOrcSketch implements TableSketch<Empty> {
                 // many times.
                 Files.move(schemaPath, finalSchemaPath, StandardCopyOption.ATOMIC_MOVE);
             }
-            return Empty.getInstance();
+            return this.zero();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -121,5 +141,10 @@ public class SaveAsOrcSketch implements TableSketch<Empty> {
     @Override
     public Empty add(@Nullable Empty left, @Nullable Empty right) {
         return left;
+    }
+
+    @Override
+    public String toString() {
+        return Paths.get(this.folder,  "*." + kind).toString();
     }
 }

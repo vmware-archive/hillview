@@ -29,7 +29,7 @@ import {
     RecordOrder,
     RemoteObjectId,
     StringFilterDescription,
-    StringColumnFilterDescription, AggregateDescription, CountWithConfidence
+    StringColumnFilterDescription, AggregateDescription, CountWithConfidence, DataKinds, SaveAsArgs, LoadedTable, Empty
 } from "../javaBridge";
 import {OnCompleteReceiver} from "../rpc";
 import {DisplayName, SchemaClass} from "../schemaClass";
@@ -40,7 +40,7 @@ import {SubMenu, TopMenuItem} from "../ui/menu";
 import {SpecialChars, ViewKind} from "../ui/ui";
 import {
     cloneToSet,
-    Converters,
+    Converters, getUUID,
     ICancellable,
     significantDigits,
 } from "../util";
@@ -175,33 +175,28 @@ export abstract class TSViewBase extends BigTableView {
         this.resize();
     }
 
-    public saveAsOrc(schema: SchemaClass): void {
-        const dialog = new Dialog("Save as ORC files",
-            "Describe the set of ORC files where data will be saved.");
-        const folder = dialog.addTextField("folderName", "Folder", FieldKind.String, "/",
-            "All ORC files will be written to this folder on each of the remote machines.");
+    public saveAs(schema: SchemaClass, fileKind: DataKinds): void {
+        const dialog = new Dialog("Save as " + fileKind + " files",
+            "Describe the set of files where data will be saved.");
+        const label = fileKind == "db" ? "Table" : "Folder";
+        const value = fileKind == "db" ? "table" : "/";
+        const help = fileKind == "db" ? "Table to save data to" :
+            "All files will be written to this folder on each of the remote machines.";
+        const folder = dialog.addTextField("folderName", label, FieldKind.String, value, help);
         folder.required = true;
         dialog.setCacheTitle("saveAsDialog");
 
-        class SaveReceiver extends OnCompleteReceiver<boolean> {
-            constructor(page: FullPage, operation: ICancellable<boolean>) {
-                super(page, operation, "Save as ORC files");
-            }
-
-            public run(value: boolean): void {
-                if (value)
-                    this.page.reportError("Save succeeded.");
-            }
-        }
-
         dialog.setAction(() => {
             const folderName = dialog.getFieldValue("folderName");
-            const rr = this.createStreamingRpcRequest<boolean>("saveAsOrc", {
-                folderName,
+            const directory = fileKind == "db" ? "T" + getUUID().replace(/-/g, '') : folderName;
+            const args: SaveAsArgs = {
+                folder: directory,
+                fileKind,
                 schema: schema.schema,
-                renameMap: schema.getRenameVector(),
-            });
-            const renderer = new SaveReceiver(this.page, rr);
+                renameMap: schema.getRenameVector()
+            };
+            const rr = this.createStreamingRpcRequest<Empty>("saveAs", args);
+            const renderer = new SaveReceiver(this.page, args, folderName, rr);
             rr.invoke(renderer);
         });
         dialog.show();
@@ -269,7 +264,7 @@ export abstract class TSViewBase extends BigTableView {
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.meta,
             buckets, cds, null, this.defaultProvenance, {
             reusePage: false, relative: false,
-            chartKind: chartKind, exact: exact
+            chartKind: chartKind, exact: exact, stacked: true
         }));
     }
 
@@ -380,8 +375,16 @@ export abstract class TSViewBase extends BigTableView {
             text: "Save as", help: "Save the data to persistent storage.", subMenu: new SubMenu([
                 {
                     text: "Save as ORC files...",
-                    action: () => this.saveAsOrc(this.getSchema()),
-                    help: "Save the data to a set of ORC files on the remote machines.",
+                    action: () => this.saveAs(this.getSchema(), "orc"),
+                    help: "Save the data to a set of ORC files on the worker machines.",
+                }, {
+                    text: "Save as CSV files...",
+                    action: () => this.saveAs(this.getSchema(), "csv"),
+                    help: "Save the data to a set of CSV files on the worker machines.",
+                }, {
+                    text: "Save as DB table...",
+                    action: () => this.saveAs(this.getSchema(), "db"),
+                    help: "Save the data to a table in the original database.",
                 },
             ]),
         };
@@ -690,6 +693,43 @@ class CountReceiver extends OnCompleteReceiver<CountWithConfidence> {
         this.page.reportError("Distinct values in column \'" +
             this.colName.toString() + "\' " + SpecialChars.approx + String(data.count) + "\n" +
             "Operation took " + significantDigits(timeInMs / 1000) + " seconds");
+    }
+}
+
+class SaveReceiver extends OnCompleteReceiver<Empty> {
+    constructor(page: FullPage, protected args: SaveAsArgs, protected tableName: string, operation: ICancellable<Empty>) {
+        super(page, operation, "Save data");
+    }
+
+    public run(value: Empty): void {
+        if (this.args.fileKind == "db") {
+            // We have saved the data to files, now tell the database to load it
+            const args: LoadedTable = {
+                schema: this.args.schema!,
+                tempTableName: this.args.folder,
+                table: this.tableName
+            };
+            // Notice that we use the dataset remote object, and not the one that has
+            // invoked us.
+            const rr = this.page.dataset!.remoteObject.createStreamingRpcRequest<Empty>("loadGreenplumTable", args);
+            rr.chain(this.operation);
+            const rec = new SaveDbCompleteReceiver(this.page, rr);
+            rr.invoke(rec);
+        } else {
+            this.page.reportError("Save successful.");
+        }
+    }
+}
+
+class SaveDbCompleteReceiver extends OnCompleteReceiver<Empty> {
+    constructor(page: FullPage, operation: ICancellable<Empty>) {
+        super(page, operation, "Load into database");
+    }
+
+    public run(value: Empty): void {
+        // If this runs the value is actually irrelevant, we have succeeded.
+        // The alternative is that an exception was thrown someplace.
+        this.page.reportError("Save successful.");
     }
 }
 

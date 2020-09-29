@@ -20,6 +20,7 @@ package org.hillview.targets;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.hillview.*;
+import org.hillview.sketches.results.TableSummary;
 import org.hillview.utils.*;
 import org.hillview.dataStructures.QuantilesArgs;
 import org.hillview.security.PersistedKeyLoader;
@@ -168,7 +169,9 @@ public class DPWrapper {
         @SuppressWarnings("ConstantConditions")
         long rowCountConfidence = Converters.toLong(PrivacyUtils.laplaceCI(
                 1, 1.0/epsilon, PrivacyUtils.DEFAULT_ALPHA).second);
-        return new TableMetadata(metadata, this.container.privacySchema, rowCountConfidence);
+        return new TableMetadata(new TableTarget.TableMetadata(
+                new TableSummary(metadata.schema, rowCount), metadata.geoMetadata),
+                this.container.privacySchema, rowCountConfidence);
     }
 
     /**
