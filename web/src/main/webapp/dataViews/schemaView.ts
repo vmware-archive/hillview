@@ -290,7 +290,7 @@ export class SchemaView extends TSViewBase {
             text: "Map",
             action: () => this.geo(this.meta.schema.find(this.getSelectedColNames()[0])!),
             help: "Plot the data in the selected columns on a map."
-        }, selectedCount === 1);
+        }, selectedCount === 1 && this.hasGeo(this.getSelectedColNames()[0]));
         this.contextMenu.addItem({
             text: "Estimate distinct elements",
             action: () => this.hLogLog(),

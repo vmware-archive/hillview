@@ -126,6 +126,10 @@ table {
     border-bottom: 1px solid black;
 }
 
+.trellisTitle {
+    text-align: center;
+}
+
 .tableView .empty {
     background: #eeeeee;
 }

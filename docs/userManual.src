@@ -947,6 +947,17 @@ The user can specify a folder on the remote worker machines.  Each
 file in the current dataset will be saved as a new file in ORC format
 in the specified folder.
 
+* Save as CSV files: allows users to specify how data should be saved
+  in the [CSV file format](#reading-csv-files).
+
+The user can specify a folder on the remote worker machines.  Each
+file in the current dataset will be saved as a new file in comma-separated value format
+in the specified folder, with a header.
+
+* Save as DB table: this option is only available if the user has loaded the
+data from a federated database.  In this case, the user is allowed to save
+the data back to the federated database into a table that they can specify.
+
 ### Table views
 
 The next figure shows a typical table view.
@@ -1821,21 +1832,32 @@ singular values explain most of the variance of the data.
 
 ## Trellis plots
 
-Hillview can display multiple histograms or heatmaps in a grid view
-called a Trellis plot.  Each plot corresponds to a contiguous range of
-values from a column.  For example, the figure below shows a Trellis
+Hillview can display multiple histograms, heatmaps, or quartiles in a grid view
+called a Trellis plot.  Each plot corresponds to data from a contiguous range of
+values from a column -- the trellis plots are always "grouped" on this
+particular column.  For example, the figure below shows a Trellis
 plot of histograms of the arrival delay, where each histogram is drawn
-for a different state.
+for a different group of states.
+
+![Trellis plot with one histogram for a group of states](trellis.png)
 
 Selection in a Trellis plot can be done in several ways:
+
+* clicking on the title button of the trellis plot will only select the
+  data in the corresponding chart in the grid.
+
 * dragging the mouse within a single plot will perform selection on
-  the X axis of that plot.
+  the X axis of that plot, as shown in the following figure.
 
 ![Selection within a single plot](trellis-simple-selection.png)
 
 * dragging the mouse across multiple plots will select the data
-  corresponding the all plots congiguously between the first one
+  corresponding the all plots contiguously between the first one
   selected and the last one selected
+
+A Trellis plot that contains a single group degenerates into a simpler plot; for
+example, a Trellis plot of 1D histograms that contains a single group
+will be displayed as a simple histogram plot instead.
 
 ![Selection across multiple plots](trellis-complex-selection.png)
 
@@ -1929,10 +1951,13 @@ This image displays the count of rows that correspond to each state.  Note that:
   responsibility of the data management administratory to use proper map
   databases and link them with correct geographic metadata.
 
-Hillview geographic views are not zoomable.  Each view is supposed to display a relatively
+Each view is supposed to display a relatively
 small number of polygons -- each polygon is expected to be larger than a few pixels.
 In consequence, columns that contain geographic features are assumed to have a small number
 of distinct values -- fewer than the number of pixels on the screen.
+
+The buttons above a geographic view allow the user to zoom-in and out, and to pan
+the view in different directions.  The first button fits the plot on the screen.
 
 ### Combining two views
 

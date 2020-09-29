@@ -1039,6 +1039,29 @@ export function truncate(str: string, length: number): string {
     }
 }
 
+export function roughTimeSpan(min: number, max: number): [number, string] {
+    const start = Converters.dateFromDouble(min);
+    const end = Converters.dateFromDouble(max);
+    if (start == null || end == null)
+        return [0, "none"];
+    // In milliseconds
+    const ms_per_day = 86_400_000;
+    const distance = end.getTime() - start.getTime();
+    const years = distance / (365 * ms_per_day);
+    if (years >= 5)
+        return [Math.ceil(years), "years"];
+    const months = distance / (30 * ms_per_day);
+    if (months >= 5)
+        return [Math.ceil(months), "months"];
+    const days = distance / ms_per_day;
+    if (days >= 5)
+        return [Math.ceil(days), "days"];
+    const hours = distance / 3_600_000;
+    if (hours >= 5)
+        return [Math.ceil(hours), "hours"];
+    return [Math.ceil(distance / 60_000), "minutes"];
+}
+
 export function optionToBoolean(value: boolean | undefined): boolean {
     if (value === undefined)
         return false;

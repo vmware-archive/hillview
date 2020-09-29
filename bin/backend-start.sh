@@ -11,4 +11,4 @@ if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
 # DEBUG_CLASSLOADER="-verbose:class"
 
 cd ${mydir}/.. || exit 1
-java ${LOGGING} ${DEBUG_CLASSLOADER} -server -jar platform/target/hillview-server-jar-with-dependencies.jar 127.0.0.1:3569
+java ${LOGGING} ${DEBUG_CLASSLOADER} -server -Xmx6G -jar platform/target/hillview-server-jar-with-dependencies.jar 127.0.0.1:3569

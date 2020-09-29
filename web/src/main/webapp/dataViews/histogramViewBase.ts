@@ -23,7 +23,7 @@ import {FullPage} from "../ui/fullPage";
 import {D3SvgElement, ViewKind} from "../ui/ui";
 import {ChartView} from "../modules";
 import {AxisData} from "./axisData";
-import {assert} from "../util";
+import {assert, roughTimeSpan} from "../util";
 import {TableMeta} from "../ui/receiver";
 
 /**
@@ -84,6 +84,14 @@ export abstract class HistogramViewBase<D> extends ChartView<D> {
             .attr("width", width)
             .attr("height", height);
         return true;
+    }
+
+    protected addTimeSummary(): void {
+        if (this.xAxisData.description.kind == "LocalDate" ||
+            this.xAxisData.description.kind == "Date") {
+            const span = roughTimeSpan(this.xAxisData.dataRange.min!, this.xAxisData.dataRange.max!);
+            this.summary!.set("Time range in " + span[1], span[0]);
+        }
     }
 }
 

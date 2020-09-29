@@ -493,7 +493,7 @@ export class HeatmapView extends
             [0, 0], cds, null, this.defaultProvenance, {
             reusePage: false,
             chartKind: "2DHistogram",
-            exact: true
+            exact: true, stacked: true
         }));
     }
 

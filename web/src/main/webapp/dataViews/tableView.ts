@@ -758,14 +758,6 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         };
     }
 
-    protected hasGeo(colName: string): boolean {
-        for (const geoInfo of this.meta.geoMetadata) {
-            if (geoInfo.columnName == colName)
-                return true;
-        }
-        return false;
-    }
-
     public createIntervalColumn(cols: string[]): void {
         if (cols.length != 2) {
             this.page.reportError("Only 2 columns expected");

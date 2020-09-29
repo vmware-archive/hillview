@@ -40,7 +40,7 @@ import {
     ICancellable, makeInterval,
     PartialResult,
     percentString,
-    significantDigits, Two, assertNever, assert, Exporter,
+    significantDigits, Two, assertNever, assert, Exporter, roughTimeSpan,
 } from "../util";
 import {AxisData} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
@@ -285,6 +285,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
         this.summary.set("buckets", this.bucketCount);
         if (this.samplingRate < 1.0)
             this.summary.set("sampling rate", this.samplingRate);
+        this.addTimeSummary();
         this.summary.display();
     }
 
@@ -374,7 +375,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
             reusePage: false,
             relative: false,
             chartKind: "2DHistogram",
-            exact: true
+            exact: true, stacked: true
         }));
     }
 

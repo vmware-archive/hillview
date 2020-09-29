@@ -217,7 +217,7 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.meta,
             [this.xAxisData.bucketCount, 0], cds, null, this.defaultProvenance, {
                 reusePage: false,
-                chartKind: "2DHistogram"
+                chartKind: "2DHistogram", stacked: true
             }));
     }
 
