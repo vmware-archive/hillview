@@ -63,7 +63,7 @@ public class GreenplumStubTarget extends SimpleDBTarget {
         // This triggers the dumping of the data on the workers
         query = "INSERT INTO " + tmpTableName + " SELECT * FROM " + tableName;
         this.database.executeUpdate(query);
-        // Cleanup: remove temporary table and view
+        // Cleanup: remove temporary table
         query = "DROP EXTERNAL TABLE " + tmpTableName;
         this.database.executeUpdate(query);
         this.database.disconnect();
@@ -99,7 +99,7 @@ public class GreenplumStubTarget extends SimpleDBTarget {
         query = "INSERT INTO " + desc.table + " SELECT * FROM " + desc.tempTableName;
         this.database.executeUpdate(query);
 
-        // Cleanup: remove temporary table and view
+        // Cleanup: remove temporary table
         query = "DROP EXTERNAL TABLE " + desc.tempTableName;
         this.database.executeUpdate(query);
         this.database.disconnect();

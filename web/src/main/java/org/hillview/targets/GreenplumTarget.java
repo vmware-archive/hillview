@@ -89,7 +89,7 @@ public class GreenplumTarget extends TableTarget {
         // This triggers the dumping of the data on the workers
         query = "INSERT INTO " + tmpTableName + " SELECT " + String.join(", ", columns) + " FROM " + tableName;
         database.executeUpdate(query);
-        // Cleanup: remove temporary table and view
+        // Cleanup: remove temporary table
         query = "DROP EXTERNAL TABLE " + tmpTableName;
         database.executeUpdate(query);
     }
