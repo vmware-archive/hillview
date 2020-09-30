@@ -433,9 +433,9 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
         assert(this.surface != null);
         this.pointDescription = new TextOverlay(this.surface.getCanvas(),
             this.surface.getActualChartSize(),
-            [this.xAxisData.getDisplayNameString(this.getSchema())!,
-                this.legendAxisData.getDisplayNameString(this.getSchema())!,
-                this.groupByAxisData.getDisplayNameString(this.getSchema())!,
+            [this.xAxisData.getName(this.getSchema())!,
+                this.legendAxisData.getName(this.getSchema())!,
+                this.groupByAxisData.getName(this.getSchema())!,
                 "y",
                 "percent",
                 "count" /* TODO:, "cdf" */], 40);

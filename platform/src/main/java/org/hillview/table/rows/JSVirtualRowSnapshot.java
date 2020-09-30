@@ -38,9 +38,8 @@ public class JSVirtualRowSnapshot extends VirtualRowSnapshot {
     public JSVirtualRowSnapshot(
             ITable table, Schema schema,
             @Nullable
-            HashMap<String, String> columnRenameMap,
             Context engine) {
-        super(table, schema, columnRenameMap);
+        super(table, schema);
         this.engine = engine;
     }
 

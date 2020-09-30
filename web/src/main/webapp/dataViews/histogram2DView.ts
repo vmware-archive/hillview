@@ -23,7 +23,6 @@ import {
     RemoteObjectId, kindIsNumeric, Groups, RangeFilterArrayDescription,
 } from "../javaBridge";
 import {Receiver, RpcRequest} from "../rpc";
-import {DisplayName} from "../schemaClass";
 import {BaseReceiver, TableTargetAPI} from "../modules";
 import {CDFPlot} from "../ui/cdfPlot";
 import {IDataView} from "../ui/dataview";
@@ -245,11 +244,11 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
 
         let pointFields;
         if (this.stacked) {
-            pointFields = [this.xAxisData.getDisplayNameString(this.getSchema())!,
-                this.yAxisData.getDisplayNameString(this.getSchema())!,
+            pointFields = [this.xAxisData.getName(this.getSchema())!,
+                this.yAxisData.getName(this.getSchema())!,
                 "bucket", "y", "count", "%", "cdf"];
         } else {
-            pointFields = ["bucket", this.yAxisData.getDisplayNameString(this.getSchema())!, "y", "count"];
+            pointFields = ["bucket", this.yAxisData.getName(this.getSchema())!, "y", "count"];
         }
 
         assert(this.surface != null);
@@ -315,13 +314,13 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
     }
 
     public trellis(): void {
-        const columns: DisplayName[] = this.getSchema().displayNamesExcluding(
+        const columns: string[] = this.getSchema().namesExcluding(
             [this.xAxisData.description.name, this.yAxisData.description.name]);
         this.chooseTrellis(columns);
     }
 
-    protected showTrellis(colName: DisplayName): void {
-        const groupBy = this.getSchema().findByDisplayName(colName)!;
+    protected showTrellis(colName: string): void {
+        const groupBy = this.getSchema().find(colName)!;
         const cds: IColumnDescription[] = [
             this.xAxisData.description,
             this.yAxisData.description,

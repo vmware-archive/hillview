@@ -64,7 +64,7 @@ export abstract class Histogram2DBase extends Plot<Pair<Groups<Groups<number>>, 
         this.xAxisData.setResolution(this.getChartWidth(), AxisKind.Bottom, PlottingSurface.bottomMargin);
         // Axis legends
         this.plottingSurface.getCanvas().append("text")
-            .text(this.xAxisData.getDisplayNameString(this.schema))
+            .text(this.xAxisData.getName(this.schema))
             .attr("transform", `translate(${this.getChartWidth() / 2},
             ${this.getChartHeight() + this.plottingSurface.topMargin + this.plottingSurface.bottomMargin / 2})`)
             .attr("text-anchor", "middle")

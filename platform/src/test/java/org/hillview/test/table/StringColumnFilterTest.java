@@ -78,7 +78,7 @@ public class StringColumnFilterTest extends BaseTest {
         cols[0] = "Name";
         StringColumnsFilterDescription equalityFilter =
                 new StringColumnsFilterDescription(cols,
-                new StringFilterDescription("Ed"), null);
+                new StringFilterDescription("Ed"));
         FilterMap filterMap = new FilterMap(equalityFilter);
         ITable result = filterMap.apply(table);
         Assert.assertNotNull(result);
@@ -97,7 +97,7 @@ public class StringColumnFilterTest extends BaseTest {
 
         // Same process for Mike.
         equalityFilter = new StringColumnsFilterDescription(cols,
-                new StringFilterDescription("Mike"), null);
+                new StringFilterDescription("Mike"));
         filterMap = new FilterMap(equalityFilter);
         result = filterMap.apply(table);
         Assert.assertNotNull(result);

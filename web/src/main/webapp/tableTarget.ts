@@ -56,7 +56,7 @@ import {
     CreateIntervalColumnMapInfo,
     HeatmapRequestInfo,
     RowValue,
-    MapAndColumnRepresentation, FilterListDescription, TableMetadata
+    MapAndColumnRepresentation, FilterListDescription, TableMetadata, RenameArgs
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
 import {FullPage, PageTitle} from "./ui/fullPage";
@@ -360,12 +360,18 @@ export class TableTargetAPI extends RemoteObject {
 
     public createCorrelationMatrixRequest(columnNames: string[], totalRows: number, toSample: boolean):
 RpcRequest<RemoteObjectId> {
-        return this.createStreamingRpcRequest<RemoteObjectId>("correlationMatrix", {
+        const args = {
             columnNames: columnNames,
             totalRows: totalRows,
             seed: Seed.instance.get(),
             toSample: toSample
-        });
+        };
+        return this.createStreamingRpcRequest<RemoteObjectId>("correlationMatrix", args);
+    }
+
+    public createRenameRequest(from: string, to: string): RpcRequest<RemoteObjectId> {
+        const a: RenameArgs = { fromName: from, toName: to };
+        return this.createStreamingRpcRequest<RemoteObjectId>("renameColumn", a);
     }
 
     public createProjectRequest(schema: Schema): RpcRequest<RemoteObjectId> {

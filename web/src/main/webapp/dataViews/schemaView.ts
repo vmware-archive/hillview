@@ -38,7 +38,7 @@ import {
     significantDigits,
     Converters, assert
 } from "../util";
-import {TableView} from "../modules";
+import {TableOperationCompleted, TableView} from "../modules";
 import {TSViewBase} from "./tsViewBase";
 import {BaseReceiver} from "../modules";
 import {Receiver, RpcRequest} from "../rpc";
@@ -203,7 +203,7 @@ export class SchemaView extends TSViewBase {
             const cd = this.meta.schema.get(i);
             const data = [
                 (i + 1).toString(),
-                this.meta.schema.displayName(cd.name)!.displayName,
+                cd.name,
                 cd.kind.toString()];
             if (this.stats != null) {
                 const cs = this.stats.get(cd.name);
@@ -299,13 +299,13 @@ export class SchemaView extends TSViewBase {
         this.contextMenu.addItem({
             text: "Filter...",
             action: () => this.showFilterDialog(
-                this.meta.schema.displayName(selectedColumn), null, 0, null),
+                selectedColumn, null, 0, null),
             help : "Eliminate data that matches/does not match a specific value.",
         }, selectedCount === 1);
         this.contextMenu.addItem({
             text: "Compare...",
             action: () => this.showCompareDialog(
-                this.meta.schema.displayName(selectedColumn), null, 0, null),
+                selectedColumn, null, 0, null),
             help : "Eliminate data that matches/does not match a specific value.",
         }, selectedCount === 1);
         this.contextMenu.addItem({
@@ -320,7 +320,7 @@ export class SchemaView extends TSViewBase {
         }, selectedCount === 1);
         this.contextMenu.addItem({
             text: "Convert...",
-            action: () => this.convert(this.meta.schema.displayName(selectedColumn)!, null, 0, null),
+            action: () => this.convert(selectedColumn != null ? selectedColumn : "", null, 0, null),
             help: "Convert the data in the selected column to a different data type.",
         }, selectedCount === 1);
         this.contextMenu.addItem({
@@ -363,15 +363,32 @@ export class SchemaView extends TSViewBase {
         this.show(0);
     }
 
+    protected doRenameColumn(from: string, to: string) {
+        const rr = this.createRenameRequest(from, to);
+        const schema = this.getSchema().renameColumn(from, to);
+        if (schema == null) {
+            this.page.reportError("Could not rename column '" + from + "' to '" + to + "'");
+            return;
+        }
+        const rec = new TableOperationCompleted(this.page, rr,
+            { rowCount: this.meta.rowCount, schema, geoMetadata: this.meta.geoMetadata },
+            null, 0, null);
+        rr.invoke(rec);
+    }
+
     private dropColumns(): void {
         const selected = cloneToSet(this.getSelectedColNames());
-        this.meta.schema = this.meta.schema.filter((c) => !selected.has(c.name));
-        this.show(0);
+        const schema = this.meta.schema.filter((c) => !selected.has(c.name));
+        const rr = this.createProjectRequest(schema.schema);
+        const rec = new TableOperationCompleted(this.page, rr,
+            { rowCount: this.meta.rowCount, schema, geoMetadata: this.meta.geoMetadata },
+            null, 0, null);
+        rr.invoke(rec);
     }
 
     private nameAction(regExp: RegExp, action: string): void {
         for (let i = 0; i < this.meta.schema.length; i++) {
-            if (this.meta.schema.displayName(this.meta.schema.get(i).name)!.displayName.match(regExp)) {
+            if (this.meta.schema.get(i).name.match(regExp)) {
                 if (action === "Add")
                     this.display.selectedRows.add(i);
                 else if (action === "Remove")

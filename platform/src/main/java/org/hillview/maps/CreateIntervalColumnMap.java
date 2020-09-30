@@ -31,7 +31,7 @@ import java.util.List;
  * This map receives a column name of the input table, and returns a table with a new column,
  * containing the specified data converted to a new kind.
  */
-public class CreateIntervalColumnMap extends AppendColumnMap {
+public class CreateIntervalColumnMap extends AppendOrReplaceColumnMap {
     static final long serialVersionUID = 1;
 
     public static class Info implements Serializable {
@@ -44,7 +44,7 @@ public class CreateIntervalColumnMap extends AppendColumnMap {
     private final Info info;
 
     public CreateIntervalColumnMap(Info info) {
-        super(info.newColName, info.columnIndex);
+        super(info.columnIndex);
         this.info = info;
     }
 

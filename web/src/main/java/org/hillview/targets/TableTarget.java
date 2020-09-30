@@ -85,6 +85,19 @@ public class TableTarget extends TableRpcTarget {
         this.runSketch(this.table, nka, request, context);
     }
 
+    @SuppressWarnings("NotNullFieldNotInitialized")
+    static class RenameArgs {
+        String fromName;
+        String toName;
+    }
+
+    @HillviewRpc
+    public void renameColumn(RpcRequest request, RpcRequestContext context) {
+        RenameArgs args = request.parseArgs(RenameArgs.class);
+        RenameColumnMap map = new RenameColumnMap(args.fromName, args.toName);
+        this.runMap(this.table, map, (d, c) -> new TableTarget(d, c, this.metadataDirectory), request, context);
+    }
+
     static class LogFragmentArgs {
         Schema schema = new Schema();
         @Nullable
@@ -180,9 +193,6 @@ public class TableTarget extends TableRpcTarget {
         String folder = "";
         @Nullable
         Schema schema;
-        // Rename map encoded as an array
-        @Nullable
-        String[] renameMap;
     }
 
     @HillviewRpc
@@ -193,8 +203,7 @@ public class TableTarget extends TableRpcTarget {
             args.folder = Paths.get(Configuration.instance.getGreenplumDumpDirectory(), args.folder).toString();
         }
         SaveAsFileSketch sk = new SaveAsFileSketch(
-                args.fileKind, args.folder, args.schema,
-                Utilities.arrayToMap(args.renameMap), true);
+                args.fileKind, args.folder, args.schema, true);
         this.runCompleteSketch(this.table, sk, request, context);
     }
 

@@ -28,9 +28,8 @@ import {
     CombineOperators, HistogramRequestInfo,
     IColumnDescription, JsonString, PrivacySchema,
     RecordOrder,
-    RemoteObjectId, RowValue,
+    RemoteObjectId, RowValue, Schema,
 } from "./javaBridge";
-import {SchemaClassSerialization} from "./schemaClass";
 import {BigTableView, TableTargetAPI} from "./tableTarget";
 import {HillviewToplevel} from "./toplevel";
 import {IDataView} from "./ui/dataview";
@@ -58,7 +57,7 @@ export interface IViewSerialization {
     provenance: string;
     remoteObjectId: RemoteObjectId;
     rowCount: number;
-    schema: SchemaClassSerialization;
+    schema: Schema;
     geoMetadata: ColumnGeoRepresentation[];
 }
 
@@ -94,7 +93,7 @@ export interface BaseHeatmapSerialization extends IViewSerialization {
 }
 
 export interface HeatmapSerialization extends BaseHeatmapSerialization {
-    detailedColumns: SchemaClassSerialization | null;
+    detailedColumns: Schema | null;
 }
 
 export interface MapSerialization extends IViewSerialization {

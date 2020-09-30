@@ -362,18 +362,18 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
         assert(this.surface != null);
         this.pointDescription = new TextOverlay(this.surface.getCanvas(),
             this.surface.getActualChartSize(),
-            [this.xAxisData.getDisplayNameString(this.getSchema())!,
-                this.yAxisData.getDisplayNameString(this.getSchema())!,
-                this.groupByAxisData.getDisplayNameString(this.getSchema())!,
+            [this.xAxisData.getName(this.getSchema())!,
+                this.yAxisData.getName(this.getSchema())!,
+                this.groupByAxisData.getName(this.getSchema())!,
                 "count"], 40);
 
         // Axis labels
         const canvas = this.surface.getCanvas();
         canvas.append("text")
-            .text(this.getSchema().displayName(this.yAxisData.description.name))
+            .text(this.yAxisData.description.name)
             .attr("dominant-baseline", "text-before-edge");
         canvas.append("text")
-            .text(this.getSchema().displayName(this.xAxisData.description.name))
+            .text(this.xAxisData.description.name)
             .attr("transform", `translate(${this.surface.getChartWidth() / 2},
                       ${this.surface.getChartHeight() + this.surface.topMargin +
             this.surface.bottomMargin / 2})`)

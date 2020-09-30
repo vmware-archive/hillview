@@ -20,26 +20,29 @@ import {
     AggregateDescription,
     AggregateKind,
     allAggregateKind,
-    ColumnSortOrientation, CompareDatasetsInfo,
+    ColumnSortOrientation,
+    CompareDatasetsInfo,
     Comparison,
     ComparisonFilterDescription,
+    CreateIntervalColumnMapInfo,
+    ExtractValueFromKeyMapInfo,
     FindResult,
     IColumnDescription,
     JSFilterInfo,
     kindIsString,
-    ExtractValueFromKeyMapInfo,
     NextKList,
     RecordOrder,
     RemoteObjectId,
     RowData,
     RowFilterDescription,
+    RowValue,
     Schema,
     StringFilterDescription,
-    CreateIntervalColumnMapInfo, RowValue, TableMetadata
+    TableMetadata
 } from "../javaBridge";
 import {OnCompleteReceiver, Receiver} from "../rpc";
-import {DisplayName, SchemaClass} from "../schemaClass";
-import {BaseReceiver, OnNextK, TableTargetAPI} from "../modules";
+import {SchemaClass} from "../schemaClass";
+import {BaseReceiver, OnNextK, SchemaView, TableTargetAPI} from "../modules";
 import {DataRangeUI} from "../ui/dataRangeUI";
 import {IDataView} from "../ui/dataview";
 import {Dialog, FieldKind, saveAs} from "../ui/dialog";
@@ -50,21 +53,24 @@ import {SelectionStateMachine} from "../ui/selectionStateMachine";
 import {Resolution, SpecialChars, ViewKind} from "../ui/ui";
 import {
     add,
+    all,
+    assert,
+    assertNever,
     cloneToSet,
     Converters,
+    Exporter,
     find,
     formatNumber,
     ICancellable,
     makeMissing,
     makeSpan,
     PartialResult,
+    percent,
     sameAggregate,
     significantDigits,
     significantDigitsHtml,
-    truncate,
-    all, percent, assertNever, assert, Exporter
+    truncate
 } from "../util";
-import {SchemaView} from "../modules";
 import {SpectrumReceiver} from "./spectrumView";
 import {TSViewBase} from "./tsViewBase";
 import {Grid} from "../ui/grid";
@@ -498,7 +504,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
     }
 
     private addHeaderCell(cd: IColumnDescription,
-                          displayName: DisplayName,
+                          colName: string,
                           help: string,
                           width: number,
                           isVisible: boolean,
@@ -516,7 +522,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             span.onclick = () => this.toggleOrder(cd.name);
             th.appendChild(span);
         }
-        th.appendChild(makeSpan(displayName.toString(), false));
+        th.appendChild(makeSpan(colName, false));
         return th;
     }
 
@@ -637,9 +643,8 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 text: "Filter...",
                 action: () => {
                     const colName = this.getSelectedColNames()[0];
-                    const colDesc = this.meta.schema.displayName(colName);
                     this.showFilterDialog(
-                        colDesc, this.order, this.tableRowsDesired, this.aggregates);
+                        colName, this.order, this.tableRowsDesired, this.aggregates);
                 },
                 help: "Eliminate data that matches/does not match a specific value.",
             }, selectedCount === 1 && !this.isPrivate());
@@ -647,14 +652,14 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 text: "Compare...",
                 action: () => {
                     const colName = this.getSelectedColNames()[0];
-                    this.showCompareDialog(this.meta.schema.displayName(colName),
+                    this.showCompareDialog(colName,
                         this.order, this.tableRowsDesired, this.aggregates);
                 },
                 help: "Eliminate data that matches/does not match a specific value.",
             }, selectedCount === 1 && !this.isPrivate());
             this.contextMenu.addItem({
                 text: "Convert...",
-                action: () => this.convert(this.meta.schema.displayName(cd.name)!,
+                action: () => this.convert(cd.name,
                     this.order, this.tableRowsDesired, this.aggregates),
                 help: "Convert the data in the selected column to a different data type.",
             }, selectedCount === 1 && !this.isPrivate());
@@ -758,6 +763,26 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         };
     }
 
+    protected doRenameColumn(from: string, to: string) {
+        const rr = this.createRenameRequest(from, to);
+        const schema = this.getSchema().renameColumn(from, to);
+        if (schema == null) {
+            this.page.reportError("Could not rename column '" + from + "' to '" + to + "'");
+            return;
+        }
+        const o = this.order.sortOrientationList.map(
+            c => c.columnDescription.name == from ? { columnDescription: { name: to, kind: c.columnDescription.kind },
+                isAscending: c.isAscending } : c);
+        let a: AggregateDescription[] | null = null
+        if (this.aggregates != null)
+            a = this.aggregates.map(a => a.cd.name == from ? { agkind: a.agkind,
+            cd: { name: to, kind: a.cd.kind } } : a)
+        const rec = new TableOperationCompleted(this.page, rr,
+            { rowCount: this.meta.rowCount, schema, geoMetadata: this.meta.geoMetadata },
+            new RecordOrder(o), this.tableRowsDesired, a);
+        rr.invoke(rec);
+    }
+
     public createIntervalColumn(cols: string[]): void {
         if (cols.length != 2) {
             this.page.reportError("Only 2 columns expected");
@@ -785,7 +810,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             o.addColumn({columnDescription: cd, isAscending: true});
             const keep = dialog.getBooleanValue("keep");
             if (!keep) {
-                schema = schema.filter((c) => cols.indexOf(schema.displayName(c.name)!.displayName) < 0);
+                schema = schema.filter((c) => cols.indexOf(c.name) < 0);
                 o.hide(cols[0]);
                 o.hide(cols[1]);
             }
@@ -866,7 +891,6 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             const arg: JSFilterInfo = {
                 jsCode: fun,
                 schema: subSchema.schema,
-                renameMap: subSchema.getRenameVector(),
             };
             const rr = this.createJSFilterRequest(arg);
             const title = "Filtered using JS";
@@ -947,11 +971,11 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
 
         {
             // Create column headers
-            let thd = this.addHeaderCell(posCd, new DisplayName(posCd.name),
+            let thd = this.addHeaderCell(posCd, posCd.name,
                 "Position within sorted order.", DataRangeUI.width, true, false);
             thd.oncontextmenu = () => {};
 
-            thd = this.addHeaderCell(ctCd, new DisplayName(ctCd.name),
+            thd = this.addHeaderCell(ctCd, ctCd.name,
                 "Number of occurrences.", 75, true, false);
             thd.oncontextmenu = () => {};
             if (this.meta.schema == null)
@@ -963,8 +987,8 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             cds.push(cd);
 
             const kindString = cd.kind.toString();
-            const name = this.meta.schema.displayName(cd.name)!;
-            let title = name.displayName + "\nType is " + kindString + "\n";
+            const name = cd.name;
+            let title = name + "\nType is " + kindString + "\n";
             if (this.isPrivate()) {
                 const pm = this.dataset.privacySchema!.quantization.quantization[cd.name];
                 if (pm != null) {
@@ -997,7 +1021,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             }
             title += "Right mouse click opens a menu\n";
             const visible = this.order.find(cd.name) >= 0;
-            const thd = this.addHeaderCell(cd, name, title, 0, visible, true);
+            const thd = this.addHeaderCell(cd, cd.name, title, 0, visible, true);
             thd.classList.add("col" + i.toString());
             thd.onclick = (e) => this.columnClick(i, e);
             thd.ondblclick = (e) => {
@@ -1016,14 +1040,14 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             for (let i = 0; i < this.aggregates.length; i++) {
                 const ag = this.aggregates[i];
                 let name;
-                const dn = this.meta.schema.displayName(ag.cd.name)!;
+                const dn = ag.cd.name;
                 name = ag.agkind + "(" + dn.toString() + ")";
                 const cd: IColumnDescription = {
                     kind: ag.cd.kind,
                     name: name
                 };
-                const thd = this.addHeaderCell(cd, new DisplayName(name),
-                    ag.agkind + " of values in column " + this.meta.schema.displayName(ag.cd.name),
+                const thd = this.addHeaderCell(cd, name,
+                    ag.agkind + " of values in column " + ag.cd.name,
                     0, true, false);
                 const aggIndex = i;
                 thd.oncontextmenu = (e: MouseEvent) => {

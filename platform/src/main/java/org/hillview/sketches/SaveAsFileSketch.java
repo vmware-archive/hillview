@@ -35,7 +35,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.HashMap;
 
 /**
  * This sketch saves a table into a set of files in the specified folder.
@@ -54,23 +53,16 @@ public class SaveAsFileSketch implements TableSketch<Empty> {
      * If true a schema file will also be created.
      */
     private final boolean createSchema;
-    /**
-     * Map that describes how columns should be renamed.
-     */
-    @Nullable
-    private final HashMap<String, String> renameMap;
 
     public SaveAsFileSketch(
             final String kind,
             final String folder,
             @Nullable final Schema schema,
-            @Nullable final HashMap<String, String> renameMap,
             boolean createSchema) {
         this.kind = kind;
         this.folder = folder;
         this.createSchema = createSchema;
         this.schema = schema;
-        this.renameMap = renameMap;
     }
 
     @Override
@@ -79,8 +71,6 @@ public class SaveAsFileSketch implements TableSketch<Empty> {
         try {
             if (this.schema != null)
                 data = data.project(this.schema);
-            if (this.renameMap != null && this.renameMap.size() != 0)
-                data = data.renameColumns(this.renameMap);
 
             // Executed for side-effect.
             data.getLoadedColumns(data.getSchema().getColumnNames());

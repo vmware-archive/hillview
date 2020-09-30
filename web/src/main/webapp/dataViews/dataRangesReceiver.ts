@@ -394,8 +394,8 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 }
                 if (this.title == null)
                     this.title = new PageTitle(
-                        "Quartiles of " + this.meta.schema.displayName(this.cds[1].name)!.toString() +
-                        " bucketed by " + this.meta.schema.displayName(this.cds[0].name)!.toString(), this.provenance!);
+                        "Quartiles of " + this.cds[1].name +
+                        " bucketed by " + this.cds[0].name, this.provenance!);
 
                 const histoArg = DataRangesReceiver.computeHistogramArgs(
                     this.cds[0], ranges[0], maxXBucketCount,
@@ -439,7 +439,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 const axisData = new AxisData(this.cds[0], ranges[0], histoArg.bucketCount);
                 if (this.title == null)
                     this.title = new PageTitle(
-                        "Histogram of " + this.meta.schema.displayName(this.cds[0].name)!.toString(), this.provenance!);
+                        "Histogram of " + this.cds[0].name, this.provenance!);
                 const renderer = new HistogramReceiver(this.title, this.page,
                     this.originator.remoteObjectId, this.getMeta(), axisData, rr, cdfArg.samplingRate,
                     this.options.pieChart != null ? this.options.pieChart : false, this.options.reusePage); // TODO sampling rate?
@@ -463,8 +463,8 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 const groupByAxis = new AxisData(this.cds[1], ranges[1]!, wArg.bucketCount);
                 if (this.title == null)
                     this.title = new PageTitle(
-                        "Histograms of " + this.meta.schema.displayName(this.cds[0].name)!.toString() +
-                        " grouped by " + this.meta.schema.displayName(this.cds[1].name)!.toString(), this.provenance!);
+                        "Histograms of " + this.cds[0].name +
+                        " grouped by " + this.cds[1].name, this.provenance!);
                 const renderer = new TrellisHistogramReceiver(this.title, this.page,
                     this.originator, this.getMeta(),
                     [xAxisData, groupByAxis], this.bucketCounts[0],
@@ -494,9 +494,9 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
 
                 if (this.title == null)
                     this.title = new PageTitle(
-                        "Trellis quartiles of " + this.meta.schema.displayName(this.cds[1].name)!.toString() +
-                        " bucketed by " + this.meta.schema.displayName(this.cds[0].name)!.toString() +
-                        " grouped by " + this.meta.schema.displayName(this.cds[2].name)!.toString(), this.provenance!);
+                        "Trellis quartiles of " + this.cds[1].name +
+                        " bucketed by " + this.cds[0].name +
+                        " grouped by " + this.cds[2].name, this.provenance!);
 
                 const histoArg0 = DataRangesReceiver.computeHistogramArgs(
                     this.cds[0], ranges[0], maxXBucketCount,
@@ -546,9 +546,9 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 if (this.title == null)
                     this.title = new PageTitle(
                         this.options.chartKind.toString().replace("Trellis", "") +
-                                 " (" + this.meta.schema.displayName(this.cds[0].name)!.displayName +
-                                 ", " + this.meta.schema.displayName(this.cds[1].name)!.displayName +
-                                 ") grouped by " + this.meta.schema.displayName(this.cds[2].name)!.displayName, this.provenance!);
+                                 " (" + this.cds[0].name +
+                                 ", " + this.cds[1].name +
+                                 ") grouped by " + this.cds[2].name, this.provenance!);
                 let renderer;
                 if (this.options.chartKind === "Trellis2DHistogram")
                     renderer = new TrellisHistogram2DReceiver(this.title, this.page,
@@ -578,8 +578,8 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 const yAxis = new AxisData(this.cds[1], ranges[1]!, yArg.bucketCount);
                 if (this.title == null)
                     this.title = new PageTitle(
-                        "Heatmap (" + this.meta.schema.displayName(this.cds[0].name)!.displayName + ", " +
-                        this.meta.schema.displayName(this.cds[1].name)!.displayName + ")", this.provenance!);
+                        "Heatmap (" + this.cds[0].name + ", " +
+                        this.cds[1].name + ")", this.provenance!);
                 if (this.isPrivate()) {
                     const rr = this.originator.createHistogram2DRequest(args);
                     const renderer = new HeatmapReceiver(this.title, this.page,
@@ -634,8 +634,8 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 const yData = new AxisData(this.cds[1], ranges[1]!, yarg.bucketCount);
                 if (this.title == null)
                     this.title = new PageTitle(
-                        "2DHistogram (" + this.meta.schema.displayName(this.cds[0].name)!.displayName + ", " +
-                    this.meta.schema.displayName(this.cds[1].name)!.displayName + ")", this.provenance!);
+                        "2DHistogram (" + this.cds[0].name + ", " +
+                    this.cds[1].name + ")", this.provenance!);
                 const renderer = new Histogram2DReceiver(this.title, this.page,
                     this.originator, this.getMeta(),[xAxis, yData], cdfArg.samplingRate, rr, this.options);
                 rr.chain(this.operation);

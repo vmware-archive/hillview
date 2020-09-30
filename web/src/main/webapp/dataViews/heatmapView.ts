@@ -27,7 +27,7 @@ import {
     RowValue,
 } from "../javaBridge";
 import {Receiver, RpcRequest} from "../rpc";
-import {DisplayName, SchemaClass} from "../schemaClass";
+import {SchemaClass} from "../schemaClass";
 import {BaseReceiver, ChartView, TableTargetAPI} from "../modules";
 import {IDataView} from "../ui/dataview";
 import {FullPage, PageTitle} from "../ui/fullPage";
@@ -168,12 +168,12 @@ export class HeatmapView extends
         const dialog = new Dialog("Details column",
             "Select the column used to display the second color map.");
         let input = dialog.addColumnSelectField("column", "Column:",
-            this.detailColumns.allDisplayNames().slice(2), null,
+            this.detailColumns.allColumnNames().slice(2), null,
             "Data in this column will be used for the second color map.");
         input.required = true;
         dialog.setAction(() => {
             const c = dialog.getColumnName("column");
-            this.detailIndex = this.detailColumns!.columnIndex(this.getSchema().fromDisplayName(c)!);
+            this.detailIndex = this.detailColumns!.columnIndex(c);
             this.resize();
         });
         dialog.show();
@@ -431,8 +431,7 @@ export class HeatmapView extends
         this.plot.draw();
 
         this.setupMouse();
-        const cols = this.getColumns().map(
-            (c) => this.getSchema().displayName(c.name)!.displayName);
+        const cols = this.getColumns().map((c) => c.name);
         cols.splice(2, 0, "count");
         assert(this.surface != null);
         this.pointDescription = new TextOverlay(
@@ -498,7 +497,7 @@ export class HeatmapView extends
     }
 
     public groupBy(): void {
-        const columns: DisplayName[] = this.getSchema().displayNamesExcluding(
+        const columns: string[] = this.getSchema().namesExcluding(
             [this.xAxisData.description.name, this.yAxisData.description.name]);
         this.chooseTrellis(columns);
     }
@@ -510,8 +509,8 @@ export class HeatmapView extends
         saveAs(fileName, lines.join("\n"));
     }
 
-    protected showTrellis(colName: DisplayName): void {
-        const groupBy = this.getSchema().findByDisplayName(colName);
+    protected showTrellis(colName: string): void {
+        const groupBy = this.getSchema().find(colName);
         if (groupBy == null)
             return;
         const cds: IColumnDescription[] = [this.xAxisData.description,

@@ -24,7 +24,6 @@ import {
     RemoteObjectId, RangeFilterArrayDescription,
 } from "../javaBridge";
 import {Receiver} from "../rpc";
-import {DisplayName} from "../schemaClass";
 import {CDFPlot, NoCDFPlot} from "../ui/cdfPlot";
 import {IDataView} from "../ui/dataview";
 import {Dialog, saveAs} from "../ui/dialog";
@@ -40,7 +39,7 @@ import {
     ICancellable, makeInterval,
     PartialResult,
     percentString,
-    significantDigits, Two, assertNever, assert, Exporter, roughTimeSpan,
+    significantDigits, Two, assertNever, assert, Exporter,
 } from "../util";
 import {AxisData} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
@@ -290,12 +289,12 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
     }
 
     public trellis(): void {
-        const columns: DisplayName[] = this.getSchema().displayNamesExcluding([this.xAxisData.description.name]);
+        const columns: string[] = this.getSchema().namesExcluding([this.xAxisData.description.name]);
         this.chooseTrellis(columns);
     }
 
-    protected showTrellis(colName: DisplayName): void {
-        const groupBy = this.getSchema().findByDisplayName(colName);
+    protected showTrellis(colName: string): void {
+        const groupBy = this.getSchema().find(colName);
         const cds: IColumnDescription[] = [this.xAxisData.description, groupBy!];
         const rr = this.createDataQuantilesRequest(cds, this.page, "TrellisHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.meta,
@@ -317,12 +316,12 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
     }
 
     public chooseSecondColumn(): void {
-        const columns: DisplayName[] = [];
+        const columns: string[] = [];
         for (let i = 0; i < this.getSchema().length; i++) {
             const col = this.getSchema().get(i);
             if (col.name === this.xAxisData.description.name)
                 continue;
-            columns.push(this.getSchema().displayName(col.name)!);
+            columns.push(col.name);
         }
         if (columns.length === 0) {
             this.page.reportError("No other acceptable columns found");
@@ -338,13 +337,13 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
     }
 
     public chooseQuartilesColumn(): void {
-        const columns: DisplayName[] = [];
+        const columns: string[] = [];
         for (let i = 0; i < this.getSchema().length; i++) {
             const col = this.getSchema().get(i);
             if (col.name === this.xAxisData.description.name ||
                 !kindIsNumeric(col.kind))
                 continue;
-            columns.push(this.getSchema().displayName(col.name)!);
+            columns.push(col.name);
         }
         if (columns.length === 0) {
             this.page.reportError("No other acceptable columns found");
@@ -366,8 +365,8 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
         saveAs(fileName, lines.join("\n"));
     }
 
-    private showSecondColumn(colName: DisplayName): void {
-        const oc = this.getSchema().findByDisplayName(colName);
+    private showSecondColumn(colName: string): void {
+        const oc = this.getSchema().find(colName);
         const cds: IColumnDescription[] = [this.xAxisData.description, oc!];
         const rr = this.createDataQuantilesRequest(cds, this.page, "2DHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.meta,
@@ -379,8 +378,8 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
         }));
     }
 
-    private showQuartiles(colName: DisplayName): void {
-        const oc = this.getSchema().findByDisplayName(colName);
+    private showQuartiles(colName: string): void {
+        const oc = this.getSchema().find(colName);
         const qhr = new DataRangesReceiver(this, this.page, null,
             this.meta, [this.xAxisData.bucketCount],
             [this.xAxisData.description, oc!],

@@ -32,7 +32,7 @@ import {
     StringColumnFilterDescription, AggregateDescription, CountWithConfidence, DataKinds, SaveAsArgs, LoadedTable, Empty
 } from "../javaBridge";
 import {OnCompleteReceiver} from "../rpc";
-import {DisplayName, SchemaClass} from "../schemaClass";
+import {SchemaClass} from "../schemaClass";
 import {BigTableView} from "../modules";
 import {Dialog, FieldKind, saveAs} from "../ui/dialog";
 import {FullPage, PageTitle} from "../ui/fullPage";
@@ -88,24 +88,23 @@ export abstract class TSViewBase extends BigTableView {
     /**
      * Convert the data in a column to a different column kind.
      */
-    public convert(origDisplayName: DisplayName, order: RecordOrder | null,
+    public convert(from: string, order: RecordOrder | null,
                    rowsDesired: number, aggregates: AggregateDescription[] | null): void {
-        const dialog = new ConverterDialog(origDisplayName, this.getSchema());
+        const dialog = new ConverterDialog(from, this.getSchema());
         dialog.setAction(
             () => {
-                const displayName = dialog.getColumnName("columnName");
-                const dispName = this.getSchema().fromDisplayName(displayName);
-                if (dispName == null) {
-                    this.page.reportError(`Column name ${displayName} not found.`);
+                const colName = dialog.getColumnName("columnName");
+                const columnIndex = this.getSchema().columnIndex(colName);
+                if (columnIndex < 0) {
+                    this.page.reportError(`Column name ${colName} not found.`);
                     return;
                 }
-                const columnIndex = this.getSchema().columnIndex(dispName);
                 const kindStr = dialog.getFieldValue("newKind");
                 const kind: ContentsKind = asContentsKind(kindStr);
                 const keep = dialog.getBooleanValue("keep");
                 const newColName = keep ?
                     dialog.getFieldValue("newColumnName") :
-                    this.getSchema().uniqueColumnName(displayName.displayName);
+                    this.getSchema().uniqueColumnName(colName);
 
                 if (this.getSchema().columnIndex(newColName) >= 0) {
                     this.page.reportError(`Column name ${newColName} already exists in table.`);
@@ -113,7 +112,7 @@ export abstract class TSViewBase extends BigTableView {
                 }
 
                 const args: ConvertColumnInfo = {
-                    colName: this.getSchema().findByDisplayName(displayName)!.name,
+                    colName,
                     newColName: newColName,
                     newKind: kind,
                     columnIndex: columnIndex,
@@ -129,10 +128,9 @@ export abstract class TSViewBase extends BigTableView {
                     o.addColumn({columnDescription: cd, isAscending: true});
                 if (!keep) {
                     const initial = schema.length;
-                    schema = schema.filter((c) => !schema.displayName(c.name)!.equals(displayName));
+                    schema = schema.filter((c) => c.name != colName);
                     console.assert(schema.length < initial);
-                    const ok = schema.changeDisplayName(new DisplayName(newColName), displayName.displayName);
-                    console.assert(ok);
+                    schema = schema.renameColumn(newColName, colName)!;
                 }
                 const meta: TableMeta = { schema: schema, rowCount: this.meta.rowCount, geoMetadata: this.meta.geoMetadata };
                 rr.invoke(new TableOperationCompleted(this.page, rr, meta,
@@ -148,7 +146,7 @@ export abstract class TSViewBase extends BigTableView {
     protected geo(column: IColumnDescription): void {
         const rr = this.createGeoRequest(column);
         const args: ReceiverCommonArgs = {
-            title: new PageTitle("Count of " + this.getSchema().displayName(column.name)!.displayName,
+            title: new PageTitle("Count of " + column.name,
                 this.defaultProvenance),
             remoteObject: this,
             ...this.meta,
@@ -166,23 +164,23 @@ export abstract class TSViewBase extends BigTableView {
             return;
         }
         const colName = cols[0];
-        const displayName = this.getSchema().displayName(colName)!;
-        const dialog = new Dialog("Rename column", "Choose a new name for column " + displayName);
+        const dialog = new Dialog("Rename column", "Choose a new name for column " + colName);
         const name = dialog.addTextField("name", "New name",
-            FieldKind.String, displayName.displayName, "New name to use for column");
+            FieldKind.String, colName, "New name to use for column");
         name.required = true;
-        dialog.setAction(() => this.doRenameColumn(displayName, dialog.getFieldValue("name")));
+        dialog.setAction(() => {
+            const from = colName;
+            const to = dialog.getFieldValue("name");
+            if (this.getSchema().find(to) != null) {
+                this.page.reportError("Cannot rename column to " + to + " since the name is already used.");
+                return;
+            }
+            this.doRenameColumn(from, to);
+        });
         dialog.show();
     }
 
-    public doRenameColumn(fromDisplayName: DisplayName, to: string): void {
-        this.meta.schema = this.getSchema().clone();
-        if (!this.getSchema().changeDisplayName(fromDisplayName, to)) {
-            this.page.reportError("Cannot rename column to " + to + " since the name is already used.");
-            return;
-        }
-        this.resize();
-    }
+    protected abstract doRenameColumn(from: string, to: string): void;
 
     public saveAs(schema: SchemaClass, fileKind: DataKinds): void {
         const dialog = new Dialog("Save as " + fileKind + " files",
@@ -202,7 +200,6 @@ export abstract class TSViewBase extends BigTableView {
                 folder: directory,
                 fileKind,
                 schema: schema.schema,
-                renameMap: schema.getRenameVector()
             };
             const rr = this.createStreamingRpcRequest<Empty>("saveAs", args);
             const renderer = new SaveReceiver(this.page, args, folderName, rr);
@@ -247,7 +244,6 @@ export abstract class TSViewBase extends BigTableView {
             outputColumn: col,
             outputKind: asContentsKind(kind),
             schema: subSchema.schema,
-            renameMap: subSchema.getRenameVector(),
         };
         const rr = this.createJSCreateColumnRequest(arg);
         const cd: IColumnDescription = {
@@ -283,7 +279,7 @@ export abstract class TSViewBase extends BigTableView {
             return;
         }
 
-        const allColumns = this.getSchema().allDisplayNames();
+        const allColumns = this.getSchema().allColumnNames();
         const dia = new Dialog(viewKind,
                         "Display a " + viewKind + " of the data in two columns");
         dia.addColumnSelectField("columnName0", "First column", allColumns, allColumns[0],
@@ -292,10 +288,8 @@ export abstract class TSViewBase extends BigTableView {
                     "Second column " + (viewKind === "2DHistogram" ? "(Y axis)" : "(color)"));
         dia.setAction(
             () => {
-                const c0 = dia.getColumnName("columnName0");
-                const col0 = this.getSchema().fromDisplayName(c0);
-                const c1 = dia.getColumnName("columnName1");
-                const col1 = this.getSchema().fromDisplayName(c1);
+                const col0 = dia.getColumnName("columnName0");
+                const col1 = dia.getColumnName("columnName1");
                 if (col0 == null || col1 == null)
                     return;
                 if (col0 === col1) {
@@ -311,7 +305,7 @@ export abstract class TSViewBase extends BigTableView {
 
     public trellisMenu(chartKind: ViewKind): void {
         const count = chartKind == "TrellisHistogram" ? 2 : 3;
-        const allColumns = this.getSchema().allDisplayNames();
+        const allColumns = this.getSchema().allColumnNames();
         const dia = new Dialog(chartKind,
             "Display a " + chartKind);
         dia.addColumnSelectField("columnName0", "First column", allColumns, allColumns[0],
@@ -324,22 +318,17 @@ export abstract class TSViewBase extends BigTableView {
 
         dia.setAction(
             () => {
-                const c0 = dia.getColumnName("columnName0");
-                const col0 = this.getSchema().fromDisplayName(c0);
-                const c1 = dia.getColumnName("columnName1");
-                const col1 = this.getSchema().fromDisplayName(c1);
+                const col0 = dia.getColumnName("columnName0");
+                const col1 = dia.getColumnName("columnName1");
                 if (col0 == null || col1 == null)
                     return;
                 if (col0 === col1) {
                     this.page.reportError("The columns must be distinct");
                     return;
                 }
-                let col2 = null;
                 const colNames = [col0, col1];
-
                 if (count === 3) {
-                    const c2 = dia.getColumnName("columnName2");
-                    col2 = this.getSchema().fromDisplayName(c2);
+                    const col2 = dia.getColumnName("columnName2");
                     if (col2 == null)
                         return;
                     if (col0 === col2 || col1 === col2) {
@@ -363,15 +352,15 @@ export abstract class TSViewBase extends BigTableView {
         }
         const colName = this.getSelectedColNames()[0];
         const rr = this.createHLogLogRequest(colName);
-        const rec = new CountReceiver(this.getPage(), rr, this.getSchema().displayName(colName)!);
+        const rec = new CountReceiver(this.getPage(), rr, colName);
         rr.invoke(rec);
     }
 
     public oneDHistogramMenu(): void {
-        const dia = new HistogramDialog(this.getSchema().allDisplayNames());
+        const dia = new HistogramDialog(this.getSchema().allColumnNames());
         dia.setAction(
             () => {
-                const col = this.getSchema().fromDisplayName(dia.getColumn())!;
+                const col = dia.getColumn();
                 const cds = this.getSchema().getCheckedDescriptions([col]);
                 this.chart(cds, "Histogram");
             },
@@ -424,15 +413,15 @@ export abstract class TSViewBase extends BigTableView {
 
     /**
      * Show a dialog to compare values on the specified column.
-     * @param displayColName     Display column name.  If null the user will select the column.
+     * @param colName     Column name.  If null the user will select the column.
      * @param order  Current record ordering; if null the data will be displayed in a schema view.
      * @param tableRowsDesired  Number of table rows to display.
      * @param aggregates        Aggregations that should be computed.
      */
     protected showFilterDialog(
-        displayColName: DisplayName | null, order: RecordOrder | null, tableRowsDesired: number,
+        colName: string | null, order: RecordOrder | null, tableRowsDesired: number,
         aggregates: AggregateDescription[] | null): void {
-        const cd = this.getSchema().findByDisplayName(displayColName)!;
+        const cd = this.getSchema().find(colName)!;
         const ef = new FilterDialog(cd, this.getSchema());
         ef.setAction(() => {
             const rowFilter = ef.getFilter();
@@ -458,15 +447,15 @@ export abstract class TSViewBase extends BigTableView {
 
     /**
      * Show a dialog to compare values on the specified column.
-     * @param displayName       Column display name.  If null the user will select the column.
+     * @param colName           Column name.  If null the user will select the column.
      * @param order             Current record ordering.
      * @param tableRowsDesired  Number of table rows to display.
      * @param aggregates        Aggregations that should be computed.
      */
     protected showCompareDialog(
-        displayName: DisplayName | null, order: RecordOrder | null, tableRowsDesired: number,
+        colName: string | null, order: RecordOrder | null, tableRowsDesired: number,
         aggregates: AggregateDescription[] | null): void {
-        const cfd = new ComparisonFilterDialog(displayName, this.getSchema(), this.page.getErrorReporter());
+        const cfd = new ComparisonFilterDialog(colName, this.getSchema(), this.page.getErrorReporter());
         cfd.setAction(() => this.runComparisonFilter(
             cfd.getFilter(), order, tableRowsDesired, aggregates));
         cfd.show();
@@ -518,7 +507,7 @@ export abstract class TSViewBase extends BigTableView {
         let title = "Frequent Elements from ";
         const cols: string[] = this.getSelectedColNames();
         if (cols.length <= 1) {
-            title += " " + this.getSchema().displayName(cols[0]);
+            title += " " + cols[0];
         } else {
             title += cols.length + " columns";
         }
@@ -550,7 +539,7 @@ class FilterDialog extends Dialog {
         super("Filter" + (columnDescription == null ? "" : (" " + columnDescription.name)),
             "Eliminates data from a column according to its value.");
         if (columnDescription == null) {
-            const cols = this.schema.allDisplayNames();
+            const cols = this.schema.allColumnNames();
             if (cols.length === 0)
                 return;
             this.addColumnSelectField("column", "Column", cols, null, "Column that is filtered");
@@ -571,7 +560,7 @@ class FilterDialog extends Dialog {
         const textQuery: string = this.getFieldValue("query");
         if (this.columnDescription == null) {
             const colName = this.getColumnName("column");
-            this.columnDescription = this.schema.find(this.schema.fromDisplayName(colName))!;
+            this.columnDescription = this.schema.find(colName)!;
         }
         const asSubString = this.getBooleanValue("asSubString");
         const asRegEx = this.getBooleanValue("asRegEx");
@@ -594,16 +583,16 @@ class FilterDialog extends Dialog {
 class ComparisonFilterDialog extends Dialog {
     private explanation: HTMLElement;
 
-    constructor(private displayName: DisplayName | null,
+    constructor(private colName: string | null,
                 private schema: SchemaClass,
                 private reporter: ErrorReporter) {
-        super("Compare " + (displayName != null ? displayName.toString() : ""),
+        super("Compare " + (colName != null ? colName : ""),
             "Compare values");
         this.explanation = this.addText("Value == row[" +
-            (displayName != null ? displayName.toString() : "?") + "]");
+            (colName != null ? colName : "?") + "]");
 
-        if (displayName == null) {
-            const cols = this.schema.allDisplayNames();
+        if (colName == null) {
+            const cols = this.schema.allColumnNames();
             if (cols.length === 0)
                 return;
             const col = this.addColumnSelectField("column", "Column", cols, null, "Column that is filtered");
@@ -619,10 +608,10 @@ class ComparisonFilterDialog extends Dialog {
         this.selectionChanged();
     }
 
-    protected getColName(): DisplayName {
-        if (this.displayName == null)
+    protected getColName(): string {
+        if (this.colName == null)
             return this.getColumnName("column");
-        return this.displayName;
+        return this.colName;
     }
 
     protected selectionChanged(): void {
@@ -637,13 +626,13 @@ class ComparisonFilterDialog extends Dialog {
         let endValue: number | null = null;
 
         let colSelected;
-        if (this.displayName == null) {
+        if (this.colName == null) {
             colSelected = this.getColumnName("column");
         } else {
-            colSelected = this.displayName;
+            colSelected = this.colName;
         }
 
-        const columnDescription = this.schema.findByDisplayName(colSelected);
+        const columnDescription = this.schema.find(colSelected);
         if (columnDescription == null)
             return null;
         if (columnDescription.kind === "Date") {
@@ -693,14 +682,14 @@ class ComparisonFilterDialog extends Dialog {
 
 class CountReceiver extends OnCompleteReceiver<CountWithConfidence> {
     constructor(page: FullPage, operation: ICancellable<CountWithConfidence>,
-                protected colName: DisplayName) {
+                protected colName: string) {
         super(page, operation, "Estimate distinct count");
     }
 
     public run(data: CountWithConfidence): void {
         const timeInMs = this.elapsedMilliseconds();
         this.page.reportError("Distinct values in column \'" +
-            this.colName.toString() + "\' " + SpecialChars.approx + String(data.count) + "\n" +
+            this.colName + "\' " + SpecialChars.approx + String(data.count) + "\n" +
             "Operation took " + significantDigits(timeInMs / 1000) + " seconds");
     }
 }
@@ -725,7 +714,7 @@ class SaveReceiver extends OnCompleteReceiver<Empty> {
             const rec = new SaveDbCompleteReceiver(this.page, rr);
             rr.invoke(rec);
         } else {
-            this.page.reportError("Save successful.");
+            this.page.reportError("Save successful in " + significantDigits(this.elapsedMilliseconds() / 1000) + " seconds");
         }
     }
 }
@@ -738,7 +727,7 @@ class SaveDbCompleteReceiver extends OnCompleteReceiver<Empty> {
     public run(value: Empty): void {
         // If this runs the value is actually irrelevant, we have succeeded.
         // The alternative is that an exception was thrown someplace.
-        this.page.reportError("Save successful.");
+        this.page.reportError("Save successful in " + significantDigits(this.elapsedMilliseconds() / 1000) + " seconds");
     }
 }
 
@@ -749,10 +738,10 @@ export class ConverterDialog extends Dialog {
     // noinspection TypeScriptFieldCanBeMadeReadonly
     private columnNameFixed: boolean = false;
 
-    constructor(protected readonly displayName: DisplayName,
+    constructor(protected readonly colName: string,
                 protected readonly schema: SchemaClass) {
         super("Convert column", "Creates a new column by converting the data in an existing column to a new type.");
-        const cn = this.addColumnSelectField("columnName", "Column: ", schema.allDisplayNames(), displayName,
+        const cn = this.addColumnSelectField("columnName", "Column: ", schema.allColumnNames(), colName,
             "Column whose type is converted");
         const nk = this.addSelectField("newKind", "Convert to: ",
             allContentsKind, null,
@@ -760,7 +749,7 @@ export class ConverterDialog extends Dialog {
         const check = this.addBooleanField("keep", "Keep original column", false,
             "If true the original column will be kept");
         const newNameField = this.addTextField(
-            "newColumnName", "New column name: ", FieldKind.String, displayName.toString(),
+            "newColumnName", "New column name: ", FieldKind.String, colName,
             "A name for the new column.  The name must be different from all other column names.");
         this.showField("newColumnName", false);
         check.onchange = () => this.generateColumnName();
@@ -779,18 +768,18 @@ export class ConverterDialog extends Dialog {
             return;
         const cn = this.getColumnName("columnName");
         const suffix = " (" + this.getFieldValue("newKind") + ")";
-        const nn = this.schema.uniqueColumnName(cn.displayName + suffix);
+        const nn = this.schema.uniqueColumnName(cn + suffix);
         this.setFieldValue("newColumnName", nn);
     }
 }
 
 export class HistogramDialog extends Dialog {
-    constructor(allColumns: DisplayName[]) {
+    constructor(allColumns: string[]) {
         super("1D histogram", "Display a 1D histogram of the data in a column");
         this.addColumnSelectField("columnName", "Column", allColumns, null, "Column to histogram");
     }
 
-    public getColumn(): DisplayName {
+    public getColumn(): string {
         return this.getColumnName("columnName");
     }
 }

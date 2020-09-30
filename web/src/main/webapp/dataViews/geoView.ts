@@ -26,7 +26,6 @@ import {ChartView} from "./chartView";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {assert, Converters, Exporter, ICancellable, PartialResult, significantDigits} from "../util";
 import {BaseReceiver, TableTargetAPI} from "../tableTarget";
-import {DisplayName} from "../schemaClass";
 import {CommonArgs, TableMeta, OnCompleteReceiverCommon, ReceiverCommonArgs} from "../ui/receiver";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {IDataView} from "../ui/dataview";
@@ -156,7 +155,7 @@ export class GeoView extends ChartView<NextKList> {
     refresh(): void {
         const rr = this.createGeoRequest(this.keyColumn);
         const args: ReceiverCommonArgs = {
-            title: new PageTitle("Count of " + this.meta.schema.displayName(this.keyColumn.name)!.displayName,
+            title: new PageTitle("Count of " + this.keyColumn.name,
                 this.defaultProvenance),
             remoteObject: this,
             originalPage: this.page,
@@ -173,7 +172,7 @@ export class GeoView extends ChartView<NextKList> {
         this.updateView(this.data, true);
     }
 
-    protected showTrellis(colName: DisplayName): void {
+    protected showTrellis(colName: string): void {
         // TODO
     }
 

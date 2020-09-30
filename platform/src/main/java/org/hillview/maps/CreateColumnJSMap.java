@@ -26,17 +26,14 @@ import org.hillview.table.api.*;
 import org.hillview.table.columns.BaseColumn;
 import org.hillview.table.columns.IntervalColumn;
 import org.hillview.table.rows.JSVirtualRowSnapshot;
-import org.hillview.utils.Utilities;
 
-import javax.annotation.Nullable;
 import java.io.Serializable;
-import java.util.HashMap;
 
 /**
  * This map creates a new column by running a JavaScript
  * function over a set of columns.
  */
-public class CreateColumnJSMap extends AppendColumnMap {
+public class CreateColumnJSMap extends AppendOrReplaceColumnMap {
     static final long serialVersionUID = 1;
 
     public static class Info implements Serializable {
@@ -49,32 +46,25 @@ public class CreateColumnJSMap extends AppendColumnMap {
         Schema schema;
         String outputColumn;
         ContentsKind outputKind;
-        /**
-         * Map string->string described by a string array.
-         */
-        @Nullable
-        String[] renameMap;
 
-        public Info(String jsFunction, Schema schema, String outputColumn, ContentsKind outputKind, @Nullable String[] renameMap) {
+        public Info(String jsFunction, Schema schema, String outputColumn, ContentsKind outputKind) {
             this.jsFunction = jsFunction;
             this.schema = schema;
             this.outputColumn = outputColumn;
             this.outputKind = outputKind;
-            this.renameMap = renameMap;
         }
     }
 
     public final Info info;
 
     public CreateColumnJSMap(Info info) {
-        super(info.outputColumn, -1);
+        super(-1);
         this.info = info;
     }
 
     @Override
     IColumn createColumn(ITable table) {
         try {
-            HashMap<String, String> renameMap = Utilities.arrayToMap(this.info.renameMap);
             Context context = Context.newBuilder().allowAllAccess(true).build();
             // Compiles the JS function
             context.eval("js", this.info.jsFunction);
@@ -94,7 +84,7 @@ public class CreateColumnJSMap extends AppendColumnMap {
             table.getLoadedColumns(this.info.schema.getColumnNames());
 
             JSVirtualRowSnapshot vrs = new JSVirtualRowSnapshot(
-                    table, this.info.schema, renameMap, context);
+                    table, this.info.schema, context);
             ProxyObject vrsProxy = ProxyObject.fromMap(vrs);
             IRowIterator it = table.getMembershipSet().getIterator();
             int r = it.getNextRow();

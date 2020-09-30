@@ -114,22 +114,23 @@ export class LogFileView extends TableTargetAPI implements IHtmlElement, OnNextK
         const row = document.createElement("tr");
         row.className = "logHeader";
         tbl.appendChild(row);
-        for (const col of this.schema.columnNames) {
+        for (const col of this.schema.schema) {
+            const colName = col.name;
             const cell = row.insertCell();
-            cell.textContent = col;
-            cell.onclick = () => this.rotateColor(col, cell);
+            cell.textContent = colName;
+            cell.onclick = () => this.rotateColor(colName, cell);
             const check = document.createElement("input");
             check.type = "checkbox";
             let checked = true;
-            if (col === GenericLogs.filenameColumn ||
-                col === GenericLogs.directoryColumn)
+            if (colName === GenericLogs.filenameColumn ||
+                colName === GenericLogs.directoryColumn)
                 checked = false;
             check.checked = checked;
-            check.onclick = (e) => { this.check(col); e.stopPropagation(); };
+            check.onclick = (e) => { this.check(colName); e.stopPropagation(); };
             cell.appendChild(check);
             if (checked)
-                this.visibleColumns.add(col);
-            this.color.set(col, "black");
+                this.visibleColumns.add(colName);
+            this.color.set(colName, "black");
         }
     }
 

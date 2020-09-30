@@ -17,7 +17,6 @@
 
 import {BigTableView} from "../modules";
 import {BucketsInfo, IColumnDescription, RangeFilterArrayDescription, RecordOrder, RemoteObjectId} from "../javaBridge";
-import {DisplayName} from "../schemaClass";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {D3SvgElement, DragEventKind, Point, Resolution, ViewKind} from "../ui/ui";
 import {TextOverlay} from "../ui/textOverlay";
@@ -190,7 +189,7 @@ export abstract class ChartView<D> extends BigTableView {
         return false;
     }
 
-    protected chooseTrellis(columns: DisplayName[]): void {
+    protected chooseTrellis(columns: string[]): void {
         if (columns.length === 0) {
             this.page.reportError("No acceptable columns found");
             return;
@@ -203,7 +202,7 @@ export abstract class ChartView<D> extends BigTableView {
         dialog.show();
     }
 
-    protected abstract showTrellis(colName: DisplayName): void;
+    protected abstract showTrellis(colName: string): void;
 
     public getSourceAxisRange(sourcePageId: string, dragEvent: DragEventKind): BucketsInfo | null {
         const page = this.dataset.findPage(Number(sourcePageId));

@@ -27,7 +27,7 @@ import java.io.Serializable;
 /**
  * This map creates a new column by applying the function to each element in an input column.
  */
-public abstract class CreateColumnMap extends AppendColumnMap {
+public abstract class CreateColumnMap extends AppendOrReplaceColumnMap {
     static final long serialVersionUID = 1;
 
     static class Info implements Serializable {
@@ -45,7 +45,7 @@ public abstract class CreateColumnMap extends AppendColumnMap {
     private final Info info;
 
     CreateColumnMap(Info info) {
-        super(info.outputColumn, info.outputIndex);
+        super(info.outputIndex);
         this.info = info;
     }
 
@@ -55,7 +55,7 @@ public abstract class CreateColumnMap extends AppendColumnMap {
     @Override
     public IColumn createColumn(ITable table) {
         IColumn col = table.getLoadedColumn(this.info.inputColumn.name);
-        ColumnDescription outputColumn = new ColumnDescription(this.newColName, ContentsKind.String);
+        ColumnDescription outputColumn = new ColumnDescription(this.info.outputColumn, ContentsKind.String);
         IMutableColumn outCol = BaseColumn.create(outputColumn,
                 table.getMembershipSet().getMax(),
                 table.getMembershipSet().getSize());

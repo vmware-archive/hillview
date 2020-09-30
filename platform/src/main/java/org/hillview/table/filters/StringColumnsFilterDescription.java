@@ -22,8 +22,6 @@ import org.hillview.table.api.*;
 import org.hillview.table.rows.VirtualRowSnapshot;
 import org.hillview.utils.Utilities;
 
-import javax.annotation.Nullable;
-
 public class StringColumnsFilterDescription implements ITableFilterDescription {
     static final long serialVersionUID = 1;
 
@@ -35,17 +33,11 @@ public class StringColumnsFilterDescription implements ITableFilterDescription {
      * The description of the filter that will be used.
      */
     private final StringFilterDescription stringFilterDescription;
-    /*
-     * Map string->string described by a string array.
-     */
-    @Nullable
-    private final String[] renameMap;
 
     public StringColumnsFilterDescription(String[] colNames, StringFilterDescription
-            stringFilterDescription, @Nullable String[] renameMap) {
+            stringFilterDescription) {
         this.colNames = colNames;
         this.stringFilterDescription = stringFilterDescription;
-        this.renameMap = renameMap;
     }
 
     @Override
@@ -63,9 +55,7 @@ public class StringColumnsFilterDescription implements ITableFilterDescription {
             this.stringFilter = StringFilterFactory.getFilter(stringFilterDescription);
             Schema schema = table.getSchema().project(
                     c -> Utilities.indexOf(StringColumnsFilterDescription.this.colNames, c) >= 0);
-            this.vrs = new VirtualRowSnapshot(
-                    table, schema,
-                    Utilities.arrayToMap(StringColumnsFilterDescription.this.renameMap));
+            this.vrs = new VirtualRowSnapshot(table, schema);
         }
 
         /**

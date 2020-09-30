@@ -20,7 +20,6 @@ import {event as d3event, select as d3select} from "d3-selection";
 import {cloneArray, makeId, makeSpan, makeInputBox, px} from "../util";
 import {EditBox} from "./editBox";
 import {IHtmlElement, Point} from "./ui";
-import {DisplayName} from "../schemaClass";
 import * as FileSaver from "file-saver";
 
 export enum FieldKind {
@@ -569,15 +568,15 @@ export class Dialog extends DialogBase {
      * @return       A reference to the select html input field.
      */
     public addColumnSelectField(fieldName: string, labelText: string,
-                                options: DisplayName[], value: DisplayName | null,
+                                options: string[], value: string | null,
                                 toolTip: string): HTMLInputElement | HTMLSelectElement {
         let v = null;
         if (value !== null)
-            v = value.displayName;
+            v = value;
         else if (options.length > 0)
-            v = options[0].displayName;
+            v = options[0];
         return this.addSelectInternal(
-            fieldName, labelText, options.map((c) => c.displayName),
+            fieldName, labelText, options,
             v, toolTip, FieldKind.ColumnName);
     }
 
@@ -621,10 +620,10 @@ export class Dialog extends DialogBase {
      * Get the value associated with a field that represents a column name.
      * @param field  Field name.
      */
-    public getColumnName(field: string): DisplayName {
+    public getColumnName(field: string): string {
         const f = this.fields.get(field);
         console.assert(f.type === FieldKind.ColumnName);
-        return new DisplayName(f.html.value);
+        return f.html.value;
     }
 
     /**
@@ -665,10 +664,10 @@ export class Dialog extends DialogBase {
      * @param {string} field  Field whose value is set.
      * @param value  Value that is being set.
      */
-    public setColumnValue(field: string, value: DisplayName): void {
+    public setColumnValue(field: string, value: string): void {
         const f = this.fields.get(field);
         console.assert(f.type === FieldKind.ColumnName);
-        f.html.value = value.displayName;
+        f.html.value = value;
     }
 
     /**

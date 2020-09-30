@@ -87,7 +87,6 @@ export interface SaveAsArgs {
     fileKind: DataKinds;
     folder: string;
     schema: Schema | null;
-    renameMap: string[] | null;
 }
 
 // Describes the configuration of the UI for a specific installation of Hillview
@@ -207,7 +206,6 @@ export interface CreateColumnJSMapInfo {
     schema: Schema;
     outputColumn: string;
     outputKind: ContentsKind;
-    renameMap: string[];
 }
 
 export interface ExtractValueFromKeyMapInfo {
@@ -323,6 +321,11 @@ export interface BasicColStats {
     maxString?: string;
 }
 
+export interface RenameArgs {
+    fromName: string;
+    toName: string;
+}
+
 export interface RangeFilterDescription {
     min: number | null;
     max: number | null;
@@ -340,7 +343,6 @@ export interface RangeFilterArrayDescription {
 export interface JSFilterInfo {
     jsCode: string;
     schema: Schema;
-    renameMap: string[];
 }
 
 export interface RowFilterDescription {
