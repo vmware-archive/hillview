@@ -197,11 +197,10 @@ export class Test {
                 (formField as HTMLInputElement).value = "Date";
                 const confirm = findElement(".dialog .confirm");
                 confirm.click();
-                this.next(); // synchronous -- fall into next test
             }
         }, {
             description: "drop column Cancelled",
-            cond: () => true,
+            cond: () => Test.existsElement("#hillviewPage1 .idle"),
             cont: () => {
                 // Drop column cancelled
                 const cancCol = findElement("#hillviewPage1 thead td[data-colname=Cancelled] .truncated");

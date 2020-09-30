@@ -42,7 +42,6 @@ import {
 import {AxisData, AxisKind} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
 import {DataRangesReceiver, NewTargetReceiver} from "./dataRangesReceiver";
-import {DisplayName} from "../schemaClass";
 import {Quartiles2DPlot} from "../ui/quartiles2DPlot";
 import {saveAs} from "../ui/dialog";
 import {TableMeta} from "../ui/receiver";
@@ -97,13 +96,13 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
     }
 
     public trellis(): void {
-        const columns: DisplayName[] = this.getSchema().displayNamesExcluding(
+        const columns: string[] = this.getSchema().namesExcluding(
             [this.xAxisData.description.name, this.qCol.name]);
         this.chooseTrellis(columns);
     }
 
-    protected showTrellis(colName: DisplayName): void {
-        const groupBy = this.getSchema().findByDisplayName(colName)!;
+    protected showTrellis(colName: string): void {
+        const groupBy = this.getSchema().find(colName)!;
         const cds: IColumnDescription[] = [
             this.xAxisData.description,
             this.qCol,
@@ -151,7 +150,7 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
         assert(this.surface != null);
         this.pointDescription = new TextOverlay(this.surface.getChart(),
             this.surface.getActualChartSize(),
-            [this.xAxisData.getDisplayNameString(this.getSchema())!, "bucket",
+            [this.xAxisData.getName()!, "bucket",
                 "max", "q3", "median", "q1", "min", "count", "missing"], 40);
         this.pointDescription.show(false);
         this.standardSummary();

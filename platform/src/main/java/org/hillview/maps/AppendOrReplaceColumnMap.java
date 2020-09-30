@@ -20,26 +20,24 @@ package org.hillview.maps;
 import org.hillview.dataset.api.IMap;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
+import org.hillview.utils.Linq;
 
 import javax.annotation.Nullable;
+import java.util.List;
 
 /**
- * This is a base class for map computations that need to add
- * a column to a table.
+ * This is a base class for map computations that need to add or replace
+ * a column to a table.  If the newly created column has a name that already exists
+ * then the old column is replaced and the index is ignored.
  */
-public abstract class AppendColumnMap implements IMap<ITable, ITable> {
+public abstract class AppendOrReplaceColumnMap implements IMap<ITable, ITable> {
     static final long serialVersionUID = 1;
-    /**
-     * Name for the new column.
-     */
-    final String newColName;
     /**
      * Where to insert the new column; if -1 the column is inserted at the end.
      */
     private final int    insertionIndex;
 
-    AppendColumnMap(String newColName, int insertionIndex) {
-        this.newColName = newColName;
+    AppendOrReplaceColumnMap(int insertionIndex) {
         this.insertionIndex = insertionIndex;
     }
 
@@ -53,9 +51,14 @@ public abstract class AppendColumnMap implements IMap<ITable, ITable> {
     @Override
     public ITable apply(@Nullable ITable table) {
         assert table != null;
-        if (table.getSchema().containsColumnName(this.newColName))
-            throw new IllegalArgumentException("Column " + this.newColName + " already exists in table.");
         IColumn column = this.createColumn(table);
-        return table.insertColumn(column, this.insertionIndex);
+        String name = column.getName();
+        if (table.getSchema().containsColumnName(name)) {
+            List<IColumn> cols = Linq.map(table.getColumns(table.getSchema()),
+                    c -> c.getName().equals(name) ? column : c);
+            return table.replace(cols);
+        } else {
+            return table.insertColumn(column, this.insertionIndex);
+        }
     }
 }

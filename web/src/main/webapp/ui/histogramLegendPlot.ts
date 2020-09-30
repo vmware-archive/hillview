@@ -18,7 +18,6 @@
 import {AxisData, AxisKind} from "../dataViews/axisData";
 import {Plot} from "./plot";
 import {Resolution} from "./ui";
-import {SchemaClass} from "../schemaClass";
 import {LegendPlot} from "./legendPlot";
 import {HtmlPlottingSurface} from "./plottingSurface";
 import {assertNever, ColorMap, desaturateOutsideRange} from "../util";
@@ -37,7 +36,6 @@ export class HistogramLegendPlot extends LegendPlot<void> {
     protected readonly missingGap = 30;
     protected readonly missingWidth = 20;
     protected colorWidth: number;
-    protected schema: SchemaClass;
     public    colorMap: ColorMap;
     protected originalMap: ColorMap;
 
@@ -50,7 +48,7 @@ export class HistogramLegendPlot extends LegendPlot<void> {
     public draw(): void {
         this.plottingSurface.getCanvas()
             .append("text")
-            .text(this.axisData.getDisplayNameString(this.schema))
+            .text(this.axisData.getName())
             .attr("transform", `translate(${this.getChartWidth() / 2}, 0)`)
             .attr("text-anchor", "middle")
             .attr("dominant-baseline", "text-before-edge");
@@ -162,10 +160,9 @@ export class HistogramLegendPlot extends LegendPlot<void> {
         return (x) => this.colorMap(x / this.axisData.bucketCount);
     }
 
-    public setData(axis: AxisData, missingLegend: boolean, schema: SchemaClass): void {
+    public setData(axis: AxisData, missingLegend: boolean): void {
         this.axisData = axis;
         this.missingLegend = missingLegend;
-        this.schema = schema;
         if (kindIsString(axis.description.kind))
             this.setMap((d) => Plot.categoricalMap(Math.round(d * (this.axisData.bucketCount - 1))));
         else

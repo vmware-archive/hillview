@@ -24,7 +24,6 @@ import {
     RemoteObjectId, Groups
 } from "../javaBridge";
 import {OnCompleteReceiver} from "../rpc";
-import {DisplayName} from "../schemaClass";
 import {BaseReceiver, TableTargetAPI} from "../modules";
 import {IDataView} from "../ui/dataview";
 import {Dialog, FieldKind} from "../ui/dialog";
@@ -137,7 +136,7 @@ export class SpectrumView extends ChartView<Groups<number>> {
     }
 
     // noinspection JSUnusedLocalSymbols
-    protected showTrellis(colName: DisplayName): void { /* not used */ }
+    protected showTrellis(colName: string): void { /* not used */ }
 
     protected createNewSurfaces(): void {
         if (this.surface != null)

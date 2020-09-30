@@ -23,7 +23,6 @@ import {
 } from "../javaBridge";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {BaseReceiver, TableTargetAPI} from "../modules";
-import {DisplayName} from "../schemaClass";
 import {
     add, assert, assertNever,
     Converters, Exporter,
@@ -169,13 +168,13 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
     }
 
     public chooseSecondColumn(): void {
-        const columns: DisplayName[] = [];
+        const columns: string[] = [];
         for (let i = 0; i < this.getSchema().length; i++) {
             const col = this.getSchema().get(i);
             if (col.name === this.xAxisData.description!.name ||
                 col.name === this.groupByAxisData.description!.name)
                 continue;
-            columns.push(this.getSchema().displayName(col.name)!);
+            columns.push(col.name);
         }
         if (columns.length === 0) {
             this.page.reportError("No other acceptable columns found");
@@ -191,8 +190,8 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
         dialog.show();
     }
 
-    protected showSecondColumn(colName: DisplayName): void {
-        const col = this.getSchema().findByDisplayName(colName)!;
+    protected showSecondColumn(colName: string): void {
+        const col = this.getSchema().find(colName)!;
         const cds = [this.xAxisData.description, col, this.groupByAxisData.description];
         const rr = this.createDataQuantilesRequest(cds, this.page, "Trellis2DHistogram");
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.meta,
@@ -353,8 +352,8 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
         this.setupMouse();
         this.pointDescription = new TextOverlay(this.surface.getCanvas(),
             this.surface.getActualChartSize(),
-            [this.xAxisData.getDisplayNameString(this.getSchema())!,
-                this.groupByAxisData.getDisplayNameString(this.getSchema())!,
+            [this.xAxisData.getName()!,
+                this.groupByAxisData.getName()!,
                 "count", "cdf"], 40);
         this.cdfDot = this.surface.getChart()
             .append("circle")

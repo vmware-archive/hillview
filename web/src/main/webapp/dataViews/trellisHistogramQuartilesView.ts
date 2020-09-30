@@ -253,7 +253,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
 
     protected export(): void {
         let lines: string[] = [];
-        const axisName = this.getSchema().displayName(this.groupByAxisData.description.name);
+        const axisName = this.groupByAxisData.description.name;
         let bucketNo = 0;
         for (const g of allBuckets(this.data)) {
             const desc = this.groupByAxisData.bucketDescription(bucketNo++, 0);
@@ -358,8 +358,8 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
         this.setupMouse();
         this.pointDescription = new TextOverlay(this.surface!.getCanvas(),
             this.surface!.getActualChartSize(),
-            [this.xAxisData.getDisplayNameString(this.getSchema())!,
-                this.groupByAxisData.getDisplayNameString(this.getSchema())!,
+            [this.xAxisData.getName()!,
+                this.groupByAxisData.getName()!,
                 "bucket", "max", "q3", "median", "q1", "min", "count", "missing"], 40);
         this.pointDescription.show(false);
         this.standardSummary();

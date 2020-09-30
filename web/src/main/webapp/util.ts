@@ -134,8 +134,8 @@ export class Exporter {
         data: Groups<Groups<number>>, schema: SchemaClass, axis: AxisData[]): string[] {
         const lines: string[] = [];
 
-        const yAxis = schema.displayName(axis[1].description!.name);
-        const xAxis = schema.displayName(axis[0].description!.name);
+        const yAxis = axis[1].description!.name;
+        const xAxis = axis[0].description!.name;
         let line = "";
         for (let y = 0; y < axis[1].bucketCount; y++) {
             const by = axis[1].bucketDescription(y, 0);
@@ -165,11 +165,11 @@ export class Exporter {
         let lines = [];
         let line = "count";
         for (const o of order.sortOrientationList)
-            line += "," + JSON.stringify(schema.displayName(o.columnDescription.name)!.displayName);
+            line += "," + JSON.stringify(o.columnDescription.name);
         if (aggregates != null)
             for (const a of aggregates) {
                 // noinspection UnnecessaryLocalVariableJS
-                const dn = schema.displayName(a.cd.name)!.displayName;
+                const dn = a.cd.name;
                 line += "," + JSON.stringify(a.agkind + "(" + dn + "))");
             }
         lines.push(line);
@@ -197,8 +197,8 @@ export class Exporter {
 
     public static histogramAsCsv(data: Groups<number>, schema: SchemaClass, axis: AxisData): string[] {
         const lines: string[] = [];
-        const displayName = schema.displayName(axis.description.name);
-        let line = JSON.stringify(displayName!.displayName) + ",count";
+        const colName = axis.description.name;
+        let line = JSON.stringify(colName) + ",count";
         lines.push(line);
         for (let x = 0; x < data.perBucket.length; x++) {
             const bx = axis.bucketDescription(x, 0);
@@ -213,7 +213,7 @@ export class Exporter {
     public static histogram3DAsCsv(
         data: Groups<Groups<Groups<number>>>, schema: SchemaClass, axis: AxisData[]): string[] {
         let lines: string[] = [];
-        const gAxis = schema.displayName(axis[2].description!.name);
+        const gAxis = axis[2].description!.name;
         for (let g = 0; g < axis[2].bucketCount; g++) {
             const gl = Exporter.histogram2DAsCsv(data.perBucket[g], schema, axis);
             const first = gl[0];
@@ -234,7 +234,7 @@ export class Exporter {
     public static quartileAsCsv(g: Groups<SampleSet>, schema: SchemaClass, axis: AxisData): string[] {
         const lines: string[] = [];
         let line = "";
-        const axisName = schema.displayName(axis.description.name);
+        const axisName = axis.description.name;
         for (let x = 0; x < axis.bucketCount; x++) {
             const bx = axis.bucketDescription(x, 0);
             const l = JSON.stringify(axisName + " " + bx);
@@ -959,16 +959,6 @@ export function transpose<D>(m: D[][]): D[][] {
         result.push(v);
     }
     return result;
-}
-
-/**
- * Converts a map to an array by creating an array with an even number of elements
- * where the elements alternate keys and values [k0, v0, k1, v1, ...]
- */
-export function mapToArray<K, V>(map: Map<K, V>): any[] {
-    const res: any[] = [];
-    map.forEach((v, k) => { res.push(k); res.push(v); });
-    return res;
 }
 
 /**

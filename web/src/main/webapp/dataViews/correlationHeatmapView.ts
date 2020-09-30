@@ -27,7 +27,6 @@ import {
     truncate,
     zip
 } from "../util";
-import {DisplayName} from "../schemaClass";
 import {RpcRequest} from "../rpc";
 import {CommonArgs, ReceiverCommon, ReceiverCommonArgs} from "../ui/receiver";
 import {SubMenu, TopMenu} from "../ui/menu";
@@ -259,7 +258,7 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
         this.updateView(this.data, true);
     }
 
-    protected showTrellis(colName: DisplayName): void { /* not used */ }
+    protected showTrellis(colName: string): void { /* not used */ }
 
     protected legendSelectionCompleted(xl: number, xr: number): void {
         const [min, max] = reorder(this.colorLegend.invert(xl), this.colorLegend.invert(xr));

@@ -108,7 +108,7 @@ export class HeavyHittersView extends BigTableView {
         let header: string[] = ["Rank"];
         let tips: string[] = ["Position in decreasing order of frequency."];
         this.columnsShown.forEach((c) => {
-            header.push(this.getSchema().displayName(c.name)!.displayName);
+            header.push(c.name);
             tips.push("Column name");
         });
         header = header.concat(["Count", "% (Above " + this.percent.toString() + ")", "Fraction"]);
@@ -135,7 +135,7 @@ export class HeavyHittersView extends BigTableView {
         const lines: string[] = [];
         let line = "";
         for (const c of this.columnsShown)
-            line += JSON.stringify(this.getSchema().displayName(c.name)!.displayName) + ",";
+            line += JSON.stringify(c.name) + ",";
         line += "Count,%";
         lines.push(line);
 
@@ -443,7 +443,7 @@ export class HeavyHittersReceiver extends OnCompleteReceiver<TopList> {
     public run(data: TopList): void {
         if (data.top.rows.length === 0) this.showEmptyDialog();
         else {
-            const names = this.columnsShown.map((c) => this.meta.schema.displayName(c.name)).join(", ");
+            const names = this.columnsShown.map((c) => c.name).join(", ");
             let newPage = this.page;
             if (!this.reusePage)
                 newPage = this.page.dataset!.newPage(

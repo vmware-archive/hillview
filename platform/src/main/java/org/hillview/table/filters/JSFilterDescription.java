@@ -25,11 +25,8 @@ import org.hillview.table.api.ITable;
 import org.hillview.table.api.ITableFilter;
 import org.hillview.table.api.ITableFilterDescription;
 import org.hillview.table.rows.VirtualRowSnapshot;
-import org.hillview.utils.Utilities;
 
-import javax.annotation.Nullable;
 import java.io.Serializable;
-import java.util.HashMap;
 
 /**
  * A filter that uses JavaScript to filter data.
@@ -40,12 +37,10 @@ public class JSFilterDescription implements ITableFilterDescription {
     public static class Info implements Serializable {
         Schema schema;
         String jsCode;
-        @Nullable String[] renameMap;
 
-        public Info(Schema schema, String jsCode, @Nullable String[] renameMap) {
+        public Info(Schema schema, String jsCode) {
             this.schema = schema;
             this.jsCode = jsCode;
-            this.renameMap = renameMap;
         }
     }
 
@@ -61,11 +56,8 @@ public class JSFilterDescription implements ITableFilterDescription {
         private final ProxyObject vrsProxy;
 
         JSFilter(ITable table) {
-            HashMap<String, String> renameMap = Utilities.arrayToMap(JSFilterDescription.this.info.renameMap);
             try {
-                this.vrs = new VirtualRowSnapshot(
-                        table, JSFilterDescription.this.info.schema,
-                        renameMap);
+                this.vrs = new VirtualRowSnapshot(table, JSFilterDescription.this.info.schema);
                 this.vrsProxy = ProxyObject.fromMap(this.vrs);
                 Context context = Context.newBuilder().allowAllAccess(true).build();
                 // Compiles the JS function

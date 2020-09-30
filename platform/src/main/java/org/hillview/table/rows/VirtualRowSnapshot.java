@@ -58,28 +58,19 @@ public class VirtualRowSnapshot extends BaseRowSnapshot implements ISketchWorksp
     private final Schema schema;
     protected final HashMap<String, IColumn> columns;
 
-    public VirtualRowSnapshot(final ITable table, final Schema schema,
-            @Nullable final Map<String, String> columnRenameMap) {
+    public VirtualRowSnapshot(final ITable table, final Schema schema) {
         this.table = table;
         this.schema = schema;
         this.columns = new HashMap<String, IColumn>();
         List<IColumn> cols = table.getLoadedColumns(schema.getColumnNames());
         for (IColumn col: cols) {
             String nameToUse = col.getName();
-            if (columnRenameMap != null && columnRenameMap.containsKey(nameToUse))
-                nameToUse = columnRenameMap.get(nameToUse);
             this.columns.put(nameToUse, col);
         }
     }
 
-    public VirtualRowSnapshot(
-            final ITable table,
-            final Schema schema) {
-        this(table, schema, null);
-    }
-
     public VirtualRowSnapshot(final ITable table) {
-        this(table, table.getSchema(), null);
+        this(table, table.getSchema());
     }
 
     public boolean exists() { return this.rowIndex >= 0; }

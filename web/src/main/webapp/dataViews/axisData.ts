@@ -199,13 +199,10 @@ export class AxisData {
         this.axis = null;
     }
 
-    public getDisplayNameString(schema: SchemaClass): string | null {
+    public getName(): string | null {
         if (this.description == null)
             return null;
-        const disp = schema.displayName(this.description.name);
-        if (disp === null)
-            return null;
-        return disp.displayName;
+        return this.description.name;
     }
 
     private static needsAdjustment(kind: ContentsKind): boolean {
