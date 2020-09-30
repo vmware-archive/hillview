@@ -358,8 +358,8 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
         this.setupMouse();
         this.pointDescription = new TextOverlay(this.surface!.getCanvas(),
             this.surface!.getActualChartSize(),
-            [this.xAxisData.getName(this.getSchema())!,
-                this.groupByAxisData.getName(this.getSchema())!,
+            [this.xAxisData.getName()!,
+                this.groupByAxisData.getName()!,
                 "bucket", "max", "q3", "median", "q1", "min", "count", "missing"], 40);
         this.pointDescription.show(false);
         this.standardSummary();

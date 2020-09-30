@@ -77,10 +77,10 @@ export class HeatmapPlot
         const canvas = this.plottingSurface.getCanvas();
         if (this.showAxes) {
             canvas.append("text")
-                .text(this.yAxisData.getName(this.schema))
+                .text(this.yAxisData.getName())
                 .attr("dominant-baseline", "text-before-edge");
             canvas.append("text")
-                .text(this.xAxisData.getName(this.schema))
+                .text(this.xAxisData.getName())
                 .attr("x", this.getChartWidth() / 2)
                 .attr("y", this.getChartHeight() + this.plottingSurface.topMargin +
                         this.plottingSurface.bottomMargin / 2)

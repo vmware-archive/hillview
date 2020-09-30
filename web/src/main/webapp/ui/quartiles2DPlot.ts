@@ -100,7 +100,7 @@ export class Quartiles2DPlot extends Plot<Groups<SampleSet>> {
         this.barWidth = chartWidth / bucketCount;
 
         this.plottingSurface.getCanvas().append("text")
-            .text(this.xAxisData.getName(this.schema))
+            .text(this.xAxisData.getName())
             .attr("transform", `translate(${this.getChartWidth() / 2},
             ${this.getChartHeight() + this.plottingSurface.topMargin + this.plottingSurface.bottomMargin / 2})`)
             .attr("text-anchor", "middle")

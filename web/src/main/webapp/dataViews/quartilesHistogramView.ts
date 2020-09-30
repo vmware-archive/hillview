@@ -150,7 +150,7 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
         assert(this.surface != null);
         this.pointDescription = new TextOverlay(this.surface.getChart(),
             this.surface.getActualChartSize(),
-            [this.xAxisData.getName(this.getSchema())!, "bucket",
+            [this.xAxisData.getName()!, "bucket",
                 "max", "q3", "median", "q1", "min", "count", "missing"], 40);
         this.pointDescription.show(false);
         this.standardSummary();

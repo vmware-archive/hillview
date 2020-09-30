@@ -425,7 +425,7 @@ export class HeatmapView extends
         }
         this.colorLegend.draw();
         if (this.showDetails) {
-            this.detailLegend!.setData(detailsAxisData!, false, this.detailColumns!);
+            this.detailLegend!.setData(detailsAxisData!, false);
             this.detailLegend!.draw();
         }
         this.plot.draw();

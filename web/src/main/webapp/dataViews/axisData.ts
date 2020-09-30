@@ -199,7 +199,7 @@ export class AxisData {
         this.axis = null;
     }
 
-    public getName(schema: SchemaClass): string | null {
+    public getName(): string | null {
         if (this.description == null)
             return null;
         return this.description.name;

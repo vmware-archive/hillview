@@ -405,7 +405,7 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
             this.maxYAxis = max;
         }
 
-        this.legendPlot.setData(this.legendAxisData, this.legendAxisData.dataRange.missingCount > 0, this.getSchema());
+        this.legendPlot.setData(this.legendAxisData, this.legendAxisData.dataRange.missingCount > 0);
         this.legendPlot.draw();
 
         for (let i = 0; i < data.perBucket.length; i++) {
@@ -433,9 +433,9 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
         assert(this.surface != null);
         this.pointDescription = new TextOverlay(this.surface.getCanvas(),
             this.surface.getActualChartSize(),
-            [this.xAxisData.getName(this.getSchema())!,
-                this.legendAxisData.getName(this.getSchema())!,
-                this.groupByAxisData.getName(this.getSchema())!,
+            [this.xAxisData.getName()!,
+                this.legendAxisData.getName()!,
+                this.groupByAxisData.getName()!,
                 "y",
                 "percent",
                 "count" /* TODO:, "cdf" */], 40);

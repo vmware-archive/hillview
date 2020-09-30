@@ -352,8 +352,8 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
         this.setupMouse();
         this.pointDescription = new TextOverlay(this.surface.getCanvas(),
             this.surface.getActualChartSize(),
-            [this.xAxisData.getName(this.getSchema())!,
-                this.groupByAxisData.getName(this.getSchema())!,
+            [this.xAxisData.getName()!,
+                this.groupByAxisData.getName()!,
                 "count", "cdf"], 40);
         this.cdfDot = this.surface.getChart()
             .append("circle")

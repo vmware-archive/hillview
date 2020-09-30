@@ -362,9 +362,9 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
         assert(this.surface != null);
         this.pointDescription = new TextOverlay(this.surface.getCanvas(),
             this.surface.getActualChartSize(),
-            [this.xAxisData.getName(this.getSchema())!,
-                this.yAxisData.getName(this.getSchema())!,
-                this.groupByAxisData.getName(this.getSchema())!,
+            [this.xAxisData.getName()!,
+                this.yAxisData.getName()!,
+                this.groupByAxisData.getName()!,
                 "count"], 40);
 
         // Axis labels
