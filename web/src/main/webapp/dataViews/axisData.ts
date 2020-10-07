@@ -35,7 +35,6 @@ import {
     truncate,
 } from "../util";
 import {AnyScale, D3Axis, D3SvgElement, SpecialChars} from "../ui/ui";
-import {SchemaClass} from "../schemaClass";
 
 export enum AxisKind {
     Bottom,

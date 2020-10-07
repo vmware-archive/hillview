@@ -54,16 +54,10 @@ public class Configuration {
         return this.properties.getProperty(propertyName, defaultValue);
     }
 
-    public String getGreenplumDumpScript() {
+    public String getGreenplumMoveScript() {
         return this.getProperty(
-                // The dump-greenplum.sh script will write its stdin to the specified file
-                "greenplumDumpScript", "/home/gpadmin/hillview/dump-greenplum.sh");
-    }
-
-    public String getGreenplumLoadScript() {
-        return this.getProperty(
-                // The load-greenplum.sh script will enumerate the data in the specified directory
-                "greenplumLoadScript", "/home/gpadmin/hillview/load-greenplum.sh");
+                // The -greenplum.sh script will write its stdin to the specified file
+                "greenplumMoveScript", "/home/gpadmin/hillview/move-greenplum.sh");
     }
 
     public String getGreenplumDumpDirectory() {

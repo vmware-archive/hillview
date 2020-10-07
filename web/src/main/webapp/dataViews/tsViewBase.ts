@@ -219,8 +219,8 @@ export abstract class TSViewBase extends BigTableView {
             "outColKind", "Data type", allContentsKind, "String",
             "Type of data in the generated column.");
         dialog.addMultiLineTextField("function", "Function",
-            "function map(row) {", "  return row['col'];", "}",
-            "A JavaScript function that computes the values for each row of the generated column." +
+            null, "function map(row) {\nreturn row['col'];\n}", null,
+            "A JavaScript function named 'map' that computes the values for each row of the generated column." +
             "The function has a single argument 'row'.  The row is a JavaScript map that can be indexed with " +
             "a column name (a string) and which produces a value.");
         dialog.setCacheTitle("CreateJSDialog");
@@ -236,7 +236,7 @@ export abstract class TSViewBase extends BigTableView {
             return;
         }
         const kind = dialog.getFieldValue("outColKind");
-        const fun = "function map(row) {" + dialog.getFieldValue("function") + "}";
+        const fun = dialog.getFieldValue("function");
         const selColumns = cloneToSet(this.getSelectedColNames());
         const subSchema = this.getSchema().filter((c) => selColumns.has(c.name));
         const arg: CreateColumnJSMapInfo = {

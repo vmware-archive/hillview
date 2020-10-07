@@ -17,6 +17,8 @@
 
 package org.hillview.storage.jdbc;
 
+import org.hillview.utils.Utilities;
+
 import javax.annotation.Nullable;
 import java.io.Serializable;
 
@@ -43,6 +45,12 @@ public class JdbcConnectionInformation implements Serializable {
      * If true data is loaded lazily - on demand.
      */
     public boolean lazyLoading;
+
+    public void validate() {
+        // To avoid code injection
+        Utilities.checkIdentifier(this.database);
+        Utilities.checkIdentifier(this.table);
+    }
 
     @Override
     public String toString() {

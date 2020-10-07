@@ -27,38 +27,39 @@ export class EditBox implements IHtmlElement {
     public pre: HTMLInputElement;
     public post: HTMLInputElement;
 
-    constructor(name: string, pre: string, value: string, post: string) {
+    constructor(name: string, pre: string | null, value: string | null, post: string | null) {
         this.topLevel = document.createElement("div");
         this.textArea = document.createElement("textarea");
         this.textArea.style.fontFamily = "monospace";
         this.topLevel.style.display = "flex";
         this.topLevel.style.flexDirection = "column";
-
-        this.pre = document.createElement("input");
-        this.pre.readOnly = true;
-        this.pre.style.fontFamily = "monospace";
-
-        this.post = document.createElement("input");
-        this.post.readOnly = true;
-        this.post.style.fontFamily = "monospace";
-
         this.textArea.rows = 10;
         this.textArea.style.flexGrow = "100";
+
         this.textArea.id = makeId(name);
+        if (pre != null) {
+            this.pre = document.createElement("input");
+            this.pre.readOnly = true;
+            this.pre.style.fontFamily = "monospace";
+            this.pre.value = pre;
+            this.topLevel.appendChild(this.pre);
+        }
+
         // The following will prevent these events from going to the parent element
         this.textArea.onkeydown = (e) => e.stopPropagation();
         this.textArea.onkeypress = (e) => e.stopPropagation();
         this.textArea.onmousedown = (e) => e.stopPropagation();
-
-        this.topLevel.appendChild(this.pre);
-        this.topLevel.appendChild(this.textArea);
-        this.topLevel.appendChild(this.post);
-        if (pre != null)
-            this.pre.value = pre;
         if (value != null)
-            this.value = value;
-        if (post != null)
+            this.textArea.value = value;
+        this.topLevel.appendChild(this.textArea);
+
+        if (post != null) {
+            this.post = document.createElement("input");
+            this.post.readOnly = true;
+            this.post.style.fontFamily = "monospace";
             this.post.value = post;
+            this.topLevel.appendChild(this.post);
+        }
     }
 
     public focus(): void {

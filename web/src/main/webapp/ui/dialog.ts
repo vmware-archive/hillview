@@ -392,8 +392,8 @@ export class Dialog extends DialogBase {
      * @param post      String to write after editable field.
      * @param toolTip   Help message to show as a tool-tip.
      */
-    public addMultiLineTextField(fieldName: string, labelText: string, pre: string,
-                                 value: string, post: string, toolTip: string): void {
+    public addMultiLineTextField(fieldName: string, labelText: string, pre: string | null,
+                                 value: string | null, post: string | null, toolTip: string): void {
         const fieldDiv = this.createRowContainer(fieldName, labelText, toolTip);
         const input = new EditBox(fieldName, pre, value, post);
         input.setTabIndex(this.tabIndex++);

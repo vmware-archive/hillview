@@ -57,6 +57,18 @@ public class Utilities {
         return "GMT" + offset;
     }
 
+    public static void checkIdentifier(@Nullable String str) {
+        if (Utilities.isNullOrEmpty(str))
+            throw new HillviewException("The empty string is not a valid identifier");
+        if (!Character.isJavaIdentifierStart(str.charAt(0)))
+            throw new HillviewException("'" + str + "' is not a valid identifier");
+        for (int i = 1; i < str.length(); i++) {
+            char c = str.charAt(i);
+            if (!Character.isJavaIdentifierPart(c))
+                throw new HillviewException("'" + str + "' is not a valid identifier");
+        }
+    }
+
     @FunctionalInterface
     public
     interface TriFunction<A, B, C, R> {

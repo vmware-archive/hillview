@@ -46,6 +46,7 @@ abstract class JdbcConnection {
     private final HashMap<String, String> params = new LinkedHashMap<String, String>();
 
     static JdbcConnection create(JdbcConnectionInformation conn) {
+        conn.validate();
         if (Utilities.isNullOrEmpty(conn.databaseKind))
             throw new RuntimeException("Database kind cannot be empty");
         switch (conn.databaseKind) {

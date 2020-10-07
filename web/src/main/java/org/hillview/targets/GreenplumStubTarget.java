@@ -24,6 +24,7 @@ import org.hillview.storage.jdbc.JdbcDatabase;
 import org.hillview.table.Schema;
 import org.hillview.utils.Converters;
 import org.hillview.utils.JsonInString;
+import org.hillview.utils.Utilities;
 
 import java.sql.SQLException;
 
@@ -43,6 +44,7 @@ public class GreenplumStubTarget extends SimpleDBTarget {
     public void dumpGreenplumTable(RpcRequest request, RpcRequestContext context) throws SQLException {
         // Connection is opened by constructor.
         String tmpTableName = request.parseArgs(String.class);
+        Utilities.checkIdentifier(tmpTableName);
         Converters.checkNull(this.schema);
         /*
         In this scheme, which does not seem to work, we only dump the first column now,
@@ -56,7 +58,7 @@ public class GreenplumStubTarget extends SimpleDBTarget {
         String tableName = this.jdbc.table;
         String query = "CREATE WRITABLE EXTERNAL WEB TABLE " +
                 tmpTableName + " (LIKE " + tableName + ") EXECUTE '" +
-                Configuration.instance.getGreenplumDumpScript() + " " +
+                Configuration.instance.getGreenplumMoveScript() + " fromdb " +
                 Configuration.instance.getGreenplumDumpDirectory() + "/" + tmpTableName +
                 "' FORMAT 'CSV'";
         this.database.executeUpdate(query);
@@ -84,6 +86,8 @@ public class GreenplumStubTarget extends SimpleDBTarget {
     public void loadGreenplumTable(RpcRequest request, RpcRequestContext context) throws SQLException {
         this.database.connect();
         LoadedTable desc = request.parseArgs(LoadedTable.class);
+        Utilities.checkIdentifier(desc.tempTableName);
+        Utilities.checkIdentifier(desc.table);
         String cols = JdbcDatabase.schemaToSQL(null, desc.schema);
         String query = "CREATE TABLE " +
                 desc.table + " (" + cols + ")";
@@ -91,7 +95,7 @@ public class GreenplumStubTarget extends SimpleDBTarget {
 
         query = "CREATE EXTERNAL WEB TABLE " +
                 desc.tempTableName + " (LIKE " + desc.table + ") EXECUTE '" +
-                Configuration.instance.getGreenplumLoadScript() + " " +
+                Configuration.instance.getGreenplumMoveScript() + " todb " +
                 Configuration.instance.getGreenplumDumpDirectory() + "/" + desc.tempTableName +
                 "' FORMAT 'CSV'";
         this.database.executeUpdate(query);

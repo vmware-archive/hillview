@@ -244,7 +244,7 @@ export class Test {
                 item.click();
                 (findElement(".dialog #outColName") as HTMLInputElement).value = "O";
                 (findElement(".dialog #outColKind") as HTMLInputElement).value = "String";
-                (findElement(".dialog #function") as HTMLInputElement).value = "return row['OriginCityName'][0];";
+                (findElement(".dialog #function") as HTMLInputElement).value = "function map(row) { return row['OriginCityName'][0]; }";
                 findElement(".dialog .confirm").click();
             },
         }, {

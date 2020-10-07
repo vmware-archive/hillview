@@ -82,7 +82,7 @@ public class GreenplumTarget extends TableTarget {
         // Create an external table that will be written into
         String query = "CREATE WRITABLE EXTERNAL WEB TABLE " +
                 tmpTableName + " (" + cols + ") EXECUTE '" +
-                Configuration.instance.getGreenplumDumpScript() + " " +
+                Configuration.instance.getGreenplumMoveScript() + " fromdb " +
                 Configuration.instance.getGreenplumDumpDirectory() + "/" + tmpTableName +
                 "' FORMAT 'CSV'";
         database.executeUpdate(query);

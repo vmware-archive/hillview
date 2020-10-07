@@ -129,6 +129,7 @@ public class JdbcDatabase {
             first = false;
             ColumnDescription desc = schema.getDescription(c);
             String type = JdbcDatabase.sqlType(desc.kind);
+            Utilities.checkIdentifier(c);
             cols.append(c).append(" ").append(type);
         }
         return cols.toString();
