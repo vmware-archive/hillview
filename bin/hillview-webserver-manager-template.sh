@@ -15,6 +15,7 @@ start() {
 }
 
 stop() {
+    export CATALINA_PID=catalina.pid
     if pgrep -f tomcat; then
         ${SERVICE_DIRECTORY}"/"${TOMCAT}/bin/shutdown.sh -force
         echo Stopped

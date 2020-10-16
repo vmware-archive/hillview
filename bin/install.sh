@@ -11,6 +11,6 @@ SAVEDIR=${PWD}
 cd ${mydir} || exit 1
 
 cd ..
-wget https://github.com/vmware/hillview/releases/download/v${HILLVIEW_VERSION}/hillview-bin.zip
+wget https://github.com/vmware/hillview/releases/download/${HILLVIEW_VERSION}/hillview-bin.zip
 unzip -o hillview-bin.zip
 cd ${SAVEDIR} || exit 1
