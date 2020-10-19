@@ -340,6 +340,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                         break;
                     case "Trellis2DHistogram":
                         this.options.chartKind = "2DHistogram";
+                        this.options.stacked = true;
                         break;
                     case "TrellisQuartiles":
                         this.options.chartKind = "QuartileVector";

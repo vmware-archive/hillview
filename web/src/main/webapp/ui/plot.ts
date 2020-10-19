@@ -25,7 +25,7 @@ import {interpolateRainbow as d3interpolateRainbow,
     schemeSet3 as d3set3
 } from "d3-scale-chromatic";
 import {significantDigits} from "../util";
-import {color, rgb} from "d3-color";
+import {rgb} from "d3-color";
 
 /**
  * Abstract base class for all plots.
@@ -131,7 +131,7 @@ export abstract class Plot<D> {
     // a categorical color map for up to 50 values
     public static categoricalMap(d: number): string {
         let result = "black";
-        if (d < 0 || d > Plot.categoricalColor.length)
+        if (d < 0 || d >= Plot.categoricalColor.length)
             return result;
         return Plot.categoricalColor[d];
     }

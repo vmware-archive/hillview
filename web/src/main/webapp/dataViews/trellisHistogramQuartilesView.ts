@@ -36,7 +36,7 @@ import {
     TrellisQuartilesSerialization
 } from "../datasetView";
 import {IDataView} from "../ui/dataview";
-import {ChartOptions, DragEventKind, Resolution} from "../ui/ui";
+import {ChartOptions, DragEventKind, HtmlString, Resolution} from "../ui/ui";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {
     NewTargetReceiver,
@@ -363,6 +363,7 @@ export class TrellisHistogramQuartilesView extends TrellisChartView<Groups<Group
                 "bucket", "max", "q3", "median", "q1", "min", "count", "missing"], 40);
         this.pointDescription.show(false);
         this.standardSummary();
+        this.summary!.setString("bar width", new HtmlString(this.xAxisData.barWidth()));
         this.summary!.display();
     }
 

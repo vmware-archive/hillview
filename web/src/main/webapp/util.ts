@@ -338,7 +338,7 @@ export class Converters {
     public static durationFromDouble(val: number): string {
         if (val === 0)
             return "0";
-        const ms = val % 1000;
+        const ms = Math.round(val % 1000);
         val = Math.floor(val / 1000);
         const sec = val % 60;
         val = Math.floor(val / 60);
@@ -348,7 +348,7 @@ export class Converters {
         const days = Math.floor(val / 24);
         let result: string = "";
         if (days > 0)
-            result = significantDigits(days) + "days";
+            result = significantDigits(days) + " days";
         if (days > 1000)
             return result;
         if (hours > 0) {
@@ -648,8 +648,10 @@ export function prefixSum(n: number[]): number[] {
     return result;
 }
 
-export function percent(n: number): number {
-    return n * 100;
+export function percent(numerator: number, denominator: number): number {
+    if (denominator <= 0)
+        return 0;
+    return (numerator / denominator) * 100;
 }
 
 /**

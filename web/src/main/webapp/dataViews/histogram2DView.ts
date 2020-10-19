@@ -32,7 +32,7 @@ import {HistogramLegendPlot} from "../ui/histogramLegendPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {ChartOptions, DragEventKind, Resolution} from "../ui/ui";
+import {ChartOptions, DragEventKind, HtmlString, Resolution} from "../ui/ui";
 import {
     add, assert, assertNever,
     Converters, Exporter, Heatmap,
@@ -261,6 +261,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
         this.summary.set("colors", this.yPoints);
         if (this.samplingRate < 1.0)
             this.summary.set("sampling rate", this.samplingRate);
+        this.summary.setString("bar width", new HtmlString(this.xAxisData.barWidth()));
         this.addTimeSummary();
         this.summary.display();
     }
@@ -568,7 +569,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
         }
 
         this.pointDescription!.update(pointInfo, mouseX, mouseY);
-        this.legendPlot.highlight(colorIndex);
+        this.legendPlot.showBorder(colorIndex);
     }
 
     // Round x to align a bucket boundary.  x is a coordinate within the canvas.
@@ -651,7 +652,7 @@ export class Histogram2DView extends HistogramViewBase<Pair<Groups<Groups<number
             min = Math.max(0, Math.floor(min));
             max = Math.min(this.yPoints, Math.ceil(max));
 
-            this.legendPlot.emphasizeRange(min / this.yPoints, max / this.yPoints);
+            this.legendPlot.emphasizeRange(min, max);
             const heatmap = Heatmap.create(this.data.first);
             const filter = heatmap.bucketsInRange(min, max);
             const count = filter.sum();

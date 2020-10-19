@@ -314,6 +314,30 @@ public class GenericLogsTest extends BaseTest {
     }
 
     @Test
+    public void testNsxtProtonLog() {
+        String path = dataDir + "/sample_logs/nsxtprotonlog";
+        GrokLogs logs = new GrokLogs("%{NSXT_PROTON}");
+        TextFileLoader fileLoader = logs.getFileLoader(path);
+        ITable table = fileLoader.load();
+        Assert.assertNotNull(table);
+        if (BaseTest.toPrint)
+            System.out.println(table.toLongString(10));
+        Assert.assertEquals("Table[13x8]", table.toString());
+    }
+
+    @Test
+    public void testNsxtProxyLog() {
+        String path = dataDir + "/sample_logs/nsxtproxylog";
+        GrokLogs logs = new GrokLogs("%{NSXT_PROXY}");
+        TextFileLoader fileLoader = logs.getFileLoader(path);
+        ITable table = fileLoader.load();
+        Assert.assertNotNull(table);
+        if (BaseTest.toPrint)
+            System.out.println(table.toLongString(10));
+        Assert.assertEquals("Table[14x5]", table.toString());
+    }
+
+    @Test
     public void testHDFSDataNodeLog() {
         String path = dataDir + "/sample_logs/hdfsdatanodelog";
         GrokLogs logs = new GrokLogs("%{HDFSDATANODELOG}");

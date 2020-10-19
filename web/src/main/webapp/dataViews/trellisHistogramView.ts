@@ -33,7 +33,7 @@ import {
 import {AxisData, AxisKind} from "./axisData";
 import {IViewSerialization, TrellisHistogramSerialization} from "../datasetView";
 import {IDataView} from "../ui/dataview";
-import {D3SvgElement, DragEventKind, Resolution} from "../ui/ui";
+import {D3SvgElement, DragEventKind, HtmlString, Resolution} from "../ui/ui";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {CDFPlot} from "../ui/cdfPlot";
@@ -360,6 +360,7 @@ export class TrellisHistogramView extends TrellisChartView<Two<Groups<Groups<num
             .attr("r", Resolution.mouseDotRadius)
             .attr("fill", "blue");
         this.summary!.set("rows", this.meta.rowCount, this.isPrivate());
+        this.summary!.setString("bar width", new HtmlString(this.xAxisData.barWidth()));
         this.summary!.display();
     }
 

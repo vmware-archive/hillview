@@ -1,0 +1,8 @@
+2020-10-16T18:59:51.801Z - "GET /nsxapi/api/v1/platform-management/synchronized-users/10002 HTTP/1.1" 200 553 8 7
+2020-10-16T18:59:52.323Z - "GET /nsxapi/api/v1/operational/application/status HTTP/1.1" 200 161 2 2
+2020-10-16T18:59:52.326Z - "GET /nsxapi/api/v1/cluster/restore/info HTTP/1.1" 200 134 2 2
+2020-10-16T18:59:57.607Z - "GET /nsxapi/api/v1/aaa/synchronized-vidm-properties/vidm-properties HTTP/1.1" 200 611 3 3
+2020-10-16T19:00:00.155Z - "GET /nsxapi/api/v1/transport-zones HTTP/1.1" 200 1733 42 42
+2020-10-16T19:00:00.272Z - "GET /nsxapi/api/v1/edge-clusters HTTP/1.1" 200 54 15 14
+2020-10-16T19:00:00.407Z - "GET /nsxapi/api/v1/intrusion-services/ids-signatures HTTP/1.1" 200 - 4 4
+2020-10-16T19:00:01.849Z - "GET /nsxapi/api/v1/firewall/sections/ffffffff-35f8-4611-a40f-545432e3119a/rules HTTP/1.1" 200 489 56 56

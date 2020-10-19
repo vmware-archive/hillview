@@ -31,6 +31,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.time.Instant;
+import java.time.temporal.TemporalUnit;
 import java.util.Collections;
 
 public class RowSnapShotTest extends BaseTest {
@@ -38,6 +39,8 @@ public class RowSnapShotTest extends BaseTest {
     @Test
     public void rowDateSnapshotTest() {
         Instant now = Instant.now();
+        // In hillview we only represent time to a precision of milliseconds
+        now = now.minusNanos(now.getNano() % 1000000);
         final String name = "Date";
         DoubleListColumn col = new DoubleListColumn(
                 new ColumnDescription(name, ContentsKind.Date));

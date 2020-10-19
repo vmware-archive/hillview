@@ -35,7 +35,7 @@ import {HeatmapPlot} from "../ui/heatmapPlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {DragEventKind, Resolution} from "../ui/ui";
+import {DragEventKind, HtmlString, Resolution} from "../ui/ui";
 import {
     assert, assertNever,
     Converters,
@@ -79,6 +79,7 @@ export class HeatmapView extends
     protected readonly viewMenu: SubMenu;
     protected xAxisData: AxisData;
     protected yAxisData: AxisData;
+    protected detailsAxisData: AxisData | null;
     protected legendDiv: HTMLDivElement;
     protected confThreshold: number;
     private readonly defaultProvenance: string = "From heatmap";
@@ -282,7 +283,8 @@ export class HeatmapView extends
             if (this.showDetails) {
                 // noinspection JSUnusedLocalSymbols
                 this.detailLegend = new HistogramLegendPlot(
-                    this.detailLegendSurface!, (xl, xr)=> {});
+                    this.detailLegendSurface!,
+                    (xl, xr) => this.detailSelectionCompleted(xl, xr));
             }
         }
 
@@ -310,6 +312,17 @@ export class HeatmapView extends
         }
         if (shiftPressed) {
             this.colorLegend.emphasizeRange(xl, xr);
+        }
+    }
+
+    protected detailSelectionCompleted(xl: number, xr: number): void {
+        const shiftPressed = d3event.sourceEvent.shiftKey;
+        if (shiftPressed) {
+            let min = this.detailsAxisData!.bucketCount * xl / this.detailLegend!.width;
+            let max = this.detailsAxisData!.bucketCount * xr / this.detailLegend!.width;
+            [min, max] = reorder(min, max);
+            this.detailLegend!.emphasizeRange(min, max);
+            this.updateView(this.data, true)
         }
     }
 
@@ -377,7 +390,7 @@ export class HeatmapView extends
             return;
         }
 
-        let detailsAxisData: AxisData | null = null;
+        this.detailsAxisData = null;
         let detailLegendColumn: IColumnDescription | null = null;
         let range: BucketsInfo | null = null;
         if (this.data.third != null) {
@@ -401,7 +414,7 @@ export class HeatmapView extends
                 } else {
                     legendBucketCount = Resolution.max2DBucketCount;
                 }
-                detailsAxisData = new AxisData(detailLegendColumn, range, legendBucketCount);
+                this.detailsAxisData = new AxisData(detailLegendColumn, range, legendBucketCount);
             }
         }
 
@@ -415,17 +428,17 @@ export class HeatmapView extends
         // The order of these operations is important:
         // Data must be set in each legend, then the kind, then it can be drawn.
         // The heatmap itself can only be drawn after the colormaps have been set.
-        this.plot.setData(data, this.xAxisData, this.yAxisData, detailsAxisData,
+        this.plot.setData(data, this.xAxisData, this.yAxisData, this.detailsAxisData,
             this.meta.schema, this.confThreshold, this.isPrivate());
         if (!keepColorMap) {
             this.colorLegend.setData(this.plot.getMaxCount());
-        }
-        if (this.showDetails) {
-            this.colorLegend.setColorMapKind(ColorMapKind.Grayscale);
+            if (this.showDetails)
+                this.colorLegend.setColorMapKind(ColorMapKind.Grayscale);
         }
         this.colorLegend.draw();
         if (this.showDetails) {
-            this.detailLegend!.setData(detailsAxisData!, false);
+            if (!keepColorMap)
+                this.detailLegend!.setData(this.detailsAxisData!, false);
             this.detailLegend!.draw();
         }
         this.plot.draw();
@@ -445,6 +458,8 @@ export class HeatmapView extends
         if (this.samplingRate < 1.0) {
             this.summary.set("sampling rate", this.samplingRate);
         }
+        this.summary.setString("pixel width", new HtmlString(this.xAxisData.barWidth()));
+        this.summary.setString("pixel height", new HtmlString(this.yAxisData.barWidth()));
         this.summary.display();
     }
 
@@ -589,6 +604,11 @@ export class HeatmapView extends
                     data = zip(d, this.detailColumns!.schema,
                         (v, desc) => Converters.valueToString(v, desc.kind, false));
                     data.splice(2, 0, "1"); // We know that the count is 1.
+                    const value = d[this.detailIndex];
+                    const valueIndex = this.detailsAxisData!.bucketIndex(value);
+                    this.detailLegend!.showBorder(valueIndex);
+                } else {
+                    this.detailLegend!.showBorder(null);
                 }
             }
         }

@@ -168,26 +168,11 @@ export class LoadView extends RemoteObject implements IDataView {
                     dialog.show();
                 },
                 help: "A set of log files residing on the worker machines."
-            },
-            {
-                text: "Syslog...",
-                action: () => {
-                    const dialog = new GenericLogDialog();
-                    dialog.setFieldValue("fileNamePattern", "/var/log/syslog*");
-                    dialog.setFieldValue("logFormat", "%{RFC5424}");
-                    dialog.setFieldValue("startTime", null);
-                    dialog.setFieldValue("endTime", null);
-                    dialog.setAction(() => this.init.loadFiles(dialog.getFiles(), this.page));
-                    dialog.show();
-                },
-                help: "A set of log files residing on the worker machines."
-            },
-            {
+            }, {
                 text: "Saved view",
                 action: () => this.loadSavedDialog(),
                 help: "Load a data view that has been saved previously."
-            },
-            {
+            }, {
                 text: "CSV files...",
                 action: () => {
                     const dialog = new CSVFileDialog();
@@ -195,8 +180,7 @@ export class LoadView extends RemoteObject implements IDataView {
                     dialog.show();
                 },
                 help: "A set of comma-separated value files residing on the worker machines."
-            },
-            {
+            }, {
                 text: "JSON files...",
                 action: () => {
                     const dialog = new JsonFileDialog();
@@ -204,8 +188,7 @@ export class LoadView extends RemoteObject implements IDataView {
                     dialog.show();
                 },
                 help: "A set of files containing JSON values residing on the worker machines."
-            },
-            {
+            }, {
                 text: "Parquet files...",
                 action: () => {
                     const dialog = new ParquetFileDialog();
@@ -213,8 +196,7 @@ export class LoadView extends RemoteObject implements IDataView {
                     dialog.show();
                 },
                 help: "A set of Parquet files residing on the worker machines."
-            },
-            {
+            }, {
                 text: "ORC files...",
                 action: () => {
                     const dialog = new OrcFileDialog();
@@ -222,8 +204,7 @@ export class LoadView extends RemoteObject implements IDataView {
                     dialog.show();
                 },
                 help: "A set of Orc files residing on the worker machines."
-            },
-            {
+            }, {
                 text: "Federated DB tables...",
                 action: () => {
                     const dialog = new DBDialog(true);
@@ -454,9 +435,8 @@ class GenericLogDialog extends Dialog {
             "shell pattern with path that describes the names of the files to load (comma-separated patterns allowed)");
         pattern.required = true;
         // TODO: This should perhaps be read from the back-end service.
-        const logFormats = ["%{HADOOP}", "%{RFC5424}", "%{VSANTRACE}", "%{ZOOKEEPERLOG}",
-                            "%{YARNLOG}", "%{HBASELOG}", "%{OOZEILOG}", "%{HDFSNAMENODELOG}",
-                            "%{HDFSDATANODELOG}", "%{SYSLOG}", "%{BLOCKTRACE}"];
+        const logFormats = ["%{HADOOP}", "%{RFC5424}", "%{VSANTRACE}", "%{PROTON}", "%{PROTON_PROXY}",
+                            "%{SYSLOG}", "%{BLOCKTRACE}"];
         const format = this.addSelectField("logFormat", "Log format", logFormats, "%{SYSLOG}",
             "Log format : https://github.com/vmware/hillview/blob/master/docs/userManual.md" +
             "#232-specifying-rules-for-parsing-logs");

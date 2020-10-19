@@ -14,6 +14,8 @@ from argparse import ArgumentParser
 
 is3 = sys.version_info[0] == 3
 print("Python version is", 3 if is3 else 2)
+# Set the following to 'False' to use scp instead of rsync
+useRsync = True
 
 def get_logger(module_name):
     """ Returns the logger object """
@@ -92,7 +94,11 @@ class RemoteHost:
             u = ""
         else:
             u = self.user + "@"
-        command = "rsync -u " + copyOption + " " + source + " " + u + self.host + ":" + dest
+        if useRsync:
+            command = "rsync -u " + copyOption + " " + source + " " + u + self.host + ":" + dest
+        else:
+            # scp always follows symlinks, so copyOption is not needed
+            command = "scp " + source + " " + u + self.host + ":" + dest
         execute_command(command)
 
     def __str__(self):
