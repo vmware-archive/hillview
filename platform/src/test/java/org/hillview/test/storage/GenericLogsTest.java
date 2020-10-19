@@ -320,7 +320,7 @@ public class GenericLogsTest extends BaseTest {
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
-        //if (BaseTest.toPrint)
+        if (BaseTest.toPrint)
             System.out.println(table.toLongString(10));
         Assert.assertEquals("Table[13x8]", table.toString());
     }
@@ -332,7 +332,7 @@ public class GenericLogsTest extends BaseTest {
         TextFileLoader fileLoader = logs.getFileLoader(path);
         ITable table = fileLoader.load();
         Assert.assertNotNull(table);
-        //if (BaseTest.toPrint)
+        if (BaseTest.toPrint)
             System.out.println(table.toLongString(10));
         Assert.assertEquals("Table[14x5]", table.toString());
     }
