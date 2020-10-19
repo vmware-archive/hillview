@@ -1,0 +1,5 @@
+2020-09-24T21:57:08.258Z 10.196.132.2 - "GET /api/v1/intelligence/nodes/deployments HTTP/1.1" 200 80 5 5
+2020-09-24T21:57:08.444Z 10.196.132.2 - "GET /api/v1/ui-controller/clusters-node-aggregate-info HTTP/1.1" 200 22966 194 187
+2020-09-24T21:57:08.464Z 10.196.132.2 - "GET /api/v1/ui-controller/cluster-nodes-aggregate-info HTTP/1.1" 200 21605 160 153
+2020-09-24T21:57:08.516Z 10.196.132.2 - "GET /policy/api/v1/search?query=resource_type:Alarm%0A%20%20%20%20%20%20%20%20%20%20AND%20feature_name:manager_health%20AND%20status:OPEN&data_source=ALL HTTP/1.1" 200 965 32 31
+2020-09-24T21:57:11.488Z 10.196.132.2 - "GET /policy/api/v1/search?query=resource_type:Alarm%0A%20%20%20%20%20%20%20%20%20%20AND%20feature_name:manager_health%20AND%20status:OPEN&data_source=ALL HTTP/1.1" 200 965 17 16
