@@ -33,7 +33,7 @@ import {PiePlot} from "../ui/piePlot";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {DragEventKind, Resolution} from "../ui/ui";
+import {DragEventKind, HtmlString, Resolution} from "../ui/ui";
 import {
     Converters,
     ICancellable, makeInterval,
@@ -284,6 +284,7 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
         this.summary.set("buckets", this.bucketCount);
         if (this.samplingRate < 1.0)
             this.summary.set("sampling rate", this.samplingRate);
+        this.summary.setString("bar width", new HtmlString(this.xAxisData.barWidth()));
         this.addTimeSummary();
         this.summary.display();
     }

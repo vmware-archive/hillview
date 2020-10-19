@@ -31,7 +31,7 @@ import {
     Converters,
     formatDate,
     formatNumber,
-    formatTime,
+    formatTime, significantDigits,
     truncate,
 } from "../util";
 import {AnyScale, D3Axis, D3SvgElement, SpecialChars} from "../ui/ui";
@@ -173,25 +173,23 @@ export class AxisData {
                        public bucketCount: number) {
         this.displayRange = dataRange;
         const kind = description == null ? null : description.kind;
-        if (dataRange != null) {
-            if (kindIsString(kind!)) {
-                this.displayRange = {
-                    min: -.5,
-                    max: dataRange.stringQuantiles!.length - .5,
-                    presentCount: dataRange.presentCount,
-                    missingCount: dataRange.missingCount,
-                    allStringsKnown: dataRange.allStringsKnown,
-                    stringQuantiles: dataRange.stringQuantiles,
-                    maxBoundary: dataRange.maxBoundary
-                };
-            } else if (kind === "Integer") {
-                this.displayRange = {
-                    min: dataRange.min! - .5,
-                    max: dataRange.max! + .5,
-                    presentCount: dataRange.presentCount,
-                    missingCount: dataRange.missingCount
-                };
-            }
+        if (kindIsString(kind!)) {
+            this.displayRange = {
+                min: -.5,
+                max: dataRange.stringQuantiles!.length - .5,
+                presentCount: dataRange.presentCount,
+                missingCount: dataRange.missingCount,
+                allStringsKnown: dataRange.allStringsKnown,
+                stringQuantiles: dataRange.stringQuantiles,
+                maxBoundary: dataRange.maxBoundary
+            };
+        } else if (kind === "Integer") {
+            this.displayRange = {
+                min: dataRange.min! - .5,
+                max: dataRange.max! + .5,
+                presentCount: dataRange.presentCount,
+                missingCount: dataRange.missingCount
+            };
         }
         // These are set when we know the screen size.
         this.scale = null;
@@ -202,6 +200,40 @@ export class AxisData {
         if (this.description == null)
             return null;
         return this.description.name;
+    }
+
+    public barWidth(): string {
+        if (kindIsString(this.description!.kind)) {
+            const bucketSize = this.dataRange.stringQuantiles!.length / this.bucketCount;
+            if (this.dataRange.allStringsKnown) {
+                if (bucketSize <= 1)
+                    return "1 value";
+                return Math.ceil(bucketSize) + " values";
+            } else {
+                return "Multiple values";
+            }
+        }
+
+        const bucketSize = (this.dataRange.max! - this.dataRange.min!) / this.bucketCount;
+        switch (this.description!.kind) {
+            case "Integer":
+                if (bucketSize <= 1)
+                    return "1 value";
+                else
+                    return SpecialChars.approx + Math.floor(bucketSize) + " values";
+            case "Double":
+            case "Interval":
+                return significantDigits(bucketSize);
+            case "Date":
+            case "LocalDate":
+            case "Time":
+            case "Duration":
+                return Converters.durationFromDouble(bucketSize);
+            case "None":
+                return "None";
+        }
+        assert(false);
+        return "";
     }
 
     private static needsAdjustment(kind: ContentsKind): boolean {
@@ -274,7 +306,7 @@ export class AxisData {
                 const labelPeriod = Math.ceil(tickCount / maxLabelCount);
                 // On a legend the leftmost and rightmost ticks are at the ends
                 // On a plot axis the ticks are offset .5 from the ends.
-                const totalIntervals = axisKind === AxisKind.Legend ? (tickCount - 1) : tickCount;
+                const totalIntervals = axisKind === AxisKind.Legend ? ((tickCount > 1) ? (tickCount - 1) : 1): tickCount;
                 const tickSpan = pixels / totalIntervals;
                 const maxLabelWidthInPixels = 180;  // X labels are rotated, so they can be wider
                 // This is actually just a guess for the width

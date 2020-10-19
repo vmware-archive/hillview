@@ -135,11 +135,11 @@ export class HistogramLegendPlot extends LegendPlot<void> {
     }
 
     /**
-     * Highlight the color with the specified index.  Special values:
+     * Show a border around the color with the specified index.  Special values:
      * - colorIndex is bucketCount: missing box
      * - colorIndex is null: nothing
      */
-    public highlight(colorIndex: number | null): void {
+    public showBorder(colorIndex: number | null): void {
         if (colorIndex == null) {
             this.hilightRect
                 .attr("width", 0);
@@ -157,7 +157,7 @@ export class HistogramLegendPlot extends LegendPlot<void> {
     }
 
     public getColorMap(): ColorMap {
-        return (x) => this.colorMap(x / this.axisData.bucketCount);
+        return (x) => this.colorMap(x / (this.axisData.bucketCount > 1 ? this.axisData.bucketCount - 1 : 1));
     }
 
     public setData(axis: AxisData, missingLegend: boolean): void {
@@ -171,10 +171,12 @@ export class HistogramLegendPlot extends LegendPlot<void> {
 
     /**
      * Emphasize the colors in the map in range x0 to x1.  These are
-     * two values in the range 0-1.
+     * two values in the range 0-bucketCount.
      */
     public emphasizeRange(x0: number, x1: number): void {
-        this.colorMap = desaturateOutsideRange(this.originalMap, x0, x1);
+        this.colorMap = desaturateOutsideRange(this.originalMap,
+            Math.max(0, Math.floor(x0) / this.axisData.bucketCount),
+            Math.min(1.0, Math.ceil(x1) / this.axisData.bucketCount));
     }
 
     public setSurface(surface: HtmlPlottingSurface): void {

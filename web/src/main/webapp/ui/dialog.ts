@@ -443,6 +443,12 @@ export class Dialog extends DialogBase {
         this.fields.set(fieldName, { html: input, type: FieldKind.Datetime });
         if (value != null)
             input.value = value.toISOString().slice(0, 16);
+        const close = document.createElement("span");
+        close.className = "close";
+        close.innerHTML = "&times;";
+        close.onclick = () => input.value = "";
+        close.title = "Clear date.";
+        input.parentElement!.appendChild(close);
         return input;
     }
 

@@ -1090,9 +1090,9 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         this.summary.set("table rows", tableRowCount);
         this.summary.set("displayed rows", this.dataRowsDisplayed, this.isPrivate());
         this.standardSummary();
-        this.summary.set("% visible", percent(this.dataRowsDisplayed / this.meta.rowCount));
+        this.summary.set("% visible", percent(this.dataRowsDisplayed, this.meta.rowCount));
         if (this.startPosition > 0) {
-            this.summary.set("starting at %", percent(this.startPosition / this.meta.rowCount));
+            this.summary.set("starting at %", percent(this.startPosition, this.meta.rowCount));
         }
         this.summary.display();
 

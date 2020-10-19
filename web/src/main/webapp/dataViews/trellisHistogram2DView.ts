@@ -36,7 +36,7 @@ import {
     TrellisHistogram2DSerialization
 } from "../datasetView";
 import {IDataView} from "../ui/dataview";
-import {ChartOptions, DragEventKind, Resolution} from "../ui/ui";
+import {ChartOptions, DragEventKind, HtmlString, Resolution} from "../ui/ui";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {Histogram2DPlot} from "../ui/histogram2DPlot";
 import {
@@ -249,7 +249,7 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
         const position = d3mouse(this.surface!.getCanvas().node());
         this.pointDescription.update(
             [xs, value.toString(), group, significantDigits(y), percentString(perc), count], position[0], position[1]);
-        this.legendPlot.highlight(colorIndex);
+        this.legendPlot.showBorder(colorIndex);
     }
 
     protected exactHistogram(): void {
@@ -446,6 +446,7 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
             const span = roughTimeSpan(this.xAxisData.dataRange.min!, this.xAxisData.dataRange.max!);
             this.summary!.set("Time range in " + span[1], span[0]);
         }
+        this.summary!.setString("bar width", new HtmlString(this.xAxisData.barWidth()));
         this.summary!.display();
     }
 
@@ -493,7 +494,7 @@ export class TrellisHistogram2DView extends TrellisChartView<Groups<Groups<Group
             min = Math.max(0, Math.floor(min));
             max = Math.min(yPoints, Math.ceil(max));
 
-            this.legendPlot.emphasizeRange(min / yPoints, max / yPoints);
+            this.legendPlot.emphasizeRange(min, max);
             const heatmaps = new GroupsClass(this.data).map(g => Heatmap.create(g));
             const filter = heatmaps.map(g => g.bucketsInRange(min, max));
             const count = filter.reduce((c, g) => c + g.sum(), 0);

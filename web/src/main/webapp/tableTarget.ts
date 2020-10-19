@@ -462,18 +462,22 @@ RpcRequest<RemoteObjectId> {
 }
 
 export class SummaryMessage {
-    data: Map<string, number>;
-    approx: Set<string>;
+    data: Map<string, HtmlString>;
 
     constructor(protected parent: HTMLDivElement) {
         this.data = new Map();
-        this.approx = new Set();
     }
 
-    public set(s: string, n: number, approx?: boolean): void {
-        this.data.set(s, n);
+    set(s: string, n: number, approx?: boolean): void {
+        let summary = new HtmlString("");
         if (approx != null && approx)
-            this.approx.add(s);
+            summary.appendSafeString(SpecialChars.approx);
+        summary.append(significantDigitsHtml(n));
+        this.data.set(s, summary);
+    }
+
+    setString(s: string, v: HtmlString): void {
+        this.data.set(s, v);
     }
 
     public display(): void {
@@ -484,9 +488,7 @@ export class SummaryMessage {
                 summary.appendSafeString(", ");
             first = false;
             summary.appendSafeString(k + ": ");
-            if (this.approx.has(k))
-                summary.appendSafeString(SpecialChars.approx);
-            summary.append(significantDigitsHtml(v));
+            summary.append(v);
         });
         summary.setInnerHtml(this.parent);
     }

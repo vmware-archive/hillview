@@ -24,7 +24,7 @@ import {BaseReceiver, TableTargetAPI} from "../modules";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
-import {DragEventKind, Resolution} from "../ui/ui";
+import {DragEventKind, HtmlString, Resolution} from "../ui/ui";
 import {AxisData, AxisKind} from "./axisData";
 import {
     NewTargetReceiver,
@@ -381,6 +381,8 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
             .attr("dominant-baseline", "hanging");
         this.standardSummary();
         assert(this.summary != null);
+        this.summary.setString("pixel width", new HtmlString(this.xAxisData.barWidth()));
+        this.summary.setString("pixel height", new HtmlString(this.yAxisData.barWidth()));
         this.summary.display();
     }
 

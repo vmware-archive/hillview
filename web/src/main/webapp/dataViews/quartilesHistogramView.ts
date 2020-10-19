@@ -29,7 +29,7 @@ import {FullPage, PageTitle} from "../ui/fullPage";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {HtmlPlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
-import {ChartOptions, DragEventKind, Resolution} from "../ui/ui";
+import {ChartOptions, DragEventKind, HtmlString, Resolution} from "../ui/ui";
 import {
     assert,
     assertNever,
@@ -156,6 +156,7 @@ export class QuartilesHistogramView extends HistogramViewBase<Groups<SampleSet>>
         this.standardSummary();
         assert(this.summary != null);
         this.summary.set("buckets", bucketCount);
+        this.summary.setString("bar width", new HtmlString(this.xAxisData.barWidth()));
         this.summary.display();
     }
 
