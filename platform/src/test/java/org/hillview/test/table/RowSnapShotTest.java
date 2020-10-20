@@ -31,7 +31,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.time.Instant;
-import java.time.temporal.TemporalUnit;
 import java.util.Collections;
 
 public class RowSnapShotTest extends BaseTest {
