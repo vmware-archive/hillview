@@ -431,6 +431,8 @@ export class DatasetView implements IHtmlElement {
     public newPage(title: PageTitle, sourcePage: FullPage | null): FullPage {
         const num = this.pageCounter++;
         const page = new FullPage(num, title, sourcePage != null ? sourcePage.pageId : null, this);
+        if (sourcePage != null)
+            page.setTitleColor(sourcePage.getColor());
         this.insertAfter(page, sourcePage);
         return page;
     }

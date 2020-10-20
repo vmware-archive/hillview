@@ -179,6 +179,13 @@ export class FullPage implements IHtmlElement {
             h2.appendChild(refLink);
         }
 
+        const picker = document.createElement("input");
+        picker.type = "color";
+        picker.style.width = "20px";
+        picker.value = "#ffffff";
+        picker.oninput = () => { this.setTitleColor(picker.value); };
+        this.addCell(picker, true);
+
         if (this.dataset != null) {
             this.eBox = makeSpan(SpecialChars.epsilon);
             this.eBox.title = "Data is shown with differential privacy.";
@@ -257,6 +264,10 @@ export class FullPage implements IHtmlElement {
 
         this.bottomContainer.appendChild(this.progressManager.getHTMLRepresentation());
         this.bottomContainer.appendChild(this.console.getHTMLRepresentation());
+    }
+
+    public getColor(): string {
+        return this.titleRow.style.background;
     }
 
     public changeEpsilon(): void {
@@ -467,5 +478,9 @@ export class FullPage implements IHtmlElement {
 
     public scrollIntoView(): void {
         this.getHTMLRepresentation().scrollIntoView( { block: "end", behavior: "smooth" } );
+    }
+
+    setTitleColor(color: string): void {
+        this.titleRow.style.background = color;
     }
 }

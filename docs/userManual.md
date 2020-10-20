@@ -26,7 +26,7 @@ one row for an airline flight.  Columns in this dataset include: the date of the
 the origin and destination cities, the origin and destination states,
 the origin airport code, the distance flown, the departure and arrival delay.
 
-Updated on 2020 Sep 29.
+Updated on 2020 Oct 19.
 
 # Contents
   * 1 [Basic concepts](#1-basic-concepts)
@@ -855,6 +855,9 @@ with x.
 
 ![View heading](view-heading.png)
 
+The color picker rectangle allows you to change the color of the title
+to make it easier to visually navigate; the color of a view is inherited
+by all views that are spawned by it.
 The two black triangles in the view heading allow the view to be moved
 up and down on the web page.  The axis markers X, Y, and G can be
 dragged between some views; dropping them will "move" the
