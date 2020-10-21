@@ -26,7 +26,7 @@ one row for an airline flight.  Columns in this dataset include: the date of the
 the origin and destination cities, the origin and destination states,
 the origin airport code, the distance flown, the departure and arrival delay.
 
-Updated on 2020 Oct 20.
+Updated on 2020 Oct 21.
 
 # Contents
   * 1 [Basic concepts](#1-basic-concepts)
@@ -1353,6 +1353,13 @@ keep all rows based on a comparison with the specific table cell:
 
 ![Cell filtering context menu](filter-context-menu.png)
 
+For numeric and date cells the user has the option to selection a range of
+values centered at the current cell value ("keep around").  A new menu will popup
+to allow the user to specify the extent of the interval.
+
+In addition, two options allow the user to move the current row to the top
+of the table or to the middle row.
+
 #### 4.3.5 Operations on a table row
 
 Right-clicking on a table cell in a meta column opens a row-specific menu.
@@ -1396,6 +1403,8 @@ The view menu offers the following options.
 * Schema: displays [the table schema](#42-schema-views).
 
 * Change table size: this changes the number of rows displayed.
+
+* Conceal/reveal all hidden columns: makes the hidden columns completely invisible.
 
 #### 4.3.8 The table filter menu
 
