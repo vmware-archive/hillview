@@ -41,7 +41,7 @@ export class PageTitle {
      * @param provenance A human-readable description of how this page was produced.
      *                   Shown on mouse-over.
      */
-    constructor(public readonly format: string,
+    constructor(public format: string,
                 public readonly provenance: string) {}
 
     public getHTMLRepresentation(parentPage: FullPage): HTMLElement {
@@ -80,6 +80,11 @@ export class PageTitle {
 
     public getTextRepresentation(parentPage: FullPage): string {
         return this.getHTMLRepresentation(parentPage).innerText;
+    }
+
+    setFormat(textContent: string | null) {
+        if (textContent != null)
+            this.format = textContent;
     }
 }
 
@@ -159,11 +164,19 @@ export class FullPage implements IHtmlElement {
         if (this.title != null) {
             const titleStart = (this.pageId > 0 ? (this.pageId.toString() + ". ") : "");
             h2.appendChild(makeSpan(titleStart));
-            h2.appendChild(this.title.getHTMLRepresentation(this));
+            const repr = this.title.getHTMLRepresentation(this);
+            repr.contentEditable = "true";
+            repr.onblur = () => this.title.setFormat(repr.textContent);
+            repr.onkeydown = (e) => {
+                if (e.key == "Enter") {
+                    repr.blur();
+                }
+            };
+            h2.appendChild(repr);
             h2.style.cursor = "grab";
             h2.draggable = true;
             h2.ondragstart = (e) => this.setDragPayload(e, "Title");
-            h2.title = "Drag-and-drop to copy this data to another view.";
+            h2.title = "Drag-and-drop to copy this data to another view. Click to edit.";
         }
         h2.style.textOverflow = "ellipsis";
         h2.style.textAlign = "center";
@@ -181,7 +194,7 @@ export class FullPage implements IHtmlElement {
 
         const picker = document.createElement("input");
         picker.type = "color";
-        picker.style.width = "20px";
+        picker.style.width = "25px";
         picker.value = "#ffffff";
         picker.oninput = () => { this.setTitleColor(picker.value); };
         this.addCell(picker, true);

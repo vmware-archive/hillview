@@ -712,8 +712,8 @@ The Hillview user interface uses a tabbed web page to display multiple
 datasets; each dataset is opened in a separate tab.  Even if the same
 dataset is loaded a second time, it will be displayed in a new tab.
 The current dataset is shown in a highlighted tab (white in the image
-below).  The dataset name is shown in the tab; the user can click on
-the tab to edit the displayed dataset name.
+below).  The dataset name is shown in the tab; the user can modify
+the displayed dataset name by clicking on it.
 
 ![Dataset tabs](dataset-tabs.png)
 
@@ -769,7 +769,8 @@ user needs to scroll up and down to see the views.
 
 Each view has a heading that describes it briefly, as shown in the
 following figure.  Each view has a unique number, shown before the
-title.  The lineage of views is usually shown in the title, allowing
+title.  The title can be edited by clicking on it.
+The lineage of views is usually shown in the title, allowing
 users to navigate from a view to the source view from which it was
 generated.  Views can also be closed by clicking the button marked
 with x.

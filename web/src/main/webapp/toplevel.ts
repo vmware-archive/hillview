@@ -97,8 +97,14 @@ export class HillviewToplevel implements IHtmlElement {
         this.tabs.push(tab);
         let cell = row.insertCell();
         cell.textContent = dataset.name;
-        cell.title = dataset.name + "\nRight-click opens a menu";
-        cell.onclick = () => { if (this.select(tabName)) { this.rename(tabName); } };
+        cell.title = dataset.name + "\nRight-click opens a menu. Click to edit.";
+        cell.onblur = () => dataset.rename(cell.textContent);
+        cell.onkeydown = (e) => {
+            if (e.key == "Enter") {
+                cell.blur();
+            }
+        };
+        cell.contentEditable = "true";
         cell.className = "dataset-name";
         cell.oncontextmenu = (e) => menu.showAtMouse(e);
 
@@ -117,28 +123,6 @@ export class HillviewToplevel implements IHtmlElement {
         const index = this.tabs.map((d) => d.id).lastIndexOf(tabName);
         assert(index >= 0);
         return index;
-    }
-
-    public rename(tabName: string): void {
-        const index = this.index(tabName);
-        const cell = this.tabs[index].querySelector(".dataset-name") as HTMLElement;
-        cell.onclick = null;
-        const oldName = cell.textContent;
-        const input = document.createElement("input");
-        cell.textContent = "";
-        cell.insertBefore(input, cell.children[0]);
-        input.value = oldName!;
-        input.type = "text";
-        input.onmouseout = () => this.renamed(cell, input, tabName);
-        input.onchange = () => this.renamed(cell, input, tabName);
-    }
-
-    public renamed(cell: HTMLElement, input: HTMLInputElement, tabName: string): void {
-        const newName = input.value;
-        const index = this.index(tabName);
-        this.datasets[index].rename(newName);
-        cell.textContent = newName;
-        cell.onclick = () => { if (this.select(tabName)) { this.rename(tabName); } };
     }
 
     public remove(tabName: string): void {

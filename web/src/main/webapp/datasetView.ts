@@ -335,8 +335,11 @@ export class DatasetView implements IHtmlElement {
         return this.topLevel;
     }
 
-    public rename(name: string): void {
-        this.name = name;
+    public rename(name: string | null): void {
+        if (name == null)
+            this.name = "";
+        else
+            this.name = name;
     }
 
     public select(pageId: number): void {
