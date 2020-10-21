@@ -249,6 +249,13 @@ export function kindIsString(kind: ContentsKind): boolean {
     return kind === "String" || kind === "Json";
 }
 
+/**
+ * True if kind represents some kind of temporal information.
+ */
+export function kindIsTemporal(kind: ContentsKind): boolean {
+    return kind === "Date" || kind === "LocalDate" || kind === "Duration" || kind === "Time";
+}
+
 export type Schema = IColumnDescription[];
 
 export interface RowData {

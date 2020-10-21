@@ -28,9 +28,9 @@ import {
     ExtractValueFromKeyMapInfo,
     FindResult,
     IColumnDescription,
-    JSFilterInfo,
+    JSFilterInfo, kindIsTemporal, kindIsNumeric,
     kindIsString,
-    NextKList,
+    NextKList, RangeFilterArrayDescription, RangeFilterDescription,
     RecordOrder,
     RemoteObjectId,
     RowData,
@@ -95,12 +95,14 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
     protected nextKList: NextKList;
     protected contextMenu: ContextMenu;
     protected cellsPerColumn: Map<string, HTMLElement[]>;
+    protected headerPerColumn: Map<string, HTMLElement>;
+    // The selectedColumns state machine is indexed with the column index in the schema.
     protected selectedColumns = new SelectionStateMachine();
     protected message: HTMLElement;
     protected strFilter: StringFilterDescription | null;
     public aggregates: AggregateDescription[] | null;
-
-    // The following elements are used for Find
+    // If true display the hidden columns
+    public showHidden: boolean = true;
     protected findBar: FindBar;
 
     public constructor(
@@ -151,6 +153,18 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 text: "Change table size...",
                 action: () => this.changeTableSize(),
                 help: "Change the number of rows displayed",
+            }, {
+                text: "Conceal/reveal all hidden columns",
+                action: () => {
+                    if (this.headerPerColumn.size == 0 && this.showHidden) {
+                        this.page.reportError("No columns are visible; ignoring.");
+                        return;
+                    }
+                    this.showHidden = !this.showHidden;
+                    this.selectedColumns.clear();
+                    this.resize();
+                },
+                help: "Show or hide all columns that are currently hidden"
             }];
         items.push({
                 text: "View", help: "Change the way the data is displayed.",
@@ -511,6 +525,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                           isSortable: boolean): HTMLElement {
         const className = isSortable ? null : "meta";
         const th = this.grid.addHeader(width, cd.name, !isVisible, className);
+        this.headerPerColumn.set(colName, th);
         th.classList.add("preventselection");
         th.title = help;
         if (!isVisible) {
@@ -934,6 +949,8 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                       revert: boolean,
                       order: RecordOrder,
                       result: FindResult | null): void {
+        this.cellsPerColumn = new Map<string, HTMLElement[]>();
+        this.headerPerColumn = new Map<string, HTMLElement>();
         this.grid.prepareForUpdate();
         this.selectedColumns.clear();
         this.nextKList = nextKList;
@@ -984,56 +1001,58 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
 
         for (let i = 0; i < this.meta.schema.length; i++) {
             const cd = this.meta.schema.get(i);
-            cds.push(cd);
+            const visible = this.order.find(cd.name) >= 0;
+            if (this.showHidden || visible) {
+                cds.push(cd);
 
-            const kindString = cd.kind.toString();
-            const name = cd.name;
-            let title = name + "\nType is " + kindString + "\n";
-            if (this.isPrivate()) {
-                const pm = this.dataset.privacySchema!.quantization.quantization[cd.name];
-                if (pm != null) {
-                    const eps = this.dataset.getEpsilon([cd.name]);
-                    title += "Epsilon=" + eps + "\n";
-                    if (kindIsString(cd.kind)) {
-                        title += "Range is [" + pm.leftBoundaries![0] + ", " + pm.globalMax + "]\n";
-                        title += "Divided in " + pm.leftBoundaries!.length + " intervals\n";
-                    } else if (cd.kind === "Date") {
-                        title += "Range is [" + Converters.dateFromDouble(pm.globalMin as number) +
-                            ", " + Converters.dateFromDouble(pm.globalMax as number) + "]\n";
-                        title += "Bucket size is "
-                            + Converters.durationFromDouble(pm.granularity!) + "\n";
-                    } else if (cd.kind === "LocalDate") {
-                        title += "Range is [" + Converters.localDateFromDouble(pm.globalMin as number) +
-                            ", " + Converters.localDateFromDouble(pm.globalMax as number) + "]\n";
-                        title += "Bucket size is "
-                            + Converters.durationFromDouble(pm.granularity!) + "\n";
-                    } else if (cd.kind === "Time") {
-                        title += "Range is [" + Converters.timeFromDouble(pm.globalMin as number) +
-                            ", " + Converters.timeFromDouble(pm.globalMax as number) + "]\n";
-                        title += "Bucket size is "
-                            + Converters.durationFromDouble(pm.granularity!) + "\n";
-                    } else {
-                        title += "Range is [" + formatNumber(pm.globalMin as number) + ", " +
-                            formatNumber(pm.globalMax as number) + "]\n";
-                        title += "Bucket size is " + pm.granularity + "\n";
+                const kindString = cd.kind.toString();
+                const name = cd.name;
+                let title = name + "\nType is " + kindString + "\n";
+                if (this.isPrivate()) {
+                    const pm = this.dataset.privacySchema!.quantization.quantization[cd.name];
+                    if (pm != null) {
+                        const eps = this.dataset.getEpsilon([cd.name]);
+                        title += "Epsilon=" + eps + "\n";
+                        if (kindIsString(cd.kind)) {
+                            title += "Range is [" + pm.leftBoundaries![0] + ", " + pm.globalMax + "]\n";
+                            title += "Divided in " + pm.leftBoundaries!.length + " intervals\n";
+                        } else if (cd.kind === "Date") {
+                            title += "Range is [" + Converters.dateFromDouble(pm.globalMin as number) +
+                                ", " + Converters.dateFromDouble(pm.globalMax as number) + "]\n";
+                            title += "Bucket size is "
+                                + Converters.durationFromDouble(pm.granularity!) + "\n";
+                        } else if (cd.kind === "LocalDate") {
+                            title += "Range is [" + Converters.localDateFromDouble(pm.globalMin as number) +
+                                ", " + Converters.localDateFromDouble(pm.globalMax as number) + "]\n";
+                            title += "Bucket size is "
+                                + Converters.durationFromDouble(pm.granularity!) + "\n";
+                        } else if (cd.kind === "Time") {
+                            title += "Range is [" + Converters.timeFromDouble(pm.globalMin as number) +
+                                ", " + Converters.timeFromDouble(pm.globalMax as number) + "]\n";
+                            title += "Bucket size is "
+                                + Converters.durationFromDouble(pm.granularity!) + "\n";
+                        } else {
+                            title += "Range is [" + formatNumber(pm.globalMin as number) + ", " +
+                                formatNumber(pm.globalMax as number) + "]\n";
+                            title += "Bucket size is " + pm.granularity + "\n";
+                        }
                     }
                 }
+                title += "Right mouse click opens a menu\n";
+                const thd = this.addHeaderCell(cd, cd.name, title, 0, visible, true);
+                thd.classList.add("col" + i.toString());
+                thd.onclick = (e) => this.columnClick(i, e);
+                thd.ondblclick = (e) => {
+                    e.preventDefault();
+                    const o = this.order.clone();
+                    if (visible)
+                        o.hide(cd.name);
+                    else
+                        o.addColumn({columnDescription: cd, isAscending: true});
+                    this.setOrder(o, true);
+                };
+                this.createContextMenu(thd, i, visible);
             }
-            title += "Right mouse click opens a menu\n";
-            const visible = this.order.find(cd.name) >= 0;
-            const thd = this.addHeaderCell(cd, cd.name, title, 0, visible, true);
-            thd.classList.add("col" + i.toString());
-            thd.onclick = (e) => this.columnClick(i, e);
-            thd.ondblclick = (e) => {
-                e.preventDefault();
-                const o = this.order.clone();
-                if (visible)
-                    o.hide(cd.name);
-                else
-                    o.addColumn({ columnDescription: cd, isAscending: true });
-                this.setOrder(o, true);
-            };
-            this.createContextMenu(thd, i, visible);
         }
 
         if (this.aggregates != null) {
@@ -1067,7 +1086,6 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             }
         }
 
-        this.cellsPerColumn = new Map<string, HTMLElement[]>();
         cds.forEach((cd) => this.cellsPerColumn.set(cd.name, []));
         let tableRowCount = 0;
         // Add row data
@@ -1080,7 +1098,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             for (let i = 0; i < nextKList.rows.length; i++) {
                 const row = nextKList.rows[i];
                 const agg = nextKList.aggregates == null ? null : nextKList.aggregates[i];
-                this.addRow(row, previousRow, agg, cds, index === nextKList.rows.length - 1);
+                this.addRow(nextKList.rows, previousRow, agg, cds, index);
                 previousRow = row;
                 index++;
             }
@@ -1132,6 +1150,68 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         const newPage = this.dataset.newPage(new PageTitle(title, Converters.rowFilterDescription(filter)), this.page);
         rr.invoke(new TableOperationCompleted(newPage, rr, this.meta, this.order,
             this.tableRowsDesired, this.aggregates));
+    }
+
+    public filterAroundValue(cd: IColumnDescription, value: RowValue): void {
+        const doubleValue = value as number;
+        const display = Converters.valueToString(value, cd.kind, true);
+        const dialog = new Dialog(
+            "Interval size", "Interval size around " + display);
+
+        switch (cd.kind) {
+            case "Integer":
+            case "Double":
+                const nf = dialog.addTextField("interval", "interval", FieldKind.Double, "5",
+                    "Interval size.");
+                nf.required = true;
+                break;
+            case "Date":
+            case "Duration":
+            case "LocalDate":
+            case "Time":
+                const df = dialog.addTextField("days", "days", FieldKind.Integer, "0",
+                    "Number of days");
+                df.required = true;
+                const tf = dialog.addTextField("time", "[[HH:]MM:]SS[.msec]", FieldKind.Time, "2.5",
+                    "Time interval");
+                tf.required = true;
+                break;
+        }
+
+        dialog.setAction(() => {
+            let size: number | null = 0;
+            if (kindIsNumeric(cd.kind))
+                size = dialog.getFieldValueAsNumber("interval");
+            else {
+                const days = dialog.getFieldValueAsInt("days");
+                const ms = dialog.getFieldValueAsInterval("time");
+                if (days != null && ms != null) {
+                    size = ms + days * 86_400_000;
+                }
+            }
+            if (size == null) {
+                this.page.reportError("Could not parse interval");
+                return;
+            }
+            const filter: RangeFilterDescription = {
+                min: doubleValue - size,
+                max: doubleValue + size,
+                minString: null,
+                maxString: null,
+                cd,
+                includeMissing: false
+            };
+            const filters: RangeFilterArrayDescription = {
+                filters: [filter],
+                complement: false
+            };
+            const rr = this.createFilterRequest(filters);
+            const title = "Filtered around " + display;
+            const newPage = this.dataset.newPage(new PageTitle(title, this.defaultProvenance), this.page);
+            rr.invoke(new TableOperationCompleted(newPage, rr, this.meta, this.order,
+                this.tableRowsDesired, this.aggregates));
+        });
+        dialog.show();
     }
 
     public filterOnValue(cd: IColumnDescription, value: RowValue, comparison: Comparison): void {
@@ -1200,7 +1280,11 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         rr.invoke(rec);
     }
 
-    // mouse click on a column
+    /**
+     * Mouse click on a column.
+     * @param colNum  column position in schema.
+     * @param e       mouse event
+     */
     private columnClick(colNum: number, e: MouseEvent): void {
         e.preventDefault();
         if (e.ctrlKey || e.metaKey)
@@ -1224,7 +1308,10 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         this.selectedColumns.clear();
         let count = 0;
         for (let i = 0; i < this.meta.schema.length; i++) {
-            const kind = this.meta.schema.get(i).kind;
+            const desc = this.meta.schema.get(i);
+            if (!this.headerPerColumn.has(desc.name))
+                continue;
+            const kind = desc.kind;
             if (kind === "Integer" || kind === "Double") {
                 this.selectedColumns.add(i);
                 count++;
@@ -1326,8 +1413,10 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
     private highlightSelectedColumns(): void {
         for (let i = 0; i < this.meta.schema.length; i++) {
             const name = this.meta.schema.get(i).name;
-            const header = this.grid.getHeader(i + 2);  // 2 extra columns
+            if (!this.headerPerColumn.has(name))
+                continue;
             const cells = this.cellsPerColumn.get(name);
+            const header = this.headerPerColumn.get(name);
             const selected = this.selectedColumns.has(i);
             if (selected)
                 header.classList.add("selected");
@@ -1382,15 +1471,37 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         newPage.scrollIntoView();
     }
 
-    public moveRowToTop(row: RowData): void {
+    public moveRowToBoundary(row: RowData, top: boolean): void {
+        const order = top ? this.order.clone() : this.order.invert();
         const rr = this.createNextKRequest(
-            this.order, row.values, this.tableRowsDesired, this.aggregates, null);
-        rr.invoke(new NextKReceiver(this.page, this, rr, false, this.order, null));
+            order, row.values, this.tableRowsDesired, this.aggregates, null);
+        rr.invoke(new NextKReceiver(this.page, this, rr, !top, order, null));
     }
 
-    public addRow(row: RowData, previousRow: RowData | null,
+    protected centerRow(rows: RowData[], index: number): void {
+        const mid = Math.floor(rows.length / 2);
+        if (index == mid)
+            return;
+        if (index < mid) {
+            if (this.startPosition <= 0) {
+                this.page.reportError("Cannot move: already at the top");
+                return;
+            }
+            this.moveRowToBoundary(rows[index + mid], false);
+        } else {
+            if (this.startPosition + this.dataRowsDisplayed >= this.meta.rowCount - 1) {
+                this.page.reportError("Cannot move: already at the bottom");
+                return;
+            }
+            this.moveRowToBoundary(rows[index - mid], true);
+        }
+    }
+
+    public addRow(rows: RowData[], previousRow: RowData | null,
                   agg: number[] | null,
-                  cds: IColumnDescription[], last: boolean): void {
+                  cds: IColumnDescription[], index: number): void {
+        const last = index == rows.length - 1;
+        const row = rows[index];
         this.grid.newRow();
         const position = this.startPosition + this.dataRowsDisplayed;
         const rowContextMenu = (e: MouseEvent) => {
@@ -1421,8 +1532,13 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             }, true);
             this.contextMenu.addItem({
                 text: "Move to top",
-                action: () => this.moveRowToTop(row),
+                action: () => this.moveRowToBoundary(row, true),
                 help: "Move this row to the top of the view.",
+            }, true);
+            this.contextMenu.addItem({
+                text: "Center row",
+                action: () => this.centerRow(rows, index),
+                help: "Move this row to become the middle row.",
             }, true);
             this.contextMenu.showAtMouse(e);
         };
@@ -1547,9 +1663,17 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                         action: () => this.filterOnValue(cd, value, "<="),
                         help: "Keep only the rows that have a larger or equal in this column."
                     }, true);
+                    this.contextMenu.addItem({text: "Keep around " + shortValue + "...",
+                        action: () => this.filterAroundValue(cd, value),
+                        help: "Keep values in this column close to this one."
+                    }, kindIsNumeric(cd.kind) || kindIsTemporal(cd.kind));
                     this.contextMenu.addItem({text: "Move to top",
-                        action: () => this.moveRowToTop(row),
+                        action: () => this.moveRowToBoundary(row, true),
                         help: "Move this row to the top of the view."
+                    }, true);
+                    this.contextMenu.addItem({text: "Center row",
+                        action: () => this.centerRow(rows, index),
+                        help: "Move this row to become the middle row.",
                     }, true);
                     /*
                     if (this.dataset.isLog() &&
