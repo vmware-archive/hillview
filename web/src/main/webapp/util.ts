@@ -22,15 +22,20 @@
 import {ErrorReporter} from "./ui/errReporter";
 import {DragEventKind, HtmlString, pageReferenceFormat, Resolution, Size} from "./ui/ui";
 import {
-    AggregateDescription, BucketsInfo,
+    AggregateDescription,
+    BucketsInfo,
     ComparisonFilterDescription,
     ContentsKind,
-    Groups, IColumnDescription,
+    Groups,
+    IColumnDescription,
     kindIsNumeric,
-    kindIsString, NextKList,
+    kindIsString,
+    NextKList,
     RangeFilterArrayDescription,
-    RangeFilterDescription, RecordOrder,
-    RowFilterDescription, RowValue,
+    RangeFilterDescription,
+    RecordOrder,
+    RowFilterDescription,
+    RowValue,
     SampleSet,
     StringFilterDescription
 } from "./javaBridge";
@@ -697,6 +702,10 @@ export function formatDate(d: Date | null): string {
     return df;
 }
 
+export function addSeconds(d: Date, seconds: number): Date {
+    return new Date(d.getTime() + seconds * 1000);
+}
+
 export function assertNever(x: never): never {
     throw new Error("Unexpected object: " + x);
 }
@@ -741,6 +750,24 @@ export function formatTime(d: Date | null, nonEmpty: boolean): string {
             return "00:00";
     }
     return time;
+}
+
+/**
+ * Parses a string encoding a duration in the format [hh:[mm:]]ss[.ms] into a number of milliseconds.
+ */
+export function parseDuration(d: string | null): number | null {
+    if (d == null)
+        return null;
+    const re = /(((\d{1,2}):)?(\d{1,2}):)?(\d{1,2})([.](\d{1,3}))?/;
+    const m = d.match(re);
+    console.debug(m);
+    if (m == null)
+        return null;
+    const hour = m[3] ?? "0";
+    const minutes = m[4] ?? "0";
+    const seconds = m[5] ?? "0";
+    const fraction = ((m[7] ?? "") + "000").substr(0, 3);
+    return (1000 * (60 * (60 * parseInt(hour)) + parseInt(minutes)) + parseInt(seconds)) + parseInt(fraction);
 }
 
 /**
@@ -1051,7 +1078,17 @@ export function roughTimeSpan(min: number, max: number): [number, string] {
     const hours = distance / 3_600_000;
     if (hours >= 5)
         return [Math.ceil(hours), "hours"];
-    return [Math.ceil(distance / 60_000), "minutes"];
+    const minutes = distance / 60_000;
+    if (minutes >= 5)
+        return [Math.ceil(minutes), "minutes"];
+    const seconds = distance / 1_000;
+    if (seconds >= 5)
+        return [Math.ceil(seconds), "seconds"];
+    const ms = distance;
+    if (ms >= 1)
+        return [Math.ceil(ms), "ms"];
+    const ns = distance * 1000_000;
+    return [Math.ceil(ns), "ns"];
 }
 
 export function optionToBoolean(value: boolean | undefined): boolean {

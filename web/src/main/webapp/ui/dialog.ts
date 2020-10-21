@@ -17,7 +17,7 @@
 
 import {drag as d3drag} from "d3-drag";
 import {event as d3event, select as d3select} from "d3-selection";
-import {cloneArray, makeId, makeSpan, makeInputBox, px} from "../util";
+import {cloneArray, makeId, makeSpan, makeInputBox, px, parseDuration} from "../util";
 import {EditBox} from "./editBox";
 import {IHtmlElement, Point} from "./ui";
 import * as FileSaver from "file-saver";
@@ -30,6 +30,7 @@ export enum FieldKind {
     Password,
     File,
     Datetime,
+    Time,
     ColumnName,
     Object
 }
@@ -360,7 +361,7 @@ export class Dialog extends DialogBase {
         let t = "string";
         if (type === FieldKind.Integer)
             t = "number";
-        if (type === FieldKind.Password)
+        else if (type === FieldKind.Password)
             t = "password";
         const input = this.createInputElement(fieldName, labelText, toolTip, t);
         this.fields.set(fieldName, {html: input, type});
@@ -686,6 +687,15 @@ export class Dialog extends DialogBase {
         if (isNaN(result))
             return null;
         return result;
+    }
+
+    /**
+     * Gets the field value as a number, encoded using the Hillview time
+     * encoding rules.
+     */
+    public getFieldValueAsInterval(field: string): number | null {
+        const s = this.getFieldValue(field);
+        return parseDuration(s);
     }
 
     /**
