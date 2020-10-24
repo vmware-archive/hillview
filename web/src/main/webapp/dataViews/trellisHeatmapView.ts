@@ -333,7 +333,7 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
                 { first: buckets, second: null, third: null };
             const plot = this.hps[i];
             // The order of these operations is important
-            plot.setData(heatmap, this.xAxisData, this.yAxisData, null, this.getSchema(), 2, this.isPrivate());
+            plot.setData(heatmap, this.xAxisData, this.yAxisData, null, this.getSchema(), this.isPrivate());
             max = Math.max(max, plot.getMaxCount());
         }
         if (this.shape.missingBucket) {
@@ -342,7 +342,7 @@ export class TrellisHeatmapView extends TrellisChartView<Groups<Groups<Groups<nu
                 { first: buckets, second: null, third: null };
             const plot = this.hps[histogram3d.perBucket.length];
             // The order of these operations is important
-            plot.setData(heatmap, this.xAxisData, this.yAxisData, null, this.getSchema(), 2, this.isPrivate());
+            plot.setData(heatmap, this.xAxisData, this.yAxisData, null, this.getSchema(), this.isPrivate());
             max = Math.max(max, plot.getMaxCount());
         }
 

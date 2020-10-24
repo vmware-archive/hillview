@@ -81,7 +81,6 @@ export class HeatmapView extends
     protected yAxisData: AxisData;
     protected detailsAxisData: AxisData | null;
     protected legendDiv: HTMLDivElement;
-    protected confThreshold: number;
     private readonly defaultProvenance: string = "From heatmap";
     private showDetails: boolean;  // true if we display data about 1-sized boxes
     private detailIndex: number;  // column that is used to display the detail colormap
@@ -96,7 +95,6 @@ export class HeatmapView extends
         super(remoteObjectId, meta, page, "Heatmap");
         if (detailColumns != null)
             assert(detailColumns.length >= 2);
-        this.confThreshold = 2;
         this.detailLegendSurface = null;
         this.detailLegendDiv = null;
         this.detailLegend = null;
@@ -134,10 +132,6 @@ export class HeatmapView extends
                 action: () => this.groupBy(),
                 help: "Group data by a third column.",
             }, {
-                text: "Confidence threshold...",
-                action: () => this.changeThreshold(),
-                help: "Specify how much larger than the confidence interval the data must be to be displayed.",
-            }, {
                 text: "Show/hide regression",
                 action: () => this.toggleRegression(),
                 help: "Show or hide the linear regression line"
@@ -153,7 +147,6 @@ export class HeatmapView extends
             this.dataset.combineMenu(this, page.pageId),
         ]);
 
-        this.viewMenu.enable("Confidence threshold...", this.isPrivate());
         this.viewMenu.enable("Change detail column...",
             this.detailColumns != null && this.detailColumns.length >= 2);
         this.page.setMenu(this.menu);
@@ -192,24 +185,6 @@ export class HeatmapView extends
                 reusePage: false,
                 chartKind: "QuartileVector",
             }));
-    }
-
-    public changeThreshold(): void {
-        const thDialog = new Dialog("Confidence threshold",
-            "Change the threshold for the confidence interval.");
-        let input = thDialog.addTextField("multiplier", "Multiplier:", FieldKind.Double, this.confThreshold.toString(),
-            "Data with value > multiplier * confidence is displayed.");
-        input.required = true;
-        thDialog.setAction(() => {
-            const c = thDialog.getFieldValueAsNumber("multiplier");
-            if (c == null) {
-                this.page.reportError("Threshold must be a number");
-                return;
-            }
-            this.confThreshold = c;
-            this.resize();
-        });
-        thDialog.show();
     }
 
     public toggleRegression(): void {
@@ -429,7 +404,7 @@ export class HeatmapView extends
         // Data must be set in each legend, then the kind, then it can be drawn.
         // The heatmap itself can only be drawn after the colormaps have been set.
         this.plot.setData(data, this.xAxisData, this.yAxisData, this.detailsAxisData,
-            this.meta.schema, this.confThreshold, this.isPrivate());
+            this.meta.schema, this.isPrivate());
         if (!keepColorMap) {
             this.colorLegend.setData(this.plot.getMaxCount());
             if (this.showDetails)

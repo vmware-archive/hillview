@@ -387,7 +387,7 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
             for (let x = y + 1; x < charts; x++) {
                 this.hps[index].setData({ first: data[index], second: null, third: null },
                     this.xAxes[x],  this.yAxes[y], null,
-                    this.getSchema(), 0, this.isPrivate());
+                    this.getSchema(), this.isPrivate());
                 max = Math.max(max, this.hps[index].getMaxCount());
                 index++;
             }

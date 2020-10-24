@@ -17,7 +17,7 @@
 
 import {AxisData, AxisKind} from "../dataViews/axisData";
 import {Groups, kindIsString, RowValue} from "../javaBridge";
-import {ColorMap, regression, Triple, valueWithConfidence} from "../util";
+import {Color, ColorMap, regression, Triple, valueWithConfidence} from "../util";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {SchemaClass} from "../schemaClass";
@@ -28,7 +28,7 @@ interface Dot {
     y: number;
     count: number;
     valueIndex: number;  // index in detailColorMap
-    confident: boolean;
+    confRatio: number;  // can be negative.  Large values (> 2) -> confident.  Small values: not confident.
 }
 
 export class HeatmapPlot
@@ -95,14 +95,15 @@ export class HeatmapPlot
         const ctx: CanvasRenderingContext2D = htmlCanvas.getContext("2d")!;
         for (const dot of this.dots) {
             ctx.beginPath();
-            if (dot.confident) {
-                if (this.detailColorMap != null && dot.count === 1)
-                    ctx.fillStyle = this.detailColorMap(dot.valueIndex);
-                else
-                    ctx.fillStyle = this.colorMap(dot.count);
-            } else {
-                ctx.fillStyle = "lightgrey";
-            }
+            let color: Color | null;
+            if (this.detailColorMap != null && dot.count === 1)
+                color = Color.parse(this.detailColorMap(dot.valueIndex));
+            else if (dot.count <= 0) // can happen with privacy noise added
+                color = new Color(.9, .9, .9);
+            else
+                color = Color.parse(this.colorMap(dot.count));
+            color = color!.brighten(1 / dot.confRatio);
+            ctx.fillStyle = color.toString();
             ctx.fillRect(dot.x, dot.y, this.pointWidth, this.pointHeight);
             ctx.closePath();
         }
@@ -180,7 +181,7 @@ export class HeatmapPlot
 
     public setData(heatmap: Triple<Groups<Groups<number>>, Groups<Groups<number>> | null, Groups<Groups<RowValue[]>> | null>,
                    xData: AxisData, yData: AxisData, detailData: AxisData | null,
-                   schema: SchemaClass, confThreshold: number, isPrivate: boolean): void {
+                   schema: SchemaClass, isPrivate: boolean): void {
         this.data = heatmap;
         this.xAxisData = xData;
         this.yAxisData = yData;
@@ -209,13 +210,16 @@ export class HeatmapPlot
             for (let y = 0; y < this.yPoints; y++) {
                 const b = this.data.first.perBucket[x].perBucket[y];
                 const count = Math.max(0, b);
-                let conf: boolean;
+                let confRatio: number;
                 let valueIndex = 0;
                 if (!isPrivate) {
-                    conf = true;
+                    confRatio = 1;
                 } else {
-                    const confidence = this.data.second!.perBucket[x].perBucket[y];
-                    conf = b >= (confThreshold * confidence);
+                    let confidence = this.data.second!.perBucket[x].perBucket[y];
+                    if (confidence <= 1) // should never happen
+                        confRatio = count;
+                    else
+                        confRatio = Math.max(count, 1) / confidence;
                 }
                 if (count === 1 && this.data.third != null && detailData != null) { // could happen if we have only 2 cols.
                     const value = this.data.third.perBucket[x].perBucket[y][this.detailIndex];
@@ -223,14 +227,14 @@ export class HeatmapPlot
                 }
                 if (count > this.max)
                     this.max = count;
-                if ((this.isPrivate && conf) || (!this.isPrivate && count !== 0)) {
+                if (this.isPrivate || (!this.isPrivate && count !== 0)) {
                     const rec: Dot = {
                         x: x * this.pointWidth,
                         // +1 because it's the upper corner
                         y: this.getChartHeight() - (y + 1) * this.pointHeight,
                         count,
                         valueIndex,
-                        confident: conf
+                        confRatio
                     };
                     this.visible += count;
                     this.distinct++;

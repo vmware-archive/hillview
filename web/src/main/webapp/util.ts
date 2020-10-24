@@ -1227,7 +1227,13 @@ export class Color {
         return new Color(+m[1]/255, +m[2]/255, +m[3]/255);
     }
 
+    /**
+     * Amount is a factor which is "multiplied" with the color.
+     * Below 1 it leaves the color unchanged.
+     */
     public brighten(amount: number): Color {
+        if (amount <= 1)
+            return this;
         return new Color(
             (this.r + (amount - 1)) / amount,
             (this.g + (amount - 1)) / amount,

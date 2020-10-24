@@ -102,6 +102,10 @@ export class TableTargetAPI extends RemoteObject {
         super(remoteObjectId);
     }
 
+    public createMergeRequest(r: RemoteObjectId): RpcRequest<RemoteObjectId> {
+        return this.createStreamingRpcRequest<RemoteObjectId>("mergeWith", [r]);
+    }
+
     public createSetRequest(r: RemoteObjectId, c: CombineOperators): RpcRequest<RemoteObjectId> {
         return this.createStreamingRpcRequest<RemoteObjectId>("setOperation",
             { otherId: r, op: CombineOperators[c] });
