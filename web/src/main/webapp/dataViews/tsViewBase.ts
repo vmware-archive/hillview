@@ -264,6 +264,9 @@ export abstract class TSViewBase extends BigTableView {
     protected chart(cds: IColumnDescription[], chartKind: ViewKind): void {
         const exact = this.isPrivate(); // If private, do not sample
         const cols = chartKind === "Heatmap" ? cds.slice(0,2) : cds;
+        if (this.isPrivate())
+            // Do not allow additional columns when displaying private datahrsy
+            cds = cds.slice(0,2);
         const rr = this.createDataQuantilesRequest(cols, this.page, chartKind);
         const buckets = cols.map(_ => 0);
         rr.invoke(new DataRangesReceiver(this, this.page, rr, this.meta,

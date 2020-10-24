@@ -22,7 +22,6 @@ import {LoadView} from "./loadView";
 import {FullPage, PageTitle} from "./ui/fullPage";
 import {ContextMenu} from "./ui/menu";
 import {IHtmlElement, removeAllChildren} from "./ui/ui";
-import {assert} from "./util";
 import {UIConfig} from "./javaBridge";
 
 /**
@@ -98,15 +97,9 @@ export class HillviewToplevel implements IHtmlElement {
         let cell = row.insertCell();
         cell.textContent = dataset.name;
         cell.title = dataset.name + "\nRight-click opens a menu. Click to edit.";
-        cell.onblur = () => dataset.rename(cell.textContent);
-        cell.onkeydown = (e) => {
-            if (e.key == "Enter") {
-                cell.blur();
-            }
-        };
-        cell.contentEditable = "true";
         cell.className = "dataset-name";
         cell.oncontextmenu = (e) => menu.showAtMouse(e);
+        cell.onclick = () => this.select(tabName);
 
         const close = document.createElement("span");
         close.className = "close";
@@ -114,19 +107,20 @@ export class HillviewToplevel implements IHtmlElement {
         close.setAttribute("float", "right");
         close.onclick = () => this.remove(tabName);
         close.title = "Close this dataset.";
+
         cell = row.insertCell();
         cell.appendChild(close);
         this.select(tabName);
     }
 
     public index(tabName: string): number {
-        const index = this.tabs.map((d) => d.id).lastIndexOf(tabName);
-        assert(index >= 0);
-        return index;
+        return this.tabs.map((d) => d.id).lastIndexOf(tabName);
     }
 
     public remove(tabName: string): void {
         const index = this.index(tabName);
+        if (index < 0)
+            return;
         this.strip.removeChild(this.tabs[index]);
         this.datasets.splice(index, 1);
         this.tabs.splice(index, 1);
@@ -141,20 +135,26 @@ export class HillviewToplevel implements IHtmlElement {
     /**
      * Select the tab with the specified name (a string like tabXXX).
      * @param tabName    Name of tab to select.
-     * @returns True if the same tab was already selected.
      */
-    public select(tabName: string): boolean {
+    public select(tabName: string): void {
         const index = this.index(tabName);
-        let selected: boolean = false;
+        if (index < 0)
+            return;
         for (let i = 0; i < this.strip.childElementCount; i++) {
             const child: HTMLElement = this.tabs[i];
+            const cell = child.querySelector<HTMLElement>(".dataset-name")!;
             if (i !== index) {
                 child.classList.remove("current");
+                cell.contentEditable = "false";
             } else {
-                if (child.classList.contains("current")) {
-                    selected = true;
-                }
                 child.classList.add("current");
+                cell.contentEditable = "true";
+                cell.onblur = () => dataset.rename(cell.textContent);
+                cell.onkeydown = (e) => {
+                    if (e.key == "Enter") {
+                        cell.blur();
+                    }
+                };
             }
         }
 
@@ -163,13 +163,20 @@ export class HillviewToplevel implements IHtmlElement {
         this.current = dataset;
         this.content.appendChild(dataset.getHTMLRepresentation());
         dataset.resize();
-        return selected;
+    }
+
+    public getDataset(index: number): DatasetView | null {
+        return this.datasets[index];
     }
 
     public resize(): void {
         if (this.current != null) {
             this.current.resize();
         }
+    }
+
+    getDatasetNames(): string[] {
+        return this.datasets.map(d => d.name);
     }
 }
 

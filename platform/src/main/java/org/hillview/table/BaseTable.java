@@ -18,6 +18,7 @@
 package org.hillview.table;
 
 import org.hillview.table.api.*;
+import org.hillview.table.columns.EmptyColumn;
 import org.hillview.table.columns.ObjectArrayColumn;
 import org.hillview.table.rows.RowSnapshot;
 import org.hillview.utils.Linq;
@@ -75,9 +76,18 @@ public abstract class BaseTable implements ITable, Serializable {
 
     /**
      * Returns columns in the order they appear in the schema.
+     * If the schema requests a column that does not exist, an empty
+     * column is created.
      */
     public List<IColumn> getColumns(Schema schema) {
-        return Linq.map(schema.getColumnNames(), this::getColumn);
+        List<IColumn> result = new ArrayList<>(schema.getColumnCount());
+        for (ColumnDescription cd: schema.getColumnDescriptions()) {
+            if (this.columns.containsKey(cd.name))
+                result.add(this.columns.get(cd.name));
+            else
+                result.add(new EmptyColumn(cd));
+        }
+        return result;
     }
 
     /**

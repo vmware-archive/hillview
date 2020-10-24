@@ -22,7 +22,7 @@ import {HistogramView} from "./dataViews/histogramView";
 import {SchemaView} from "./modules";
 import {SpectrumView} from "./dataViews/spectrumView";
 import {SchemaReceiver, TableView} from "./modules";
-import {DataLoaded, getDescription} from "./initialObject";
+import {DataLoaded, getDescription, RemoteTableReceiver} from "./initialObject";
 import {
     BucketsInfo, ColumnGeoRepresentation,
     CombineOperators, HistogramRequestInfo,
@@ -44,7 +44,7 @@ import JSONEditor, {JSONEditorOptions} from "jsoneditor";
 import {OnCompleteReceiver} from "./rpc";
 import {QuartilesHistogramView} from "./dataViews/quartilesHistogramView";
 import {TrellisHistogramQuartilesView} from "./dataViews/trellisHistogramQuartilesView";
-import {saveAs} from "./ui/dialog";
+import {Dialog, saveAs} from "./ui/dialog";
 import {showBookmarkURL} from "./ui/dialog";
 import {CorrelationHeatmapView} from "./dataViews/correlationHeatmapView";
 import {GeoView} from "./dataViews/geoView";
@@ -208,6 +208,10 @@ export class DatasetView implements IHtmlElement {
             action: () => this.refresh(),
             help: "Refresh all views of the dataset."
         }, {
+            text: "Merge with...",
+            action: () => this.merge(),
+            help: "Add this data to another dataset."
+        }, {
             text: "Edit privacy policy",
             action: () => this.editPrivacy(),
             help: "For private datasets: opens an editor to edit the privacy parameters."
@@ -216,12 +220,37 @@ export class DatasetView implements IHtmlElement {
         HillviewToplevel.instance.addDataset(this, this.menu);
     }
 
+    protected merge(): void {
+        const names = HillviewToplevel.instance.getDatasetNames();
+        const dialog = new Dialog("Merge", "Merge with another dataset");
+        dialog.addSelectFieldAsObject("dataset", "dataset",
+            names.map((_, i) => i), i => names[i],
+            "Dataset name to merge with.");
+        dialog.setAction(() => {
+            const index = dialog.getFieldValueAsObject<number>("dataset");
+            if (index == null)
+                return;
+            const dataset = HillviewToplevel.instance.getDataset(index);
+            this.mergeWith(dataset);
+        });
+        dialog.show();
+    }
+
     public rebuild(): void {
         const ser = this.serialize();
         const ds = new DatasetView(ser.remoteObjectId, this.name, ser, this.loadMenuPage);
         const success = ds.reconstruct(ser);
         if (!success)
             this.loadMenuPage.reportError("Error recomputing view");
+    }
+
+    protected mergeWith(view: DatasetView | null): void {
+        if (view == null)
+            return;
+        const rr = this.remoteObject.createMergeRequest(view.remoteObjectId);
+        const name = this.name + "+" + view.name;
+        const observer = new RemoteTableReceiver(this.loadMenuPage, rr, this.loaded, name, true);
+        rr.invoke(observer);
     }
 
     /**

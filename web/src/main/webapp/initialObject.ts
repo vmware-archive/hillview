@@ -150,7 +150,7 @@ class FilePruneReceiver extends OnCompleteReceiver<RemoteObjectId> {
  * Receives the ID for a remote table and initiates a request to get the
  * table schema.
  */
-class RemoteTableReceiver extends BaseReceiver {
+export class RemoteTableReceiver extends BaseReceiver {
     /**
      * Create a renderer for a new table.
      * @param sourcePage      Parent page initiating this request.

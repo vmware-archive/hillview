@@ -20,6 +20,7 @@ package org.hillview.targets;
 import com.google.gson.JsonObject;
 import org.hillview.*;
 import org.hillview.dataStructures.*;
+import org.hillview.dataset.ParallelDataSet;
 import org.hillview.dataset.api.*;
 import org.hillview.geo.PolygonSet;
 import org.hillview.maps.*;
@@ -757,5 +758,19 @@ public class TableTarget extends TableRpcTarget {
         Schema proj = request.parseArgs(Schema.class);
         ProjectMap map = new ProjectMap(proj);
         this.runMap(this.table, map, (d, c) -> new TableTarget(d, c, this.metadataDirectory), request, context);
+    }
+
+    @HillviewRpc
+    public void mergeWith(RpcRequest request, RpcRequestContext context) {
+        List<String> ids = Utilities.list(request.parseArgs(String[].class));
+        RpcObjectManager.instance.when(
+                ids, l -> {
+                    List<IDataSet<ITable>> other = Linq.map(l, e -> e.to(TableTarget.class).table);
+                    other.add(0, TableTarget.this.table);
+                    ParallelDataSet<ITable> par = new ParallelDataSet<>(other);
+                    HillviewComputation comp = context.getComputation(request);
+                    TableTarget result = new TableTarget(par, comp, TableTarget.this.metadataDirectory);
+                    this.returnResult(result.getId(), request, context);
+                });
     }
 }

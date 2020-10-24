@@ -132,8 +132,8 @@ public class Table extends BaseTable {
 
     /**
      * Creates a new table that only has the columns specified in the schema.
-     * @param schema: Schema of the resulting table.  Must be a subset of the
-     *              columns of the existing table.
+     * @param schema: Schema of the resulting table.  If a column does not exist,
+     *              an empty column is created.
      */
     @Override
     public ITable project(Schema schema) {

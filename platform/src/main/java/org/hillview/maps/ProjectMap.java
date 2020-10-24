@@ -24,7 +24,8 @@ import org.hillview.table.api.ITable;
 import javax.annotation.Nullable;
 
 /**
- * A map that preserves only a subset of the columns.
+ * A map that preserves the specified columns.
+ * If a column is requested that does not exist, an empty column is created.
  */
 public class ProjectMap implements IMap<ITable, ITable> {
     static final long serialVersionUID = 1;

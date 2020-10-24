@@ -17,6 +17,8 @@
 
 package org.hillview;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
 import org.hillview.sketches.highorder.IdPostProcessedSketch;
 import org.hillview.sketches.highorder.PostProcessedSketch;
 import org.hillview.dataset.RemoteDataSet;
@@ -34,7 +36,7 @@ public interface IRpcTarget extends ICast {
      * This class represents the ID of an RPC Target.
      * It is used by other classes that refer to RpcTargets by their ids.
      */
-    class Id {
+    class Id implements IJson {
         private final String objectId;
         public Id(String objectId) {
             this.objectId = objectId;
@@ -72,6 +74,11 @@ public interface IRpcTarget extends ICast {
 
         boolean isInitial() {
             return this.objectId.equals(Id.initialId().objectId);
+        }
+
+        @Override
+        public JsonElement toJsonTree() {
+            return new JsonPrimitive(this.objectId);
         }
     }
 
