@@ -19,7 +19,7 @@ import {HeatmapView} from "./dataViews/heatmapView";
 import {HeavyHittersView} from "./dataViews/heavyHittersView";
 import {Histogram2DView} from "./dataViews/histogram2DView";
 import {HistogramView} from "./dataViews/histogramView";
-import {SchemaView} from "./modules";
+import {BaseReceiver, SchemaView} from "./modules";
 import {SpectrumView} from "./dataViews/spectrumView";
 import {SchemaReceiver, TableView} from "./modules";
 import {DataLoaded, getDescription, RemoteTableReceiver} from "./initialObject";
@@ -48,6 +48,7 @@ import {Dialog, saveAs} from "./ui/dialog";
 import {showBookmarkURL} from "./ui/dialog";
 import {CorrelationHeatmapView} from "./dataViews/correlationHeatmapView";
 import {GeoView} from "./dataViews/geoView";
+import {SchemaClass} from "./schemaClass";
 
 export interface IViewSerialization {
     viewKind: ViewKind;
@@ -221,7 +222,7 @@ export class DatasetView implements IHtmlElement {
     }
 
     protected merge(): void {
-        const names = HillviewToplevel.instance.getDatasetNames();
+        const names = HillviewToplevel.instance.datasets.filter(d => d != this).map(d => d.name);
         const dialog = new Dialog("Merge", "Merge with another dataset");
         dialog.addSelectFieldAsObject("dataset", "dataset",
             names.map((_, i) => i), i => names[i],
@@ -230,7 +231,7 @@ export class DatasetView implements IHtmlElement {
             const index = dialog.getFieldValueAsObject<number>("dataset");
             if (index == null)
                 return;
-            const dataset = HillviewToplevel.instance.getDataset(index);
+            const dataset = HillviewToplevel.instance.datasets[index];
             this.mergeWith(dataset);
         });
         dialog.show();
@@ -247,10 +248,40 @@ export class DatasetView implements IHtmlElement {
     protected mergeWith(view: DatasetView | null): void {
         if (view == null)
             return;
-        const rr = this.remoteObject.createMergeRequest(view.remoteObjectId);
-        const name = this.name + "+" + view.name;
-        const observer = new RemoteTableReceiver(this.loadMenuPage, rr, this.loaded, name, true);
-        rr.invoke(observer);
+        // Get the schemas from any of the views.
+        const schemaA = this.getSchema();
+        const schemaB = view.getSchema();
+        if (schemaA == null || schemaB == null) {
+            this.loadMenuPage.reportError("Could not find schema");
+            return;
+        }
+        const schemaRes = schemaA.merge(schemaB);
+        if (schemaRes.isErr) {
+            this.loadMenuPage.reportError("Conflicting schema: " + schemaRes.error);
+            return;
+        }
+        const schema = schemaRes.unwrap();
+        if (schema.schema.length != schemaA.length) {
+            const proj = this.remoteObject.createProjectRequest(schema.schema);
+            const receiver = new ProjectFirstReceiver(schema,
+                this.loadMenuPage, proj, this, view, schemaB);
+            proj.invoke(receiver);
+        } else {
+            const receiver = new ProjectFirstReceiver(schema,
+                this.loadMenuPage, null, this, view, schemaB);
+            receiver.run(this.remoteObjectId);
+            receiver.finished();
+        }
+    }
+
+    public getSchema(): SchemaClass | null {
+        for (const page of this.allPages) {
+            const view = page.dataView as BigTableView;
+            if (view == null)
+                continue;
+            return view.meta.schema;
+        }
+        return null;
     }
 
     /**
@@ -677,3 +708,47 @@ class CreateBookmarkURLReceiver extends OnCompleteReceiver<string> {
         console.log("Bookmark has been created.");
     }
 }
+
+// Part of the workflow of merging two tables with distinct schemas.
+// Receivers a table that has been projected and invokes a projection on a second table,
+// after which the tables are merged.
+class ProjectFirstReceiver extends BaseReceiver {
+    constructor(protected schema: SchemaClass, loadMenuPage: FullPage,
+                operation: ICancellable<RemoteObjectId> | null,
+                protected left: DatasetView, protected right: DatasetView,
+                protected rightSchema: SchemaClass) {
+        super(loadMenuPage, operation, "reconcile schemas", null);
+    }
+
+    public run(firstProjectionId: RemoteObjectId): void {
+        const firstProjection = new TableTargetAPI(firstProjectionId);
+        if (this.schema.schema.length != this.rightSchema.length) {
+            const proj = new TableTargetAPI(this.right.remoteObjectId).createProjectRequest(this.schema.schema);
+            const receiver = new ProjectSecondReceiver(
+                this.page, proj, this.left, this.right, firstProjection);
+            proj.invoke(receiver);
+        } else {
+            const receiver = new ProjectSecondReceiver(
+                this.page, null, this.left, this.right, firstProjection);
+            receiver.run(this.right.remoteObjectId);
+            receiver.finished();
+        }
+    }
+}
+
+class ProjectSecondReceiver extends BaseReceiver {
+    constructor(loadMenuPage: FullPage, operation: ICancellable<RemoteObjectId> | null,
+                protected left: DatasetView, protected right: DatasetView,
+                protected firstProjection: TableTargetAPI) {
+        super(loadMenuPage, operation, "reconcile schemas", null);
+    }
+
+    public run(secondObjectId: RemoteObjectId): void {
+        const rr = this.firstProjection.createMergeRequest(secondObjectId);
+        const name = this.left.name + " + " + this.right.name;
+        const receiver = new RemoteTableReceiver(this.page, rr,
+            { kind: "Merged", first: this.left.loaded, second: this.right.loaded }, name, true);
+        rr.invoke(receiver);
+    }
+}
+

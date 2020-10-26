@@ -435,7 +435,7 @@ class GenericLogDialog extends Dialog {
             "shell pattern with path that describes the names of the files to load (comma-separated patterns allowed)");
         pattern.required = true;
         // TODO: This should perhaps be read from the back-end service.
-        const logFormats = ["%{HADOOP}", "%{RFC5424}", "%{VSANTRACE}", "%{PROTON}", "%{PROTON_PROXY}",
+        const logFormats = ["%{HADOOP}", "%{RFC5424}", "%{VSANTRACE}", "%{NSXT_PROTON}", "%{NSXT_PROXY}",
                             "%{SYSLOG}", "%{BLOCKTRACE}"];
         const format = this.addSelectField("logFormat", "Log format", logFormats, "%{SYSLOG}",
             "Log format : https://github.com/vmware/hillview/blob/master/docs/userManual.md" +

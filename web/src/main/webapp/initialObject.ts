@@ -48,7 +48,13 @@ export interface SSTableFilesLoaded {
     description: CassandraConnectionInfo;
 }
 
-export type DataLoaded = FilesLoaded | TablesLoaded | HillviewLogs | IDatasetSerialization | SSTableFilesLoaded;
+export interface Merged {
+    kind: "Merged";
+    first: DataLoaded;
+    second: DataLoaded;
+}
+
+export type DataLoaded = FilesLoaded | TablesLoaded | HillviewLogs | IDatasetSerialization | SSTableFilesLoaded | Merged;
 
 export function getDescription(data: DataLoaded): PageTitle {
     switch (data.kind) {
@@ -66,6 +72,10 @@ export function getDescription(data: DataLoaded): PageTitle {
             return new PageTitle("logs", "Hillview installation logs");
         case "SSTable":
             return new PageTitle(data.description.database + "/" + data.description.table, "loaded from files");
+        case "Merged":
+            const name = getDescription(data.first).format + "+" + getDescription(data.second).format;
+            return new PageTitle("Merged " + name,
+                getDescription(data.first).provenance + "+" + getDescription(data.second).provenance);
     }
 }
 

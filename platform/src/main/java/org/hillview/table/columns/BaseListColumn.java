@@ -98,7 +98,7 @@ public abstract class BaseListColumn extends BaseColumn implements IAppendableCo
             case Json:
                 return new StringListColumn(desc);
             case None:
-                return new EmptyColumn(desc);
+                return new EmptyColumn(desc, 0);
             case Integer:
                 return new IntListColumn(desc);
             case Date:
