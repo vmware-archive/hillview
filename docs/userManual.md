@@ -26,7 +26,7 @@ one row for an airline flight.  Columns in this dataset include: the date of the
 the origin and destination cities, the origin and destination states,
 the origin airport code, the distance flown, the departure and arrival delay.
 
-Updated on 2020 Oct 21.
+Updated on 2020 Oct 26.
 
 # Contents
   * 1 [Basic concepts](#1-basic-concepts)
@@ -829,6 +829,14 @@ the exact same view.  This functionality is similar to the above
 closed, this option will reopen it.
 
 * Refresh: fetches and redraws all the views associated with this dataset.
+
+* Merge with...: allows the user to specify another dataset, loaded in a separate tab.
+  The two datasets will be merged, by taking the union of their rows; the result will
+  be loaded in a new tab.  The datasets can be merged only if their schemas are compatible.
+  Two schemas as incompatible if there is a common column name with different types in the
+  two datasets.  If two datasets are incompatible the user needs to rename columns
+  or convert datatypes prior to the merging operation.  If a column does not exist in
+  one of the two datasets, it is assumed to contain only null values.
 
 * Edit privacy policy: this is an experimental feature related to
   differentially-private data visualizations, which is not yet documented.

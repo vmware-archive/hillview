@@ -38,9 +38,9 @@ public class EmptyColumn extends BaseColumn implements IAppendableColumn, IMutab
         this.sealed = true;
     }
 
-    public EmptyColumn(ColumnDescription desc) {
+    public EmptyColumn(ColumnDescription desc, int size) {
         super(desc);
-        this.size = 0;
+        this.size = size;
         this.sealed = false;
     }
 
@@ -112,7 +112,7 @@ public class EmptyColumn extends BaseColumn implements IAppendableColumn, IMutab
 
     @Override
     public IColumn convertKind(ContentsKind kind, String newColName, IMembershipSet unused) {
-        return new EmptyColumn(new ColumnDescription(newColName, kind));
+        return new EmptyColumn(new ColumnDescription(newColName, kind), this.size);
     }
 
     @Override

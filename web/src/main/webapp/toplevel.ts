@@ -31,7 +31,7 @@ import {UIConfig} from "./javaBridge";
  */
 export class HillviewToplevel implements IHtmlElement {
     private readonly topLevel: HTMLElement;
-    private readonly datasets: DatasetView[];
+    public readonly datasets: DatasetView[];
     private readonly strip: HTMLDivElement;
     private readonly tabs: HTMLElement[];
     private readonly content: HTMLDivElement;
@@ -165,18 +165,10 @@ export class HillviewToplevel implements IHtmlElement {
         dataset.resize();
     }
 
-    public getDataset(index: number): DatasetView | null {
-        return this.datasets[index];
-    }
-
     public resize(): void {
         if (this.current != null) {
             this.current.resize();
         }
-    }
-
-    getDatasetNames(): string[] {
-        return this.datasets.map(d => d.name);
     }
 }
 

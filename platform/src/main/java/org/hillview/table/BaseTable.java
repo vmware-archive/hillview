@@ -85,7 +85,7 @@ public abstract class BaseTable implements ITable, Serializable {
             if (this.columns.containsKey(cd.name))
                 result.add(this.columns.get(cd.name));
             else
-                result.add(new EmptyColumn(cd));
+                result.add(new EmptyColumn(cd, this.getNumOfRows()));
         }
         return result;
     }

@@ -17,6 +17,7 @@
 
 import {IColumnDescription, Schema} from "./javaBridge";
 import {assert, cloneArray, Serializable} from "./util";
+import {Result} from "@badrap/result";
 
 /**
  * A SchemaClass is a class containing a Schema and some indexes and methods
@@ -143,5 +144,21 @@ export class SchemaClass implements Serializable<SchemaClass> {
             cds.push(colDesc!);
         });
         return cds;
+    }
+
+    public merge(other: SchemaClass): Result<SchemaClass> {
+        const result: IColumnDescription[] = [];
+        for (const cd of this.schema) {
+            const otherCd = other.find(cd.name);
+            if (otherCd == null)
+                result.push(cd);
+            else if (otherCd.kind != cd.kind)
+                return Result.err(new Error("Conflicing types for column " + cd.name + ": " + cd.kind + " and " + otherCd.kind))
+            // else: we will push it when we scan the other schema
+        }
+        for (const cd of other.schema) {
+            result.push(cd);
+        }
+        return Result.ok(new SchemaClass(result));
     }
 }

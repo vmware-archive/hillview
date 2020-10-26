@@ -718,7 +718,7 @@ export abstract class BaseReceiver extends OnCompleteReceiver<RemoteObjectId> {
     protected remoteObject: TableTargetAPI;
 
     protected constructor(public page: FullPage,
-                          public operation: ICancellable<RemoteObjectId>,
+                          public operation: ICancellable<RemoteObjectId> | null,
                           public description: string,
                           protected dataset: DatasetView | null) { // may be null for the first table
         super(page, operation, description);
