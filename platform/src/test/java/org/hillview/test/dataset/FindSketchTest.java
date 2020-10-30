@@ -35,7 +35,7 @@ public class FindSketchTest extends BaseTest {
         RecordOrder cso = new RecordOrder();
         for (String colName : table.getSchema().getColumnNames())
             cso.append(new ColumnSortOrientation(table.getSchema().getDescription(colName), true));
-        StringFilterDescription sf = new StringFilterDescription("Mike", false, false, false);
+        StringFilterDescription sf = new StringFilterDescription("Mike", false, false, false, false, false, true);
         FindSketch fsk = new FindSketch(sf, null, cso);
         FindSketch.Result result = fsk.create(table);
         Assert.assertNotNull(result);
@@ -50,7 +50,7 @@ public class FindSketchTest extends BaseTest {
         RecordOrder cso = new RecordOrder();
         for (String colName : table.getSchema().getColumnNames())
             cso.append(new ColumnSortOrientation(table.getSchema().getDescription(colName), true));
-        StringFilterDescription sf = new StringFilterDescription("Noone", false, false, false);
+        StringFilterDescription sf = new StringFilterDescription("Noone", false, false, false, false, false, true);
         FindSketch fsk = new FindSketch(sf, null, cso);
         FindSketch.Result result = fsk.create(table);
         Assert.assertNotNull(result);
@@ -63,7 +63,7 @@ public class FindSketchTest extends BaseTest {
         RecordOrder cso = new RecordOrder();
         for (String colName : table.getSchema().getColumnNames())
             cso.append(new ColumnSortOrientation(table.getSchema().getDescription(colName), true));
-        StringFilterDescription sf = new StringFilterDescription("Bill", false, false, false);
+        StringFilterDescription sf = new StringFilterDescription("Bill", false, false, false, false, false, true);
         FindSketch fsk = new FindSketch(sf, null, cso);
         FindSketch.Result result = fsk.create(table);
         Assert.assertNotNull(result);
@@ -81,17 +81,20 @@ public class FindSketchTest extends BaseTest {
 
         // start at row with index 2, which is larger than the first one in cso
         RowSnapshot top2 = new RowSnapshot(table, 2, table.getSchema());
-        StringFilterDescription sf = new StringFilterDescription("Mike", false, false, false);
-        FindSketch fsk = new FindSketch(sf, top2, cso, false);
+        StringFilterDescription sf = new StringFilterDescription("Mike", false, false, false, false, false, true);
+        FindSketch fsk = new FindSketch(sf, top2, cso);
         FindSketch.Result result = fsk.create(table);
         Assert.assertNotNull(result);
         this.assertResult(1, 0, 0,true, result);
         RowSnapshot top0 = new RowSnapshot(table, 0, table.getSchema());
-        fsk = new FindSketch(sf, top0, cso, false);
+        sf.excludeTopRow = false;
+        fsk = new FindSketch(sf, top0, cso);
         result = fsk.create(table);
         Assert.assertNotNull(result);
         this.assertResult(0, 1, 0, false, result);
-        fsk = new FindSketch(sf, top0, cso, true);
+
+        sf.excludeTopRow = true;
+        fsk = new FindSketch(sf, top0, cso);
         result = fsk.create(table);
         Assert.assertNotNull(result);
         this.assertResult(1, 0, 0, true, result);
@@ -106,12 +109,15 @@ public class FindSketchTest extends BaseTest {
 
         // start at row with index 3, which is larger than the first one in cso
         RowSnapshot top = new RowSnapshot(table, 3, table.getSchema());
-        StringFilterDescription sf = new StringFilterDescription("Bi", true, false, true);
-        FindSketch fsk = new FindSketch(sf, top, cso, false);
+        StringFilterDescription sf = new StringFilterDescription("Bi", true, false, true, false, false, true);
+        FindSketch fsk = new FindSketch(sf, top, cso);
         FindSketch.Result result = fsk.create(table);
         Assert.assertNotNull(result);
         this.assertResult(0, 2, 0, "Bill", result);
-        fsk = new FindSketch(sf, top, cso, true);
+
+        sf.next = true;
+        sf.excludeTopRow = true;
+        fsk = new FindSketch(sf, top, cso);
         result = fsk.create(table);
         Assert.assertNotNull(result);
         this.assertResult(2, 0, 0, true, result);
@@ -123,11 +129,12 @@ public class FindSketchTest extends BaseTest {
         RecordOrder cso = new RecordOrder();
         String colName = table.getSchema().getColumnNames().get(1);
         cso.append(new ColumnSortOrientation(table.getSchema().getDescription(colName), true));
-        StringFilterDescription sf = new StringFilterDescription("Mike", false, false, false);
+        StringFilterDescription sf = new StringFilterDescription("Mike", false, false, false, false, false, true);
         FindSketch fsk = new FindSketch(sf, null, cso);
         FindSketch.Result result = fsk.create(table);
         Assert.assertNotNull(result);
         // No matches on the second column
+        Assert.assertNotNull(result);
         this.assertResult(0, 0, 0,true, result);
     }
 
@@ -139,33 +146,41 @@ public class FindSketchTest extends BaseTest {
         cso.append(new ColumnSortOrientation(table.getSchema().getDescription(colName), true));
 
         // Search substring "i".
-        StringFilterDescription sf = new StringFilterDescription("i", true, false, true);
+        StringFilterDescription sf = new StringFilterDescription("i", true, false, true, false, false, false);
         RowSnapshot top = new RowSnapshot(table, 0, table.getSchema());
-        FindSketch fsk = new FindSketch(sf, top, cso, false, true);
+        sf.excludeTopRow = false;
+        sf.next = true;
+        FindSketch fsk = new FindSketch(sf, top, cso);
         // Search for strings geq Mike
         FindSketch.Result result = fsk.create(table);
         Assert.assertNotNull(result);
         this.assertResult(2, 1, 2, "Mike", result);
-        fsk = new FindSketch(sf, top, cso, true);
+
+        sf.next = true;
+        sf.excludeTopRow = true;
+        fsk = new FindSketch(sf, top, cso);
         // Searching strings strictly greater than Mike
         result = fsk.create(table);
         Assert.assertNotNull(result);
-
         this.assertResult(3, 1, 1, "Richard", result);
+
         // Previous search from Mike
-        fsk = new FindSketch(sf, top, cso, true, false);
+        sf.excludeTopRow = true;
+        sf.next = false;
+        fsk = new FindSketch(sf, top, cso);
         result = fsk.create(table);
         Assert.assertNotNull(result);
-
         if (toPrint)
             printRes(top, colName, result);
         this.assertResult(0, 2, 3, "Bill", result);
+
         // Previous search from Smith
         top = new RowSnapshot(table, 5, table.getSchema());
-        fsk = new FindSketch(sf, top, cso, true, false);
+        sf.excludeTopRow = true;
+        sf.next = false;
+        fsk = new FindSketch(sf, top, cso);
         result = fsk.create(table);
         Assert.assertNotNull(result);
-
         if (toPrint)
             printRes(top, colName, result);
         this.assertResult(3, 1, 1, "Richard", result);
@@ -174,6 +189,7 @@ public class FindSketchTest extends BaseTest {
     private void printRes(RowSnapshot topRow,  String colName, FindSketch.Result result) {
         Assert.assertNotNull(result.firstMatchingRow);
         System.out.printf("TopRow: %s\n", topRow.asString(colName));
+        Assert.assertNotNull(result.firstMatchingRow);
         System.out.printf("First Row: %s, before %d, at %d, after %d\n",
                 result.firstMatchingRow.asString(colName), result.before, result.at,  result.after);
     }

@@ -153,7 +153,8 @@ export class SchemaClass implements Serializable<SchemaClass> {
             if (otherCd == null)
                 result.push(cd);
             else if (otherCd.kind != cd.kind)
-                return Result.err(new Error("Conflicing types for column " + cd.name + ": " + cd.kind + " and " + otherCd.kind))
+                return Result.err(new Error("Conflicting types for column " + cd.name + ": " +
+                    cd.kind + " and " + otherCd.kind))
             // else: we will push it when we scan the other schema
         }
         for (const cd of other.schema) {

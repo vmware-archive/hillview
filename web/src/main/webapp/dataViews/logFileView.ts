@@ -18,31 +18,31 @@
 import {IHtmlElement, removeAllChildren} from "../ui/ui";
 import {SubMenu, TopMenu} from "../ui/menu";
 import {FindBar} from "../ui/findBar";
-import {BaseReceiver, OnNextK, TableTargetAPI} from "../modules";
-import {FullPage} from "../ui/fullPage";
-import {Converters, ICancellable, makeMissing, makeSpan, significantDigits} from "../util";
-import {FindResult, GenericLogs, NextKList, RecordOrder, RemoteObjectId, Schema} from "../javaBridge";
-import {SchemaClass} from "../schemaClass";
-import {NextKReceiver} from "../modules";
+import {BaseReceiver, BigTableView} from "../modules";
+import {FullPage, PageTitle} from "../ui/fullPage";
+import {assert, Converters, ICancellable, makeSpan, PartialResult} from "../util";
+import {FindResult, GenericLogs, IColumnDescription, NextKList, RecordOrder, RemoteObjectId} from "../javaBridge";
+import {Receiver, RpcRequest} from "../rpc";
+import {TableMeta} from "../ui/receiver";
 
-export class LogFileView extends TableTargetAPI implements IHtmlElement, OnNextK {
+export class LogFileView extends BigTableView implements IHtmlElement {
     protected readonly topLevel: HTMLElement;
     protected readonly findBar: FindBar;
-    protected readonly footer: HTMLElement;
-    protected readonly contents: HTMLElement;
     protected nextKList: NextKList;
     protected visibleColumns: Set<string>;
     protected color: Map<string, string>;  // one per column
-    protected wrap = true;
+    public static readonly requestSize = 1000;  // number of lines brought in one request
+    private activeRequest: RpcRequest<NextKList> | null;
+    protected contents: HTMLDivElement;
+    protected wrap: boolean = false;
 
     constructor(remoteObjectId: RemoteObjectId,
-                protected schema: SchemaClass,
-                protected filename: string) {
-        super(remoteObjectId);
+                meta: TableMeta,
+                protected order: RecordOrder,
+                page: FullPage) {
+        super(remoteObjectId, meta, page, "LogFile");
         this.visibleColumns = new Set<string>();
         this.color = new Map<string, string>();
-
-        this.topLevel = document.createElement("div");
         this.topLevel.className = "logFileViewer";
 
         const header = document.createElement("header");
@@ -62,14 +62,6 @@ export class LogFileView extends TableTargetAPI implements IHtmlElement, OnNextK
         header.appendChild(schemaDisplay);
         this.displaySchema(schemaDisplay);
 
-        this.contents = document.createElement("div");
-        this.contents.className = "logFileContents";
-        this.topLevel.appendChild(this.contents);
-
-        this.footer = document.createElement("footer");
-        this.footer.className = "logFileFooter";
-        this.topLevel.appendChild(this.footer);
-
         const menu = new TopMenu([{
             text: "View",
             help: "Control the view",
@@ -77,8 +69,14 @@ export class LogFileView extends TableTargetAPI implements IHtmlElement, OnNextK
                 text: "Wrap",
                 help: "Change text wrapping",
                 action: () => this.toggleWrap()
+            }, {
+                text: "Refresh",
+                help: "Refresh current view",
+                action: () => {
+                    // TODO
+                }
             }])
-        } /* TODO, {
+        }, {
             text: "Find",
             help: "Search specific values",
             subMenu: new SubMenu([{
@@ -86,24 +84,26 @@ export class LogFileView extends TableTargetAPI implements IHtmlElement, OnNextK
                 help: "Search for a string",
                 action: () => this.showFindBar(true)
             }])
-        } */]);
+        }]);
+        this.page.setMenu(menu);
 
-        // must be done after the menu has been created
-        titleBar.appendChild(menu.getHTMLRepresentation());
-        const h2 = document.createElement("h2");
-        h2.textContent = this.filename;
-        h2.style.textAlign = "center";
-        h2.style.flexGrow = "100";
-        titleBar.appendChild(h2);
+        this.contents = this.makeToplevelDiv("log");
+        this.contents.style.whiteSpace = "nowrap";
+        this.contents.style.overflow = "scroll";
     }
 
-    protected toggleWrap(): void {
+    public toggleWrap(): void {
         this.wrap = !this.wrap;
         if (!this.wrap) {
             this.contents.style.whiteSpace = "nowrap";
         } else {
             this.contents.style.whiteSpace = "normal";
         }
+        this.resize();
+    }
+
+    protected export(): void {
+        throw new Error("Method not implemented.");
     }
 
     private displaySchema(header: HTMLElement): void {
@@ -114,23 +114,18 @@ export class LogFileView extends TableTargetAPI implements IHtmlElement, OnNextK
         const row = document.createElement("tr");
         row.className = "logHeader";
         tbl.appendChild(row);
-        for (const col of this.schema.schema) {
-            const colName = col.name;
+        for (const col of this.order.sortOrientationList) {
+            const colName = col.columnDescription.name;
             const cell = row.insertCell();
             cell.textContent = colName;
+            cell.style.textOverflow = "ellipsis";
+            cell.style.overflow = "hidden";
+            cell.title = colName + ": Click to color; right-click to toggle.";
             cell.onclick = () => this.rotateColor(colName, cell);
-            const check = document.createElement("input");
-            check.type = "checkbox";
-            let checked = true;
-            if (colName === GenericLogs.filenameColumn ||
-                colName === GenericLogs.directoryColumn)
-                checked = false;
-            check.checked = checked;
-            check.onclick = (e) => { this.check(colName); e.stopPropagation(); };
-            cell.appendChild(check);
-            if (checked)
-                this.visibleColumns.add(colName);
+            cell.oncontextmenu = (e) => { this.check(colName, cell); e.preventDefault(); }
+            cell.classList.add("selected");
             this.color.set(colName, "black");
+            this.visibleColumns.add(colName);
         }
     }
 
@@ -147,8 +142,12 @@ export class LogFileView extends TableTargetAPI implements IHtmlElement, OnNextK
         }
     }
 
-    private refresh(): void {
-        this.display(this.nextKList);
+    public refresh(): void {
+        let firstRow = null;
+        if (this.nextKList != null && this.nextKList.rows.length > 0)
+            firstRow = this.nextKList.rows[0].values;
+        const rr = this.createNextKRequest(this.order, firstRow, 100, null, null);
+        rr.invoke(new LogFragmentReceiver(this.page, this, rr, null));
     }
 
     private rotateColor(col: string, cell: HTMLElement): void {
@@ -156,15 +155,18 @@ export class LogFileView extends TableTargetAPI implements IHtmlElement, OnNextK
         const next = LogFileView.nextColor(current);
         this.color.set(col, next);
         cell.style.color = this.color.get(col);
-        this.refresh();
+        this.resize();
     }
 
-    private check(col: string): void {
-        if (this.visibleColumns.has(col))
-            this.visibleColumns.delete(col);
-        else
-            this.visibleColumns.add(col);
-        this.refresh();
+    private check(colName: string, cell: HTMLElement): void {
+        if (this.visibleColumns.has(colName)) {
+            this.visibleColumns.delete(colName);
+            cell.classList.remove("selected");
+        } else {
+            this.visibleColumns.add(colName);
+            cell.classList.add("selected");
+        }
+        this.resize();
     }
 
     private onFind(next: boolean, fromTop: boolean): void {
@@ -179,95 +181,68 @@ export class LogFileView extends TableTargetAPI implements IHtmlElement, OnNextK
         return this.topLevel;
     }
 
-    public updateCompleted(timeInMs: number): void {
-        this.footer.textContent = "Operation took " +
-            significantDigits(timeInMs / 1000) + " seconds";
-    }
-
-    public display(nextKList: NextKList): void {
+    public updateView(nextKList: NextKList,
+                      result: FindResult | null): void {
+        this.activeRequest = null;
         this.nextKList = nextKList;
-        removeAllChildren(this.contents);
         if (nextKList == null)
             return;
 
-        const parent = document.createElement("div");
+        removeAllChildren(this.contents);
         for (const row of nextKList.rows) {
             const rowSpan = document.createElement("span");
+            rowSpan.className = "logRow";
             let index = 0;
             for (const value of row.values) {
-                const col = (this.schema.schema)[index++];
-                if (this.visibleColumns.has(col.name)) {
-                    if (value == null) {
-                        rowSpan.appendChild(makeMissing());
+                const col = this.order.sortOrientationList[index++];
+                const name = col.columnDescription.name;
+                if (!this.visibleColumns.has(name))
+                    continue;
+                if (value != null) {
+                    let shownValue = Converters.valueToString(value, col.columnDescription.kind, true);
+                    let high;
+                    if (name === GenericLogs.lineNumberColumn) {
+                        // left pad the line number
+                        shownValue = ("00000" + shownValue).slice(-5);
+                        high = makeSpan(shownValue, false);
                     } else {
-                        let shownValue = Converters.valueToString(value, col.kind, true);
-                        if (col.name === GenericLogs.lineNumberColumn) {
-                            // left pad the line number
-                            shownValue = ("00000" + shownValue).slice(-5);
-                        }
-                        const high = makeSpan(shownValue, false);
-                        high.classList.add("logCell");
-                        high.style.color = this.color.get(col.name);
-                        rowSpan.appendChild(high);
+                        high = this.findBar.highlight(shownValue, null);
                     }
+                    high.classList.add("logCell");
+                    high.style.color = this.color.get(name);
+                    rowSpan.appendChild(high);
                 }
             }
             rowSpan.appendChild(document.createElement("br"));
-            parent.appendChild(rowSpan);
+            this.contents.appendChild(rowSpan);
         }
-        this.contents.appendChild(parent);
     }
 
-    public updateView(nextKList: NextKList,
-                      ignored0: boolean,
-                      ignored1: RecordOrder,
-                      result: FindResult): void {
-        this.display(nextKList);
-    }
-}
-
-export class LogFileReceiver extends BaseReceiver {
-    public constructor(page: FullPage,
-                       operation: ICancellable<RemoteObjectId>,
-                       protected filename: string,
-                       protected schema: SchemaClass,
-                       protected rowSchema: Schema,
-                       protected row: any[]) {
-        super(page, operation, "GetLogFile", page.dataset);
+    protected getCombineRenderer(title: PageTitle):
+        (page: FullPage, operation: ICancellable<RemoteObjectId>) => BaseReceiver {
+        assert(false);
     }
 
-    public run(value: RemoteObjectId): void {
-        super.run(value);
-        // Prune the dataset; may increase efficiency
-        const rr = this.remoteObject.createStreamingRpcRequest<RemoteObjectId>("prune", null);
-        rr.chain(this.operation);
-        const observer = new PrunedLogFileReceiver(this.page, rr, this.filename,
-            this.schema, this.rowSchema, this.row);
-        rr.invoke(observer);
+    public resize(): void {
+        this.updateView(this.nextKList, null);
     }
 }
 
-class PrunedLogFileReceiver extends BaseReceiver {
-    public constructor(page: FullPage,
-                       operation: ICancellable<RemoteObjectId>,
-                       protected filename: string,
-                       protected schema: SchemaClass,
-                       protected rowSchema: Schema,
-                       protected row: any[]) {
-        super(page, operation, "prune", page.dataset);
+export class LogFragmentReceiver extends Receiver<NextKList> {
+    constructor(page: FullPage,
+                protected view: LogFileView,
+                operation: ICancellable<NextKList>,
+                protected findResult: FindResult | null) {
+        super(page, operation, "Getting log fragment");
     }
 
-    public run(value: RemoteObjectId): void {
-        super.run(value);
-        const logWindow = window.open("log.html", "_blank");
-        if (logWindow == null)
-            return;
-        const viewer = new LogFileView(this.remoteObject.remoteObjectId, this.schema, this.filename);
-        logWindow.onload = () => {
-            logWindow.document.title = this.filename;
-            logWindow.document.body.appendChild(viewer.getHTMLRepresentation());
-        };
-        const rr = viewer.createGetLogFragmentRequest(this.schema.schema, this.row, this.rowSchema, 1000);
-        rr.invoke(new NextKReceiver(this.page, viewer, rr, false, null, null));
+    public onNext(value: PartialResult<NextKList>): void {
+        super.onNext(value);
+        this.view.updateView(value.data, this.findResult);
+    }
+
+    public onCompleted(): void {
+        super.onCompleted();
+        this.view.updateCompleted(this.elapsedMilliseconds());
     }
 }

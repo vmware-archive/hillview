@@ -169,8 +169,13 @@ public abstract class RpcTarget implements IJson, IRpcTarget {
         @Override
         public void onCompleted() {
             HillviewLogger.instance.info("Computation completed", "for {0}", this.name);
-            RpcServer.requestCompleted(this.request, Converters.checkNull(this.context.session));
-            this.request.syncCloseSession(this.context.session);
+            if (this.context.session != null && this.context.session.isOpen()) {
+                RpcServer.requestCompleted(this.request, this.context.session);
+                this.request.syncCloseSession(this.context.session);
+            } else {
+                HillviewLogger.instance.warn("null or closed session; cannot send complete reply",
+                        "for {0}", this.name);
+            }
         }
 
         @Override

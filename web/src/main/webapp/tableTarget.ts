@@ -27,7 +27,6 @@ import {
     CombineOperators,
     CompareDatasetsInfo,
     ComparisonFilterDescription,
-    ContainsArgs,
     CountWithConfidence,
     EigenVal,
     FindResult,
@@ -221,42 +220,24 @@ export class TableTargetAPI extends RemoteObject {
         return this.createStreamingRpcRequest<Groups<Groups<SampleSet>>>("getQuantilesMatrix", args);
     }
 
-    public createContainsRequest(order: RecordOrder, row: RowValue[]): RpcRequest<RemoteObjectId> {
-        const args: ContainsArgs = {
-            order: order,
-            row: row
-        };
-        return this.createStreamingRpcRequest<RemoteObjectId>("contains", args);
-    }
-
-    public createGetLogFragmentRequest(schema: Schema, row: RowValue[], rowSchema: Schema, rowCount: number):
-        RpcRequest<NextKList> {
-        return this.createStreamingRpcRequest<NextKList>("getLogFragment", {
-            schema: schema,
-            row: row,
-            rowSchema: rowSchema,
-            count: rowCount
-        });
-    }
-
     /**
      * Create a request for a nextK sketch
      * @param order            Sorting order.
      * @param firstRow         Values in the smallest row (may be null).
      * @param rowsOnScreen     How many rows to bring.
      * @param aggregates       List of aggregates to compute.
-     * @param columnsNoValue   List of columns in the firstRow for which we want to specify
+     * @param columnsMinimumValue  List of columns in the firstRow for which we want to specify
      *                         "minimum possible value" instead of "null".
      */
     public createNextKRequest(order: RecordOrder, firstRow: RowValue[] | null, rowsOnScreen: number,
-                              aggregates: AggregateDescription[] | null, columnsNoValue: string[] | null):
+                              aggregates: AggregateDescription[] | null, columnsMinimumValue: string[] | null):
         RpcRequest<NextKList> {
         const nextKArgs: NextKArgs = {
             toFind: null,
             order,
             firstRow,
             rowsOnScreen,
-            columnsNoValue,
+            columnsMinimumValue,
             aggregates
         };
         return this.createStreamingRpcRequest<NextKList>("getNextK", nextKArgs);

@@ -48,6 +48,14 @@ body {
     outline: none;
 }
 
+.containerWithScrollbar {
+    flex-direction: row;
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+}
+
 .chart-page > h2 {
     text-align: center;
     margin: 5px;
@@ -92,6 +100,8 @@ table {
     border: 1px solid black;
     padding: 0;
 }
+
+/******************************/
 
 .tableView {
     border-collapse: collapse;
@@ -219,10 +229,17 @@ div.truncated {
     background: yellow;
 }
 
+/* code common to all pages */
+.hillviewSinglePage .hillviewPage {
+    padding: 0;
+    display: flex;
+    flex-flow: column nowrap;
+    align-items: center;
+}
+
 .hillviewPage {
     border: 2px solid grey;
     margin: 3px 1px;
-    padding: 0;
 }
 
 .hillviewPage:hover {
@@ -496,6 +513,10 @@ table .logHeader td {
     padding: 2px;
 }
 
+table .logHeader td.selected {
+    background: white;
+}
+
 .logFileViewer {
     display: flex;
     flex-flow: column;
@@ -515,11 +536,31 @@ table .logHeader td {
 }
 
 .logFileContents {
-    flex: 1;
+    flex: 1 1 auto;
     overflow: auto;
+}
+
+.logRow:hover {
+    background: lightyellow;
 }
 
 .logCell {
     margin-right: 4px;
     font-family: monospace;
+}
+
+.filler {
+    background: darksalmon;
+    width: 100%;
+}
+
+.downloading {
+    width: 200px;
+    height: 100px;
+    background: orange;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    margin-left: -100px; /* half width */
+    margin-top: -50px; /* half height */
 }

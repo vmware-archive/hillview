@@ -160,7 +160,7 @@ public class PrivateTableTarget extends TableRpcTarget implements IPrivateDatase
         if (nextKArgs.order.getSize() != 0)
             throw new HillviewException("No column data can be displayed privately");
         RowSnapshot rs = TableTarget.asRowSnapshot(
-                nextKArgs.firstRow, nextKArgs.order, nextKArgs.columnsNoValue);
+                nextKArgs.firstRow, nextKArgs.order, nextKArgs.columnsMinimumValue);
         NextKSketch nk = new NextKSketch(nextKArgs.order, null, rs, nextKArgs.rowsOnScreen,
                 this.getPrivacySchema().quantization);
         double epsilon = this.wrapper.getPrivacySchema().epsilon();

@@ -38,7 +38,8 @@ import {
     RowValue,
     Schema,
     StringFilterDescription,
-    TableMetadata
+    TableMetadata,
+    GenericLogs
 } from "../javaBridge";
 import {OnCompleteReceiver, Receiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
@@ -67,14 +68,13 @@ import {
     PartialResult,
     percent,
     sameAggregate,
-    significantDigits,
-    significantDigitsHtml,
+    significantDigits, significantDigitsHtml,
     truncate
 } from "../util";
 import {SpectrumReceiver} from "./spectrumView";
 import {TSViewBase} from "./tsViewBase";
 import {Grid} from "../ui/grid";
-import {LogFileReceiver} from "./logFileView";
+import {LogFileView, LogFragmentReceiver} from "./logFileView";
 import {FindBar} from "../ui/findBar";
 import {HillviewToplevel} from "../toplevel";
 import {TableMeta} from "../ui/receiver";
@@ -165,6 +165,10 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                     this.resize();
                 },
                 help: "Show or hide all columns that are currently hidden"
+            }, {
+                text: "Log view",
+                action: () => this.openLogView(),
+                help: "Open a log viewer in a new tab"
             }];
         items.push({
                 text: "View", help: "Change the way the data is displayed.",
@@ -217,11 +221,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
 
         // to force the scroll bar next to the table we put them in yet another div
         const tblAndScrollBar = document.createElement("div");
-        tblAndScrollBar.style.flexDirection = "row";
-        tblAndScrollBar.style.display = "flex";
-        tblAndScrollBar.style.flexWrap = "nowrap";
-        tblAndScrollBar.style.justifyContent = "flex-start";
-        tblAndScrollBar.style.alignItems = "stretch";
+        tblAndScrollBar.className = "containerWithScrollbar";
         this.topLevel.appendChild(tblAndScrollBar);
         this.grid = new Grid(80);
         tblAndScrollBar.appendChild(this.scrollBar.getHTMLRepresentation());
@@ -243,7 +243,6 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             if (saveAsMenu != null)
                 saveAsMenu.enable("Save as DB table...", false);
         }
-
         this.createDiv("summary");
     }
 
@@ -259,6 +258,9 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
      */
     private findFilter(): void {
         const filter = this.findBar.getFilter();
+        if (filter == null) {
+            return;
+        }
         const columns = this.order.getSchema().map((c) => c.name);
         if (columns.length === 0) {
             this.page.reportError("No columns are visible");
@@ -1117,7 +1119,6 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         if (result != null) {
             this.findBar.setCounts(result.before, result.after);
         } else {
-            this.strFilter = null;
             this.findBar.show(false);
         }
 
@@ -1675,16 +1676,6 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                         action: () => this.centerRow(rows, index),
                         help: "Move this row to become the middle row.",
                     }, true);
-                    /*
-                    if (this.dataset.isLog() &&
-                        cd.name === "Filename" && row.count === 1) {
-                        this.contextMenu.addItem({
-                            text: "Open file",
-                            action: () => this.openLogFile(row, value),
-                            help: "Open this file in a new tab"
-                        }, true);
-                    }
-                    */
                     this.contextMenu.showAtMouse(e);
                 };
             } else {
@@ -1711,10 +1702,43 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         this.dataRowsDisplayed += row.count;
     }
 
-    public openLogFile(row: RowData, filename: string): void {
-        const rr = this.createContainsRequest(this.order, row.values);
-        rr.invoke(new LogFileReceiver(this.page, rr, filename, this.meta.schema,
-            this.order.getSchema(), row.values));
+    public openLogView(): void {
+        const ts = this.meta.schema.find(GenericLogs.timestampColumnName);
+        if (ts == null) {
+            this.page.reportError("Cannot identify timestamp column");
+            return;
+        }
+        const logWindow = window.open("log.html", "_blank");
+        if (logWindow == null)
+            return;
+        logWindow.onload = () => {
+            const newPage = new FullPage(0, this.page.title, null, this.dataset);
+            newPage.setSinglePage();
+            logWindow.document.title = this.page.title.format;
+            logWindow.document.body.appendChild(newPage.getHTMLRepresentation());
+            let allColumns = this.meta.schema.schema.filter(c => c.name != ts.name);
+            allColumns.unshift(ts);
+            const order = new RecordOrder(allColumns.map(c => { return { columnDescription: c, isAscending: true }; }));
+            let colsMinValue = null;
+            const startRow = this.nextKList.rows.length > 0 ? this.nextKList.rows[0].values : null;
+            let firstRow = null;
+            if (startRow != null) {
+                firstRow = [];
+                colsMinValue = [];
+                for (const c of order.sortOrientationList) {
+                    const index = this.order.find(c.columnDescription.name);
+                    if (index >= 0) {
+                        firstRow.push(startRow[index]);
+                    } else {
+                        firstRow.push(null);
+                        colsMinValue.push(c.columnDescription.name);
+                    }
+                }
+            }
+            const viewer = new LogFileView(this.remoteObjectId, this.meta, order, newPage);
+            const rr = viewer.createNextKRequest(order, firstRow, 100, null, colsMinValue);
+            rr.invoke(new LogFragmentReceiver(newPage, viewer, rr, null));
+        };
     }
 
     public setScroll(top: number, bottom: number): void {

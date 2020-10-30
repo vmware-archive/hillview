@@ -25,7 +25,6 @@ import javax.annotation.Nullable;
 import java.util.regex.Pattern;
 
 public class StringFilterFactory {
-
     public static IStringFilter getFilter(StringFilterDescription stringFilterDescription) {
         if (stringFilterDescription.compareValue == null)
             return new MissingValuesFilter(stringFilterDescription);

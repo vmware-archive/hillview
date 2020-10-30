@@ -61,7 +61,7 @@ public class TableTarget extends TableRpcTarget {
         @Nullable
         Object[] firstRow;
         @Nullable
-        String[] columnsNoValue;
+        String[] columnsMinimumValue;
         int rowsOnScreen;
         @Nullable
         AggregateDescription[] aggregates;
@@ -69,17 +69,17 @@ public class TableTarget extends TableRpcTarget {
 
     @Nullable
     static RowSnapshot asRowSnapshot(
-            @Nullable Object[] data, RecordOrder order, @Nullable String[] columnsNoValue) {
+            @Nullable Object[] data, RecordOrder order, @Nullable String[] columnsMinimumValue) {
         if (data == null) return null;
         Schema schema = order.toSchema();
-        return RowSnapshot.parseJson(schema, data, columnsNoValue);
+        return RowSnapshot.parseJson(schema, data, columnsMinimumValue);
     }
 
     @HillviewRpc
     public void getNextK(RpcRequest request, RpcRequestContext context) {
         NextKArgs nextKArgs = request.parseArgs(NextKArgs.class);
         RowSnapshot rs = TableTarget.asRowSnapshot(
-                nextKArgs.firstRow, nextKArgs.order, nextKArgs.columnsNoValue);
+                nextKArgs.firstRow, nextKArgs.order, nextKArgs.columnsMinimumValue);
         NextKSketch nk = new NextKSketch(nextKArgs.order, AggregateDescription.getAggregates(nextKArgs.aggregates),
                 rs, nextKArgs.rowsOnScreen);
         NextKSketchAggregate nka = new NextKSketchAggregate(nk, nextKArgs.aggregates);
@@ -97,25 +97,6 @@ public class TableTarget extends TableRpcTarget {
         RenameArgs args = request.parseArgs(RenameArgs.class);
         RenameColumnMap map = new RenameColumnMap(args.fromName, args.toName);
         this.runMap(this.table, map, (d, c) -> new TableTarget(d, c, this.metadataDirectory), request, context);
-    }
-
-    static class LogFragmentArgs {
-        Schema schema = new Schema();
-        @Nullable
-        Object[] row;
-        Schema rowSchema = new Schema();
-        int count;
-    }
-
-    @HillviewRpc
-    public void getLogFragment(RpcRequest request, RpcRequestContext context) {
-        LogFragmentArgs args = request.parseArgs(LogFragmentArgs.class);
-        RowSnapshot row = null;
-        if (args.row != null)
-            row = RowSnapshot.parseJson(args.rowSchema, args.row, null);
-        LogFragmentSketch lfs = new LogFragmentSketch(
-                args.schema, row, args.rowSchema, args.count);
-        this.runCompleteSketch(this.table, lfs, request, context);
     }
 
     @HillviewRpc
@@ -142,20 +123,6 @@ public class TableTarget extends TableRpcTarget {
         this.runCompleteSketch(this.table, post, request, context);
     }
 
-    static class ContainsArgs {
-        RecordOrder order = new RecordOrder();
-        @Nullable
-        Object[] row;
-    }
-
-    @HillviewRpc
-    public void contains(RpcRequest request, RpcRequestContext context) {
-        ContainsArgs args = request.parseArgs(ContainsArgs.class);
-        RowSnapshot row = TableTarget.asRowSnapshot(args.row, args.order, null);
-        ContainsMap map = new ContainsMap(args.order.toSchema(), Converters.checkNull(row));
-        this.runMap(this.table, map, (d, c) -> new TableTarget(d, c, this.metadataDirectory), request, context);
-    }
-
     static class FindArgs {
         @Nullable
         RecordOrder order;
@@ -163,8 +130,6 @@ public class TableTarget extends TableRpcTarget {
         Object[] topRow;
         @Nullable
         StringFilterDescription stringFilterDescription;
-        boolean excludeTopRow;
-        boolean next;
     }
 
     @HillviewRpc
@@ -173,8 +138,7 @@ public class TableTarget extends TableRpcTarget {
         Converters.checkNull(args.order);
         Converters.checkNull(args.stringFilterDescription);
         RowSnapshot rs = TableTarget.asRowSnapshot(args.topRow, args.order, null);
-        FindSketch sk = new FindSketch(args.stringFilterDescription, rs, args.order,
-                args.excludeTopRow, args.next);
+        FindSketch sk = new FindSketch(args.stringFilterDescription, rs, args.order);
         this.runCompleteSketch(this.table, sk, request, context);
     }
 
