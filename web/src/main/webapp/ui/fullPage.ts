@@ -151,6 +151,7 @@ export class FullPage implements IHtmlElement {
         this.bottomContainer = document.createElement("div");
 
         this.titleRow = document.createElement("div");
+        this.titleRow.className = "titleRow";
         this.titleRow.style.display = "flex";
         this.titleRow.style.width = "100%";
         this.titleRow.style.flexDirection = "row";
@@ -270,7 +271,8 @@ export class FullPage implements IHtmlElement {
         }
 
         this.displayHolder = document.createElement("div");
-        this.displayHolder.style.height = "100%";
+        this.displayHolder.className = "displayHolder";
+        this.displayHolder.style.width = "100%";
         this.displayHolder.ondragover = (event) => event.preventDefault();
         this.displayHolder.ondrop = (event) => this.dropped(event);
 

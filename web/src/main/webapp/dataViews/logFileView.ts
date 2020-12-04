@@ -21,7 +21,7 @@ import {FindBar} from "../ui/findBar";
 import {BaseReceiver, BigTableView} from "../modules";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {assert, Converters, ICancellable, makeSpan, PartialResult} from "../util";
-import {FindResult, GenericLogs, IColumnDescription, NextKList, RecordOrder, RemoteObjectId} from "../javaBridge";
+import {FindResult, GenericLogs, NextKList, RecordOrder, RemoteObjectId} from "../javaBridge";
 import {Receiver, RpcRequest} from "../rpc";
 import {TableMeta} from "../ui/receiver";
 
@@ -35,6 +35,7 @@ export class LogFileView extends BigTableView implements IHtmlElement {
     private activeRequest: RpcRequest<NextKList> | null;
     protected contents: HTMLDivElement;
     protected wrap: boolean = false;
+    protected bars: HTMLDivElement[];
 
     constructor(remoteObjectId: RemoteObjectId,
                 meta: TableMeta,
@@ -44,8 +45,10 @@ export class LogFileView extends BigTableView implements IHtmlElement {
         this.visibleColumns = new Set<string>();
         this.color = new Map<string, string>();
         this.topLevel.className = "logFileViewer";
+        this.bars = [];
 
         const header = document.createElement("header");
+        header.style.flex = "none";
         this.topLevel.appendChild(header);
 
         const titleBar = document.createElement("div");
@@ -87,9 +90,30 @@ export class LogFileView extends BigTableView implements IHtmlElement {
         }]);
         this.page.setMenu(menu);
 
-        this.contents = this.makeToplevelDiv("log");
+        const middle = this.makeToplevelDiv("logFileContents");
+        middle.className = "logFileContents";
+
+        const div = document.createElement("div");
+        div.style.flex = "1";
+        div.style.minWidth = "100px";
+        middle.appendChild(div);
+
+        this.contents = document.createElement("div");
+        div.appendChild(this.contents);
         this.contents.style.whiteSpace = "nowrap";
-        this.contents.style.overflow = "scroll";
+        this.contents.className = "logFileData";
+
+        const barCount = 3;
+        for (let i = 0; i < barCount; i++) {
+            const bar = document.createElement("div");
+            bar.className = "logHeatmap";
+            this.bars.push(bar);
+            middle.appendChild(bar);
+        }
+
+        const footer = document.createElement("footer");
+        footer.className = "logFileFooter";
+        this.topLevel.appendChild(footer);
     }
 
     public toggleWrap(): void {

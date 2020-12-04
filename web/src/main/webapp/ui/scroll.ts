@@ -16,7 +16,6 @@
  */
 
 import {drag as d3drag} from "d3-drag";
-// import "d3-transition";
 import {mouse as d3mouse, select as d3select} from "d3-selection";
 import {percentString} from "../util";
 import {D3SvgElement, IHtmlElement} from "./ui";

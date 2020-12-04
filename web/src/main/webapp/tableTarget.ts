@@ -516,6 +516,7 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
         public readonly viewKind: ViewKind) {
         super(remoteObjectId);
         this.topLevel = document.createElement("div");
+        this.topLevel.classList.add("bigTableView");
         this.setPage(page);
         page.setDataView(this);
         this.dataset = page.dataset!;
