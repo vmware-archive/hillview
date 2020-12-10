@@ -244,6 +244,13 @@ public class TableTarget extends TableRpcTarget {
     }
 
     @HillviewRpc
+    public void histogram(RpcRequest request, RpcRequestContext context) {
+        HistogramRequestInfo info = request.parseArgs(HistogramRequestInfo.class);
+        TableSketch<Groups<Count>> sk = info.getSketch(0); // Histogram
+        this.runSketch(this.table, sk.andThen(r -> r.toSerializable(c -> c)), request, context);
+    }
+
+    @HillviewRpc
     public void histogram2D(RpcRequest request, RpcRequestContext context) {
         HistogramRequestInfo info = request.parseArgs(HistogramRequestInfo.class);
         assert info.size() == 2;

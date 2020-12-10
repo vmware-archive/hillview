@@ -20,10 +20,23 @@ import {SubMenu, TopMenu} from "../ui/menu";
 import {FindBar} from "../ui/findBar";
 import {BaseReceiver, BigTableView} from "../modules";
 import {FullPage, PageTitle} from "../ui/fullPage";
-import {assert, Converters, ICancellable, makeSpan, PartialResult} from "../util";
-import {FindResult, GenericLogs, NextKList, RecordOrder, RemoteObjectId} from "../javaBridge";
-import {Receiver, RpcRequest} from "../rpc";
+import {assert, Converters, ICancellable, makeSpan, PartialResult, px} from "../util";
+import {
+    BucketsInfo,
+    FindResult,
+    GenericLogs,
+    Groups,
+    IColumnDescription,
+    NextKList,
+    RecordOrder,
+    RemoteObjectId
+} from "../javaBridge";
+import {OnCompleteReceiver, Receiver, RpcRequest} from "../rpc";
 import {TableMeta} from "../ui/receiver";
+import {DataRangesReceiver} from "./dataRangesReceiver";
+import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
+import {HistogramPlot} from "../ui/histogramPlot";
+import {AxisData} from "./axisData";
 
 export class LogFileView extends BigTableView implements IHtmlElement {
     protected readonly topLevel: HTMLElement;
@@ -36,10 +49,13 @@ export class LogFileView extends BigTableView implements IHtmlElement {
     protected contents: HTMLDivElement;
     protected wrap: boolean = false;
     protected bars: HTMLDivElement[];
+    protected plots: HistogramPlot[];
+    public readonly heatmapWidth: number = 10;
 
     constructor(remoteObjectId: RemoteObjectId,
                 meta: TableMeta,
                 protected order: RecordOrder,
+                public readonly timestampColumn: IColumnDescription,
                 page: FullPage) {
         super(remoteObjectId, meta, page, "LogFile");
         this.visibleColumns = new Set<string>();
@@ -107,6 +123,7 @@ export class LogFileView extends BigTableView implements IHtmlElement {
         for (let i = 0; i < barCount; i++) {
             const bar = document.createElement("div");
             bar.className = "logHeatmap";
+            bar.style.width = px(this.heatmapWidth);
             this.bars.push(bar);
             middle.appendChild(bar);
         }
@@ -114,6 +131,22 @@ export class LogFileView extends BigTableView implements IHtmlElement {
         const footer = document.createElement("footer");
         footer.className = "logFileFooter";
         this.topLevel.appendChild(footer);
+    }
+
+    protected createSurface(div: HTMLDivElement): PlottingSurface {
+        return new HtmlPlottingSurface(div, this.page, {
+            width: this.heatmapWidth,
+            height: this.getHeatmapHeight(),
+            topMargin: 0,
+            bottomMargin: 0,
+            leftMargin: 0,
+            rightMargin: 0,
+        });
+    }
+
+    public createSurfaces(): void {
+        this.plots = this.bars.map(b => this.createSurface(b)).map(s => new HistogramPlot(s));
+        this.plots.forEach(p => { p.showLabels = false; p.displayAxes = false; p.rotate = true; });
     }
 
     public toggleWrap(): void {
@@ -124,6 +157,10 @@ export class LogFileView extends BigTableView implements IHtmlElement {
             this.contents.style.whiteSpace = "normal";
         }
         this.resize();
+    }
+
+    public getHeatmapHeight(): number {
+        return this.contents.clientHeight;
     }
 
     protected export(): void {
@@ -171,7 +208,7 @@ export class LogFileView extends BigTableView implements IHtmlElement {
         if (this.nextKList != null && this.nextKList.rows.length > 0)
             firstRow = this.nextKList.rows[0].values;
         const rr = this.createNextKRequest(this.order, firstRow, 100, null, null);
-        rr.invoke(new LogFragmentReceiver(this.page, this, rr, null));
+        rr.invoke(new LogFragmentReceiver(this.page, this, rr));
     }
 
     private rotateColor(col: string, cell: HTMLElement): void {
@@ -250,22 +287,80 @@ export class LogFileView extends BigTableView implements IHtmlElement {
     public resize(): void {
         this.updateView(this.nextKList, null);
     }
+
+    public updateLineDensity(axis: AxisData, value: Groups<number>): void {
+        this.plots[0].setHistogram({ first: value, second: null }, 1.0, axis,
+            null, false, this.meta.rowCount);
+        this.plots[0].draw();
+    }
 }
 
 export class LogFragmentReceiver extends Receiver<NextKList> {
     constructor(page: FullPage,
                 protected view: LogFileView,
-                operation: ICancellable<NextKList>,
-                protected findResult: FindResult | null) {
+                operation: ICancellable<NextKList>) {
         super(page, operation, "Getting log fragment");
     }
 
     public onNext(value: PartialResult<NextKList>): void {
         super.onNext(value);
-        this.view.updateView(value.data, this.findResult);
+        this.view.updateView(value.data, null);
     }
 
     public onCompleted(): void {
+        super.onCompleted();
+        this.view.createSurfaces();
+        const rr = this.view.createDataQuantilesRequest([this.view.timestampColumn], this.page, "LogFile");
+        rr.chain(this.operation);
+        const rec = new TimestampRangeReceiver(this.page, this.view, rr);
+        rr.invoke(rec);
+    }
+}
+
+export class TimestampRangeReceiver extends OnCompleteReceiver<BucketsInfo[]> {
+    constructor(page: FullPage,
+                protected view: LogFileView,
+                operation: ICancellable<BucketsInfo[]>) {
+        super(page, operation, "Getting timestamp range");
+    }
+
+    public run(value: BucketsInfo[]) {
+        assert(value.length == 1);
+        const pixels = this.view.getHeatmapHeight() / 2;
+        // noinspection JSSuspiciousNameCombination
+        const args = DataRangesReceiver.computeHistogramArgs(
+            this.view.timestampColumn,
+            value[0],
+            pixels,
+            true,
+            // This is sideways
+            { height: this.view.heatmapWidth, width: pixels });
+        const rr = this.view.createHistogramRequest({
+            histos: [ args ],
+            samplingRate: 1.0,
+            seed: 0,
+        });
+        rr.chain(this.operation);
+        const axis = new AxisData(this.view.timestampColumn, value[0], pixels);
+        const rec = new TimestampHistogramReceiver(this.page, this.view, axis, rr);
+        rr.invoke(rec);
+    }
+}
+
+export class TimestampHistogramReceiver extends Receiver<Groups<number>> {
+    constructor(page: FullPage,
+                protected view: LogFileView,
+                protected axis: AxisData,
+                operation: ICancellable<Groups<number>>) {
+        super(page, operation, "Getting time distribution");
+    }
+
+    public onNext(value: PartialResult<Groups<number>>): void {
+        if (value != null && value.data != null)
+            this.view.updateLineDensity(this.axis, value.data);
+    }
+
+    public onCompleted() {
         super.onCompleted();
         this.view.updateCompleted(this.elapsedMilliseconds());
     }

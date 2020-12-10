@@ -382,6 +382,7 @@ export interface HistogramInfo {
     bucketCount: number;  // sometimes superseded by leftBoundaries
     // only used when doing string histograms
     leftBoundaries?: string[];
+    maxString?: string;
     // only used when doing double histograms
     min?: number;
     max?: number;

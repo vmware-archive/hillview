@@ -237,6 +237,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 samplingRate: samplingRate,
                 leftBoundaries: bounds,
                 bucketCount: bounds.length,
+                maxString: range.maxBoundary
             };
         } else {
             let cdfCount = Math.floor(chartSize.width);

@@ -170,12 +170,13 @@ export class TableTargetAPI extends RemoteObject {
                 return [maxBuckets, maxBuckets, maxWindows];
             case "TrellisHistogram":
                 return [width, maxWindows];
+            case "LogFile":
+                return [page.getHeightInPixels()];
             case "Table":
             case "Schema":
             case "Load":
             case "HeavyHitters":
             case "SVD Spectrum":
-            case "LogFile":
             case "Map":
                 // Shoudld not occur
                 assert(false);
@@ -391,6 +392,11 @@ RpcRequest<RemoteObjectId> {
     public createFilterListRequest(f: FilterListDescription):
         RpcRequest<RemoteObjectId> {
         return this.createStreamingRpcRequest<RemoteObjectId>("filterList", f);
+    }
+
+    public createHistogramRequest(info: HistogramRequestInfo):
+        RpcRequest<Groups<number>> {
+        return this.createStreamingRpcRequest<Groups<number>>("histogram", info);
     }
 
     public createHistogram2DAndCDFRequest(info: HistogramRequestInfo):

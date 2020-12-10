@@ -1735,9 +1735,9 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                     }
                 }
             }
-            const viewer = new LogFileView(this.remoteObjectId, this.meta, order, newPage);
+            const viewer = new LogFileView(this.remoteObjectId, this.meta, order, ts, newPage);
             const rr = viewer.createNextKRequest(order, firstRow, 100, null, colsMinValue);
-            rr.invoke(new LogFragmentReceiver(newPage, viewer, rr, null));
+            rr.invoke(new LogFragmentReceiver(newPage, viewer, rr));
         };
     }
 

@@ -41,24 +41,33 @@ export abstract class Plot<D> {
     protected xAxisRepresentation: D3SvgElement;
     protected yAxisRepresentation: D3SvgElement;
     protected rowCount: number;
+    public rotate: boolean;  // if true rotate by 90 degrees
 
     /**
      * Create a plot that will do all its drawing on the specified plotting surface.
      */
-    protected constructor(protected plottingSurface: PlottingSurface) {}
+    protected constructor(protected plottingSurface: PlottingSurface) {
+        this.rotate = false;
+    }
 
     /**
      * Returns the chart width in pixels - excluding borders.
      */
     public getChartWidth(): number {
-        return this.plottingSurface.getChartWidth();
+        if (this.rotate)
+            return this.plottingSurface.getChartHeight();
+        else
+            return this.plottingSurface.getChartWidth();
     }
 
     /**
      * Returns the chart height in pixels - excluding borders.
      */
     public getChartHeight(): number {
-        return this.plottingSurface.getChartHeight();
+        if (this.rotate)
+            return this.plottingSurface.getChartWidth();
+        else
+            return this.plottingSurface.getChartHeight();
     }
 
     public getXAxis(): AxisDescription {
@@ -87,6 +96,7 @@ export abstract class Plot<D> {
     }
 
     protected drawAxes(): void {
+        // TODO: handle rotate if needed
         const yAxis = this.getYAxis();
         const xAxis = this.getXAxis();
         if (yAxis != null)

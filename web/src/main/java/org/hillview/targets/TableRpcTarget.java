@@ -76,6 +76,7 @@ public abstract class TableRpcTarget extends RpcTarget {
         // Only used when doing string histograms
         @Nullable
         private String[] leftBoundaries;
+        private String maxString;
         // Only used when doing double histograms
         private double min;
         private double max;
@@ -93,9 +94,10 @@ public abstract class TableRpcTarget extends RpcTarget {
             this.bucketCount = bucketCount;
         }
 
-        public HistogramInfo(ColumnDescription cd, String[] leftBoundaries) {
+        public HistogramInfo(ColumnDescription cd, String[] leftBoundaries, String max) {
             this.cd = cd;
             this.leftBoundaries = leftBoundaries;
+            this.maxString = max;
         }
 
         public IHistogramBuckets getBuckets(@Nullable ColumnQuantization quantization) {
@@ -105,7 +107,7 @@ public abstract class TableRpcTarget extends RpcTarget {
                     return new StringHistogramBuckets(this.cd.name, this.leftBoundaries,
                             ((StringColumnQuantization)quantization).globalMax);
                 else
-                    return new StringHistogramBuckets(this.cd.name, this.leftBoundaries);
+                    return new StringHistogramBuckets(this.cd.name, this.leftBoundaries, this.maxString);
             } else {
                 return new DoubleHistogramBuckets(this.cd.name, this.min, this.max, this.bucketCount);
             }

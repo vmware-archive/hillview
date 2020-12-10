@@ -230,8 +230,10 @@ export abstract class ChartView<D> extends BigTableView {
         if (myAxis == null)
             return null;
 
-        if (sourceAxis.description !== myAxis.description) {
-            this.page.reportError("Axis is on different columns");
+        if (sourceAxis.description.name !== myAxis.description.name ||
+            sourceAxis.description.kind !== myAxis.description.kind) {
+            this.page.reportError("Axis is on different columns: " +
+                sourceAxis.description.name + " and " + myAxis.description.name);
             return null;
         }
 

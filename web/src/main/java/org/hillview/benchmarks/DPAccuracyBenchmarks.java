@@ -188,7 +188,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
             // StringColumnQuantization
             StringColumnQuantization sq = (StringColumnQuantization)cq;
             info = new TableRpcTarget.HistogramInfo(
-                    new ColumnDescription(col, ContentsKind.String), sq.leftBoundaries);
+                    new ColumnDescription(col, ContentsKind.String), sq.leftBoundaries, sq.globalMax);
         }
 
         TableRpcTarget.HistogramRequestInfo result = new TableRpcTarget.HistogramRequestInfo();

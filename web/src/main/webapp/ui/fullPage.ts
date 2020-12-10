@@ -503,6 +503,10 @@ export class FullPage implements IHtmlElement {
         return Math.floor(this.pageTopLevel.getBoundingClientRect().width);
     }
 
+    public getHeightInPixels(): number {
+        return Math.floor(this.pageTopLevel.getBoundingClientRect().height);
+    }
+
     public scrollIntoView(): void {
         this.getHTMLRepresentation().scrollIntoView( { block: "end", behavior: "smooth" } );
     }
