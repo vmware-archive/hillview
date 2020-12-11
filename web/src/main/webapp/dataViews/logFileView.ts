@@ -20,7 +20,7 @@ import {SubMenu, TopMenu} from "../ui/menu";
 import {FindBar} from "../ui/findBar";
 import {BaseReceiver, BigTableView} from "../modules";
 import {FullPage, PageTitle} from "../ui/fullPage";
-import {assert, Converters, ICancellable, makeSpan, PartialResult, px} from "../util";
+import {assert, Converters, ICancellable, makeSpan, PartialResult, percentString, px} from "../util";
 import {
     BucketsInfo,
     FindResult,
@@ -35,8 +35,8 @@ import {OnCompleteReceiver, Receiver, RpcRequest} from "../rpc";
 import {TableMeta} from "../ui/receiver";
 import {DataRangesReceiver} from "./dataRangesReceiver";
 import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
-import {HistogramPlot} from "../ui/histogramPlot";
 import {AxisData} from "./axisData";
+import {TimestampPlot} from "../ui/timestampPlot";
 
 export class LogFileView extends BigTableView implements IHtmlElement {
     protected readonly topLevel: HTMLElement;
@@ -49,8 +49,12 @@ export class LogFileView extends BigTableView implements IHtmlElement {
     protected contents: HTMLDivElement;
     protected wrap: boolean = false;
     protected bars: HTMLDivElement[];
-    protected plots: HistogramPlot[];
+    protected plots: TimestampPlot[];
     public readonly heatmapWidth: number = 10;
+    protected tsIndex: number; // index of the timestamp column in data
+    private maxTs: number; // maximum timestamp
+    private minTs: number; // minimum timestamp
+    private box: HTMLDivElement;  // box showing the visible data as an outline
 
     constructor(remoteObjectId: RemoteObjectId,
                 meta: TableMeta,
@@ -62,6 +66,7 @@ export class LogFileView extends BigTableView implements IHtmlElement {
         this.color = new Map<string, string>();
         this.topLevel.className = "logFileViewer";
         this.bars = [];
+        this.tsIndex = this.meta.schema.columnIndex(this.timestampColumn.name);
 
         const header = document.createElement("header");
         header.style.flex = "none";
@@ -119,14 +124,26 @@ export class LogFileView extends BigTableView implements IHtmlElement {
         this.contents.style.whiteSpace = "nowrap";
         this.contents.className = "logFileData";
 
+        const bars = document.createElement("div");
+        bars.style.display = "flex";
+        bars.style.flexDirection = "row";
+        bars.style.flexWrap = "nowrap";
+        bars.style.position = "relative";
+        middle.appendChild(bars);
         const barCount = 3;
         for (let i = 0; i < barCount; i++) {
             const bar = document.createElement("div");
             bar.className = "logHeatmap";
             bar.style.width = px(this.heatmapWidth);
             this.bars.push(bar);
-            middle.appendChild(bar);
+            bars.appendChild(bar);
         }
+        this.box = document.createElement("div");
+        this.box.style.position = "absolute";
+        this.box.style.left = px(0);
+        this.box.style.right = px(0);
+        this.box.style.border = "2px solid black";
+        bars.appendChild(this.box);
 
         const footer = document.createElement("footer");
         footer.className = "logFileFooter";
@@ -145,8 +162,7 @@ export class LogFileView extends BigTableView implements IHtmlElement {
     }
 
     public createSurfaces(): void {
-        this.plots = this.bars.map(b => this.createSurface(b)).map(s => new HistogramPlot(s));
-        this.plots.forEach(p => { p.showLabels = false; p.displayAxes = false; p.rotate = true; });
+        this.plots = this.bars.map(b => this.createSurface(b)).map(s => new TimestampPlot(s, "blue"));
     }
 
     public toggleWrap(): void {
@@ -277,6 +293,14 @@ export class LogFileView extends BigTableView implements IHtmlElement {
             rowSpan.appendChild(document.createElement("br"));
             this.contents.appendChild(rowSpan);
         }
+        if (this.nextKList.rows.length > 0) {
+            const minVisTs = nextKList.rows[0].values[this.tsIndex] as number;
+            const maxVisTs = nextKList.rows[nextKList.rows.length - 1].values[this.tsIndex] as number;
+            const minFraction = minVisTs / (this.maxTs - this.minTs);
+            const maxFraction = maxVisTs / (this.maxTs - this.minTs);
+            this.box.style.top = Math.round(minFraction * 100) + "%";
+            this.box.style.bottom = Math.round(maxFraction * 100) + "%";
+        }
     }
 
     protected getCombineRenderer(title: PageTitle):
@@ -289,9 +313,13 @@ export class LogFileView extends BigTableView implements IHtmlElement {
     }
 
     public updateLineDensity(axis: AxisData, value: Groups<number>): void {
-        this.plots[0].setHistogram({ first: value, second: null }, 1.0, axis,
-            null, false, this.meta.rowCount);
+        this.plots[0].setHistogram(value);
         this.plots[0].draw();
+    }
+
+    setTimetstampRange(min: number, max: number): void {
+        this.minTs = min;
+        this.maxTs = max;
     }
 }
 
@@ -326,22 +354,24 @@ export class TimestampRangeReceiver extends OnCompleteReceiver<BucketsInfo[]> {
 
     public run(value: BucketsInfo[]) {
         assert(value.length == 1);
+        const range = value[0];
         const pixels = this.view.getHeatmapHeight() / 2;
         // noinspection JSSuspiciousNameCombination
         const args = DataRangesReceiver.computeHistogramArgs(
             this.view.timestampColumn,
-            value[0],
+            range,
             pixels,
             true,
             // This is sideways
             { height: this.view.heatmapWidth, width: pixels });
+        this.view.setTimetstampRange(range.min!, range.max!);
         const rr = this.view.createHistogramRequest({
             histos: [ args ],
             samplingRate: 1.0,
             seed: 0,
         });
         rr.chain(this.operation);
-        const axis = new AxisData(this.view.timestampColumn, value[0], pixels);
+        const axis = new AxisData(this.view.timestampColumn, range, pixels);
         const rec = new TimestampHistogramReceiver(this.page, this.view, axis, rr);
         rr.invoke(rec);
     }

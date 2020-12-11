@@ -95,15 +95,13 @@ export class HistogramPlot extends Plot<Pair<Groups<number>, Groups<number> | nu
         const confidence: number[] = this.isPrivate ? this.data.second!.perBucket :
             new Array(this.data.first.perBucket.length); // filled with zeros
         const zippedData = d3zip(counts, confidence);
-        const rotate = this.rotate ? "90" : "0";
         const bars = this.plottingSurface
             .getChart()
             .selectAll("g")
             .data(zippedData)
             .enter()
             .append("g")
-            .attr("transform", (d: number[], i: number) => `translate(${i * this.barWidth}, 0) ` +
-                `rotate(${rotate} ${chartWidth / 2} ${chartHeight / 2})`);
+            .attr("transform", (d: number[], i: number) => `translate(${i * this.barWidth}, 0)`);
 
         this.yScale = d3scaleLinear()
             .domain([0, displayMax])
@@ -112,7 +110,7 @@ export class HistogramPlot extends Plot<Pair<Groups<number>, Groups<number> | nu
         // Boxes can be taller than the maxYAxis height.  In this case yScale returns
         // a negative value, and we have to truncate the rectangles.
         bars.append("rect")
-            .attr("y", (d: number[]) => this.yScale(d[0]) < 0 ? 0 : this.yScale(d[0]))
+            .attr("y", (d: number[]) => this.yLabel(d[0]))
             .attr("fill", (d: number[]) => this.confident(d) ? "darkcyan" : "lightgrey")
             .attr("height", (d: number[]) => chartHeight - this.yLabel(d[0]))
             .attr("width", this.barWidth - 1);
