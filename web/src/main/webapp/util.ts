@@ -668,6 +668,10 @@ export function percentString(n: number): string {
     return significantDigits(n) + "%";
 }
 
+export function fractionToPercent(n: number): string {
+    return Math.round(n * 100).toString() + "%";
+}
+
 /**
  * convert a number to a string and prepend zeros if necessary to
  * bring the integer part to the specified number of digits
@@ -1126,6 +1130,12 @@ export function cloneToSet<T>(arr: T[]): Set<T> {
     const result = new Set<T>();
     arr.forEach((e) => result.add(e));
     return result;
+}
+
+export function last<T>(arr: T[]): T | null {
+    if (arr.length == 0)
+        return null;
+    return arr[arr.length - 1];
 }
 
 export function getUUID(): string {

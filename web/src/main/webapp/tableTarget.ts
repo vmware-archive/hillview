@@ -543,7 +543,7 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
         return this.meta.schema;
     }
 
-    protected createDiv(b: CommonPlots): void {
+    protected createDiv(b: CommonPlots): HTMLDivElement {
         const div = this.makeToplevelDiv(b.toString());
         switch (b) {
             case "chart":
@@ -559,6 +559,7 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
                 this.legendDiv = div;
                 break;
         }
+        return div;
     }
 
     protected abstract export(): void;

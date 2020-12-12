@@ -16,11 +16,11 @@
  */
 
 import {scaleLinear as d3scaleLinear} from "d3-scale";
-import {AxisKind} from "../dataViews/axisData";
-import {Groups} from "../javaBridge";
+import {ContentsKind, Groups} from "../javaBridge";
 import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {D3Scale} from "./ui";
+import {ColorMap, Converters, formatNumber} from "../util";
 
 /**
  * A Timestamp plot is a specialized form of histogram plot for use in log file visualizations.
@@ -30,13 +30,19 @@ export class TimestampPlot extends Plot<Groups<number>> {
     protected yScale: D3Scale;
     public max: number;  // maximum value in a bucket
     protected chartWidth: number;
+    protected minTs: number; // minimum timestamp
+    protected maxTs: number; // maximum timestamp
+    protected kind: ContentsKind;
 
-    public constructor(protected plottingSurface: PlottingSurface, protected color: string) {
+    public constructor(protected plottingSurface: PlottingSurface, protected map: ColorMap) {
         super(plottingSurface);
     }
 
-    public setHistogram(bars: Groups<number>): void {
+    public setHistogram(bars: Groups<number>, minTs: number, maxTs: number, kind: ContentsKind): void {
         this.data = bars;
+        this.minTs = minTs;
+        this.maxTs = maxTs;
+        this.kind = kind;
         const chartHeight = this.getChartHeight();
         this.chartWidth = this.getChartWidth();
         const bucketCount = this.data.perBucket.length;
@@ -59,26 +65,24 @@ export class TimestampPlot extends Plot<Groups<number>> {
             .append("g")
             .append("rect")
             .attr("y", (d: number, i: number) => i * this.barHeight)
-            .attr("x", (d: number) => this.chartWidth - this.getWidth(d))
-            .attr("fill", (d: number) => d == 0 ? "lightgrey" : this.color)
-            .attr("width", (d: number) => { const w = this.getWidth(d); console.log(w); return w; })
-            .attr("height", this.barHeight);
+            .attr("x", 0)
+            .attr("fill", (d: number) => this.getColor(d))
+            .attr("width", this.chartWidth)
+            .attr("height", this.barHeight)
+            .append("svg:title")
+            .text((d: number, i: number) => d > 0 ? (this.getTs(i) + ", " + formatNumber(d) + " lines") : "");
     }
 
-    getWidth(c: number): number {
-        if (c == 0)
-            return this.chartWidth;
-        return this.yScale(c);
+    protected getTs(index: number): string {
+        const interpolated = this.minTs + (this.maxTs - this.minTs) * index / this.data.perBucket.length;
+        return Converters.valueToString(interpolated, this.kind, true)
     }
 
-    /**
-     * The index of the bucket covering the current x position on the X axis.
-     */
-    public getBucketIndex(x: number): number {
-        const bucket = Math.floor(x / this.barHeight);
-        if (bucket < 0 || this.data == null ||
-            bucket >= this.data.perBucket.length)
-            return -1;
-        return bucket;
+ getColor(value: number): string {
+        if (value <= 0)
+            return "white";
+        if (this.max <= 0)
+            return this.map(1);
+        return this.map(value / this.max);
     }
 }

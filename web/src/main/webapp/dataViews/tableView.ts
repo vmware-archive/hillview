@@ -62,7 +62,7 @@ import {
     Exporter,
     find,
     formatNumber,
-    ICancellable,
+    ICancellable, last,
     makeMissing,
     makeSpan,
     PartialResult,
@@ -451,7 +451,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         }
         const o = this.order.clone();
         const rr = this.createNextKRequest(
-            o, this.nextKList.rows[this.nextKList.rows.length - 1].values,
+            o, last(this.nextKList.rows)!.values,
             this.tableRowsDesired, this.aggregates, null);
         rr.invoke(new NextKReceiver(this.getPage(), this, rr, false, o, null));
     }

@@ -24,6 +24,7 @@ import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {D3Axis, D3Scale} from "./ui";
 import {SchemaClass} from "../schemaClass";
+import {last} from "../util";
 
 interface Whisker {
     x: number,
@@ -116,7 +117,7 @@ export class Quartiles2DPlot extends Plot<Groups<SampleSet>> {
             // If we do not have enough samples replicate the existing ones
             const extra = q.samples;
             for (let i = q.samples.length; i < 3; i++)
-                extra.push(q.samples[q.samples.length - 1]);
+                extra.push(last(q.samples)!);
             const whisker: Whisker = {
                 x: x,
                 min: q.min,

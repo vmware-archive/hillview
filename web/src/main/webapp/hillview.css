@@ -575,7 +575,9 @@ table .logHeader td.selected {
     box-sizing: border-box;
 }
 
-.filler {
+.logGap {
     background: darksalmon;
     width: 100%;
+    align-items: center;
+    justify-content: center;
 }
