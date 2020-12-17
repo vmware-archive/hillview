@@ -464,7 +464,7 @@ export class SchemaView extends TSViewBase {
         const newPage = this.dataset.newPage(new PageTitle("Selected columns", "Schema view"), this.page);
         const selected = this.display.getSelectedRows();
         const newSchema = this.meta.schema.filter((c) => selected.has(this.meta.schema.columnIndex(c.name)));
-        const tv = new TableView(this.remoteObjectId,
+        const tv = new TableView(this.getRemoteObjectId()!,
             {rowCount: this.meta.rowCount, schema: newSchema, geoMetadata: this.meta.geoMetadata }, newPage);
         newPage.setDataView(tv);
         const nkl: NextKList = {

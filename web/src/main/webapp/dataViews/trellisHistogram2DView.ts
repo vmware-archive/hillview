@@ -548,7 +548,7 @@ export class TrellisHistogram2DReceiver extends Receiver<Groups<Groups<Groups<nu
                 protected options: ChartOptions) {
         super(options.reusePage ? page : page.dataset!.newPage(title, page), operation, "histogram");
         this.trellisView = new TrellisHistogram2DView(
-            remoteTable.remoteObjectId, meta,
+            remoteTable.getRemoteObjectId()!, meta,
             this.shape, this.samplingRate, this.page);
         this.trellisView.setAxes(axes[0], axes[1], axes[2], optionToBoolean(options.relative));
     }

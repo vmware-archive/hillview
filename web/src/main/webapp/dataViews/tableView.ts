@@ -23,7 +23,6 @@ import {
     ColumnSortOrientation,
     CompareDatasetsInfo,
     Comparison,
-    ComparisonFilterDescription,
     CreateIntervalColumnMapInfo,
     ExtractValueFromKeyMapInfo,
     FindResult,
@@ -56,9 +55,8 @@ import {
     add,
     all,
     assert,
-    assertNever,
     cloneToSet,
-    Converters,
+    Converters, createComparisonFilter,
     Exporter,
     find,
     formatNumber,
@@ -1216,40 +1214,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
     }
 
     public filterOnValue(cd: IColumnDescription, value: RowValue, comparison: Comparison): void {
-        let stringValue = null;
-        let doubleValue = null;
-        let intervalEnd = null;
-        switch (cd.kind) {
-            case "Json":
-            case "String":
-                stringValue = value as string;
-                break;
-            case "Integer":
-            case "Double":
-            case "Date":
-            case "Duration":
-            case "LocalDate":
-            case "Time":
-                doubleValue = value as number;
-                break;
-            case "Interval":
-                const a = value as number[];
-                doubleValue = a[0];
-                intervalEnd = a[1];
-                break;
-            case "None":
-                stringValue = null;
-                break;
-            default:
-                assertNever(cd.kind);
-        }
-        const cfd: ComparisonFilterDescription = {
-            column: cd,
-            stringValue,
-            doubleValue,
-            intervalEnd,
-            comparison,
-        };
+        const cfd = createComparisonFilter(cd, value, comparison);
         this.runComparisonFilter(cfd, this.order, this.tableRowsDesired, this.aggregates);
     }
 
@@ -1404,7 +1369,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         if (valid) {
             const rr = this.createSpectrumRequest(colNames, this.meta.rowCount, toSample);
             rr.invoke(new SpectrumReceiver(
-                this.getPage(), this, this.remoteObjectId, this.meta,
+                this.getPage(), this, this.getRemoteObjectId()!, this.meta,
                 colNames, rr, false));
         } else {
             this.page.reportError("Not valid for PCA:" + message);
@@ -1466,7 +1431,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
 
     public viewSchema(): void {
         const newPage = this.dataset.newPage(new PageTitle("Schema", this.defaultProvenance), this.page);
-        const sv = new SchemaView(this.remoteObjectId, this.meta, newPage);
+        const sv = new SchemaView(this.getRemoteObjectId()!, this.meta, newPage);
         newPage.setDataView(sv);
         sv.show(0);
         newPage.scrollIntoView();
@@ -1529,7 +1494,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             }, true);
             this.contextMenu.addItem({text: "Keep all rows after and this one",
                 action: () => this.filterOnRowValue(row.values, "<="),
-                help: "Keep only this rows and the rows that cone after this one in the sort order."
+                help: "Keep only this rows and the rows that come after this one in the sort order."
             }, true);
             this.contextMenu.addItem({
                 text: "Move to top",
@@ -1735,8 +1700,8 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                     }
                 }
             }
-            const viewer = new LogFileView(this.remoteObjectId, this.meta, order, ts, newPage);
-            const rr = viewer.createNextKRequest(order, firstRow, 100, null, colsMinValue);
+            const viewer = new LogFileView(this.getRemoteObjectId()!, this.meta, order, ts, newPage);
+            const rr = viewer.createNextKRequest(order, firstRow, LogFileView.increment, null, colsMinValue);
             rr.invoke(new LogFragmentReceiver(newPage, viewer, rr));
         };
     }
@@ -1859,7 +1824,7 @@ export class SchemaReceiver extends OnCompleteReceiver<TableMetadata> {
         const useSchema = this.viewKind === "Schema" ||
             (this.viewKind === null && ts.schema.length > 20);
         if (useSchema) {
-            const dataView = new SchemaView(this.remoteObject.remoteObjectId, meta, this.page);
+            const dataView = new SchemaView(this.remoteObject.getRemoteObjectId()!, meta, this.page);
             this.page.setDataView(dataView);
             dataView.show(this.elapsedMilliseconds());
         } else {
@@ -1871,7 +1836,7 @@ export class SchemaReceiver extends OnCompleteReceiver<TableMetadata> {
             };
 
             const order = new RecordOrder([]);
-            const table = new TableView(this.remoteObject.remoteObjectId, meta, this.page);
+            const table = new TableView(this.remoteObject.getRemoteObjectId()!, meta, this.page);
             this.page.setDataView(table);
             table.updateView(nk, false, order, null);
             table.updateCompleted(this.elapsedMilliseconds());
@@ -1975,7 +1940,7 @@ class PCASchemaReceiver extends OnCompleteReceiver<TableMetadata> {
 
         const schema = this.tv.meta.schema.concat(newCols);
         const table = new TableView(
-            this.remoteObject.remoteObjectId,
+            this.remoteObject.getRemoteObjectId()!,
             { rowCount: this.tv.meta.rowCount, schema, geoMetadata: ts.geoMetadata }, this.page);
         this.page.setDataView(table);
         const rr = table.createNextKRequest(o, null, this.tableRowsDesired, null, null);
@@ -2015,7 +1980,7 @@ export class TableOperationCompleted extends BaseReceiver {
                 this.page, rr, this.remoteObject, this.page.dataset!, this.meta.schema, "Schema"));
         } else {
             const table = new TableView(
-                this.remoteObject.remoteObjectId, this.meta, this.page);
+                this.remoteObject.getRemoteObjectId()!, this.meta, this.page);
             table.aggregates = this.aggregates;
             this.page.setDataView(table);
             const rr = table.createNextKRequest(

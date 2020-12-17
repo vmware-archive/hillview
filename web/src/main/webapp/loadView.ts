@@ -50,7 +50,7 @@ export class LoadView extends RemoteObject implements IDataView {
     public readonly viewKind: ViewKind;
 
     constructor(protected init: InitialObject, protected page: FullPage, protected bookmarkFile: string | null) {
-        super(init.remoteObjectId);
+        super(init.getRemoteObjectId());
         this.viewKind = "Load";
         this.top = document.createElement("div");
         this.console = new ErrorDisplay();
@@ -58,10 +58,6 @@ export class LoadView extends RemoteObject implements IDataView {
         this.getUIConfig();
         // Check whether the user is trying to visit a bookmark link
         if (bookmarkFile != null) this.openingBookmark(bookmarkFile);
-    }
-
-    public getRemoteObjectId(): string | null {
-        return null;
     }
 
     private getUIConfig(): void {

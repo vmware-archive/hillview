@@ -58,7 +58,7 @@ export class CorrelationHeatmapView extends ChartView<Groups<Groups<number>>[]> 
 
     constructor(args: CommonArgs, protected histoArgs: HistogramRequestInfo,
                 protected ranges: BucketsInfo[], page: FullPage) {
-        super(args.remoteObject.remoteObjectId, args, page, "CorrelationHeatmaps")
+        super(args.remoteObject.getRemoteObjectId()!, args, page, "CorrelationHeatmaps")
         this.menu = new TopMenu([this.exportMenu(),
             { text: "View", help: "Change the way the data is displayed.", subMenu: new SubMenu([
                     { text: "refresh",

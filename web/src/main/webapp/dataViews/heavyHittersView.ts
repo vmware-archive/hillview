@@ -124,7 +124,7 @@ export class HeavyHittersView extends BigTableView {
         const result: HeavyHittersSerialization = {
             ...super.serialize(),
             percent: this.percent,
-            remoteTableId: this.remoteTableObject.remoteObjectId,
+            remoteTableId: this.remoteTableObject.getRemoteObjectId()!,
             isApprox: this.isApprox,
             columnsShown: this.columnsShown,
         };

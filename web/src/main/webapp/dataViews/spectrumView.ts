@@ -184,7 +184,7 @@ export class SpectrumView extends ChartView<Groups<number>> {
 
     public refresh(): void {
         const rr = this.createSpectrumRequest(this.colNames, this.meta.rowCount, true);
-        rr.invoke(new SpectrumReceiver(this.page, this, this.remoteObjectId,
+        rr.invoke(new SpectrumReceiver(this.page, this, this.getRemoteObjectId()!,
             this.meta,  this.colNames, rr, true));
     }
 

@@ -23,7 +23,7 @@ import {ErrorReporter} from "./ui/errReporter";
 import {DragEventKind, HtmlString, pageReferenceFormat, Resolution, Size} from "./ui/ui";
 import {
     AggregateDescription,
-    BucketsInfo,
+    BucketsInfo, Comparison,
     ComparisonFilterDescription,
     ContentsKind,
     Groups,
@@ -668,8 +668,46 @@ export function percentString(n: number): string {
     return significantDigits(n) + "%";
 }
 
+export function createComparisonFilter(cd: IColumnDescription, value: RowValue, comparison: Comparison):
+    ComparisonFilterDescription {
+    let stringValue = null;
+    let doubleValue = null;
+    let intervalEnd = null;
+    switch (cd.kind) {
+        case "Json":
+        case "String":
+            stringValue = value as string;
+            break;
+        case "Integer":
+        case "Double":
+        case "Date":
+        case "Duration":
+        case "LocalDate":
+        case "Time":
+            doubleValue = value as number;
+            break;
+        case "Interval":
+            const a = value as number[];
+            doubleValue = a[0];
+            intervalEnd = a[1];
+            break;
+        case "None":
+            stringValue = null;
+            break;
+        default:
+            assertNever(cd.kind);
+    }
+    return {
+        column: cd,
+        stringValue,
+        doubleValue,
+        intervalEnd,
+        comparison,
+    };
+}
+
 export function fractionToPercent(n: number): string {
-    return Math.round(n * 100).toString() + "%";
+    return (n * 100) + "%";
 }
 
 /**
@@ -1284,6 +1322,19 @@ export function periodicSamples(data: string[], count: number): string[] | null 
 }
 
 export type ColorMap = (d: number) => string;
+
+// Return the index in the array data for which func returns the minimum value
+export function argmin<T>(data: T[], func: (x: T) => number): number {
+    if (data.length == 0)
+        return -1;
+    let min = func(data[0]);
+    let result = 0;
+    for (let i = 1; i < data.length; i++) {
+        if (func(data[i]) < min)
+            result = i;
+    }
+    return result;
+}
 
 export function desaturateOutsideRange(c: ColorMap, x0: number, x1: number): ColorMap {
     const [min, max] = reorder(x0, x1);

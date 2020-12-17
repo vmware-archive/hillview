@@ -90,7 +90,7 @@ export abstract class ChartView<D> extends BigTableView {
 
     protected showTable(columns: IColumnDescription[], provenance: string): void {
         const newPage = this.dataset.newPage(new PageTitle("Table", provenance), this.page);
-        const table = new TableView(this.remoteObjectId, this.meta, newPage);
+        const table = new TableView(this.getRemoteObjectId()!, this.meta, newPage);
         newPage.setDataView(table);
 
         const order =  new RecordOrder(

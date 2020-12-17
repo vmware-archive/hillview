@@ -97,7 +97,7 @@ export class TableTargetAPI extends RemoteObject {
      * Create a reference to a remote table target.
      * @param remoteObjectId   Id of remote table on the web server.
      */
-    constructor(public readonly remoteObjectId: RemoteObjectId) {
+    constructor(remoteObjectId: RemoteObjectId) {
         super(remoteObjectId);
     }
 
@@ -279,7 +279,7 @@ export class TableTargetAPI extends RemoteObject {
     public createCheckHeavyRequest(r: RemoteObject, schema: Schema):
             RpcRequest<TopList> {
         return this.createStreamingRpcRequest<TopList>("checkHeavy", {
-            hittersId: r.remoteObjectId,
+            hittersId: r.getRemoteObjectId(),
             schema: schema
         } as HeavyHittersFilterInfo);
     }
@@ -306,7 +306,7 @@ export class TableTargetAPI extends RemoteObject {
     public createProjectToEigenVectorsRequest(r: RemoteObject, dimension: number, projectionName: string):
     RpcRequest<RemoteObjectId> {
         return this.createStreamingRpcRequest<RemoteObjectId>("projectToEigenVectors", {
-            id: r.remoteObjectId,
+            id: r.getRemoteObjectId(),
             numComponents: dimension,
             projectionName: projectionName
         });
@@ -575,10 +575,6 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
             }])};
     }
 
-    public getRemoteObjectId(): string | null {
-        return this.remoteObjectId;
-    }
-
     /**
      * Save the information needed to (re)create this view.
      */
@@ -589,7 +585,7 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
             sourcePageId: this.page.sourcePageId,
             title: this.page.title.format,
             provenance: this.page.title.provenance,
-            remoteObjectId: this.remoteObjectId,
+            remoteObjectId: this.getRemoteObjectId()!,
             rowCount: this.meta.rowCount,
             schema: this.meta.schema.serialize(),
             geoMetadata: this.meta.geoMetadata
