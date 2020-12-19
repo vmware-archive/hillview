@@ -29,7 +29,7 @@ import {
     PartialResult,
     px,
     last,
-    fractionToPercent, argmin, createComparisonFilter,
+    fractionToPercent, argmin, createComparisonFilter, cloneArray,
 } from "../util";
 import {
     BucketsInfo, Comparison,
@@ -44,7 +44,6 @@ import {
 import {OnCompleteReceiver, Receiver} from "../rpc";
 import {TableMeta} from "../ui/receiver";
 import {DataRangesReceiver} from "./dataRangesReceiver";
-import {AxisData} from "./axisData";
 import {TimestampPlot} from "../ui/timestampPlot";
 import {interpolateBlues} from "d3-scale-chromatic";
 
@@ -70,7 +69,7 @@ export class LogFileView extends BigTableView implements IHtmlElement {
     private maxTs: number; // maximum timestamp
     private minTs: number; // minimum timestamp
     private readonly box: HTMLDivElement;  // box showing the visible data as an outline
-    private readonly line: HTMLDivElement;
+    private readonly linePointer: HTMLDivElement;
     public static readonly increment = 250; // how many more rows to bring
     protected readonly barHolder: HTMLDivElement;
     protected contextMenu: ContextMenu;
@@ -79,7 +78,7 @@ export class LogFileView extends BigTableView implements IHtmlElement {
 
     constructor(remoteObjectId: RemoteObjectId,
                 meta: TableMeta,
-                protected order: RecordOrder,
+                protected readonly order: RecordOrder,
                 public readonly timestampColumn: IColumnDescription,
                 page: FullPage) {
         super(remoteObjectId, meta, page, "LogFile");
@@ -104,12 +103,12 @@ export class LogFileView extends BigTableView implements IHtmlElement {
         header.appendChild(this.findBar.getHTMLRepresentation());
         this.findBar.show(false);
 
+        this.filterHolder = document.createElement("div");
+        header.appendChild(this.filterHolder);
+
         const schemaDisplay = document.createElement("div");
         header.appendChild(schemaDisplay);
         this.displaySchema(schemaDisplay);
-
-        this.filterHolder = document.createElement("div");
-        header.appendChild(this.filterHolder);
 
         this.contextMenu = new ContextMenu(this.topLevel);
         const menu = new TopMenu([{
@@ -122,9 +121,7 @@ export class LogFileView extends BigTableView implements IHtmlElement {
             }, {
                 text: "Refresh",
                 help: "Refresh current view",
-                action: () => {
-                    // TODO
-                }
+                action: () => this.refresh()
             }])
         }, {
             text: "Find",
@@ -169,14 +166,15 @@ export class LogFileView extends BigTableView implements IHtmlElement {
         this.box.style.left = px(0);
         this.box.style.right = px(0);
         this.box.style.border = "2px solid black";
-        this.line = document.createElement("div");
-        this.line.style.position = "absolute";
-        this.line.style.left = px(0);
-        this.line.style.right = px(0);
-        this.line.style.border = "2px solid rgba(255, 255, 0, .5)";
-        this.line.style.height = px(0);
+        this.linePointer = document.createElement("div");
+        this.linePointer.style.position = "absolute";
+        this.linePointer.style.left = px(0);
+        this.linePointer.style.right = px(0);
+        this.linePointer.style.border = "2px solid rgba(255, 255, 0, .5)";
+        this.linePointer.style.background = "rgba(255, 255, 0, .5)";
+        this.linePointer.style.height = px(0);
         this.barHolder.appendChild(this.box);
-        this.barHolder.appendChild(this.line);
+        this.barHolder.appendChild(this.linePointer);
         this.barHolder.onclick = (e) => this.scrollTimestamp(e);
         this.barHolder.onmousemove = (e) => this.onMouseMove(e);
         const footer = document.createElement("footer");
@@ -270,6 +268,9 @@ export class LogFileView extends BigTableView implements IHtmlElement {
     }
 
     public refresh(): void {
+        for (const bar of this.bars) {
+            removeAllChildren(bar);
+        }
         let firstRow = null;
         if (this.nextKList != null && this.nextKList.rows.length > 0)
             firstRow = this.nextKList.rows[0].values;
@@ -329,11 +330,11 @@ export class LogFileView extends BigTableView implements IHtmlElement {
         const fraction = this.timestampPosition(timestamp);
         if (fraction > .99) {
             // otherwise the line may be drawn completely outside
-            this.line.style.bottom = fractionToPercent(1 - fraction);
-            this.line.style.top = "";
+            this.linePointer.style.bottom = fractionToPercent(1 - fraction);
+            this.linePointer.style.top = "";
         } else {
-            this.line.style.top = fractionToPercent(fraction);
-            this.line.style.bottom = "";
+            this.linePointer.style.top = fractionToPercent(fraction);
+            this.linePointer.style.bottom = "";
         }
     }
 
@@ -344,9 +345,6 @@ export class LogFileView extends BigTableView implements IHtmlElement {
     public updateView(nextKList: NextKList,
                       findResult: FindResult | null): void {
         this.nextKList = nextKList;
-        if (nextKList == null)
-            return;
-
         removeAllChildren(this.contents);
         if (nextKList.startPosition > 0) {
             const before = document.createElement("button");
@@ -461,7 +459,7 @@ export class LogFileView extends BigTableView implements IHtmlElement {
         this.updateView(this.nextKList, null);
     }
 
-    public updateLineDensity(axis: AxisData, value: Groups<number>): void {
+    public updateLineDensity(value: Groups<number>): void {
         this.plots[0].setHistogram(value, this.minTs, this.maxTs, this.timestampColumn.kind);
         this.plots[0].draw();
     }
@@ -518,26 +516,34 @@ export class LogFileView extends BigTableView implements IHtmlElement {
         // this.summary!.display();
     }
 
-    addFilteredView(fd: FilteredDataset) {
+    public addFilteredView(fd: FilteredDataset): void {
         this.filters.push(fd);
         const filterRow = document.createElement("div");
-        filterRow.className = "titleRow";
-        filterRow.style.display = "flex";
-        filterRow.style.width = "100%";
-        filterRow.style.flexDirection = "row";
-        filterRow.style.flexWrap = "nowrap";
-        filterRow.style.alignItems = "center";
+        filterRow.className = "logFilterRow";
+        const span = makeSpan("Filter: " + fd.title);
+        span.style.flexGrow = "100";
+        filterRow.appendChild(span);
 
-        filterRow.appendChild(makeSpan(fd.title));
         const close = document.createElement("span");
         close.className = "close";
         close.innerHTML = "&times;";
-        // close.onclick = () => this.removeFilter(this);
-        close.title = "Close this view.";
-        close.style.flexGrow = "100";
+        const index = this.filters.length - 1;
+        close.onclick = () => this.removeFilters(index);
+        close.title = "Remove this filter and the subsequent ones.";
         filterRow.appendChild(close);
 
         this.filterHolder.appendChild(filterRow);
+    }
+
+    protected removeFilters(startIndex: number): void {
+        if (startIndex >= this.filters.length)
+            return;
+        removeAllChildren(this.filterHolder);
+        const filters = cloneArray(this.filters);
+        this.filters = [];
+        for (let i = 0; i < startIndex; i++)
+            this.addFilteredView(filters[i]);
+        this.refresh();
     }
 }
 
@@ -605,6 +611,8 @@ export class LogFragmentReceiver extends OnCompleteReceiver<NextKList> {
         this.view.createSurfaces();
         if (value.rowsScanned == 0) {
             this.view.page.reportError("No data left");
+            this.view.updateView(value, null);
+            this.view.updateLineDensity({ perBucket: [], perMissing: 0 });
             return;
         }
         const rr = this.view.createDataQuantilesRequest([this.view.timestampColumn], this.page, "LogFile");
@@ -630,7 +638,7 @@ export class TimestampRangeReceiver extends OnCompleteReceiver<BucketsInfo[]> {
         const args = DataRangesReceiver.computeHistogramArgs(
             this.view.timestampColumn,
             range,
-            Math.floor(pixels),
+            Math.min(this.initialData.rowsScanned, Math.floor(pixels)),
             true,
             // This is sideways
             { height: this.view.heatmapWidth, width: pixels });
@@ -643,8 +651,7 @@ export class TimestampRangeReceiver extends OnCompleteReceiver<BucketsInfo[]> {
             seed: 0,
         });
         rr.chain(this.operation);
-        const axis = new AxisData(this.view.timestampColumn, range, pixels);
-        const rec = new TimestampHistogramReceiver(this.page, this.view, axis, rr);
+        const rec = new TimestampHistogramReceiver(this.page, this.view, rr);
         rr.invoke(rec);
     }
 }
@@ -652,14 +659,13 @@ export class TimestampRangeReceiver extends OnCompleteReceiver<BucketsInfo[]> {
 export class TimestampHistogramReceiver extends Receiver<Groups<number>> {
     constructor(page: FullPage,
                 protected view: LogFileView,
-                protected axis: AxisData,
                 operation: ICancellable<Groups<number>>) {
         super(page, operation, "Getting time distribution");
     }
 
     public onNext(value: PartialResult<Groups<number>>): void {
         if (value != null && value.data != null)
-            this.view.updateLineDensity(this.axis, value.data);
+            this.view.updateLineDensity(value.data);
     }
 
     public onCompleted() {

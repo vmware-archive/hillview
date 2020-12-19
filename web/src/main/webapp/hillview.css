@@ -581,3 +581,12 @@ table .logHeader td.selected {
     align-items: center;
     justify-content: center;
 }
+
+.logFilterRow {
+    display: flex;
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    background: burlywood;
+}
