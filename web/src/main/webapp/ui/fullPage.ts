@@ -16,7 +16,7 @@
  */
 
 import {DatasetView} from "../datasetView";
-import {assertNever, makeMissing, makeSpan, openInNewTab, significantDigits,} from "../util";
+import {assertNever, makeMissing, makeSpan, openInNewTab, significantDigits} from "../util";
 import {IDataView} from "./dataview";
 import {ErrorDisplay, ErrorReporter} from "./errReporter";
 import {TopMenu} from "./menu";
@@ -151,6 +151,7 @@ export class FullPage implements IHtmlElement {
         this.bottomContainer = document.createElement("div");
 
         this.titleRow = document.createElement("div");
+        this.titleRow.className = "titleRow";
         this.titleRow.style.display = "flex";
         this.titleRow.style.width = "100%";
         this.titleRow.style.flexDirection = "row";
@@ -270,11 +271,15 @@ export class FullPage implements IHtmlElement {
         }
 
         this.displayHolder = document.createElement("div");
+        this.displayHolder.className = "displayHolder";
+        this.displayHolder.style.width = "100%";
         this.displayHolder.ondragover = (event) => event.preventDefault();
         this.displayHolder.ondrop = (event) => this.dropped(event);
+
         this.pageTopLevel.appendChild(this.displayHolder);
         this.pageTopLevel.appendChild(this.bottomContainer);
 
+        this.bottomContainer.style.width = "100%";
         this.bottomContainer.appendChild(this.progressManager.getHTMLRepresentation());
         this.bottomContainer.appendChild(this.console.getHTMLRepresentation());
     }
@@ -354,6 +359,14 @@ export class FullPage implements IHtmlElement {
             return;
         this.dataset.select(Number(pageId));
         view.combine(CombineOperators.Replace);
+    }
+
+    /**
+     * Makes the page fill the whole browser page.
+     */
+    public setSinglePage(): void {
+        this.pageTopLevel.style.height = "100%";
+        this.pageTopLevel.className = "hillviewSinglePage";
     }
 
     public setViewKind(viewKind: ViewKind): void {
@@ -476,6 +489,7 @@ export class FullPage implements IHtmlElement {
         this.getErrorReporter().reportError(error);
     }
 
+    // noinspection JSUnusedGlobalSymbols
     public clearError(): void {
         this.getErrorReporter().clear();
     }
@@ -487,6 +501,10 @@ export class FullPage implements IHtmlElement {
 
     public getWidthInPixels(): number {
         return Math.floor(this.pageTopLevel.getBoundingClientRect().width);
+    }
+
+    public getHeightInPixels(): number {
+        return Math.floor(this.pageTopLevel.getBoundingClientRect().height);
     }
 
     public scrollIntoView(): void {

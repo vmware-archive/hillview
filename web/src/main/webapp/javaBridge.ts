@@ -62,6 +62,7 @@ export type FederatedDatabase = "mysql" | "impala" | "cassandra" | "greenplum";
 
 export type SimpleFeatureCollection = FeatureCollection<DirectGeometryObject>;
 
+// noinspection JSUnusedGlobalSymbols
 /**
  * This must match the data in LogFiles.java
  */
@@ -72,15 +73,6 @@ export class GenericLogs {
     public static readonly directoryColumn = "Directory";
     public static readonly filenameColumn = "Filename";
     public static readonly lineNumberColumn = "Line";
-
-    public static readonly logFileFixedSchema: Schema = [
-        { name: GenericLogs.directoryColumn, kind: "String" },
-        { name: GenericLogs.filenameColumn, kind: "String" },
-        { name: GenericLogs.lineNumberColumn, kind: "Integer" },
-        { name: GenericLogs.timestampColumnName, kind: "Date" },
-        { name: GenericLogs.hostColumn, kind: "String" },
-        { name: GenericLogs.parseErrorColumn, kind: "String" }
-    ];
 }
 
 export interface SaveAsArgs {
@@ -232,6 +224,7 @@ export interface Status {
     exception: string;
 }
 
+// noinspection JSUnusedGlobalSymbols
 export enum CombineOperators {
     Union, Intersection, Exclude, Replace,
 }
@@ -389,6 +382,7 @@ export interface HistogramInfo {
     bucketCount: number;  // sometimes superseded by leftBoundaries
     // only used when doing string histograms
     leftBoundaries?: string[];
+    maxString?: string;
     // only used when doing double histograms
     min?: number;
     max?: number;
@@ -439,7 +433,7 @@ export interface NextKArgs {
     order: RecordOrder;
     firstRow: RowValue[] | null;
     rowsOnScreen: number;
-    columnsNoValue: string[] | null;
+    columnsMinimumValue: string[] | null;
     aggregates: AggregateDescription[] | null;
 }
 
@@ -505,12 +499,6 @@ export class RecordOrder {
         result.sortOrientationList[index].isAscending =
             !result.sortOrientationList[index].isAscending;
         return result;
-    }
-
-    public addColumnIfNotVisible(cso: ColumnSortOrientation): void {
-        const index = this.find(cso.columnDescription.name);
-        if (index === -1)
-            this.sortOrientationList.push(cso);
     }
 
     public clone(): RecordOrder {

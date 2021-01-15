@@ -25,7 +25,7 @@ import {Plot} from "./plot";
 import {PlottingSurface} from "./plottingSurface";
 import {D3Axis, D3Scale} from "./ui";
 import {symbol, symbolTriangle} from "d3-shape";
-import {Pair, valueWithConfidence} from "../util";
+import {formatNumber, Pair, valueWithConfidence} from "../util";
 import {IBarPlot} from "./IBarPlot";
 
 /**
@@ -46,11 +46,13 @@ export class HistogramPlot extends Plot<Pair<Groups<number>, Groups<number> | nu
     public maxYAxis: number | null;
     public max: number;  // maximum value in a bucket
     public displayAxes: boolean;
+    public showLabels: boolean;
     public isPrivate: boolean;
 
     public constructor(protected plottingSurface: PlottingSurface) {
         super(plottingSurface);
         this.displayAxes = true;
+        this.showLabels = true;
     }
 
     /**
@@ -97,7 +99,8 @@ export class HistogramPlot extends Plot<Pair<Groups<number>, Groups<number> | nu
             .getChart()
             .selectAll("g")
             .data(zippedData)
-            .enter().append("g")
+            .enter()
+            .append("g")
             .attr("transform", (d: number[], i: number) => `translate(${i * this.barWidth}, 0)`);
 
         this.yScale = d3scaleLinear()
@@ -107,15 +110,16 @@ export class HistogramPlot extends Plot<Pair<Groups<number>, Groups<number> | nu
         // Boxes can be taller than the maxYAxis height.  In this case yScale returns
         // a negative value, and we have to truncate the rectangles.
         bars.append("rect")
-            .attr("y", (d: number[]) => this.yScale(d[0]) < 0 ? 0 : this.yScale(d[0]))
+            .attr("y", (d: number[]) => this.yLabel(d[0]))
             .attr("fill", (d: number[]) => this.confident(d) ? "darkcyan" : "lightgrey")
             .attr("height", (d: number[]) => chartHeight - this.yLabel(d[0]))
             .attr("width", this.barWidth - 1);
 
         // overflow signs if necessary
-        bars.append("svg:path")
+        bars.filter( (d: number[]) => this.yScale(d[0]) < 0)
+            .append("svg:path")
             // I am not sure how triangle size is measured; this 7 below seems to work find
-            .attr("d", symbol().type(symbolTriangle).size( (d: number[]) => this.yScale(d[0]) < 0 ? 7 * this.barWidth : 0))
+            .attr("d", symbol().type(symbolTriangle).size(7 * this.barWidth))
             .attr("transform", () => `translate(${this.barWidth / 2}, 0)`)
             .style("fill", "red")
             .append("svg:title")
@@ -134,19 +138,21 @@ export class HistogramPlot extends Plot<Pair<Groups<number>, Groups<number> | nu
                 .attr("transform", () => `translate(${this.barWidth / 2}, 0)`);
         }
 
-        bars.append("text")
-            .attr("class", "histogramBoxLabel")
-            .attr("x", this.barWidth / 2)
-            .attr("y", (d: number[]) => this.yLabel(d[0]))
-            .attr("text-anchor", "middle")
-            .attr("dy", (d: number[]) => d[0] <= (9 * displayMax / 10) ? "-.25em" : ".75em")
-            .text((d: number[]) => Plot.boxHeight(
-                d[0], this.samplingRate, this.rowCount))
-            .exit();
+        if (this.showLabels) {
+            bars.append("text")
+                .attr("class", "histogramBoxLabel")
+                .attr("x", this.barWidth / 2)
+                .attr("y", (d: number[]) => this.yLabel(d[0]))
+                .attr("text-anchor", "middle")
+                .attr("dy", (d: number[]) => d[0] <= (9 * displayMax / 10) ? "-.25em" : ".75em")
+                .text((d: number[]) => Plot.boxHeight(
+                    d[0], this.samplingRate, this.rowCount))
+                .append("svg:title")
+                .text((d: number) => formatNumber(d));
+        }
 
         this.yAxis = d3axisLeft<number>(this.yScale)
             .tickFormat(d3format(".2s"));
-
         this.xAxisData.setResolution(chartWidth, AxisKind.Bottom, PlottingSurface.bottomMargin);
     }
 

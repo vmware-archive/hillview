@@ -701,7 +701,7 @@ export class Histogram2DReceiver extends Receiver<Pair<Groups<Groups<number>>, G
                 protected options: ChartOptions) {
         super(options.reusePage ? page : page.dataset!.newPage(title, page), operation, "histogram");
         this.view = new Histogram2DView(
-            this.remoteObject.remoteObjectId, meta, samplingRate, this.page);
+            this.remoteObject.getRemoteObjectId()!, meta, samplingRate, this.page);
         this.view.setAxes(axes[0], axes[1], optionToBoolean(options.relative), optionToBoolean(options.stacked));
     }
 

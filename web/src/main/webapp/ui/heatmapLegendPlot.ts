@@ -22,7 +22,7 @@ import {
 import {D3Axis, D3Scale, D3SvgElement, Resolution} from "./ui";
 import {ContextMenu} from "./menu";
 import {HtmlPlottingSurface, PlottingSurface} from "./plottingSurface";
-import {assert, assertNever, ColorMap, desaturateOutsideRange} from "../util";
+import {assert, assertNever, Color, ColorMap, desaturateOutsideRange} from "../util";
 import {scaleLinear as d3scaleLinear, scaleLog as d3scaleLog} from "d3-scale";
 import {axisBottom as d3axisBottom} from "d3-axis";
 import {AxisDescription} from "../dataViews/axisData";
@@ -85,6 +85,23 @@ export enum ColorMapKind {
     Grayscale
 }
 
+// This color map returns a color that is a desaturated version of the specified color.
+// 1 is white, 0 is the color itself.
+export function desaturate(c: Color): ColorMap {
+    const col = (a: number, b: number) => Math.round(a * 255 * (1 - b));
+    return (x: number) =>
+        `rgb(${col(c.r, x)},${col(c.g, x)},${col(c.b, x)})`
+}
+
+// This color map returns a color that is a an interpolated color between c0 and c1
+export function interpolate(c0: Color, c1: Color): ColorMap {
+    const interp = (a: number, b: number, c: number) => Math.round((a * (1 - c) + b * c) * 255);
+    return (x: number) =>
+        `rgb(${interp(c0.r, c1.r, x)},${interp(c0.g, c1.g, x)},${interp(c0.b, c1.b, x)})`
+}
+
+export const grayscale: ColorMap = desaturate(new Color(1, 1, 1));
+
 /**
  * Displays a color map suitable for heatmaps.
  */
@@ -145,8 +162,7 @@ export class HeatmapLegendPlot extends LegendPlot<number> {
                 this.colorMap.setMap(d3interpolateWarm);
                 break;
             case ColorMapKind.Grayscale:
-                this.colorMap.setMap((x: number) => `rgb(
-                ${Math.round(255 * (1 - x))},${Math.round(255 * (1 - x))},${Math.round(255 * (1 - x))})`);
+                this.colorMap.setMap(grayscale);
                 break;
             default:
                 assertNever(kind);

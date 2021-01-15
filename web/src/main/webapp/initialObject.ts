@@ -129,7 +129,7 @@ class FileSizeReceiver extends OnCompleteReceiver<FileSizeSketchInfo> {
         {
             const fileSize = "Loading " + size.fileCount + " file(s), total size " +
                 significantDigits(size.totalSize) + " bytes";
-            const fn = new RemoteObject(this.remoteObj.remoteObjectId);
+            const fn = new RemoteObject(this.remoteObj.getRemoteObjectId());
             const rr = fn.createStreamingRpcRequest<RemoteObjectId>("loadTable", null);
             rr.chain(this.operation);
             const observer = new RemoteTableReceiver(this.page, rr, this.data, fileSize, this.newDataset);
@@ -180,7 +180,7 @@ export class RemoteTableReceiver extends BaseReceiver {
         rr.chain(this.operation);
         const title = getDescription(this.data);
         if (this.newDataset) {
-            const dataset = new DatasetView(this.remoteObject.remoteObjectId, title.format, this.data, this.page);
+            const dataset = new DatasetView(this.remoteObject.getRemoteObjectId()!, title.format, this.data, this.page);
             const newPage = dataset.newPage(title, null);
             rr.invoke(new SchemaReceiver(newPage, rr, this.remoteObject, dataset, null, null));
         } else {
@@ -213,7 +213,7 @@ class GreenplumTableReceiver extends BaseReceiver {
         const rr = this.remoteObject.createGetMetadataRequest();
         rr.chain(this.operation);
         const title = getDescription(this.data);
-        const dataset = new DatasetView(this.remoteObject.remoteObjectId, title.format, this.data, this.page);
+        const dataset = new DatasetView(this.remoteObject.getRemoteObjectId()!, title.format, this.data, this.page);
         const newPage = dataset.newPage(title, null);
         rr.invoke(new GreenplumSchemaReceiver(
             newPage, rr, this.initialObject, this.remoteObject, this.data.description));

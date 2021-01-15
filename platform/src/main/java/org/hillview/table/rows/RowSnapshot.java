@@ -178,16 +178,16 @@ public class RowSnapshot extends BaseRowSnapshot
      * When row snapshots are serialized as JSON some data types have to be converted.
      * @param data    Data to fill the row
      * @param schema  Row schema
-     * @param columnsNoValue  List of columns that may not have a value specified.
+     * @param columnsMinimumValue  List of columns that may not have a value specified.
      *                        For these the minimum value will be used.
      * @return        A row parsed from an array of objects deserialized from JSON.
      */
     public static RowSnapshot parseJson(Schema schema,
                                         Object[] data,
-                                        @Nullable String[] columnsNoValue) {
+                                        @Nullable String[] columnsMinimumValue) {
         HashSet<String> set = null;
-        if (columnsNoValue != null)
-            set = new HashSet<String>(Arrays.asList(columnsNoValue));
+        if (columnsMinimumValue != null)
+            set = new HashSet<String>(Arrays.asList(columnsMinimumValue));
         Object[] converted = new Object[data.length];
         List<String> cols = new ArrayList<String>(data.length);
         cols.addAll(schema.getColumnNames());

@@ -90,7 +90,7 @@ export abstract class ChartView<D> extends BigTableView {
 
     protected showTable(columns: IColumnDescription[], provenance: string): void {
         const newPage = this.dataset.newPage(new PageTitle("Table", provenance), this.page);
-        const table = new TableView(this.remoteObjectId, this.meta, newPage);
+        const table = new TableView(this.getRemoteObjectId()!, this.meta, newPage);
         newPage.setDataView(table);
 
         const order =  new RecordOrder(
@@ -230,8 +230,10 @@ export abstract class ChartView<D> extends BigTableView {
         if (myAxis == null)
             return null;
 
-        if (sourceAxis.description !== myAxis.description) {
-            this.page.reportError("Axis is on different columns");
+        if (sourceAxis.description.name !== myAxis.description.name ||
+            sourceAxis.description.kind !== myAxis.description.kind) {
+            this.page.reportError("Axis is on different columns: " +
+                sourceAxis.description.name + " and " + myAxis.description.name);
             return null;
         }
 

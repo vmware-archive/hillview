@@ -23,7 +23,7 @@ import {ErrorReporter} from "./ui/errReporter";
 import {DragEventKind, HtmlString, pageReferenceFormat, Resolution, Size} from "./ui/ui";
 import {
     AggregateDescription,
-    BucketsInfo,
+    BucketsInfo, Comparison,
     ComparisonFilterDescription,
     ContentsKind,
     Groups,
@@ -668,6 +668,48 @@ export function percentString(n: number): string {
     return significantDigits(n) + "%";
 }
 
+export function createComparisonFilter(cd: IColumnDescription, value: RowValue, comparison: Comparison):
+    ComparisonFilterDescription {
+    let stringValue = null;
+    let doubleValue = null;
+    let intervalEnd = null;
+    switch (cd.kind) {
+        case "Json":
+        case "String":
+            stringValue = value as string;
+            break;
+        case "Integer":
+        case "Double":
+        case "Date":
+        case "Duration":
+        case "LocalDate":
+        case "Time":
+            doubleValue = value as number;
+            break;
+        case "Interval":
+            const a = value as number[];
+            doubleValue = a[0];
+            intervalEnd = a[1];
+            break;
+        case "None":
+            stringValue = null;
+            break;
+        default:
+            assertNever(cd.kind);
+    }
+    return {
+        column: cd,
+        stringValue,
+        doubleValue,
+        intervalEnd,
+        comparison,
+    };
+}
+
+export function fractionToPercent(n: number): string {
+    return (n * 100) + "%";
+}
+
 /**
  * convert a number to a string and prepend zeros if necessary to
  * bring the integer part to the specified number of digits
@@ -1024,6 +1066,16 @@ export function regression(data: number[][]): number[] {
 }
 
 /**
+ * True if the specified element is visible on the screen.
+ * @param e            A DOM element.
+ */
+export function visible(e: HTMLElement): boolean {
+    const screenHeight = Math.max(document.documentElement.clientHeight, window.innerHeight);
+    const rect = e.getBoundingClientRect();
+    return !(rect.bottom < 0 || rect.top >= screenHeight);
+}
+
+/**
  * This is actually just a guess on the width of the vertical scroll-bar,
  * which we would like to always be visible.
  */
@@ -1116,6 +1168,12 @@ export function cloneToSet<T>(arr: T[]): Set<T> {
     const result = new Set<T>();
     arr.forEach((e) => result.add(e));
     return result;
+}
+
+export function last<T>(arr: T[]): T | null {
+    if (arr.length == 0)
+        return null;
+    return arr[arr.length - 1];
 }
 
 export function getUUID(): string {
@@ -1264,6 +1322,19 @@ export function periodicSamples(data: string[], count: number): string[] | null 
 }
 
 export type ColorMap = (d: number) => string;
+
+// Return the index in the array data for which func returns the minimum value
+export function argmin<T>(data: T[], func: (x: T) => number): number {
+    if (data.length == 0)
+        return -1;
+    let min = func(data[0]);
+    let result = 0;
+    for (let i = 1; i < data.length; i++) {
+        if (func(data[i]) < min)
+            result = i;
+    }
+    return result;
+}
 
 export function desaturateOutsideRange(c: ColorMap, x0: number, x1: number): ColorMap {
     const [min, max] = reorder(x0, x1);

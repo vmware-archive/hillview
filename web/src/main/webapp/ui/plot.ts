@@ -87,6 +87,7 @@ export abstract class Plot<D> {
     }
 
     protected drawAxes(): void {
+        // TODO: handle rotate if needed
         const yAxis = this.getYAxis();
         const xAxis = this.getXAxis();
         if (yAxis != null)

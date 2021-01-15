@@ -23,7 +23,6 @@ import {
     ColumnSortOrientation,
     CompareDatasetsInfo,
     Comparison,
-    ComparisonFilterDescription,
     CreateIntervalColumnMapInfo,
     ExtractValueFromKeyMapInfo,
     FindResult,
@@ -38,7 +37,8 @@ import {
     RowValue,
     Schema,
     StringFilterDescription,
-    TableMetadata
+    TableMetadata,
+    GenericLogs
 } from "../javaBridge";
 import {OnCompleteReceiver, Receiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
@@ -55,26 +55,24 @@ import {
     add,
     all,
     assert,
-    assertNever,
     cloneToSet,
-    Converters,
+    Converters, createComparisonFilter,
     Exporter,
     find,
     formatNumber,
-    ICancellable,
+    ICancellable, last,
     makeMissing,
     makeSpan,
     PartialResult,
     percent,
     sameAggregate,
-    significantDigits,
-    significantDigitsHtml,
+    significantDigits, significantDigitsHtml,
     truncate
 } from "../util";
 import {SpectrumReceiver} from "./spectrumView";
 import {TSViewBase} from "./tsViewBase";
 import {Grid} from "../ui/grid";
-import {LogFileReceiver} from "./logFileView";
+import {LogFileView, LogFragmentReceiver} from "./logFileView";
 import {FindBar} from "../ui/findBar";
 import {HillviewToplevel} from "../toplevel";
 import {TableMeta} from "../ui/receiver";
@@ -165,6 +163,10 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                     this.resize();
                 },
                 help: "Show or hide all columns that are currently hidden"
+            }, {
+                text: "Log view",
+                action: () => this.openLogView(),
+                help: "Open a log viewer in a new tab"
             }];
         items.push({
                 text: "View", help: "Change the way the data is displayed.",
@@ -217,11 +219,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
 
         // to force the scroll bar next to the table we put them in yet another div
         const tblAndScrollBar = document.createElement("div");
-        tblAndScrollBar.style.flexDirection = "row";
-        tblAndScrollBar.style.display = "flex";
-        tblAndScrollBar.style.flexWrap = "nowrap";
-        tblAndScrollBar.style.justifyContent = "flex-start";
-        tblAndScrollBar.style.alignItems = "stretch";
+        tblAndScrollBar.className = "containerWithScrollbar";
         this.topLevel.appendChild(tblAndScrollBar);
         this.grid = new Grid(80);
         tblAndScrollBar.appendChild(this.scrollBar.getHTMLRepresentation());
@@ -243,7 +241,6 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             if (saveAsMenu != null)
                 saveAsMenu.enable("Save as DB table...", false);
         }
-
         this.createDiv("summary");
     }
 
@@ -259,6 +256,9 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
      */
     private findFilter(): void {
         const filter = this.findBar.getFilter();
+        if (filter == null) {
+            return;
+        }
         const columns = this.order.getSchema().map((c) => c.name);
         if (columns.length === 0) {
             this.page.reportError("No columns are visible");
@@ -449,7 +449,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         }
         const o = this.order.clone();
         const rr = this.createNextKRequest(
-            o, this.nextKList.rows[this.nextKList.rows.length - 1].values,
+            o, last(this.nextKList.rows)!.values,
             this.tableRowsDesired, this.aggregates, null);
         rr.invoke(new NextKReceiver(this.getPage(), this, rr, false, o, null));
     }
@@ -1117,7 +1117,6 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         if (result != null) {
             this.findBar.setCounts(result.before, result.after);
         } else {
-            this.strFilter = null;
             this.findBar.show(false);
         }
 
@@ -1215,40 +1214,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
     }
 
     public filterOnValue(cd: IColumnDescription, value: RowValue, comparison: Comparison): void {
-        let stringValue = null;
-        let doubleValue = null;
-        let intervalEnd = null;
-        switch (cd.kind) {
-            case "Json":
-            case "String":
-                stringValue = value as string;
-                break;
-            case "Integer":
-            case "Double":
-            case "Date":
-            case "Duration":
-            case "LocalDate":
-            case "Time":
-                doubleValue = value as number;
-                break;
-            case "Interval":
-                const a = value as number[];
-                doubleValue = a[0];
-                intervalEnd = a[1];
-                break;
-            case "None":
-                stringValue = null;
-                break;
-            default:
-                assertNever(cd.kind);
-        }
-        const cfd: ComparisonFilterDescription = {
-            column: cd,
-            stringValue,
-            doubleValue,
-            intervalEnd,
-            comparison,
-        };
+        const cfd = createComparisonFilter(cd, value, comparison);
         this.runComparisonFilter(cfd, this.order, this.tableRowsDesired, this.aggregates);
     }
 
@@ -1403,7 +1369,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         if (valid) {
             const rr = this.createSpectrumRequest(colNames, this.meta.rowCount, toSample);
             rr.invoke(new SpectrumReceiver(
-                this.getPage(), this, this.remoteObjectId, this.meta,
+                this.getPage(), this, this.getRemoteObjectId()!, this.meta,
                 colNames, rr, false));
         } else {
             this.page.reportError("Not valid for PCA:" + message);
@@ -1465,7 +1431,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
 
     public viewSchema(): void {
         const newPage = this.dataset.newPage(new PageTitle("Schema", this.defaultProvenance), this.page);
-        const sv = new SchemaView(this.remoteObjectId, this.meta, newPage);
+        const sv = new SchemaView(this.getRemoteObjectId()!, this.meta, newPage);
         newPage.setDataView(sv);
         sv.show(0);
         newPage.scrollIntoView();
@@ -1528,7 +1494,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             }, true);
             this.contextMenu.addItem({text: "Keep all rows after and this one",
                 action: () => this.filterOnRowValue(row.values, "<="),
-                help: "Keep only this rows and the rows that cone after this one in the sort order."
+                help: "Keep only this rows and the rows that come after this one in the sort order."
             }, true);
             this.contextMenu.addItem({
                 text: "Move to top",
@@ -1675,16 +1641,6 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                         action: () => this.centerRow(rows, index),
                         help: "Move this row to become the middle row.",
                     }, true);
-                    /*
-                    if (this.dataset.isLog() &&
-                        cd.name === "Filename" && row.count === 1) {
-                        this.contextMenu.addItem({
-                            text: "Open file",
-                            action: () => this.openLogFile(row, value),
-                            help: "Open this file in a new tab"
-                        }, true);
-                    }
-                    */
                     this.contextMenu.showAtMouse(e);
                 };
             } else {
@@ -1711,10 +1667,43 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
         this.dataRowsDisplayed += row.count;
     }
 
-    public openLogFile(row: RowData, filename: string): void {
-        const rr = this.createContainsRequest(this.order, row.values);
-        rr.invoke(new LogFileReceiver(this.page, rr, filename, this.meta.schema,
-            this.order.getSchema(), row.values));
+    public openLogView(): void {
+        const ts = this.meta.schema.find(GenericLogs.timestampColumnName);
+        if (ts == null) {
+            this.page.reportError("Cannot identify timestamp column");
+            return;
+        }
+        const logWindow = window.open("log.html", "_blank");
+        if (logWindow == null)
+            return;
+        logWindow.onload = () => {
+            const newPage = new FullPage(0, this.page.title, null, this.dataset);
+            newPage.setSinglePage();
+            logWindow.document.title = this.page.title.format;
+            logWindow.document.body.appendChild(newPage.getHTMLRepresentation());
+            let allColumns = this.meta.schema.schema.filter(c => c.name != ts.name);
+            allColumns.unshift(ts);
+            const order = new RecordOrder(allColumns.map(c => { return { columnDescription: c, isAscending: true }; }));
+            let colsMinValue = null;
+            const startRow = this.nextKList.rows.length > 0 ? this.nextKList.rows[0].values : null;
+            let firstRow = null;
+            if (startRow != null) {
+                firstRow = [];
+                colsMinValue = [];
+                for (const c of order.sortOrientationList) {
+                    const index = this.order.find(c.columnDescription.name);
+                    if (index >= 0) {
+                        firstRow.push(startRow[index]);
+                    } else {
+                        firstRow.push(null);
+                        colsMinValue.push(c.columnDescription.name);
+                    }
+                }
+            }
+            const viewer = new LogFileView(this.getRemoteObjectId()!, this.meta, order, ts, newPage);
+            const rr = viewer.createNextKRequest(order, firstRow, LogFileView.increment, null, colsMinValue);
+            rr.invoke(new LogFragmentReceiver(newPage, viewer, rr));
+        };
     }
 
     public setScroll(top: number, bottom: number): void {
@@ -1835,7 +1824,7 @@ export class SchemaReceiver extends OnCompleteReceiver<TableMetadata> {
         const useSchema = this.viewKind === "Schema" ||
             (this.viewKind === null && ts.schema.length > 20);
         if (useSchema) {
-            const dataView = new SchemaView(this.remoteObject.remoteObjectId, meta, this.page);
+            const dataView = new SchemaView(this.remoteObject.getRemoteObjectId()!, meta, this.page);
             this.page.setDataView(dataView);
             dataView.show(this.elapsedMilliseconds());
         } else {
@@ -1847,7 +1836,7 @@ export class SchemaReceiver extends OnCompleteReceiver<TableMetadata> {
             };
 
             const order = new RecordOrder([]);
-            const table = new TableView(this.remoteObject.remoteObjectId, meta, this.page);
+            const table = new TableView(this.remoteObject.getRemoteObjectId()!, meta, this.page);
             this.page.setDataView(table);
             table.updateView(nk, false, order, null);
             table.updateCompleted(this.elapsedMilliseconds());
@@ -1951,7 +1940,7 @@ class PCASchemaReceiver extends OnCompleteReceiver<TableMetadata> {
 
         const schema = this.tv.meta.schema.concat(newCols);
         const table = new TableView(
-            this.remoteObject.remoteObjectId,
+            this.remoteObject.getRemoteObjectId()!,
             { rowCount: this.tv.meta.rowCount, schema, geoMetadata: ts.geoMetadata }, this.page);
         this.page.setDataView(table);
         const rr = table.createNextKRequest(o, null, this.tableRowsDesired, null, null);
@@ -1991,7 +1980,7 @@ export class TableOperationCompleted extends BaseReceiver {
                 this.page, rr, this.remoteObject, this.page.dataset!, this.meta.schema, "Schema"));
         } else {
             const table = new TableView(
-                this.remoteObject.remoteObjectId, this.meta, this.page);
+                this.remoteObject.getRemoteObjectId()!, this.meta, this.page);
             table.aggregates = this.aggregates;
             this.page.setDataView(table);
             const rr = table.createNextKRequest(

@@ -27,7 +27,6 @@ import {
     CombineOperators,
     CompareDatasetsInfo,
     ComparisonFilterDescription,
-    ContainsArgs,
     CountWithConfidence,
     EigenVal,
     FindResult,
@@ -98,7 +97,7 @@ export class TableTargetAPI extends RemoteObject {
      * Create a reference to a remote table target.
      * @param remoteObjectId   Id of remote table on the web server.
      */
-    constructor(public readonly remoteObjectId: RemoteObjectId) {
+    constructor(remoteObjectId: RemoteObjectId) {
         super(remoteObjectId);
     }
 
@@ -171,12 +170,13 @@ export class TableTargetAPI extends RemoteObject {
                 return [maxBuckets, maxBuckets, maxWindows];
             case "TrellisHistogram":
                 return [width, maxWindows];
+            case "LogFile":
+                return [page.getHeightInPixels()];
             case "Table":
             case "Schema":
             case "Load":
             case "HeavyHitters":
             case "SVD Spectrum":
-            case "LogFile":
             case "Map":
                 // Shoudld not occur
                 assert(false);
@@ -221,42 +221,24 @@ export class TableTargetAPI extends RemoteObject {
         return this.createStreamingRpcRequest<Groups<Groups<SampleSet>>>("getQuantilesMatrix", args);
     }
 
-    public createContainsRequest(order: RecordOrder, row: RowValue[]): RpcRequest<RemoteObjectId> {
-        const args: ContainsArgs = {
-            order: order,
-            row: row
-        };
-        return this.createStreamingRpcRequest<RemoteObjectId>("contains", args);
-    }
-
-    public createGetLogFragmentRequest(schema: Schema, row: RowValue[], rowSchema: Schema, rowCount: number):
-        RpcRequest<NextKList> {
-        return this.createStreamingRpcRequest<NextKList>("getLogFragment", {
-            schema: schema,
-            row: row,
-            rowSchema: rowSchema,
-            count: rowCount
-        });
-    }
-
     /**
      * Create a request for a nextK sketch
      * @param order            Sorting order.
      * @param firstRow         Values in the smallest row (may be null).
      * @param rowsOnScreen     How many rows to bring.
      * @param aggregates       List of aggregates to compute.
-     * @param columnsNoValue   List of columns in the firstRow for which we want to specify
+     * @param columnsMinimumValue  List of columns in the firstRow for which we want to specify
      *                         "minimum possible value" instead of "null".
      */
     public createNextKRequest(order: RecordOrder, firstRow: RowValue[] | null, rowsOnScreen: number,
-                              aggregates: AggregateDescription[] | null, columnsNoValue: string[] | null):
+                              aggregates: AggregateDescription[] | null, columnsMinimumValue: string[] | null):
         RpcRequest<NextKList> {
         const nextKArgs: NextKArgs = {
             toFind: null,
             order,
             firstRow,
             rowsOnScreen,
-            columnsNoValue,
+            columnsMinimumValue,
             aggregates
         };
         return this.createStreamingRpcRequest<NextKList>("getNextK", nextKArgs);
@@ -297,7 +279,7 @@ export class TableTargetAPI extends RemoteObject {
     public createCheckHeavyRequest(r: RemoteObject, schema: Schema):
             RpcRequest<TopList> {
         return this.createStreamingRpcRequest<TopList>("checkHeavy", {
-            hittersId: r.remoteObjectId,
+            hittersId: r.getRemoteObjectId(),
             schema: schema
         } as HeavyHittersFilterInfo);
     }
@@ -324,7 +306,7 @@ export class TableTargetAPI extends RemoteObject {
     public createProjectToEigenVectorsRequest(r: RemoteObject, dimension: number, projectionName: string):
     RpcRequest<RemoteObjectId> {
         return this.createStreamingRpcRequest<RemoteObjectId>("projectToEigenVectors", {
-            id: r.remoteObjectId,
+            id: r.getRemoteObjectId(),
             numComponents: dimension,
             projectionName: projectionName
         });
@@ -410,6 +392,11 @@ RpcRequest<RemoteObjectId> {
     public createFilterListRequest(f: FilterListDescription):
         RpcRequest<RemoteObjectId> {
         return this.createStreamingRpcRequest<RemoteObjectId>("filterList", f);
+    }
+
+    public createHistogramRequest(info: HistogramRequestInfo):
+        RpcRequest<Groups<number>> {
+        return this.createStreamingRpcRequest<Groups<number>>("histogram", info);
     }
 
     public createHistogram2DAndCDFRequest(info: HistogramRequestInfo):
@@ -535,6 +522,7 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
         public readonly viewKind: ViewKind) {
         super(remoteObjectId);
         this.topLevel = document.createElement("div");
+        this.topLevel.classList.add("bigTableView");
         this.setPage(page);
         page.setDataView(this);
         this.dataset = page.dataset!;
@@ -555,7 +543,7 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
         return this.meta.schema;
     }
 
-    protected createDiv(b: CommonPlots): void {
+    protected createDiv(b: CommonPlots): HTMLDivElement {
         const div = this.makeToplevelDiv(b.toString());
         switch (b) {
             case "chart":
@@ -571,6 +559,7 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
                 this.legendDiv = div;
                 break;
         }
+        return div;
     }
 
     protected abstract export(): void;
@@ -586,10 +575,6 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
             }])};
     }
 
-    public getRemoteObjectId(): string | null {
-        return this.remoteObjectId;
-    }
-
     /**
      * Save the information needed to (re)create this view.
      */
@@ -600,7 +585,7 @@ export abstract class BigTableView extends TableTargetAPI implements IDataView, 
             sourcePageId: this.page.sourcePageId,
             title: this.page.title.format,
             provenance: this.page.title.provenance,
-            remoteObjectId: this.remoteObjectId,
+            remoteObjectId: this.getRemoteObjectId()!,
             rowCount: this.meta.rowCount,
             schema: this.meta.schema.serialize(),
             geoMetadata: this.meta.geoMetadata

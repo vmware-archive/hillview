@@ -39,7 +39,7 @@ const RpcRequestPath = "rpc";
  * are represented in Java by classes that extend RpcTarget.
  */
 export class RemoteObject {
-    constructor(public readonly remoteObjectId: RemoteObjectId) {}
+    constructor(private readonly remoteObjectId: RemoteObjectId | null) {}
 
     /**
      * Creates a request to a remote method.  The request must be invoked separately.
@@ -55,11 +55,15 @@ export class RemoteObject {
      * @returns {RpcRequest}   The request that is created.
      */
     public createStreamingRpcRequest<T>(method: string, args: any): RpcRequest<T> {
-        return new RpcRequest<T>(this.remoteObjectId, method, args);
+        return new RpcRequest<T>(this.getRemoteObjectId()!, method, args);
+    }
+
+    public getRemoteObjectId(): RemoteObjectId | null {
+        return this.remoteObjectId;
     }
 
     public toString(): string {
-        return this.remoteObjectId;
+        return this.getRemoteObjectId()!.toString();
     }
 }
 

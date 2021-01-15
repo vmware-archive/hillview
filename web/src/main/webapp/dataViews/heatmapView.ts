@@ -647,7 +647,7 @@ export class HeatmapReceiver extends Receiver<Two<Groups<Groups<number>>>> {
                 protected reusePage: boolean) {
         super(reusePage ? page : page.dataset!.newPage(title, page), operation, "histogram");
         this.view = new HeatmapView(
-            remoteTable.remoteObjectId, meta, null,
+            remoteTable.getRemoteObjectId()!, meta, null,
             this.samplingRate, this.page);
         this.view.setAxes(axisData[0], axisData[1]);
     }
@@ -682,7 +682,7 @@ export class HeatmapWithDataReceiver extends Receiver<Pair<Groups<Groups<number>
                 protected reusePage: boolean) {
         super(reusePage ? page : page.dataset!.newPage(title, page), operation, "histogram");
         this.view = new HeatmapView(
-            remoteTable.remoteObjectId, meta, detailedColumns,
+            remoteTable.getRemoteObjectId()!, meta, detailedColumns,
             this.samplingRate, this.page);
         this.view.setAxes(axisData[0], axisData[1]);
     }

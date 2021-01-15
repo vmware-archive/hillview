@@ -439,7 +439,7 @@ export class TrellisHistogramQuartilesReceiver extends Receiver<Groups<Groups<Sa
                 protected options: ChartOptions) {
         super(options.reusePage ? page : page.dataset!.newPage(title, page), operation, "quartiles");
         this.trellisView = new TrellisHistogramQuartilesView(
-            remoteTable.remoteObjectId, meta, qCol, this.shape, this.page);
+            remoteTable.getRemoteObjectId()!, meta, qCol, this.shape, this.page);
         const xAxis = new AxisData(histoArgs[0].cd, range[0], histoArgs[0].bucketCount);
         const groupByAxis = new AxisData(histoArgs[1].cd, range[1], histoArgs[1].bucketCount);
         this.trellisView.setAxes(xAxis, groupByAxis);

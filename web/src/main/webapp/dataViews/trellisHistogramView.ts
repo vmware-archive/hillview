@@ -477,7 +477,7 @@ export class TrellisHistogramReceiver extends Receiver<Two<Groups<Groups<number>
                 protected reusePage: boolean) {
         super(reusePage ? page : page.dataset!.newPage(title, page), operation, "histogram");
         this.trellisView = new TrellisHistogramView(
-            remoteTable.remoteObjectId, meta,
+            remoteTable.getRemoteObjectId()!, meta,
             this.shape, this.samplingRate, this.page);
         this.trellisView.setAxes(axes[0], axes[1]);
     }

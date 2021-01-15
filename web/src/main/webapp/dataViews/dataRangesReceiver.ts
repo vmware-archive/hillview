@@ -237,6 +237,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                 samplingRate: samplingRate,
                 leftBoundaries: bounds,
                 bucketCount: bounds.length,
+                maxString: range.maxBoundary
             };
         } else {
             let cdfCount = Math.floor(chartSize.width);
@@ -442,7 +443,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
                     this.title = new PageTitle(
                         "Histogram of " + this.cds[0].name, this.provenance!);
                 const renderer = new HistogramReceiver(this.title, this.page,
-                    this.originator.remoteObjectId, this.getMeta(), axisData, rr, cdfArg.samplingRate,
+                    this.originator.getRemoteObjectId()!, this.getMeta(), axisData, rr, cdfArg.samplingRate,
                     this.options.pieChart != null ? this.options.pieChart : false, this.options.reusePage); // TODO sampling rate?
                 rr.invoke(renderer);
                 break;

@@ -53,7 +53,7 @@ export class GeoView extends ChartView<NextKList> {
     protected yShift: number = 0;
 
     constructor(args: CommonArgs, protected readonly keyColumn: IColumnDescription, page: FullPage) {
-        super(args.remoteObject.remoteObjectId, args, page, "Map");
+        super(args.remoteObject.getRemoteObjectId()!, args, page, "Map");
         const zoomIncrement = 1.3;
         this.viewMenu = new SubMenu([{
                 text: "refresh",

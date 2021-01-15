@@ -24,6 +24,7 @@ import {PlottingSurface} from "./plottingSurface";
 import {D3Scale} from "./ui";
 import {symbol, symbolTriangle} from "d3-shape";
 import {Histogram2DBase} from "./histogram2DBase";
+import {formatNumber} from "../util";
 
 /**
  * Represents an SVG rectangle drawn on the screen.
@@ -112,10 +113,11 @@ export class Histogram2DPlot extends Histogram2DBase {
         this.barWidth = this.getChartWidth() / this.xPoints;
         const scale = displayMax <= 0 ? 1 : this.getChartHeight() / displayMax;
 
-        this.plottingSurface.getChart()
-            .selectAll("g")
-            .data(rects)
-            .enter().append("g")
+        const chart = this.plottingSurface.getChart()
+            .selectAll("g");
+        chart.data(rects)
+            .enter()
+            .append("g")
             .append("svg:rect")
             .attr("x", (d: Box) => d.xIndex! * this.barWidth)
             .attr("y", (d: Box) => this.rectPosition(d, counts, scale))
@@ -123,33 +125,33 @@ export class Histogram2DPlot extends Histogram2DBase {
             .attr("width", this.barWidth)
             .attr("fill", (d: Box) => this.color(d.yIndex!, this.yPoints - 1))
             .attr("stroke", "black")
-            .attr("stroke-width", (d: Box) => d.yIndex! < 0 ? 1 : 0)
-            // overflow signs if necessary
-            .data(counts)
+            .attr("stroke-width", (d: Box) => d.yIndex! < 0 ? 1 : 0);
+        // overflow signs if necessary
+        chart.data(counts.map( (c, i) => [c,i])) // add the index to each data element
             .enter()
+            .filter((di: number[]) => !this.normalized && ((di[0] * scale) > this.getChartHeight()))
             .append("g")
             .append("svg:path")
             // I am not sure how triangle size is measured; this 7 below seems to work find
-            .attr("d", symbol().type(symbolTriangle).size(
-                (d: number) => (!this.normalized && ((d * scale) > this.getChartHeight())) ?
-                    7 * this.barWidth : 0))
-            .attr("transform", (c: Box, i: number) => `translate(${(i + .5) * this.barWidth}, 0)`)
+            .attr("d", symbol().type(symbolTriangle).size(7 * this.barWidth))
+            .attr("transform", (di: number[]) => `translate(${(di[1] + .5) * this.barWidth}, 0)`)
             .style("fill", "red")
             .append("svg:title")
-            .text("Bar is truncated")
-            // label bars
-            .data(counts)
+            .text("Bar is truncated");
+        // label bars
+        chart.data(counts)
             .enter()
             .append("g")
             .append("text")
             .attr("class", "histogramBoxLabel")
-            .attr("x", (c: Box, i: number) => (i + .5) * this.barWidth)
+            .attr("x", (_: number, i: number) =>(i + .5) * this.barWidth)
             .attr("y", (d: number) => (!this.normalized && ((d * scale) < this.getChartHeight())) ?
                 this.getChartHeight() - (d * scale) : 0)
             .attr("text-anchor", "middle")
             .attr("dy", (d: number) => this.normalized ? 0 : d <= (9 * displayMax / 10) ? "-.25em" : ".75em")
-            .text((d: number) => Plot.boxHeight(d, this.samplingRate, this.rowCount));
-
+            .text((d: number) => Plot.boxHeight(d, this.samplingRate, this.rowCount))
+            .append("svg:title")
+            .text((d: number) => formatNumber(d));
         if (displayMax <= 0) {
             this.plottingSurface.reportError("All values are missing.");
             return;

@@ -48,6 +48,14 @@ body {
     outline: none;
 }
 
+.containerWithScrollbar {
+    flex-direction: row;
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: stretch;
+}
+
 .chart-page > h2 {
     text-align: center;
     margin: 5px;
@@ -92,6 +100,8 @@ table {
     border: 1px solid black;
     padding: 0;
 }
+
+/******************************/
 
 .tableView {
     border-collapse: collapse;
@@ -219,10 +229,22 @@ div.truncated {
     background: yellow;
 }
 
+.hillviewSinglePage {
+    padding: 0;
+    display: flex;
+    flex-flow: column nowrap;
+}
+
+.hillviewSinglePage > .displayHolder {
+    min-height: 100px;
+    flex-shrink: 1;
+    flex-grow: 1;
+}
+
 .hillviewPage {
+    padding: 0;
     border: 2px solid grey;
     margin: 3px 1px;
-    padding: 0;
 }
 
 .hillviewPage:hover {
@@ -496,10 +518,16 @@ table .logHeader td {
     padding: 2px;
 }
 
+table .logHeader td.selected {
+    background: white;
+}
+
 .logFileViewer {
     display: flex;
     flex-flow: column;
+    width: 100%;
     height: 100%;
+    box-sizing: border-box;
 }
 
 .logFileTitle {
@@ -507,19 +535,58 @@ table .logHeader td {
     width: 100%;
     flex-direction: row;
     flex-wrap: nowrap;
-    align-items: center;
+    box-sizing: border-box;
 }
 
 .logFileFooter {
     background: silver;
+    box-sizing: border-box;
 }
 
 .logFileContents {
-    flex: 1;
-    overflow: auto;
+    display: flex;
+    flex-flow: row;
+    flex-wrap: nowrap;
+    flex: auto;
+    box-sizing: border-box;
+    min-height: 100px;
+}
+
+.logFileData {
+    width: 100%;
+    height: 100%;
+    overflow-y: scroll;
+    overflow-x: scroll;
+    box-sizing: border-box;
+}
+
+.logHeatmap {
+    box-sizing: border-box;
+}
+
+.logRow:hover {
+    background: lightyellow;
+    box-sizing: border-box;
 }
 
 .logCell {
     margin-right: 4px;
     font-family: monospace;
+    box-sizing: border-box;
+}
+
+.logGap {
+    background: darksalmon;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+}
+
+.logFilterRow {
+    display: flex;
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    background: burlywood;
 }

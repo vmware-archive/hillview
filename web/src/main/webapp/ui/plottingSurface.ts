@@ -56,11 +56,12 @@ export abstract class PlottingSurface {
     /**
      * SVG element on top of which the chart is drawn.
      */
-    public svgCanvas: D3SvgElement;
+    public svgElement: D3SvgElement;
     /**
      * Current size in pixels of the canvas.
      */
     public size: Size;
+
     /**
      * An SVG g element which is used to draw the chart; it is offset from the
      * svgCanvas by leftMargin, topMargin.
@@ -76,26 +77,13 @@ export abstract class PlottingSurface {
     public static readonly leftMargin = 40;      // left margin in pixels in a plot
 
     protected constructor(public readonly page: FullPage, sb: SizeAndBorders) {
-        // Default dimensions
-        this.topMargin = PlottingSurface.topMargin;
-        this.rightMargin = PlottingSurface.rightMargin;
-        this.bottomMargin = PlottingSurface.bottomMargin;
-        this.leftMargin = PlottingSurface.leftMargin;
         this.size = PlottingSurface.getDefaultCanvasSize(this.page.getWidthInPixels());
-        this.size.width = Math.max(PlottingSurface.minCanvasWidth, this.size.width);
-        // User-specified dimensions
-        if (sb.topMargin != null)
-            this.topMargin = sb.topMargin;
-        if (sb.rightMargin != null)
-            this.rightMargin = sb.rightMargin;
-        if (sb.leftMargin != null)
-            this.leftMargin = sb.leftMargin;
-        if (sb.bottomMargin != null)
-            this.bottomMargin = sb.bottomMargin;
-        if (sb.width != null)
-            this.size.width = sb.width;
-        if (sb.height != null)
-            this.size.height = sb.height;
+        this.topMargin = sb.topMargin ?? PlottingSurface.topMargin;
+        this.rightMargin = sb.rightMargin ?? PlottingSurface.rightMargin;
+        this.leftMargin = sb.leftMargin ?? PlottingSurface.leftMargin;
+        this.bottomMargin = sb.bottomMargin ?? PlottingSurface.bottomMargin;
+        this.size.width = sb.width ?? Math.max(PlottingSurface.minCanvasWidth, this.size.width);
+        this.size.height = sb.height ?? this.size.height;
     }
 
     public reportError(message: string): void {
@@ -120,9 +108,9 @@ export abstract class PlottingSurface {
      * De-allocates the canvas if it exists.
      */
     public destroy(): void {
-        if (this.svgCanvas != null)
-            this.svgCanvas.remove();
-        this.svgCanvas = null;
+        if (this.svgElement != null)
+            this.svgElement.remove();
+        this.svgElement = null;
     }
 
     public getChart(): D3SvgElement {
@@ -133,7 +121,7 @@ export abstract class PlottingSurface {
      * Get the canvas of the plotting area.  Must be called after create.
      */
     public getCanvas(): D3SvgElement {
-        return this.svgCanvas!;
+        return this.svgElement!;
     }
 
     /**
@@ -159,17 +147,17 @@ export abstract class PlottingSurface {
     }
 
     protected createObjects(root: D3SvgElement): void {
-        this.svgCanvas = root
+        this.svgElement = root
             .append("svg")
             .attr("id", "canvas")
             .attr("border", 1)
             .attr("cursor", "crosshair")
             .attr("width", this.size.width)
             .attr("height", this.size.height);
-        this.chartArea = this.svgCanvas
+        this.chartArea = this.svgElement
             .append("g")
             .attr("transform", `translate(${this.leftMargin}, ${this.topMargin})`);
-        this.selectionBorder = this.svgCanvas
+        this.selectionBorder = this.svgElement
             .append("rect")
             .attr("width", this.size.width)
             .attr("height", this.size.height)
