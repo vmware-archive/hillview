@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # We attempted to make this program work with both python2 and python3
 
-"""This python starts the Hillview service on the machines
+"""This python script starts the Hillview service on the machines
    specified in the configuration file."""
 # pylint: disable=invalid-name
 

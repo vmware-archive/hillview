@@ -50,13 +50,15 @@ import {interpolateBlues} from "d3-scale-chromatic";
 class FilteredDataset {
     constructor(public readonly remoteObjectId: RemoteObjectId, 
                 public readonly meta: TableMeta, 
-                public readonly title: string) {}
+                public readonly title: string,
+                // Value of nextKRows before filter was applied
+                public readonly previousNextK: NextKList) {}
 }
 
 export class LogFileView extends BigTableView implements IHtmlElement {
     protected readonly topLevel: HTMLElement;
     protected readonly findBar: FindBar;
-    protected nextKList: NextKList;
+    public nextKList: NextKList;
     protected visibleColumns: Set<string>;
     protected color: Map<string, string>;  // one per column
     public static readonly requestSize = 1000;  // number of lines brought in one request
@@ -123,7 +125,7 @@ export class LogFileView extends BigTableView implements IHtmlElement {
                 help: "Refresh current view",
                 action: () => this.refresh()
             }])
-        }, {
+        }/*, {
             text: "Find",
             help: "Search specific values",
             subMenu: new SubMenu([{
@@ -131,7 +133,7 @@ export class LogFileView extends BigTableView implements IHtmlElement {
                 help: "Search for a string",
                 action: () => this.showFindBar(true)
             }])
-        }]);
+        } */]);
         this.page.setMenu(menu);
 
         const middle = this.makeToplevelDiv("logFileContents");
@@ -153,7 +155,7 @@ export class LogFileView extends BigTableView implements IHtmlElement {
         this.barHolder.style.flexWrap = "nowrap";
         this.barHolder.style.position = "relative";
         middle.appendChild(this.barHolder);
-        const barCount = 3;
+        const barCount = 1;
         for (let i = 0; i < barCount; i++) {
             const bar = document.createElement("div");
             bar.className = "logHeatmap";
@@ -170,7 +172,7 @@ export class LogFileView extends BigTableView implements IHtmlElement {
         this.linePointer.style.position = "absolute";
         this.linePointer.style.left = px(0);
         this.linePointer.style.right = px(0);
-        this.linePointer.style.border = "2px solid rgba(255, 255, 0, .5)";
+        this.linePointer.style.border = "1px solid rgba(255, 255, 0, .5)";
         this.linePointer.style.background = "rgba(255, 255, 0, .5)";
         this.linePointer.style.height = px(0);
         this.barHolder.appendChild(this.box);
@@ -328,14 +330,8 @@ export class LogFileView extends BigTableView implements IHtmlElement {
 
     protected showLine(timestamp: number): void {
         const fraction = this.timestampPosition(timestamp);
-        if (fraction > .99) {
-            // otherwise the line may be drawn completely outside
-            this.linePointer.style.bottom = fractionToPercent(1 - fraction);
-            this.linePointer.style.top = "";
-        } else {
-            this.linePointer.style.top = fractionToPercent(fraction);
-            this.linePointer.style.bottom = "";
-        }
+        this.linePointer.style.top = fractionToPercent(fraction);
+        this.linePointer.style.bottom = fractionToPercent(1 - fraction);
     }
 
     public timestampToString(val: number): string {
@@ -543,6 +539,10 @@ export class LogFileView extends BigTableView implements IHtmlElement {
         this.filters = [];
         for (let i = 0; i < startIndex; i++)
             this.addFilteredView(filters[i]);
+        for (const bar of this.bars) {
+            removeAllChildren(bar);
+        }
+        this.nextKList = filters[startIndex].previousNextK;
         this.refresh();
     }
 }
@@ -556,7 +556,7 @@ class LogFilteredReceiver extends OnCompleteReceiver<RemoteObjectId> {
     }
 
     public run(data: RemoteObjectId): void {
-        const fd = new FilteredDataset(data, this.view.meta, this.filterDescription);
+        const fd = new FilteredDataset(data, this.view.meta, this.filterDescription, this.view.nextKList);
         this.view.addFilteredView(fd);
         this.view.refresh();
     }
