@@ -101,7 +101,6 @@ public class GuessSchema {
     private
     DateParsing dateParser;
 
-
     public GuessSchema() {
         this.dateParser = null;
         this.name = "";

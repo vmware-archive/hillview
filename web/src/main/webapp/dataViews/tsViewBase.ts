@@ -104,9 +104,9 @@ export abstract class TSViewBase extends BigTableView {
                 const keep = dialog.getBooleanValue("keep");
                 const newColName = keep ?
                     dialog.getFieldValue("newColumnName") :
-                    this.getSchema().uniqueColumnName(colName);
+                    colName;
 
-                if (this.getSchema().columnIndex(newColName) >= 0) {
+                if (keep && this.getSchema().columnIndex(newColName) >= 0) {
                     this.page.reportError(`Column name ${newColName} already exists in table.`);
                     return;
                 }
@@ -122,16 +122,16 @@ export abstract class TSViewBase extends BigTableView {
                     kind: kind,
                     name: newColName,
                 };
-                let schema = this.getSchema().insert(cd, columnIndex);
                 const o = order != null ? order.clone() : null;
                 if (o != null)
                     o.addColumn({columnDescription: cd, isAscending: true});
+                let schema: SchemaClass = this.getSchema();
                 if (!keep) {
                     const initial = schema.length;
                     schema = schema.filter((c) => c.name != colName);
                     console.assert(schema.length < initial);
-                    schema = schema.renameColumn(newColName, colName)!;
                 }
+                schema = schema.insert(cd, columnIndex);
                 const meta: TableMeta = { schema: schema, rowCount: this.meta.rowCount, geoMetadata: this.meta.geoMetadata };
                 rr.invoke(new TableOperationCompleted(this.page, rr, meta,
                     o, rowsDesired, aggregates));
