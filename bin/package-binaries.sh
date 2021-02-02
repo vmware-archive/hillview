@@ -7,9 +7,7 @@
 set -ex
 
 ARCHIVE=hillview-bin.zip
-#TARARCHIVE=hillview.tar.gz
 
-#echo "Creating ${ARCHIVE} and ${TARARCHIVE} in toplevel directory."
 echo "Creating ${ARCHIVE} in toplevel directory."
 cd ..
 
@@ -17,8 +15,5 @@ FILES="platform/target/hillview-server-jar-with-dependencies.jar web/target/web-
 
 rm -f ${ARCHIVE}
 zip ${ARCHIVE} ${FILES}
-
-#rm -f ${TARARCHIVE}
-#tar cvfz ${TARARCHIVE} ${FILES}
 
 cd bin
