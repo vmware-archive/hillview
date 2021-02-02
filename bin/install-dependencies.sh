@@ -29,7 +29,7 @@ case "${OSTYPE}" in
         ;;
 esac
 
-${SUDO} ${INSTALL} install wget maven ${NODEJS} ${NPM} ${LIBFORTRAN} unzip gzip python3
+${SUDO} ${INSTALL} install wget maven ${NODEJS} ${LIBFORTRAN} unzip gzip python3
 echo "Installing typescript compiler"
 ${SUDO} npm install -g typescript@3.9.7
 pip install jproperties
