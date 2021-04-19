@@ -149,6 +149,23 @@ export class LoadView extends RemoteObject implements IDataView {
                 help: "The US flights dataset.",
             });
         }
+        /*
+        // TODO: Delete
+        testitems.push({
+            text: "Flights (15 columns, ORC, private)",
+            action: () => {
+                const files: FileSetDescription = {
+                    fileNamePattern: "data/ontime_small_private/*.orc",
+                    schemaFile: "schema",
+                    schema: null,
+                    name: "Flights (private)",
+                    fileKind: "orc",
+                };
+                this.init.loadFiles(files, this.page);
+            },
+            help: "The US flights dataset.",
+        });
+        */
         this.testDatasetsMenu = new SubMenu(testitems);
 
         const loadMenuItems: MenuItem[] = [];

@@ -347,9 +347,9 @@ export class FilterMapReceiver extends BaseReceiver {
         const remoteObject = new TableTargetAPI(value);
         const rr = remoteObject.createGeoRequest(this.keyColumn);
         const args: ReceiverCommonArgs = {
+            ...this.meta, // this must come first, since remoteObject below overwrites the field
             title: this.page.title,
             remoteObject: remoteObject,
-            ...this.meta,
             originalPage: this.page,
             options: { chartKind: "Map", reusePage: false }
         };
