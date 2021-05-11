@@ -26,7 +26,7 @@ one row for an airline flight.  Columns in this dataset include: the date of the
 the origin and destination cities, the origin and destination states,
 the origin airport code, the distance flown, the departure and arrival delay.
 
-Updated on 2020 Oct 26.
+Updated on 2021 May 11.
 
 # Contents
   * 1 [Basic concepts](#1-basic-concepts)
@@ -61,7 +61,6 @@ Updated on 2020 Oct 26.
       * 3.3.8 [Reading data from SQL databases](#338-reading-data-from-sql-databases)
         * 3.3.8.1 [Reading data from Greenplum databases](#3381-reading-data-from-greenplum-databases)
         * 3.3.8.2 [Reading from a federated set of MySQL databases](#3382-reading-from-a-federated-set-of-mysql-databases)
-        * 3.3.8.3 [Reading data from Cassandra databases](#3383-reading-data-from-cassandra-databases)
     * 3.4 [Navigating multiple datasets](#34-navigating-multiple-datasets)
   * 4 [Data views](#4-data-views)
     * 4.1 [The heading of a view](#41-the-heading-of-a-view)
@@ -670,8 +669,8 @@ The following menu allows the user to specify the data to load.
 ![Specifying database connections](db-menu-mysql.png)
 
 * database kind: A drop-down menu indicating the kind of database to
-  load data from.  Currently we support 'mysql',
-  'greenplum', and 'cassandra'.  Each of these is discussed in a separate
+  load data from.  Currently we support 'mysql', and
+  'greenplum'.  Each of these is discussed in a separate
   section below.
 
 * host: The network name of a machine hosting the database.
@@ -748,42 +747,6 @@ Hillview allows the user to visualize the union of all table fragments.
 The JDBC connection parameters introduced by the user in the dialog
 shown in [the section above](#338-reading-data-from-sql-databases) describe
 simultaneoulsy all connections from the workers.
-
-##### 3.3.8.3 Reading data from Cassandra databases
-
-Hillview can read data from [Cassandra distributed databases](https://cassandra.apache.org/).
-For this purpose a Hillview worker should be deployed on each Cassandra node.
-Moreover, Hillview must have read access to Cassandra's SSTables.
-Hillview assumes that no writes are in progress while reading the
-data from storage.
-
-![Hillview reading from a Cassandra database](hillview-cassandra.png)
-
-The following menu allows the user to specify the data to load.
-
-![Specifying Cassandra database connections](db-menu-cassandra.png)
-
-* database kind: Indicating the kind of database that we will connect 
-  to, which is Cassandra. We also support another DB, 'mysql' and 
-  'impala'.
-
-* host: One of the network name/IP address of the machines hosting 
-  Cassandra cluster. Every node in Cassandra cluster are the same 
-  (no master-slave concept), thus Hillview can connect to any node.
-
-* db directory: The directory where Cassandra is located/installed.
-  
-* port: The network port where Cassandra service is listening.
-
-* jmx port: The JMX port where Cassandra does inter-node communication.
-
-* database: The database/keyspace to load data from.
-
-* table: The table to load data from.
-
-* user: The name of the user connecting to the database.
-
-* password: Credentials of the user connecting to the database.
 
 ### 3.4 Navigating multiple datasets
 

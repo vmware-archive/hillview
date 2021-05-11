@@ -5,8 +5,6 @@
 set -e
 set -x
 
-# Set to 0 if you don't want to install cassandra locally for tests
-INSTALL_CASSANDRA=1
 SAVEDIR=${PWD}
 mydir="$(dirname -- "$0")"
 if [[ ! -d "${mydir}" ]]; then mydir="${PWD}"; fi
@@ -76,9 +74,3 @@ rm -f node_modules/typescript
 npm install
 npm link typescript
 popd
-
-# Install Cassandra and populate a test database
-if [ ${INSTALL_CASSANDRA} -eq 1 ]; then
-    ./${mydir}/install-cassandra.sh
-    sudo apt install mysql-server
-fi

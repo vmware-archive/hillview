@@ -20,7 +20,6 @@ import {InitialObject} from "./initialObject";
 import {
     FileSetDescription,
     JdbcConnectionInformation,
-    CassandraConnectionInfo,
     Status,
     UIConfig,
     FederatedDatabase
@@ -557,7 +556,7 @@ class DBDialog extends Dialog {
     constructor(isFederated: boolean) {
         super("Load DB tables", "Loads data from a parallel or federated database.");
         const arrDB: FederatedDatabase[] = [];
-        if (isFederated) arrDB.push("greenplum", "cassandra");
+        if (isFederated) arrDB.push("greenplum");
         else arrDB.push("impala");
         arrDB.push("mysql");
 
@@ -568,19 +567,9 @@ class DBDialog extends Dialog {
         const host = this.addTextField("host", "Host", FieldKind.String, "localhost",
             "Machine name where database is located; each machine will open a connection to this host");
         host.required = true;
-        if (isFederated) {
-            const dbDir = this.addTextField("dbDir", "DB Directory", FieldKind.String, null,
-                "Absolute path of dCassandra's installation directory");
-            this.hideInputField("dbDir", dbDir);
-        }
         const port = this.addTextField("port", "Port", FieldKind.Integer, null,
             "Network port to connect to database.");
         port.required = true;
-        if (isFederated) {
-            const jmxPort = this.addTextField("jmxPort", "JMX Port", FieldKind.Integer, null,
-                "Cassandra's JMX port to connect to server-side tools.");
-            this.hideInputField("jmxPort", jmxPort);
-        }
         const database = this.addTextField("database", "Database", FieldKind.String, null,
             "Name of database to load.");
         database.required = true;
@@ -591,9 +580,7 @@ class DBDialog extends Dialog {
             "(Optional) The name of the user opening the connection.");
         this.addTextField("password", "Password", FieldKind.Password, null,
             "(Optional) The password for the user opening the connection.");
-        // not caching the federated connection because the cache failed to show all Cassandra's fields
-        if (!isFederated)
-            this.setCacheTitle("DBDialog");
+        this.setCacheTitle("DBDialog");
         this.dbChanged();
     }
 
@@ -616,12 +603,6 @@ class DBDialog extends Dialog {
                 this.hideInputField("jmxPort");
                 this.hideInputField("dbDir");
                 break;
-            case "cassandra":
-                this.setFieldValue("port", "9042");
-                this.setFieldValue("jmxPort", "7199");
-                this.showInputField("jmxPort");
-                this.showInputField("dbDir");
-                break;
             case "greenplum":
                 this.setFieldValue("port", "5432");
                 this.hideInputField("jmxPort");
@@ -632,7 +613,7 @@ class DBDialog extends Dialog {
         }
     }
 
-    public getDBConnection(): JdbcConnectionInformation | CassandraConnectionInfo | null {
+    public getDBConnection(): JdbcConnectionInformation | null {
         const db = this.getDbKind();
         switch (db) {
             case null:
@@ -641,8 +622,6 @@ class DBDialog extends Dialog {
             case "impala":
             case "greenplum":
                 return this.getJdbcConnection();
-            case "cassandra":
-                return this.getCassandraConnection();
             default:
                 assertNever(db);
         }
@@ -658,21 +637,6 @@ class DBDialog extends Dialog {
             password: this.getFieldValue("password"),
             databaseKind: this.getFieldValue("databaseKind"),
             lazyLoading: true,
-        };
-    }
-
-    public getCassandraConnection(): CassandraConnectionInfo {
-        return {
-            host: this.getFieldValue("host"),
-            port: this.getFieldValueAsNumber("port") ?? 0,
-            database: this.getFieldValue("database"),
-            table: this.getFieldValue("table"),
-            user: this.getFieldValue("user"),
-            password: this.getFieldValue("password"),
-            databaseKind: this.getFieldValue("databaseKind"),
-            lazyLoading: true,
-            jmxPort: this.getFieldValueAsNumber("jmxPort") ?? 0,
-            cassandraRootDir: this.getFieldValue("dbDir"),
         };
     }
 

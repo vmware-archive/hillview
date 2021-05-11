@@ -58,7 +58,7 @@ export function asContentsKind(kind: string): ContentsKind {
     }
 }
 
-export type FederatedDatabase = "mysql" | "impala" | "cassandra" | "greenplum";
+export type FederatedDatabase = "mysql" | "impala" | "greenplum";
 
 export type SimpleFeatureCollection = FeatureCollection<DirectGeometryObject>;
 
@@ -164,11 +164,6 @@ export interface JdbcConnectionInformation {
     password: string;
     databaseKind: string;  // e.g. mysql; part of url for connection
     lazyLoading: boolean;
-}
-
-export interface CassandraConnectionInfo extends JdbcConnectionInformation {
-    jmxPort: number;
-    cassandraRootDir: string;
 }
 
 export type DataKinds = "csv" | "orc" | "parquet" | "json" | "hillviewlog" | "db" | "genericlog" | "sstable" | "lazycsv";

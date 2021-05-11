@@ -3,8 +3,6 @@
 # This is a shell script which only defines some variables used by other scripts.
 
 TOMCATVERSION="9.0.4"
-CASSANDRA_INSTALLATION_DIR=${HOME}/cassandra
-CASSANDRA_VERSION="3.11.7"
 
 # Detect operating system
 # Sets "INSTALL" to the program that can install software
