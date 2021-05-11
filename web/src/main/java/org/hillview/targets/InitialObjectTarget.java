@@ -26,7 +26,6 @@ import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.*;
 import org.hillview.dataset.remoting.HillviewServer;
 import org.hillview.management.*;
-import org.hillview.maps.FindCassandraFilesMap;
 import org.hillview.maps.FindFilesMap;
 import org.hillview.maps.highorder.IdMap;
 import org.hillview.maps.LoadDatabaseTableMap;
@@ -159,17 +158,6 @@ public class InitialObjectTarget extends RpcTarget {
         this.runFlatMap(this.emptyDataset, finder,
                 (d, c) -> new GreenplumFileDescriptionTarget(
                         d, c, folder, tmpTableName, database, desc.schema), request, context);
-    }
-
-    @HillviewRpc
-    public void findCassandraFiles(RpcRequest request, RpcRequestContext context) {
-        CassandraConnectionInfo desc = request.parseArgs(CassandraConnectionInfo.class);
-        HillviewLogger.instance.info("Finding SSTable files", "{0}", desc);
-        IMap<Empty, List<IFileReference>> finder = new FindCassandraFilesMap(desc);
-        Converters.checkNull(this.emptyDataset);
-        this.runFlatMap(this.emptyDataset, finder,
-                // TODO: metadata file
-                (d, c) -> new FileDescriptionTarget(d, c, null), request, context);
     }
 
     @HillviewRpc

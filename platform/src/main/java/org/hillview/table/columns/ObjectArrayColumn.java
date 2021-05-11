@@ -17,7 +17,6 @@
 
 package org.hillview.table.columns;
 
-import jnr.ffi.annotations.In;
 import net.openhft.hashing.LongHashFunction;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.api.*;

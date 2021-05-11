@@ -21,7 +21,6 @@ import {
     FileSetDescription,
     FileSizeSketchInfo,
     JdbcConnectionInformation,
-    CassandraConnectionInfo,
     RemoteObjectId, FederatedDatabase, TableMetadata,
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject} from "./rpc";
@@ -43,18 +42,13 @@ export interface HillviewLogs {
     kind: "Hillview logs";
 }
 
-export interface SSTableFilesLoaded {
-    kind: "SSTable";
-    description: CassandraConnectionInfo;
-}
-
 export interface Merged {
     kind: "Merged";
     first: DataLoaded;
     second: DataLoaded;
 }
 
-export type DataLoaded = FilesLoaded | TablesLoaded | HillviewLogs | IDatasetSerialization | SSTableFilesLoaded | Merged;
+export type DataLoaded = FilesLoaded | TablesLoaded | HillviewLogs | IDatasetSerialization | Merged;
 
 export function getDescription(data: DataLoaded): PageTitle {
     switch (data.kind) {
@@ -70,8 +64,6 @@ export function getDescription(data: DataLoaded): PageTitle {
                 "loaded from database");
         case "Hillview logs":
             return new PageTitle("logs", "Hillview installation logs");
-        case "SSTable":
-            return new PageTitle(data.description.database + "/" + data.description.table, "loaded from files");
         case "Merged":
             const name = getDescription(data.first).format + "+" + getDescription(data.second).format;
             return new PageTitle("Merged " + name,
@@ -318,13 +310,6 @@ export class InitialObject extends RemoteObject {
         rr.invoke(observer);
     }
 
-    public loadCassandraFiles(conn: CassandraConnectionInfo, loadMenuPage: FullPage): void {
-        const rr = this.createStreamingRpcRequest<RemoteObjectId>("findCassandraFiles", conn);
-        const observer = new FilesReceiver(loadMenuPage, rr,
-            { kind: "SSTable", description: conn }, true);
-        rr.invoke(observer);
-    }
-
     public loadLogs(loadMenuPage: FullPage): void {
         // Use a guid to force the request to reload every time
         const rr = this.createStreamingRpcRequest<RemoteObjectId>("findLogs", getUUID());``
@@ -350,7 +335,7 @@ export class InitialObject extends RemoteObject {
         rr.invoke(observer);
     }
 
-    public loadFederatedDBTable(conn: JdbcConnectionInformation | CassandraConnectionInfo | null,
+    public loadFederatedDBTable(conn: JdbcConnectionInformation | null,
             db: FederatedDatabase | null, loadMenuPage: FullPage): void {
         if (db == null || conn == null) {
             loadMenuPage.reportError("Unknown database kind");
@@ -364,9 +349,6 @@ export class InitialObject extends RemoteObject {
             case "mysql":
             case "impala":
                 this.loadTable(conn as JdbcConnectionInformation, loadMenuPage, "loadDBTable");
-                break;
-            case "cassandra":
-                this.loadCassandraFiles(conn as CassandraConnectionInfo, loadMenuPage);
                 break;
             case "greenplum":
                 this.loadGreenplumTable(conn as JdbcConnectionInformation, loadMenuPage, "loadGreenplumTable");

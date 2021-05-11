@@ -11,8 +11,3 @@ popd
 pushd ../platform
 java -jar target/data-cleaner-jar-with-dependencies.jar
 popd
-
-# Insert testing data to local Cassandra
-pushd ../data/sstable
-./loadCassandraDB.sh
-popd
