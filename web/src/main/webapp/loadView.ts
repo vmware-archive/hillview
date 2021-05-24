@@ -74,99 +74,22 @@ export class LoadView extends RemoteObject implements IDataView {
             disableSuggestions(false);
     }
 
-    private createMenus(): void {
-        const testitems: MenuItem[] = [];
-        testitems.push(
-            { text: "Flights (15 columns, CSV)",
-                action: () => {
-                    const files: FileSetDescription = {
-                        fileNamePattern: "data/ontime/????_*.csv*",
-                        schemaFile: "short.schema",
-                        schema: null,
-                        headerRow: true,
-                        name: "Flights (15 columns)",
-                        fileKind: "csv",
-                    };
-                    this.init.loadFiles(files, this.page);
-                },
-                help: "The US flights dataset.",
-            },
-            { text: "Flights (15 columns, ORC)",
-                action: () => {
-                    const files: FileSetDescription = {
-                        fileNamePattern: "data/ontime_small_orc/*.orc",
-                        schemaFile: "schema",
-                        schema: null,
-                        name: "Flights (15 columns, ORC)",
-                        fileKind: "orc",
-                    };
-                    this.init.loadFiles(files, this.page);
-                },
-                help: "The US flights dataset.",
-            },
-            { text: "Flights (all columns, ORC)",
-                action: () => {
-                    const files: FileSetDescription = {
-                        fileNamePattern: "data/ontime_big_orc/*.orc",
-                        schemaFile: "schema",
-                        schema: null,
-                        name: "Flights (ORC)",
-                        fileKind: "orc",
-                    };
-                    this.init.loadFiles(files, this.page);
-                },
-                help: "The US flights dataset -- all 110 columns." });
-        if (HillviewToplevel.instance.uiconfig.privateIsCsv) {
-            testitems.push({
-                text: "Flights (15 columns, CSV, private)",
-                action: () => {
-                    const files: FileSetDescription = {
-                        fileNamePattern: "data/ontime_private/????_*.csv*",
-                        schemaFile: "short.schema",
-                        schema: null,
-                        headerRow: true,
-                        name: "Flights (private)",
-                        fileKind: "csv",
-                    };
-                    this.init.loadFiles(files, this.page);
-                },
-                help: "The US flights dataset.",
-            });
-        } else {
-            testitems.push({
-                text: "Flights (15 columns, ORC, private)",
-                action: () => {
-                    const files: FileSetDescription = {
-                        fileNamePattern: "data/ontime_private/*.orc",
-                        schemaFile: "schema",
-                        schema: null,
-                        name: "Flights (private)",
-                        fileKind: "orc",
-                    };
-                    this.init.loadFiles(files, this.page);
-                },
-                help: "The US flights dataset.",
-            });
-        }
-        /*
-        // TODO: Delete
-        testitems.push({
-            text: "Flights (15 columns, ORC, private)",
-            action: () => {
-                const files: FileSetDescription = {
-                    fileNamePattern: "data/ontime_small_private/*.orc",
-                    schemaFile: "schema",
-                    schema: null,
-                    name: "Flights (private)",
-                    fileKind: "orc",
-                };
-                this.init.loadFiles(files, this.page);
-            },
-            help: "The US flights dataset.",
-        });
-        */
-        this.testDatasetsMenu = new SubMenu(testitems);
+    public convertToMenu(data: FileSetDescription[]): MenuItem[] {
+        const convert: ((d: FileSetDescription) => MenuItem) = (d: FileSetDescription) => {
+            return {
+                text: d.name || d.fileNamePattern,
+                help: d.name || "Data to load",
+                action: () => this.init.loadFiles(d, this.page)
+            }
+        };
+        return data.map(convert);
+    }
 
+    private createMenus(): void {
+        const demoItems: FileSetDescription[] = [];
+        HillviewToplevel.instance.uiconfig.defaultFiles?.forEach(
+            e => demoItems.push(e));
+        this.testDatasetsMenu = new SubMenu(this.convertToMenu(demoItems));
         const loadMenuItems: MenuItem[] = [];
         loadMenuItems.push({
                 text: "Hillview logs",

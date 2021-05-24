@@ -1,0 +1,7 @@
+{
+  "hideSuggestions": true,
+  "greenplumScript": "/home/gpdamin/hillview/move-greenplum.sh",
+  // This directory is used to store the exchanged between Greenplum before and Hillview.
+  // The directory must be readable/writable by the segment hosts and Hillview workers.
+  "greenplumDumpDirectory": "/tmp"
+}

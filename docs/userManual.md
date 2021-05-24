@@ -26,7 +26,7 @@ one row for an airline flight.  Columns in this dataset include: the date of the
 the origin and destination cities, the origin and destination states,
 the origin airport code, the distance flown, the departure and arrival delay.
 
-Updated on 2021 May 11.
+Updated on 2021 May 24.
 
 # Contents
   * 1 [Basic concepts](#1-basic-concepts)
@@ -39,12 +39,13 @@ Updated on 2021 May 11.
     * 2.4 [Data conversions](#24-data-conversions)
       * 2.4.1 [JavaScript conversions](#241-javascript-conversions)
       * 2.4.2 [JDBC conversions](#242-jdbc-conversions)
-    * 2.5 [Metadata](#25-metadata)
-      * 2.5.1 [Mapping a dataset to a metadata directory](#251-mapping-a-dataset-to-a-metadata-directory)
-      * 2.5.2 [Data schema](#252-data-schema)
-      * 2.5.3 [Differentially-private metadata](#253-differentially-private-metadata)
-      * 2.5.4 [Geographic metadata](#254-geographic-metadata)
-        * 2.5.4.1 [Connecting dataset features to geographic metadata](#2541-connecting-dataset-features-to-geographic-metadata)
+    * 2.5 [Service configuration](#25-service-configuration)
+    * 2.6 [Metadata](#26-metadata)
+      * 2.6.1 [Mapping a dataset to a metadata directory](#261-mapping-a-dataset-to-a-metadata-directory)
+      * 2.6.2 [Data schema](#262-data-schema)
+      * 2.6.3 [Differentially-private metadata](#263-differentially-private-metadata)
+      * 2.6.4 [Geographic metadata](#264-geographic-metadata)
+        * 2.6.4.1 [Connecting dataset features to geographic metadata](#2641-connecting-dataset-features-to-geographic-metadata)
   * 3 [Interacting with data](#3-interacting-with-data)
     * 3.1 [Error display](#31-error-display)
     * 3.2 [Mouse-based selection](#32-mouse-based-selection)
@@ -130,7 +131,7 @@ it receives small results from these.  The data on the workers is
 never sent over the network; the worker locally compute all views that
 are needed to produce the final result.  The root node can store
 optional metadata information.  This is described below in the
-[metadata](#25-metadata) section.
+[metadata](#26-metadata) section.
 
 ### 1.2 Streaming interaction
 
@@ -249,7 +250,66 @@ When reading data from a JDBC source Hillview applies the following conversions:
 |`NULL`|`None`|
 |Other|Error: not supported|
 
-### 2.5 Metadata
+### 2.5 Service configuration
+
+The root node will look for a file named `hillview.json` in the working directory.
+If found, this file can influence the service behavior.  The file can contain
+comments, starting with double slashes `//`; these must occur on a line
+starting with spaces and containing nothing except the comment.  Here is an example
+for this file:
+
+```
+{
+  // "Parameters influencing the display of the UI"
+  // If true the 'saveAs' menu is enabled
+  "enableSaveAs": true,
+  // If true the menu to read from a local database is enabled
+  "localDbMenu": true,
+  // If true the 'Test' menu for UI testing is displayed
+  "showTestMenu": true,
+  // If true the 'Manage' menu for managing the installation is displayed
+  "enableManagement": true,
+  // If true the 'Suggestions' in the UI are not displayed
+  "hideSuggestions": true,
+
+  // Files to show in the Demo datasets menu
+  "defaultFiles": [{
+    fileNamePattern: "data/ontime/????_*.csv*",
+    schemaFile: "short.schema",
+    schema: null,
+    headerRow: true,
+    name: "Flights (15 columns, CSV)",
+    fileKind: "csv"
+  }, {
+    fileNamePattern: "data/ontime_small_orc/*.orc",
+    schemaFile: "schema",
+    schema: null,
+    name: "Flights (15 columns, ORC)",
+    fileKind: "orc"
+  }, {
+    fileNamePattern: "data/ontime_private/????_*.csv*",
+    schemaFile: "short.schema",
+    schema: null,
+    headerRow: true,
+    name: "Flights (15 columns, CSV, private)",
+    fileKind: "csv"
+  }],
+
+  ///////////////////////////////////////////////////////////////////////////////////
+  ////////////////// Configuration options used with Greenplum //////////////////////
+  // This script is invoked when data is dumped from an external web table
+  "greenplumDumpScript": "/home/gpdamin/hillview/dump-greenplum.sh",
+  // This directory is used to store the data dumped from Greenplum before it's parsed by Hillview.
+  // The directory must be writable by the segment hosts.
+  "greenplumDumpDirectory": "/tmp"
+}
+```
+
+The property `defaultFiles` of the configuration describes a set of data
+files residing on the workers which are used to populate the "Demo datasets"
+Hillview menu.  Currently only files are supported.
+
+### 2.6 Metadata
 
 This section describes various kinds of metadata manipulated by Hillview.
 The hillview root node stores the optional metadata in a directory called
@@ -262,7 +322,7 @@ The hillview root node stores the optional metadata in a directory called
 |`data/metadata/differential-privacy`|Root directory for differentially-private metadata; has one subdirectory for each dataset|
 |`data/metadata/geo`|Root directory for geographic metadata; has one subdirectory for each dataset|
 
-#### 2.5.1 Mapping a dataset to a metadata directory
+#### 2.6.1 Mapping a dataset to a metadata directory
 
 Hillview uses some conventions in the structuring of directories on the root
 note in order to associate metadata information on the
@@ -278,7 +338,7 @@ associated with this dataset on the root node:
    metadata describing the differential privacy parameters a dataset
    that only supports only private visualizations
 
-#### 2.5.2 Data schema
+#### 2.6.2 Data schema
 
 For some file formats that are not self-describing Hillview uses a
 `schema` file to specify the format of the data.  The following is an
@@ -305,11 +365,11 @@ column description has two fields:
 * kind: A string describing the type of data in the column,
   corresponding to the types in the [data model](#21-data-model-and-supported-data-types).
 
-#### 2.5.3 Differentially-private metadata
+#### 2.6.3 Differentially-private metadata
 
 TODO
 
-#### 2.5.4 Geographic metadata
+#### 2.6.4 Geographic metadata
 
 The directory `data/geo` on the root node can contain various
 with geographic information data.  We currently support
@@ -317,7 +377,7 @@ with geographic information data.  We currently support
 The organization of these files on disk is not mandated by
 Hillview.
 
-##### 2.5.4.1 Connecting dataset features to geographic metadata
+##### 2.6.4.1 Connecting dataset features to geographic metadata
 
 For each dataset that contains columns that can be mapped to a geographic feature
 a metadata file can describe the connection between the values in the
@@ -526,7 +586,7 @@ is deployed*.
 * File name pattern: A shell expansion pattern that names the files to
   load.  Multiple files may be loaded on each machine.
 
-* Schema file: An optional [schema file](#252-data-schema)
+* Schema file: An optional [schema file](#262-data-schema)
   in JSON format that describes the schema of the data.  In the
   absence of a schema file Hillview attempts to guess the type of data
   in each column.  The schema file must reside in same folder.
@@ -584,7 +644,7 @@ is an ORC struct with scalar types as fields.
 * File name pattern: A shell expansion pattern that names the files to
   load.  Multiple files may be loaded on each machine.
 
-* Schema file: An optional [schema file](#252-data-schema)
+* Schema file: An optional [schema file](#262-data-schema)
   in JSON format that describes the schema of the data.  The schema
   file must reside in same folder, and it must be compatible with the
   ORC schema.
@@ -730,6 +790,9 @@ The interaction between Hillview and Greenplum proceeds as follows:
    dumped data, passing along the schema previously obtained.
 
 5. From this point on Hillview no longer needs to interact with Greenplum.
+
+The [configuration section](#25-service-configuration) shows two configuration
+variables that mediate the interaction between Greenplum and Hillview.
 
 ##### 3.3.8.2 Reading from a federated set of MySQL databases
 
@@ -1999,7 +2062,7 @@ Selection is done as in heatmaps, but selection is restricted to a single heatma
 Plotting geographic views require the presence of some geographic metadata
 on the Hillview root node, and also some dataset-specific metadata that ties
 a column to a specific geographic feature.  This is documented in the
-[Geographic metadata](#254-geographic-metadata) section.
+[Geographic metadata](#264-geographic-metadata) section.
 
 ![Geographic views](geographic-views.png)
 

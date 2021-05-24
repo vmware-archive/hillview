@@ -264,7 +264,7 @@ export class Test {
                 const row3 = findElement("#hillviewPage2 #row3");
                 row3.dispatchEvent(controlClickEvent());
                 // Select menu item to show the associated table
-                findElement("#hillviewPage2 .topMenu #Selected_columns").click();
+                findElement("#hillviewPage2 .topMenu #Table_of_selected_columns").click();
                 this.next(); // no rpc
             }
         }, {
