@@ -88,9 +88,9 @@ export interface UIConfig {
     localDbMenu?: boolean;   // show the local db connection
     showTestMenu?: boolean;  // the test menu is shown
     enableManagement?: boolean;  // management menu enabled
-    privateIsCsv?: boolean;    // the private dataset is in csv form
     hideSuggestions?: boolean; // do not display the suggestions
     hideDemoMenu?: boolean; // do not show the "demo" menu
+    defaultFiles?: FileSetDescription[]; // Files to show in the default menu.
 }
 
 export interface ColumnQuantization {

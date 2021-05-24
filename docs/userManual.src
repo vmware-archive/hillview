@@ -171,6 +171,65 @@ When reading data from a JDBC source Hillview applies the following conversions:
 |`NULL`|`None`|
 |Other|Error: not supported|
 
+### Service configuration
+
+The root node will look for a file named `hillview.json` in the working directory.
+If found, this file can influence the service behavior.  The file can contain
+comments, starting with double slashes `//`; these must occur on a line
+starting with spaces and containing nothing except the comment.  Here is an example
+for this file:
+
+```
+{
+  // "Parameters influencing the display of the UI"
+  // If true the 'saveAs' menu is enabled
+  "enableSaveAs": true,
+  // If true the menu to read from a local database is enabled
+  "localDbMenu": true,
+  // If true the 'Test' menu for UI testing is displayed
+  "showTestMenu": true,
+  // If true the 'Manage' menu for managing the installation is displayed
+  "enableManagement": true,
+  // If true the 'Suggestions' in the UI are not displayed
+  "hideSuggestions": true,
+
+  // Files to show in the Demo datasets menu
+  "defaultFiles": [{
+    fileNamePattern: "data/ontime/????_*.csv*",
+    schemaFile: "short.schema",
+    schema: null,
+    headerRow: true,
+    name: "Flights (15 columns, CSV)",
+    fileKind: "csv"
+  }, {
+    fileNamePattern: "data/ontime_small_orc/*.orc",
+    schemaFile: "schema",
+    schema: null,
+    name: "Flights (15 columns, ORC)",
+    fileKind: "orc"
+  }, {
+    fileNamePattern: "data/ontime_private/????_*.csv*",
+    schemaFile: "short.schema",
+    schema: null,
+    headerRow: true,
+    name: "Flights (15 columns, CSV, private)",
+    fileKind: "csv"
+  }],
+
+  ///////////////////////////////////////////////////////////////////////////////////
+  ////////////////// Configuration options used with Greenplum //////////////////////
+  // This script is invoked when data is dumped from an external web table
+  "greenplumDumpScript": "/home/gpdamin/hillview/dump-greenplum.sh",
+  // This directory is used to store the data dumped from Greenplum before it's parsed by Hillview.
+  // The directory must be writable by the segment hosts.
+  "greenplumDumpDirectory": "/tmp"
+}
+```
+
+The property `defaultFiles` of the configuration describes a set of data
+files residing on the workers which are used to populate the "Demo datasets"
+Hillview menu.  Currently only files are supported.
+
 ### Metadata
 
 This section describes various kinds of metadata manipulated by Hillview.
@@ -652,6 +711,9 @@ The interaction between Hillview and Greenplum proceeds as follows:
    dumped data, passing along the schema previously obtained.
 
 5. From this point on Hillview no longer needs to interact with Greenplum.
+
+The [configuration section](#service-configuration) shows two configuration
+variables that mediate the interaction between Greenplum and Hillview.
 
 ##### Reading from a federated set of MySQL databases
 

@@ -64,9 +64,13 @@ export class SchemaView extends TSViewBase {
         this.defaultProvenance = "Schema view";
         this.contextMenu = new ContextMenu(this.topLevel);
         const viewMenu = new SubMenu([{
-            text: "Selected columns",
+            text: "Table of selected columns",
             action: () => this.showTable(),
-            help: "Show the data using a tabular view containing the selected columns.",
+            help: "Show the data using a tabular view containing the selected columns (or all columns if none is selected).",
+        }, {
+            text: "Table of all columns",
+            action: () => this.showTable(),
+            help: "Show all columns in a tabular view.",
         }]);
 
         /* Dialog box for selecting columns based on name */
@@ -463,7 +467,11 @@ export class SchemaView extends TSViewBase {
     private showTable(): void {
         const newPage = this.dataset.newPage(new PageTitle("Selected columns", "Schema view"), this.page);
         const selected = this.display.getSelectedRows();
-        const newSchema = this.meta.schema.filter((c) => selected.has(this.meta.schema.columnIndex(c.name)));
+        let newSchema: SchemaClass;
+        if (selected.size == 0)
+            newSchema = this.meta.schema;
+        else
+            newSchema = this.meta.schema.filter((c) => selected.has(this.meta.schema.columnIndex(c.name)));
         const tv = new TableView(this.getRemoteObjectId()!,
             {rowCount: this.meta.rowCount, schema: newSchema, geoMetadata: this.meta.geoMetadata }, newPage);
         newPage.setDataView(tv);

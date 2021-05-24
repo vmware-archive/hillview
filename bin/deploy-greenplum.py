@@ -21,8 +21,8 @@
 
 # pylint: disable=invalid-name
 from argparse import ArgumentParser
-from jproperties import Properties
 import os
+import json
 import tempfile
 from hillviewCommon import ClusterConfiguration, get_config, get_logger, execute_command
 
@@ -41,17 +41,17 @@ def main():
     web.run_remote_shell_command("cd bin; ./redeploy.sh -s config-greenplum.json")
     web.copy_file_to_remote("../repository/PROGRESS_DATADIRECT_JDBC_DRIVER_PIVOTAL_GREENPLUM_5.1.4.000275.jar",
                              config.service_folder + "/" + config.tomcat + "/lib", "")
-    # Generate properties file
-    with open("greenplum.properties", "rb") as f:
-        p = Properties()
-        p.load(f, "utf-8")
-        p["greenplumMoveScript"] = config.service_folder + "/move-greenplum.sh"
-        p["hideDemoMenu"] = "true"
-        p["enableSaveAs"] = "true"
+    # Generate configuration file
+    with open("greenplum.json", "rb") as f:
+        dict = json.load(f)
+        dict["greenplumMoveScript"] = config.service_folder + "/move-greenplum.sh"
+        dict["hideDemoMenu"] = "true"
+        dict["enableSaveAs"] = "true"
     tmp = tempfile.NamedTemporaryFile(mode="w", delete=False)
-    p.store(tmp, encoding="utf-8")
+    j = json.dumps(dict)
+    tmp.write(j)
     tmp.close()
-    web.copy_file_to_remote(tmp.name, config.service_folder + "/hillview.properties", "")
+    web.copy_file_to_remote(tmp.name, config.service_folder + "/hillview.json", "")
     os.remove(tmp.name)
 
 if __name__ == "__main__":

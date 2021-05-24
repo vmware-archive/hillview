@@ -30,7 +30,7 @@ esac
 ${SUDO} ${INSTALL} install wget maven ${NODEJS} ${LIBFORTRAN} unzip gzip python3
 echo "Installing typescript compiler"
 ${SUDO} npm install -g typescript@3.9.7
-pip install jproperties
+pip install json
 
 # Download apache if not there.
 pushd ..

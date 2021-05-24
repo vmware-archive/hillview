@@ -1,0 +1,52 @@
+{
+  // "Parameters influencing the display of the UI"
+  // If true the 'saveAs' menu is enabled
+  "enableSaveAs": true,
+  // If true the menu to read from a local database is enabled
+  "localDbMenu": true,
+  // If true the 'Test' menu for UI testing is displayed
+  "showTestMenu": true,
+  // If true the 'Manage' menu for managing the installation is displayed
+  "enableManagement": true,
+  // If true the 'Suggestions' in the UI are not displayed
+  "hideSuggestions": true,
+
+  // Files to show in the Demo datasets menu
+  "defaultFiles": [{
+    fileNamePattern: "data/ontime/????_*.csv*",
+    schemaFile: "short.schema",
+    schema: null,
+    headerRow: true,
+    name: "Flights (15 columns, CSV)",
+    fileKind: "csv"
+  }, {
+    fileNamePattern: "data/ontime_small_orc/*.orc",
+    schemaFile: "schema",
+    schema: null,
+    name: "Flights (15 columns, ORC)",
+    fileKind: "orc"
+  }, {
+    fileNamePattern: "data/ontime_private/????_*.csv*",
+    schemaFile: "short.schema",
+    schema: null,
+    headerRow: true,
+    name: "Flights (15 columns, CSV, private)",
+    fileKind: "csv"
+  }
+  // {
+  //   fileNamePattern: "data/ontime_small_private/*.orc",
+  //   schemaFile: "schema",
+  //   schema: null,
+  //   name: "Flights (15 columns, ORC, private)",
+  //   fileKind: "orc",
+  // }
+  ],
+
+  ///////////////////////////////////////////////////////////////////////////////////
+  ////////////////// Configuration options used with Greenplum //////////////////////
+  // This script is invoked when data is dumped from an external web table
+  "greenplumDumpScript": "/home/gpdamin/hillview/dump-greenplum.sh",
+  // This directory is used to store the data dumped from Greenplum before it's parsed by Hillview.
+  // The directory must be writable by the segment hosts.
+  "greenplumDumpDirectory": "/tmp"
+}

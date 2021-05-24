@@ -92,16 +92,8 @@ public class InitialObjectTarget extends RpcTarget {
 
     @HillviewRpc
     public void getUIConfig(RpcRequest request, RpcRequestContext context) {
-        UIConfig config = new UIConfig();
-        config.enableSaveAs = Configuration.instance.getBooleanProperty("enableSaveAs");
-        config.localDbMenu = Configuration.instance.getBooleanProperty("localDbMenu");
-        config.showTestMenu = Configuration.instance.getBooleanProperty("showTestMenu");
-        config.enableManagement = Configuration.instance.getBooleanProperty("enableManagement");
-        config.privateIsCsv = Configuration.instance.getBooleanProperty("privateIsCsv");
-        config.hideSuggestions = Configuration.instance.getBooleanProperty("hideSuggestions");
-        config.hideDemoMenu = Configuration.instance.getBooleanProperty("hideDemoMenu");
         Converters.checkNull(this.emptyDataset);
-        this.returnResult(config, request, context);
+        this.returnResult(Configuration.instance.getAsJson(), request, context);
     }
 
     @HillviewRpc
