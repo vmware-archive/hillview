@@ -30,7 +30,7 @@ def execute_command(command):
         exit(exitcode)
 
 def main():
-    site = "https://mapcruzin.com/fcc-wireless-shapefiles/airports.zip"
+    site = "https://mapcruzin.com/fcc-wireless-shapefiles/"
     file = "airports.zip"
     execute_command("wget -q " + site + file)
     execute_command("unzip -o " + file)
