@@ -6,7 +6,8 @@ import os
 import subprocess
 from sys import platform
 
-wgetoptions = ""
+wgetoptions = "--no-check-certificate"
+
 
 def execute_command(command):
     """Executes the specified command using a shell"""
@@ -16,20 +17,22 @@ def execute_command(command):
         print("Exit code returned:", exitcode)
         exit(exitcode)
 
+
 def canonical_name(year, month):
-    return "On_Time_On_Time_Performance_" + str(year) + "_" + str(month)
+    return f"On_Time_On_Time_Performance_{year}_{month}"
+
 
 def download(startyear, startmonth, endyear, endmonth):
     months = (endyear - startyear) * 12 + endmonth - startmonth + 1
     if months < 0:
         print("Illegal time range")
     for i in range(0, months):
-        inMonths = startyear*12 + startmonth + i - 1
-        year = int(inMonths / 12)
-        month = (inMonths % 12) + 1
-        basename = "On_Time_Reporting_Carrier_On_Time_Performance_1987_present_" \
-                   + str(year) \
-                   + "_" + str(month)
+        inMonths = startyear * 12 + startmonth + i - 1
+        year = inMonths // 12
+        month = inMonths % 12 + 1
+        basename = (
+            f"On_Time_Reporting_Carrier_On_Time_Performance_1987_present_{year}_{month}"
+        )
         canonical = canonical_name(year, month)
         if not os.path.exists(canonical + ".csv.gz"):
             filename = basename + ".zip"
@@ -45,17 +48,6 @@ def download(startyear, startmonth, endyear, endmonth):
         else:
             print("Already having " + basename)
 
-def main():
-    # Newer versions of ubuntu have problems downloading the data
-    # due to security settings, so we have to feed wget some additional
-    # options.  Unfortunately these options do not exist on earlier versions.
-    global wgetoptions
-    if platform == "linux":
-        import lsb_release
-        info = lsb_release.get_lsb_information()
-        if info['ID'] == "Ubuntu" and int(info["RELEASE"].split(".")[0]) > 18:
-            wgetoptions = "--cipher 'DEFAULT:!DH'"
-    download(2016, 1, 2016, 2)
 
 if __name__ == "__main__":
-    main()
+    download(2016, 1, 2016, 2)
