@@ -16,7 +16,7 @@ echo "Installing programs needed to build"
 case "${OSTYPE}" in
     linux*)
         echo "Installing curl"
-        ${SUDO} ${INSTALL} install curl -y
+        ${SUDO} ${INSTALL} install -y curl
         if [ "$(cat /etc/*-release | grep -Ec 'ubuntu|debian')" -ne 0 ]; then
             curl -sL https://deb.nodesource.com/setup_12.x | ${SUDO} -E bash -
 	elif [ "$(cat /etc/*-release | grep -c -e centos -e rhel )" -ne 0 ]; then
@@ -27,7 +27,7 @@ case "${OSTYPE}" in
         ;;
 esac
 
-${SUDO} ${INSTALL} install wget maven ${NODEJS} ${LIBFORTRAN} unzip gzip python3
+${SUDO} ${INSTALL} install -y wget maven ${NODEJS} ${LIBFORTRAN} unzip gzip python3
 echo "Installing typescript compiler"
 ${SUDO} npm install -g typescript@3.9.7
 

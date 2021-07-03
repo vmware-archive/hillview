@@ -5,8 +5,8 @@
 import os
 import subprocess
 from sys import platform
-
-wgetoptions = "--no-check-certificate"
+import urllib.request
+import json
 
 
 def execute_command(command):
@@ -20,6 +20,13 @@ def execute_command(command):
 
 def canonical_name(year, month):
     return f"On_Time_On_Time_Performance_{year}_{month}"
+
+
+def get_latest_wayback_machine_snapshot(url: str):
+    # reference: https://archive.org/help/wayback_api.php
+    wayback_api = f"https://archive.org/wayback/available?url={url}"
+    response = json.loads(urllib.request.urlopen(wayback_api).read())
+    return response["archived_snapshots"]["closest"]["url"]
 
 
 def download(startyear, startmonth, endyear, endmonth):
@@ -37,7 +44,22 @@ def download(startyear, startmonth, endyear, endmonth):
         if not os.path.exists(canonical + ".csv.gz"):
             filename = basename + ".zip"
             url = "https://transtats.bts.gov/PREZIP/" + filename
-            global wgetoptions
+
+            # The ip address range used for github actions seem to have been
+            # blocked by bts.gov so we use the following workaround: if GitHub
+            # actions environment is detected then we download the latest
+            # snapshot from internet archive instead.
+
+            # Note that since these zip archives are behind a web form on the
+            # bts.gov website so they are not automatically archived by wayback
+            # machine. If a link hasn't been captured by wayback machine, go the
+            # internet archive (https://archive.org/web/) and save it manually.
+            if os.getenv("GITHUB_ACTIONS") == "true":
+                wgetoptions = ""
+                url = get_latest_wayback_machine_snapshot(url)
+            else:
+                wgetoptions = "--no-check-certificate"
+
             execute_command("wget " + wgetoptions + " -q " + url)
             execute_command("unzip -o " + filename)
             os.unlink(filename)
