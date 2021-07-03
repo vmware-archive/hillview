@@ -1,0 +1,30 @@
+name: Run unit tests
+
+on: [push, pull_request]
+
+jobs:
+  unit-tests:
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, ubuntu-18.04]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Install java 8
+        run: sudo apt update && sudo apt install -y openjdk-8-jdk
+      - name: Check out the repository
+        uses: actions/checkout@v2
+      - name: Install dependencies
+        working-directory: bin
+        run: ./install-dependencies.sh
+      - name: Build project
+        working-directory: bin
+        run: ./rebuild.sh -a
+      - name: Process demo data
+        working-directory: bin
+        run: ./demo-data-cleaner.sh
+      - name: Run unit tests
+        working-directory: bin
+        run: ./rebuild.sh -t
+        env:
+          JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64/
