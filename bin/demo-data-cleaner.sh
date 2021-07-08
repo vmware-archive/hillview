@@ -17,7 +17,8 @@ while getopts "g" opt; do
       ;;
     *)
       echo "demo-data-cleaner.sh [-g]"
-      echo "-g: Generating delta table for testing, requires python3, pyspark, and delta-spark"
+      echo "This script runs the java class DemoDataCleaner to prepare data for testing/demo purposes"
+      echo "-g: Also generate a delta table for testing, requires python3, pyspark, and delta-spark"
       exit 1
       ;;
   esac

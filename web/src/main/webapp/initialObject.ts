@@ -21,7 +21,7 @@ import {
     FileSetDescription,
     FileSizeSketchInfo,
     JdbcConnectionInformation,
-    RemoteObjectId, FederatedDatabase, TableMetadata,
+    RemoteObjectId, FederatedDatabase, TableMetadata, DeltaTableDescription,
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject} from "./rpc";
 import {BaseReceiver} from "./tableTarget";
@@ -38,6 +38,11 @@ export interface TablesLoaded {
     description: JdbcConnectionInformation;
 }
 
+export interface DeltaTableLoaded {
+    kind: "Delta table";
+    description: DeltaTableDescription;
+}
+
 export interface HillviewLogs {
     kind: "Hillview logs";
 }
@@ -48,7 +53,7 @@ export interface Merged {
     second: DataLoaded;
 }
 
-export type DataLoaded = FilesLoaded | TablesLoaded | HillviewLogs | IDatasetSerialization | Merged;
+export type DataLoaded = FilesLoaded | TablesLoaded | DeltaTableLoaded | HillviewLogs | IDatasetSerialization | Merged;
 
 export function getDescription(data: DataLoaded): PageTitle {
     switch (data.kind) {
@@ -68,6 +73,11 @@ export function getDescription(data: DataLoaded): PageTitle {
             const name = getDescription(data.first).format + "+" + getDescription(data.second).format;
             return new PageTitle("Merged " + name,
                 getDescription(data.first).provenance + "+" + getDescription(data.second).provenance);
+        case "Delta table":
+            if (data.description.snapshotVersion == null)
+                return new PageTitle(data.description.path, "Loaded from delta table")
+            else
+                return new PageTitle(`${data.description.path}:v${data.description.snapshotVersion}`,"Loaded from delta table");
     }
 }
 
@@ -312,7 +322,7 @@ export class InitialObject extends RemoteObject {
 
     public loadLogs(loadMenuPage: FullPage): void {
         // Use a guid to force the request to reload every time
-        const rr = this.createStreamingRpcRequest<RemoteObjectId>("findLogs", getUUID());``
+        const rr = this.createStreamingRpcRequest<RemoteObjectId>("findLogs", getUUID());
         const observer = new FilesReceiver(loadMenuPage, rr, { kind: "Hillview logs"}, true);
         rr.invoke(observer);
     }
@@ -356,5 +366,11 @@ export class InitialObject extends RemoteObject {
             default:
                 assertNever(db);
         }
+    }
+
+    public loadDeltaTable(description: DeltaTableDescription, loadMenuPage: FullPage): void{
+        const rr = this.createStreamingRpcRequest<RemoteObjectId>("loadDeltaTable", description);
+        const observer = new FilesReceiver(loadMenuPage, rr, { kind: "Delta table", description: description}, true);
+        rr.invoke(observer);
     }
 }

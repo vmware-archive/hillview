@@ -31,7 +31,7 @@ if __name__ == "__main__":
         _df = spark.read.format("csv").option("header", "true").load(file_full_path)
         if index == 0:
             df = _df
-            df.write.format("delta").mode("overwrite").save(delta_table_path)
+            df.write.format("delta").save(delta_table_path)
         else:
             df = df.union(_df)
             df.write.format("delta").mode("append").save(delta_table_path)
