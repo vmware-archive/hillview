@@ -17,12 +17,14 @@ jobs:
       - name: Install dependencies
         working-directory: bin
         run: ./install-dependencies.sh
+      - name: Install dependencies for generating delta table
+        run: pip3 install --user pyspark delta-spark
       - name: Build project
         working-directory: bin
         run: ./rebuild.sh -a
       - name: Process demo data
         working-directory: bin
-        run: ./demo-data-cleaner.sh
+        run: ./demo-data-cleaner.sh -g
       - name: Run unit tests
         working-directory: bin
         run: ./rebuild.sh -t
