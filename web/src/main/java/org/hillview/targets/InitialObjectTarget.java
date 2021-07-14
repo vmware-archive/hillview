@@ -19,6 +19,8 @@ package org.hillview.targets;
 
 import org.apache.commons.io.FileUtils;
 import org.hillview.*;
+import org.hillview.maps.FindDeltaTableFilesMap;
+import org.hillview.storage.delta.DeltaTableDescription;
 import org.hillview.storage.jdbc.JdbcConnectionInformation;
 import org.hillview.storage.jdbc.JdbcDatabase;
 import org.hillview.table.PrivacySchema;
@@ -175,6 +177,14 @@ public class InitialObjectTarget extends RpcTarget {
                 Converters.checkNull(conn.database),
                 conn.table).toString();
         this.runMap(this.emptyDataset, map, (e, c) -> new GreenplumStubTarget(conn, c, dir), request, context);
+    }
+
+    @HillviewRpc
+    public void loadDeltaTable(RpcRequest request, RpcRequestContext context) {
+        DeltaTableDescription desc = request.parseArgs(DeltaTableDescription.class);
+        HillviewLogger.instance.info("Loading delta table", "{0}", desc);
+        IMap<Empty, List<IFileReference>> finder = new FindDeltaTableFilesMap<>(desc);
+        runFlatMap(emptyDataset, finder, (d, c) -> new FileDescriptionTarget(d, c, desc.path), request, context);
     }
 
     @HillviewRpc

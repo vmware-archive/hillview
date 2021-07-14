@@ -64,6 +64,9 @@ public class ParquetFileLoader extends TextFileLoader {
         System.setProperty("hadoop.home.dir", "/");
         this.configuration.set("hadoop.security.authentication", "simple");
         this.configuration.set("hadoop.security.authorization", "false");
+        this.configuration.set("fs.hdfs.impl", org.apache.hadoop.hdfs.DistributedFileSystem.class.getName());
+        this.configuration.set("fs.file.impl", org.apache.hadoop.fs.LocalFileSystem.class.getName());
+
         try {
             ParquetReadOptions.Builder builder = new ParquetReadOptions.Builder();
             InputFile file = HadoopInputFile.fromPath(path, this.configuration);
