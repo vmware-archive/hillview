@@ -115,7 +115,8 @@ def prepare_aggregator(config, rh):
         rh.copy_file_to_remote(
             config.scriptFolder +
             "/../platform/target/hillview-server-jar-with-dependencies.jar",
-            config.service_folder + "/hillview", "")
+            config.service_folder, "")
+        rh.copy_file_to_remote("forever.sh", config.service_folder, "")
     tmp = tempfile.NamedTemporaryFile(mode="w", delete=False)
     for h in rh.children:
         tmp.write(h + ":" + str(config.worker_port) + "\n")
