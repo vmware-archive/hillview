@@ -8,6 +8,7 @@ import org.hillview.maps.ExtractWorkerFilesMap;
 import org.hillview.maps.LoadFilesMap;
 import org.hillview.sketches.SummarySketch;
 import org.hillview.sketches.results.TableSummary;
+import org.hillview.storage.FileSetDescription;
 import org.hillview.storage.IFileReference;
 import org.hillview.storage.delta.DeltaTableDescription;
 import org.hillview.table.api.ITable;
@@ -33,7 +34,9 @@ public class DeltaTableTest extends BaseTest {
         description.path = deltaTablePath.toString();
         description.snapshotVersion = null;
         Map<String, List<String>> filesPerWorker = Collections.singletonMap(Utilities.getHostName(), description.getFiles());
-        IMap<Empty, List<IFileReference>> finder = new ExtractWorkerFilesMap<>(filesPerWorker);
+        FileSetDescription fileSetDescription = new FileSetDescription();
+        fileSetDescription.fileKind = "parquet";
+        IMap<Empty, List<IFileReference>> finder = new ExtractWorkerFilesMap<>(fileSetDescription, filesPerWorker);
         IDataSet<IFileReference> found = local.blockingFlatMap(finder);
 
         IMap<IFileReference, ITable> loader = new LoadFilesMap();

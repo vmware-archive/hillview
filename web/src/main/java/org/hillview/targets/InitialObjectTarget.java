@@ -211,7 +211,9 @@ public class InitialObjectTarget extends RpcTarget {
         Map<String, List<String>> filesPerWorker = IntStream.range(0, workerCount).
                 boxed().
                 collect(Collectors.toMap(workers::get, splitFiles::get));
-        IMap<Empty, List<IFileReference>> finder = new ExtractWorkerFilesMap<>(filesPerWorker);
+        FileSetDescription fileSetDescription = new FileSetDescription();
+        fileSetDescription.fileKind = "parquet";
+        IMap<Empty, List<IFileReference>> finder = new ExtractWorkerFilesMap<>(fileSetDescription, filesPerWorker);
 
         this.runFlatMap(this.emptyDataset, finder,
                 (d, c) -> new FileDescriptionTarget(d, c, desc.path), request, context);
