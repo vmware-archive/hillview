@@ -19,30 +19,36 @@ package org.hillview.targets;
 
 import org.apache.commons.io.FileUtils;
 import org.hillview.*;
-import org.hillview.storage.jdbc.JdbcConnectionInformation;
-import org.hillview.storage.jdbc.JdbcDatabase;
-import org.hillview.table.PrivacySchema;
 import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.*;
 import org.hillview.dataset.remoting.HillviewServer;
 import org.hillview.management.*;
+import org.hillview.maps.ExtractWorkerFilesMap;
 import org.hillview.maps.FindFilesMap;
-import org.hillview.maps.highorder.IdMap;
 import org.hillview.maps.LoadDatabaseTableMap;
-import org.hillview.storage.*;
+import org.hillview.maps.highorder.IdMap;
+import org.hillview.storage.FileSetDescription;
+import org.hillview.storage.IFileReference;
+import org.hillview.storage.delta.DeltaTableDescription;
+import org.hillview.storage.jdbc.JdbcConnectionInformation;
+import org.hillview.storage.jdbc.JdbcDatabase;
+import org.hillview.table.PrivacySchema;
 import org.hillview.table.Schema;
 import org.hillview.utils.*;
 
 import javax.annotation.Nullable;
 import javax.websocket.Session;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * This is the first RpcTarget that is created on the front-end.  It receives the
@@ -59,6 +65,8 @@ public class InitialObjectTarget extends RpcTarget {
 
     @Nullable
     private IDataSet<Empty> emptyDataset = null;
+    @Nullable
+    private List<String> workers = null;
 
     public InitialObjectTarget() {
         // Get the base naming context
@@ -67,8 +75,8 @@ public class InitialObjectTarget extends RpcTarget {
         if (clusterFile == null) {
             HillviewLogger.instance.info(
                     "No cluster description file specified; creating singleton");
-            desc = new HostList(Collections.singletonList(HostAndPort.fromParts(LOCALHOST,
-                                                                    HillviewServer.DEFAULT_PORT)));
+            desc = new HostList(Collections.singletonList(
+                    HostAndPort.fromParts(LOCALHOST, HillviewServer.DEFAULT_PORT)));
             this.initialize(desc);
         } else {
             try {
@@ -88,6 +96,8 @@ public class InitialObjectTarget extends RpcTarget {
 
     private void initialize(final HostList description) {
         this.emptyDataset = RemoteDataSet.createCluster(description, RemoteDataSet.defaultDatasetIndex);
+        PingSketch<Empty> ping = new PingSketch<Empty>();
+        this.workers = new ArrayList<>(Converters.checkNull(this.emptyDataset.blockingSketch(ping)));
     }
 
     @HillviewRpc
@@ -175,6 +185,38 @@ public class InitialObjectTarget extends RpcTarget {
                 Converters.checkNull(conn.database),
                 conn.table).toString();
         this.runMap(this.emptyDataset, map, (e, c) -> new GreenplumStubTarget(conn, c, dir), request, context);
+    }
+
+    @HillviewRpc
+    public void loadDeltaTable(RpcRequest request, RpcRequestContext context) {
+        DeltaTableDescription desc = request.parseArgs(DeltaTableDescription.class);
+        HillviewLogger.instance.info("Loading delta table",
+                "path: {0}, snapshot: {1}", desc.path, desc.snapshotVersion);
+
+        List<String> files = desc.getFiles();
+
+        assert workers != null && workers.size() > 0;
+        int workerCount = workers.size();
+        // create an empty list for each worker to store the assigned files
+        List<List<String>> splitFiles = IntStream.range(0, workerCount)
+                .mapToObj(i -> new ArrayList<String>())
+                .collect(Collectors.toList());
+
+        // assign files to each worker in a round robin manner
+        // TODO: make this locality-aware
+        for (int i = 0; i < files.size(); i++) {
+            splitFiles.get(i % workerCount).add(files.get(i));
+        }
+
+        Map<String, List<String>> filesPerWorker = IntStream.range(0, workerCount).
+                boxed().
+                collect(Collectors.toMap(workers::get, splitFiles::get));
+        FileSetDescription fileSetDescription = new FileSetDescription();
+        fileSetDescription.fileKind = "parquet";
+        IMap<Empty, List<IFileReference>> finder = new ExtractWorkerFilesMap<>(fileSetDescription, filesPerWorker);
+
+        this.runFlatMap(this.emptyDataset, finder,
+                (d, c) -> new FileDescriptionTarget(d, c, desc.path), request, context);
     }
 
     @HillviewRpc

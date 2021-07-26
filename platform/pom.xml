@@ -160,16 +160,6 @@
             <version>7.1</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-hdfs-client</artifactId>
-            <version>3.3.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>2.10.5.1</version>
-        </dependency>
-        <dependency>
             <groupId>commons-pool</groupId>
             <artifactId>commons-pool</artifactId>
             <version>1.6</version>
@@ -188,7 +178,7 @@
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
-            <version>3.3.0</version>
+            <version>3.3.1</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.nimbusds</groupId>
@@ -397,7 +387,7 @@
         </dependency>
         <dependency>
             <groupId>org.apache.parquet</groupId>
-            <artifactId>parquet-column</artifactId>
+            <artifactId>parquet-hadoop</artifactId>
             <version>1.11.1</version>
             <exclusions>
                 <exclusion>
@@ -414,10 +404,22 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <!-- Delta lake -->
         <dependency>
-            <groupId>org.apache.parquet</groupId>
-            <artifactId>parquet-hadoop</artifactId>
-            <version>1.11.1</version>
+            <groupId>io.delta</groupId>
+            <artifactId>delta-standalone_2.12</artifactId>
+            <version>0.2.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-client</artifactId>
+            <version>3.3.1</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-common</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- Apache ORC: Columnar storage. -->
         <dependency>

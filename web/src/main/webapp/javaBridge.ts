@@ -166,7 +166,12 @@ export interface JdbcConnectionInformation {
     lazyLoading: boolean;
 }
 
-export type DataKinds = "csv" | "orc" | "parquet" | "json" | "hillviewlog" | "db" | "genericlog" | "sstable" | "lazycsv";
+export interface DeltaTableDescription {
+    path: string;
+    snapshotVersion: number | null;
+}
+
+export type DataKinds = "csv" | "orc" | "parquet" | "json" | "hillviewlog" | "db" | "genericlog" | "sstable" | "lazycsv" | "delta";
 
 export interface FileSetDescription {
     fileKind: DataKinds;

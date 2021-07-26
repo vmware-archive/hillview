@@ -22,7 +22,8 @@ import {
     JdbcConnectionInformation,
     Status,
     UIConfig,
-    FederatedDatabase
+    FederatedDatabase,
+    DeltaTableDescription
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject} from "./rpc";
 import {Test} from "./test";
@@ -148,6 +149,14 @@ export class LoadView extends RemoteObject implements IDataView {
                     dialog.show();
                 },
                 help: "A set of database tables residing in databases on each worker machine."
+            }, {
+                text: "Delta table...",
+                action: () => {
+                    const dialog = new DeltaTableDialog();
+                    dialog.setAction(() => this.init.loadDeltaTable(dialog.getDeltaTableDescription(), this.page))
+                    dialog.show();
+                },
+                help: "A delta lake table"
             });
         if (HillviewToplevel.instance.uiconfig.localDbMenu)
             // This is only used for testing differentially-private loading from a
@@ -472,6 +481,38 @@ class OrcFileDialog extends Dialog {
     }
 }
 
+class DeltaTableDialog extends Dialog {
+    constructor() {
+        super(
+            "Load a Delta Lake table",
+            "Load a Delta Lake table from local filesystem, hdfs, or s3"
+        );
+        const path = this.addTextField(
+            "deltaTablePath",
+            "Delta table path",
+            FieldKind.String,
+            "/delta-table",
+            "Path to the delta table to load."
+        );
+        path.required = true;
+        this.addTextField(
+            "snapshotVersion",
+            "Snapshot Version (optional)",
+            FieldKind.Integer,
+            null,
+            "The version of the snapshot to load, if empty the latest snapshot will be loaded."
+        );
+        this.setCacheTitle("DeltaTableDialog");
+    }
+
+    public getDeltaTableDescription(): DeltaTableDescription {
+        return {
+            path: this.getFieldValue("deltaTablePath"),
+            snapshotVersion: this.getFieldValueAsNumber("snapshotVersion")
+        };
+    }
+}
+
 /**
  * Dialog asking the user which DB table to load.
  */
@@ -649,5 +690,5 @@ class CreateBookmarkContentReceiver extends OnCompleteReceiver<object> {
 
     public run(value: object): void {
         this.loadMenu.loaded(JSON.stringify(value));
-    }   
+    }
 }

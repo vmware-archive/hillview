@@ -78,6 +78,8 @@ data/ontime/On_Time_On_Time*
 data/ontime_big/*.gz
 data/ontime/2016_*.csv
 data/ontime/*.orc
+data/ontime/*.crc
+data/ontime/delta-table/
 data/ontime_orc/*
 data/ontime_small_orc/*
 data/ontime_private/*
