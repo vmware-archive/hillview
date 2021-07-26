@@ -720,7 +720,7 @@
                 <configuration>
                     <rules>
                         <banDuplicatePomDependencyVersions/>
-                        <dependencyConverge/>
+                        <dependencyConvergence/>
                     </rules>
                 </configuration>
             </plugin>
