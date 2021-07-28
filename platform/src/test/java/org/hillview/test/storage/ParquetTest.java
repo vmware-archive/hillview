@@ -25,48 +25,38 @@ import org.hillview.test.BaseTest;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 public class ParquetTest extends BaseTest {
     // Not yet checked-in into the repository
-    private static final String path = dataDir + "/parquet/" +
-            "part-r-00000-9d5cd245-a2e4-4002-9d58-0efdfb0fb962.gz.parquet";
+    private static final Path path = Paths.get(dataDir, "ontime", "2016_1.parquet");
 
     @Test
     public void readTest() {
-        ITable table;
-        try {
-            ParquetFileLoader pr = new ParquetFileLoader(path, false);
-            table = pr.load();
-        } catch (Exception ex) {
-            // If the file is not present do not fail the test.
-            return;
-        }
+        ParquetFileLoader pr = new ParquetFileLoader(path.toString(), false);
+        ITable table = pr.load();
 
         Assert.assertNotNull(table);
-        Assert.assertEquals("Table[18x4214]", table.toString());
-        IColumn first = table.getLoadedColumn("java_version");
-        Assert.assertEquals(first.getString(0), "1.8.0_91");
+        Assert.assertEquals("Table[15x445827]", table.toString());
+        IColumn first = table.getLoadedColumn("OriginCityName");
+        Assert.assertEquals("Dallas/Fort Worth, TX", first.getString(0));
         if (toPrint) {
-            System.out.println(table.getSchema().toString());
+            System.out.println(table.getSchema());
             System.out.println(table.toLongString(100));
         }
     }
 
     @Test
     public void lazyReadTest() {
-        ITable table;
-        try {
-            ParquetFileLoader pr = new ParquetFileLoader(path, true);
-            table = pr.load();
-        } catch (Exception ex) {
-            // If the file is not present do not fail the test.
-            return;
-        }
+        ParquetFileLoader pr = new ParquetFileLoader(path.toString(), true);
+        ITable table = pr.load();
 
         Assert.assertNotNull(table);
-        Assert.assertEquals("Table[18x4214]", table.toString());
-        IColumn first = table.getLoadedColumn("java_version");
-        Assert.assertEquals(first.getString(0), "1.8.0_91");
-        Table tbl = (Table)table;
+        Assert.assertEquals("Table[15x445827]", table.toString());
+        IColumn first = table.getLoadedColumn("OriginCityName");
+        Assert.assertEquals(first.getString(0), "Dallas/Fort Worth, TX");
+        Table tbl = (Table) table;
         Assert.assertFalse(tbl.getColumns().get(1).isLoaded());
     }
 }
