@@ -19,53 +19,66 @@ package org.hillview.sketches;
 
 import org.hillview.dataset.api.TableSketch;
 import org.hillview.sketches.results.BasicColStats;
+import org.hillview.sketches.results.HLogLog;
+import org.hillview.table.api.IColumn;
 import org.hillview.table.api.ITable;
 import org.hillview.utils.Converters;
 import org.hillview.utils.JsonList;
+import org.hillview.utils.Pair;
 
 import javax.annotation.Nullable;
 
 /**
  * A Sketch that computes basic column statistics for a set of columns.
  */
-public class BasicColStatSketch implements TableSketch<JsonList<BasicColStats>> {
+public class BasicColStatSketch implements TableSketch<JsonList<Pair<BasicColStats, HLogLog>>> {
     static final long serialVersionUID = 1;
     private final String[] cols;
     private final int momentNum;
+    private final long[] seeds;
 
-    public BasicColStatSketch(String[] cols, int momentNum) {
+    public BasicColStatSketch(String[] cols, int momentNum, long[] seeds) {
         this.cols = cols;
         this.momentNum = momentNum;
+        this.seeds = seeds;
     }
 
-    public BasicColStatSketch(String col, int momentNum) {
+    public BasicColStatSketch(String col, int momentNum, long seed) {
         this.cols = new String[] { col };
         this.momentNum = momentNum;
+        this.seeds = new long[] { seed };
     }
 
     @Override
-    public JsonList<BasicColStats> create(@Nullable final ITable data) {
+    public JsonList<Pair<BasicColStats, HLogLog>> create(@Nullable final ITable data) {
         Converters.checkNull(data);
-        JsonList<BasicColStats> result = this.getZero();
+        JsonList<Pair<BasicColStats, HLogLog>> result = this.getZero();
         Converters.checkNull(result);
+        for (int i = 0; i < this.cols.length; i++) {
+            IColumn col = data.getLoadedColumn(this.cols[i]);
+            result.get(i).first.scan(col, data.getMembershipSet());
+            result.get(i).second.createHLL(col, data.getMembershipSet());
+        }
+        return result;
+    }
+
+    @Override
+    public JsonList<Pair<BasicColStats, HLogLog>> zero() {
+        JsonList<Pair<BasicColStats, HLogLog>> result = new JsonList<>(this.cols.length);
         for (int i = 0; i < this.cols.length; i++)
-            result.get(i).scan(data.getLoadedColumn(this.cols[i]), data.getMembershipSet());
+            result.add(new Pair<>(
+                    new BasicColStats(this.momentNum, true),
+                    new HLogLog(HLogLogSketch.DEFAULT_LOG_SPACE_SIZE, seeds[i])
+            ));
+
         return result;
     }
 
     @Override
-    public JsonList<BasicColStats> zero() {
-        JsonList<BasicColStats> result = new JsonList<BasicColStats>(this.cols.length);
-        for (int i=0; i < this.cols.length; i++)
-            result.add(new BasicColStats(this.momentNum, true));
-        return result;
-    }
-
-    @Override
-    public JsonList<BasicColStats> add(@Nullable final JsonList<BasicColStats> left,
-                                       @Nullable final JsonList<BasicColStats> right) {
+    public JsonList<Pair<BasicColStats, HLogLog>> add(@Nullable final JsonList<Pair<BasicColStats, HLogLog>> left,
+                                                      @Nullable final JsonList<Pair<BasicColStats, HLogLog>> right) {
         assert left != null;
         assert right != null;
-        return left.zip(right, BasicColStats::union);
+        return left.zip(right, (p1, p2) -> new Pair<>(p1.first.union(p2.first), p1.second.union(p2.second)));
     }
 }

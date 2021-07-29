@@ -19,6 +19,7 @@ import {IViewSerialization} from "../datasetView";
 import {
     allContentsKind,
     BasicColStats,
+    CountWithConfidence,
     kindIsString,
     NextKList,
     RecordOrder,
@@ -34,6 +35,7 @@ import {
     cloneToSet,
     formatNumber,
     ICancellable,
+    Pair,
     PartialResult,
     significantDigits,
     Converters, assert
@@ -53,6 +55,7 @@ export class SchemaView extends TSViewBase {
     protected display: TabularDisplay;
     protected contextMenu: ContextMenu;
     protected stats: Map<string, BasicColStats> | null;
+    protected counts: Map<string, CountWithConfidence> | null;
     protected nameDialog: Dialog;
     protected typeDialog: Dialog;
 
@@ -184,6 +187,10 @@ export class SchemaView extends TSViewBase {
             descriptions.push("Minimum value", "Maximum value", "Average value",
                 "Standard deviation", "Number of missing elements");
         }
+        if (this.counts != null) {
+            names.push("DistinctCount");
+            descriptions.push("Estimated number of distinct values");
+        }
         this.display.setColumns(names, descriptions);
         this.display.addRightClickHandler("Name", (e: Event) => {
             e.preventDefault();
@@ -236,6 +243,14 @@ export class SchemaView extends TSViewBase {
                     data.push(formatNumber(cs.missingCount));
                 } else {
                     data.push("", "", "", "", "");
+                }
+            }
+            if (this.counts != null) {
+                const ct = this.counts.get(cd.name);
+                if (ct != null) {
+                    data.push(String(ct.count));
+                } else {
+                    data.push("");
                 }
             }
             const row = this.display.addRow(data);
@@ -359,6 +374,17 @@ export class SchemaView extends TSViewBase {
             this.stats = new Map<string, BasicColStats>();
         for (let i = 0; i < cols.length; i++) {
             this.stats.set(cols[i], stats[i]);
+        }
+        this.show(0);
+    }
+
+    public updateCounts(cols: string[], counts: CountWithConfidence[]): void{
+        console.assert(cols.length === counts.length);
+        if (this.counts == null) {
+            this.counts = new Map<string, CountWithConfidence>();
+        }
+        for (let i = 0; i < cols.length; i++) {
+            this.counts.set(cols[i], counts[i]);
         }
         this.show(0);
     }
@@ -489,17 +515,19 @@ export class SchemaView extends TSViewBase {
 /**
  * Receives a set of basic column statistics and updates the SchemaView to display them.
  */
-class BasicColStatsReceiver extends Receiver<BasicColStats[]> {
+class BasicColStatsReceiver extends Receiver<Pair<BasicColStats, CountWithConfidence>[]> {
     constructor(page: FullPage,
                 public sv: SchemaView,
                 public cols: string[],
-                rr: RpcRequest<BasicColStats[]>) {
+                rr: RpcRequest<Pair<BasicColStats, CountWithConfidence>[]>) {
         super(page, rr, "Get basic statistics");
     }
 
-    public onNext(value: PartialResult<BasicColStats[]>): void {
+    public onNext(value: PartialResult<Pair<BasicColStats, CountWithConfidence>[]>): void {
         super.onNext(value);
-        if (value.data != null)
-            this.sv.updateStats(this.cols, value.data);
+        if (value.data != null) {
+            this.sv.updateStats(this.cols, value.data.map(p => p.first));
+            this.sv.updateCounts(this.cols, value.data.map(p => p.second));
+        }
     }
 }

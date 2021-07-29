@@ -104,19 +104,28 @@ public class TableTarget extends TableRpcTarget {
         this.runPrune(this.table, new EmptyTableMap(), (d, c) -> new TableTarget(d, c, this.metadataDirectory), request, context);
     }
 
+    static class BasicColStatsArgs {
+        String[] cols;
+        long[] seeds;
+    }
+
     @HillviewRpc
     public void basicColStats(RpcRequest request, RpcRequestContext context) {
-        String[] args = request.parseArgs(String[].class);
-        BasicColStatSketch sk = new BasicColStatSketch(args, 2);
-        PostProcessedSketch<ITable, JsonList<BasicColStats>, JsonList<BasicColStats>> post =
+        BasicColStatsArgs args = request.parseArgs(BasicColStatsArgs.class);
+        BasicColStatSketch sk = new BasicColStatSketch(args.cols, 2, args.seeds);
+        PostProcessedSketch<ITable, JsonList<Pair<BasicColStats, HLogLog>>, JsonList<Pair<BasicColStats, CountWithConfidence>>> post =
                 sk.andThen(stats -> {
-                    for (BasicColStats s : Converters.checkNull(stats)) {
+                    JsonList<Pair<BasicColStats, CountWithConfidence>> results = new JsonList<>();
+                    for (Pair<BasicColStats, HLogLog> p : Converters.checkNull(stats)) {
                         // We mutate in place; this is safe in the root node.
+                        BasicColStats s = p.first;
                         if (s.moments.length > 1)
                             // the value should never be negative, but you can't trust FP
                             s.moments[1] = Math.sqrt(Math.max(0, s.moments[1] - s.moments[0] * s.moments[0]));
+
+                        results.add(new Pair<>(s, p.second.getCount()));
                     }
-                    return stats;
+                    return results;
                 });
         // If the view has many columns sending partial results to the
         // UI overwhelms the browser, so we only send the final result.
@@ -541,14 +550,14 @@ public class TableTarget extends TableRpcTarget {
     @HillviewRpc
     public void heavyHittersMG(RpcRequest request, RpcRequestContext context) {
         HeavyHittersRequestInfo info = request.parseArgs(HeavyHittersRequestInfo.class);
-        MGFreqKSketch sk = new MGFreqKSketch(info.columns, info.amount/100);
+        MGFreqKSketch sk = new MGFreqKSketch(info.columns, info.amount / 100);
         PostProcessedSketch<ITable, FreqKListMG, TopList> post =
                 sk.andThen(result -> {
-                HillviewComputation computation = context.getComputation(request);
-                HeavyHittersTarget target = new HeavyHittersTarget(result, computation);
-                NextKList top = result.getTop(info.columns);
-                return new TopList(top, target.getId().toString());
-            });
+                    HillviewComputation computation = context.getComputation(request);
+                    HeavyHittersTarget target = new HeavyHittersTarget(result, computation);
+                    NextKList top = result.getTop(info.columns);
+                    return new TopList(top, target.getId().toString());
+                });
         this.runCompleteSketch(this.table, post, request, context);
     }
 
@@ -559,7 +568,7 @@ public class TableTarget extends TableRpcTarget {
     public void heavyHittersSampling(RpcRequest request, RpcRequestContext context) {
         HeavyHittersRequestInfo info = request.parseArgs(HeavyHittersRequestInfo.class);
         SampleHeavyHittersSketch shh = new SampleHeavyHittersSketch(info.columns,
-                info.amount/100, info.totalRows, info.seed);
+                info.amount / 100, info.totalRows, info.seed);
         PostProcessedSketch<ITable, FreqKListSample, TopList> post =
                 shh.andThen(result -> {
                     HillviewComputation computation = context.getComputation(request);
@@ -667,7 +676,7 @@ public class TableTarget extends TableRpcTarget {
         SetOperationInfo op = request.parseArgs(SetOperationInfo.class);
         SetOperationMap sm = new SetOperationMap(op.op);
         RpcObjectManager.instance.when(op.otherId, target -> {
-            TableTarget otherTable = (TableTarget)target;
+            TableTarget otherTable = (TableTarget) target;
             TableTarget.this.runZip(
                     TableTarget.this.table, otherTable.table, sm, (d, c) -> new TableTarget(d, c, this.metadataDirectory), request, context);
         });
