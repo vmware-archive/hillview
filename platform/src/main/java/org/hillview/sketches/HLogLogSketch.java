@@ -30,6 +30,8 @@ import javax.annotation.Nullable;
 public class HLogLogSketch implements TableSketch<HLogLog> {
     static final long serialVersionUID = 1;
 
+    static public final int DEFAULT_LOG_SPACE_SIZE = 12;
+
     private final String colName;
     private final long seed; //seed for the hash function of the HLogLog
     /**
@@ -41,7 +43,7 @@ public class HLogLogSketch implements TableSketch<HLogLog> {
     private final ColumnQuantization quantization;
 
     public HLogLogSketch(String colName, long seed) {
-        this(colName, 12, seed, null);
+        this(colName, DEFAULT_LOG_SPACE_SIZE, seed, null);
     }
 
     public HLogLogSketch(String colName, int logSpaceSize, long seed,

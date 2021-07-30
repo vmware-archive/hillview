@@ -31,8 +31,6 @@ import org.hillview.utils.TestTables;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 /**
  * Tests the hyper-log-log algorithm.
  */
@@ -50,8 +48,8 @@ public class HyperLogLogTest extends BaseTest {
         hll.createHLL(col, memSet);
         long alsoResult = hll.distinctItemCount;
         long result = hll.distinctItemsEstimator();
-        assertEquals(alsoResult, result);
-        assertTrue((result > (0.9 * range)) && (result < (1.1 * range)));
+        Assert.assertEquals(alsoResult, result);
+        Assert.assertTrue((result > (0.9 * range)) && (result < (1.1 * range)));
     }
 
     @Test
@@ -63,6 +61,6 @@ public class HyperLogLogTest extends BaseTest {
         final ParallelDataSet<ITable> all = TestTables.makeParallel(bigTable, bigSize / 10);
         final HLogLog hll = all.blockingSketch(new HLogLogSketch(colName, 16, 12345678, null));
         Assert.assertNotNull(hll);
-        assertTrue(hll.distinctItemsEstimator() > 85000);
+        Assert.assertTrue(hll.distinctItemsEstimator() > 85000);
     }
 }

@@ -18,17 +18,21 @@
 package org.hillview.test.dataset;
 
 import org.hillview.dataset.LocalDataSet;
-import org.hillview.sketches.*;
+import org.hillview.sketches.BasicColStatSketch;
+import org.hillview.sketches.HistogramSketch;
 import org.hillview.sketches.results.BasicColStats;
 import org.hillview.sketches.results.DoubleHistogramBuckets;
+import org.hillview.sketches.results.HLogLog;
 import org.hillview.sketches.results.IHistogramBuckets;
 import org.hillview.table.SmallTable;
 import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;
 import org.hillview.test.TestUtil;
 import org.hillview.utils.JsonList;
+import org.hillview.utils.Pair;
 import org.junit.Assert;
 import org.junit.Test;
+
 import static org.hillview.utils.TestTables.getIntTable;
 
 /**
@@ -45,10 +49,10 @@ public class HistPerfTest extends BaseTest {
         final SmallTable bigTable = getIntTable(bigSize, numCols);
         this.colName = bigTable.getSchema().getColumnNames().get(0);
         this.dataSet = new LocalDataSet<ITable>(bigTable);
-        JsonList<BasicColStats> r = this.dataSet.blockingSketch(
-                new BasicColStatSketch(this.colName, 0));
+        JsonList<Pair<BasicColStats, HLogLog>> r = this.dataSet.blockingSketch(
+                new BasicColStatSketch(this.colName, 0, 0));
         Assert.assertNotNull(r);
-        this.colStat = r.get(0);
+        this.colStat = r.get(0).first;
     }
 
     /*
@@ -68,10 +72,10 @@ public class HistPerfTest extends BaseTest {
 
     private void prepareHistNew(int width, int height, int barWidth, boolean useSampling) {
         int bucketNum = width / barWidth;
-        IHistogramBuckets bDec  =
+        IHistogramBuckets bDec =
                 new DoubleHistogramBuckets(this.colName, this.colStat.getMin(), this.colStat.getMax(), bucketNum);
         // approximately what is needed to have error smaller than a single pixel
-        double sampleSize  =  2 * height * height * bucketNum;
+        double sampleSize = 2 * height * height * bucketNum;
         double rate = sampleSize / this.colStat.getPresentCount();
         if ((rate > 0.1) || (!useSampling))
             rate = 1.0; // no use in sampling

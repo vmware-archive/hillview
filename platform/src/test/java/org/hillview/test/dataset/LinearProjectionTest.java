@@ -21,12 +21,10 @@ import org.hillview.dataset.api.IDataSet;
 import org.hillview.maps.LinearProjectionMap;
 import org.hillview.sketches.BasicColStatSketch;
 import org.hillview.sketches.results.BasicColStats;
+import org.hillview.sketches.results.HLogLog;
 import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;
-import org.hillview.utils.BlasConversions;
-import org.hillview.utils.JsonList;
-import org.hillview.utils.TestTables;
-import org.hillview.utils.Utilities;
+import org.hillview.utils.*;
 import org.jblas.DoubleMatrix;
 import org.jblas.ranges.AllRange;
 import org.jblas.util.Random;
@@ -34,6 +32,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @SuppressWarnings("ConstantConditions")
@@ -78,6 +77,8 @@ public class LinearProjectionTest extends BaseTest {
         int rows = 10000;
         int cols = 20;
         int numProjections = 2;
+        long[] seeds = new long[cols];
+        Arrays.fill(seeds, 0);
         DoubleMatrix dataMatrix = DoubleMatrix.rand(rows, cols);
         DoubleMatrix projectionMatrix = DoubleMatrix.rand(numProjections, cols);
         DoubleMatrix projectionCheck = dataMatrix.mmul(projectionMatrix.transpose());
@@ -92,23 +93,23 @@ public class LinearProjectionTest extends BaseTest {
 
         for (int i = 0; i < numProjections; i++) {
             BasicColStatSketch b = new BasicColStatSketch(
-                    String.format("LP%d", i), 1);
-            JsonList<BasicColStats> bcss = result.blockingSketch(b);
+                    String.format("LP%d", i), 1, 0);
+            JsonList<Pair<BasicColStats, HLogLog>> bcss = result.blockingSketch(b);
             Assert.assertNotNull(bcss);
             Assert.assertEquals(1, bcss.size());
             double expectedMean = projectionCheck.get(new AllRange(), i).mean();
-            double actualMean = bcss.get(0).getMoment(1);
+            double actualMean = bcss.get(0).first.getMoment(1);
             double eps = actualMean * 1e-6;
             Assert.assertTrue("Mean is too far from actual mean", Math.abs(actualMean - expectedMean) < eps);
 
             double expectedMin = projectionCheck.get(new AllRange(), i).min();
-            double actualMin = bcss.get(0).getMin();
+            double actualMin = bcss.get(0).first.getMin();
             eps = actualMin * 1e-6;
             Assert.assertTrue("Min is too far from actual min", Math.abs(actualMin - expectedMin) < eps);
 
             double expectedMax = projectionCheck.get(new AllRange(), i).max();
-            double actualMax = bcss.get(0).getMax();
-            eps = actualMax* 1e-6;
+            double actualMax = bcss.get(0).first.getMax();
+            eps = actualMax * 1e-6;
             Assert.assertTrue("Max is too far from actual min", Math.abs(actualMax - expectedMax) < eps);
         }
     }

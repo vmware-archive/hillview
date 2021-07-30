@@ -18,11 +18,10 @@
 package org.hillview.test.dataset;
 
 import org.hillview.dataset.api.IDataSet;
-import org.hillview.dataset.api.ISketch;
 import org.hillview.maps.LinearProjectionMap;
 import org.hillview.sketches.BasicColStatSketch;
-import org.hillview.sketches.results.*;
 import org.hillview.sketches.PCACorrelationSketch;
+import org.hillview.sketches.results.*;
 import org.hillview.table.api.ITable;
 import org.hillview.test.BaseTest;
 import org.hillview.utils.*;
@@ -30,6 +29,7 @@ import org.jblas.DoubleMatrix;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class PCATest extends BaseTest {
@@ -38,15 +38,17 @@ public class PCATest extends BaseTest {
         int size = 10;
         int numFrags = 1;
         int numCols  = 3;
+        long[] seeds = new long[numCols];
+        Arrays.fill(seeds, 0);
         ITable table = TestTables.getLinearTable(size, numCols);
         List<String> colNameList = table.getSchema().getColumnNames();
         String[] colNames = Utilities.toArray(colNameList);
         IDataSet<ITable> dataset = TestTables.makeParallel(table, size/numFrags);
-        ISketch<ITable, JsonList<BasicColStats>> statsSk = new BasicColStatSketch(colNames, 0);
-        JsonList<BasicColStats> stats = dataset.blockingSketch(statsSk);
+        BasicColStatSketch statsSk = new BasicColStatSketch(colNames, 0, seeds);
+        JsonList<Pair<BasicColStats, HLogLog>> stats = dataset.blockingSketch(statsSk);
         Assert.assertNotNull(stats);
         JsonList<DoubleHistogramBuckets> buckets =
-                Linq.zipMap(colNameList, stats, (c, s) -> new DoubleHistogramBuckets(c, s.min, s.max, 3));
+                Linq.zipMap(colNameList, stats.map(p -> p.first), (c, s) -> new DoubleHistogramBuckets(c, s.min, s.max, 3));
         CorrelationSketch csk = new CorrelationSketch(buckets.toArray(new IHistogramBuckets[0]), 1.0, 0);
         JsonList<Groups<Groups<Count>>> groups = dataset.blockingSketch(csk);
         Assert.assertNotNull(groups);
