@@ -188,7 +188,7 @@ export class SchemaView extends TSViewBase {
                 "Standard deviation", "Number of missing elements");
         }
         if (this.counts != null) {
-            names.push("DistinctCount");
+            names.push("~DistinctCount");
             descriptions.push("Estimated number of distinct values");
         }
         this.display.setColumns(names, descriptions);
