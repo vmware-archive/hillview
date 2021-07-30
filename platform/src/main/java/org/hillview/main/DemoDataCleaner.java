@@ -43,6 +43,8 @@ class DemoDataCleaner {
     private static final String dataFolder = "../data/ontime";
 
     public static void main(String[] args) throws IOException {
+        boolean parquetEnabled = (System.getProperty("parquet.enabled") != null);
+
         HillviewLogger.initialize("data cleaner", "hillview.log");
         String prefix = "On_Time_On_Time_Performance_";
         Path folder = Paths.get(dataFolder);
@@ -85,26 +87,26 @@ class DemoDataCleaner {
                         System.out.println("Writing " + end);
                         owriter.writeTable(p);
                     }
-
-                    final String parquetFileName = end.replace(".orc", ".parquet");
-                    File parquetFile = new File(parquetFileName);
-                    if (!parquetFile.exists()) {
-                        ParquetFileWriter writer = new ParquetFileWriter(parquetFileName);
-                        System.out.println("Writing " + parquetFileName);
-                        try {
-                            writer.writeTable(p);
-                        } catch (RuntimeException runtimeException) {
-                            System.err.println("Error when writing to parquet file: " + runtimeException.getMessage());
-                            // If the exception happens during writing, an incomplete file may be left
+                    if (parquetEnabled) {
+                        final String parquetFileName = end.replace(".orc", ".parquet");
+                        File parquetFile = new File(parquetFileName);
+                        if (!parquetFile.exists()) {
+                            ParquetFileWriter writer = new ParquetFileWriter(parquetFileName);
+                            System.out.println("Writing " + parquetFileName);
                             try {
-                                Files.deleteIfExists(parquetFile.toPath());
-                            } catch (IOException ioException) {
-                                System.err.println("Auto Deletion failed: " + ioException.getMessage());
-                                System.err.println("Please manually delete " + parquetFile.getPath());
-                                System.exit(-1);
+                                writer.writeTable(p);
+                            } catch (RuntimeException runtimeException) {
+                                System.err.println("Error when writing to parquet file: " + runtimeException.getMessage());
+                                // If the exception happens during writing, an incomplete file may be left
+                                try {
+                                    Files.deleteIfExists(parquetFile.toPath());
+                                } catch (IOException ioException) {
+                                    System.err.println("Auto Deletion failed: " + ioException.getMessage());
+                                    System.err.println("Please manually delete " + parquetFile.getPath());
+                                    System.exit(-1);
+                                }
                             }
                         }
-
                     }
 
                     String big = filename.replace(".csv.gz", ".orc");
