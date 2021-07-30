@@ -31,8 +31,6 @@ import org.hillview.utils.TestTables;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static org.junit.Assert.assertTrue;
-
 public class BasicStatSketchTest extends BaseTest {
     private static final long seed = 0;
 
@@ -66,8 +64,8 @@ public class BasicStatSketchTest extends BaseTest {
         Assert.assertEquals(1, result.size());
         Assert.assertEquals(1, result1.size());
         Assert.assertEquals(result.get(0).first.getMoment(1), result1.get(0).first.getMoment(1), 0.001);
-        assertTrue(result.get(0).second.distinctItemsEstimator() > 85000);
-        assertTrue(result1.get(0).second.distinctItemsEstimator() > 85000);
+        Assert.assertTrue(result.get(0).second.distinctItemsEstimator() > 85000);
+        Assert.assertTrue(result1.get(0).second.distinctItemsEstimator() > 85000);
     }
 
     @Test
