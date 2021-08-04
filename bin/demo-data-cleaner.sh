@@ -20,7 +20,7 @@ while getopts "dp" opt; do
       ARGS+="-Dparquet.enabled "
       ;;
     *)
-      echo "Usage: demo-data-cleaner.sh [-g]"
+      echo "Usage: demo-data-cleaner.sh [-d] [-p]"
       echo "This script runs the java class DemoDataCleaner to prepare data for testing/demo purposes."
       echo "-d: Also generate a delta table for testing, requires python3, pyspark, and delta-spark."
       echo "-p: Also generate parquet files for testing."
