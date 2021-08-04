@@ -80,7 +80,7 @@ public class TestUtil {
         Percentiles(results);
     }
 
-    private static IColumn getRandDateArray(int size, String colName) {
+    public static IColumn getRandDateArray(int size, String colName) {
         final ColumnDescription desc = new ColumnDescription(colName, ContentsKind.Date);
         double[] data = new double[size];
         final Randomness rn = new Randomness(0);

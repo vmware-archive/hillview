@@ -28,6 +28,8 @@ import java.util.Locale;
 public class Converters {
     public static final long NANOS_TO_SECONDS = 1_000_000_000;
     public static final int NANOS_TO_MILLIS = 1_000_000;
+    public static final int MICROS_TO_MILLIS = 1_000;
+    public static final int MILLIS_TO_SECONDS = 1_000;
     public static final int SECONDS_TO_DAY = 24 * 3600;
 
     private static final LocalDateTime baseLocalTime = LocalDateTime.of(

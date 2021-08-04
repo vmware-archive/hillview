@@ -41,7 +41,6 @@ public class DoubleArrayColumn
     public DoubleArrayColumn(final ColumnDescription description,
                              final double[] data) {
         super(description, data.length);
-        this.checkKind(ContentsKind.Double);
         this.data = data;
     }
 

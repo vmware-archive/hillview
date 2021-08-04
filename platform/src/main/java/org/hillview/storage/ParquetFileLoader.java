@@ -35,16 +35,22 @@ import org.apache.parquet.io.InputFile;
 import org.apache.parquet.io.MessageColumnIO;
 import org.apache.parquet.io.RecordReader;
 import org.apache.parquet.io.api.Binary;
+import org.apache.parquet.schema.LogicalTypeAnnotation;
+import org.apache.parquet.schema.LogicalTypeAnnotation.*;
 import org.apache.parquet.schema.MessageType;
+import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Type;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Table;
 import org.hillview.table.api.*;
 import org.hillview.table.columns.BaseListColumn;
 import org.hillview.utils.Converters;
+import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Linq;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -94,10 +100,41 @@ public class ParquetFileLoader extends TextFileLoader {
             Type fieldType = g.getType().getType(field);
             if (!fieldType.isPrimitive())
                 throw new RuntimeException("Non-primitive field not supported");
-            switch (cds.get(field).getPrimitiveType().getPrimitiveTypeName()) {
+            PrimitiveType primitiveType = cds.get(field).getPrimitiveType();
+            LogicalTypeAnnotation logicalType = primitiveType.getLogicalTypeAnnotation();
+            switch (primitiveType.getPrimitiveTypeName()) {
                 case INT64: {
                     long l = g.getLong(field, 0);
-                    col.append((double) l);
+                    if (logicalType instanceof TimestampLogicalTypeAnnotation) {
+                        switch (((TimestampLogicalTypeAnnotation) logicalType).getUnit()) {
+                            case MILLIS:
+                                col.append((double) l);
+                                break;
+                            case MICROS:
+                                col.append((double) l / Converters.MICROS_TO_MILLIS);
+                                break;
+                            case NANOS:
+                                col.append((double) l / Converters.NANOS_TO_MILLIS);
+                                break;
+                            default:
+                                throw new RuntimeException("Unexpected time unit when parsing parquet timestamp: " +
+                                        ((TimestampLogicalTypeAnnotation) logicalType).getUnit());
+                        }
+                    } else if (logicalType instanceof TimeLogicalTypeAnnotation) {
+                        switch (((TimeLogicalTypeAnnotation) logicalType).getUnit()) {
+                            case MICROS:
+                                col.append((double) l / Converters.MICROS_TO_MILLIS);
+                                break;
+                            case NANOS:
+                                col.append((double) l / Converters.NANOS_TO_MILLIS);
+                                break;
+                            default:
+                                throw new RuntimeException("Unexpected time unit when parse parquet time: " +
+                                        ((TimeLogicalTypeAnnotation) logicalType).getUnit());
+                        }
+                    } else {
+                        col.append((double) l);
+                    }
                     break;
                 }
                 case FLOAT: {
@@ -112,7 +149,16 @@ public class ParquetFileLoader extends TextFileLoader {
                 }
                 case INT32: {
                     int i = g.getInteger(field, 0);
-                    col.append(i);
+                    if (logicalType instanceof TimeLogicalTypeAnnotation) {
+                        if (((TimeLogicalTypeAnnotation) logicalType).getUnit() == LogicalTypeAnnotation.TimeUnit.MILLIS) {
+                            col.append((double) i);
+                        } else {
+                            throw new RuntimeException("Unexpected unit when parsing parsing parquet time: " +
+                                    ((TimeLogicalTypeAnnotation) logicalType).getUnit());
+                        }
+                    } else {
+                        col.append(i);
+                    }
                     break;
                 }
                 case BOOLEAN: {
@@ -127,8 +173,23 @@ public class ParquetFileLoader extends TextFileLoader {
                     break;
                 }
                 case FIXED_LEN_BYTE_ARRAY: {
-                    String s = g.getString(field, 0);
-                    col.append(s);
+                    if (logicalType instanceof IntervalLogicalTypeAnnotation) {
+                        ByteBuffer bb = g.getBinary(field, 0).toByteBuffer();
+                        bb.order(ByteOrder.LITTLE_ENDIAN);
+                        int months = bb.getInt();
+                        int days = bb.getInt();
+                        int milliseconds = bb.getInt();
+                        if (months != 0) {
+                            HillviewLogger.instance.warn("Month is not zero in parquet interval: using conversion of 30 days per month",
+                                    "name: {0}, months: {1}, days: {2}, milliseconds: {3}", cds.get(field).getPath(), months, days, milliseconds);
+                        }
+                        int daysInMonth = 30;
+                        double totalMilliseconds = (days + daysInMonth * months) * Converters.SECONDS_TO_DAY * Converters.MILLIS_TO_SECONDS + milliseconds;
+                        col.append(totalMilliseconds);
+                    } else {
+                        String s = g.getString(field, 0);
+                        col.append(s);
+                    }
                     break;
                 }
                 case INT96: {
@@ -153,19 +214,51 @@ public class ParquetFileLoader extends TextFileLoader {
     private static ColumnDescription getColumnDescription(ColumnDescriptor cd) {
         String name = String.join("", cd.getPath());  // this should contain a single String
         ContentsKind kind;
-        switch (cd.getPrimitiveType().getPrimitiveTypeName()) {
+        PrimitiveType primitiveType = cd.getPrimitiveType();
+        LogicalTypeAnnotation logicalType = primitiveType.getLogicalTypeAnnotation();
+        switch (primitiveType.getPrimitiveTypeName()) {
             case INT64:
+                if (logicalType instanceof TimestampLogicalTypeAnnotation) {
+                    if (((TimestampLogicalTypeAnnotation) logicalType).isAdjustedToUTC()) {
+                        kind = ContentsKind.Date;
+                    } else {
+                        kind = ContentsKind.LocalDate;
+                    }
+                } else if (logicalType instanceof TimeLogicalTypeAnnotation) {
+                    kind = ContentsKind.Time;
+                } else {
+                    kind = ContentsKind.Double;
+                }
+                break;
             case FLOAT:
             case DOUBLE:
                 kind = ContentsKind.Double;
                 break;
             case INT32:
-                kind = ContentsKind.Integer;
+                if (logicalType instanceof TimeLogicalTypeAnnotation) {
+                    kind = ContentsKind.Time;
+                } else {
+                    kind = ContentsKind.Integer;
+                }
                 break;
             case BOOLEAN:
-            case BINARY:
             case FIXED_LEN_BYTE_ARRAY:
-                kind = ContentsKind.String;
+                if (logicalType instanceof IntervalLogicalTypeAnnotation) {
+                    kind = ContentsKind.Duration;
+                } else {
+                    kind = ContentsKind.String;
+                }
+                break;
+            case BINARY:
+                if (logicalType instanceof StringLogicalTypeAnnotation) {
+                    kind = ContentsKind.String;
+                } else if (logicalType instanceof JsonLogicalTypeAnnotation) {
+                    kind = ContentsKind.Json;
+                } else {
+                    HillviewLogger.instance.warn("Encountered BINARY field with no or unhandled logical type annotation: attempting to parse as string",
+                            "name: {0}, logical type annotation: {1}", name, logicalType);
+                    kind = ContentsKind.String;
+                }
                 break;
             case INT96:
                 kind = ContentsKind.LocalDate;
@@ -186,27 +279,6 @@ public class ParquetFileLoader extends TextFileLoader {
             result.add(BaseListColumn.create(desc));
         }
         return result;
-    }
-
-    public class ParquetColumnLoader implements IColumnLoader {
-        @Override
-        public List<? extends IColumn> loadColumns(List<String> names) {
-            FileMetaData fm = ParquetFileLoader.this.metadata.getFileMetaData();
-            MessageType schema = fm.getSchema();
-            List<Type> list = new ArrayList<Type>();
-            for (Type col : schema.getFields()) {
-                String colName = col.getName();
-                if (names.contains(colName))
-                    list.add(col);
-            }
-            assert list.size() > 0;
-            MessageType newSchema = new MessageType(schema.getName(), list);
-            FileMetaData nfm = new FileMetaData(
-                    newSchema, fm.getKeyValueMetaData(), fm.getCreatedBy());
-            List<BlockMetaData> blocks = ParquetFileLoader.this.metadata.getBlocks();
-            ParquetMetadata md = new ParquetMetadata(nfm, blocks);
-            return ParquetFileLoader.this.loadColumns(md);
-        }
     }
 
     private List<IColumn> loadColumns(ParquetMetadata md) {
@@ -261,6 +333,27 @@ public class ParquetFileLoader extends TextFileLoader {
             List<IColumn> cols = this.loadColumns(md);
             this.close(null);
             return new Table(cols, this.filename, null);
+        }
+    }
+
+    public class ParquetColumnLoader implements IColumnLoader {
+        @Override
+        public List<? extends IColumn> loadColumns(List<String> names) {
+            FileMetaData fm = ParquetFileLoader.this.metadata.getFileMetaData();
+            MessageType schema = fm.getSchema();
+            List<Type> list = new ArrayList<Type>();
+            for (Type col : schema.getFields()) {
+                String colName = col.getName();
+                if (names.contains(colName))
+                    list.add(col);
+            }
+            assert list.size() > 0;
+            MessageType newSchema = new MessageType(schema.getName(), list);
+            FileMetaData nfm = new FileMetaData(
+                    newSchema, fm.getKeyValueMetaData(), fm.getCreatedBy());
+            List<BlockMetaData> blocks = ParquetFileLoader.this.metadata.getBlocks();
+            ParquetMetadata md = new ParquetMetadata(nfm, blocks);
+            return ParquetFileLoader.this.loadColumns(md);
         }
     }
 }

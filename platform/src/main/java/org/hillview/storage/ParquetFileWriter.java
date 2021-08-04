@@ -5,7 +5,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.parquet.avro.AvroParquetWriter;
 import org.apache.parquet.avro.AvroSchemaConverter;
 import org.apache.parquet.hadoop.ParquetWriter;
-import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
@@ -15,8 +14,10 @@ import org.hillview.table.Schema;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;
+import org.hillview.utils.Converters;
 
 import java.io.IOException;
+import java.time.ZoneOffset;
 import java.util.List;
 
 public class ParquetFileWriter implements ITableWriter {
@@ -32,21 +33,40 @@ public class ParquetFileWriter implements ITableWriter {
         for (ColumnDescription description : schema.getColumnDescriptions()) {
             switch (description.kind) {
                 case Date:
+                    builder.optional(PrimitiveType.PrimitiveTypeName.INT64)
+                            .as(LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.MILLIS))
+                            .named(description.name);
+                    break;
                 case Double:
-                case Duration:
-                case LocalDate:
-                case Time:
                     builder.optional(PrimitiveType.PrimitiveTypeName.DOUBLE).named(description.name);
                     break;
                 case Integer:
                     builder.optional(PrimitiveType.PrimitiveTypeName.INT32).named(description.name);
                     break;
+                case LocalDate:
+                    builder.optional(PrimitiveType.PrimitiveTypeName.INT64)
+                            .as(LogicalTypeAnnotation.timestampType(false, LogicalTypeAnnotation.TimeUnit.MILLIS))
+                            .named(description.name);
+                    break;
+                /** Although parquet has the JSON logical type [1], avro doesn't [2]
+                 * If we annotate with the json type here, the annotation will be lost after conversion to avro schema
+                 * Therefore here we treat JSON the same way as string
+                 * references:
+                 * [1]: https://github.com/apache/parquet-format/blob/master/LogicalTypes.md#json
+                 * [2]: https://avro.apache.org/docs/current/spec.html#Logical+Types
+                 **/
                 case Json:
                 case String:
                     builder.optional(PrimitiveType.PrimitiveTypeName.BINARY)
                             .as(LogicalTypeAnnotation.stringType())
                             .named(description.name);
                     break;
+                case Time:
+                    builder.optional(PrimitiveType.PrimitiveTypeName.INT32)
+                            .as(LogicalTypeAnnotation.timeType(true, LogicalTypeAnnotation.TimeUnit.MILLIS))
+                            .named(description.name);
+                    break;
+                case Duration:
                 case Interval:
                 case None:
                 default:
@@ -67,7 +87,6 @@ public class ParquetFileWriter implements ITableWriter {
         try {
             ParquetWriter<GenericData.Record> writer = AvroParquetWriter.<GenericData.Record>builder(new Path(filepath))
                     .withSchema(avroSchema)
-                    .withCompressionCodec(CompressionCodecName.SNAPPY)
                     .build();
 
             IRowIterator iterator = table.getMembershipSet().getIterator();
@@ -84,18 +103,26 @@ public class ParquetFileWriter implements ITableWriter {
 
                     switch (col.getKind()) {
                         case Date:
+                            record.put(col.getName(), Converters.toDate(col.getDouble(nextRow)).toEpochMilli());
+                            break;
                         case Double:
                         case Duration:
-                        case LocalDate:
-                        case Time:
                             record.put(col.getName(), col.getDouble(nextRow));
                             break;
                         case Integer:
                             record.put(col.getName(), col.getInt(nextRow));
                             break;
+                        case LocalDate:
+                            record.put(col.getName(),
+                                    Converters.toLocalDate(col.getDouble(nextRow)).atZone(ZoneOffset.systemDefault()).toInstant().toEpochMilli());
+                            break;
                         case Json:
                         case String:
                             record.put(col.getName(), col.getString(nextRow));
+                            break;
+                        case Time:
+                            record.put(col.getName(),
+                                    Converters.toTime(col.getDouble(nextRow)).toNanoOfDay() / Converters.NANOS_TO_MILLIS);
                             break;
                         case Interval:
                         case None:
