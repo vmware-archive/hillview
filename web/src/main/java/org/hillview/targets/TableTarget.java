@@ -106,13 +106,13 @@ public class TableTarget extends TableRpcTarget {
 
     static class BasicColStatsArgs {
         String[] cols;
-        long[] seeds;
+        long seed;
     }
 
     @HillviewRpc
     public void basicColStats(RpcRequest request, RpcRequestContext context) {
         BasicColStatsArgs args = request.parseArgs(BasicColStatsArgs.class);
-        BasicColStatSketch sk = new BasicColStatSketch(args.cols, 2, args.seeds);
+        BasicColStatSketch sk = new BasicColStatSketch(args.cols, 2, args.seed);
         PostProcessedSketch<ITable, JsonList<Pair<BasicColStats, HLogLog>>, JsonList<Pair<BasicColStats, CountWithConfidence>>> post =
                 sk.andThen(stats -> {
                     JsonList<Pair<BasicColStats, CountWithConfidence>> results = new JsonList<>();

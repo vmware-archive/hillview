@@ -260,7 +260,7 @@ export class TableTargetAPI extends RemoteObject {
     public createBasicColStatsRequest(cols: string[]): RpcRequest<Pair<BasicColStats, CountWithConfidence>[]> {
         return this.createStreamingRpcRequest<Pair<BasicColStats, CountWithConfidence>[]>(
             "basicColStats",
-            { cols: cols, seeds: cols.map(c => Seed.instance.get())});
+            { cols: cols, seed: Seed.instance.get()});
     }
 
     public createHeavyHittersRequest(columns: IColumnDescription[],

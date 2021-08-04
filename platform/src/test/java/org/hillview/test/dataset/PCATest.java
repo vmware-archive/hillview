@@ -29,7 +29,6 @@ import org.jblas.DoubleMatrix;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.Arrays;
 import java.util.List;
 
 public class PCATest extends BaseTest {
@@ -38,13 +37,11 @@ public class PCATest extends BaseTest {
         int size = 10;
         int numFrags = 1;
         int numCols  = 3;
-        long[] seeds = new long[numCols];
-        Arrays.fill(seeds, 0);
         ITable table = TestTables.getLinearTable(size, numCols);
         List<String> colNameList = table.getSchema().getColumnNames();
         String[] colNames = Utilities.toArray(colNameList);
         IDataSet<ITable> dataset = TestTables.makeParallel(table, size/numFrags);
-        BasicColStatSketch statsSk = new BasicColStatSketch(colNames, 0, seeds);
+        BasicColStatSketch statsSk = new BasicColStatSketch(colNames, 0, 0);
         JsonList<Pair<BasicColStats, HLogLog>> stats = dataset.blockingSketch(statsSk);
         Assert.assertNotNull(stats);
         JsonList<DoubleHistogramBuckets> buckets =
