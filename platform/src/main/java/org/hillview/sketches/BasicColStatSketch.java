@@ -35,18 +35,18 @@ public class BasicColStatSketch implements TableSketch<JsonList<Pair<BasicColSta
     static final long serialVersionUID = 1;
     private final String[] cols;
     private final int momentNum;
-    private final long[] seeds;
+    private final long seed;
 
-    public BasicColStatSketch(String[] cols, int momentNum, long[] seeds) {
+    public BasicColStatSketch(String[] cols, int momentNum, long seed) {
         this.cols = cols;
         this.momentNum = momentNum;
-        this.seeds = seeds;
+        this.seed = seed;
     }
 
     public BasicColStatSketch(String col, int momentNum, long seed) {
         this.cols = new String[] { col };
         this.momentNum = momentNum;
-        this.seeds = new long[] { seed };
+        this.seed = seed;
     }
 
     @Override
@@ -68,7 +68,7 @@ public class BasicColStatSketch implements TableSketch<JsonList<Pair<BasicColSta
         for (int i = 0; i < this.cols.length; i++)
             result.add(new Pair<>(
                     new BasicColStats(this.momentNum, true),
-                    new HLogLog(HLogLogSketch.DEFAULT_LOG_SPACE_SIZE, seeds[i])
+                    new HLogLog(HLogLogSketch.DEFAULT_LOG_SPACE_SIZE, seed)
             ));
 
         return result;
