@@ -95,6 +95,7 @@ data/synthetic/privacy_metadata.json
 data/metadata/differential-privacy/data/ontime_private/privacy_metadata.json
 data/geo/us_states/cb_*
 data/geo/airports/airprt*
+data/parquet/
 
 *.DS_Store
 hillview_root_key
