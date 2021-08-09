@@ -152,9 +152,13 @@ export class LoadView extends RemoteObject implements IDataView {
             }, {
                 text: "Delta table...",
                 action: () => {
-                    const dialog = new DeltaTableDialog();
-                    dialog.setAction(() => this.init.loadDeltaTable(dialog.getDeltaTableDescription(), this.page))
-                    dialog.show();
+                    const rr = this.createStreamingRpcRequest<string>("getHDFSUri", null);
+                    const observer = new GenericReceiver("get HDFS URI", this.page, rr, hdfsUri => {
+                        const dialog = new DeltaTableDialog(hdfsUri);
+                        dialog.setAction(() => this.init.loadDeltaTable(dialog.getDeltaTableDescription(), this.page))
+                        dialog.show();
+                    });
+                    rr.invoke(observer);
                 },
                 help: "A delta lake table"
             });
@@ -482,7 +486,7 @@ class OrcFileDialog extends Dialog {
 }
 
 class DeltaTableDialog extends Dialog {
-    constructor() {
+    constructor(hdfsUri: string) {
         super(
             "Load a Delta Lake table",
             "Load a Delta Lake table from local filesystem, hdfs, or s3"
@@ -491,7 +495,7 @@ class DeltaTableDialog extends Dialog {
             "deltaTablePath",
             "Delta table path",
             FieldKind.String,
-            "/delta-table",
+            hdfsUri,
             "Path to the delta table to load."
         );
         path.required = true;

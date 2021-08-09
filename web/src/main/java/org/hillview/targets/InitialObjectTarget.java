@@ -17,7 +17,10 @@
 
 package org.hillview.targets;
 
+import com.google.gson.JsonPrimitive;
 import org.apache.commons.io.FileUtils;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.hillview.*;
 import org.hillview.dataset.RemoteDataSet;
 import org.hillview.dataset.api.*;
@@ -104,6 +107,34 @@ public class InitialObjectTarget extends RpcTarget {
     public void getUIConfig(RpcRequest request, RpcRequestContext context) {
         Converters.checkNull(this.emptyDataset);
         this.returnResult(Configuration.instance.getAsJson(), request, context);
+    }
+
+    @HillviewRpc
+    public void getHDFSUri(RpcRequest request, RpcRequestContext context) {
+        final String hadoopHome = System.getenv("HADOOP_HOME");
+        String hdfsUri;
+
+        if (hadoopHome == null) {
+            HillviewLogger.instance.warn("Could not find HADOOP_HOME");
+            hdfsUri = "";
+        } else {
+            try {
+                final Path hadoopConfigDir = new Path(Paths.get(hadoopHome, "etc", "hadoop").toUri());
+                org.apache.hadoop.conf.Configuration configuration
+                        = new org.apache.hadoop.conf.Configuration();
+                configuration.addResource(new Path(hadoopConfigDir, "core-site.xml"));
+                configuration.addResource(new Path(hadoopConfigDir, "hdfs-site.xml"));
+                hdfsUri = FileSystem.getDefaultUri(configuration).toString();
+            } catch (Exception exception) {
+                HillviewLogger.instance.warn(
+                        "Found HADOOP_HOME but failed to load config",
+                        "HADOOP_HOME: {0}, error message: {1}",
+                        hadoopHome, exception.getMessage());
+                hdfsUri = "";
+            }
+        }
+
+        this.returnResult(new JsonValue(new JsonPrimitive(hdfsUri)), request, context);
     }
 
     @HillviewRpc
