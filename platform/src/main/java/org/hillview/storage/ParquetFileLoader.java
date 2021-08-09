@@ -54,6 +54,7 @@ import java.nio.ByteOrder;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class ParquetFileLoader extends TextFileLoader {
@@ -85,7 +86,7 @@ public class ParquetFileLoader extends TextFileLoader {
 
     @SuppressWarnings("RedundantCast")
     private static void appendGroup(
-            List<IAppendableColumn> cols, Group g, List<ColumnDescriptor> cds) {
+            List<IAppendableColumn> cols, Group g, List<ColumnDescriptor> cds, boolean[] hasAmbiguousInterval) {
         int fieldCount = g.getType().getFieldCount();
         for (int field = 0; field < fieldCount; field++) {
             int valueCount = g.getFieldRepetitionCount(field);
@@ -180,11 +181,11 @@ public class ParquetFileLoader extends TextFileLoader {
                         int days = bb.getInt();
                         int milliseconds = bb.getInt();
                         if (months != 0) {
-                            HillviewLogger.instance.warn("Month is not zero in parquet interval: using conversion of 30 days per month",
-                                    "name: {0}, months: {1}, days: {2}, milliseconds: {3}", cds.get(field).getPath(), months, days, milliseconds);
+                            hasAmbiguousInterval[field] = true;
                         }
                         int daysInMonth = 30;
-                        double totalMilliseconds = (days + daysInMonth * months) * Converters.SECONDS_TO_DAY * Converters.MILLIS_TO_SECONDS + milliseconds;
+                        double totalMilliseconds = milliseconds
+                                + (days + daysInMonth * months) * Converters.SECONDS_TO_DAY * Converters.MILLIS_TO_SECONDS;
                         col.append(totalMilliseconds);
                     } else {
                         String s = g.getString(field, 0);
@@ -200,13 +201,17 @@ public class ParquetFileLoader extends TextFileLoader {
                     NanoTime nt = NanoTime.fromBinary(val);
                     int julianDay = nt.getJulianDay();
                     long nanosOfDay = nt.getTimeOfDayNanos();
-                    long epochSeconds = (julianDay - JULIAN_DAY_NUMBER_FOR_UNIX_EPOCH) * Converters.SECONDS_TO_DAY + nanosOfDay / Converters.NANOS_TO_SECONDS;
-                    LocalDateTime inst = LocalDateTime.ofEpochSecond(epochSeconds, Converters.toInt(nanosOfDay % Converters.NANOS_TO_SECONDS), ZoneOffset.UTC);
+                    long epochSeconds
+                            = (julianDay - JULIAN_DAY_NUMBER_FOR_UNIX_EPOCH) * Converters.SECONDS_TO_DAY
+                            + nanosOfDay / Converters.NANOS_TO_SECONDS;
+                    LocalDateTime inst = LocalDateTime.ofEpochSecond(
+                            epochSeconds, Converters.toInt(nanosOfDay % Converters.NANOS_TO_SECONDS), ZoneOffset.UTC);
                     col.append(Converters.toDouble(inst));
                     break;
                 }
                 default:
-                    throw new RuntimeException("Unexpected column kind " + cds.get(field).getPrimitiveType().getPrimitiveTypeName());
+                    throw new RuntimeException(
+                            "Unexpected column kind " + cds.get(field).getPrimitiveType().getPrimitiveTypeName());
             }
         }
     }
@@ -246,6 +251,9 @@ public class ParquetFileLoader extends TextFileLoader {
                 if (logicalType instanceof IntervalLogicalTypeAnnotation) {
                     kind = ContentsKind.Duration;
                 } else {
+                    HillviewLogger.instance.warn(
+                            "FIXED_LEN_BYTE_ARRAY field with missing or unknown logical type: parsing as string",
+                            "name: {0}, logical type: {2}", name, logicalType);
                     kind = ContentsKind.String;
                 }
                 break;
@@ -255,8 +263,9 @@ public class ParquetFileLoader extends TextFileLoader {
                 } else if (logicalType instanceof JsonLogicalTypeAnnotation) {
                     kind = ContentsKind.Json;
                 } else {
-                    HillviewLogger.instance.warn("Encountered BINARY field with no or unhandled logical type annotation: attempting to parse as string",
-                            "name: {0}, logical type annotation: {1}", name, logicalType);
+                    HillviewLogger.instance.warn(
+                            "BINARY field with missing or unknown logical type: parsing as string",
+                            "name: {0}, logical type: {2}", name, logicalType);
                     kind = ContentsKind.String;
                 }
                 break;
@@ -290,6 +299,17 @@ public class ParquetFileLoader extends TextFileLoader {
             ParquetFileReader r = new ParquetFileReader(file, builder.build());
             MessageColumnIO columnIO = new ColumnIOFactory().getColumnIO(schema);
 
+            // The parquet interval format has 3 fields: months, days, and milliseconds. However, since there is no
+            // constant conversion from months to days, non-zero month values are ambiguous. So we need to warn the user
+            // if such values are found.
+            // See https://github.com/apache/parquet-format/blob/master/LogicalTypes.md#interval
+            // We use an array keeps track of whether such ambiguous interval values exists in each column. And for each
+            // column with ambiguous value(s), we only log one warning message after the loading procedure is done to
+            // avoid excessive warning messages.
+            // This part should probably be refactored if there are more warnings that may be emitted during loading.
+            boolean[] hasAmbiguousInterval = new boolean[cols.size()];
+            Arrays.fill(hasAmbiguousInterval, false);
+
             PageReadStore pages;
             while (null != (pages = r.readNextRowGroup())) {
                 final long rows = pages.getRowCount();
@@ -297,13 +317,22 @@ public class ParquetFileLoader extends TextFileLoader {
                         pages, new GroupRecordConverter(schema));
                 for (int i = 0; i < rows; i++) {
                     Group g = recordReader.read();
-                    appendGroup(cols, g, md.getFileMetaData().getSchema().getColumns());
+                    appendGroup(cols, g, md.getFileMetaData().getSchema().getColumns(), hasAmbiguousInterval);
                 }
             }
 
             for (IAppendableColumn c : cols)
                 c.seal();
             r.close();
+
+            for (int i = 0; i < cols.size(); i++) {
+                if (hasAmbiguousInterval[i]) {
+                    HillviewLogger.instance.warn("Found values in parquet interval column with non-zero month field: " +
+                                    "using conversion of 30 days per month",
+                            "column name: {0}", cols.get(i).getName());
+                }
+            }
+
             return Linq.map(cols, e -> e);
         } catch (IOException ex) {
             throw new RuntimeException(ex);
