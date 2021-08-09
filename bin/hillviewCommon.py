@@ -74,7 +74,7 @@ class RemoteHost:
             logger.info(message)
         f.close()
 
-        command = "ssh " + self.uh() + " bash -s < " + file.name
+        command = "ssh " + self.uh() + " bash -l -s < " + file.name
         exitcode = subprocess.call(command, shell=True)
         if exitcode != 0:
             error = "Exit code returned: " + str(exitcode)
