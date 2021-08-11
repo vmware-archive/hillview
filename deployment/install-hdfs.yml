@@ -1,0 +1,71 @@
+---
+
+- hosts: all
+  tasks:
+    - name: Download hadoop
+      get_url:
+        url: "https://mirrors.ocf.berkeley.edu/apache/hadoop/common/hadoop-{{ hadoop_version }}/hadoop-{{ hadoop_version}}.tar.gz"
+        dest: "/tmp/hadoop-{{ hadoop_version }}.tar.gz"
+
+    - set_fact: HADOOP_HOME="{{ ansible_env.HOME }}/hadoop-{{ hadoop_version }}"
+
+    - name: Unarchive hadoop
+      unarchive:
+        src: "/tmp/hadoop-{{ hadoop_version }}.tar.gz"
+        dest: "{{ ansible_env.HOME }}"
+        remote_src: true
+        creates: "{{ HADOOP_HOME }}"
+
+    - name: Set HADOOP_HOME environment variable
+      lineinfile:
+        path: "{{ ansible_env.HOME }}/.profile"
+        line: "export HADOOP_HOME=$HOME/hadoop-{{ hadoop_version }}"
+
+    - name: Set PATH environment variable
+      lineinfile:
+        path: "{{ ansible_env.HOME }}/.profile"
+        line: "export PATH=$HADOOP_HOME/bin:$HADOOP_HOME/sbin:$PATH"
+
+    - name: Get JAVA_HOME
+      shell: bash -lc 'echo $JAVA_HOME'
+      register: echo_java_home
+      changed_when: false
+      failed_when: echo_java_home.stdout == ""
+
+    - name: Set JAVA_HOME for hadoop environment
+      lineinfile:
+        path: "{{ HADOOP_HOME }}/etc/hadoop/hadoop-env.sh"
+        regexp: "^# export JAVA_HOME=$"
+        line: "export JAVA_HOME={{ echo_java_home.stdout }}"
+
+    - name: Write workers config
+      template:
+        src: templates/workers.j2
+        dest: "{{ HADOOP_HOME }}/etc/hadoop/workers"
+
+    - name: Write core-site.xml
+      template:
+        src: templates/core-site.xml.j2
+        dest: "{{ HADOOP_HOME }}/etc/hadoop/core-site.xml"
+
+    - name: Write hdfs-site.xml
+      template:
+        src: templates/hdfs-site.xml.j2
+        dest: "{{ HADOOP_HOME }}/etc/hadoop/hdfs-site.xml"
+
+- hosts: namenode
+  tasks:
+    - name: Format hdfs if it hasn't been formatted
+      shell:
+        cmd: "{{ HADOOP_HOME }}/bin/hdfs namenode -format"
+        creates: "{{ HADOOP_HOME }}/data/namenode/current/VERSION"
+
+    - name: Check hdfs status
+      shell: "{{ HADOOP_HOME }}/bin/hdfs dfsadmin -report"
+      register: hdfs_report
+      changed_when: false
+      failed_when: false
+
+    - name: Start hdfs
+      shell: "{{ HADOOP_HOME }}/sbin/start-dfs.sh"
+      when: hdfs_report.rc != 0
