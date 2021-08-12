@@ -39,6 +39,10 @@ def write_inventory_file(config, file):
 
 
 def get_deployment_dir():
+    """
+    Assumes there is a deployment folder in the project root that contains the needed ansible files.
+    :return: The absolute path to the deployment folder.
+    """
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(project_root, "deployment")
 
