@@ -1,11 +1,20 @@
 #!/usr/bin/env python3
-# requires ansible and ansible-runner: pip3 install --user ansible ansible-runner
 import os
 from argparse import ArgumentParser
 from configparser import ConfigParser
 from tempfile import NamedTemporaryFile
 
-import ansible_runner
+try:
+    import ansible_runner
+except ModuleNotFoundError:
+    import textwrap
+    import sys
+    print(textwrap.dedent("""\
+    This script requires ansible and ansible-runner.
+    You can install these modules using the following command:
+        pip install --user ansible ansible-runner
+    """), file=sys.stderr)
+    sys.exit(-1)
 
 from hillviewCommon import get_config
 
