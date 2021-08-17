@@ -53,7 +53,8 @@ on a remoate cluster when Hillview is installed
 
 * `delete-data.py`: delete a folder from all machines in a Hillview cluster
 * `deploy.py`: copy the Hillview binaries to all machines in a Hillview cluster
-* `download-data.py`: downloads the specified files from all machines in a cluster
+* `deploy-hdfs.py`: download and install HDFS on all machines in a hillview cluster
+* `download-data.py`: download the specified files from all machines in a cluster
 * `hillviewCommon.py`: common library used by other Python programs
 * `run-on-all.py`: run a command on all machines in a Hillview cluster
 * `start.py`: start the Hillview service on a remote cluster
