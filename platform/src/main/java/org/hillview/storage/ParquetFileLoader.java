@@ -35,19 +35,26 @@ import org.apache.parquet.io.InputFile;
 import org.apache.parquet.io.MessageColumnIO;
 import org.apache.parquet.io.RecordReader;
 import org.apache.parquet.io.api.Binary;
+import org.apache.parquet.schema.LogicalTypeAnnotation;
+import org.apache.parquet.schema.LogicalTypeAnnotation.*;
 import org.apache.parquet.schema.MessageType;
+import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Type;
 import org.hillview.table.ColumnDescription;
 import org.hillview.table.Table;
 import org.hillview.table.api.*;
 import org.hillview.table.columns.BaseListColumn;
 import org.hillview.utils.Converters;
+import org.hillview.utils.HillviewLogger;
 import org.hillview.utils.Linq;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class ParquetFileLoader extends TextFileLoader {
@@ -79,7 +86,7 @@ public class ParquetFileLoader extends TextFileLoader {
 
     @SuppressWarnings("RedundantCast")
     private static void appendGroup(
-            List<IAppendableColumn> cols, Group g, List<ColumnDescriptor> cds) {
+            List<IAppendableColumn> cols, Group g, List<ColumnDescriptor> cds, boolean[] hasAmbiguousInterval) {
         int fieldCount = g.getType().getFieldCount();
         for (int field = 0; field < fieldCount; field++) {
             int valueCount = g.getFieldRepetitionCount(field);
@@ -94,10 +101,41 @@ public class ParquetFileLoader extends TextFileLoader {
             Type fieldType = g.getType().getType(field);
             if (!fieldType.isPrimitive())
                 throw new RuntimeException("Non-primitive field not supported");
-            switch (cds.get(field).getPrimitiveType().getPrimitiveTypeName()) {
+            PrimitiveType primitiveType = cds.get(field).getPrimitiveType();
+            LogicalTypeAnnotation logicalType = primitiveType.getLogicalTypeAnnotation();
+            switch (primitiveType.getPrimitiveTypeName()) {
                 case INT64: {
                     long l = g.getLong(field, 0);
-                    col.append((double) l);
+                    if (logicalType instanceof TimestampLogicalTypeAnnotation) {
+                        switch (((TimestampLogicalTypeAnnotation) logicalType).getUnit()) {
+                            case MILLIS:
+                                col.append((double) l);
+                                break;
+                            case MICROS:
+                                col.append((double) l / Converters.MICROS_TO_MILLIS);
+                                break;
+                            case NANOS:
+                                col.append((double) l / Converters.NANOS_TO_MILLIS);
+                                break;
+                            default:
+                                throw new RuntimeException("Unexpected time unit when parsing parquet timestamp: " +
+                                        ((TimestampLogicalTypeAnnotation) logicalType).getUnit());
+                        }
+                    } else if (logicalType instanceof TimeLogicalTypeAnnotation) {
+                        switch (((TimeLogicalTypeAnnotation) logicalType).getUnit()) {
+                            case MICROS:
+                                col.append((double) l / Converters.MICROS_TO_MILLIS);
+                                break;
+                            case NANOS:
+                                col.append((double) l / Converters.NANOS_TO_MILLIS);
+                                break;
+                            default:
+                                throw new RuntimeException("Unexpected time unit when parse parquet time: " +
+                                        ((TimeLogicalTypeAnnotation) logicalType).getUnit());
+                        }
+                    } else {
+                        col.append((double) l);
+                    }
                     break;
                 }
                 case FLOAT: {
@@ -112,7 +150,16 @@ public class ParquetFileLoader extends TextFileLoader {
                 }
                 case INT32: {
                     int i = g.getInteger(field, 0);
-                    col.append(i);
+                    if (logicalType instanceof TimeLogicalTypeAnnotation) {
+                        if (((TimeLogicalTypeAnnotation) logicalType).getUnit() == LogicalTypeAnnotation.TimeUnit.MILLIS) {
+                            col.append((double) i);
+                        } else {
+                            throw new RuntimeException("Unexpected unit when parsing parsing parquet time: " +
+                                    ((TimeLogicalTypeAnnotation) logicalType).getUnit());
+                        }
+                    } else {
+                        col.append(i);
+                    }
                     break;
                 }
                 case BOOLEAN: {
@@ -127,8 +174,23 @@ public class ParquetFileLoader extends TextFileLoader {
                     break;
                 }
                 case FIXED_LEN_BYTE_ARRAY: {
-                    String s = g.getString(field, 0);
-                    col.append(s);
+                    if (logicalType instanceof IntervalLogicalTypeAnnotation) {
+                        ByteBuffer bb = g.getBinary(field, 0).toByteBuffer();
+                        bb.order(ByteOrder.LITTLE_ENDIAN);
+                        int months = bb.getInt();
+                        int days = bb.getInt();
+                        int milliseconds = bb.getInt();
+                        if (months != 0) {
+                            hasAmbiguousInterval[field] = true;
+                        }
+                        int daysInMonth = 30;
+                        double totalMilliseconds = milliseconds
+                                + (days + daysInMonth * months) * Converters.SECONDS_TO_DAY * Converters.MILLIS_TO_SECONDS;
+                        col.append(totalMilliseconds);
+                    } else {
+                        String s = g.getString(field, 0);
+                        col.append(s);
+                    }
                     break;
                 }
                 case INT96: {
@@ -139,13 +201,17 @@ public class ParquetFileLoader extends TextFileLoader {
                     NanoTime nt = NanoTime.fromBinary(val);
                     int julianDay = nt.getJulianDay();
                     long nanosOfDay = nt.getTimeOfDayNanos();
-                    long epochSeconds = (julianDay - JULIAN_DAY_NUMBER_FOR_UNIX_EPOCH) * Converters.SECONDS_TO_DAY + nanosOfDay / Converters.NANOS_TO_SECONDS;
-                    LocalDateTime inst = LocalDateTime.ofEpochSecond(epochSeconds, Converters.toInt(nanosOfDay % Converters.NANOS_TO_SECONDS), ZoneOffset.UTC);
+                    long epochSeconds
+                            = (julianDay - JULIAN_DAY_NUMBER_FOR_UNIX_EPOCH) * Converters.SECONDS_TO_DAY
+                            + nanosOfDay / Converters.NANOS_TO_SECONDS;
+                    LocalDateTime inst = LocalDateTime.ofEpochSecond(
+                            epochSeconds, Converters.toInt(nanosOfDay % Converters.NANOS_TO_SECONDS), ZoneOffset.UTC);
                     col.append(Converters.toDouble(inst));
                     break;
                 }
                 default:
-                    throw new RuntimeException("Unexpected column kind " + cds.get(field).getPrimitiveType().getPrimitiveTypeName());
+                    throw new RuntimeException(
+                            "Unexpected column kind " + cds.get(field).getPrimitiveType().getPrimitiveTypeName());
             }
         }
     }
@@ -153,19 +219,55 @@ public class ParquetFileLoader extends TextFileLoader {
     private static ColumnDescription getColumnDescription(ColumnDescriptor cd) {
         String name = String.join("", cd.getPath());  // this should contain a single String
         ContentsKind kind;
-        switch (cd.getPrimitiveType().getPrimitiveTypeName()) {
+        PrimitiveType primitiveType = cd.getPrimitiveType();
+        LogicalTypeAnnotation logicalType = primitiveType.getLogicalTypeAnnotation();
+        switch (primitiveType.getPrimitiveTypeName()) {
             case INT64:
+                if (logicalType instanceof TimestampLogicalTypeAnnotation) {
+                    if (((TimestampLogicalTypeAnnotation) logicalType).isAdjustedToUTC()) {
+                        kind = ContentsKind.Date;
+                    } else {
+                        kind = ContentsKind.LocalDate;
+                    }
+                } else if (logicalType instanceof TimeLogicalTypeAnnotation) {
+                    kind = ContentsKind.Time;
+                } else {
+                    kind = ContentsKind.Double;
+                }
+                break;
             case FLOAT:
             case DOUBLE:
                 kind = ContentsKind.Double;
                 break;
             case INT32:
-                kind = ContentsKind.Integer;
+                if (logicalType instanceof TimeLogicalTypeAnnotation) {
+                    kind = ContentsKind.Time;
+                } else {
+                    kind = ContentsKind.Integer;
+                }
                 break;
             case BOOLEAN:
-            case BINARY:
             case FIXED_LEN_BYTE_ARRAY:
-                kind = ContentsKind.String;
+                if (logicalType instanceof IntervalLogicalTypeAnnotation) {
+                    kind = ContentsKind.Duration;
+                } else {
+                    HillviewLogger.instance.warn(
+                            "FIXED_LEN_BYTE_ARRAY field with missing or unknown logical type: parsing as string",
+                            "name: {0}, logical type: {2}", name, logicalType);
+                    kind = ContentsKind.String;
+                }
+                break;
+            case BINARY:
+                if (logicalType instanceof StringLogicalTypeAnnotation) {
+                    kind = ContentsKind.String;
+                } else if (logicalType instanceof JsonLogicalTypeAnnotation) {
+                    kind = ContentsKind.Json;
+                } else {
+                    HillviewLogger.instance.warn(
+                            "BINARY field with missing or unknown logical type: parsing as string",
+                            "name: {0}, logical type: {2}", name, logicalType);
+                    kind = ContentsKind.String;
+                }
                 break;
             case INT96:
                 kind = ContentsKind.LocalDate;
@@ -188,27 +290,6 @@ public class ParquetFileLoader extends TextFileLoader {
         return result;
     }
 
-    public class ParquetColumnLoader implements IColumnLoader {
-        @Override
-        public List<? extends IColumn> loadColumns(List<String> names) {
-            FileMetaData fm = ParquetFileLoader.this.metadata.getFileMetaData();
-            MessageType schema = fm.getSchema();
-            List<Type> list = new ArrayList<Type>();
-            for (Type col : schema.getFields()) {
-                String colName = col.getName();
-                if (names.contains(colName))
-                    list.add(col);
-            }
-            assert list.size() > 0;
-            MessageType newSchema = new MessageType(schema.getName(), list);
-            FileMetaData nfm = new FileMetaData(
-                    newSchema, fm.getKeyValueMetaData(), fm.getCreatedBy());
-            List<BlockMetaData> blocks = ParquetFileLoader.this.metadata.getBlocks();
-            ParquetMetadata md = new ParquetMetadata(nfm, blocks);
-            return ParquetFileLoader.this.loadColumns(md);
-        }
-    }
-
     private List<IColumn> loadColumns(ParquetMetadata md) {
         try {
             MessageType schema = md.getFileMetaData().getSchema();
@@ -218,6 +299,17 @@ public class ParquetFileLoader extends TextFileLoader {
             ParquetFileReader r = new ParquetFileReader(file, builder.build());
             MessageColumnIO columnIO = new ColumnIOFactory().getColumnIO(schema);
 
+            // The parquet interval format has 3 fields: months, days, and milliseconds. However, since there is no
+            // constant conversion from months to days, non-zero month values are ambiguous. So we need to warn the user
+            // if such values are found.
+            // See https://github.com/apache/parquet-format/blob/master/LogicalTypes.md#interval
+            // We use an array keeps track of whether such ambiguous interval values exists in each column. And for each
+            // column with ambiguous value(s), we only log one warning message after the loading procedure is done to
+            // avoid excessive warning messages.
+            // This part should probably be refactored if there are more warnings that may be emitted during loading.
+            boolean[] hasAmbiguousInterval = new boolean[cols.size()];
+            Arrays.fill(hasAmbiguousInterval, false);
+
             PageReadStore pages;
             while (null != (pages = r.readNextRowGroup())) {
                 final long rows = pages.getRowCount();
@@ -225,13 +317,22 @@ public class ParquetFileLoader extends TextFileLoader {
                         pages, new GroupRecordConverter(schema));
                 for (int i = 0; i < rows; i++) {
                     Group g = recordReader.read();
-                    appendGroup(cols, g, md.getFileMetaData().getSchema().getColumns());
+                    appendGroup(cols, g, md.getFileMetaData().getSchema().getColumns(), hasAmbiguousInterval);
                 }
             }
 
             for (IAppendableColumn c : cols)
                 c.seal();
             r.close();
+
+            for (int i = 0; i < cols.size(); i++) {
+                if (hasAmbiguousInterval[i]) {
+                    HillviewLogger.instance.warn("Found values in parquet interval column with non-zero month field: " +
+                                    "using conversion of 30 days per month",
+                            "column name: {0}", cols.get(i).getName());
+                }
+            }
+
             return Linq.map(cols, e -> e);
         } catch (IOException ex) {
             throw new RuntimeException(ex);
@@ -261,6 +362,27 @@ public class ParquetFileLoader extends TextFileLoader {
             List<IColumn> cols = this.loadColumns(md);
             this.close(null);
             return new Table(cols, this.filename, null);
+        }
+    }
+
+    public class ParquetColumnLoader implements IColumnLoader {
+        @Override
+        public List<? extends IColumn> loadColumns(List<String> names) {
+            FileMetaData fm = ParquetFileLoader.this.metadata.getFileMetaData();
+            MessageType schema = fm.getSchema();
+            List<Type> list = new ArrayList<Type>();
+            for (Type col : schema.getFields()) {
+                String colName = col.getName();
+                if (names.contains(colName))
+                    list.add(col);
+            }
+            assert list.size() > 0;
+            MessageType newSchema = new MessageType(schema.getName(), list);
+            FileMetaData nfm = new FileMetaData(
+                    newSchema, fm.getKeyValueMetaData(), fm.getCreatedBy());
+            List<BlockMetaData> blocks = ParquetFileLoader.this.metadata.getBlocks();
+            ParquetMetadata md = new ParquetMetadata(nfm, blocks);
+            return ParquetFileLoader.this.loadColumns(md);
         }
     }
 }

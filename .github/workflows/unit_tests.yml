@@ -24,7 +24,7 @@ jobs:
         run: ./rebuild.sh -a
       - name: Process demo data
         working-directory: bin
-        run: ./demo-data-cleaner.sh -g
+        run: ./demo-data-cleaner.sh -dp
       - name: Run unit tests
         working-directory: bin
         run: ./rebuild.sh -t
