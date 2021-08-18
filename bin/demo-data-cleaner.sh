@@ -14,7 +14,13 @@ ARGS=""
 while getopts "dp" opt; do
   case "$opt" in
     d)
-      python3 generate-delta-table.py
+      pushd ../data/ontime/
+      if [ ! -d "delta-table" ]; then
+        for file in `ls *.csv.gz | sort -n`; do
+          python3 ../../bin/append-to-delta-table.py --format csv -o header true $file delta-table
+        done
+      fi
+      popd
       ;;
     p)
       ARGS+="-Dparquet.enabled "
