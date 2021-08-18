@@ -47,6 +47,6 @@ public class DeltaTableTest extends BaseTest {
         IDataSet<ITable> mapped = found.blockingMap(loader);
         SummarySketch sk = new SummarySketch();
         TableSummary tableSummary = mapped.blockingSketch(sk);
-        Assert.assertEquals(1_315_543, tableSummary.rowCount);
+        Assert.assertEquals(869_716, tableSummary.rowCount);
     }
 }
