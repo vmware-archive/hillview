@@ -1606,6 +1606,9 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                     shownValue = Converters.valueToString(row.values[dataIndex], cd.kind, true);
                     const high = this.findBar.highlight(shownValue, this.strFilter);
                     cell.appendChild(high);
+                    cell.onclick = () => {
+                        this.page.reportError(shownValue);
+                    };
                 }
 
                 const shortValue = truncate(shownValue, 30);
