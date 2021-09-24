@@ -41,6 +41,7 @@ import javax.websocket.Session;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Set;
 
 /**
  * This is the most important RpcTarget, representing a remote table.
@@ -731,6 +732,41 @@ public class TableTarget extends TableRpcTarget {
         ExtractValueFromKeyMap.Info info = request.parseArgs(ExtractValueFromKeyMap.Info.class);
         ExtractValueFromKeyMap map = new ExtractValueFromKeyMap(info);
         this.runMap(this.table, map, (d, c) -> new TableTarget(d, c, this.metadataDirectory), request, context);
+    }
+
+    @HillviewRpc
+    public void kvGetAllKeys(RpcRequest request, RpcRequestContext context) {
+        String column = request.parseArgs(String.class);
+        ExtractAllKeysSketch sketch = new ExtractAllKeysSketch(column);
+        PostProcessedSketch<ITable, DistinctStrings, RpcTarget.Id> post =
+                sketch.andThen(result -> {
+                    HillviewComputation computation = context.getComputation(request);
+                    StringListTarget target = new StringListTarget(result, computation);
+                    return target.getId();
+                });
+        this.runCompleteSketch(this.table, post, request, context);
+    }
+
+    static class ExplodeColumnsInfo {
+        // Column to explode
+        String column = "";
+        // Prefix to add to each column name.
+        String prefix = "";
+        // Id of dataset storing the list of keys to explode
+        String distinctColumnsObjectId = "";
+    }
+
+    @HillviewRpc
+    public void kvExplodeColumn(RpcRequest request, RpcRequestContext context) {
+        ExplodeColumnsInfo ei = request.parseArgs(ExplodeColumnsInfo.class);
+        RpcObjectManager.instance.when(
+                ei.distinctColumnsObjectId, rpcTarget -> {
+                    StringListTarget keys = rpcTarget.to(StringListTarget.class);
+                    IMap<ITable, ITable> map = new ExplodeKeyValueColumnMap(ei.column, ei.prefix, keys.strings);
+                    TableTarget.this.runMap(
+                            TableTarget.this.table, map,
+                            (d, c) -> new TableTarget(d, c, this.metadataDirectory), request, context);
+                });
     }
 
     @HillviewRpc

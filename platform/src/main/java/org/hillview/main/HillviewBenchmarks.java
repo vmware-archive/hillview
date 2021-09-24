@@ -251,7 +251,7 @@ public class HillviewBenchmarks extends Benchmarks {
             assert s != null;
             assert s.schema != null;
             String colName = s.schema.getColumnNames().get(0);
-            TableSketch<DistinctStringsSketch.DistinctStrings> sk =
+            TableSketch<DistinctStrings> sk =
                     new DistinctStringsSketch(colName);
             Runnable r = () -> Converters.checkNull(data.blockingSketch(sk)).getQuantiles(quantiles);
             runNTimes(r, runCount, "Naive " + distinct + " distinct", elementsPerPartition);
@@ -295,9 +295,9 @@ public class HillviewBenchmarks extends Benchmarks {
             assert s.schema != null;
             System.out.println("Table has " + s.rowCount + " rows");
             String colName = s.schema.getColumnNames().get(0);
-            TableSketch<DistinctStringsSketch.DistinctStrings> sk =
+            TableSketch<DistinctStrings> sk =
                     new DistinctStringsSketch(colName);
-            DistinctStringsSketch.DistinctStrings strings = data.blockingSketch(sk);
+            DistinctStrings strings = data.blockingSketch(sk);
             assert strings != null;
             List<String> uniqueStrings = new ArrayList<String>();
             strings.getStrings().forEach(uniqueStrings::add);
@@ -329,9 +329,9 @@ public class HillviewBenchmarks extends Benchmarks {
             assert s != null;
             assert s.schema != null;
             String colName = s.schema.getColumnNames().get(0);
-            TableSketch<DistinctStringsSketch.DistinctStrings> sk =
+            TableSketch<DistinctStrings> sk =
                     new DistinctStringsSketch(colName);
-            DistinctStringsSketch.DistinctStrings strings = data.blockingSketch(sk);
+            DistinctStrings strings = data.blockingSketch(sk);
             List<String> uniqueStrings = new ArrayList<String>();
             assert strings != null;
             strings.getStrings().forEach(uniqueStrings::add);

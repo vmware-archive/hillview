@@ -55,7 +55,7 @@ import {
     CreateIntervalColumnMapInfo,
     HeatmapRequestInfo,
     RowValue,
-    MapAndColumnRepresentation, FilterListDescription, TableMetadata, RenameArgs
+    MapAndColumnRepresentation, FilterListDescription, TableMetadata, RenameArgs, ExplodeColumnsInfo
 } from "./javaBridge";
 import {OnCompleteReceiver, RemoteObject, RpcRequest} from "./rpc";
 import {FullPage, PageTitle} from "./ui/fullPage";
@@ -384,6 +384,16 @@ RpcRequest<RemoteObjectId> {
     public createKVCreateColumnRequest(c: ExtractValueFromKeyMapInfo):
         RpcRequest<string> {
         return this.createStreamingRpcRequest<string>("kvCreateColumn", c);
+    }
+
+    public createKVGetAllKeysRequest(c: string):
+        RpcRequest<RemoteObjectId> {
+        return this.createStreamingRpcRequest<string>("kvGetAllKeys", c);
+    }
+
+    public createKVExplodeColumnsRequest(e: ExplodeColumnsInfo):
+        RpcRequest<RemoteObjectId> {
+        return this.createStreamingRpcRequest<RemoteObjectId>("kvExplodeColumn", e);
     }
 
     public createFilterRequest(f: RangeFilterArrayDescription):

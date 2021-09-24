@@ -207,6 +207,15 @@ export interface ExtractValueFromKeyMapInfo {
     outputIndex: number;
 }
 
+export interface ExplodeColumnsInfo {
+    // Column to explode
+    column: string;
+    // Prefix to add to each column name.
+    prefix: string;
+    // Id of dataset storing the list of keys to explode
+    distinctColumnsObjectId: string;
+}
+
 export type AggregateKind = "Sum" | "Count" | "Min" | "Max" | "Average";
 export const allAggregateKind: AggregateKind[] = ["Sum", "Count", "Min", "Max", "Average"];
 
