@@ -11,13 +11,10 @@ TOMCATVERSION="9.0.4"
 
 case "$OSTYPE" in
     linux*)
-        LIBFORTRAN="libgfortran3"
+        LIBFORTRAN="libgfortran5"
         if [ "$(cat /etc/*-release | grep -Ec 'ubuntu|debian')" -ne 0 ]; then
             # Npm will be installed with node.js
             INSTALL="apt-get"; SUDO="sudo"; NODEJS="nodejs";
-            if [ "$(lsb_release -d | grep -Ec 20)" -ne 0 ]; then
-                LIBFORTRAN="libgfortran5"
-            fi
         elif [ "$(cat /etc/*-release | grep -Ec 'centos|rhel' )" -ne 0 ]; then
             INSTALL="yum"; SUDO="sudo"; NODEJS="nodejs";
         else

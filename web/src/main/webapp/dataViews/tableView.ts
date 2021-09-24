@@ -38,7 +38,7 @@ import {
     Schema,
     StringFilterDescription,
     TableMetadata,
-    GenericLogs
+    GenericLogs, ExplodeColumnsInfo
 } from "../javaBridge";
 import {OnCompleteReceiver, Receiver} from "../rpc";
 import {SchemaClass} from "../schemaClass";
@@ -76,6 +76,7 @@ import {LogFileView, LogFragmentReceiver} from "./logFileView";
 import {FindBar} from "../ui/findBar";
 import {HillviewToplevel} from "../toplevel";
 import {TableMeta} from "../ui/receiver";
+import {RemoteTableReceiver} from "../initialObject";
 
 /**
  * Displays a table in the browser.
@@ -702,6 +703,15 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                     this.createKVColumnDialog(colName, this.tableRowsDesired);
                 },
                 help: "Extract a value associated with a specific key. " +
+                    " This is only applicable for some structured string or JSON columns."
+            }, selectedCount === 1 && this.isKVColumn(this.getSelectedColNames()[0]) && !this.isPrivate());
+            this.contextMenu.addItem({
+                text: "Explode key-values...",
+                action: () => {
+                    const colName = this.getSelectedColNames()[0];
+                    this.explodeKVColumnDialog(colName, this.tableRowsDesired);
+                },
+                help: "Explode a key-value column into a list of colums: one for each key that appears. " +
                     " This is only applicable for some structured string or JSON columns."
             }, selectedCount === 1 && this.isKVColumn(this.getSelectedColNames()[0]) && !this.isPrivate());
 
@@ -1759,6 +1769,53 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
             this.page, rr,
             { rowCount: this.meta.rowCount, schema, geoMetadata: this.meta.geoMetadata },
             o, tableRowsDesired, this.aggregates);
+        rr.invoke(rec);
+    }
+
+    public explodeKVColumnDialog(inputColumn: string, tableRowsDesired: number): void {
+        const dialog = new Dialog(
+            "Explode key-value", "Explode a key-value string into a set of columns.");
+        const kf = dialog.addTextField("prefix", "Prefix", FieldKind.String, null,
+            "Prefix to add to all generated column names.");
+        dialog.setCacheTitle("ExplodeKVDialog");
+        dialog.setAction(() => this.explodeKVColumn(dialog.getFieldValue("prefix"), inputColumn, tableRowsDesired));
+        dialog.show();
+    }
+
+    private explodeKVColumn(outColPrefix: string, inputColumn: string, tableRowsDesired: number): void {
+        const ic = this.meta.schema.find(inputColumn);
+        if (ic === null)
+            return;
+        const rr = this.createKVGetAllKeysRequest(inputColumn);
+        const rec = new ExplodedKeyReceiver(
+            this.page, rr, this, this.meta, this.order, tableRowsDesired,
+            this.aggregates, inputColumn, outColPrefix);
+        rr.invoke(rec);
+    }
+}
+
+class ExplodedKeyReceiver extends OnCompleteReceiver<RemoteObjectId> {
+    constructor(page: FullPage,
+                operation: ICancellable<RemoteObjectId>,
+                protected view: TableView,
+                protected readonly meta: TableMeta,
+                protected order: RecordOrder | null,
+                protected tableRowsDesired: number,
+                protected aggregates: AggregateDescription[] | null,
+                protected column: string,
+                protected outColPrefix: string) {
+        super(page, operation, "Finding all keys");
+    }
+
+    public run(value: RemoteObjectId): void {
+        const args: ExplodeColumnsInfo = {
+            column: this.column,
+            prefix: this.outColPrefix,
+            distinctColumnsObjectId: value
+        };
+        const rr = this.view.createKVExplodeColumnsRequest(args);
+        rr.chain(this.operation);
+        const rec = new RemoteTableReceiver(this.page, rr, this.view.dataset.loaded, "Explode columns", false);
         rr.invoke(rec);
     }
 }

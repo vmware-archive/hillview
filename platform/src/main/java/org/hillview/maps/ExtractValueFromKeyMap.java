@@ -61,6 +61,6 @@ public class ExtractValueFromKeyMap extends CreateColumnMap {
             (s.startsWith("{") && s.endsWith("}"))) {
                   s = s.substring(1, s.length() - 2);
         }
-        return Utilities.getKV(s, this.info.key);
+        return Utilities.getKV(Utilities.cleanupKVString(s), this.info.key);
     }
 }
