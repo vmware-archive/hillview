@@ -443,7 +443,7 @@ public class HillviewServer extends HillviewServerGrpc.HillviewServerImplBase {
 
                 @Override
                 public void onNext(final PartialResult<?> pr) {
-                    HillviewLogger.instance.info("Partial sketch result", "{0}", pr);
+                    HillviewLogger.instance.debug("Partial sketch result", "{0}", pr);
                     queue = queue.thenRunAsync(() -> {
                         try {
                             if (memoize && this.sketchResultAccumulator != null)

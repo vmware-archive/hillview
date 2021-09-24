@@ -51,16 +51,16 @@
         <img src="hillview-logo.png" height="40" alt="Hillview logo" style="vertical-align: middle"
         onclick="window.open('https://github.com/vmware/hillview')">
         <div>
-            <h1>
+            <h2>
                 <a href="https://github.com/vmware/hillview/blob/master/docs/userManual.md" target="_blank" title="Open user manual">big data spreadsheet</a>
-            </h1>
+            </h2>
         </div>
     </div>
-    <div>
+    <div id="suggestions" >
         <div onmouseover="showSuggestions(true)"
              onmouseout="showSuggestions(false)" id="suggestions-anchor" style="display: inline-block">Suggestions</div>
         <div style="display: inline-block; width: auto"></div>
-        <div id="suggestions" style="display: block;
+        <div style="display: block;
              position: fixed; border: 1px solid black;
              background: white; z-index: 20"
              onmouseout="showSuggestions(false)">

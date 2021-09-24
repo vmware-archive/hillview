@@ -74,6 +74,7 @@ h2 {
 .console {
     font-family: monospace;
     white-space: pre-wrap;
+    word-break: break-all;
     background: #f0f0f0;
 }
 

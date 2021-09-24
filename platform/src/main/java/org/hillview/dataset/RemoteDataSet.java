@@ -346,7 +346,7 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
             PartialResult<Integer> pr = Converters.checkNull((PartialResult<Integer>)op.result);
             final IDataSet<S> ids = (pr.deltaValue == null) ? null :
                     new RemoteDataSet<S>(RemoteDataSet.this.serverEndpoint, pr.deltaValue);
-            HillviewLogger.instance.info("Receiving partial response: new dataset", "{0}", pr.deltaValue);
+            HillviewLogger.instance.debug("Receiving partial response: new dataset", "{0}", pr.deltaValue);
             return new PartialResult<IDataSet<S>>(pr.deltaDone, ids);
         }
     }
@@ -365,7 +365,7 @@ public class RemoteDataSet<T> extends BaseDataSet<T> {
             final OperationResponse<?> op = SerializationUtils.deserialize(response
                     .getSerializedOp().toByteArray());
             assert op.result != null;
-            HillviewLogger.instance.info("Receiving partial sketch result", "{0}", op.result);
+            HillviewLogger.instance.debug("Receiving partial sketch result", "{0}", op.result);
             return (PartialResult<S>)op.result;
         }
     }
