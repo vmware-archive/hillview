@@ -33,8 +33,8 @@ import java.util.logging.*;
  * It uses commas to separate the fields.
  * The result produced by format and arguments is escaped: quotes and newlines are escaped.
  * This is a typical log message format
-2017-10-12 02:18:29.084,worker,INFO,ubuntu,pool-1-thread-1,org.hillview.maps.FindCsvFileMapper,apply,Find files in folder,/hillview/data
-_______date_______________who__level_machine___thread___________class__________________________method__message______________args_________
+2017-10-12 02:18:29.084,worker,INFO,ubuntu,pool-1-thread-1,TableTarget.java,1020,org.hillview.maps.FindCsvFileMapper,apply,Find files in folder,/hillview/data
+_______date____________|__who__|level|machine|_thread_____|___file_________|line|__class____________________________|method|__message__________|____args______
  */
 public class HillviewLogger {
     // Actual logging channel.
@@ -123,7 +123,7 @@ public class HillviewLogger {
         this.logger.warning(text);
     }
 
-    private void debug(String message, String format, Object... arguments) {
+    public void debug(String message, String format, Object... arguments) {
         if (!this.logger.isLoggable(Level.INFO))
             return;
         String text = this.createMessage(message, format, arguments);
@@ -158,7 +158,8 @@ public class HillviewLogger {
         StackTraceElement[] stackTraceElements = current.getStackTrace();
         StackTraceElement caller = stackTraceElements[3];
         String quoted = this.quote(text);
-        return String.join(",", current.getName(), caller.getClassName(),
+        return String.join(",", current.getName(), caller.getFileName(),
+                Integer.toString(caller.getLineNumber()), caller.getClassName(),
                 caller.getMethodName(), message, quoted);
     }
 

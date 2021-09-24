@@ -44,14 +44,13 @@ public class LogFileParserTest extends BaseTest {
     @Test
     public void parseLogLines() throws IOException {
         String logFileContents = String.join("\n",
-    "2017-10-12 02:17:42.722,worker,INFO,ubuntu,main,org.hillview.dataset" +
-            ".LocalDataSet,<clinit>,Detect CPUs,Using 3 processors",
-    "2017-10-12 02:17:43.172,worker,INFO,ubuntu,main,org.hillview.dataset" +
-            ".remoting.HillviewServer,put,Inserting dataset,0",
-    "2017-10-12 02:17:43.173,worker,INFO,ubuntu,main,org.hillview.utils" +
-            ".HillviewLogger,info,Created HillviewServer",
-    "2017-10-12 02:18:29.084,worker,INFO,ubuntu,pool-1-thread-1,org.hillview" +
-            ".maps.FindCsvFileMapper,apply,Find files in folder,/hillview/data"
+    "2021-09-24 15:02:19.474,none,INFO,linux,main,HillviewLogger.java," +
+            "82,org.hillview.utils.HillviewLogger,<init>,Starting logger," +
+            "Working directory: /home/mbudiu/git/hillview/.\n" +
+            "2021-09-24 15:02:19.484,worker,INFO,linux,main,ExecutorUtils.java,83," +
+            "org.hillview.utils.ExecutorUtils,getComputeExecutorService,Detect CPUs,Using 4 processors\n" +
+            "2021-09-24 15:02:19.661,worker,INFO,linux,main,HillviewLogger.java," +
+            "171,org.hillview.utils.HillviewLogger,info,Created HillviewServer"
         );
 
         File f = File.createTempFile("tmp", null, new File("."));
@@ -63,19 +62,21 @@ public class LogFileParserTest extends BaseTest {
         Path path = Paths.get(".", f.getName());
         ITable table = HillviewLogs.parseLogFile(path.toString());
         Converters.checkNull(table);
-        Assert.assertEquals(table.toString(), "Table[14x4]");
-        LocalDate date = LocalDate.of(2017, 10, 12);
-        LocalTime time = LocalTime.of(2, 17, 42, 722000000);
+        Assert.assertEquals("Table[16x3]", table.toString());
+        LocalDate date = LocalDate.of(2021, 9, 24);
+        LocalTime time = LocalTime.of(15, 2, 19, 474000000);
         LocalDateTime dt = LocalDateTime.of(date, time);
         Assert.assertEquals(dt, getValue(table, LogFiles.timestampColumnName, 0));
-        Assert.assertEquals("worker", getValue(table, "Role", 0));
+        Assert.assertEquals("none", getValue(table, "Role", 0));
         Assert.assertEquals("INFO", getValue(table, "Level", 0));
-        Assert.assertEquals("ubuntu", getValue(table, "Machine", 0));
+        Assert.assertEquals("linux", getValue(table, "Machine", 0));
         Assert.assertEquals("main", getValue(table, "Thread", 0));
-        Assert.assertEquals("org.hillview.dataset.LocalDataSet", getValue(table, "Class", 0));
-        Assert.assertEquals("<clinit>", getValue(table, "Method", 0));
-        Assert.assertEquals("Detect CPUs", getValue(table, "Message", 0));
-        Assert.assertEquals("Using 3 processors", getValue(table, "Arguments", 0));
+        Assert.assertEquals("org.hillview.utils.HillviewLogger", getValue(table, "Class", 0));
+        Assert.assertEquals("<init>", getValue(table, "Method", 0));
+        Assert.assertEquals("Starting logger", getValue(table, "Message", 0));
+        Assert.assertEquals("Working directory: /home/mbudiu/git/hillview/.", getValue(table, "Arguments", 0));
+        Assert.assertEquals(82, getValue(table, "SourceLine", 0));
+        Assert.assertEquals("HillviewLogger.java", getValue(table, "SourceFile", 0));
         Assert.assertEquals(1, getValue(table, LogFiles.lineNumberColumn, 0));
         Assert.assertEquals("./", getValue(table, LogFiles.directoryColumn, 0));
         Assert.assertEquals(f.getName(), getValue(table, LogFiles.filenameColumn, 0));
@@ -84,9 +85,8 @@ public class LogFileParserTest extends BaseTest {
 
     @Test
     public void parseMalformedLog() throws IOException {
-        String s = "2019-03-22 09:27:10.292,worker,INFO,ip-172-31-12-140,computation-0,org.hillview.dataset.LocalDataSet," +
-                "lambda$map$0,Starting map,org.hillview.dataset.LocalDataSet(2)@ip-172-31-12-140:org.hillview.storage." +
-                "FileSetDescription$FileReference@3cfb3d27:org.hillview.maps.LoadFilesMapper\n" +
+        String s = "2021-09-24 15:02:19.484,worker,INFO,linux,main,ExecutorUtils.java,83," +
+                "org.hillview.utils.ExecutorUtils,getComputeExecutorService,Detect CPUs,Using 4 processors\n" +
         "2019-03-22 09:27:10.505,worker,WARNING,ip-172-31-12-140,Unable to load native-hadoop "+
                 "library for your platform... using builtin-java classes where applicable\n";
 
@@ -99,7 +99,7 @@ public class LogFileParserTest extends BaseTest {
         Path path = Paths.get(".", f.getName());
         ITable table = HillviewLogs.parseLogFile(path.toString());
         Converters.checkNull(table);
-        Assert.assertEquals(table.toString(), "Table[14x2]");
+        Assert.assertEquals(table.toString(), "Table[16x2]");
         Assert.assertNull(getValue(table, LogFiles.parseErrorColumn, 0));
         Assert.assertNotNull(getValue(table, LogFiles.parseErrorColumn, 1));
     }

@@ -38,7 +38,7 @@ import java.util.regex.Matcher;
 public class HillviewLogs extends LogFiles {
     private static final Schema schema = new Schema();
     private static final Pattern pattern = Pattern.compile("([^,]*),([^,]*),([^,]*),([^,]*),([^,]*)," +
-            "([^,]*),([^,]*),([^,]*),?(.*)");
+            "([^,]*),([0-9]+),([^,]*),([^,]*),([^,]*),?(.*)");
 
     static {
         HillviewLogs.schema.append(new ColumnDescription(LogFiles.timestampColumnName, ContentsKind.LocalDate));
@@ -46,6 +46,8 @@ public class HillviewLogs extends LogFiles {
         HillviewLogs.schema.append(new ColumnDescription("Level", ContentsKind.String));
         HillviewLogs.schema.append(new ColumnDescription("Machine", ContentsKind.String));
         HillviewLogs.schema.append(new ColumnDescription("Thread", ContentsKind.String));
+        HillviewLogs.schema.append(new ColumnDescription("SourceFile", ContentsKind.String));
+        HillviewLogs.schema.append(new ColumnDescription("SourceLine", ContentsKind.Integer));
         HillviewLogs.schema.append(new ColumnDescription("Class", ContentsKind.String));
         HillviewLogs.schema.append(new ColumnDescription("Method", ContentsKind.String));
         HillviewLogs.schema.append(new ColumnDescription("Message", ContentsKind.String));
@@ -71,11 +73,13 @@ public class HillviewLogs extends LogFiles {
             output[2] = m.group(3); // Level
             output[3] = m.group(4); // Machine
             output[4] = m.group(5); // Thread
-            output[5] = m.group(6); // Class
-            output[6] = m.group(7); // Method
-            output[7] = m.group(8); // Message
-            String arguments = StringEscapeUtils.unescapeCsv(m.group(9));
-            output[8] = arguments.replace("\\n", "\n");  // Arguments
+            output[5] = m.group(6); // SourceFile
+            output[6] = m.group(7); // SourceLine
+            output[7] = m.group(8); // Class
+            output[8] = m.group(9); // Method
+            output[9] = m.group(10); // Message
+            String arguments = StringEscapeUtils.unescapeCsv(m.group(11));
+            output[10] = arguments.replace("\\n", "\n");  // Arguments
             return true;
         }
 
