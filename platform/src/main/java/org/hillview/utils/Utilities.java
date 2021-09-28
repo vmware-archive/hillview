@@ -19,7 +19,6 @@ package org.hillview.utils;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.reflect.TypeToken;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hillview.dataset.api.IJson;
@@ -34,8 +33,6 @@ import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -302,129 +299,6 @@ public class Utilities {
      */
     public static String singleSpaced(String s) {
         return s.replaceAll("^ +| +$|( )+", "$1");
-    }
-
-    /**
-     * Given a string of the form ((k="v")[ ])*, extract the value associated with a specific key.
-     * @param key Key to search.
-     * @return The associated value or null.
-     * TODO: this does not handle escaped quotes in the value.
-     */
-    @Nullable
-    public static String getKV(@Nullable String s, String key) {
-        if (s == null)
-            return null;
-        String[] parts = s.split(" ");
-        for (String p : parts) {
-            String[] kv = p.split("=");
-            if (kv.length != 2)
-                continue;
-            if (kv[0].equals(key))
-                return Utilities.trim(kv[1], '"');
-        }
-        return null;
-    }
-
-    /**
-     * Given a string of the form ((k="v")[ ])*, extract all the keys.
-     * TODO: this does not handle escaped quotes in the value.
-     */
-    public static void getAllKeys(@Nullable String s, Consumer<String> consumer) {
-        if (s == null)
-            return;
-        String[] parts = s.split(" ");
-        for (String p : parts) {
-            String[] kv = p.split("=");
-            if (kv.length != 2)
-                continue;
-            consumer.accept(kv[0]);
-        }
-    }
-
-    @Nullable
-    public static String cleanupKVString(@Nullable String s) {
-        if (s == null)
-            return s;
-        if ((s.startsWith("[") && s.endsWith("]")) ||
-                (s.startsWith("{") && s.endsWith("}"))) {
-            s = s.substring(1, s.length() - 2);
-        }
-        return s;
-    }
-
-    /**
-     * Given a string of the form ((k="v")[ ])*, extract all the key-value pairs
-     * and invoke the consumer for each pair..
-     * TODO: this does not handle escaped quotes in the value.
-     */
-    public static void forAllKVPairs(@Nullable String s, BiConsumer<String, String> consumer) {
-        if (s == null)
-            return;
-        String[] parts = s.split(" ");
-        for (String p : parts) {
-            String[] kv = p.split("=");
-            if (kv.length != 2)
-                continue;
-            consumer.accept(kv[0], Utilities.trim(kv[1], '"'));
-        }
-    }
-
-    /**
-     * Given a JSON string that represents an object return the
-     * sub-object corresponding to the specified key.
-     * @param json  JSON string.
-     * @param key   Key name.
-     * @return      The corresponding field, or null.
-     */
-    @Nullable
-    public static String getJsonField(@Nullable String json, String key) {
-        if (json == null)
-            return null;
-        Map<String, Object> map = IJson.gsonInstance.fromJson(json,
-                new TypeToken<Map<String, String>>() {
-                }.getType());
-        if (map == null)
-            return null;
-        Object o = map.get(key);
-        if (o == null)
-            return null;
-        return o.toString();
-    }
-
-    /**
-     * Given a JSON string that represents an object return the
-     * keys of all fields.
-     * @param json  JSON string.
-     */
-    @Nullable
-    public static Iterable<String> getAllJsonFieldNames(@Nullable String json) {
-        if (json == null)
-            return null;
-        Map<String, Object> map = IJson.gsonInstance.fromJson(json,
-                new TypeToken<Map<String, String>>() {
-                }.getType());
-        if (map == null)
-            return null;
-        return map.keySet();
-    }
-
-    /**
-     * Given a JSON string that represents an object, explode it into
-     * fields and invoke the consumer for each key-value pair.
-     * @param json  JSON string.
-     * @param consumer Function invoked for each key-value pair.
-     */
-    public static void forAllJsonFields(@Nullable String json, BiConsumer<String, Object> consumer) {
-        if (json == null)
-            return;
-        Map<String, Object> map = IJson.gsonInstance.fromJson(json,
-                new TypeToken<Map<String, String>>() {
-                }.getType());
-        if (map == null)
-            return;
-        for (Map.Entry<String, Object> e : map.entrySet()) {
-            consumer.accept(e.getKey(), e.getValue());
-        }
     }
 
     /**

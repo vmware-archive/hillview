@@ -20,10 +20,10 @@ package org.hillview.maps;
 import org.hillview.dataset.api.IMap;
 import org.hillview.sketches.DistinctStrings;
 import org.hillview.table.ColumnDescription;
+import org.hillview.table.GuessKVParser;
 import org.hillview.table.api.*;
 import org.hillview.table.columns.BaseColumn;
-import org.hillview.utils.Converters;
-import org.hillview.utils.Utilities;
+import org.hillview.utils.*;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -60,11 +60,12 @@ public class ExplodeKeyValueColumnMap implements IMap<ITable, ITable> {
         int colCount = this.keys.size();
         Map<String, IMutableColumn> columns = new HashMap<String, IMutableColumn>(colCount);
         for (String s: this.keys.getStrings()) {
-            ColumnDescription cd = new ColumnDescription(this.prefix + s, kind);
+            String name = this.prefix + s;
+            ColumnDescription cd = new ColumnDescription(name, kind);
             IMutableColumn col = BaseColumn.create(cd, set.getMax(), set.getSize());
-            columns.put(s, col);
+            columns.put(name, col);
         }
-
+        IKVParsing parsing = GuessKVParser.getParserForColumn(source.getDescription());
         // Scan the source data and fill the columns.
         IRowIterator it = set.getIterator();
         int r = it.getNextRow();
@@ -72,31 +73,26 @@ public class ExplodeKeyValueColumnMap implements IMap<ITable, ITable> {
             String value = source.getString(r);
             final int row = r;
             for (String k: this.keys.getStrings())
-                columns.get(k).setMissing(row);
-            if (kind == ContentsKind.Json) {
-                Utilities.forAllJsonFields(value, (c, v) -> {
-                    IMutableColumn col = columns.get(this.prefix + c);
-                    if (col == null)
-                        throw new RuntimeException("Could not locate column " + this.prefix + c);
-                    col.set(row, v.toString());
-                });
-            } else if (kind == ContentsKind.String) {
-                Utilities.forAllKVPairs(Utilities.cleanupKVString(value), (c, v) -> {
-                    IMutableColumn col = columns.get(this.prefix + c);
-                    if (col == null)
-                        throw new RuntimeException("Could not locate column " + this.prefix + c);
+                columns.get(this.prefix + k).setMissing(row);
+            parsing.parse(value, (k, v) -> {
+                String columnName = this.prefix + k;
+                IMutableColumn col = columns.get(columnName);
+                if (col == null)
+                    throw new RuntimeException("Could not locate column " + columnName);
+                if (col.isMissing(row)) {
                     col.set(row, v);
-                });
-            } else {
-                throw new RuntimeException("Unexpected column type: " + kind);
-            }
+                } else {
+                    // If keys are repeated we concatenate values.
+                    String prev = col.getString(row);
+                    col.set(row, prev + v);
+                }
+                return false;
+            });
             r = it.getNextRow();
         }
         List<IColumn> complete = data.getColumns(data.getSchema());
-        for (String k: this.keys.getStrings()) {
-            IColumn col = columns.get(k).seal();
-            complete.add(col);
-        }
+        for (IMutableColumn col: columns.values())
+            complete.add(col.seal());
         return data.replace(complete);
     }
 }

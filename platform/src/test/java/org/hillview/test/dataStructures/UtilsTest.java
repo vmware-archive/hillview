@@ -50,51 +50,6 @@ public class UtilsTest extends BaseTest {
     }
 
     @Test
-    public void testGetKV() {
-        @Nullable String s;
-
-        //noinspection ConstantConditions
-        s = Utilities.getKV(null, "key");
-        //noinspection ConstantConditions
-        Assert.assertNull(s);
-
-        s = Utilities.getKV("", "key");
-        Assert.assertNull(s);
-
-        s = Utilities.getKV("some string", "key");
-        Assert.assertNull(s);
-
-        s = Utilities.getKV("prefix key=value", "key");
-        Assert.assertEquals("value", s);
-
-        s = Utilities.getKV("prefix key=\"value\"", "key");
-        Assert.assertEquals("value", s);
-    }
-
-    @Test
-    public void testJsonExtract() {
-        //noinspection ConstantConditions
-        String s = Utilities.getJsonField(null, "key");
-        //noinspection ConstantConditions
-        Assert.assertNull(s);
-
-        s = Utilities.getJsonField("", "key");
-        Assert.assertNull(s);
-
-        s = Utilities.getJsonField("{}", "key");
-        Assert.assertNull(s);
-
-        s = Utilities.getJsonField("{ 'key': 'value' }", "key");
-        Assert.assertEquals("value", s);
-
-        s = Utilities.getJsonField("{ key: \"value\", key1: 123 }", "key");
-        Assert.assertEquals("value", s);
-
-        s = Utilities.getJsonField("{'ownerUuid': 'f9d2a656-b379-8193-c409-002590f9e586', 'rangemapKey': 0xffffffffffffffff, 'offset': 9181814784, 'length': 4096}", "offset");
-        Assert.assertEquals("9181814784", s);
-    }
-
-    @Test
     public void testSingleSpaced() {
         String s = Utilities.singleSpaced("NOSPACES");
         Assert.assertEquals("NOSPACES", s);

@@ -18,7 +18,9 @@
 package org.hillview.maps;
 
 import org.hillview.table.ColumnDescription;
+import org.hillview.table.GuessKVParser;
 import org.hillview.table.api.ContentsKind;
+import org.hillview.utils.IKVParsing;
 import org.hillview.utils.Utilities;
 
 import javax.annotation.Nullable;
@@ -35,10 +37,12 @@ public class ExtractValueFromKeyMap extends CreateColumnMap {
 
     public static class Info extends CreateColumnMap.Info {
         String key;
+        IKVParsing parser;
 
         public Info(String key, ColumnDescription inputCol, String outputCol, int i) {
             super(inputCol, outputCol, i);
             this.key = key;
+            this.parser = GuessKVParser.getParserForColumn(inputCol);
         }
     }
 
@@ -52,15 +56,6 @@ public class ExtractValueFromKeyMap extends CreateColumnMap {
     @Override
     @Nullable
     public String extract(@Nullable String s) {
-        if (s == null)
-            return null;
-        if (this.info.inputColumn.kind == ContentsKind.Json) {
-            return Utilities.getJsonField(s, this.info.key);
-        }
-        if ((s.startsWith("[") && s.endsWith("]")) ||
-            (s.startsWith("{") && s.endsWith("}"))) {
-                  s = s.substring(1, s.length() - 2);
-        }
-        return Utilities.getKV(Utilities.cleanupKVString(s), this.info.key);
+        return this.info.parser.extractValue(s, this.info.key);
     }
 }

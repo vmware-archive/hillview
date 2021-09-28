@@ -18,12 +18,11 @@
 package org.hillview.sketches;
 
 import org.hillview.dataset.api.TableSketch;
-import org.hillview.table.api.ContentsKind;
+import org.hillview.table.GuessKVParser;
 import org.hillview.table.api.IColumn;
 import org.hillview.table.api.IRowIterator;
 import org.hillview.table.api.ITable;
-import org.hillview.utils.Converters;
-import org.hillview.utils.Utilities;
+import org.hillview.utils.*;
 
 import javax.annotation.Nullable;
 
@@ -47,18 +46,12 @@ public class ExtractAllKeysSketch implements TableSketch<DistinctStrings> {
     public DistinctStrings create(@Nullable ITable data) {
         DistinctStrings result = new DistinctStrings();
         IColumn col = Converters.checkNull(data).getLoadedColumn(this.column);
+        IKVParsing parsing = GuessKVParser.getParserForColumn(col.getDescription());
         IRowIterator it = data.getMembershipSet().getIterator();
         int r = it.getNextRow();
         while (r >= 0) {
             String source = col.asString(r);
-            if (col.getKind() == ContentsKind.Json) {
-                @Nullable
-                Iterable<String> strings = Utilities.getAllJsonFieldNames(source);
-                if (strings != null)
-                    result.addAll(strings);
-            } else {
-                Utilities.getAllKeys(Utilities.cleanupKVString(source), result::add);
-            }
+            parsing.extractKeys(source, result::add);
             r = it.getNextRow();
         }
         return result;
