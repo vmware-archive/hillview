@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {IHtmlElement} from "./ui";
+import {IHtmlElement, SpecialChars} from "./ui";
 
 /**
  * Core interface for reporting errors.
@@ -55,6 +55,7 @@ export class ErrorDisplay implements IHtmlElement, ErrorReporter {
     protected topLevel: HTMLElement;
     protected console: HTMLDivElement;
     protected clearButton: HTMLElement;
+    protected copyButton: HTMLElement;
 
     constructor() {
         this.topLevel = document.createElement("div");
@@ -62,6 +63,15 @@ export class ErrorDisplay implements IHtmlElement, ErrorReporter {
         this.console.className = "console";
         const container = document.createElement("span");
         this.topLevel.appendChild(container);
+
+        this.copyButton = document.createElement("span");
+        this.copyButton.innerHTML = SpecialChars.scissors;
+        this.copyButton.title = "copy error to clipboard";
+        this.copyButton.style.display = "none";
+        this.copyButton.onclick = () => this.copy();
+        this.copyButton.style.cssFloat = "right";
+        this.copyButton.style.zIndex = "10";
+
         this.clearButton = document.createElement("span");
         this.clearButton.className = "close";
         this.clearButton.innerHTML = "&times;";
@@ -70,7 +80,9 @@ export class ErrorDisplay implements IHtmlElement, ErrorReporter {
         this.clearButton.onclick = () => this.clear();
         this.clearButton.style.cssFloat = "right";
         this.clearButton.style.zIndex = "10";
+
         container.appendChild(this.clearButton);
+        container.appendChild(this.copyButton);
         container.appendChild(this.console);
     }
 
@@ -81,10 +93,16 @@ export class ErrorDisplay implements IHtmlElement, ErrorReporter {
     public reportError(message: string): void {
         this.console.innerText = message;
         this.clearButton.style.display = "block";
+        this.copyButton.style.display = "block";
     }
 
     public clear(): void {
         this.console.textContent = "";
         this.clearButton.style.display = "none";
+        this.copyButton.style.display = "none";
+    }
+
+    public copy(): void {
+        navigator.clipboard.writeText(this.console.innerText);
     }
 }
