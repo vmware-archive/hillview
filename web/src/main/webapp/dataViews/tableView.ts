@@ -1618,6 +1618,32 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 cell.title = exactValue + "\nRight click will popup a menu.";
                 cell.oncontextmenu = (e) => {
                     this.contextMenu.clear();
+                    const sel = window.getSelection();
+                    if (sel != null) {
+                        const selString = sel.toString();
+                        this.contextMenu.addItem({
+                            text: "Keep rows containing " +
+                                truncate(selString, 20),
+                            action: () => {
+                                const filter: StringFilterDescription = {
+                                    compareValue: selString,
+                                    asRegEx: false,
+                                    asSubString: true,
+                                    caseSensitive: false,
+                                    complement: false
+                                };
+                                const columns = this.order.getSchema().map((c) => c.name);
+                                const rr = this.createFilterColumnsRequest(
+                                    {colNames: columns, stringFilterDescription: filter});
+                                const title = "Filtered on: " + filter.compareValue;
+                                const newPage = this.dataset.newPage(new PageTitle(title,
+                                    Converters.stringFilterDescription(filter)), this.page);
+                                rr.invoke(new TableOperationCompleted(newPage, rr, this.meta,
+                                    this.order, this.tableRowsDesired, this.aggregates))
+                            },
+                            help: "Keep rows containing this string"
+                        }, true);
+                    }
                     // This menu shows the value to the right, but the filter
                     // takes the value to the left, so we have to flip all
                     // comparison signs.
@@ -1781,7 +1807,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
     public explodeKVColumnDialog(inputColumn: string, tableRowsDesired: number): void {
         const dialog = new Dialog(
             "Explode key-value", "Explode a key-value string into a set of columns.");
-        const kf = dialog.addTextField("prefix", "Prefix", FieldKind.String, null,
+        dialog.addTextField("prefix", "Prefix", FieldKind.String, null,
             "Prefix to add to all generated column names.");
         dialog.setCacheTitle("ExplodeKVDialog");
         dialog.setAction(() => this.explodeKVColumn(dialog.getFieldValue("prefix"), inputColumn, tableRowsDesired));
