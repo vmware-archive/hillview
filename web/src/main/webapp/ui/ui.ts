@@ -110,6 +110,7 @@ export class SpecialChars {
     public static rightArrowHtml = "&rArr;";
     public static epsilon = "\u03B5";
     public static enDash = "&ndash;";
+    public static scissors = "\u2702";
 }
 
 /**

@@ -713,7 +713,7 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
                 },
                 help: "Explode a key-value column into a list of colums: one for each key that appears. " +
                     " This is only applicable for some structured string or JSON columns."
-            }, selectedCount === 1 && this.isKVColumn(this.getSelectedColNames()[0]) && !this.isPrivate());
+            }, selectedCount === 1 /*&& this.isKVColumn(this.getSelectedColNames()[0])*/ && !this.isPrivate());
 
             foldoutMenu.addItem({
                 text: "Histogram",
@@ -1599,20 +1599,23 @@ export class TableView extends TSViewBase implements IScrollTarget, OnNextK {
 
             if (this.isVisible(cd.name)) {
                 let shownValue: string;
+                let exactValue: string;
                 if (value == null) {
                     cell.appendChild(makeMissing());
                     shownValue = "missing";
+                    exactValue = "";
                 } else {
                     shownValue = Converters.valueToString(row.values[dataIndex], cd.kind, true);
+                    exactValue = Converters.valueToString(row.values[dataIndex], cd.kind, false);
                     const high = this.findBar.highlight(shownValue, this.strFilter);
                     cell.appendChild(high);
-                    cell.onclick = () => {
-                        this.page.reportError(shownValue);
-                    };
                 }
+                cell.onclick = () => {
+                    this.page.reportError(exactValue);
+                };
 
                 const shortValue = truncate(shownValue, 30);
-                cell.title = shownValue + "\nRight click will popup a menu.";
+                cell.title = exactValue + "\nRight click will popup a menu.";
                 cell.oncontextmenu = (e) => {
                     this.contextMenu.clear();
                     // This menu shows the value to the right, but the filter
