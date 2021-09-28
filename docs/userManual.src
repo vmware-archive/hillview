@@ -354,11 +354,17 @@ with the data.
 
 Some operations can trigger errors.  For example, the attempt to load
 a non-existent file.  These errors usually manifest as Java exceptions
-in the backend.  Today the Hillview front-end captures these
-exceptions and displays them on the screen.  We are working to improve
-the usability of error messages.
+in the backend.  The Hillview front-end captures these
+exceptions and displays them on the screen.  The following image
+shows an error displayed.
 
 ![Error displayed by Hillview](exception.png)
+
+The error display has two small buttons on the top-right:
+
+* The red x button will clear the error display area.
+* The button displaying scissors will copy the contents of the error
+  area to the clipboard.
 
 ### Mouse-based selection
 
@@ -1068,6 +1074,10 @@ the whole dataset is covered by this.  You can see that, although the
 table only has 20 rows, it actually displays information for 212 thousand
 rows in the original dataset, or 24% of the data!
 
+Clicking on a visible table cell will display its contents in the [error
+message area](#error-display); this is useful to display in full the contents
+of cells that store long strings.
+
 #### Scrolling
 
 Because each displayed row summarizes information from multiple rows,
@@ -1171,6 +1181,10 @@ the current state of the display.
       selected.  This displays the data as a [Trellis plot
       view](#trellis-plots-of-heatmaps).
 
+    * Correlation: Computes pairwise-correlations between all selected columns.
+      This is displayed as a [triangular matrix of heatmaps](#correlation-heatmaps).
+      This option is only available for numeric columns.
+
     * Map: this option requires either one or two columns to be selected.
       The first column is used as a geographic feature name.  The second
       column must be an aggregate column; if no second column is selected
@@ -1194,10 +1208,6 @@ the current state of the display.
   data) and 100 (the whole data).  The result is all items whose
   frequency in the selected columns is above the threshold. the result
   is shown in a [frequent elements view](#frequent-elements-views).
-
-* Correlation: Computes pairwise-correlations between all selected columns.
-  This is displayed as a [triangular matrix of heatmaps](#correlation-heatmaps).
-  This option is only available for numeric columns.
 
 * PCA...: principal component analysis.  [Principal Component
   Analysis](https://en.wikipedia.org/wiki/Principal_component_analysis)
@@ -1260,15 +1270,6 @@ the current state of the display.
 
   ![Create interval colum menu](create-interval-menu.png)
 
-* Aggregate...: this pops up a menu that allows the user to create a metadata
-  column using an aggregation function over the data in the selected column;
-  this is only applicable for numeric columns.
-
-  ![Aggregate menu](aggregate-menu.png)
-
-  The user can select one of the following aggregates: sum, min, max, count, average.
-  The aggregate data is displayed in a meta column, shown in green.
-
 * Create column in JS...: allows the user to write a JavaScript program that
   computes values for a new column.
 
@@ -1294,11 +1295,36 @@ function map(row) {
 See the section [JavaScript conversions](#javascript-conversions) about how data is
 Hillview exchanges data with JavaScript.
 
+* Aggregate...: this pops up a menu that allows the user to create a metadata
+  column using an aggregation function over the data in the selected column;
+  this is only applicable for numeric columns.
+
+  ![Aggregate menu](aggregate-menu.png)
+
+  The user can select one of the following aggregates: sum, min, max, count, average.
+  The aggregate data is displayed in a meta column, shown in green.
+
 * Extract value...: this option is only available when browsing data
   that originates from some log files, where the current column format
   is of the form key=value pairs.  This option allows the user to
   specify a key and a destination column; the associated value will be
   extracted into the indicated column.
+
+* Explode key-values...: this option is related to the one above.
+  It is applicable to JSON columns and string columns only.  For a JSON
+  column it will treat a top-level JSON object as a key-value map that
+  maps fields to other JSON values.  For a string column it use some heuristics
+  to parse the column contents as a sequence of key=value pairs.  Exploding
+  the column will first collect all keys that appear in all rows of the table.
+  It is expected that this is a relatively small set.  Then a new string column
+  will be created for each key and the corresponding value will be added
+  to the column.  If a key is repeated currently all values will be
+  concatenated.  The user is asked to supply a `prefix` string, which
+  will be prepended to all keys to generate the column names.
+  For example, consider a JSON object such as `{ name: "Mike", Age: 10 }`.
+  Exploding this object and specifying a prefix of "top." for the result
+  will create two columns named `top.name` and `top.Age`, holding the values
+  `Mike` and `10` respectively.
 
 #### Operations on a table cell
 
