@@ -18,7 +18,7 @@ jobs:
         working-directory: bin
         run: ./install-dependencies.sh
       - name: Install dependencies for generating delta table
-        run: pip3 install --user pyspark delta-spark
+        run: pip3 install --user pyspark==3.1.2 delta-spark==1.0.0
       - name: Build project
         working-directory: bin
         run: ./rebuild.sh -a
