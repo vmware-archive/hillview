@@ -11,7 +11,7 @@ except ModuleNotFoundError:
     print(textwrap.dedent("""\
     This script requires pyspark and delta-spark.
     You can install these modules using the following command:
-        pip install --user pyspark delta-spark
+        pip install --user pyspark==3.1.2 delta-spark==1.0.0
     """), file=sys.stderr)
     sys.exit(-1)
 
