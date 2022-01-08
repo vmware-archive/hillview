@@ -113,6 +113,12 @@ export class SpecialChars {
     public static scissors = "\u2702";
 }
 
+export function px(dim: number): string {
+    if (dim === 0)
+        return dim.toString();
+    return dim.toString() + "px";
+}
+
 /**
  * Remove all children of an HTML DOM object..
  */

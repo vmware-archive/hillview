@@ -115,7 +115,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
         Noise noise = new Noise();
         int bucketCount = decomposition.getBucketCount();
         for (int left = 0; left < bucketCount; left++) {
-            for (int right = left; right < bucketCount; right++) {
+            for (int right = left + 1; right < bucketCount + 1; right++) {
                 ph.noiseForRange(left, right, scale, baseVariance, laplace, noise);
                 sqtot += Math.pow(noise.getNoise(), 2);
                 abstot += Math.abs(noise.getNoise());
@@ -153,9 +153,9 @@ public class DPAccuracyBenchmarks extends Benchmarks {
         int xBucketCount = xd.getBucketCount();
         int yBucketCount = yd.getBucketCount();
         for (int left = 0; left < xBucketCount; left++) {
-            for (int right = left; right < xBucketCount; right++) {
+            for (int right = left + 1; right < xBucketCount + 1; right++) {
                 for (int top = 0; top < yBucketCount; top++) {
-                    for (int bot = top; bot < yBucketCount; bot++) {
+                    for (int bot = top + 1; bot < yBucketCount + 1; bot++) {
                         ph.noiseForRange(left, right, top, bot,
                                 scale, baseVariance, noise);
                         sqtot += Math.pow(noise.getNoise(), 2);
@@ -260,7 +260,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
         return new Pair<Double, Double>(totAccuracy / iterations, Utilities.stdev(accuracies));
     }
 
-    public void benchmarkHistogramL2Accuracy() throws IOException {
+    public void benchmarkHistogramL1Accuracy() throws IOException {
         HillviewLogger.instance.setLogLevel(Level.OFF);
         @Nullable
         IDataSet<ITable> table = this.loadData();
@@ -277,7 +277,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
         Assert.assertNotNull(mdSchema.quantization);
 
         HashMap<String, ArrayList<Double>> results = new HashMap<String, ArrayList<Double>>();
-        int iterations = 5;
+        int iterations = 10;
         for (String col : cols) {
             ColumnQuantization quantization = mdSchema.quantization.get(col);
             Assert.assertNotNull(quantization);
@@ -302,7 +302,7 @@ public class DPAccuracyBenchmarks extends Benchmarks {
         writer.close();
     }
 
-    public void benchmarkHeatmapL2Accuracy() throws IOException {
+    public void benchmarkHeatmapL1Accuracy() throws IOException {
         HillviewLogger.instance.setLogLevel(Level.OFF);
         @Nullable
         IDataSet<ITable> table = this.loadData();
@@ -360,6 +360,6 @@ public class DPAccuracyBenchmarks extends Benchmarks {
 
         String resultsFilename = args[0];
         DPAccuracyBenchmarks bench = new DPAccuracyBenchmarks(resultsFilename);
-        bench.benchmarkHeatmapL2Accuracy();
+        bench.benchmarkHeatmapL1Accuracy();
     }
 }
