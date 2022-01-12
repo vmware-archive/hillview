@@ -17,7 +17,7 @@
 
 import {PlottingSurface} from "./plottingSurface";
 import {AxisData, AxisDescription} from "../dataViews/axisData";
-import {D3SvgElement, SpecialChars} from "./ui";
+import {D3SvgElement, px, SpecialChars} from "./ui";
 import {interpolateRainbow as d3interpolateRainbow,
     schemeDark2 as d3dark2,
     schemePaired as d3paired,
@@ -94,6 +94,7 @@ export abstract class Plot<D> {
             this.yAxisRepresentation = this.plottingSurface.getChart()
                 .append("g")
                 .attr("class", "y-axis")
+                .style("font-size", px(AxisDescription.fontSize))
                 .call(yAxis.axis);
         if (xAxis != null) {
             this.xAxisRepresentation =

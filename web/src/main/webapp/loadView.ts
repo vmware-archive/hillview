@@ -259,7 +259,8 @@ export class LoadView extends RemoteObject implements IDataView {
 
     protected changeAxesFont(): void {
         const dialog = new Dialog("Axis font", "Change axis font");
-        const size = dialog.addTextField("size", "Size", FieldKind.Integer, "10", "Font size");
+        const size = dialog.addTextField("size", "Size", FieldKind.Integer,
+            AxisDescription.fontSize.toString(), "Font size");
         size.min = "4";
         size.max = "30";
         size.required = true;
