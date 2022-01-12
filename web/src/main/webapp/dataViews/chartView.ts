@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {BigTableView} from "../modules";
+import {BigTableView, NextKReceiver, TableView} from "../modules";
 import {BucketsInfo, IColumnDescription, RangeFilterArrayDescription, RecordOrder, RemoteObjectId} from "../javaBridge";
 import {FullPage, PageTitle} from "../ui/fullPage";
 import {D3SvgElement, DragEventKind, Point, Resolution, ViewKind} from "../ui/ui";
@@ -25,9 +25,9 @@ import {TopMenu} from "../ui/menu";
 import {drag as d3drag} from "d3-drag";
 import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {AxisData} from "./axisData";
-import {Dialog} from "../ui/dialog";
-import {NextKReceiver, TableView} from "../modules";
+import {Dialog, FieldKind} from "../ui/dialog";
 import {TableMeta} from "../ui/receiver";
+import {px} from "../util";
 
 /**
  * A ChartView is a common base class for many views that

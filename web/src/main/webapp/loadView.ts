@@ -33,8 +33,10 @@ import {ErrorDisplay} from "./ui/errReporter";
 import {FullPage} from "./ui/fullPage";
 import {MenuItem, SubMenu, TopMenu, TopMenuItem} from "./ui/menu";
 import {ViewKind} from "./ui/ui";
-import {Converters, ICancellable, loadFile, getUUID, disableSuggestions, assertNever} from "./util";
+import {Converters, ICancellable, loadFile, getUUID, disableSuggestions, assertNever, px} from "./util";
 import {HillviewToplevel} from "./toplevel";
+import {select as d3select, selectAll as d3selectAll} from "d3-selection";
+import {AxisDescription} from "./dataViews/axisData";
 
 /**
  * The load menu is the first menu that is displayed on the screen.
@@ -162,6 +164,7 @@ export class LoadView extends RemoteObject implements IDataView {
                 },
                 help: "A delta lake table"
             });
+
         if (HillviewToplevel.instance.uiconfig.localDbMenu)
             // This is only used for testing differentially-private loading from a
             // local database.
@@ -196,6 +199,15 @@ export class LoadView extends RemoteObject implements IDataView {
                 ]),
             });
         }
+        items.push({
+            text: "View", help: "Change the way data is displayed", subMenu: new SubMenu([
+                {
+                    text: "Axis font",
+                    help: "Change font on all displayed axes",
+                    action: () => this.changeAxesFont(),
+                }
+            ]),
+        });
 
         /**
          * These are operations supported by the back-end management API.
@@ -243,6 +255,29 @@ export class LoadView extends RemoteObject implements IDataView {
 
         this.menu = new TopMenu(items);
         this.page.setMenu(this.menu);
+    }
+
+    protected changeAxesFont(): void {
+        const dialog = new Dialog("Axis font", "Change axis font");
+        const size = dialog.addTextField("size", "Size", FieldKind.Integer, "10", "Font size");
+        size.min = "4";
+        size.max = "30";
+        size.required = true;
+        dialog.setAction(() => {
+            const sz = dialog.getFieldValueAsInt("size");
+            if (sz == null) {
+                this.page.reportError("Invalid font size " + sz);
+                return;
+            }
+            AxisDescription.fontSize = sz;
+            d3selectAll(".x-axis>.tick>text").each(function(d) {
+                d3select(this).style("font-size", px(sz));
+            });
+            d3selectAll(".y-axis>.tick>text").each(function(d) {
+                d3select(this).style("font-size", px(sz));
+            });
+        });
+        dialog.show();
     }
 
     public purgeAll(): void {

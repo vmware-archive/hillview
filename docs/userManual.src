@@ -381,6 +381,12 @@ Selections can be modified using the keyboard as follows:
   will toggle the selection of the current element, while leaving the
   selection status of other elements unchanged.
 
+### Changing axes font
+
+The top-level load menu has a "View" submenu which allows one to change the default font used
+for the axes of the plots.  This value is global across all plots.  Once changed, all plots use
+the new font size on the axes.
+
 ### Loading data
 
 Hillview supports reading data from multiple data-sources.

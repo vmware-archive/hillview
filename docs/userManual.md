@@ -26,7 +26,7 @@ one row for an airline flight.  Columns in this dataset include: the date of the
 the origin and destination cities, the origin and destination states,
 the origin airport code, the distance flown, the departure and arrival delay.
 
-Updated on 2021 Sep 28.
+Updated on 2022 Jan 11.
 
 # Contents
   * 1 [Basic concepts](#1-basic-concepts)
@@ -49,20 +49,21 @@ Updated on 2021 Sep 28.
   * 3 [Interacting with data](#3-interacting-with-data)
     * 3.1 [Error display](#31-error-display)
     * 3.2 [Mouse-based selection](#32-mouse-based-selection)
-    * 3.3 [Loading data](#33-loading-data)
-      * 3.3.1 [Loading logs](#331-loading-logs)
-        * 3.3.1.1 [Example](#3311-example)
-        * 3.3.1.2 [Custom Patterns](#3312-custom-patterns)
-      * 3.3.2 [Reading generic logs](#332-reading-generic-logs)
-      * 3.3.3 [Reading saved dataset views](#333-reading-saved-dataset-views)
-      * 3.3.4 [Reading CSV files](#334-reading-csv-files)
-      * 3.3.5 [Reading JSON files](#335-reading-json-files)
-      * 3.3.6 [Reading ORC files](#336-reading-orc-files)
-      * 3.3.7 [Reading Parquet files](#337-reading-parquet-files)
-      * 3.3.8 [Reading data from SQL databases](#338-reading-data-from-sql-databases)
-        * 3.3.8.1 [Reading data from Greenplum databases](#3381-reading-data-from-greenplum-databases)
-        * 3.3.8.2 [Reading from a federated set of MySQL databases](#3382-reading-from-a-federated-set-of-mysql-databases)
-    * 3.4 [Navigating multiple datasets](#34-navigating-multiple-datasets)
+    * 3.3 [Changing axes font](#33-changing-axes-font)
+    * 3.4 [Loading data](#34-loading-data)
+      * 3.4.1 [Loading logs](#341-loading-logs)
+        * 3.4.1.1 [Example](#3411-example)
+        * 3.4.1.2 [Custom Patterns](#3412-custom-patterns)
+      * 3.4.2 [Reading generic logs](#342-reading-generic-logs)
+      * 3.4.3 [Reading saved dataset views](#343-reading-saved-dataset-views)
+      * 3.4.4 [Reading CSV files](#344-reading-csv-files)
+      * 3.4.5 [Reading JSON files](#345-reading-json-files)
+      * 3.4.6 [Reading ORC files](#346-reading-orc-files)
+      * 3.4.7 [Reading Parquet files](#347-reading-parquet-files)
+      * 3.4.8 [Reading data from SQL databases](#348-reading-data-from-sql-databases)
+        * 3.4.8.1 [Reading data from Greenplum databases](#3481-reading-data-from-greenplum-databases)
+        * 3.4.8.2 [Reading from a federated set of MySQL databases](#3482-reading-from-a-federated-set-of-mysql-databases)
+    * 3.5 [Navigating multiple datasets](#35-navigating-multiple-datasets)
   * 4 [Data views](#4-data-views)
     * 4.1 [The heading of a view](#41-the-heading-of-a-view)
     * 4.2 [Schema views](#42-schema-views)
@@ -460,7 +461,13 @@ Selections can be modified using the keyboard as follows:
   will toggle the selection of the current element, while leaving the
   selection status of other elements unchanged.
 
-### 3.3 Loading data
+### 3.3 Changing axes font
+
+The top-level load menu has a "View" submenu which allows one to change the default font used
+for the axes of the plots.  This value is global across all plots.  Once changed, all plots use
+the new font size on the axes.
+
+### 3.4 Loading data
 
 Hillview supports reading data from multiple data-sources.
 
@@ -476,25 +483,25 @@ storage.
   This is used to debug the Hillview system itself.
 
 * Generic logs: allows the user to [read logs from a set of log
-  files](#332-reading-generic-logs).
+  files](#342-reading-generic-logs).
 
 * Saved view: allows the user to [read data from a saved
-  view](#333-reading-saved-dataset-views).
+  view](#343-reading-saved-dataset-views).
 
 * CSV files: allows the user to [read data from a set of CSV
-  files](#334-reading-csv-files).
+  files](#344-reading-csv-files).
 
 * JSON files: allows the user to [read the data from a set of JSON
-  files](#335-reading-json-files).
+  files](#345-reading-json-files).
 
 * Parquet files: allows the user to [read the data from a set of
-  Parquet files](#337-reading-parquet-files).
+  Parquet files](#347-reading-parquet-files).
 
 * ORC files: allows the user to [read the data from a set of ORC
-  files](#336-reading-orc-files).
+  files](#346-reading-orc-files).
 
 * Federated DB tables: allows the user to [read data from a set of federated
-  or distributed databases](#338-reading-data-from-sql-databases).
+  or distributed databases](#348-reading-data-from-sql-databases).
 
 After the data loading is initiated the user will be presented with a
 view of the loaded table.  If the table has relatively few columns,
@@ -502,7 +509,7 @@ the user is shown directly a [Tabular view](#43-table-views).  Otherwise
 the user is shown a [Schema view](#42-schema-views), which can be
 used to select a smaller set of columns to browse.
 
-#### 3.3.1 Loading logs
+#### 3.4.1 Loading logs
 
 We use on the grok library for parsing distributed logs.
 For more info visit https://github.com/thekrakken/java-grok/blob/master/README.md
@@ -524,7 +531,7 @@ For the above example, your grok pattern would look something like this:
 ```
 For more patterns : https://github.com/thekrakken/java-grok/blob/master/src/main/resources/patterns/patterns
 
-##### 3.3.1.1 Example
+##### 3.4.1.1 Example
 
 Given this line from a syslog log:
 ```
@@ -543,13 +550,13 @@ message   : CRON[25907]: (CRON) info (No MTA installed, discarding output)
 timestamp : Sep 17 06:55:14.123
 ```
 
-##### 3.3.1.2 Custom Patterns
+##### 3.4.1.2 Custom Patterns
 
 Hillview supports certain pre-defined log format patterns. You have an option to define custom log format patterns
 to suit your needs and specify the same in the logFormat field in the UI (under Generic Logs). Given a log pattern
 and a set of files, what you will get in Hillview is a table with columns corresponding to the names that you gave to the patterns.
 
-#### 3.3.2 Reading generic logs
+#### 3.4.2 Reading generic logs
 
 Hillview can read data from log files with diffrent log formats. The
 following menu allows the users to specify the files to load.  *The
@@ -563,13 +570,13 @@ is deployed*.
 * File name pattern: A shell expansion pattern that names the files to
   load.  Multiple files may be loaded on each machine.
 
-* Log format: The [log format](#331-loading-logs) of the logs.
+* Log format: The [log format](#341-loading-logs) of the logs.
 
-#### 3.3.3 Reading saved dataset views
+#### 3.4.3 Reading saved dataset views
 
 Hillview can reload all the data views associated with a datased.
 A collection of views can be saved to a file from the dataset tab menu,
-as described in [Navigating multiple datasets](#34-navigating-multiple-datasets).
+as described in [Navigating multiple datasets](#35-navigating-multiple-datasets).
 The following menu allows the users to specify the files to load.
 
 ![Specifying a view to load](bookmarked-data-menu.png)
@@ -578,7 +585,7 @@ The following menu allows the users to specify the files to load.
 
 * Tab label: A name to display for dataset.
 
-#### 3.3.4 Reading CSV files
+#### 3.4.4 Reading CSV files
 
 Hillview can read data from comma- or tab-separated files. The
 following menu allows the users to specify the files to load.  *The
@@ -612,7 +619,7 @@ a 'missing' data value.
 When parsing dates Hillview assumes that all rows will be using the same date format,
 and it attempts to guess a suitable parsing format.
 
-#### 3.3.5 Reading JSON files
+#### 3.4.5 Reading JSON files
 
 Hillview can read data from JSON files. The following menu allows the
 users to specify the files to load.  *The files must be resident on
@@ -635,7 +642,7 @@ The assumed format is as follows:
 All the JSON files must have the same schema.  JSON files may be
 compressed.
 
-#### 3.3.6 Reading ORC files
+#### 3.4.6 Reading ORC files
 
 Hillview can read data from [Apache ORC
 files](https://github.com/apache/orc), a columnar storage format.
@@ -697,7 +704,7 @@ file it will perform type conversions at loading time, as follows:
 |`TIMESTAMP`|`String`,`Json`|`String` representation of the date|
 |`TIMESTAMP`|`Date`|Convert to date assuming that the timezone is UTC|
 
-#### 3.3.7 Reading Parquet files
+#### 3.4.7 Reading Parquet files
 
 Hillview can read data from [Apache Parquet
 files](http://parquet.apache.org), a columnar storage format.  The
@@ -726,7 +733,7 @@ and Hillview data types:
 |INT96|`LocalDate`|
 |other|Error - conversion fails|
 
-#### 3.3.8 Reading data from SQL databases
+#### 3.4.8 Reading data from SQL databases
 
 The following menu allows the user to load data from a
 parallel database or a federated set of databases that expose some JDBC services.
@@ -751,7 +758,7 @@ The following menu allows the user to specify the data to load.
 
 * password: Credentials of the user connecting to the database.
 
-##### 3.3.8.1 Reading data from Greenplum databases
+##### 3.4.8.1 Reading data from Greenplum databases
 
 Hillview can read data from a [Greenplum massively parallel database](https://greenplum.org/).
 The following diagram illustrates how Hillview interact with Greenplum.
@@ -761,7 +768,7 @@ The following diagram illustrates how Hillview interact with Greenplum.
 * The hillview root node can run anywhere (including the same machine as the Master Host),
   but it needs to be able to open
   a JDBC connection to the Greenplum Master Host.  The Master Host must be specified
-  as `host` in the connection dialog shown in [the section above](#338-reading-data-from-sql-databases).
+  as `host` in the connection dialog shown in [the section above](#348-reading-data-from-sql-databases).
   The default network port for Greenplum is `5432`.
 
 * Each hillview worker must be deployed on the same machine which contains a
@@ -782,7 +789,7 @@ The following diagram illustrates how Hillview interact with Greenplum.
 The interaction between Hillview and Greenplum proceeds as follows:
 
 1. The user initiates a connection to a Greenplum database by filling the
-   form shown in [the section above](#338-reading-data-from-sql-databases).
+   form shown in [the section above](#348-reading-data-from-sql-databases).
 
 2. The Hillview root node initiates a JDBC connection to the Greenplum
    Master host.  Using this connection the Hillview root node obtains
@@ -800,7 +807,7 @@ The interaction between Hillview and Greenplum proceeds as follows:
 The [configuration section](#25-service-configuration) shows two configuration
 variables that mediate the interaction between Greenplum and Hillview.
 
-##### 3.3.8.2 Reading from a federated set of MySQL databases
+##### 3.4.8.2 Reading from a federated set of MySQL databases
 
 The image below shows a system where Hillview reads directly from a set of
 independent MySQL databases (this can be easily extended
@@ -814,10 +821,10 @@ shards tables across databases such that different shards of a table
 are stored with the same table name across different databases.
 Hillview allows the user to visualize the union of all table fragments.
 The JDBC connection parameters introduced by the user in the dialog
-shown in [the section above](#338-reading-data-from-sql-databases) describe
+shown in [the section above](#348-reading-data-from-sql-databases) describe
 simultaneoulsy all connections from the workers.
 
-### 3.4 Navigating multiple datasets
+### 3.5 Navigating multiple datasets
 
 The Hillview user interface uses a tabbed web page to display multiple
 datasets; each dataset is opened in a separate tab.  Even if the same
@@ -851,8 +858,8 @@ as long as the server-side data does not change.
 
 * Save this tab to file.  This saves the data describing this view into a JSON
 file.  The data can be loaded back from the
-[load menu](#33-loading-data) as described in
-[Reading saved dataset views](#333-reading-saved-dataset-views).  The file
+[load menu](#34-loading-data) as described in
+[Reading saved dataset views](#343-reading-saved-dataset-views).  The file
 can also be sent to other users, who will be able to open
 the exact same view.  This functionality is similar to the above
 "bookmark", but does not keep any server-side data.
@@ -1062,7 +1069,7 @@ of columns using the chart menu:
 ![Save-as menu](saveas-menu.png)
 
 * Save as ORC files: allows users to specify how data should be saved
-  in the [ORC file format](#336-reading-orc-files).
+  in the [ORC file format](#346-reading-orc-files).
 
 ![Save-as ORC menu](saveas-orc-menu.png)
 
@@ -1071,7 +1078,7 @@ file in the current dataset will be saved as a new file in ORC format
 in the specified folder.
 
 * Save as CSV files: allows users to specify how data should be saved
-  in the [CSV file format](#334-reading-csv-files).
+  in the [CSV file format](#344-reading-csv-files).
 
 The user can specify a folder on the remote worker machines.  Each
 file in the current dataset will be saved as a new file in comma-separated value format

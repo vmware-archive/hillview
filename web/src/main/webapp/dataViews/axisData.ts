@@ -31,7 +31,7 @@ import {
     Converters,
     formatDate,
     formatNumber,
-    formatTime, significantDigits,
+    formatTime, px, significantDigits,
     truncate,
 } from "../util";
 import {AnyScale, D3Axis, D3SvgElement, SpecialChars} from "../ui/ui";
@@ -130,6 +130,8 @@ class BucketBoundaries {
 }
 
 export class AxisDescription {
+    public static fontSize = 10;
+
     constructor(
         public readonly axis: D3Axis,
         public readonly majorTickPeriod: number,
@@ -139,6 +141,8 @@ export class AxisDescription {
 
     public draw(onElement: D3SvgElement): D3SvgElement {
         const result = onElement.call(this.axis);
+        result.selectAll("text")
+            .style("font-size", px(AxisDescription.fontSize));
         if (this.rotate)
             result.selectAll("text")
                 .style("text-anchor", "start")
@@ -313,7 +317,7 @@ export class AxisData {
                 // of a letter used to draw axes.  We use d3 axes, which
                 // have a default font size of 10.  Normally we should
                 // measure the size of a string, but this is much simpler.
-                const fontWidth = 8;
+                const fontWidth = AxisDescription.fontSize;
                 const maxLabelWidthInChars = Math.floor(
                     bottom ? maxLabelWidthInPixels / fontWidth : labelRoom / fontWidth);
                 console.assert(maxLabelWidthInChars > 2);
