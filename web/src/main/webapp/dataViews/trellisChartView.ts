@@ -88,7 +88,9 @@ export abstract class TrellisChartView<D> extends ChartView<D> {
      */
     protected createAllSurfaces(
         onCreation: (surface: PlottingSurface) => void): void {
-        this.surface = new HtmlPlottingSurface(this.chartDiv!, this.page, {});
+        this.surface = new HtmlPlottingSurface(this.chartDiv!, this.page, {
+            leftMargin: PlottingSurface.leftMargin * AxisDescription.fontSize / 10
+        });
 
         let created = 0;
         this.surfaces = [];

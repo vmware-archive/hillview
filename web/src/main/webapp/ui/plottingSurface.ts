@@ -70,8 +70,8 @@ export abstract class PlottingSurface {
     protected selectionBorder: D3SvgElement;
 
     public static readonly minCanvasWidth = 300; // minimum number of pixels for a plot (including margins)
-    public static readonly canvasHeight = 500;   // size of a plot
-    public static readonly topMargin = 10;        // top margin in pixels in a plot
+    public static readonly canvasHeight = 520;   // size of a plot
+    public static readonly topMargin = 10;       // top margin in pixels in a plot
     public static readonly rightMargin = 20;     // right margin in pixels in a plot
     public static readonly bottomMargin = 50;    // bottom margin in pixels in a plot
     public static readonly leftMargin = 40;      // left margin in pixels in a plot

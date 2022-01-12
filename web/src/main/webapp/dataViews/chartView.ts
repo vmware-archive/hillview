@@ -27,7 +27,6 @@ import {event as d3event, mouse as d3mouse} from "d3-selection";
 import {AxisData} from "./axisData";
 import {Dialog, FieldKind} from "../ui/dialog";
 import {TableMeta} from "../ui/receiver";
-import {px} from "../util";
 
 /**
  * A ChartView is a common base class for many views that

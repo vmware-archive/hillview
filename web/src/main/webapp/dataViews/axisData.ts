@@ -305,7 +305,7 @@ export class AxisData {
                 const labels: string[] = [];
                 const fullLabels: string[] = [];
                 const tickCount = Math.ceil(this.displayRange.max! - this.displayRange.min!);
-                const minLabelSpace = 20;  // We reserve at least this many pixels
+                const minLabelSpace = 20 * AxisDescription.fontSize / 10;  // We reserve at least this many pixels
                 const maxLabelCount = pixels / minLabelSpace;
                 const labelPeriod = Math.ceil(tickCount / maxLabelCount);
                 // On a legend the leftmost and rightmost ticks are at the ends

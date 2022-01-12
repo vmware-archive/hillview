@@ -320,7 +320,7 @@ export class DataRangesReceiver extends OnCompleteReceiver<BucketsInfo[]> {
             } else {
                 const maxWindows =
                     Math.floor(chartSize.width / Resolution.minTrellisWindowSize) *
-                    Math.floor(chartSize.height / Resolution.minTrellisWindowSize);
+                    Math.floor(chartSize.height / (Resolution.minTrellisWindowSize + Resolution.lineHeight));
                 if (kindIsString(this.cds[groupByIndex].kind))
                     windows = Math.min(maxWindows, ranges[groupByIndex]!.stringQuantiles!.length);
                 else if (this.cds[groupByIndex].kind === "Integer")

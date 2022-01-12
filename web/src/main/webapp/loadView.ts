@@ -37,6 +37,7 @@ import {Converters, ICancellable, loadFile, getUUID, disableSuggestions, assertN
 import {HillviewToplevel} from "./toplevel";
 import {select as d3select, selectAll as d3selectAll} from "d3-selection";
 import {AxisDescription} from "./dataViews/axisData";
+import {HeatmapPlot} from "./ui/heatmapPlot";
 
 /**
  * The load menu is the first menu that is displayed on the screen.
@@ -248,6 +249,13 @@ export class LoadView extends RemoteObject implements IDataView {
                         text: "Purge all data",
                         action: () => this.purgeAll(),
                         help: "Purge all data from memory (memoized, root, leaf)"
+                    }, {
+                        text: "Toggle privat heatmap threshold",
+                        action: () => {
+                            HeatmapPlot.useConfThreshold = !HeatmapPlot.useConfThreshold;
+                            this.page.reportError("Use threshold is " + HeatmapPlot.useConfThreshold);
+                        },
+                        help: "Change the way private heatmaps are displayed"
                     }
                 ]),
             },

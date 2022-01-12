@@ -31,7 +31,7 @@ import {FullPage, PageTitle} from "../ui/fullPage";
 import {HistogramPlot} from "../ui/histogramPlot";
 import {PiePlot} from "../ui/piePlot";
 import {SubMenu, TopMenu} from "../ui/menu";
-import {HtmlPlottingSurface} from "../ui/plottingSurface";
+import {HtmlPlottingSurface, PlottingSurface} from "../ui/plottingSurface";
 import {TextOverlay} from "../ui/textOverlay";
 import {DragEventKind, HtmlString, Resolution} from "../ui/ui";
 import {
@@ -41,7 +41,7 @@ import {
     percentString,
     significantDigits, Two, assertNever, assert, Exporter,
 } from "../util";
-import {AxisData} from "./axisData";
+import {AxisData, AxisDescription} from "./axisData";
 import {BucketDialog, HistogramViewBase} from "./histogramViewBase";
 import {NewTargetReceiver, DataRangesReceiver} from "./dataRangesReceiver";
 import {BaseReceiver} from "../modules";
@@ -183,7 +183,9 @@ export class HistogramView extends HistogramViewBase<Two<Two<Groups<number>>>> /
     protected createNewSurfaces(): void {
         if (this.surface != null)
             this.surface.destroy();
-        this.surface = new HtmlPlottingSurface(this.chartDiv!, this.page, {});
+        this.surface = new HtmlPlottingSurface(this.chartDiv!, this.page, {
+            leftMargin: PlottingSurface.leftMargin * AxisDescription.fontSize / 10 // scale by font size
+        });
         if (this.pie) {
             this.plot = new PiePlot(this.surface);
             this.cdfPlot = new NoCDFPlot();
