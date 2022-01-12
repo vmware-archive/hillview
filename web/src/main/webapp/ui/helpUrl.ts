@@ -30,7 +30,7 @@ export const helpUrl: Map<ViewKind, string> = new Map<ViewKind, string>()
     .set("TrellisQuartiles", "(#64-trellis-plots-of-quartile-vectors)")
     .set("HeavyHitters", "(#44-frequent-elements-views)")
     .set("Schema", "(#42-schema-views)")
-    .set("Load", "(#33-loading-data)")
+    .set("Load", "(#34-loading-data)")
     .set("Map", "(#66-geographic-views)")
     .set("SVD Spectrum", "(#55-singular-value-spectrum-views)")
     .set("CorrelationHeatmaps", "(#correlation-heatmaps)");
