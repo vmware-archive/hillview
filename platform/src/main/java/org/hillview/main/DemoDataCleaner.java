@@ -32,6 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.stream.Stream;
 
 /**
@@ -69,6 +70,12 @@ class DemoDataCleaner {
                     ITable tbl = r.load();
                     assert tbl != null;
                     ITable p = tbl.project(schema);
+                    if (p.getSchema().containsColumnName("Reporting_Airline")) {
+                        // The schema has changed at some point
+                        HashMap<String, String> h = new HashMap<>();
+                        h.put("Reporting_Airline", "UniqueCarrier");
+                        p = p.renameColumns(h);
+                    }
 
                     String end = filename.replace(prefix, "");
                     if (end.endsWith(".gz"))

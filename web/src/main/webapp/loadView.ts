@@ -250,7 +250,7 @@ export class LoadView extends RemoteObject implements IDataView {
                         action: () => this.purgeAll(),
                         help: "Purge all data from memory (memoized, root, leaf)"
                     }, {
-                        text: "Toggle privat heatmap threshold",
+                        text: "Toggle private heatmap threshold",
                         action: () => {
                             HeatmapPlot.useConfThreshold = !HeatmapPlot.useConfThreshold;
                             this.page.reportError("Use threshold is " + HeatmapPlot.useConfThreshold);

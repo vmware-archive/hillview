@@ -288,6 +288,7 @@ export class AxisData {
         }
         // on vertical axis the direction is swapped
         const domain = bottom ? [actualMin, actualMax] : [actualMax, actualMin];
+        let rotate = AxisDescription.fontSize > 10;
 
         switch (this.description.kind) {
             case "Integer":
@@ -296,7 +297,7 @@ export class AxisData {
                 this.scale = d3scaleLinear()
                     .domain(domain)
                     .range([0, pixels]);
-                this.axis = new AxisDescription(axisCreator(this.scale), 1, false, null);
+                this.axis = new AxisDescription(axisCreator(this.scale), 1, rotate, null);
                 break;
             }
             case "Json":
@@ -321,7 +322,7 @@ export class AxisData {
                 const maxLabelWidthInChars = Math.floor(
                     bottom ? maxLabelWidthInPixels / fontWidth : labelRoom / fontWidth);
                 console.assert(maxLabelWidthInChars > 2);
-                let rotate = false;
+                rotate = false;
 
                 for (let i = 0; i < tickCount; i++) {
                     ticks.push((i + adjust) * tickSpan);
@@ -361,7 +362,7 @@ export class AxisData {
                 this.scale = d3scaleTime()
                     .domain([minDate, maxDate])
                     .range([0, pixels]);
-                this.axis = new AxisDescription(axisCreator(this.scale), 1, false, null);
+                this.axis = new AxisDescription(axisCreator(this.scale), 1, rotate, null);
                 break;
             }
             case "Date": {
@@ -370,7 +371,7 @@ export class AxisData {
                 this.scale = d3scaleTime()
                     .domain([minDate, maxDate])
                     .range([0, pixels]);
-                this.axis = new AxisDescription(axisCreator(this.scale), 1, false, null);
+                this.axis = new AxisDescription(axisCreator(this.scale), 1, rotate, null);
                 break;
             }
             case "None":
