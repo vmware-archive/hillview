@@ -69,13 +69,13 @@ class DemoDataCleaner {
                     System.out.println("Reading " + f);
                     ITable tbl = r.load();
                     assert tbl != null;
-                    ITable p = tbl.project(schema);
-                    if (p.getSchema().containsColumnName("Reporting_Airline")) {
+                    if (tbl.getSchema().containsColumnName("Reporting_Airline")) {
                         // The schema has changed at some point
                         HashMap<String, String> h = new HashMap<>();
                         h.put("Reporting_Airline", "UniqueCarrier");
-                        p = p.renameColumns(h);
+                        tbl = tbl.renameColumns(h);
                     }
+                    ITable p = tbl.project(schema);
 
                     String end = filename.replace(prefix, "");
                     if (end.endsWith(".gz"))
