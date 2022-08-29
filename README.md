@@ -1,3 +1,6 @@
+*This project has been archived in August 2022.  The code should run
+fine, but no more updates are planned.*
+
 ![Hillview project logo](hillview-logo.png)
 
 Hillview: a big data spreadsheet.  Hillview is a cloud-based
@@ -21,8 +24,10 @@ There is a [Hillview user manual](docs/userManual.md).
 A [short video](https://1drv.ms/v/s!AlywK8G1COQ_jeRQatBqla3tvgk4FQ)
 shows the system in action in real-time.
 
-You can [try a demo](http://ec2-18-217-136-170.us-east-2.compute.amazonaws.com:8080/)
-of the system running on 15 small Amazon machines.
+You can [try a
+demo](http://ec2-18-217-136-170.us-east-2.compute.amazonaws.com:8080/)
+of the system running on 15 small Amazon machines.  (the demo will
+stop working eventually)
 
 A [paper](https://arxiv.org/abs/1907.04827) describing the system in
 some detail.  This is an extended version of the following publication
